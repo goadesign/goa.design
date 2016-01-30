@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>goa</title>
+    <link>http://goa.design/</link>
+    <description>Recent content on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 30 Jan 2016 13:13:20 -0500</lastBuildDate>
+    <atom:link href="http://goa.design/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>about</title>
+      <link>http://goa.design/about/</link>
+      <pubDate>Sat, 30 Jan 2016 13:13:20 -0500</pubDate>
+      
+      <guid>http://goa.design/about/</guid>
+      <description>&lt;p&gt;hello about!&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Hello Goa!</title>
+      <link>http://goa.design/blog/hello-goa/</link>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
+      
+      <guid>http://goa.design/blog/hello-goa/</guid>
+      <description>&lt;p&gt;hello Goa welcome blog post&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>gorma</title>
+      <link>http://goa.design/plugins/gorma/</link>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
+      
+      <guid>http://goa.design/plugins/gorma/</guid>
+      <description>&lt;p&gt;hello gorma&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Getting Started</title>
+      <link>http://goa.design/guide/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/guide/</guid>
+      <description>&lt;p&gt;Getting Started Guide Here&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>JWT</title>
+      <link>http://goa.design/middleware/jwt/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/middleware/jwt/</guid>
+      <description>&lt;p&gt;Getting Started Guide Here
+JWT&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>goa components</title>
+      <link>http://goa.design/components/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/components/</guid>
+      <description>&lt;p&gt;Components landing&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>goa engine</title>
+      <link>http://goa.design/components/engine/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/components/engine/</guid>
+      <description>&lt;p&gt;engine&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>goa middleware</title>
+      <link>http://goa.design/middleware/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/middleware/</guid>
+      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>goa plugins</title>
+      <link>http://goa.design/plugins/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/plugins/</guid>
+      <description>&lt;p&gt;Content of the file goes Here &amp;ndash; plugins&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>goagen</title>
+      <link>http://goa.design/components/goagen/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/components/goagen/</guid>
+      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>runtime</title>
+      <link>http://goa.design/components/runtime/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/components/runtime/</guid>
+      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>swagger</title>
+      <link>http://goa.design/components/swagger/</link>
+      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/components/swagger/</guid>
+      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

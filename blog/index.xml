@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Blogs on goa</title>
+    <link>http://goa.design/blog/</link>
+    <description>Recent content in Blogs on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 30 Jan 2016 11:01:06 -0500</lastBuildDate>
+    <atom:link href="http://goa.design/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Hello Goa!</title>
+      <link>http://goa.design/blog/hello-goa/</link>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
+      
+      <guid>http://goa.design/blog/hello-goa/</guid>
+      <description>&lt;p&gt;hello Goa welcome blog post&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
