@@ -1,0 +1,84 @@
+{{ partial "header.html" . }}
+
+
+<body>
+
+	{{ partial "navigation.html" . }}
+
+	<!-- Content
+	================================================== -->
+	<section id="content" class="container">
+
+
+	<div class="hero-unit">
+		<p>Design first.  Then win. </p> 
+	</div>
+
+</section><!-- end .container -->
+
+<div class="lead-container">
+<div class="container">
+
+	<!-- Macbook carousel -->
+	<div id="carousel" class="carousel slide stacked" rel="carousel">
+
+		<!-- Carousel items -->
+		<div class="carousel-inner">
+			<!-- Item -->
+			<div class="item active">
+				<img alt="" src="/assets/home-variant/placeholder-940x480-1.gif" />
+			</div>
+			<!-- end Item -->
+			<!-- Item -->
+			<div class="item">
+				<img alt="" src="/assets/home-variant/placeholder-940x480-2.gif" />
+			</div>
+			<!-- end Item -->
+			<!-- Item -->
+			<div class="item">
+				<img alt="" src="/assets/home-variant/placeholder-940x480-3.gif" />
+			</div>
+			<!-- end Item -->
+		</div>
+		<!-- Carousel navigation -->
+		<a class="carousel-control left" href="#carousel" data-slide="prev"></a>
+		<a class="carousel-control right" href="#carousel" data-slide="next"></a>
+
+	</div>
+	<!-- end Macbook carousel -->
+
+
+	<div class="row">
+		<div class="span4">
+			<span class="circle" style="background:#ED3E3E;"><i class="icon-heart-empty"></i></span>&nbsp;
+			<h3 class="inline">Code Generation</h3>
+			<p>
+				goa relies on code generation to alleviate the need for reflection or repetitive coding. The goagen tool analyzes the API design and produces various artifacts including code, documentation, tests or even your own output. The end result is application code that is clean and terse.
+			</p>
+			<p><a class="" href="#">Read more &raquo;</a></p>
+		</div>
+
+		<div class="span4">
+			<span class="circle" style="background:#80AD00;"><i class="icon-leaf"></i></span>
+			<h3 class="inline">Design Based</h3>
+			<p>
+				The goa language allows writing self-explanatory code that describes the design of the API. The description focuses on listing the resources and the actions they support. The goa language is flexible and stays out of the way, you get to decide how your API should work.	
+			</p>
+			<p><a class="" href="#">Read more &raquo;</a></p>
+		</div>
+
+		<div class="span4">
+			<span class="circle" style="background:#5DB9F2;"><i class="icon-bolt"></i></span>
+			<h3 class="inline">Powerful Request Context</h3>
+			<p>Every API action handler in goa gets a context as first argument. The context implements the Context interface from google's context package. This means built-in support for deadlines and cancelation signals. The context also exposes the request and response states with action specific helper methods generated from the design.</p>
+			<p><a class="" href="#">Read more &raquo;</a></p>
+		</div>
+
+	</div>
+	<!-- end .row -->
+	
+</div>
+</div>
+	</section>
+
+{{ partial "footer.html" . }}
