@@ -7,6 +7,7 @@ all: hugo index
 hugo:
 	hugo --theme=goa
 index:
+	npm install --save-dev grunt string toml conzole
 	grunt lunr-index
 
 deploy:

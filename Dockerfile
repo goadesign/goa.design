@@ -9,7 +9,7 @@ RUN     mv hugo_0.15_linux_amd64/hugo_0.15_linux_amd64 /usr/local/bin/hugo && rm
 
 # Install Bower & Grunt
 RUN npm install -g grunt-cli grunt 
-RUN npm install --save-dev grunt-cli grunt string toml
+RUN npm install --save-dev grunt-cli grunt string toml conzole
 
 ADD . /website/
 # Define working directory.

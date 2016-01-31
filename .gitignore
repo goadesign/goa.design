@@ -7,4 +7,6 @@ vendor
 _integration_tests/*/**/*.*
 .DS_Store
 website/public
+node_modules
+
 
