@@ -1864,7 +1864,7 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   width: 70%;
   float: left;
   color: #888;
-  font-size: 11px;
+  font-size: 16px;
 }
 .post .entry-body h2 {
   font-size: 16px;

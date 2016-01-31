@@ -7,8 +7,8 @@
 	<section id="content" class="container">
 
 	<div class="hero-unit">
-		<h1>Blog<h1>
-		<p>We can't help but talk about it. </p>
+		<h1>{{ .Title  }}</h1>
+		<p>{{ .Description }}</p>
 	</div>
 
 	<hr />
@@ -22,7 +22,9 @@
 
 
   <div>
-   <h2 id="title">Posts</h1>
+	<p>
+	Goa is built from several pieces. Here's the list and we need more words here.
+	</p>
         <ul id="list">
             {{ range .Data.Pages }}
 	    <li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
