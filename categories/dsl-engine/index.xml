@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Generation on goa</title>
-    <link>http://goa.design/categories/generation/</link>
-    <description>Recent content in Generation on goa</description>
+    <title>Dsl Engine on goa</title>
+    <link>http://goa.design/categories/dsl-engine/</link>
+    <description>Recent content in Dsl Engine on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Sat, 30 Jan 2016 11:01:06 -0500</lastBuildDate>
-    <atom:link href="http://goa.design/categories/generation/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://goa.design/categories/dsl-engine/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>goagen</title>
-      <link>http://goa.design/components/goagen/</link>
+      <title>Goa DSL Engine</title>
+      <link>http://goa.design/components/engine/</link>
       <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
-      <guid>http://goa.design/components/goagen/</guid>
+      <guid>http://goa.design/components/engine/</guid>
       <description>&lt;p&gt;&lt;p&gt;
                                 &lt;code&gt;goagen&lt;/code&gt; is a tool that generates various artifacts from a goa design package.&lt;br/&gt; Install it with:
                                 &lt;code class=&#34;bash&#34;&gt;go get github.com/goadesign/goa/goagen&lt;/code&gt;&lt;br/&gt;
