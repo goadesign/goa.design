@@ -1,4 +1,10 @@
-
++++
+date = "2016-01-30T11:01:06-05:00"
+title = "goa"
+description = "godoc"
+categories = ["GoDoc"]
+tags = ["godoc"]
++++
 # goa
     import "github.com/goadesign/goa"
 

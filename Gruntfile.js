@@ -2,12 +2,13 @@ var toml = require("toml");
 var S = require("string");
 
 var CONTENT_PATH_PREFIX = "content";
+var SITE_IDX_DEST = "static/js/pindex.json";
 
 module.exports = function(grunt) {
 
     grunt.registerTask("lunr-index", function() {
 
-        grunt.log.writeln("Building pages index");
+        grunt.log.writeln("Build pages index");
 
         var indexPages = function() {
             var pagesIndex = [];
@@ -45,6 +46,7 @@ module.exports = function(grunt) {
 
         var processMDFile = function(abspath, filename) {
             var content = grunt.file.read(abspath);
+            grunt.log.ok("READING FILE:" + abspath)
             var pageIndex;
             // First separate the Front Matter from the content and parse it
             content = content.split("+++");
@@ -52,14 +54,18 @@ module.exports = function(grunt) {
             try {
                 frontMatter = toml.parse(content[1].trim());
             } catch (e) {
-                conzole.failed(e.message);
+                grunt.log.error("ERROR WHILST PROCESSING: " + abspath + e.message);
+            }
+            if (frontMatter.url) {
+                var href = frontMatter.url;
+            } else {
+                var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s;
+                // href for index.md files stops at the folder name
+                if (filename === "index.md") {
+                    href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(filename).s;
+                }
             }
 
-            var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s;
-            // href for index.md files stops at the folder name
-            if (filename === "index.md") {
-                href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(filename).s;
-            }
 
             // Build Lunr index for this page
             pageIndex = {
@@ -72,7 +78,7 @@ module.exports = function(grunt) {
             return pageIndex;
         };
 
-        grunt.file.write("static/js/lunr/PagesIndex.json", JSON.stringify(indexPages()));
+        grunt.file.write(SITE_IDX_DEST, JSON.stringify(indexPages()));
         grunt.log.ok("Index built");
     });
 };
