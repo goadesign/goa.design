@@ -1,12 +1,10 @@
-{
-    "title": "runtime",
-    "description": "The runtime",
-    "tags": [ "engine", "dsl" ],
-    "date": "2016-01-30",
-    "categories": [
-        "Generation"
-    ]
-}
++++
+date = "2016-01-30T11:01:06-05:00"
+title = "runtime"
+description = "The goa runtime."
+categories = ["Runtime"]
+tags = ["dsl"]
++++
 
      <p>
                                 The goa runtime is implemented by the goa package. It includes the

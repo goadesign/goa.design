@@ -1,0 +1,8 @@
+{
+  "name": "goa-design",
+  "version": "0.1.0",
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "conzole": "0.2.0"
+  }
+}

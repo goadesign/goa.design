@@ -7,7 +7,7 @@
 
 	
 	<meta charset="utf-8">
-	<title>Plain - Clean Responsive Bootstrap Theme</title>
+	<title>goa :: Design-first API Generation</title>
 	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
 
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -34,7 +34,6 @@
 
 		
 	<header id="header">
-
 		
 		<nav class="navbar">
 			<div class="navbar-inner">
@@ -70,6 +69,7 @@
 								<li><a href="/plugins/gorma/" title="">gorma</a></li>
 							</ul>
 						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
 						<li><a href="/blog/" title="Blog">Blog</a></li>
 						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
 					</ul>
@@ -83,8 +83,7 @@
 	<section id="content" class="container">
 
 	<div class="hero-unit">
-		<h1>Blog<h1>
-		<p>We can't help but talk about it. </p>
+		<h1>Dsl<h1>
 	</div>
 
 	<hr />
@@ -92,38 +91,115 @@
 	
 	<div class="row" id="blog">
 
-		
-		<div class="span8"> 
 
 
+ 		
+		<div class="span12"> 
+            
+			
+			<article class="post">
+				<div class="entry-body">
+					<a href="http://goa.design/components/engine/">
+						<h2 class="entry-title">Goa DSL Engine</h2>
+					</a>
+					<p>goagen is a tool that generates various artifacts from a goa design package. Install it with: go get github.com/goadesign/goa/goagen goagen relies on goimports: go get golang.org/x/tools/cmd/goimports Each type of artifact is associated with a goagen command that exposes it own set of flags. Internally these commands map to &ldquo;generators&rdquo; that contain the logic for generating the artifacts. It works something like this: goagen parses the command line to determine the type of output desired and invokes the appropriate generator.</p>
+				</div>
+				<div class="entry-meta">
+					<span class="entry-type"></span>
+					<span class="entry-date">Saturday, Jan 30, 2016</span>
+					<span class="entry-date"></span>
+					<div class="entry-meta">
+						<ul class="categories">
+						
+							<li><a href="/categories/DSL%20Engine/">DSL Engine</a></li>
+						
+						</ul>
+					</div>
+					<div class="widget">
+						<ul class="tags">
+						
+							<li><a href="/tags/dsl/">dsl</a></li>
+						
+						</ul>
+					</div>
+				</div>
+				<div class="clr"></div>
 
-  <div>
-   <h2 id="title">Posts</h1>
-        <ul id="list">
+			</article>
+		<hr />
             
-	    <li><a href="http://goa.design/components/">goa components</a></li>
-            
-	    <li><a href="http://goa.design/components/engine/">goa engine</a></li>
-            
-	    <li><a href="http://goa.design/middleware/">goa middleware</a></li>
-            
-	    <li><a href="http://goa.design/plugins/">goa plugins</a></li>
-            
-	    <li><a href="http://goa.design/components/goagen/">goagen</a></li>
-            
-	    <li><a href="http://goa.design/components/runtime/">runtime</a></li>
-            
-	    <li><a href="http://goa.design/components/swagger/">swagger</a></li>
-            
-        </ul>
-  </div>
+			
+			<article class="post">
+				<div class="entry-body">
+					<a href="http://goa.design/components/goagen/">
+						<h2 class="entry-title">goagen</h2>
+					</a>
+					<p>goagen is a tool that generates various artifacts from a goa design package. Install it with: go get github.com/goadesign/goa/goagen goagen relies on goimports: go get golang.org/x/tools/cmd/goimports Each type of artifact is associated with a goagen command that exposes it own set of flags. Internally these commands map to &ldquo;generators&rdquo; that contain the logic for generating the artifacts. It works something like this: goagen parses the command line to determine the type of output desired and invokes the appropriate generator.</p>
+				</div>
+				<div class="entry-meta">
+					<span class="entry-type"></span>
+					<span class="entry-date">Saturday, Jan 30, 2016</span>
+					<span class="entry-date"></span>
+					<div class="entry-meta">
+						<ul class="categories">
+						
+							<li><a href="/categories/Generation/">Generation</a></li>
+						
+						</ul>
+					</div>
+					<div class="widget">
+						<ul class="tags">
+						
+							<li><a href="/tags/dsl/">dsl</a></li>
+						
+							<li><a href="/tags/goagen/">goagen</a></li>
+						
+						</ul>
+					</div>
+				</div>
+				<div class="clr"></div>
 
+			</article>
+		<hr />
+            
+			
+			<article class="post">
+				<div class="entry-body">
+					<a href="http://goa.design/components/runtime/">
+						<h2 class="entry-title">runtime</h2>
+					</a>
+					<p>The goa runtime is implemented by the goa package. It includes the implementation of the goa action context which provides the means to access the request state and write the response. The package also contains a number of data structures and algorithms that provide supporting functionality to the service. These include logging, error handling, versioning support etc. goa follows the "battery included" model for the supporting functionality letting you customize all aspects if the provided default is not sufficient.</p>
+				</div>
+				<div class="entry-meta">
+					<span class="entry-type"></span>
+					<span class="entry-date">Saturday, Jan 30, 2016</span>
+					<span class="entry-date"></span>
+					<div class="entry-meta">
+						<ul class="categories">
+						
+							<li><a href="/categories/Runtime/">Runtime</a></li>
+						
+						</ul>
+					</div>
+					<div class="widget">
+						<ul class="tags">
+						
+							<li><a href="/tags/dsl/">dsl</a></li>
+						
+						</ul>
+					</div>
+				</div>
+				<div class="clr"></div>
+
+			</article>
+		<hr />
+            
 			
 
 			
 		</div>
-
 		
+	
 		<div class="sidebar span4">
 
 			
@@ -133,99 +209,71 @@
 
 			
 			<div class="widget">
-				<h4>Categories</h4>
-				<ul class="tags">
-					<li><a href="#">design</a></li>
-					<li><a href="#">user interface</a></li>
-					<li><a href="#">typography</a></li>
-					<li><a href="#">apps</a></li>
-					<li><a href="#">mac os/x</a></li>
-				</ul>
-			</div>
-
-			
-			<div class="widget">
-				<h4>List widget</h4>
+				<h4>All Categories</h4>
 				<ul class="icons-ul list-style">
-					<li><i class="icon-li icon-chevron-right"></i>design</li>
-					<li><i class="icon-li icon-chevron-right"></i>user interface</li>
-					<li><i class="icon-li icon-chevron-right"></i>typography</li>
-					<li><i class="icon-li icon-chevron-right"></i>apps</li>
-					<li><i class="icon-li icon-chevron-right"></i>mac os/x</li>
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
 				</ul>
 			</div>
 
 			
-			<div class="widget stacked">
-				<h4>Tabs</h4>
-				<ul class="nav nav-tabs">
-					<li class="active"><a href="#home" data-toggle="tab">Home</a></li>
-					<li class=""><a href="#profile" data-toggle="tab">Profile</a></li>
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
 				</ul>
-				<div class="tab-content">
-					<div class="tab-pane fade active in" id="home">
-						<p>Raw denim you probably haven't heard of them jean shorts Austin. Nesciunt tofu stumptown aliqua, retro synth master cleanse. Mustache cliche tempor.</p>
-					</div>
-					<div class="tab-pane fade" id="profile">
-						<p>Raw denim you probably haven't heard of them jean shorts Austin. Nesciunt tofu stumptown aliqua, retro synth master cleanse. Mustache cliche tempor.</p>
-					</div>
-				</div>   
-			</div>
-
-			
-			<div class="widget">
-				<h4>Flickr widget</h4>
-				<div class="flickr-feed" data-flickr-id="52617155@N08" data-flickr-tags="workspaces,design,2010,chicago">
-				</div>
-			</div>
-
-			
-			<div class="widget">
-				<h4>Text widget</h4>
-				<p>Cupcake ipsum dolor sit amet wafer gummi bears pudding applicake. Jujubes brownie powder. Sweet roll powder gingerbread gummies. </p>
 			</div>
 
 		</div>
-
-	</div>
-
-	<script type="text/javascript" src="js/jflickrfeed.min.js"></script>
-	</section>
-
 	
+	</div>
+	</section>
+		
 
 	<footer id="footer">
 		<div class="container">
 			<div class="row">
 				<div class="span4">
-					<a class="brand" href="index.html">
-						Plain
+					<a class="brand" href="/">
+						goa
 					</a>
 					<p>
-						Creative agency working <br />with web and interactive media. <br />
-						Lorem ipsum dolor sit amet.
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
 						
 					</p>
 				</div>
 				<div class="span4 social-networks">
 					<h3>Find us elsewhere</h3>
 					<p>
-						<a class="social-network twitter"></a>
-						<a class="social-network facebook"></a>
-						<a class="social-network linkedin"></a>
-						<a class="social-network dribbble"></a>
-						<a class="social-network pinterest"></a>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
 					</p>
 				</div>
 				<div class="span4 newsletter">
-					<h3>Newsletter</h3>
-					<p>Subscribe to our monthly newsletter and be the first to know about our news and special deals!</p>
-					<img class="ajax-loader" src="img/ajax-loader.gif" alt="" />
-					<form method="post" id="newsletter-form">
-						<input type="text" placeholder="Enter your E-mail" name="subscribe" />
-						<input type="hidden" name="bot" />
-						<button type="submit" class="icon-ok" id="newsletter-subscribe" ></button>
-					</form>
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
 				</div> 
 			</div> 		
 		</div> 
@@ -234,16 +282,8 @@
 	<footer id="copyright">
 		<div class="container">
 			<div class="row">
-				<div class="span4">
-					&copy; 2010—2012 by <a>Plain</a>
-				</div>
-				<div class="span4">
-					<a href="#" title="Send us email">hello@plain.com</a>, 
-					+123 320 000 123 456
-				</div>
-				<div class="span4">
-					<a href="http://themeforest.net/item/plain/2616790?ref=virae" rel="external" title="">PLAIN</a> BY <a title="Michal Šimonfy" rel="external" href="http://virae.org">VIRAE</a>
-					
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
 				</div>
 			</div> 		
 		</div> 
@@ -251,11 +291,12 @@
 
 	
 
-	<script type="text/javascript" src="js/bootstrap.min.js"></script>
-	<script type="text/javascript" src="js/jquery.isotope.min.js"></script>
-	<script type="text/javascript" src="js/jquery.touchSwipe.min.js"></script>
-	<script type="text/javascript" src="js/jquery.hotkeys.min.js" charset='utf-8'></script>
-	<script type="text/javascript" src="js/functions.min.js"></script>
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
 	
 </body>
 </html>		
+

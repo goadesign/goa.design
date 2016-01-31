@@ -1,12 +1,10 @@
-{
-    "title": "goa engine",
-    "description": "The parser framework for the dsl",
-    "tags": [ "engine", "dsl" ],
-    "date": "2016-01-30",
-    "categories": [
-        "Generation"
-    ]
-}
++++
+date = "2016-01-30T11:01:06-05:00"
+title = "Goa DSL Engine"
+description = "The parser framework for the dsl."
+categories = ["DSL Engine"]
+tags = ["dsl"]
++++
 
  <p>
                                 <code>goagen</code> is a tool that generates various artifacts from a goa design package.<br/> Install it with:

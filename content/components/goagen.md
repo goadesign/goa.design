@@ -1,12 +1,10 @@
-{
-    "title": "goagen",
-    "description": "The generator",
-    "tags": [ "goagen", "dsl" ],
-    "date": "2016-01-30",
-    "categories": [
-        "Generation"
-    ]
-}
++++
+date = "2016-01-30T11:01:06-05:00"
+title = "goagen"
+description = "The generator."
+categories = ["Generation"]
+tags = ["dsl", "goagen"]
++++
 
  <p>
                                 <code>goagen</code> is a tool that generates various artifacts from a goa design package.<br/> Install it with:

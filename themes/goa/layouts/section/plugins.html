@@ -37,73 +37,8 @@
 			
 		</div><!-- end .span8 -->
 
-		<!-- Sidebar with widgets
-		================================================== -->
-		<div class="sidebar span4">
-
-			<!-- search plugin -->
-			<div class="widget">
-				<input type="search" class="animated" placeholder="Search" />
-			</div>
-
-			<!-- Tags / categories -->
-			<div class="widget">
-				<h4>Categories</h4>
-				<ul class="tags">
-					<li><a href="#">design</a></li>
-					<li><a href="#">user interface</a></li>
-					<li><a href="#">typography</a></li>
-					<li><a href="#">apps</a></li>
-					<li><a href="#">mac os/x</a></li>
-				</ul>
-			</div>
-
-			<!-- List widget with custom list icons -->
-			<div class="widget">
-				<h4>List widget</h4>
-				<ul class="icons-ul list-style">
-					<li><i class="icon-li icon-chevron-right"></i>design</li>
-					<li><i class="icon-li icon-chevron-right"></i>user interface</li>
-					<li><i class="icon-li icon-chevron-right"></i>typography</li>
-					<li><i class="icon-li icon-chevron-right"></i>apps</li>
-					<li><i class="icon-li icon-chevron-right"></i>mac os/x</li>
-				</ul>
-			</div>
-
-			<!-- Example of tabs widget -->
-			<div class="widget stacked">
-				<h4>Tabs</h4>
-				<ul class="nav nav-tabs">
-					<li class="active"><a href="#home" data-toggle="tab">Home</a></li>
-					<li class=""><a href="#profile" data-toggle="tab">Profile</a></li>
-				</ul>
-				<div class="tab-content">
-					<div class="tab-pane fade active in" id="home">
-						<p>Raw denim you probably haven't heard of them jean shorts Austin. Nesciunt tofu stumptown aliqua, retro synth master cleanse. Mustache cliche tempor.</p>
-					</div>
-					<div class="tab-pane fade" id="profile">
-						<p>Raw denim you probably haven't heard of them jean shorts Austin. Nesciunt tofu stumptown aliqua, retro synth master cleanse. Mustache cliche tempor.</p>
-					</div>
-				</div>   
-			</div>
-
-			<!-- Flickr widget (notice included js/jflickrfeed.min.js file at the bottom) -->
-			<div class="widget">
-				<h4>Flickr widget</h4>
-				<div class="flickr-feed" data-flickr-id="52617155@N08" data-flickr-tags="workspaces,design,2010,chicago">
-				</div>
-			</div>
-
-			<!-- Simple text widget -->
-			<div class="widget">
-				<h4>Text widget</h4>
-				<p>Cupcake ipsum dolor sit amet wafer gummi bears pudding applicake. Jujubes brownie powder. Sweet roll powder gingerbread gummies. </p>
-			</div>
-
-		</div><!-- end sidebar -->
+		{{ partial "sidebar.html" . }}	
 
 	</div><!-- end #blog -->
-
-	<script type="text/javascript" src="/js/jflickrfeed.min.js"></script>
 	</section>
 	{{ partial "footer.html" . }}

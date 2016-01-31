@@ -20,39 +20,349 @@
     </item>
     
     <item>
-      <title>Hello Goa!</title>
-      <link>http://goa.design/blog/hello-goa/</link>
+      <title>Goa DSL Engine</title>
+      <link>http://goa.design/components/engine/</link>
       <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
-      <guid>http://goa.design/blog/hello-goa/</guid>
-      <description>&lt;p&gt;hello Goa welcome blog post&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>gorma</title>
-      <link>http://goa.design/plugins/gorma/</link>
-      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
-      
-      <guid>http://goa.design/plugins/gorma/</guid>
-      <description>&lt;p&gt;hello gorma&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Getting Started</title>
-      <link>http://goa.design/guide/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://goa.design/guide/</guid>
-      <description>&lt;p&gt;Getting Started Guide Here&lt;/p&gt;
+      <guid>http://goa.design/components/engine/</guid>
+      <description>&lt;p&gt;&lt;p&gt;
+                                &lt;code&gt;goagen&lt;/code&gt; is a tool that generates various artifacts from a goa design package.&lt;br/&gt; Install it with:
+                                &lt;code class=&#34;bash&#34;&gt;go get github.com/goadesign/goa/goagen&lt;/code&gt;&lt;br/&gt;
+                                goagen relies on &lt;code&gt;goimports&lt;/code&gt;:&lt;br/&gt;
+                                &lt;code class=&#34;bash&#34;&gt;go get golang.org/x/tools/cmd/goimports&lt;/code&gt;
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                Each type of artifact is associated with a &lt;code&gt;goagen&lt;/code&gt; command that exposes it own set of flags.
+                                Internally these commands map to &amp;ldquo;generators&amp;rdquo; that contain the logic for generating the artifacts.
+                                It works something like this:
+                        &lt;/p&gt;
+                        &lt;ol&gt;
+                                &lt;li&gt;
+                                        goagen parses the command line to determine the type of output desired and invokes the appropriate generator.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The generator writes the code of the tool that will produce the final output to a temporary Go workspace.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The tool composed of the design language package and the output producing code is compiled in the temporary workspace.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;goagen&lt;/code&gt; then runs the tool which evaluates the design functions and traverses the resulting in-memory data
+                                        structures to write the output.
+                                &lt;/li&gt;
+                        &lt;/ol&gt;
+                        &lt;p&gt;
+                                Each generator registers a command with the &lt;code&gt;goagen&lt;/code&gt; tool, &lt;code&gt;goagen &amp;ndash;help&lt;/code&gt; lists all the available
+                                commands. These are:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;app&lt;/code&gt;: generates the service boilerplate code including controllers, contexts, media types and user types.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;main&lt;/code&gt;: generates a skeleton file for each resource controller as well as a default &lt;code&gt;main&lt;/code&gt;.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;client&lt;/code&gt;: generates an API client Go package and tool.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;swagger&lt;/code&gt;: generates the API Swagger specification.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;js&lt;/code&gt;: generates a JavaScript API client.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;schema&lt;/code&gt;: generates the API Hyper-schema JSON.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;gen&lt;/code&gt;: invokes a third party generator.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;bootstrap&lt;/code&gt;: invokes the &lt;code&gt;app&lt;/code&gt;, &lt;code&gt;main&lt;/code&gt;, &lt;code&gt;client&lt;/code&gt; and &lt;code&gt;swagger&lt;/code&gt;
+                                        generators.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                The command &lt;code&gt;goagen &amp;ndash;help-long&lt;/code&gt; lists all the supported commands and their flags.
+                        &lt;/p&gt;
+                        &lt;h2&gt;Common flags&lt;/h2&gt;
+                        &lt;p&gt;
+                                The following flags apply to all the &lt;code&gt;goagen&lt;/code&gt; commands:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;design|-d=DESIGN&lt;/code&gt; defines the Go package path to the service design package.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;out|-o=OUT&lt;/code&gt; specifies where to generate the files, defaults to the current directory.
+                                &lt;/li&gt;
+                                        &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;debug&lt;/code&gt; enables &lt;code&gt;goagen&lt;/code&gt; debug. This causes &lt;code&gt;goagen&lt;/code&gt; to print the content of the temporary
+                                        files and to leave them around.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;help|&amp;ndash;help-long|&amp;ndash;help-man&lt;/code&gt; prints contextual help.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen app&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;app&lt;/code&gt; command is arguably the most critical. It generates all the supporting code for the
+                                goa service. This command supports an additional flag:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg=app&lt;/code&gt; specifies the name of the generated Go package, defaults to &lt;code&gt;app&lt;/code&gt;. That&amp;rsquo;s also the
+                                        name of the subdirectory that gets created to store the generated Go files.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                This command always deletes and re-creates any pre-existing directory with the same name. The idea
+                                being that these files should never be edited.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen main&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;main&lt;/code&gt; command helps bootstrap a new goa service by generating a default &lt;code&gt;main.go&lt;/code&gt; as
+                                well as a default (empty) implementation for each resource controller defined in the design package. By default
+                                this command only generates the files if they don&amp;rsquo;t exist yet in the output directory. This
+                                command accepts two additional flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;force&lt;/code&gt; causes the files to be generated even if files with the same name already exist (in
+                                        which case they get overwritten).
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;name=API&lt;/code&gt; specifies the name of the service to be used in the generated call to &lt;code&gt;goa.New&lt;/code&gt;.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen client&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;client&lt;/code&gt; command generates both an API client package and tool. The client package implements a &lt;code&gt;Client&lt;/code&gt;
+                                object that exposes one method for each resource action. The generated code of the CLI tool leverages the package to
+                                make the API requests to the service.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;Client&lt;/code&gt; object can be configured to use request signers that get invoked prior to sending the
+                                request. The signers modify the request to include auth headers for example. goa comes with signers that implement
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#BasicSigner&#34;&gt;basic auth&lt;/a&gt;,
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#JWTSigner&#34;&gt;JWT auth&lt;/a&gt; and a subset of
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#OAuth2Signer&#34;&gt;OAuth2&lt;/a&gt;. Custom signers my be used as well, they must
+                                implement the &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#Signer&#34;&gt;Signer&lt;/a&gt; interface.
+                                This command accepts three additional flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;version&lt;/code&gt; specifies the CLI tool version.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;signer&lt;/code&gt; specifies a signer object supported by the API. Signer objects generally perform auth.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;signerPkg&lt;/code&gt; specifies the path to the package implementing the signer objects if not goa.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen js&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;js&lt;/code&gt; command generates a JavaScript API client suitable for both client-side and server-side
+                                applications. The generated code defines an anonymous AMD module and relies on the &lt;a href=&#34;https://github.com/mzabriskie/axios&#34;&gt;axios&lt;/a&gt;
+                                promised-based JavaScript library for making the actual HTTP requests.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The generated module wraps the &lt;code&gt;axios&lt;/code&gt; client and adds API specific functions, for example:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;javascript&#34;&gt;// List all bottles in account optionally filtering by year
+// path is the request path, the format is &amp;ldquo;/cellar/accounts/:accountID/bottles&amp;rdquo;
+// years is used to build the request query string.
+// config is an optional object to be merged into the config built by the function prior to making the request.
+// The content of the config object is described here: &lt;a href=&#34;https://github.com/mzabriskie/axios#request-api&#34;&gt;https://github.com/mzabriskie/axios#request-api&lt;/a&gt;
+// This function returns a promise which raises an error if the HTTP response is a 4xx or 5xx.
+client.listBottle = function (path, years, config) {
+  cfg = {
+    timeout: timeout,
+    url: urlPrefix + path,
+    method: &amp;lsquo;get&amp;rsquo;,
+    params: {
+      years: years
+    },
+    responseType: &amp;lsquo;json&amp;rsquo;
+  };
+  if (config) {
+    cfg = utils.merge(cfg, config);
+  }
+  return client(cfg);
+}&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The generated client module can be loaded using &lt;code&gt;requirejs&lt;/code&gt;:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;javascript&#34;&gt;requirejs.config({
+  paths: {
+    axios: &amp;lsquo;/js/axios.min&amp;rsquo;,
+    client: &amp;lsquo;/js/client&amp;rsquo;
+  }
+});
+requirejs([&amp;lsquo;client&amp;rsquo;], function (client) {
+  client().listBottle (&amp;ldquo;/cellar/accounts/440/bottles&amp;rdquo;, 317)
+    .then(function (resp) {
+      // All good, use resp
+    })
+    .catch(function (resp) {
+      // Woops, request failed or returned 4xx or 5xx.
+    });
+});&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The code above assumes that the generated files &lt;code&gt;client.js&lt;/code&gt; and &lt;code&gt;axios.min.js&lt;/code&gt; are both
+                                served from &lt;code&gt;/js&lt;/code&gt;. The &lt;code&gt;resp&lt;/code&gt; value returned to the promise is an object with the following
+                                fields:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code language=&#34;javascript&#34;&gt;{
+  // &lt;code&gt;data&lt;/code&gt; is the response that was provided by the server
+  data: {},&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;status&lt;/code&gt; is the HTTP status code from the server response
+  status: 200,&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;statusText&lt;/code&gt; is the HTTP status message from the server response
+  statusText: &amp;lsquo;OK&amp;rsquo;,&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;headers&lt;/code&gt; the headers that the server responded with
+  headers: {},&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;config&lt;/code&gt; is the config that was provided to &lt;code&gt;axios&lt;/code&gt; for the request
+  config: {}
+}&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The generator also produces an example HTML and controller that can be mounted on a
+                                goa service to quickly test the JavaScript. Simply import the &lt;code&gt;js&lt;/code&gt; Go
+                                package in your service main and mount the controller. The example HTML is served
+                                under &lt;code&gt;/js&lt;/code&gt; so that loading this path in a browser will trigger the generated
+                                JavaScript.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen swagger&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;swagger&lt;/code&gt; command generates a &lt;a href=&#34;http://swagger.io&#34;&gt;Swagger&lt;/a&gt; specification of the API.
+                                The command does not accept additional flags. It generates both the Swagger JSON as well as a controller that
+                                can be mounted on the goa service to serve it under &lt;code&gt;/swagger.json&lt;/code&gt;.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen schema&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;schema&lt;/code&gt; command generates a &lt;a href=&#34;https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api&#34;&gt;Heroku-like&lt;/a&gt;
+                                JSON hyper-schema representation of the API. It generates both the JSON as well as a controller that
+                                can be mounted on the goa service to serve it under &lt;code&gt;/schema.json&lt;/code&gt;. The command accepts an additional flag:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;url|-u=URL&lt;/code&gt; specifies the base URL used to build the JSON schema ID.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen gen&lt;/code&gt;: goagen Plugins&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;gen&lt;/code&gt; command makes it possible to invoke &lt;code&gt;goagen&lt;/code&gt; plugins.
+                                This command accepts two flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg-path=PKG-PATH&lt;/code&gt; specifies the Go package path to the plugin package.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg-name=PKG-NAME&lt;/code&gt; specifies the Go package name of the plugin package. It defaults to the
+                                        name of the inner most directory in the Go package path.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                A plugin consists of a Go package which exposes a &lt;code&gt;Generate&lt;/code&gt; function with the following
+                                signature:
+                        &lt;p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;func Generate(api *design.APIDefinition) ([]string, error)
+&lt;/pre&gt;&lt;/code&gt;
+                        &lt;p&gt;
+                                 where api is the API definition computed from the design package. On success &lt;code&gt;Generate&lt;/code&gt; should return
+                                 the path to the generated files. On error the error message gets displayed to the user (and
+                                 goagen exist with status 1).
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 The &lt;code&gt;Generate&lt;/code&gt; method should take advantage of the &lt;code&gt;APIDefinition&lt;/code&gt; &lt;code&gt;IterateXXX&lt;/code&gt; methods to iterate
+                                 through the API resources, media types and types to guarantee that the order doesn&amp;rsquo;t change
+                                 between two invokation of the function (thereby generating different output even if the design
+                                 hasn&amp;rsquo;t changed).
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 They may also take advantage of Metadata. The goa design language allows defining Metadata on a
+                                 number of definitions: API, Resource, Action, Response and Attribute (which means Type and
+                                 MediaType as well since these definitions are attributes). A metadata field consists of a
+                                 key/value pair where both are simple strings. The generator can use these key/value pairs to
+                                 produce different results, see example below. Metadata has no effect on the buit-in generators.
+                                 The Output directory is available through the codegen.OutputDir global variable.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 Package genresnames is an example of a goagen plugin. It creates a file &amp;ldquo;names.txt&amp;rdquo; containing
+                                 the names of the API resources sorted in alphabetical order. If a resource has a
+                                 metadata pair with the key &amp;ldquo;genresnames/name&amp;rdquo; then the plugin uses the metadata value instead.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 Invoke the plugin with:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code&gt;
+                                 goagen gen -d &lt;Go package path to design package&gt; &amp;ndash;pkg-path=&lt;Go package path to genresnames&gt;
+                        &lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                 Source code:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;
+package genresnames&lt;/p&gt;
+
+&lt;p&gt;import (
+        &amp;ldquo;io/ioutil&amp;rdquo;
+        &amp;ldquo;os&amp;rdquo;
+        &amp;ldquo;path/filepath&amp;rdquo;
+        &amp;ldquo;strings&amp;rdquo;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    &amp;quot;gopkg.in/alecthomas/kingpin.v2&amp;quot;
+
+    &amp;quot;github.com/goadesign/goa/design&amp;quot;
+    &amp;quot;github.com/goadesign/goa/goagen/codegen&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;)&lt;/p&gt;
+
+&lt;p&gt;// Generate is the function called by goagen to generate the names file.
+func Generate(api *design.APIDefinition) ([]string, error) {
+        // Make sure to parse the common flags so that codegen.OutputDir gets properly
+        // initialized.
+        app := kingpin.New(&amp;ldquo;Resource names&amp;rdquo;, &amp;ldquo;Resource name generator&amp;rdquo;)
+        codegen.RegisterFlags(app)
+        if _, err := app.Parse(os.Args[1:]); err != nil {
+                panic(err)
+        }&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    // Now iterate through the resources to gather their names
+    names := make([]string, len(api.Resources))
+    i := 0
+    api.IterateResources(func(res *design.ResourceDefinition) error {
+            if n, ok := res.Metadata[&amp;quot;genresnames/name&amp;quot;]; ok {
+                    names[i] = n
+            } else {
+                    names[i] = res.Name
+            }
+            i++
+            return nil
+    })
+    content := strings.Join(names, &amp;quot;\n&amp;quot;)
+
+    // Write the output file and return its name
+    outputFile := filepath.Join(codegen.OutputDir, &amp;quot;names.txt&amp;quot;)
+    ioutil.WriteFile(outputFile, []byte(content), 0755)
+    return []string{outputFile}, nil
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/p&gt;
 </description>
     </item>
     
     <item>
       <title>JWT</title>
       <link>http://goa.design/middleware/jwt/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
       <guid>http://goa.design/middleware/jwt/</guid>
       <description>&lt;p&gt;Getting Started Guide Here
@@ -61,72 +371,2180 @@ JWT&lt;/p&gt;
     </item>
     
     <item>
-      <title>goa components</title>
-      <link>http://goa.design/components/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://goa.design/components/</guid>
-      <description>&lt;p&gt;Components landing&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>goa engine</title>
-      <link>http://goa.design/components/engine/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://goa.design/components/engine/</guid>
-      <description>&lt;p&gt;engine&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>goa middleware</title>
-      <link>http://goa.design/middleware/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://goa.design/middleware/</guid>
-      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>goa plugins</title>
-      <link>http://goa.design/plugins/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://goa.design/plugins/</guid>
-      <description>&lt;p&gt;Content of the file goes Here &amp;ndash; plugins&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
       <title>goagen</title>
       <link>http://goa.design/components/goagen/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
       <guid>http://goa.design/components/goagen/</guid>
-      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+      <description>&lt;p&gt;&lt;p&gt;
+                                &lt;code&gt;goagen&lt;/code&gt; is a tool that generates various artifacts from a goa design package.&lt;br/&gt; Install it with:
+                                &lt;code class=&#34;bash&#34;&gt;go get github.com/goadesign/goa/goagen&lt;/code&gt;&lt;br/&gt;
+                                goagen relies on &lt;code&gt;goimports&lt;/code&gt;:&lt;br/&gt;
+                                &lt;code class=&#34;bash&#34;&gt;go get golang.org/x/tools/cmd/goimports&lt;/code&gt;
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                Each type of artifact is associated with a &lt;code&gt;goagen&lt;/code&gt; command that exposes it own set of flags.
+                                Internally these commands map to &amp;ldquo;generators&amp;rdquo; that contain the logic for generating the artifacts.
+                                It works something like this:
+                        &lt;/p&gt;
+                        &lt;ol&gt;
+                                &lt;li&gt;
+                                        goagen parses the command line to determine the type of output desired and invokes the appropriate generator.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The generator writes the code of the tool that will produce the final output to a temporary Go workspace.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The tool composed of the design language package and the output producing code is compiled in the temporary workspace.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;goagen&lt;/code&gt; then runs the tool which evaluates the design functions and traverses the resulting in-memory data
+                                        structures to write the output.
+                                &lt;/li&gt;
+                        &lt;/ol&gt;
+                        &lt;p&gt;
+                                Each generator registers a command with the &lt;code&gt;goagen&lt;/code&gt; tool, &lt;code&gt;goagen &amp;ndash;help&lt;/code&gt; lists all the available
+                                commands. These are:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;app&lt;/code&gt;: generates the service boilerplate code including controllers, contexts, media types and user types.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;main&lt;/code&gt;: generates a skeleton file for each resource controller as well as a default &lt;code&gt;main&lt;/code&gt;.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;client&lt;/code&gt;: generates an API client Go package and tool.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;swagger&lt;/code&gt;: generates the API Swagger specification.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;js&lt;/code&gt;: generates a JavaScript API client.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;schema&lt;/code&gt;: generates the API Hyper-schema JSON.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;gen&lt;/code&gt;: invokes a third party generator.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;bootstrap&lt;/code&gt;: invokes the &lt;code&gt;app&lt;/code&gt;, &lt;code&gt;main&lt;/code&gt;, &lt;code&gt;client&lt;/code&gt; and &lt;code&gt;swagger&lt;/code&gt;
+                                        generators.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                The command &lt;code&gt;goagen &amp;ndash;help-long&lt;/code&gt; lists all the supported commands and their flags.
+                        &lt;/p&gt;
+                        &lt;h2&gt;Common flags&lt;/h2&gt;
+                        &lt;p&gt;
+                                The following flags apply to all the &lt;code&gt;goagen&lt;/code&gt; commands:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;design|-d=DESIGN&lt;/code&gt; defines the Go package path to the service design package.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;out|-o=OUT&lt;/code&gt; specifies where to generate the files, defaults to the current directory.
+                                &lt;/li&gt;
+                                        &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;debug&lt;/code&gt; enables &lt;code&gt;goagen&lt;/code&gt; debug. This causes &lt;code&gt;goagen&lt;/code&gt; to print the content of the temporary
+                                        files and to leave them around.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;help|&amp;ndash;help-long|&amp;ndash;help-man&lt;/code&gt; prints contextual help.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen app&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;app&lt;/code&gt; command is arguably the most critical. It generates all the supporting code for the
+                                goa service. This command supports an additional flag:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg=app&lt;/code&gt; specifies the name of the generated Go package, defaults to &lt;code&gt;app&lt;/code&gt;. That&amp;rsquo;s also the
+                                        name of the subdirectory that gets created to store the generated Go files.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                This command always deletes and re-creates any pre-existing directory with the same name. The idea
+                                being that these files should never be edited.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen main&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;main&lt;/code&gt; command helps bootstrap a new goa service by generating a default &lt;code&gt;main.go&lt;/code&gt; as
+                                well as a default (empty) implementation for each resource controller defined in the design package. By default
+                                this command only generates the files if they don&amp;rsquo;t exist yet in the output directory. This
+                                command accepts two additional flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;force&lt;/code&gt; causes the files to be generated even if files with the same name already exist (in
+                                        which case they get overwritten).
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;name=API&lt;/code&gt; specifies the name of the service to be used in the generated call to &lt;code&gt;goa.New&lt;/code&gt;.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen client&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;client&lt;/code&gt; command generates both an API client package and tool. The client package implements a &lt;code&gt;Client&lt;/code&gt;
+                                object that exposes one method for each resource action. The generated code of the CLI tool leverages the package to
+                                make the API requests to the service.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;Client&lt;/code&gt; object can be configured to use request signers that get invoked prior to sending the
+                                request. The signers modify the request to include auth headers for example. goa comes with signers that implement
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#BasicSigner&#34;&gt;basic auth&lt;/a&gt;,
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#JWTSigner&#34;&gt;JWT auth&lt;/a&gt; and a subset of
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#OAuth2Signer&#34;&gt;OAuth2&lt;/a&gt;. Custom signers my be used as well, they must
+                                implement the &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#Signer&#34;&gt;Signer&lt;/a&gt; interface.
+                                This command accepts three additional flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;version&lt;/code&gt; specifies the CLI tool version.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;signer&lt;/code&gt; specifies a signer object supported by the API. Signer objects generally perform auth.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;signerPkg&lt;/code&gt; specifies the path to the package implementing the signer objects if not goa.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen js&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;js&lt;/code&gt; command generates a JavaScript API client suitable for both client-side and server-side
+                                applications. The generated code defines an anonymous AMD module and relies on the &lt;a href=&#34;https://github.com/mzabriskie/axios&#34;&gt;axios&lt;/a&gt;
+                                promised-based JavaScript library for making the actual HTTP requests.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The generated module wraps the &lt;code&gt;axios&lt;/code&gt; client and adds API specific functions, for example:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;javascript&#34;&gt;// List all bottles in account optionally filtering by year
+// path is the request path, the format is &amp;ldquo;/cellar/accounts/:accountID/bottles&amp;rdquo;
+// years is used to build the request query string.
+// config is an optional object to be merged into the config built by the function prior to making the request.
+// The content of the config object is described here: &lt;a href=&#34;https://github.com/mzabriskie/axios#request-api&#34;&gt;https://github.com/mzabriskie/axios#request-api&lt;/a&gt;
+// This function returns a promise which raises an error if the HTTP response is a 4xx or 5xx.
+client.listBottle = function (path, years, config) {
+  cfg = {
+    timeout: timeout,
+    url: urlPrefix + path,
+    method: &amp;lsquo;get&amp;rsquo;,
+    params: {
+      years: years
+    },
+    responseType: &amp;lsquo;json&amp;rsquo;
+  };
+  if (config) {
+    cfg = utils.merge(cfg, config);
+  }
+  return client(cfg);
+}&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The generated client module can be loaded using &lt;code&gt;requirejs&lt;/code&gt;:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;javascript&#34;&gt;requirejs.config({
+  paths: {
+    axios: &amp;lsquo;/js/axios.min&amp;rsquo;,
+    client: &amp;lsquo;/js/client&amp;rsquo;
+  }
+});
+requirejs([&amp;lsquo;client&amp;rsquo;], function (client) {
+  client().listBottle (&amp;ldquo;/cellar/accounts/440/bottles&amp;rdquo;, 317)
+    .then(function (resp) {
+      // All good, use resp
+    })
+    .catch(function (resp) {
+      // Woops, request failed or returned 4xx or 5xx.
+    });
+});&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The code above assumes that the generated files &lt;code&gt;client.js&lt;/code&gt; and &lt;code&gt;axios.min.js&lt;/code&gt; are both
+                                served from &lt;code&gt;/js&lt;/code&gt;. The &lt;code&gt;resp&lt;/code&gt; value returned to the promise is an object with the following
+                                fields:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code language=&#34;javascript&#34;&gt;{
+  // &lt;code&gt;data&lt;/code&gt; is the response that was provided by the server
+  data: {},&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;status&lt;/code&gt; is the HTTP status code from the server response
+  status: 200,&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;statusText&lt;/code&gt; is the HTTP status message from the server response
+  statusText: &amp;lsquo;OK&amp;rsquo;,&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;headers&lt;/code&gt; the headers that the server responded with
+  headers: {},&lt;/p&gt;
+
+&lt;p&gt;// &lt;code&gt;config&lt;/code&gt; is the config that was provided to &lt;code&gt;axios&lt;/code&gt; for the request
+  config: {}
+}&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                The generator also produces an example HTML and controller that can be mounted on a
+                                goa service to quickly test the JavaScript. Simply import the &lt;code&gt;js&lt;/code&gt; Go
+                                package in your service main and mount the controller. The example HTML is served
+                                under &lt;code&gt;/js&lt;/code&gt; so that loading this path in a browser will trigger the generated
+                                JavaScript.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen swagger&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;swagger&lt;/code&gt; command generates a &lt;a href=&#34;http://swagger.io&#34;&gt;Swagger&lt;/a&gt; specification of the API.
+                                The command does not accept additional flags. It generates both the Swagger JSON as well as a controller that
+                                can be mounted on the goa service to serve it under &lt;code&gt;/swagger.json&lt;/code&gt;.
+                        &lt;/p&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen schema&lt;/code&gt;&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;schema&lt;/code&gt; command generates a &lt;a href=&#34;https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api&#34;&gt;Heroku-like&lt;/a&gt;
+                                JSON hyper-schema representation of the API. It generates both the JSON as well as a controller that
+                                can be mounted on the goa service to serve it under &lt;code&gt;/schema.json&lt;/code&gt;. The command accepts an additional flag:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;url|-u=URL&lt;/code&gt; specifies the base URL used to build the JSON schema ID.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;h2&gt;&lt;code&gt;goagen gen&lt;/code&gt;: goagen Plugins&lt;/h2&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;gen&lt;/code&gt; command makes it possible to invoke &lt;code&gt;goagen&lt;/code&gt; plugins.
+                                This command accepts two flags:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg-path=PKG-PATH&lt;/code&gt; specifies the Go package path to the plugin package.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        &lt;code&gt;&amp;ndash;pkg-name=PKG-NAME&lt;/code&gt; specifies the Go package name of the plugin package. It defaults to the
+                                        name of the inner most directory in the Go package path.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                A plugin consists of a Go package which exposes a &lt;code&gt;Generate&lt;/code&gt; function with the following
+                                signature:
+                        &lt;p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;func Generate(api *design.APIDefinition) ([]string, error)
+&lt;/pre&gt;&lt;/code&gt;
+                        &lt;p&gt;
+                                 where api is the API definition computed from the design package. On success &lt;code&gt;Generate&lt;/code&gt; should return
+                                 the path to the generated files. On error the error message gets displayed to the user (and
+                                 goagen exist with status 1).
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 The &lt;code&gt;Generate&lt;/code&gt; method should take advantage of the &lt;code&gt;APIDefinition&lt;/code&gt; &lt;code&gt;IterateXXX&lt;/code&gt; methods to iterate
+                                 through the API resources, media types and types to guarantee that the order doesn&amp;rsquo;t change
+                                 between two invokation of the function (thereby generating different output even if the design
+                                 hasn&amp;rsquo;t changed).
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 They may also take advantage of Metadata. The goa design language allows defining Metadata on a
+                                 number of definitions: API, Resource, Action, Response and Attribute (which means Type and
+                                 MediaType as well since these definitions are attributes). A metadata field consists of a
+                                 key/value pair where both are simple strings. The generator can use these key/value pairs to
+                                 produce different results, see example below. Metadata has no effect on the buit-in generators.
+                                 The Output directory is available through the codegen.OutputDir global variable.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 Package genresnames is an example of a goagen plugin. It creates a file &amp;ldquo;names.txt&amp;rdquo; containing
+                                 the names of the API resources sorted in alphabetical order. If a resource has a
+                                 metadata pair with the key &amp;ldquo;genresnames/name&amp;rdquo; then the plugin uses the metadata value instead.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                 Invoke the plugin with:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code&gt;
+                                 goagen gen -d &lt;Go package path to design package&gt; &amp;ndash;pkg-path=&lt;Go package path to genresnames&gt;
+                        &lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                 Source code:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;
+package genresnames&lt;/p&gt;
+
+&lt;p&gt;import (
+        &amp;ldquo;io/ioutil&amp;rdquo;
+        &amp;ldquo;os&amp;rdquo;
+        &amp;ldquo;path/filepath&amp;rdquo;
+        &amp;ldquo;strings&amp;rdquo;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    &amp;quot;gopkg.in/alecthomas/kingpin.v2&amp;quot;
+
+    &amp;quot;github.com/goadesign/goa/design&amp;quot;
+    &amp;quot;github.com/goadesign/goa/goagen/codegen&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;)&lt;/p&gt;
+
+&lt;p&gt;// Generate is the function called by goagen to generate the names file.
+func Generate(api *design.APIDefinition) ([]string, error) {
+        // Make sure to parse the common flags so that codegen.OutputDir gets properly
+        // initialized.
+        app := kingpin.New(&amp;ldquo;Resource names&amp;rdquo;, &amp;ldquo;Resource name generator&amp;rdquo;)
+        codegen.RegisterFlags(app)
+        if _, err := app.Parse(os.Args[1:]); err != nil {
+                panic(err)
+        }&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    // Now iterate through the resources to gather their names
+    names := make([]string, len(api.Resources))
+    i := 0
+    api.IterateResources(func(res *design.ResourceDefinition) error {
+            if n, ok := res.Metadata[&amp;quot;genresnames/name&amp;quot;]; ok {
+                    names[i] = n
+            } else {
+                    names[i] = res.Name
+            }
+            i++
+            return nil
+    })
+    content := strings.Join(names, &amp;quot;\n&amp;quot;)
+
+    // Write the output file and return its name
+    outputFile := filepath.Join(codegen.OutputDir, &amp;quot;names.txt&amp;quot;)
+    ioutil.WriteFile(outputFile, []byte(content), 0755)
+    return []string{outputFile}, nil
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/p&gt;
 </description>
     </item>
     
     <item>
       <title>runtime</title>
       <link>http://goa.design/components/runtime/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
       <guid>http://goa.design/components/runtime/</guid>
-      <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+      <description>&lt;p&gt;
+                                The goa runtime is implemented by the goa package. It includes the
+                                implementation of the goa action context which provides the means
+                                to access the request state and write the response. The package
+                                also contains a number of data structures and algorithms
+                                that provide supporting functionality to the service. These include
+                                logging, error handling, versioning support etc.
+                                goa follows the &#34;battery included&#34; model for the supporting
+                                functionality letting you customize all aspects if the provided
+                                default is not sufficient.
+                        &lt;/p&gt;
+                        &lt;h3&gt;The goa Action Context&lt;/h3&gt;
+                        &lt;p&gt;
+                                The action context is a data structure that is provided to all goa
+                                controller action implementations as first parameter. It leverages the
+                                &lt;a href=&#34;https://blog.golang.org/context&#34;&gt;work done&lt;/a&gt; at Google
+                                around passing contexts across interface boundaries and adds to it
+                                by providing additional methods tailored to the goa use case.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The context exposes methods to access the request state and write
+                                the response in a generic way like many other Go web frameworks. For
+                                example path parameters or querystring values can be accessed using
+                                the method &lt;code&gt;Get&lt;/code&gt; which returns a string. However goa goes
+                                one step further and leverages the code generation provided by `goagen`
+                                to define &lt;i&gt;action specific&lt;/i&gt; fields that provide access to the
+                                same state using &#34;typed&#34; methods. So for example if a path parameter
+                                called &lt;code&gt;ID&lt;/code&gt; is defined in the design as being of type
+                                &lt;code&gt;Integer&lt;/code&gt; the corresponding controller action method
+                                accepts a context data structure which exposes a field named &lt;code&gt;ID&lt;/code&gt;
+                                of type &lt;code&gt;int&lt;/code&gt;. The same goes for the request payload so that
+                                accessing the &lt;code&gt;Payload&lt;/code&gt; field of an action context returns
+                                a data structure that is specific to that action as described in the
+                                design. This alleviates the need for reflection or otherwise &#34;binding&#34;
+                                the context to a struct.&lt;br/&gt;
+                                &lt;br/&gt;
+                                The same goes for writing responses: while the underlying http
+                                ResponseWriter is available to write the response, the action context
+                                also provides action specific methods for writing the responses
+                                described in the design. These generated methods take care of writing
+                                the correct status code and content-type header for example. They
+                                also make it possible to specificy the response payload using custom
+                                data structures generated from the media type described in the design.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                As mentioned earlier each controller action context wraps a golang
+                                package context. This means that deadlines and cancelation signals
+                                are available to all action implemetations. The built-in
+                                &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa#Timeout&#34;&gt;Timeout&lt;/a&gt; middleware
+                                takes advantage of this ability to let services or controllers
+                                define a timeout value for all requests.
+                        &lt;/p&gt;
+                        &lt;h3&gt;Supporting Functionality&lt;/h3&gt;
+                        &lt;h4&gt;Service Mux&lt;/h4&gt;
+                        &lt;p&gt;
+                                The goa HTTP request mux is in charge of dispatching incoming requests
+                                to the correct controller action. It implements the &lt;code&gt;ServeMux&lt;/code&gt;
+                                interface which on top of the usual binding of HTTP method and path
+                                to handler also provides support for API versioning.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The &lt;code&gt;ServeMux&lt;/code&gt; interface &lt;code&gt;Handle&lt;/code&gt; method associates
+                                a request HTTP method and path to a HandleFunc which is a function
+                                that accepts a http ResponseWriter and Request as well as a instance
+                                of url Values that contain all the path and querystring parameters.&lt;br/&gt;
+                                &lt;br/&gt;
+                                The interface also exposes a &lt;code&gt;Version&lt;/code&gt; method that gives
+                                access to version specific muxes. This makes it possible to define
+                                different controller actions for the same request HTTP method and
+                                path but different API versions. The actual algorithm used to
+                                compute the targeted API version is provided via an instance of
+                                &lt;code&gt;SelectVersionFunc&lt;/code&gt;. goa comes with several implementations
+                                of SelectVersionFunc:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        The &lt;code&gt;PathSelectVersionFunc&lt;/code&gt; function creates a
+                                        &lt;code&gt;SelectVersionFunc&lt;/code&gt; that extracts the version from the request
+                                        path.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The &lt;code&gt;HeaderSelectVersionFunc&lt;/code&gt; function creates a
+                                        &lt;code&gt;SelectVersionFunc&lt;/code&gt; that extracts the version from the given
+                                        HTTP request header.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The &lt;code&gt;QuerySelectVersionFunc&lt;/code&gt; function creates a
+                                        &lt;code&gt;SelectVersionFunc&lt;/code&gt; that extracts the version from
+                                        the given querystring value.
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                The function &lt;code&gt;CombineSelectVersionFunc&lt;/code&gt; makes it possible to
+                                combine any number of &lt;code&gt;SelectionVersionFunc&lt;/code&gt; to produce
+                                arbitrarily complex lookup algorithms.
+                        &lt;/p&gt;
+                        &lt;h4&gt;Middleware&lt;/h4&gt;
+                        &lt;p&gt;
+                                goa defines its own type of middleware but also supports &#34;raw&#34; http
+                                middleware. The &lt;a href=&#34;https://github.com/goadesign/goa-middleware&#34;&gt;goa-middleware&lt;/a&gt;
+                                repo contains a number of goa middlewares.
+                        &lt;/p&gt;
+                        &lt;h4&gt;Logging&lt;/h4&gt;
+                        &lt;p&gt;
+                                goa uses structured logging so that logs created at each level contain
+                                all the contextual information. The root logger is the service-level
+                                &lt;code&gt;Logger&lt;/code&gt; field. Loggers are derived from it for each
+                                controller and for each action. Finally a logger is also created for
+                                each request so that log entries created inside a request contain
+                                the full context: service name, controller name, action name and
+                                unique request ID.
+                        &lt;p&gt;
+                        &lt;h4&gt;Error Handling&lt;/h4&gt;
+                        &lt;p&gt;
+                                All goa actions return an error. Error handlers can be defined at the 
+                                controller or service level. If an action returns a non-nil error
+                                then the controller error handler is invoked. If the controller does
+                                not define a error handler then the service-wide error handler is
+                                invoked instead. The default goa error handler simply returns a 500
+                                response containing the error details in the body.
+                        &lt;p&gt;
+                        &lt;h4&gt;Graceful Shutdown&lt;/h4&gt;
+                        &lt;p&gt;
+                                A goa service can be instantiated via `NewGraceful` in which case the
+                                http server is implemented by the &lt;a href=&#34;https://godoc.org/github.com/tylerb/graceful&#34;&gt;graceful package&lt;/a&gt;
+                                which provides graceful shutdown behavior where upon receving a
+                                shutdown signal the service waits until all pending requests are
+                                completed before terminating.
+                        &lt;/p&gt;
+                        &lt;h3&gt;Swapping the Batteries&lt;/h3&gt;
+                        &lt;h4&gt;Error Handling&lt;/h4&gt;
+                        &lt;p&gt;
+                                The service interface exposes a &lt;code&gt;SetHandler&lt;/code&gt; method which
+                                allows overriding the default service error handler. goa comes with
+                                two built-in error handlers:
+                        &lt;/p&gt;
+                        &lt;ul&gt;
+                                &lt;li&gt;
+                                        The &lt;code&gt;DefaultErrorHandler&lt;/code&gt; returns a 400 if the error
+                                        is an instance of &lt;code&gt;BadRequestError&lt;/code&gt;, 500 otherwise.
+                                        It also always writes the error message to the response body.
+                                &lt;/li&gt;
+                                &lt;li&gt;
+                                        The &lt;code&gt;TerseErrorHandler&lt;/code&gt; behaves identically to the
+                                        default error handler with the exception that it does not write
+                                        the error message to the response body for internal errors
+                                        (i.e. errors that are not instances of &lt;code&gt;BadRequestError&lt;/code&gt;).
+                                &lt;/li&gt;
+                        &lt;/ul&gt;
+                        &lt;p&gt;
+                                Custom error handlers can be easily swapped in, they consist of a
+                                function that accepts an instance of an action context and of an 
+                                error.
+                        &lt;/p&gt;
+                        &lt;h4&gt;Request Mux and Versioning&lt;/h4&gt;
+                        &lt;p&gt;
+                                As mentioned above the goa mux supports defining version specific
+                                muxes. Different versions can be defined in the design using the 
+                                &lt;code&gt;Version&lt;/code&gt; DSL:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;package design
+
+import (
+        . &#34;github.com/goadesign/goa/design&#34;
+        . &#34;github.com/goadesign/goa/design/apidsl&#34;
+)
+
+var _ = API(&#34;cellar&#34;, func() {
+        Description(&#34;A basic example of an API implemented with goa&#34;)
+        Scheme(&#34;http&#34;)
+        Host(&#34;localhost:8080&#34;)
+})
+
+var _ = Version(&#34;1.0&#34;, func() {
+        Title(&#34;The virtual winecellar v1.0 API&#34;)
+        // ... other API level properties
+})
+
+var _ = Version(&#34;2.0&#34;, func() {
+        Title(&#34;The virtual winecellar v2.0 API&#34;)
+        // ... other API level properties
+})
+
+var _ = Resource(&#34;bottle&#34;, func() {
+        BasePath(&#34;/bottles&#34;)
+        Version(&#34;1.0&#34;)
+        Version(&#34;2.0&#34;)
+        // ... other resource properties
+})
+
+var _ = Resource(&#34;bottle&#34;, func() {
+        BasePath(&#34;/bottles&#34;)
+        Version(&#34;3.0&#34;)
+        // ... other resource properties
+})
+&lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                When &lt;code&gt;goagen&lt;/code&gt; sees that the design defines versions it
+                                produces code that leverages the ServeMux interface Version method
+                                to mount controllers onto the appropriate version mux:
+                        &lt;/p&gt;
+                        &lt;pre&gt;&lt;code class=&#34;go&#34;&gt;func MountBottleV1Controller(service goa.Service, ctrl v1.BottleController) {
+                                // ...
+                        &lt;/code&gt;&lt;/pre&gt;
+                        &lt;p&gt;
+                                Each version defined in the design produces a different package containing
+                                the corresponding generated controllers.
+                        &lt;/p&gt;
+                        &lt;p&gt;
+                                The generated code relies on the &lt;code&gt;ServeMux&lt;/code&gt; method exposed
+                                by the service to retrieve the top-level mux. The goa default mux
+                                implementation relies on the &lt;a href=&#34;https://github.com/julienschmidt/httprouter&#34;&gt;httprouter&lt;/a&gt;
+                                package to implement the low level dispatch. Other low level routers
+                                can easily be subsituted by providing an implementation of the
+                                ServeMux interface.
+                        &lt;/p&gt;
 </description>
     </item>
     
     <item>
       <title>swagger</title>
       <link>http://goa.design/components/swagger/</link>
-      <pubDate>Sat, 30 Jan 2016 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 30 Jan 2016 11:01:06 -0500</pubDate>
       
       <guid>http://goa.design/components/swagger/</guid>
       <description>&lt;p&gt;Content of the file goes Here&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://goa.design/godoc/goa/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/goa/</guid>
+      <description>
+
+&lt;h1 id=&#34;goa:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;goa&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/goa&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Package goa provides the runtime support for goa web services. See also &lt;a href=&#34;http://goa.design&#34;&gt;http://goa.design&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;package design: &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa/design&#34;&gt;https://godoc.org/github.com/goadesign/goa/design&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;package dsl: &lt;a href=&#34;https://godoc.org/github.com/goadesign/goa/design/dsl&#34;&gt;https://godoc.org/github.com/goadesign/goa/design/dsl&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;code-generation:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Code Generation&lt;/h3&gt;
+
+&lt;p&gt;goa service development begins with writing the &lt;em&gt;design&lt;/em&gt; of a service. The design is described using
+the goa language implemented by the github.com/goadesign/goa/design/dsl package. The goagen tool
+consumes the metadata produced from executing the design language to generate service specific code
+that glues the underlying HTTP server with action specific code and data structures.&lt;/p&gt;
+
+&lt;p&gt;The goa package contains supporting functionality for the generated code including basic request
+and response state management through the Context data structure, error handling via the
+service and controller ErrorHandler field, middleware support via the Middleware data structure as
+well as input (and output) format validation algorithms.&lt;/p&gt;
+
+&lt;h3 id=&#34;request-context:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Request Context&lt;/h3&gt;
+
+&lt;p&gt;The Context data structure provides access to both the request and response state. It implements
+the golang.org/x/net/Context interface so that deadlines and cancelation signals may also be
+implemented with it.&lt;/p&gt;
+
+&lt;p&gt;The request state is accessible through the Get, GetMany and Payload methods which return the values
+of the request parameters, query strings and request body. Action specific contexts wrap Context and
+expose properly typed fields corresponding to the request parameters and body data structure
+descriptions appearing in the design.&lt;/p&gt;
+
+&lt;p&gt;The response state can be accessed through the ResponseStatus, ResponseLength and Header methods.
+The Context type implements the http.ResponseWriter interface and thus action contexts can be used
+in places http.ResponseWriter can. Action contexts provide action specific helper methods that write
+the responses as described in the design optionally taking an instance of the media type for
+responses that contain a body.&lt;/p&gt;
+
+&lt;p&gt;Here is an example showing an &amp;ldquo;update&amp;rdquo; action corresponding to following design (extract):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Resource(&amp;quot;bottle&amp;quot;, func() {
+    DefaultMedia(Bottle)
+    Action(&amp;quot;update&amp;quot;, func() {
+        Params(func() {
+            Param(&amp;quot;bottleID&amp;quot;, Integer)
+        })
+        Payload(UpdateBottlePayload)
+        Response(OK)
+        Response(NotFound)
+    })
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The action signature generated by goagen is:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;type BottleController interface {
+    goa.Controller
+    Update(*UpdateBottleContext) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;where UpdateBottleContext is:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    type UpdateBottleContext struct {
+            *goa.Context
+            BottleID  int
+            Payload   *UpdateBottlePayload
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;and implements:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;func (ctx *UpdateBottleContext) OK(resp *Bottle) error
+func (ctx *UpdateBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The definitions of the Bottle and UpdateBottlePayload data structures are ommitted for brievity.&lt;/p&gt;
+
+&lt;h3 id=&#34;controllers:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Controllers&lt;/h3&gt;
+
+&lt;p&gt;There is one controller interface generated per resource defined via the design language. The
+interface exposes the controller actions as well as methods to set controller specific middleware
+and error handlers (see below). User code must provide data structures that implement these
+interfaces when mounting a controller onto a service. The controller data structure should include
+an anonymous field of type *goa.ApplicationController which takes care of implementing the
+middleware and error handler handling.&lt;/p&gt;
+
+&lt;h3 id=&#34;error-handling:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Error Handling&lt;/h3&gt;
+
+&lt;p&gt;The controller action methods generated by goagen such as the Update method of the BottleController
+interface shown above all return an error value. The controller or service-wide error handler (if no
+controller specific error handler) function is invoked whenever the value returned by a controller
+action is not nil. The handler gets both the request context and the error as argument.&lt;/p&gt;
+
+&lt;p&gt;The default handler implementation returns a response with status code 500 containing the error
+message in the body. A different error handler can be specificied using the SetErrorHandler
+function on either a controller or service wide. goa comes with an alternative error handler - the
+TerseErrorHandler - which also returns a response with status 500 but does not write the error
+message to the body of the response.&lt;/p&gt;
+
+&lt;h3 id=&#34;middleware:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Middleware&lt;/h3&gt;
+
+&lt;p&gt;A goa middleware is a function that takes and returns a Handler. A Handler is a the low level
+function which handles incoming HTTP requests. goagen generates the handlers code so each handler
+creates the action specific context and calls the controller action with it.&lt;/p&gt;
+
+&lt;p&gt;Middleware can be added to a goa service or a specific controller using the Service type Use method.
+goa comes with a few stock middleware that handle common needs such as logging, panic recovery or
+using the RequestID header to trace requests across multiple services.&lt;/p&gt;
+
+&lt;h3 id=&#34;validation:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Validation&lt;/h3&gt;
+
+&lt;p&gt;The goa design language documented in the dsl package makes it possible to attach validations to
+data structure definitions. One specific type of validation consists of defining the format that a
+data structure string field must follow. Example of formats include email, data time, hostnames etc.
+The ValidateFormat function provides the implementation for the format validation invoked from the
+code generated by goagen.&lt;/p&gt;
+
+&lt;p&gt;Package goa standardizes on structured error responses: a request that fails because of
+invalid input or unexpected condition produces a response that contains one or more structured
+error(s). Each error object has three keys: a id (number), a title and a message. The title
+for a given id is always the same, the intent is to provide a human friendly categorization.
+The message is specific to the error occurrence and provides additional details that often
+include contextual information (name of parameters etc.).&lt;/p&gt;
+
+&lt;p&gt;The basic data structure backing errors is TypedError which simply contains the id and message.
+Multiple errors (not just TypedError instances) can be encapsulated in a MultiError. Both
+TypedError and MultiError implement the error interface, the Error methods return valid JSON
+that can be written directly to a response body.&lt;/p&gt;
+
+&lt;p&gt;The code generated by goagen calls the helper functions exposed in this file when it encounters
+invalid data (wrong type, validation errors etc.) such as InvalidParamTypeError,
+InvalidAttributeTypeError etc. These methods take and return an error which is a MultiError that
+gets built over time. The final MultiError object then gets serialized into the response and sent
+back to the client. The response status code is inferred from the type wrapping the error object:
+a BadRequestError produces a 400 status code while any other error produce a 500. This behavior
+can be overridden by setting a custom ErrorHandler in the application.&lt;/p&gt;
+
+&lt;h2 id=&#34;constants:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Constants&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // ErrInvalidParamType is the error produced by the generated code when
+    // a request parameter type does not match the design.
+    ErrInvalidParamType = iota + 1
+
+    // ErrMissingParam is the error produced by the generated code when a
+    // required request parameter is missing.
+    ErrMissingParam
+
+    // ErrInvalidAttributeType is the error produced by the generated
+    // code when a data structure attribute type does not match the design
+    // definition.
+    ErrInvalidAttributeType
+
+    // ErrMissingAttribute is the error produced by the generated
+    // code when a data structure attribute required by the design
+    // definition is missing.
+    ErrMissingAttribute
+
+    // ErrInvalidEnumValue is the error produced by the generated code when
+    // a values does not match one of the values listed in the attribute
+    // definition as being valid (i.e. not part of the enum).
+    ErrInvalidEnumValue
+
+    // ErrMissingHeader is the error produced by the generated code when a
+    // required header is missing.
+    ErrMissingHeader
+
+    // ErrInvalidFormat is the error produced by the generated code when
+    // a value does not match the format specified in the attribute
+    // definition.
+    ErrInvalidFormat
+
+    // ErrInvalidPattern is the error produced by the generated code when
+    // a value does not match the regular expression specified in the
+    // attribute definition.
+    ErrInvalidPattern
+
+    // ErrInvalidRange is the error produced by the generated code when
+    // a value is less than the minimum specified in the design definition
+    // or more than the maximum.
+    ErrInvalidRange
+
+    // ErrInvalidLength is the error produced by the generated code when
+    // a value is a slice with less elements than the minimum length
+    // specified in the design definition or more elements than the
+    // maximum length.
+    ErrInvalidLength
+
+    // ErrInvalidVersion is the error rendered by the default mux when a
+    // request specifies an invalid version.
+    ErrInvalidVersion
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;variables:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;Variables&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var (
+    // Log is the global logger from which other loggers (e.g. request specific loggers) are
+    // derived. Configure it by setting its handler prior to calling New.
+    // See https://godoc.org/github.com/inconshreveable/log15
+    Log log.Logger
+
+    // RootContext is the root context from which all request contexts are derived.
+    // Set values in the root context prior to starting the server to make these values
+    // available to all request handlers:
+    //
+    //	goa.RootContext = goa.RootContext.WithValue(key, value)
+    //
+    RootContext context.Context
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var InterruptSignals = []os.Signal{
+    os.Signal(syscall.SIGINT),
+    os.Signal(syscall.SIGTERM),
+    os.Signal(syscall.SIGQUIT),
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InterruptSignals is the list of signals that initiate graceful shutdown.
+Note that only SIGINT is supported on Windows so this list should be
+overridden by the caller when running on that platform.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-cancel:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func Cancel&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Cancel()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Cancel sends a cancellation signal to all handlers through the action context.
+see &lt;a href=&#34;https://godoc.org/golang.org/x/net/context&#34;&gt;https://godoc.org/golang.org/x/net/context&lt;/a&gt; for details on how to handle the signal.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-defaulterrorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func DefaultErrorHandler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func DefaultErrorHandler(ctx *Context, e error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DefaultErrorHandler returns a 400 response for request validation errors (instances of
+BadRequestError) and a 500 response for other errors. It writes the error message to the
+response body in both cases.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-defaultmissingversionhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func DefaultMissingVersionHandler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func DefaultMissingVersionHandler(ctx *Context, version string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DefaultMissingVersionHandler returns a 400 response with a typed error in the body containing
+the name of the version that was targeted by the request.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-fatal:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func Fatal&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Fatal(msg string, ctx ...interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Fatal logs a critical message and exits the process with status code 1.
+This function is meant to be used by initialization code to prevent the application from even
+starting up when something is obviously wrong.
+In particular this function should probably not be used when serving requests.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidattributetypeerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidAttributeTypeError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidAttributeTypeError(ctx string, val interface{}, expected string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidAttributeTypeError appends a typed error of id ErrIncompatibleType
+to err and returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidenumvalueerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidEnumValueError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidEnumValueError(ctx string, val interface{}, allowed []interface{}, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidEnumValueError appends a typed error of id ErrInvalidEnumValue to
+err and returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidformaterror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidFormatError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidFormatError(ctx, target string, format Format, formatError, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidFormatError appends a typed error of id ErrInvalidFormat to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidlengtherror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidLengthError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidLengthError(ctx string, target interface{}, ln, value int, min bool, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidLengthError appends a typed error of id ErrInvalidLength to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidparamtypeerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidParamTypeError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidParamTypeError(name string, val interface{}, expected string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidParamTypeError appends a typed error of id ErrInvalidParamType to
+err and returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidpatternerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidPatternError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidPatternError(ctx, target string, pattern string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidPatternError appends a typed error of id ErrInvalidPattern to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidrangeerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func InvalidRangeError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidRangeError(ctx string, target interface{}, value int, min bool, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidRangeError appends a typed error of id ErrInvalidRange to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-missingattributeerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func MissingAttributeError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MissingAttributeError(ctx, name string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MissingAttributeError appends a typed error of id ErrMissingAttribute to
+err and returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-missingheadererror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func MissingHeaderError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MissingHeaderError(name string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MissingHeaderError appends a typed error of id ErrMissingHeader to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-missingparamerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func MissingParamError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MissingParamError(name string, err error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MissingParamError appends a typed error of id ErrMissingParam to err and
+returns it.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-reporterror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func ReportError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ReportError(err error, err2 error) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ReportError coerces the first argument into a MultiError then appends the second argument and
+returns the resulting MultiError.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-terseerrorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func TerseErrorHandler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func TerseErrorHandler(ctx *Context, e error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TerseErrorHandler behaves like DefaultErrorHandler except that it does not write to the response
+body for internal errors.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-validateformat:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func ValidateFormat&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ValidateFormat(f Format, val string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ValidateFormat validates a string against a standard format.
+It returns nil if the string conforms to the format, an error otherwise.
+The format specification follows the json schema draft 4 validation extension.
+see &lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor105&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor105&lt;/a&gt;
+Supported formats are:
+- &amp;ldquo;date-time&amp;rdquo;: RFC3339 date time value
+- &amp;ldquo;email&amp;rdquo;: RFC5322 email address
+- &amp;ldquo;hostname&amp;rdquo;: RFC1035 Internet host name
+- &amp;ldquo;ipv4&amp;rdquo; and &amp;ldquo;ipv6&amp;rdquo;: RFC2673 and RFC2373 IP address values
+- &amp;ldquo;uri&amp;rdquo;: RFC3986 URI value
+- &amp;ldquo;mac&amp;rdquo;: IEEE 802 MAC-48, EUI-48 or EUI-64 MAC address value
+- &amp;ldquo;cidr&amp;rdquo;: RFC4632 and RFC4291 CIDR notation IP address value
+- &amp;ldquo;regexp&amp;rdquo;: Regular expression syntax accepted by RE2&lt;/p&gt;
+
+&lt;h2 id=&#34;func-validatepattern:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func ValidatePattern&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ValidatePattern(p string, val string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ValidatePattern returns an error if val does not match the regular expression p.
+It makes an effort to minimize the number of times the regular expression needs to be compiled.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-application:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Application&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Application struct {
+    log.Logger // Application logger
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Application represents a goa application. At the basic level an application consists of
+a set of controllers, each implementing a given resource actions. goagen generates
+global functions - one per resource - that make it possible to mount the corresponding
+controller onto an application. An application contains the middleware, logger and error
+handler shared by all its controllers. Setting up an application might look like:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;api := goa.New(&amp;quot;my api&amp;quot;)
+api.Use(SomeMiddleware())
+rc := NewResourceController()
+rc.Use(SomeOtherMiddleware())
+app.MountResourceController(api, rc)
+api.ListenAndServe(&amp;quot;:80&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;where NewResourceController returns an object that implements the resource actions as
+defined by the corresponding interface generated by goagen.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-decode:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) Decode&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) Decode(v interface{}, body io.Reader, contentType string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Decode uses registered Decoders to unmarshal a body based on the contentType&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-decoderequest:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) DecodeRequest&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) DecodeRequest(ctx *Context, v interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DecodeRequest retrives the request body and &lt;code&gt;Content-Type&lt;/code&gt; header and uses Decode
+to unmarshal into the provided &lt;code&gt;interface{}&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-encoderesponse:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) EncodeResponse&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) EncodeResponse(ctx *Context, v interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;EncodeResponse uses registered Encoders to marshal the response body based on the request
+&lt;code&gt;Accept&lt;/code&gt; header and writes it to the http.ResponseWriter&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-errorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) ErrorHandler&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) ErrorHandler() ErrorHandler
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ErrorHandler returns the currently set error handler.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-listenandserve:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) ListenAndServe&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) ListenAndServe(addr string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListenAndServe starts a HTTP server and sets up a listener on the given host/port.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-listenandservetls:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) ListenAndServeTLS&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) ListenAndServeTLS(addr, certFile, keyFile string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListenAndServeTLS starts a HTTPS server and sets up a listener on the given host/port.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-name:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the application name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-newcontroller:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) NewController&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) NewController(resName string) Controller
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewController returns a controller for the given resource. This method is mainly intended for
+use by the generated code. User code shouldn&amp;rsquo;t have to call it directly.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-servefiles:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) ServeFiles&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) ServeFiles(path, filename string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServeFiles replies to the request with the contents of the named file or directory. The logic
+for what to do when the filename points to a file vs. a directory is the same as the standard
+http package ServeFile function. The path may end with a wildcard that matches the rest of the
+URL (e.g. *filepath). If it does the matching path is appended to filename to form the full file
+path, so:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ServeFiles(&amp;quot;/index.html&amp;quot;, &amp;quot;/www/data/index.html&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Returns the content of the file &amp;ldquo;/www/data/index.html&amp;rdquo; when requests are sent to &amp;ldquo;/index.html&amp;rdquo;
+and:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ServeFiles(&amp;quot;/assets/*filepath&amp;quot;, &amp;quot;/www/data/assets&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;returns the content of the file &amp;ldquo;/www/data/assets/x/y/z&amp;rdquo; when requests are sent to
+&amp;ldquo;/assets/x/y/z&amp;rdquo;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-servemux:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) ServeMux&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) ServeMux() ServeMux
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServeMux returns the top level service mux.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-setdecoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) SetDecoder&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) SetDecoder(f DecoderFactory, makeDefault bool, contentTypes ...string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetDecoder sets a specific decoder to be used for the specified content types. If
+a decoder is already registered, it will be overwritten.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-setencoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) SetEncoder&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) SetEncoder(f EncoderFactory, makeDefault bool, contentTypes ...string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetEncoder sets a specific encoder to be used for the specified content types. If
+an encoder is already registered, it will be overwritten.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-seterrorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) SetErrorHandler&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) SetErrorHandler(handler ErrorHandler)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetErrorHandler defines an application wide error handler.
+The default error handler (DefaultErrorHandler) responds with a 500 status code and the error
+message in the response body.
+TerseErrorHandler provides an alternative implementation that does not write the error message
+to the response body for internal errors (e.g. for production).
+Set it with SetErrorHandler(TerseErrorHandler).
+Controller specific error handlers should be set using the Controller type SetErrorHandler
+method instead.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-setmissingversionhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) SetMissingVersionHandler&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) SetMissingVersionHandler(handler MissingVersionHandler)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetMissingVersionHandler registers the service missing version handler.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-use:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) Use&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) Use(m Middleware)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Use adds a middleware to the application wide middleware chain.
+See NewMiddleware for wrapping goa and http handlers into goa middleware.
+goa comes with a set of commonly used middleware, see middleware.go.
+Controller specific middleware should be mounted using the Controller type Use method instead.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-version:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Application) Version&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (app *Application) Version(name string) ServiceVersion
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Version returns an object that implements ServiceVersion based on the version name.
+If there is no version registered, it will instantiate a new version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-application-versionname:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (Application) VersionName&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver Application) VersionName() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;VersionName returns the version name.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-applicationcontroller:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ApplicationController&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ApplicationController struct {
+    log.Logger // Controller logger
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ApplicationController provides the common state and behavior for generated controllers.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-errorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) ErrorHandler&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) ErrorHandler() ErrorHandler
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ErrorHandler returns the currently set error handler.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-handleerror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) HandleError&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) HandleError(ctx *Context, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HandleError invokes the controller error handler or - if there isn&amp;rsquo;t one - the service error
+handler.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-handlefunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) HandleFunc&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) HandleFunc(name string, h, d Handler) HandleFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HandleFunc wraps al request handler into a HandleFunc. The HandleFunc initializes the
+request context by loading the request state, invokes the handler and in case of error invokes
+the controller (if there is one) or application error handler.
+This function is intended for the controller generated code. User code should not need to call
+it directly.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-middlewarechain:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) MiddlewareChain&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) MiddlewareChain() []Middleware
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MiddlewareChain returns the controller middleware chain.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-seterrorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) SetErrorHandler&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) SetErrorHandler(handler ErrorHandler)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetErrorHandler defines a controller specific error handler. When a controller action returns an
+error goa checks whether the controller is equipped with a error handler and if so calls it with
+the error given as argument. If there is no controller error handler then goa calls the
+application wide error handler instead.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-applicationcontroller-use:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*ApplicationController) Use&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctrl *ApplicationController) Use(m Middleware)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Use adds a middleware to the controller.
+See NewMiddleware for wrapping goa and http handlers into goa middleware.
+goa comes with a set of commonly used middleware, see middleware.go.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-badrequesterror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type BadRequestError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BadRequestError struct {
+    Actual error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BadRequestError is the type of errors that result in a response with status code 400.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newbadrequesterror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewBadRequestError&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewBadRequestError(err error) *BadRequestError
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewBadRequestError wraps the given error into a BadRequestError.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-badrequesterror-error:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*BadRequestError) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (b *BadRequestError) Error() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error implements error.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-basicsigner:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type BasicSigner&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BasicSigner struct {
+    // Username is the basic auth user.
+    Username string
+    // Password is err guess what? the basic auth password.
+    Password string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BasicSigner implements basic auth.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-basicsigner-registerflags:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*BasicSigner) RegisterFlags&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *BasicSigner) RegisterFlags(app *cobra.Command)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RegisterFlags adds the &amp;ldquo;&amp;ndash;user&amp;rdquo; and &amp;ldquo;&amp;ndash;pass&amp;rdquo; flags to the client tool.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-basicsigner-sign:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*BasicSigner) Sign&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *BasicSigner) Sign(req *http.Request) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Sign adds the basic auth header to the request.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-client:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Client&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Client struct {
+    // Logger is the logger used to log client requests.
+    log15.Logger
+    // Client is the underlying http client.
+    *http.Client
+    // Signers contains the ordered list of request signers. A signer may add headers,
+    // cookies etc. to a request generally to perform auth.
+    Signers []Signer
+    // Scheme is the HTTP scheme used to make requests to the API host.
+    Scheme string
+    // Host is the service hostname.
+    Host string
+    // UserAgent is the user agent set in requests made by the client.
+    UserAgent string
+    // Dump indicates whether to dump request response.
+    Dump bool
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Client is the command client data structure for all goa service clients.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newclient:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewClient&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewClient() *Client
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewClient create a new API client.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-client-do:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Client) Do&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Client) Do(req *http.Request) (*http.Response, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Do wraps the underlying http client Do method and adds logging.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-context:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Context&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Context struct {
+    context.Context // Underlying context
+    log.Logger      // Context logger
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context is the object that provides access to the underlying HTTP request and response state.
+Context implements http.ResponseWriter and also provides helper methods for writing HTTP responses.
+It also implements the context.Context interface described at &lt;a href=&#34;http://blog.golang.org/context&#34;&gt;http://blog.golang.org/context&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newcontext:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewContext(gctx context.Context,
+    service Service,
+    req *http.Request,
+    rw http.ResponseWriter,
+    params url.Values) *Context
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewContext builds a goa context from the given context.Context and request state.
+If gctx is nil then context.Background is used instead.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-allparams:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) AllParams&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) AllParams() url.Values
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AllParams return all URL and querystring parameters.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-badrequest:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) BadRequest&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) BadRequest(err *BadRequestError) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BadRequest sends a HTTP response with status code 400 and the given error as body.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-bug:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Bug&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Bug(format string, a ...interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Bug sends a HTTP response with status code 500 and the given body.
+The body can be set using a format and substituted values a la fmt.Printf.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-get:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Get&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Get(name string) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get returns the param or querystring value with the given name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-getmany:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) GetMany&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) GetMany(name string) []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GetMany returns the querystring values with the given name or nil if there aren&amp;rsquo;t any.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-getnames:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) GetNames&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) GetNames() []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GetNames returns all the querystring and URL parameter names.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-header:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Header&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Header() http.Header
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Header returns the response header. It implements the http.ResponseWriter interface.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-rawpayload:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) RawPayload&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) RawPayload() interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RawPayload returns the deserialized request body or nil if body is empty.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-request:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Request&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Request() *http.Request
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Request returns the underlying HTTP request.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-respond:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Respond&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Respond(code int, body interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Respond serializes the given body matching the request Accept header against the service
+encoders. It uses the default service encoder if no match is found.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-respondbytes:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) RespondBytes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) RespondBytes(code int, body []byte) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RespondBytes writes the given HTTP status code and response body.
+This method should only be called once per request.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-responselength:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) ResponseLength&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) ResponseLength() int
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseLength returns the response body length in bytes if the response was written to the
+context via one of the response methods (Respond, JSON, BadRequest, Bug), 0 otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-responsestatus:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) ResponseStatus&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) ResponseStatus() int
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseStatus returns the response status if it was set via one of the context response
+methods (Respond, JSON, BadRequest, Bug), 0 otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-responsewritten:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) ResponseWritten&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) ResponseWritten() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseWritten returns true if an HTTP response was written.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-service:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Service() Service
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Service returns the underlying service.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-setpayload:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) SetPayload&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) SetPayload(payload interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetPayload initializes the unmarshaled request body value.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-setresponsewriter:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) SetResponseWriter&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) SetResponseWriter(rw http.ResponseWriter) http.ResponseWriter
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetResponseWriter overrides the context underlying response writer. It returns the response
+writer that was previously set.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-setvalue:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) SetValue&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) SetValue(key, val interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetValue sets the value associated with key in the context.
+The value can be retrieved using the Value method.
+Note that this changes the underlying context.Context object and thus clients holding a reference
+to that won&amp;rsquo;t be able to access the new value. It&amp;rsquo;s probably a bad idea to hold a reference to
+the inner context anyway&amp;hellip;&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-write:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) Write&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) Write(body []byte) (int, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Write writes the HTTP response body. It implements the http.ResponseWriter interface.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-context-writeheader:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*Context) WriteHeader&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *Context) WriteHeader(code int)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;WriteHeader writes the HTTP status code to the response. It implements the
+http.ResponseWriter interface.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-controller:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Controller&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Controller interface {
+    log.Logger
+
+    // Use adds a middleware to the controller middleware chain.
+    // It is a convenient method for doing append(ctrl.MiddlewareChain(), m)
+    Use(Middleware)
+
+    // MiddlewareChain returns the controller middleware chain including the
+    // service-wide middleware.
+    MiddlewareChain() []Middleware
+
+    // ErrorHandler returns the currently set error handler.
+    ErrorHandler() ErrorHandler
+
+    // SetErrorHandler sets the controller specific error handler.
+    SetErrorHandler(ErrorHandler)
+
+    // HandleFunc returns a HandleFunc from the given handler
+    // name is used solely for logging.
+    HandleFunc(name string, h, d Handler) HandleFunc
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Controller is the interface implemented by all goa controllers.
+A controller implements a given resource actions. There is a one-to-one relationship
+between designed resources and generated controllers.
+Controllers may override the service wide error handler and be equipped with controller
+specific middleware.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-decodefunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type DecodeFunc&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DecodeFunc func(*Context, io.ReadCloser, interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DecodeFunc is the function that initialize the unmarshaled payload from the request body.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-decoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Decoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Decoder interface {
+    Decode(v interface{}) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A Decoder unmarshals an io.Reader into an interface&lt;/p&gt;
+
+&lt;h2 id=&#34;type-decoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type DecoderFactory&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DecoderFactory interface {
+    NewDecoder(r io.Reader) Decoder
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A DecoderFactory generates custom decoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gobdecoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func GobDecoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func GobDecoderFactory() DecoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GobDecoderFactory returns a struct that can generate new gob.Decoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jsondecoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func JSONDecoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func JSONDecoderFactory() DecoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONDecoderFactory returns a struct that can generate new json.Decoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-xmldecoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func XMLDecoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func XMLDecoderFactory() DecoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;XMLDecoderFactory returns a struct that can generate new xml.Decoders&lt;/p&gt;
+
+&lt;h2 id=&#34;type-defaultmux:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type DefaultMux&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DefaultMux struct {
+    SelectVersionFunc SelectVersionFunc
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DefaultMux is the default goa mux. It dispatches requests to the appropriate version mux
+using a SelectVersionFunc. The default func is DefaultVersionFunc, change it with
+SelectVersion.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-defaultmux-handle:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (DefaultMux) Handle&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m DefaultMux) Handle(method, path string, handle HandleFunc)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Handle sets the handler for the given verb and path.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-defaultmux-lookup:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (DefaultMux) Lookup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m DefaultMux) Lookup(method, path string) HandleFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lookup returns the HandleFunc associated with the given method and path.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-defaultmux-selectversion:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*DefaultMux) SelectVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *DefaultMux) SelectVersion(sv SelectVersionFunc)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SelectVersion sets the func used to compute the API version targetted by a request.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-defaultmux-servehttp:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*DefaultMux) ServeHTTP&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *DefaultMux) ServeHTTP(rw http.ResponseWriter, req *http.Request)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServeHTTP is the function called back by the underlying HTTP server to handle incoming requests.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-encoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Encoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Encoder interface {
+    Encode(v interface{}) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;An Encoder marshals from an interface into an io.Writer&lt;/p&gt;
+
+&lt;h2 id=&#34;type-encoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type EncoderFactory&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type EncoderFactory interface {
+    NewEncoder(w io.Writer) Encoder
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A EncoderFactory generates custom encoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gobencoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func GobEncoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func GobEncoderFactory() EncoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GobEncoderFactory returns a struct that can generate new gob.Encoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jsonencoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func JSONEncoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func JSONEncoderFactory() EncoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONEncoderFactory returns a struct that can generate new json.Encoders&lt;/p&gt;
+
+&lt;h3 id=&#34;func-xmlencoderfactory:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func XMLEncoderFactory&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func XMLEncoderFactory() EncoderFactory
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;XMLEncoderFactory returns a struct that can generate new xml.Encoders&lt;/p&gt;
+
+&lt;h2 id=&#34;type-encoding:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Encoding&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Encoding interface {
+    // DecodeRequest uses registered Decoders to unmarshal the request body based on
+    // the request &amp;quot;Content-Type&amp;quot; header.
+    DecodeRequest(ctx *Context, v interface{}) error
+
+    // EncodeResponse uses registered Encoders to marshal the response body based on the
+    // request &amp;quot;Accept&amp;quot; header and writes the result to the http.ResponseWriter.
+    EncodeResponse(ctx *Context, v interface{}) error
+
+    // SetDecoder registers a decoder for the given content types.
+    // If makeDefault is true then the decoder is used to decode payloads where none of
+    // the registered decoders support the request content type.
+    SetDecoder(f DecoderFactory, makeDefault bool, contentTypes ...string)
+
+    // SetEncoder registers an encoder for the given content types.
+    // If makeDefault is true then the encoder is used to encode bodies where none of
+    // the registered encoders match the request &amp;quot;Accept&amp;quot; header.
+    SetEncoder(f EncoderFactory, makeDefault bool, contentTypes ...string)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Encoding contains the encoding and decoding support.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-errorhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ErrorHandler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ErrorHandler func(*Context, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ErrorHandler defines the application error handler signature.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-errorid:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ErrorID&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ErrorID int
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ErrorID is an enum listing the possible types of errors.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-errorid-title:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (ErrorID) Title&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (k ErrorID) Title() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Title returns a human friendly error title&lt;/p&gt;
+
+&lt;h2 id=&#34;type-format:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Format&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Format string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Format defines a validation format.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // FormatDateTime defines RFC3339 date time values.
+    FormatDateTime Format = &amp;quot;date-time&amp;quot;
+
+    // FormatEmail defines RFC5322 email addresses.
+    FormatEmail = &amp;quot;email&amp;quot;
+
+    // FormatHostname defines RFC1035 Internet host names.
+    FormatHostname = &amp;quot;hostname&amp;quot;
+
+    // FormatIPv4 defines RFC2373 IPv4 address values.
+    FormatIPv4 = &amp;quot;ipv4&amp;quot;
+
+    // FormatIPv6 defines RFC2373 IPv6 address values.
+    FormatIPv6 = &amp;quot;ipv6&amp;quot;
+
+    // FormatURI defines RFC3986 URI values.
+    FormatURI = &amp;quot;uri&amp;quot;
+
+    // FormatMAC defines IEEE 802 MAC-48, EUI-48 or EUI-64 MAC address values.
+    FormatMAC = &amp;quot;mac&amp;quot;
+
+    // FormatCIDR defines RFC4632 and RFC4291 CIDR notation IP address values.
+    FormatCIDR = &amp;quot;cidr&amp;quot;
+
+    // FormatRegexp Regexp defines regular expression syntax accepted by RE2.
+    FormatRegexp = &amp;quot;regexp&amp;quot;
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-gracefulapplication:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type GracefulApplication&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type GracefulApplication struct {
+    *Application
+    sync.Mutex
+
+    // Interrupted is true if the application is in the process of shutting down.
+    Interrupted bool
+
+    // CancelOnShutdown tells whether existing requests should be canceled when shutdown is
+    // triggered (true) or whether to wait until the requests complete (false).
+    CancelOnShutdown bool
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GracefulApplication is a goa application using a graceful shutdown server.
+When sending any of the signals listed in InterruptSignals to the process GracefulApplication:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;disables keepalive connections.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;closes the listening socket, allowing another process to listen on that port immediately.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;calls Cancel, signaling all active handlers.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-decode:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) Decode&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) Decode(v interface{}, body io.Reader, contentType string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Decode uses registered Decoders to unmarshal a body based on the contentType&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-decoderequest:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) DecodeRequest&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) DecodeRequest(ctx *Context, v interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DecodeRequest retrives the request body and &lt;code&gt;Content-Type&lt;/code&gt; header and uses Decode
+to unmarshal into the provided &lt;code&gt;interface{}&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-encoderesponse:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) EncodeResponse&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) EncodeResponse(ctx *Context, v interface{}) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;EncodeResponse uses registered Encoders to marshal the response body based on the request
+&lt;code&gt;Accept&lt;/code&gt; header and writes it to the http.ResponseWriter&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-listenandserve:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*GracefulApplication) ListenAndServe&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (gapp *GracefulApplication) ListenAndServe(addr string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListenAndServe starts the HTTP server and sets up a listener on the given host/port.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-listenandservetls:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*GracefulApplication) ListenAndServeTLS&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (gapp *GracefulApplication) ListenAndServeTLS(addr, certFile, keyFile string) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListenAndServeTLS starts a HTTPS server and sets up a listener on the given host/port.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-setdecoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) SetDecoder&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) SetDecoder(f DecoderFactory, makeDefault bool, contentTypes ...string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetDecoder sets a specific decoder to be used for the specified content types. If
+a decoder is already registered, it will be overwritten.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-setencoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) SetEncoder&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) SetEncoder(f EncoderFactory, makeDefault bool, contentTypes ...string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetEncoder sets a specific encoder to be used for the specified content types. If
+an encoder is already registered, it will be overwritten.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-shutdown:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*GracefulApplication) Shutdown&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (gapp *GracefulApplication) Shutdown() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Shutdown initiates graceful shutdown of the running server once. Returns true on
+initial shutdown and false if already shutting down.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-gracefulapplication-versionname:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (GracefulApplication) VersionName&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ver GracefulApplication) VersionName() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;VersionName returns the version name.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-handlefunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type HandleFunc&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type HandleFunc func(http.ResponseWriter, *http.Request, url.Values)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HandleFunc provides the implementation for an API endpoint.
+The values include both the querystring and path parameter values.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-handler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Handler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Handler func(*Context) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Handler defines the controller handler signatures.
+Controller handlers accept a context and return an error.
+The context provides typed access to the request and response state. It implements
+the golang.org/x/net/context package Context interface so that handlers may define
+deadlines and cancelation signals - see the Timeout middleware as an example.
+If a controller handler returns an error then the application error handler is invoked
+with the request context and the error. The error handler is responsible for writing the
+HTTP response. See DefaultErrorHandler and TerseErrorHandler.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-jwtsigner:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type JWTSigner&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type JWTSigner struct {
+    // Header is the name of the HTTP header which contains the JWT.
+    // The default is &amp;quot;Authentication&amp;quot;
+    Header string
+    // Format represents the format used to render the JWT.
+    // The default is &amp;quot;Bearer %s&amp;quot;
+    Format string
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JWTSigner implements JSON Web Token auth.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jwtsigner-registerflags:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*JWTSigner) RegisterFlags&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *JWTSigner) RegisterFlags(app *cobra.Command)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RegisterFlags adds the &amp;ldquo;&amp;ndash;jwt&amp;rdquo; flag to the client tool.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jwtsigner-sign:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*JWTSigner) Sign&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *JWTSigner) Sign(req *http.Request) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Sign adds the JWT auth header.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-middleware:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Middleware&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Middleware func(Handler) Handler
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Middleware represents the canonical goa middleware signature.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newmiddleware:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewMiddleware&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewMiddleware(m interface{}) (mw Middleware, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewMiddleware creates a middleware from the given argument. The allowed types for the
+argument are:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;a goa middleware: goa.Middleware or func(goa.Handler) goa.Handler&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;a goa handler: goa.Handler or func(*goa.Context) error&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;an http middleware: func(http.Handler) http.Handler&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;or an http handler: http.Handler or func(http.ResponseWriter, *http.Request)&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;An error is returned if the given argument is not one of the types above.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-missingversionhandler:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type MissingVersionHandler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MissingVersionHandler func(*Context, string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MissingVersionHandler defines the function that handles requests targetting a non
+existant API version.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-multierror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type MultiError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MultiError []error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MultiError records multiple errors.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-multierror-error:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (MultiError) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m MultiError) Error() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error summarizes all the underlying error messages in one JSON array.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-oauth2signer:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type OAuth2Signer&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type OAuth2Signer struct {
+    // RefreshURLFormat is a format that generates the refresh access token URL given a
+    // refresh token.
+    RefreshURLFormat string
+    // RefreshToken contains the OAuth2 refresh token from which access tokens are
+    // created.
+    RefreshToken string
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;OAuth2Signer enables the use of OAuth2 refresh tokens. It takes care of creating access
+tokens given a refresh token and a refresh URL as defined in RFC 6749.
+Note that this signer does not concern itself with generating the initial refresh token,
+this has to be done prior to using the client.
+Also it assumes the response of the refresh request response is JSON encoded and of the
+form:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{
+    &amp;quot;access_token&amp;quot;:&amp;quot;2YotnFZFEjr1zCsicMWpAA&amp;quot;,
+    &amp;quot;expires_in&amp;quot;:3600,
+    &amp;quot;refresh_token&amp;quot;:&amp;quot;tGzv3JOkF0XG5Qx2TlKWIA&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;where the &amp;ldquo;expires_in&amp;rdquo; and &amp;ldquo;refresh_token&amp;rdquo; properties are optional and additional
+properties are ignored. If the response contains a &amp;ldquo;expires_in&amp;rdquo; property then the signer
+takes care of making refresh requests prior to the token expiration.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-oauth2signer-refresh:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*OAuth2Signer) Refresh&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *OAuth2Signer) Refresh() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Refresh makes a OAuth2 refresh access token request.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-oauth2signer-registerflags:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*OAuth2Signer) RegisterFlags&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *OAuth2Signer) RegisterFlags(app *cobra.Command)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RegisterFlags adds the &amp;ldquo;&amp;ndash;refreshURL&amp;rdquo; and &amp;ldquo;&amp;ndash;refreshToken&amp;rdquo; flags to the client tool.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-oauth2signer-sign:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*OAuth2Signer) Sign&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *OAuth2Signer) Sign(req *http.Request) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Sign refreshes the access token if needed and adds the OAuth header.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-resettabledecoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ResettableDecoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResettableDecoder interface {
+    Decoder
+    Reset(r io.Reader)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The ResettableDecoder is used to determine whether or not a Decoder can be reset and
+thus safely reused in a sync.Pool&lt;/p&gt;
+
+&lt;h2 id=&#34;type-resettableencoder:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ResettableEncoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResettableEncoder interface {
+    Encoder
+    Reset(w io.Writer)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The ResettableEncoder is used to determine whether or not a Encoder can be reset and
+thus safely reused in a sync.Pool&lt;/p&gt;
+
+&lt;h2 id=&#34;type-selectversionfunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type SelectVersionFunc&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type SelectVersionFunc func(*http.Request) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SelectVersionFunc is used by the default goa mux to compute the API version targetted by
+a given request.
+The default implementation looks for a version as path prefix.
+Alternate implementations can be set using the DefaultMux SelectVersion method.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-combineselectversionfunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func CombineSelectVersionFunc&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func CombineSelectVersionFunc(funcs ...SelectVersionFunc) SelectVersionFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CombineSelectVersionFunc returns a SelectVersionFunc that tries each func passed as argument
+in order and returns the first non-empty string version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-headerselectversionfunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func HeaderSelectVersionFunc&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func HeaderSelectVersionFunc(header string) SelectVersionFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HeaderSelectVersionFunc returns a SelectVersionFunc that looks for the version in the header with
+the given name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-pathselectversionfunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func PathSelectVersionFunc&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func PathSelectVersionFunc(pattern, zeroVersion string) SelectVersionFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PathSelectVersionFunc returns a SelectVersionFunc that uses the given path pattern to extract the
+version from the request path. Use the same path pattern given in the DSL to define the API base
+path, e.g. &amp;ldquo;/api/:version&amp;rdquo;.
+If the pattern matches zeroVersion then the empty version is returned (i.e. the unversioned
+controller handles the request).&lt;/p&gt;
+
+&lt;h3 id=&#34;func-queryselectversionfunc:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func QuerySelectVersionFunc&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func QuerySelectVersionFunc(query string) SelectVersionFunc
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;QuerySelectVersionFunc returns a SelectVersionFunc that looks for the version in the querystring
+with the given key.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-servemux:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ServeMux&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ServeMux interface {
+    http.Handler
+    // Handle sets the HandleFunc for a given HTTP method and path.
+    Handle(method, path string, handle HandleFunc)
+    // Lookup returns the HandleFunc associated with the given HTTP method and path.
+    Lookup(method, path string) HandleFunc
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServeMux is the interface implemented by the service request muxes. There is one instance
+of ServeMux per service version and one for requests targetting no version.
+It implements http.Handler and makes it possible to register request handlers for
+specific HTTP methods and request path via the Handle method.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newmux:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewMux&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewMux(app *Application) ServeMux
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewMux returns the default service mux implementation.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-service:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Service&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Service interface {
+    // Logging methods, configure the log handler using the Logger global variable.
+    log.Logger
+
+    // Encoding manages the service decoders and encoders.
+    Encoding
+
+    // Name is the name of the goa application.
+    Name() string
+
+    // Use adds a middleware to the service-wide middleware chain.
+    Use(m Middleware)
+
+    // ErrorHandler returns the currently set error handler, useful for middleware.
+    ErrorHandler() ErrorHandler
+
+    // SetErrorHandler registers the service-wide error handler.
+    SetErrorHandler(ErrorHandler)
+
+    // SetMissingVersionHandler registers the handler invoked when a request targets a
+    // non existant API version.
+    SetMissingVersionHandler(MissingVersionHandler)
+
+    // ServeMux returns the service mux.
+    ServeMux() ServeMux
+
+    // ListenAndServe starts a HTTP server on the given port.
+    ListenAndServe(addr string) error
+
+    // ListenAndServeTLS starts a HTTPS server on the given port.
+    ListenAndServeTLS(add, certFile, keyFile string) error
+
+    // ServeFiles replies to the request with the contents of the named file or
+    // directory. The logic // for what to do when the filename points to a file vs. a
+    // directory is the same as the standard http package ServeFile function. The path
+    // may end with a wildcard that matches the rest of the URL (e.g. *filepath). If it
+    // does the matching path is appended to filename to form the full file path, so:
+    // 	ServeFiles(&amp;quot;/index.html&amp;quot;, &amp;quot;/www/data/index.html&amp;quot;)
+    // Returns the content of the file &amp;quot;/www/data/index.html&amp;quot; when requests are sent to
+    // &amp;quot;/index.html&amp;quot; and:
+    //	ServeFiles(&amp;quot;/assets/*filepath&amp;quot;, &amp;quot;/www/data/assets&amp;quot;)
+    // returns the content of the file &amp;quot;/www/data/assets/x/y/z&amp;quot; when requests are sent
+    // to &amp;quot;/assets/x/y/z&amp;quot;.
+    ServeFiles(path, filename string) error
+
+    // Version returns an object that implements ServiceVersion based on the version name.
+    // If there is no version registered, it will instantiate a new version.
+    Version(name string) ServiceVersion
+
+    // Decode uses registered Decoders to unmarshal a body based on the contentType
+    Decode(v interface{}, body io.Reader, contentType string) error
+
+    // NewController returns a controller for the resource with the given name.
+    // This method is mainly intended for use by generated code.
+    NewController(resName string) Controller
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Service is the interface implemented by all goa services.
+It provides methods for configuring a service and running it.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-new:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func New&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func New(name string) Service
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;New instantiates an application with the given name and default decoders/encoders.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newgraceful:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func NewGraceful&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewGraceful(name string, cancelOnShutdown bool) Service
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewGraceful returns a goa application that uses a graceful shutdown server.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-serviceversion:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type ServiceVersion&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ServiceVersion interface {
+    // Encoding manages the version decoders and encoders.
+    Encoding
+
+    // VersionName returns the version name.
+    VersionName() string
+
+    // ServeMux returns the version request mux.
+    ServeMux() ServeMux
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServiceVersion is the interface for interacting with individual service versions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-signer:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type Signer&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Signer interface {
+    // Sign adds required headers, cookies etc.
+    Sign(*http.Request) error
+    // RegisterFlags registers the command line flags that defines the values used to
+    // initialize the signer.
+    RegisterFlags(cmd *cobra.Command)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Signer is the common interface implemented by all signers.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-typederror:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;type TypedError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type TypedError struct {
+    ID   ErrorID
+    Mesg string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TypedError describes an error that can be returned in a HTTP response.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-typederror-error:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*TypedError) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *TypedError) Error() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error builds an error message from the typed error details.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-typederror-marshaljson:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;func (*TypedError) MarshalJSON&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *TypedError) MarshalJSON() ([]byte, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalJSON implements the json marshaler interface.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

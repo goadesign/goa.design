@@ -4,7 +4,7 @@ draft = true
 title = "Hello Goa!"
 description = "Goa hello description"
 author = "Raphael Simon"
-categories = ["tutorial"]
+categories = ["Tutorial"]
 tags = ["generation","go"]
 +++
 
