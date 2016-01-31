@@ -23,6 +23,11 @@
   </url>
   
   <url>
+    <loc>http://goa.design/godoc/goa/</loc>
+    <lastmod>2016-01-30T11:01:06-05:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://goa.design/components/goagen/</loc>
     <lastmod>2016-01-30T11:01:06-05:00</lastmod>
   </url>
@@ -35,10 +40,6 @@
   <url>
     <loc>http://goa.design/components/swagger/</loc>
     <lastmod>2016-01-30T11:01:06-05:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://goa.design/godoc/goa/</loc>
   </url>
   
 </urlset>

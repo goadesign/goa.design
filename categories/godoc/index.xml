@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Godocs on goa</title>
-    <link>http://goa.design/godoc/</link>
-    <description>Recent content in Godocs on goa</description>
+    <title>Godoc on goa</title>
+    <link>http://goa.design/categories/godoc/</link>
+    <description>Recent content in Godoc on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Sat, 30 Jan 2016 11:01:06 -0500</lastBuildDate>
-    <atom:link href="http://goa.design/godoc/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://goa.design/categories/godoc/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>goa</title>
