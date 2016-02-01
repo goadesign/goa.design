@@ -16,7 +16,7 @@ $(echo description=\"godoc for ${pkg}\")
 $(echo categories=\[\"godoc\"\])
 $(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
 $(echo +++)
-$(cat $(basename $OUTPUT).md ))
+$(cat $(basename $OUTPUT).md )
 EOF
 done
 for OUTPUT in $(go list github.com/goadesign/middleware/...)
@@ -32,7 +32,7 @@ $(echo description=\"godoc for ${pkg}\")
 $(echo categories=\[\"godoc\"\])
 $(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
 $(echo +++)
-$(cat $(basename $OUTPUT).md ))
+$(cat $(basename $OUTPUT).md )
 EOF
 done
 for OUTPUT in $(go list github.com/goadesign/gorma/...)
@@ -48,7 +48,7 @@ $(echo description=\"godoc for ${pkg}\")
 $(echo categories=\[\"godoc\"\])
 $(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
 $(echo +++)
-$(cat $(basename $OUTPUT).md ))
+$(cat $(basename $OUTPUT).md )
 EOF
 done
 for OUTPUT in $(go list github.com/goadesign/encoding/...)
@@ -64,7 +64,7 @@ $(echo description=\"godoc for ${pkg}\")
 $(echo categories=\[\"godoc\"\])
 $(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
 $(echo +++)
-$(cat $(basename $OUTPUT).md ))
+$(cat $(basename $OUTPUT).md )
 EOF
 done
 
