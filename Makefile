@@ -10,6 +10,8 @@ index:
 	npm install --save-dev grunt string toml conzole
 	grunt lunr-index
 
+godoc:
+	./godoc.sh
 deploy:
 	./deploy.sh
 docker:
