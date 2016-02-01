@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>goa/design/apidsl</h1>
+		<p>godoc for goa/design/apidsl</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="apidsl:aab4f9d6f98ed71f45bd470427dde2a7">apidsl</h1>
+
+<pre><code>import &quot;github.com/goadesign/goa/design/apidsl&quot;
+</code></pre>
+
+<p>Package apidsl implements the goa design language.</p>
+
+<p>The goa design language provides a simple way to describe an API design. The language consists of
+global Go functions that can be nested to build up <em>definitions</em>. The root definition is the API
+definition. This definition is what the language builds as it executes. There are 3 other top level
+definitions: the resource, media type and type definitions all created using the corresponding
+global functions (Resource, MediaType and Type).</p>
+
+<p>Resource definitions describe the API resources. This includes the default media type used to
+represent the resource as well as all the actions that can be run on it.</p>
+
+<p>Media type definitions describe the media types used throughout the API. A media type describes
+the body of HTTP responses by listing their attributes (think object fields) in a recursive manner.
+This description can also include JSON schema-like validation rules that goa uses to produce
+validation code. A Media type definition also describes one or more <em>views</em> and for each view which
+fields to render. Finally a media type definition may also define <em>links</em> to other resources. The
+media type used to render the link on a resource defines a special &ldquo;link&rdquo; view used by default by
+goa to render the &ldquo;links&rdquo; child attributes.</p>
+
+<p>The last top level definition is the type definition. Type definitions describe data structures
+in a similar way that media type definitions describe response body attributes. In fact, media
+type definitions are a special kind of type definitions that add views and links. Type definitions
+can be used to describe the request payloads as a whole or any attribute appearing anywhere
+(payloads, media types, headers, params etc.) and as with media type definitions they can include
+validation rules that goa leverages to validate attributes of that type.</p>
+
+<p>Package apidsl also provides a generic DSL engine that other DSLs can plug into. Adding a DSL
+implementation consists of registering the root DSL object in the design package Roots variable.
+The runner iterates through all root DSL definitions and executes the definition sets they expose.</p>
+
+<p>In general there should be one root definition per DSL (the built-in API DSL uses the APIDefinition
+as root definition). The root definition can in turn list sets of definitions where a set defines
+a unit of execution and allows to control the ordering of execution. Each definition set consists
+of a list of definitions. Definitions must implement the design.Definition interface and may
+additionally implement the design.Source and design.Validate interfaces.</p>
+
+<h2 id="constants:aab4f9d6f98ed71f45bd470427dde2a7">Constants</h2>
+
+<pre><code class="language-go">const (
+    Continue           = &quot;Continue&quot;
+    SwitchingProtocols = &quot;SwitchingProtocols&quot;
+
+    OK                   = &quot;OK&quot;
+    Created              = &quot;Created&quot;
+    Accepted             = &quot;Accepted&quot;
+    NonAuthoritativeInfo = &quot;NonAuthoritativeInfo&quot;
+    NoContent            = &quot;NoContent&quot;
+    ResetContent         = &quot;ResetContent&quot;
+    PartialContent       = &quot;PartialContent&quot;
+
+    MultipleChoices   = &quot;MultipleChoices&quot;
+    MovedPermanently  = &quot;MovedPermanently&quot;
+    Found             = &quot;Found&quot;
+    SeeOther          = &quot;SeeOther&quot;
+    NotModified       = &quot;NotModified&quot;
+    UseProxy          = &quot;UseProxy&quot;
+    TemporaryRedirect = &quot;TemporaryRedirect&quot;
+
+    BadRequest                   = &quot;BadRequest&quot;
+    Unauthorized                 = &quot;Unauthorized&quot;
+    PaymentRequired              = &quot;PaymentRequired&quot;
+    Forbidden                    = &quot;Forbidden&quot;
+    NotFound                     = &quot;NotFound&quot;
+    MethodNotAllowed             = &quot;MethodNotAllowed&quot;
+    NotAcceptable                = &quot;NotAcceptable&quot;
+    ProxyAuthRequired            = &quot;ProxyAuthRequired&quot;
+    RequestTimeout               = &quot;RequestTimeout&quot;
+    Conflict                     = &quot;Conflict&quot;
+    Gone                         = &quot;Gone&quot;
+    LengthRequired               = &quot;LengthRequired&quot;
+    PreconditionFailed           = &quot;PreconditionFailed&quot;
+    RequestEntityTooLarge        = &quot;RequestEntityTooLarge&quot;
+    RequestURITooLong            = &quot;RequestURITooLong&quot;
+    UnsupportedMediaType         = &quot;UnsupportedMediaType&quot;
+    RequestedRangeNotSatisfiable = &quot;RequestedRangeNotSatisfiable&quot;
+    ExpectationFailed            = &quot;ExpectationFailed&quot;
+    Teapot                       = &quot;Teapot&quot;
+    UnprocessableEntity          = &quot;UnprocessableEntity&quot;
+
+    InternalServerError     = &quot;InternalServerError&quot;
+    NotImplemented          = &quot;NotImplemented&quot;
+    BadGateway              = &quot;BadGateway&quot;
+    ServiceUnavailable      = &quot;ServiceUnavailable&quot;
+    GatewayTimeout          = &quot;GatewayTimeout&quot;
+    HTTPVersionNotSupported = &quot;HTTPVersionNotSupported&quot;
+)
+</code></pre>
+
+<p>List of all built-in response names.</p>
+
+<h2 id="variables:aab4f9d6f98ed71f45bd470427dde2a7">Variables</h2>
+
+<pre><code class="language-go">var SupportedValidationFormats = []string{
+    &quot;cidr&quot;,
+    &quot;date-time&quot;,
+    &quot;email&quot;,
+    &quot;hostname&quot;,
+    &quot;ipv4&quot;,
+    &quot;ipv6&quot;,
+    &quot;mac&quot;,
+    &quot;regexp&quot;,
+    &quot;uri&quot;,
+}
+</code></pre>
+
+<p>SupportedValidationFormats lists the supported formats for use with the
+Format DSL.</p>
+
+<h2 id="func-api:aab4f9d6f98ed71f45bd470427dde2a7">func API</h2>
+
+<pre><code class="language-go">func API(name string, dsl func()) *design.APIDefinition
+</code></pre>
+
+<p>API implements the top level API DSL. It defines the API name, default description and other
+default global property values for all API versions. Here is an example showing all the possible
+API sub-definitions:</p>
+
+<pre><code>API(&quot;API name&quot;, func() {
+    Title(&quot;title&quot;)              // API title used in documentation
+    Description(&quot;description&quot;)      // API description used in documentation
+    TermsOfService(&quot;terms&quot;)
+    Contact(func() {            // API Contact information
+        Name(&quot;contact name&quot;)
+        Email(&quot;contact email&quot;)
+        URL(&quot;contact URL&quot;)
+    })
+    License(func() {            // API Licensing information
+        Name(&quot;license name&quot;)
+        URL(&quot;license URL&quot;)
+    })
+    Docs(func() {
+        Description(&quot;doc description&quot;)
+        URL(&quot;doc URL&quot;)
+    })
+    Host(&quot;goa.design&quot;)          // API hostname
+    Scheme(&quot;http&quot;)
+    BasePath(&quot;/base/:param&quot;)        // Common base path to all API actions
+    BaseParams(func() {         // Common parameters to all API actions
+        Param(&quot;param&quot;)
+    })
+    Consumes(&quot;application/xml&quot;, &quot;text/xml&quot;, func() {
+        Package(&quot;github.com/raphael/goa-middleware/encoding/xml&quot;)
+    })
+    Consumes(&quot;application/json&quot;)
+    Produces(&quot;application/vnd.golang.gob&quot;, func() {
+        Package(&quot;github.com/raphael/goa-middleware/encoding/gob&quot;)
+    })
+    Produces(&quot;application/json&quot;)
+    ResponseTemplate(&quot;static&quot;, func() { // Response template for use by actions
+        Description(&quot;description&quot;)
+        Status(404)
+        MediaType(&quot;application/json&quot;)
+    })
+    ResponseTemplate(&quot;dynamic&quot;, func(arg1, arg2 string) {
+        Description(arg1)
+        Status(200)
+        MediaType(arg2)
+    })
+    Trait(&quot;Authenticated&quot;, func() {     // Traits define DSL that can be run anywhere
+        Headers(func() {
+            Header(&quot;header&quot;)
+            Required(&quot;header&quot;)
+        })
+    })
+}
+</code></pre>
+
+<h2 id="func-apiversion:aab4f9d6f98ed71f45bd470427dde2a7">func APIVersion</h2>
+
+<pre><code class="language-go">func APIVersion(versions ...string)
+</code></pre>
+
+<p>APIVersion define the API version(s) that expose this resource.</p>
+
+<h2 id="func-action:aab4f9d6f98ed71f45bd470427dde2a7">func Action</h2>
+
+<pre><code class="language-go">func Action(name string, dsl func())
+</code></pre>
+
+<p>Action implements the action definition DSL. Action definitions describe specific API endpoints
+including the URL, HTTP method and request parameters (via path wildcards or query strings) and
+payload (data structure describing the request HTTP body). An action belongs to a resource and
+&ldquo;inherits&rdquo; default values from the resource definition including the URL path prefix, default
+response media type and default payload attribute properties (inherited from the attribute with
+identical name in the resource default media type). Action definitions also describe all the
+possible responses including the HTTP status, headers and body. Here is an example showing all
+the possible sub-definitions:</p>
+
+<pre><code>Action(&quot;Update&quot;, func() {
+    Description(&quot;Update account&quot;)
+    Docs(func() {
+        Description(&quot;Update docs&quot;)
+        URL(&quot;http//cellarapi.com/docs/actions/update&quot;)
+    })
+    Scheme(&quot;http&quot;)
+    Routing(
+        PUT(&quot;/:id&quot;),                // Full action path is built by appending &quot;/:id&quot; to parent resource base path
+        PUT(&quot;//orgs/:org/accounts/:id&quot;),    // The // prefix indicates an absolute path
+    )
+    Params(func() {                 // Params describe the action parameters
+        Param(&quot;org&quot;, String)            // Parameters may correspond to path wildcards
+        Param(&quot;id&quot;, Integer)
+        Param(&quot;sort&quot;, func() {          // or URL query string values.
+            Enum(&quot;asc&quot;, &quot;desc&quot;)
+        })
+    })
+    Headers(func() {                // Headers describe relevant action headers
+        Header(&quot;Authorization&quot;, String)
+        Header(&quot;X-Account&quot;, Integer)
+        Required(&quot;Authorization&quot;, &quot;X-Account&quot;)
+    })
+    Payload(UpdatePayload)              // Payload describes the HTTP request body (here using a type)
+    Response(NoContent)             // Each possible HTTP response is described via Response
+    Response(NotFound)
+})
+</code></pre>
+
+<h2 id="func-arrayof:aab4f9d6f98ed71f45bd470427dde2a7">func ArrayOf</h2>
+
+<pre><code class="language-go">func ArrayOf(t design.DataType) *design.Array
+</code></pre>
+
+<p>ArrayOf creates an array type from its element type. The result can be used anywhere a type can.
+Examples:</p>
+
+<pre><code>var Bottle = Type(&quot;bottle&quot;, func() {
+    Attribute(&quot;name&quot;)
+})
+
+var Bottles = ArrayOf(Bottle)
+
+Action(&quot;update&quot;, func() {
+    Params(func() {
+        Param(&quot;ids&quot;, ArrayOf(Integer))
+    })
+    Payload(ArrayOf(Bottle))  // Equivalent to Payload(Bottles)
+})
+</code></pre>
+
+<p>If you are looking to return a collection of elements in a Response
+clause, refer to CollectionOf.  ArrayOf creates a type, where
+CollectionOf creates a media type.</p>
+
+<h2 id="func-attribute:aab4f9d6f98ed71f45bd470427dde2a7">func Attribute</h2>
+
+<pre><code class="language-go">func Attribute(name string, args ...interface{})
+</code></pre>
+
+<p>Attribute implements the attribute definition DSL. An attribute describes a data structure
+recursively. Attributes are used for describing request headers, parameters and payloads -
+response bodies and headers - media types and types. An attribute definition is recursive:
+attributes may include other attributes. At the basic level an attribute has a name,
+a type and optionally a default value and validation rules. The type of an attribute can be one of:</p>
+
+<ul>
+<li><p>The primitive types Boolean, Integer, Number or String.</p></li>
+
+<li><p>A type defined via the Type function.</p></li>
+
+<li><p>A media type defined via the MediaType function.</p></li>
+
+<li><p>An object described recursively with child attributes.</p></li>
+
+<li><p>An array defined using the ArrayOf function.</p></li>
+
+<li><p>An hashmap defined using the HashOf function.</p></li>
+</ul>
+
+<p>Attributes can be defined using the Attribute, Param, Member or Header functions depending
+on where the definition appears. The syntax for all these DSL is the same.
+Here are some examples:</p>
+
+<pre><code>Attribute(&quot;name&quot;)                   // Defines an attribute of type String
+
+Attribute(&quot;name&quot;, func() {
+    Pattern(&quot;^foo&quot;)                 // Adds a validation rule to the attribute
+})
+
+Attribute(&quot;name&quot;, Integer)              // Defines an attribute of type Integer
+
+Attribute(&quot;name&quot;, Integer, func() {
+    Default(42)                 // With a default value
+})
+
+Attribute(&quot;name&quot;, Integer, &quot;description&quot;)       // Specifies a description
+
+Attribute(&quot;name&quot;, Integer, &quot;description&quot;, func() {
+    Enum(1, 2)                  // And validation rules
+})
+</code></pre>
+
+<p>Nested attributes:</p>
+
+<pre><code>Attribute(&quot;nested&quot;, func() {
+    Description(&quot;description&quot;)
+    Attribute(&quot;child&quot;)
+    Attribute(&quot;child2&quot;, func() {
+        // ....
+    })
+    Required(&quot;child&quot;)
+})
+</code></pre>
+
+<p>Here are all the valid usage of the Attribute function:</p>
+
+<pre><code>Attribute(name string, dataType DataType, description string, dsl func())
+
+Attribute(name string, dataType DataType, description string)
+
+Attribute(name string, dataType DataType, dsl func())
+
+Attribute(name string, dataType DataType)
+
+Attribute(name string, dsl func())  // dataType is String or Object (if DSL defines child attributes)
+
+Attribute(name string)          // dataType is String
+</code></pre>
+
+<h2 id="func-attributes:aab4f9d6f98ed71f45bd470427dde2a7">func Attributes</h2>
+
+<pre><code class="language-go">func Attributes(dsl func())
+</code></pre>
+
+<p>Attributes implements the media type attributes dsl. See MediaType.</p>
+
+<h2 id="func-baseparams:aab4f9d6f98ed71f45bd470427dde2a7">func BaseParams</h2>
+
+<pre><code class="language-go">func BaseParams(dsl func())
+</code></pre>
+
+<p>BaseParams defines the API base path parameters. These parameters may correspond to wildcards in
+the BasePath or URL query string values.
+The DSL for describing each Param is the Attribute DSL.</p>
+
+<h2 id="func-basepath:aab4f9d6f98ed71f45bd470427dde2a7">func BasePath</h2>
+
+<pre><code class="language-go">func BasePath(val string)
+</code></pre>
+
+<p>BasePath defines the API base path, i.e. the common path prefix to all the API actions.
+The path may define wildcards (see Routing for a description of the wildcard syntax).
+The corresponding parameters must be described using BaseParams.</p>
+
+<h2 id="func-connect:aab4f9d6f98ed71f45bd470427dde2a7">func CONNECT</h2>
+
+<pre><code class="language-go">func CONNECT(path string) *design.RouteDefinition
+</code></pre>
+
+<p>CONNECT creates a route using the GET HTTP method.</p>
+
+<h2 id="func-canonicalactionname:aab4f9d6f98ed71f45bd470427dde2a7">func CanonicalActionName</h2>
+
+<pre><code class="language-go">func CanonicalActionName(a string)
+</code></pre>
+
+<p>CanonicalActionName sets the name of the action used to compute the resource collection and
+resource collection items hrefs. See Resource.</p>
+
+<h2 id="func-collectionof:aab4f9d6f98ed71f45bd470427dde2a7">func CollectionOf</h2>
+
+<pre><code class="language-go">func CollectionOf(v interface{}, dsl ...func()) *design.MediaTypeDefinition
+</code></pre>
+
+<p>CollectionOf creates a collection media type from its element media type. A collection media
+type represents the content of responses that return a collection of resources such as &ldquo;list&rdquo;
+actions. This function can be called from any place where a media type can be used.
+The resulting media type identifier is built from the element media type by appending the media
+type parameter &ldquo;type&rdquo; with value &ldquo;collection&rdquo;.</p>
+
+<h2 id="func-consumes:aab4f9d6f98ed71f45bd470427dde2a7">func Consumes</h2>
+
+<pre><code class="language-go">func Consumes(args ...interface{})
+</code></pre>
+
+<p>Consumes adds a MIME type to the list of MIME types the APIs supports when accepting requests.
+Consumes may also specify the path of the decoding package.
+The package must expose a DecoderFactory method that returns an object which implements
+goa.DecoderFactory.</p>
+
+<h2 id="func-contact:aab4f9d6f98ed71f45bd470427dde2a7">func Contact</h2>
+
+<pre><code class="language-go">func Contact(dsl func())
+</code></pre>
+
+<p>Contact sets the API contact information.</p>
+
+<h2 id="func-delete:aab4f9d6f98ed71f45bd470427dde2a7">func DELETE</h2>
+
+<pre><code class="language-go">func DELETE(path string) *design.RouteDefinition
+</code></pre>
+
+<p>DELETE creates a route using the DELETE HTTP method.</p>
+
+<h2 id="func-default:aab4f9d6f98ed71f45bd470427dde2a7">func Default</h2>
+
+<pre><code class="language-go">func Default(def interface{})
+</code></pre>
+
+<p>Default sets the default value for an attribute.</p>
+
+<h2 id="func-defaultmedia:aab4f9d6f98ed71f45bd470427dde2a7">func DefaultMedia</h2>
+
+<pre><code class="language-go">func DefaultMedia(val interface{})
+</code></pre>
+
+<p>DefaultMedia sets a resource default media type by identifier or by reference using a value
+returned by MediaType:</p>
+
+<pre><code>var _ = Resource(&quot;bottle&quot;, func() {
+    DefaultMedia(BottleMedia)
+    // ...
+})
+
+var _ = Resource(&quot;region&quot;, func() {
+    DefaultMedia(&quot;vnd.goa.region&quot;)
+    // ...
+})
+</code></pre>
+
+<p>The default media type is used to build OK response definitions when no specific media type is
+given in the Response function call. The default media type is also used to set the default
+properties of attributes listed in action payloads. So if a media type defines an attribute
+&ldquo;name&rdquo; with associated validations then simply calling Attribute(&ldquo;name&rdquo;) inside a request
+Payload defines the payload attribute with the same type and validations.</p>
+
+<h2 id="func-description:aab4f9d6f98ed71f45bd470427dde2a7">func Description</h2>
+
+<pre><code class="language-go">func Description(d string)
+</code></pre>
+
+<p>Description sets the definition description.
+Description can be called inside API, Resource, Action or MediaType.</p>
+
+<h2 id="func-docs:aab4f9d6f98ed71f45bd470427dde2a7">func Docs</h2>
+
+<pre><code class="language-go">func Docs(dsl func())
+</code></pre>
+
+<p>Docs provides external documentation pointers.</p>
+
+<h2 id="func-email:aab4f9d6f98ed71f45bd470427dde2a7">func Email</h2>
+
+<pre><code class="language-go">func Email(email string)
+</code></pre>
+
+<p>Email sets the contact email.</p>
+
+<h2 id="func-enum:aab4f9d6f98ed71f45bd470427dde2a7">func Enum</h2>
+
+<pre><code class="language-go">func Enum(val ...interface{})
+</code></pre>
+
+<p>Enum adds a &ldquo;enum&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor76">http://json-schema.org/latest/json-schema-validation.html#anchor76</a>.</p>
+
+<h2 id="func-format:aab4f9d6f98ed71f45bd470427dde2a7">func Format</h2>
+
+<pre><code class="language-go">func Format(f string)
+</code></pre>
+
+<p>Format adds a &ldquo;format&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor104">http://json-schema.org/latest/json-schema-validation.html#anchor104</a>.
+The formats supported by goa are:</p>
+
+<p>&ldquo;date-time&rdquo;: RFC3339 date time</p>
+
+<p>&ldquo;email&rdquo;: RFC5322 email address</p>
+
+<p>&ldquo;hostname&rdquo;: RFC1035 internet host name</p>
+
+<p>&ldquo;ipv4&rdquo; and &ldquo;ipv6&rdquo;: RFC2373 IPv4 and IPv6 address</p>
+
+<p>&ldquo;uri&rdquo;: RFC3986 URI</p>
+
+<p>&ldquo;mac&rdquo;: IEEE 802 MAC-48, EUI-48 or EUI-64 MAC address</p>
+
+<p>&ldquo;cidr&rdquo;: RFC4632 or RFC4291 CIDR notation IP address</p>
+
+<p>&ldquo;regexp&rdquo;: RE2 regular expression</p>
+
+<h2 id="func-get:aab4f9d6f98ed71f45bd470427dde2a7">func GET</h2>
+
+<pre><code class="language-go">func GET(path string) *design.RouteDefinition
+</code></pre>
+
+<p>GET creates a route using the GET HTTP method.</p>
+
+<h2 id="func-head:aab4f9d6f98ed71f45bd470427dde2a7">func HEAD</h2>
+
+<pre><code class="language-go">func HEAD(path string) *design.RouteDefinition
+</code></pre>
+
+<p>HEAD creates a route using the HEAD HTTP method.</p>
+
+<h2 id="func-hashof:aab4f9d6f98ed71f45bd470427dde2a7">func HashOf</h2>
+
+<pre><code class="language-go">func HashOf(k, v design.DataType) *design.Hash
+</code></pre>
+
+<p>HashOf creates a hash map from its key and element types. The result can be used anywhere a type
+can. Examples:</p>
+
+<pre><code>var Bottle = Type(&quot;bottle&quot;, func() {
+    Attribute(&quot;name&quot;)
+})
+
+var RatedBottles = HashOf(String, Bottle)
+
+Action(&quot;updateRatings&quot;, func() {
+    Payload(func() {
+        Member(&quot;ratings&quot;, HashOf(String, Integer))  // Artificial examples...
+        Member(&quot;bottles&quot;, RatedBottles)
+})
+</code></pre>
+
+<h2 id="func-header:aab4f9d6f98ed71f45bd470427dde2a7">func Header</h2>
+
+<pre><code class="language-go">func Header(name string, args ...interface{})
+</code></pre>
+
+<p>Header is an alias of Attribute.</p>
+
+<h2 id="func-headers:aab4f9d6f98ed71f45bd470427dde2a7">func Headers</h2>
+
+<pre><code class="language-go">func Headers(dsl func())
+</code></pre>
+
+<p>Headers implements the DSL for describing HTTP headers. The DSL syntax is identical to the one
+of Attribute. Here is an example defining a couple of headers with validations:</p>
+
+<pre><code>Headers(func() {
+    Header(&quot;Authorization&quot;)
+    Header(&quot;X-Account&quot;, Integer, func() {
+        Minimum(1)
+    })
+    Required(&quot;Authorization&quot;)
+})
+</code></pre>
+
+<p>Headers can be used inside Action to define the action request headers, Response to define the
+response headers or Resource to define common request headers to all the resource actions.</p>
+
+<h2 id="func-host:aab4f9d6f98ed71f45bd470427dde2a7">func Host</h2>
+
+<pre><code class="language-go">func Host(host string)
+</code></pre>
+
+<p>Host sets the API hostname.</p>
+
+<h2 id="func-initdesign:aab4f9d6f98ed71f45bd470427dde2a7">func InitDesign</h2>
+
+<pre><code class="language-go">func InitDesign()
+</code></pre>
+
+<p>InitDesign initializes the Design global variable and loads the built-in
+response templates. This is a public function mainly so it can be used in tests.</p>
+
+<h2 id="func-license:aab4f9d6f98ed71f45bd470427dde2a7">func License</h2>
+
+<pre><code class="language-go">func License(dsl func())
+</code></pre>
+
+<p>License sets the API license information.</p>
+
+<h2 id="func-link:aab4f9d6f98ed71f45bd470427dde2a7">func Link</h2>
+
+<pre><code class="language-go">func Link(name string, view ...string)
+</code></pre>
+
+<p>Link adds a link to a media type. At the minimum a link has a name corresponding to one of the
+media type attribute names. A link may also define the view used to render the linked-to
+attribute. The default view used to render links is &ldquo;link&rdquo;. Examples:</p>
+
+<pre><code>Link(&quot;origin&quot;)      // Use the &quot;link&quot; view of the &quot;origin&quot; attribute
+Link(&quot;account&quot;, &quot;tiny&quot;) // Use the &quot;tiny&quot; view of the &quot;account&quot; attribute
+</code></pre>
+
+<h2 id="func-links:aab4f9d6f98ed71f45bd470427dde2a7">func Links</h2>
+
+<pre><code class="language-go">func Links(dsl func())
+</code></pre>
+
+<p>Links implements the media type links dsl. See MediaType.</p>
+
+<h2 id="func-maxlength:aab4f9d6f98ed71f45bd470427dde2a7">func MaxLength</h2>
+
+<pre><code class="language-go">func MaxLength(val int)
+</code></pre>
+
+<p>MaxLength adss a &ldquo;maxItems&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor42">http://json-schema.org/latest/json-schema-validation.html#anchor42</a>.</p>
+
+<h2 id="func-maximum:aab4f9d6f98ed71f45bd470427dde2a7">func Maximum</h2>
+
+<pre><code class="language-go">func Maximum(val interface{})
+</code></pre>
+
+<p>Maximum adds a &ldquo;maximum&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor17">http://json-schema.org/latest/json-schema-validation.html#anchor17</a>.</p>
+
+<h2 id="func-media:aab4f9d6f98ed71f45bd470427dde2a7">func Media</h2>
+
+<pre><code class="language-go">func Media(val interface{})
+</code></pre>
+
+<p>Media sets a response media type by name or by reference using a value returned by MediaType:</p>
+
+<pre><code>Response(&quot;NotFound&quot;, func() {
+    Status(404)
+    Media(&quot;application/json&quot;)
+})
+</code></pre>
+
+<p>Media can be used inside Response or ResponseTemplate.</p>
+
+<h2 id="func-mediatype:aab4f9d6f98ed71f45bd470427dde2a7">func MediaType</h2>
+
+<pre><code class="language-go">func MediaType(identifier string, dsl func()) *design.MediaTypeDefinition
+</code></pre>
+
+<p>MediaType implements the media type definition dsl. A media type definition describes the
+representation of a resource used in a response body. This includes listing all the <em>potential</em>
+resource attributes that can appear in the body. Views specify which of the attributes are
+actually rendered so that the same media type definition may represent multiple rendering of a
+given resource representation.</p>
+
+<p>All media types must define a view named &ldquo;default&rdquo;. This view is used to render the media type in
+response bodies when no other view is specified.</p>
+
+<p>A media type definition may also define links to other media types. This is done by first
+defining an attribute for the linked-to media type and then referring to that attribute in the
+Links dsl. Views may then elect to render one or the other or both. Links are rendered using the
+special &ldquo;link&rdquo; view. Media types that are linked to must define that view. Here is an example
+showing all the possible media type sub-definitions:</p>
+
+<pre><code>MediaType(&quot;application/vnd.goa.example.bottle&quot;, func() {
+    Description(&quot;A bottle of wine&quot;)
+    APIVersion(&quot;1.0&quot;)
+    TypeName(&quot;BottleMedia&quot;)         // Optionally override the default generated name
+    Attributes(func() {
+        Attribute(&quot;id&quot;, Integer, &quot;ID of bottle&quot;)
+        Attribute(&quot;href&quot;, String, &quot;API href of bottle&quot;)
+        Attribute(&quot;account&quot;, Account, &quot;Owner account&quot;)
+        Attribute(&quot;origin&quot;, Origin, &quot;Details on wine origin&quot;)
+        Links(func() {
+            Link(&quot;account&quot;)     // Defines a link to the Account media type
+            Link(&quot;origin&quot;, &quot;tiny&quot;)  // Overrides the default view used to render links
+        })
+        Required(&quot;id&quot;, &quot;href&quot;)
+    })
+    View(&quot;default&quot;, func() {
+        Attribute(&quot;id&quot;)
+        Attribute(&quot;href&quot;)
+        Attribute(&quot;links&quot;)  // Default view renders links
+    })
+    View(&quot;extended&quot;, func() {
+        Attribute(&quot;id&quot;)
+        Attribute(&quot;href&quot;)
+        Attribute(&quot;account&quot;)    // Extended view renders account inline
+        Attribute(&quot;origin&quot;) // Extended view renders origin inline
+        Attribute(&quot;links&quot;)  // Extended view also renders links
+    })
+})
+</code></pre>
+
+<p>This function returns the media type definition so it can be referred to throughout the dsl.</p>
+
+<h2 id="func-member:aab4f9d6f98ed71f45bd470427dde2a7">func Member</h2>
+
+<pre><code class="language-go">func Member(name string, args ...interface{})
+</code></pre>
+
+<p>Member is an alias of Attribute.</p>
+
+<h2 id="func-metadata:aab4f9d6f98ed71f45bd470427dde2a7">func Metadata</h2>
+
+<pre><code class="language-go">func Metadata(name string, value ...string)
+</code></pre>
+
+<p>Metadata is a set of key/value pairs that can be assigned
+to an object. Each value consists of a slice of stirngs so
+that multiple invocation of the Metadata function on the
+same target using the same key builds up the slice.</p>
+
+<p>While keys can have any value the following names are
+handled explicitly by goagen:</p>
+
+<p>&ldquo;struct:tag=xxx&rdquo;: sets the struct field tag xxx on generated structs.</p>
+
+<pre><code>Overrides tags that goagen would otherwise set.
+If the metadata value is a slice then the
+strings are joined with the space character as
+separator.
+</code></pre>
+
+<p>&ldquo;swagger:tag=xxx&rdquo;: sets the Swagger object field tag xxx. The value</p>
+
+<pre><code>must be one to three strings. The first string is
+the tag description while the second and third strings
+are the documentation url and description for the tag.
+Subsequent calls to Metadata on the same attribute
+with key &quot;swagger:tag&quot; builds up the Swagger tag list.
+</code></pre>
+
+<p>Usage:</p>
+
+<pre><code>Metadata(&quot;struct:tag=json&quot;, &quot;myName,omitempty&quot;)
+Metadata(&quot;struct:tag=xml&quot;, &quot;myName,attr&quot;)
+Metadata(&quot;swagger:tag=backend&quot;)
+</code></pre>
+
+<h2 id="func-minlength:aab4f9d6f98ed71f45bd470427dde2a7">func MinLength</h2>
+
+<pre><code class="language-go">func MinLength(val int)
+</code></pre>
+
+<p>MinLength adss a &ldquo;minItems&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor45">http://json-schema.org/latest/json-schema-validation.html#anchor45</a>.</p>
+
+<h2 id="func-minimum:aab4f9d6f98ed71f45bd470427dde2a7">func Minimum</h2>
+
+<pre><code class="language-go">func Minimum(val interface{})
+</code></pre>
+
+<p>Minimum adds a &ldquo;minimum&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor21">http://json-schema.org/latest/json-schema-validation.html#anchor21</a>.</p>
+
+<h2 id="func-name:aab4f9d6f98ed71f45bd470427dde2a7">func Name</h2>
+
+<pre><code class="language-go">func Name(name string)
+</code></pre>
+
+<p>Name sets the contact or license name.</p>
+
+<h2 id="func-patch:aab4f9d6f98ed71f45bd470427dde2a7">func PATCH</h2>
+
+<pre><code class="language-go">func PATCH(path string) *design.RouteDefinition
+</code></pre>
+
+<p>PATCH creates a route using the PATCH HTTP method.</p>
+
+<h2 id="func-post:aab4f9d6f98ed71f45bd470427dde2a7">func POST</h2>
+
+<pre><code class="language-go">func POST(path string) *design.RouteDefinition
+</code></pre>
+
+<p>POST creates a route using the POST HTTP method.</p>
+
+<h2 id="func-put:aab4f9d6f98ed71f45bd470427dde2a7">func PUT</h2>
+
+<pre><code class="language-go">func PUT(path string) *design.RouteDefinition
+</code></pre>
+
+<p>PUT creates a route using the PUT HTTP method.</p>
+
+<h2 id="func-package:aab4f9d6f98ed71f45bd470427dde2a7">func Package</h2>
+
+<pre><code class="language-go">func Package(path string)
+</code></pre>
+
+<p>Package sets the Go package path to the encoder or decoder. It must be used inside a
+Consumes or Produces DSL.</p>
+
+<h2 id="func-param:aab4f9d6f98ed71f45bd470427dde2a7">func Param</h2>
+
+<pre><code class="language-go">func Param(name string, args ...interface{})
+</code></pre>
+
+<p>Param is an alias of Attribute.</p>
+
+<h2 id="func-params:aab4f9d6f98ed71f45bd470427dde2a7">func Params</h2>
+
+<pre><code class="language-go">func Params(dsl func())
+</code></pre>
+
+<p>Params describe the action parameters, either path parameters identified via wildcards or query
+string parameters. Each parameter is described via the <code>Param</code> function which uses the same DSL
+as the Attribute DSL. Here is an example:</p>
+
+<pre><code>Params(func() {
+    Param(&quot;id&quot;, Integer)        // A path parameter defined using e.g. GET(&quot;/:id&quot;)
+    Param(&quot;sort&quot;, String, func() {  // A query string parameter
+        Enum(&quot;asc&quot;, &quot;desc&quot;)
+    })
+})
+</code></pre>
+
+<p>Params can be used inside Action to define the action parameters or Resource to define common
+parameters to all the resource actions.</p>
+
+<h2 id="func-parent:aab4f9d6f98ed71f45bd470427dde2a7">func Parent</h2>
+
+<pre><code class="language-go">func Parent(p string)
+</code></pre>
+
+<p>Parent sets the resource parent. The parent resource is used to compute the path to the resource
+actions as well as resource collection item hrefs. See Resource.</p>
+
+<h2 id="func-pattern:aab4f9d6f98ed71f45bd470427dde2a7">func Pattern</h2>
+
+<pre><code class="language-go">func Pattern(p string)
+</code></pre>
+
+<p>Pattern adds a &ldquo;pattern&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor33">http://json-schema.org/latest/json-schema-validation.html#anchor33</a>.</p>
+
+<h2 id="func-payload:aab4f9d6f98ed71f45bd470427dde2a7">func Payload</h2>
+
+<pre><code class="language-go">func Payload(p interface{}, dsls ...func())
+</code></pre>
+
+<p>Payload implements the action payload DSL. An action payload describes the HTTP request body
+data structure. The function accepts either a type or a DSL that describes the payload members
+using the Member DSL which accepts the same syntax as the Attribute DSL. This function can be
+called passing in a type, a DSL or both. Examples:</p>
+
+<pre><code>Payload(BottlePayload)      // Request payload is described by the BottlePayload type
+
+Payload(func() {        // Request payload is an object and is described inline
+    Member(&quot;Name&quot;)
+})
+
+Payload(BottlePayload, func() { // Request payload is described by merging the inline
+    Required(&quot;Name&quot;)    // definition into the BottlePayload type.
+})
+</code></pre>
+
+<h2 id="func-produces:aab4f9d6f98ed71f45bd470427dde2a7">func Produces</h2>
+
+<pre><code class="language-go">func Produces(args ...interface{})
+</code></pre>
+
+<p>Produces adds a MIME type to the list of MIME types the APIs can encode responses with.
+Produces may also specify the path of the encoding package.
+The package must expose a EncoderFactory method that returns an object which implements
+goa.EncoderFactory.</p>
+
+<h2 id="func-reference:aab4f9d6f98ed71f45bd470427dde2a7">func Reference</h2>
+
+<pre><code class="language-go">func Reference(t design.DataType)
+</code></pre>
+
+<p>Reference sets a type or media type reference. The value itself can be a type or a media type.
+The reference type attributes define the default properties for attributes with the same name in
+the type using the reference. So for example if a type is defined as such:</p>
+
+<pre><code>var Bottle = Type(&quot;bottle&quot;, func() {
+    Attribute(&quot;name&quot;, func() {
+        MinLength(3)
+    })
+    Attribute(&quot;vintage&quot;, Integer, func() {
+        Minimum(1970)
+    })
+    Attribute(&quot;somethingelse&quot;)
+})
+</code></pre>
+
+<p>Declaring the following media type:</p>
+
+<pre><code>var BottleMedia = MediaType(&quot;vnd.goa.bottle&quot;, func() {
+    Reference(Bottle)
+    Attributes(func() {
+        Attribute(&quot;id&quot;, Integer)
+        Attribute(&quot;name&quot;)
+        Attribute(&quot;vintage&quot;)
+    })
+})
+</code></pre>
+
+<p>defines the &ldquo;name&rdquo; and &ldquo;vintage&rdquo; attributes with the same type and validations as defined in
+the Bottle type.</p>
+
+<h2 id="func-required:aab4f9d6f98ed71f45bd470427dde2a7">func Required</h2>
+
+<pre><code class="language-go">func Required(names ...string)
+</code></pre>
+
+<p>Required adds a &ldquo;required&rdquo; validation to the attribute.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor61">http://json-schema.org/latest/json-schema-validation.html#anchor61</a>.</p>
+
+<h2 id="func-resource:aab4f9d6f98ed71f45bd470427dde2a7">func Resource</h2>
+
+<pre><code class="language-go">func Resource(name string, dsl func()) *design.ResourceDefinition
+</code></pre>
+
+<p>Resource implements the resource definition dsl. There is one resource definition per resource
+exposed by the API. The resource dsl allows setting the resource default media type. This media
+type is used to render the response body of actions that return the OK response (unless the
+action overrides the default). The default media type also sets the properties of the request
+payload attributes with the same name. See DefaultMedia.</p>
+
+<p>The resource dsl also allows listing the supported resource collection and resource collection
+item actions. Each action corresponds to a specific API endpoint. See Action.</p>
+
+<p>The resource dsl can also specify a parent resource. Parent resources have two effects.
+First, they set the prefix of all resource action paths to the parent resource href. Note that
+actions can override the path using an absolute path (that is a path starting with &ldquo;//&rdquo;).
+Second, goa uses the parent resource href coupled with the resource BasePath if any to build
+hrefs to the resource collection or resource collection items. By default goa uses the show
+action if present to compute a resource href (basically concatenating the parent resource href
+with the base path and show action path). The resource definition may specify a canonical action
+via CanonicalActionName to override that default. Here is an example of a resource definition:</p>
+
+<pre><code>Resource(&quot;bottle&quot;, func() {
+    Description(&quot;A wine bottle&quot;)    // Resource description
+    DefaultMedia(BottleMedia)   // Resource default media type
+    BasePath(&quot;/bottles&quot;)        // Common resource action path prefix if not &quot;&quot;
+    Parent(&quot;account&quot;)       // Name of parent resource if any
+    CanonicalActionName(&quot;get&quot;)  // Name of action that returns canonical representation if not &quot;show&quot;
+    UseTrait(&quot;Authenticated&quot;)   // Included trait if any, can appear more than once
+    APIVersion(&quot;v1&quot;)        // API version exposing this resource, can appear more than once.
+
+    Action(&quot;show&quot;, func() {     // Action definition, can appear more than once
+        // ... Action dsl
+    })
+})
+</code></pre>
+
+<h2 id="func-response:aab4f9d6f98ed71f45bd470427dde2a7">func Response</h2>
+
+<pre><code class="language-go">func Response(name string, paramsAndDSL ...interface{})
+</code></pre>
+
+<p>Response implements the response definition DSL. Response takes the name of the response as
+first parameter. goa defines all the standard HTTP status name as global variables so they can be
+readily used as response names. Response also accepts optional arguments that correspond to the
+arguments defined by the corresponding response template (the response template with the same
+name) if there is one, see ResponseTemplate.</p>
+
+<p>A response may also optionally use an anonymous function as last argument to specify the response
+status code, media type and headers overriding what the default response or response template
+specifies:</p>
+
+<pre><code>Response(OK, &quot;vnd.goa.bottle&quot;, func() { // OK response template accepts one argument: the media type identifier
+    Headers(func() {        // Headers list the response HTTP headers, see Headers
+        Header(&quot;X-Request-Id&quot;)
+    })
+})
+
+Response(NotFound, func() {
+    Status(404)         // Not necessary as defined by default NotFound response.
+    Media(&quot;application/json&quot;)   // Override NotFound response default of &quot;text/plain&quot;
+})
+
+Response(Created, func() {
+    Media(BottleMedia)
+})
+</code></pre>
+
+<p>goa defines a default response for all the HTTP status code. The default response simply sets
+the status code. So if an action can return NotFound for example all it has to do is specify
+Response(NotFound) - there is no need to specify the status code as the default response already
+does it, in other words:</p>
+
+<pre><code>Response(NotFound)
+</code></pre>
+
+<p>is equivalent to:</p>
+
+<pre><code>Response(NotFound, func() {
+    Status(404)
+})
+</code></pre>
+
+<p>goa also defines a default response template for the OK response which takes a single argument:
+the identifier of the media type used to render the response. The API DSL can define additional
+response templates or override the default OK response template using ResponseTemplate.</p>
+
+<p>The media type identifier specified in a response definition via the Media function can be
+&ldquo;generic&rdquo; such as &ldquo;text/plain&rdquo; or &ldquo;application/json&rdquo; or can correspond to the identifier of a
+media type defined in the API DSL. In this latter case goa uses the media type definition to
+generate helper response methods. These methods know how to render the views defined on the media
+type and run the validations defined in the media type during rendering.</p>
+
+<h2 id="func-responsetemplate:aab4f9d6f98ed71f45bd470427dde2a7">func ResponseTemplate</h2>
+
+<pre><code class="language-go">func ResponseTemplate(name string, p interface{})
+</code></pre>
+
+<p>ResponseTemplate defines a response template that action definitions can use to describe their
+responses. The template may specify the HTTP response status, header specification and body media
+type. The template consists of a name and an anonymous function. The function is called when an
+action uses the template to define a response. Response template functions accept string
+parameters they can use to define the response fields. Here is an example of a response template
+definition that uses a function with one argument corresponding to the name of the response body
+media type:</p>
+
+<pre><code>ResponseTemplate(OK, func(mt string) {
+    Status(200)             // OK response uses status code 200
+    Media(mt)               // Media type name set by action definition
+    Headers(func() {
+        Header(&quot;X-Request-Id&quot;, func() { // X-Request-Id header contains a string
+            Pattern(&quot;[0-9A-F]+&quot;)    // Regexp used to validate the response header content
+        })
+        Required(&quot;X-Request-Id&quot;)    // Header is mandatory
+    })
+})
+</code></pre>
+
+<p>This template can the be used by actions to define the OK response as follows:</p>
+
+<pre><code>Response(OK, &quot;vnd.goa.example&quot;)
+</code></pre>
+
+<p>goa comes with a set of predefined response templates (one per standard HTTP status code). The
+OK template is the only one that accepts an argument. It is used as shown in the example above to
+set the response media type. Other predefined templates do not use arguments. ResponseTemplate
+makes it possible to define additional response templates specific to the API.</p>
+
+<h2 id="func-routing:aab4f9d6f98ed71f45bd470427dde2a7">func Routing</h2>
+
+<pre><code class="language-go">func Routing(routes ...*design.RouteDefinition)
+</code></pre>
+
+<p>Routing lists the action route. Each route is defined with a function named after the HTTP method.
+The route function takes the path as argument. Route paths may use wildcards as described in the
+<a href="a href=&quot;https://godoc.org/github.com/julienschmidt/httprouter&quot;&gt;https://godoc.org/github.com/julienschmidt/httprouter&lt;/a">httprouter</a> package documentation. These
+wildcards define parameters using the <code>:name</code> or <code>*name</code> syntax where <code>:name</code> matches a path
+segment and <code>*name</code> is a catch-all that matches the path until the end.</p>
+
+<h2 id="func-scheme:aab4f9d6f98ed71f45bd470427dde2a7">func Scheme</h2>
+
+<pre><code class="language-go">func Scheme(vals ...string)
+</code></pre>
+
+<p>Scheme sets the API URL schemes.</p>
+
+<h2 id="func-status:aab4f9d6f98ed71f45bd470427dde2a7">func Status</h2>
+
+<pre><code class="language-go">func Status(status int)
+</code></pre>
+
+<p>Status sets the Response status.</p>
+
+<h2 id="func-trace:aab4f9d6f98ed71f45bd470427dde2a7">func TRACE</h2>
+
+<pre><code class="language-go">func TRACE(path string) *design.RouteDefinition
+</code></pre>
+
+<p>TRACE creates a route using the TRACE HTTP method.</p>
+
+<h2 id="func-termsofservice:aab4f9d6f98ed71f45bd470427dde2a7">func TermsOfService</h2>
+
+<pre><code class="language-go">func TermsOfService(terms string)
+</code></pre>
+
+<p>TermsOfService describes the API terms of services or links to them.</p>
+
+<h2 id="func-title:aab4f9d6f98ed71f45bd470427dde2a7">func Title</h2>
+
+<pre><code class="language-go">func Title(val string)
+</code></pre>
+
+<p>Title sets the API title used by generated documentation, JSON Hyper-schema, code comments etc.</p>
+
+<h2 id="func-trait:aab4f9d6f98ed71f45bd470427dde2a7">func Trait</h2>
+
+<pre><code class="language-go">func Trait(name string, val ...func())
+</code></pre>
+
+<p>Trait defines an API trait. A trait encapsulates arbitrary DSL that gets executed wherever the
+trait is called via the UseTrait function.</p>
+
+<h2 id="func-type:aab4f9d6f98ed71f45bd470427dde2a7">func Type</h2>
+
+<pre><code class="language-go">func Type(name string, dsl func()) *design.UserTypeDefinition
+</code></pre>
+
+<p>Type implements the type definition dsl. A type definition describes a data structure consisting
+of attributes. Each attribute has a type which can also refer to a type definition (or use a
+primitive type or nested attibutes). The dsl syntax for define a type definition is the
+Attribute dsl, see Attribute.</p>
+
+<p>On top of specifying any attribute type, type definitions can also be used to describe the data
+structure of a request payload. They can also be used by media type definitions as reference, see
+Reference. Here is an example:</p>
+
+<pre><code>Type(&quot;createPayload&quot;, func() {
+    Description(&quot;Type of create and upload action payloads&quot;)
+    APIVersion(&quot;1.0&quot;)
+    Attribute(&quot;name&quot;, String, &quot;name of bottle&quot;)
+    Attribute(&quot;origin&quot;, Origin, &quot;Details on wine origin&quot;)  // See Origin definition below
+    Required(&quot;name&quot;)
+})
+
+var Origin = Type(&quot;origin&quot;, func() {
+    Description(&quot;Origin of bottle&quot;)
+    Attribute(&quot;Country&quot;)
+})
+</code></pre>
+
+<p>This function returns the newly defined type so the value can be used throughout the dsl.</p>
+
+<h2 id="func-typename:aab4f9d6f98ed71f45bd470427dde2a7">func TypeName</h2>
+
+<pre><code class="language-go">func TypeName(name string)
+</code></pre>
+
+<p>TypeName makes it possible to set the Go struct name for a type or media type in the generated
+code. By default goagen uses the name (type) or identifier (media type) given in the dsl and
+computes a valid Go identifier from it. This function makes it possible to override that and
+provide a custom name. name must be a valid Go identifier.</p>
+
+<h2 id="func-url:aab4f9d6f98ed71f45bd470427dde2a7">func URL</h2>
+
+<pre><code class="language-go">func URL(url string)
+</code></pre>
+
+<p>URL sets the contact or license URL.</p>
+
+<h2 id="func-usetrait:aab4f9d6f98ed71f45bd470427dde2a7">func UseTrait</h2>
+
+<pre><code class="language-go">func UseTrait(name string)
+</code></pre>
+
+<p>UseTrait executes the API trait with the given name. UseTrait can be used inside a Resource,
+Action or Attribute DSL.</p>
+
+<h2 id="func-version:aab4f9d6f98ed71f45bd470427dde2a7">func Version</h2>
+
+<pre><code class="language-go">func Version(ver string, dsl func()) *design.APIVersionDefinition
+</code></pre>
+
+<p>Version is the top level design language function which defines the API global property values
+for a given version. The DSL used to define the property values is identical to the one used by
+the API function.</p>
+
+<h2 id="func-view:aab4f9d6f98ed71f45bd470427dde2a7">func View</h2>
+
+<pre><code class="language-go">func View(name string, dsl ...func())
+</code></pre>
+
+<p>View adds a new view to a media type. A view has a name and lists attributes that are
+rendered when the view is used to produce a response. The attribute names must appear in the
+media type definition. If an attribute is itself a media type then the view may specify which
+view to use when rendering the attribute using the View function in the View dsl. If not
+specified then the view named &ldquo;default&rdquo; is used. Examples:</p>
+
+<pre><code>View(&quot;default&quot;, func() {
+    Attribute(&quot;id&quot;)     // &quot;id&quot; and &quot;name&quot; must be media type attributes
+    Attribute(&quot;name&quot;)
+})
+
+View(&quot;extended&quot;, func() {
+    Attribute(&quot;id&quot;)
+    Attribute(&quot;name&quot;)
+    Attribute(&quot;origin&quot;, func() {
+        View(&quot;extended&quot;)    // Use view &quot;extended&quot; to render attribute &quot;origin&quot;
+    })
+})
+</code></pre>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+

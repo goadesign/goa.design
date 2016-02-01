@@ -6,14 +6,15 @@
     <description>Recent content in Test on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/test/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>goa/design/apidsl/test</title>
-      <link>http://goa.design/godoc/goa/design/apidsl/test/test/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/design/apidsl/test/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/design/apidsl/test/test/</guid>
+      <guid>http://goa.design/godoc/goa/design/apidsl/test/</guid>
       <description>
 
 &lt;h1 id=&#34;test:b128b7694e4de962e0088bcb1bcb254f&#34;&gt;test&lt;/h1&gt;

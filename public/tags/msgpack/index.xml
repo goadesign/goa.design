@@ -6,14 +6,15 @@
     <description>Recent content in Msgpack on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/msgpack/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>encoding/msgpack</title>
-      <link>http://goa.design/godoc/encoding/msgpack/msgpack/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/msgpack/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/msgpack/msgpack/</guid>
+      <guid>http://goa.design/godoc/encoding/msgpack/</guid>
       <description>
 
 &lt;h1 id=&#34;msgpack:1574d51e403296c43e921da78612bc7c&#34;&gt;msgpack&lt;/h1&gt;
@@ -66,10 +67,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>middleware/encoding/msgpack</title>
-      <link>http://goa.design/godoc/middleware/encoding/msgpack/msgpack/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/middleware/encoding/msgpack/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/middleware/encoding/msgpack/msgpack/</guid>
+      <guid>http://goa.design/godoc/middleware/encoding/msgpack/</guid>
       <description>
 
 &lt;h1 id=&#34;msgpack:1574d51e403296c43e921da78612bc7c&#34;&gt;msgpack&lt;/h1&gt;

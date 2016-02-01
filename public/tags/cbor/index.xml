@@ -6,14 +6,15 @@
     <description>Recent content in Cbor on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/cbor/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>encoding/cbor</title>
-      <link>http://goa.design/godoc/encoding/cbor/cbor/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/cbor/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/cbor/cbor/</guid>
+      <guid>http://goa.design/godoc/encoding/cbor/</guid>
       <description>
 
 &lt;h1 id=&#34;cbor:74653cf70b7ec2a9e9772524989bf914&#34;&gt;cbor&lt;/h1&gt;
@@ -66,10 +67,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>middleware/encoding/cbor</title>
-      <link>http://goa.design/godoc/middleware/encoding/cbor/cbor/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/middleware/encoding/cbor/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/middleware/encoding/cbor/cbor/</guid>
+      <guid>http://goa.design/godoc/middleware/encoding/cbor/</guid>
       <description>
 
 &lt;h1 id=&#34;cbor:74653cf70b7ec2a9e9772524989bf914&#34;&gt;cbor&lt;/h1&gt;

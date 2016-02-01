@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>goa/goagen/codegen</h1>
+		<p>godoc for goa/goagen/codegen</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="codegen:436ee794f96f051034db9b813b5594ba">codegen</h1>
+
+<pre><code>import &quot;github.com/goadesign/goa/goagen/codegen&quot;
+</code></pre>
+
+<p>Package codegen contains common code used by all code generators.
+Each sub-package corresponds to a code generator.
+The &ldquo;meta&rdquo; sub-package is the generator generator: it contains code that compiles and runs
+a specific generator tool that uses the user metadata.</p>
+
+<h2 id="constants:436ee794f96f051034db9b813b5594ba">Constants</h2>
+
+<pre><code class="language-go">const Version = &quot;0.0.1&quot;
+</code></pre>
+
+<p>Version of generator tools.</p>
+
+<h2 id="variables:436ee794f96f051034db9b813b5594ba">Variables</h2>
+
+<pre><code class="language-go">var (
+    // OutputDir is the path to the directory the generated files should be
+    // written to.
+    OutputDir string
+
+    // DesignPackagePath is the path to the user Go design package.
+    DesignPackagePath string
+
+    // Debug toggles debug mode.
+    // If debug mode is enabled then the generated files are not
+    // cleaned up upon failure.
+    // Also logs additional debug information.
+    // Set this flag to true prior to calling Generate.
+    Debug bool
+
+    // NoFormat causes &quot;goimports&quot; to be skipped when true.
+    NoFormat bool
+
+    // CommandName is the name of the command being run.
+    CommandName string
+)
+</code></pre>
+
+<pre><code class="language-go">var (
+
+    // DefaultFuncMap is the FuncMap used to initialize all source file templates.
+    DefaultFuncMap = template.FuncMap{
+        &quot;add&quot;:           func(a, b int) int { return a + b },
+        &quot;commandLine&quot;:   CommandLine,
+        &quot;comment&quot;:       Comment,
+        &quot;goify&quot;:         Goify,
+        &quot;gonative&quot;:      GoNativeType,
+        &quot;gopkgtypename&quot;: GoPackageTypeName,
+        &quot;gopkgtyperef&quot;:  GoPackageTypeRef,
+        &quot;gotypedef&quot;:     GoTypeDef,
+        &quot;gotypename&quot;:    GoTypeName,
+        &quot;gotyperef&quot;:     GoTypeRef,
+        &quot;join&quot;:          strings.Join,
+        &quot;mediaTypeMarshalerImpl&quot;: MediaTypeMarshalerImpl,
+        &quot;recursiveValidate&quot;:      RecursiveChecker,
+        &quot;tabs&quot;:                   Tabs,
+        &quot;tempvar&quot;:                Tempvar,
+        &quot;title&quot;:                  strings.Title,
+        &quot;toLower&quot;:                strings.ToLower,
+        &quot;typeMarshaler&quot;:          MediaTypeMarshaler,
+        &quot;userTypeMarshalerImpl&quot;:  UserTypeMarshalerImpl,
+        &quot;validationChecker&quot;:      ValidationChecker,
+        &quot;versionPkg&quot;:             VersionPackage,
+    }
+)
+</code></pre>
+
+<pre><code class="language-go">var (
+    // TempCount holds the value appended to variable names to make them unique.
+    TempCount int
+)
+</code></pre>
+
+<h2 id="func-attributemarshaler:436ee794f96f051034db9b813b5594ba">func AttributeMarshaler</h2>
+
+<pre><code class="language-go">func AttributeMarshaler(att *design.AttributeDefinition, versioned bool, defaultPkg string, context, source, target string) string
+</code></pre>
+
+<p>AttributeMarshaler produces the Go code that initiliazes the variable named with the value of
+target which holds an interface{} with the content of the variable named with the value of source
+which contains an instance of the attribute type data structure. The attribute view is used to
+render child attributes if there are any. As with TypeMarshaler the code renders media type links
+and runs any validation defined on the type definition.
+versioned indicates whether the code is being generated from a version package (true) or from the
+default package defaultPkg (false).</p>
+
+<p>The generated code assumes that there is a variable called &ldquo;err&rdquo; of type error that it can use
+to record errors.</p>
+
+<h2 id="func-commandline:436ee794f96f051034db9b813b5594ba">func CommandLine</h2>
+
+<pre><code class="language-go">func CommandLine() string
+</code></pre>
+
+<p>CommandLine return the command used to run this process.</p>
+
+<h2 id="func-comment:436ee794f96f051034db9b813b5594ba">func Comment</h2>
+
+<pre><code class="language-go">func Comment(elems ...string) string
+</code></pre>
+
+<p>Comment produces line comments by concatenating the given strings and producing 80 characters
+long lines starting with &ldquo;//&rdquo;</p>
+
+<h2 id="func-gonativetype:436ee794f96f051034db9b813b5594ba">func GoNativeType</h2>
+
+<pre><code class="language-go">func GoNativeType(t design.DataType) string
+</code></pre>
+
+<p>GoNativeType returns the Go built-in type from which instances of t can be initialized.</p>
+
+<h2 id="func-gopackagetypename:436ee794f96f051034db9b813b5594ba">func GoPackageTypeName</h2>
+
+<pre><code class="language-go">func GoPackageTypeName(t design.DataType, required []string, versioned bool, defPkg string, tabs int) string
+</code></pre>
+
+<p>GoPackageTypeName returns the Go type name for a data type.
+versioned indicates whether the type is being referenced from a version package (true) or the
+default package defPkg (false).
+required only applies when referring to a user type that is an object defined inline. In this
+case the type (Object) does not carry the required field information defined in the parent
+(anonymous) attribute.
+tabs is used to properly tabulate the object struct fields and only applies to this case.</p>
+
+<h2 id="func-gopackagetyperef:436ee794f96f051034db9b813b5594ba">func GoPackageTypeRef</h2>
+
+<pre><code class="language-go">func GoPackageTypeRef(t design.DataType, required []string, versioned bool, defPkg string, tabs int) string
+</code></pre>
+
+<p>GoPackageTypeRef returns the Go code that refers to the Go type which matches the given data type.
+versioned indicates whether the type is being referenced from a version package (true) or the
+default package defPkg (false).
+required only applies when referring to a user type that is an object defined inline. In this
+case the type (Object) does not carry the required field information defined in the parent
+(anonymous) attribute.
+tabs is used to properly tabulate the object struct fields and only applies to this case.</p>
+
+<h2 id="func-gotypedef:436ee794f96f051034db9b813b5594ba">func GoTypeDef</h2>
+
+<pre><code class="language-go">func GoTypeDef(ds design.DataStructure, versioned bool, defPkg string, tabs int, jsonTags bool) string
+</code></pre>
+
+<p>GoTypeDef returns the Go code that defines a Go type which matches the data structure
+definition (the part that comes after <code>type foo</code>).
+versioned indicates whether the type is being referenced from a version package (true) or the
+default package (false).
+tabs is the number of tab character(s) used to tabulate the definition however the first
+line is never indented.
+jsonTags controls whether to produce json tags.</p>
+
+<h2 id="func-gotypename:436ee794f96f051034db9b813b5594ba">func GoTypeName</h2>
+
+<pre><code class="language-go">func GoTypeName(t design.DataType, required []string, tabs int) string
+</code></pre>
+
+<p>GoTypeName returns the Go type name for a data type.
+tabs is used to properly tabulate the object struct fields and only applies to this case.
+This function assumes the type is in the same package as the code accessing it.
+required only applies when referring to a user type that is an object defined inline. In this
+case the type (Object) does not carry the required field information defined in the parent
+(anonymous) attribute.</p>
+
+<h2 id="func-gotyperef:436ee794f96f051034db9b813b5594ba">func GoTypeRef</h2>
+
+<pre><code class="language-go">func GoTypeRef(t design.DataType, required []string, tabs int) string
+</code></pre>
+
+<p>GoTypeRef returns the Go code that refers to the Go type which matches the given data type
+(the part that comes after <code>var foo</code>)
+required only applies when referring to a user type that is an object defined inline. In this
+case the type (Object) does not carry the required field information defined in the parent
+(anonymous) attribute.
+tabs is used to properly tabulate the object struct fields and only applies to this case.
+This function assumes the type is in the same package as the code accessing it.</p>
+
+<h2 id="func-goify:436ee794f96f051034db9b813b5594ba">func Goify</h2>
+
+<pre><code class="language-go">func Goify(str string, firstUpper bool) string
+</code></pre>
+
+<p>Goify makes a valid Go identifier out of any string.
+It does that by removing any non letter and non digit character and by making sure the first
+character is a letter or &ldquo;_&ldquo;.
+Goify produces a &ldquo;CamelCase&rdquo; version of the string, if firstUpper is true the first character
+of the identifier is uppercase otherwise it&rsquo;s lowercase.</p>
+
+<h2 id="func-indent:436ee794f96f051034db9b813b5594ba">func Indent</h2>
+
+<pre><code class="language-go">func Indent(s, prefix string) string
+</code></pre>
+
+<p>Indent inserts prefix at the beginning of each non-empty line of s. The
+end-of-line marker is NL.</p>
+
+<h2 id="func-indentbytes:436ee794f96f051034db9b813b5594ba">func IndentBytes</h2>
+
+<pre><code class="language-go">func IndentBytes(b, prefix []byte) []byte
+</code></pre>
+
+<p>IndentBytes inserts prefix at the beginning of each non-empty line of b.
+The end-of-line marker is NL.</p>
+
+<h2 id="func-mediatypemarshaler:436ee794f96f051034db9b813b5594ba">func MediaTypeMarshaler</h2>
+
+<pre><code class="language-go">func MediaTypeMarshaler(mt *design.MediaTypeDefinition, versioned bool, defaultPkg, context, source, target, view string) string
+</code></pre>
+
+<p>MediaTypeMarshaler produces the Go code that initializes the variable named target which holds a
+an interface{} with the content of the variable named source which contains an instance of the
+media type data structure. The code runs any validation defined on the media type definition.
+Also view is used to know which fields to copy and which ones to omit and for fields that are
+media types which view to use to render it. The rendering also takes care of following links.
+The generated code assumes that there is a variable called &ldquo;err&rdquo; of type error that it can use
+to record errors.
+versioned indicates whether the code is being generated from a version package (true) or from the
+default package defaultPkg (false).</p>
+
+<h2 id="func-mediatypemarshalerimpl:436ee794f96f051034db9b813b5594ba">func MediaTypeMarshalerImpl</h2>
+
+<pre><code class="language-go">func MediaTypeMarshalerImpl(mt *design.MediaTypeDefinition, versioned bool, defaultPkg, view string) string
+</code></pre>
+
+<p>MediaTypeMarshalerImpl returns the Go code for a function that marshals and validates instances
+of the given media type into raw values using the given view to render the attributes.</p>
+
+<h2 id="func-packagename:436ee794f96f051034db9b813b5594ba">func PackageName</h2>
+
+<pre><code class="language-go">func PackageName(path string) (string, error)
+</code></pre>
+
+<p>PackageName returns the name of a package at the given path</p>
+
+<h2 id="func-packagepath:436ee794f96f051034db9b813b5594ba">func PackagePath</h2>
+
+<pre><code class="language-go">func PackagePath(path string) (string, error)
+</code></pre>
+
+<p>PackagePath returns the Go package path for the directory that lives under the given absolute
+file path.</p>
+
+<h2 id="func-packageprefix:436ee794f96f051034db9b813b5594ba">func PackagePrefix</h2>
+
+<pre><code class="language-go">func PackagePrefix(ut *design.UserTypeDefinition, versioned bool, pkg string) string
+</code></pre>
+
+<p>PackagePrefix returns the package prefix to use to access ut from ver given it lives in the
+package pkg.</p>
+
+<h2 id="func-packagesourcepath:436ee794f96f051034db9b813b5594ba">func PackageSourcePath</h2>
+
+<pre><code class="language-go">func PackageSourcePath(pkg string) (string, error)
+</code></pre>
+
+<p>PackageSourcePath returns the absolute path to the given package source.</p>
+
+<h2 id="func-recursivechecker:436ee794f96f051034db9b813b5594ba">func RecursiveChecker</h2>
+
+<pre><code class="language-go">func RecursiveChecker(att *design.AttributeDefinition, nonzero, required bool, target, context string, depth int) string
+</code></pre>
+
+<p>RecursiveChecker produces Go code that runs the validation checks recursively over the given
+attribute.</p>
+
+<h2 id="func-registerflags:436ee794f96f051034db9b813b5594ba">func RegisterFlags</h2>
+
+<pre><code class="language-go">func RegisterFlags(r FlagRegistry)
+</code></pre>
+
+<p>RegisterFlags registers the global flags.</p>
+
+<h2 id="func-runtemplate:436ee794f96f051034db9b813b5594ba">func RunTemplate</h2>
+
+<pre><code class="language-go">func RunTemplate(tmpl *template.Template, data interface{}) string
+</code></pre>
+
+<p>RunTemplate executs the given template with the given input and returns
+the rendered string.</p>
+
+<h2 id="func-tabs:436ee794f96f051034db9b813b5594ba">func Tabs</h2>
+
+<pre><code class="language-go">func Tabs(depth int) string
+</code></pre>
+
+<p>Tabs returns a string made of depth tab characters.</p>
+
+<h2 id="func-tempvar:436ee794f96f051034db9b813b5594ba">func Tempvar</h2>
+
+<pre><code class="language-go">func Tempvar() string
+</code></pre>
+
+<p>Tempvar generates a unique variable name.</p>
+
+<h2 id="func-typemarshaler:436ee794f96f051034db9b813b5594ba">func TypeMarshaler</h2>
+
+<pre><code class="language-go">func TypeMarshaler(t design.DataType, versioned bool, defaultPkg, context, source, target string) string
+</code></pre>
+
+<p>TypeMarshaler produces the Go code that initializes the variable named target which is an
+interface{} with the content of the variable named source which contains an instance of the type
+data structure.
+The code takes care of rendering media types according to the view defined on the attribute
+if any. It also renders media type links. Finally it validates the results using any type
+validation that is defined on the type attributes (if the type contains attributes).
+The generated code assumes that there is a variable called &ldquo;err&rdquo; of type error that it can use
+to record errors.
+versioned indicates whether the code is being generated from a version package (true) or from the
+default package defaultPkg (false).</p>
+
+<h2 id="func-usertypemarshalerimpl:436ee794f96f051034db9b813b5594ba">func UserTypeMarshalerImpl</h2>
+
+<pre><code class="language-go">func UserTypeMarshalerImpl(u *design.UserTypeDefinition, versioned bool, defaultPkg string) string
+</code></pre>
+
+<p>UserTypeMarshalerImpl returns the Go code for a function that marshals and validates instances
+of the given user type into raw values using the given view to render the attributes.</p>
+
+<h2 id="func-validationchecker:436ee794f96f051034db9b813b5594ba">func ValidationChecker</h2>
+
+<pre><code class="language-go">func ValidationChecker(att *design.AttributeDefinition, nonzero, required bool, target, context string, depth int) string
+</code></pre>
+
+<p>ValidationChecker produces Go code that runs the validation defined in the given attribute
+definition against the content of the variable named target recursively.
+context is used to keep track of recursion to produce helpful error messages in case of type
+validation error.
+The generated code assumes that there is a pre-existing &ldquo;err&rdquo; variable of type
+error. It initializes that variable in case a validation fails.
+Note: we do not want to recurse here, recursion is done by the marshaler/unmarshaler code.</p>
+
+<h2 id="func-versionpackage:436ee794f96f051034db9b813b5594ba">func VersionPackage</h2>
+
+<pre><code class="language-go">func VersionPackage(version string) string
+</code></pre>
+
+<p>VersionPackage computes a given version package name.
+v1 =&gt; v1, V1 =&gt; v1, 1 =&gt; v1, 1.0 =&gt; v1 if unique - v1dot0 otherwise.</p>
+
+<h2 id="func-writetabs:436ee794f96f051034db9b813b5594ba">func WriteTabs</h2>
+
+<pre><code class="language-go">func WriteTabs(buf *bytes.Buffer, count int)
+</code></pre>
+
+<p>WriteTabs is a helper function that writes count tabulation characters to buf.</p>
+
+<h2 id="type-basecommand:436ee794f96f051034db9b813b5594ba">type BaseCommand</h2>
+
+<pre><code class="language-go">type BaseCommand struct {
+    CmdName        string
+    CmdDescription string
+}
+</code></pre>
+
+<p>BaseCommand provides the basic logic for all commands. It implements
+the Command interface.
+Commands may then specialize to provide the specific Run behavior.</p>
+
+<h3 id="func-newbasecommand:436ee794f96f051034db9b813b5594ba">func NewBaseCommand</h3>
+
+<pre><code class="language-go">func NewBaseCommand(name, desc string) *BaseCommand
+</code></pre>
+
+<p>NewBaseCommand instantiates a base command.</p>
+
+<h3 id="func-basecommand-description:436ee794f96f051034db9b813b5594ba">func (*BaseCommand) Description</h3>
+
+<pre><code class="language-go">func (b *BaseCommand) Description() string
+</code></pre>
+
+<p>Description returns the command description.</p>
+
+<h3 id="func-basecommand-name:436ee794f96f051034db9b813b5594ba">func (*BaseCommand) Name</h3>
+
+<pre><code class="language-go">func (b *BaseCommand) Name() string
+</code></pre>
+
+<p>Name returns the command name.</p>
+
+<h3 id="func-basecommand-registerflags:436ee794f96f051034db9b813b5594ba">func (*BaseCommand) RegisterFlags</h3>
+
+<pre><code class="language-go">func (b *BaseCommand) RegisterFlags(r FlagRegistry)
+</code></pre>
+
+<p>RegisterFlags is a dummy implementation, override in sub-command.</p>
+
+<h3 id="func-basecommand-run:436ee794f96f051034db9b813b5594ba">func (*BaseCommand) Run</h3>
+
+<pre><code class="language-go">func (b *BaseCommand) Run() ([]string, error)
+</code></pre>
+
+<p>Run is a dummy implementation, override in sub-command.</p>
+
+<h2 id="type-command:436ee794f96f051034db9b813b5594ba">type Command</h2>
+
+<pre><code class="language-go">type Command interface {
+    // Name of the command
+    Name() string
+
+    // Description returns the description used by the goa tool help.
+    Description() string
+
+    // RegisterFlags initializes the given registry flags with all
+    // the flags relevant to this command.
+    RegisterFlags(r FlagRegistry)
+
+    // Run generates the generator code then compiles and runs it.
+    // It returns the list of generated files.
+    // Run uses the variables initialized by the command line defined in RegisterFlags.
+    Run() ([]string, error)
+}
+</code></pre>
+
+<p>Command is the interface implemented by all generation goa commands.
+There is one command per generation target (i.e. app, docs, etc.)</p>
+
+<h2 id="type-flagregistry:436ee794f96f051034db9b813b5594ba">type FlagRegistry</h2>
+
+<pre><code class="language-go">type FlagRegistry interface {
+    // Flags returns the command flag set
+    Flags() *pflag.FlagSet
+}
+</code></pre>
+
+<p>FlagRegistry is the interface implemented by cobra.Command to register flags.</p>
+
+<h2 id="type-importspec:436ee794f96f051034db9b813b5594ba">type ImportSpec</h2>
+
+<pre><code class="language-go">type ImportSpec struct {
+    Name string
+    Path string
+}
+</code></pre>
+
+<p>ImportSpec defines a generated import statement.</p>
+
+<h3 id="func-newimport:436ee794f96f051034db9b813b5594ba">func NewImport</h3>
+
+<pre><code class="language-go">func NewImport(name, path string) *ImportSpec
+</code></pre>
+
+<p>NewImport creates an import spec.</p>
+
+<h3 id="func-simpleimport:436ee794f96f051034db9b813b5594ba">func SimpleImport</h3>
+
+<pre><code class="language-go">func SimpleImport(path string) *ImportSpec
+</code></pre>
+
+<p>SimpleImport creates an import with no explicit path component.</p>
+
+<h3 id="func-importspec-code:436ee794f96f051034db9b813b5594ba">func (*ImportSpec) Code</h3>
+
+<pre><code class="language-go">func (s *ImportSpec) Code() string
+</code></pre>
+
+<p>Code returns the Go import statement for the ImportSpec.</p>
+
+<h2 id="type-package:436ee794f96f051034db9b813b5594ba">type Package</h2>
+
+<pre><code class="language-go">type Package struct {
+    // (Go) Path of package
+    Path string
+    // Workspace containing package
+    Workspace *Workspace
+}
+</code></pre>
+
+<p>Package represents a temporary Go package</p>
+
+<h3 id="func-packagefor:436ee794f96f051034db9b813b5594ba">func PackageFor</h3>
+
+<pre><code class="language-go">func PackageFor(source string) (*Package, error)
+</code></pre>
+
+<p>PackageFor returns the package for the given source file.</p>
+
+<h3 id="func-package-abs:436ee794f96f051034db9b813b5594ba">func (*Package) Abs</h3>
+
+<pre><code class="language-go">func (p *Package) Abs() string
+</code></pre>
+
+<p>Abs returns the absolute path to the package source directory</p>
+
+<h3 id="func-package-compile:436ee794f96f051034db9b813b5594ba">func (*Package) Compile</h3>
+
+<pre><code class="language-go">func (p *Package) Compile(bin string) (string, error)
+</code></pre>
+
+<p>Compile compiles a package and returns the path to the compiled binary.</p>
+
+<h3 id="func-package-createsourcefile:436ee794f96f051034db9b813b5594ba">func (*Package) CreateSourceFile</h3>
+
+<pre><code class="language-go">func (p *Package) CreateSourceFile(name string) *SourceFile
+</code></pre>
+
+<p>CreateSourceFile creates a Go source file in the given package.</p>
+
+<h2 id="type-sourcefile:436ee794f96f051034db9b813b5594ba">type SourceFile</h2>
+
+<pre><code class="language-go">type SourceFile struct {
+    // Name of the source file
+    Name string
+    // Package containing source file
+    Package *Package
+}
+</code></pre>
+
+<p>SourceFile represents a single Go source file</p>
+
+<h3 id="func-sourcefilefor:436ee794f96f051034db9b813b5594ba">func SourceFileFor</h3>
+
+<pre><code class="language-go">func SourceFileFor(path string) (*SourceFile, error)
+</code></pre>
+
+<p>SourceFileFor returns a SourceFile for the file at the given path.</p>
+
+<h3 id="func-sourcefile-abs:436ee794f96f051034db9b813b5594ba">func (*SourceFile) Abs</h3>
+
+<pre><code class="language-go">func (f *SourceFile) Abs() string
+</code></pre>
+
+<p>Abs returne the source file absolute filename</p>
+
+<h3 id="func-sourcefile-executetemplate:436ee794f96f051034db9b813b5594ba">func (*SourceFile) ExecuteTemplate</h3>
+
+<pre><code class="language-go">func (f *SourceFile) ExecuteTemplate(name, source string, funcMap template.FuncMap, data interface{}) error
+</code></pre>
+
+<p>ExecuteTemplate executes the template and writes the output to the file.</p>
+
+<h3 id="func-sourcefile-formatcode:436ee794f96f051034db9b813b5594ba">func (*SourceFile) FormatCode</h3>
+
+<pre><code class="language-go">func (f *SourceFile) FormatCode() error
+</code></pre>
+
+<p>FormatCode runs &ldquo;goimports -w&rdquo; on the source file.</p>
+
+<h3 id="func-sourcefile-write:436ee794f96f051034db9b813b5594ba">func (*SourceFile) Write</h3>
+
+<pre><code class="language-go">func (f *SourceFile) Write(b []byte) (int, error)
+</code></pre>
+
+<p>Write implements io.Writer so that variables of type *SourceFile can be
+used in template.Execute.</p>
+
+<h3 id="func-sourcefile-writeheader:436ee794f96f051034db9b813b5594ba">func (*SourceFile) WriteHeader</h3>
+
+<pre><code class="language-go">func (f *SourceFile) WriteHeader(title, pack string, imports []*ImportSpec) error
+</code></pre>
+
+<p>WriteHeader writes the generic generated code header.</p>
+
+<h2 id="type-workspace:436ee794f96f051034db9b813b5594ba">type Workspace</h2>
+
+<pre><code class="language-go">type Workspace struct {
+    // Path is the absolute path to the workspace directory.
+    Path string
+    // contains filtered or unexported fields
+}
+</code></pre>
+
+<p>Workspace represents a temporary Go workspace</p>
+
+<h3 id="func-newworkspace:436ee794f96f051034db9b813b5594ba">func NewWorkspace</h3>
+
+<pre><code class="language-go">func NewWorkspace(prefix string) (*Workspace, error)
+</code></pre>
+
+<p>NewWorkspace returns a newly created temporary Go workspace.
+Use Delete to delete the corresponding temporary directory when done.</p>
+
+<h3 id="func-workspacefor:436ee794f96f051034db9b813b5594ba">func WorkspaceFor</h3>
+
+<pre><code class="language-go">func WorkspaceFor(source string) (*Workspace, error)
+</code></pre>
+
+<p>WorkspaceFor returns the Go workspace for the given Go source file.</p>
+
+<h3 id="func-workspace-delete:436ee794f96f051034db9b813b5594ba">func (*Workspace) Delete</h3>
+
+<pre><code class="language-go">func (w *Workspace) Delete()
+</code></pre>
+
+<p>Delete deletes the workspace temporary directory.</p>
+
+<h3 id="func-workspace-newpackage:436ee794f96f051034db9b813b5594ba">func (*Workspace) NewPackage</h3>
+
+<pre><code class="language-go">func (w *Workspace) NewPackage(goPath string) (*Package, error)
+</code></pre>
+
+<p>NewPackage creates a new package in the workspace. It deletes any pre-existing package.
+goPath is the go package path used to import the package.</p>
+
+<h3 id="func-workspace-reset:436ee794f96f051034db9b813b5594ba">func (*Workspace) Reset</h3>
+
+<pre><code class="language-go">func (w *Workspace) Reset() error
+</code></pre>
+
+<p>Reset removes all content from the workspace.</p>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+

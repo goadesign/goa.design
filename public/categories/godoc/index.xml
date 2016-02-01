@@ -6,14 +6,15 @@
     <description>Recent content in Godoc on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/categories/godoc/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>encoding/binc</title>
-      <link>http://goa.design/godoc/encoding/binc/binc/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/binc/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/binc/binc/</guid>
+      <guid>http://goa.design/godoc/encoding/binc/</guid>
       <description>
 
 &lt;h1 id=&#34;binc:f2560534d56b173906575db18b28614e&#34;&gt;binc&lt;/h1&gt;
@@ -66,10 +67,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>encoding/cbor</title>
-      <link>http://goa.design/godoc/encoding/cbor/cbor/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/cbor/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/cbor/cbor/</guid>
+      <guid>http://goa.design/godoc/encoding/cbor/</guid>
       <description>
 
 &lt;h1 id=&#34;cbor:74653cf70b7ec2a9e9772524989bf914&#34;&gt;cbor&lt;/h1&gt;
@@ -122,10 +123,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>encoding/gogoprotobuf</title>
-      <link>http://goa.design/godoc/encoding/gogoprotobuf/gogoprotobuf/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/gogoprotobuf/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/gogoprotobuf/gogoprotobuf/</guid>
+      <guid>http://goa.design/godoc/encoding/gogoprotobuf/</guid>
       <description>
 
 &lt;h1 id=&#34;gogoprotobuf:eeb5e4ef7dc54409a7bfb37ce59b19e2&#34;&gt;gogoprotobuf&lt;/h1&gt;
@@ -222,10 +223,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>encoding/json</title>
-      <link>http://goa.design/godoc/encoding/json/json/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/json/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/json/json/</guid>
+      <guid>http://goa.design/godoc/encoding/json/</guid>
       <description>
 
 &lt;h1 id=&#34;json:8c33735db6a47ed544ad16f66abebe27&#34;&gt;json&lt;/h1&gt;
@@ -278,10 +279,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>encoding/msgpack</title>
-      <link>http://goa.design/godoc/encoding/msgpack/msgpack/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/encoding/msgpack/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/encoding/msgpack/msgpack/</guid>
+      <guid>http://goa.design/godoc/encoding/msgpack/</guid>
       <description>
 
 &lt;h1 id=&#34;msgpack:1574d51e403296c43e921da78612bc7c&#34;&gt;msgpack&lt;/h1&gt;
@@ -334,10 +335,10 @@ The built in codec.Encoder has a compatible Reset() func&lt;/p&gt;
     
     <item>
       <title>goa</title>
-      <link>http://goa.design/godoc/goa/goa/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goa/</guid>
+      <guid>http://goa.design/godoc/goa/</guid>
       <description>
 
 &lt;h1 id=&#34;goa:f65b389c849e4c539b25815fbdc1fd8d&#34;&gt;goa&lt;/h1&gt;
@@ -1937,10 +1938,10 @@ It provides methods for configuring a service and running it.&lt;/p&gt;
     
     <item>
       <title>goa/design</title>
-      <link>http://goa.design/godoc/goa/design/design/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/design/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/design/design/</guid>
+      <guid>http://goa.design/godoc/goa/design/</guid>
       <description>
 
 &lt;h1 id=&#34;design:83772ba7ad0304b1562d08f190539946&#34;&gt;design&lt;/h1&gt;
@@ -3769,10 +3770,10 @@ underlying definition type is consistent.&lt;/p&gt;
     
     <item>
       <title>goa/design/apidsl</title>
-      <link>http://goa.design/godoc/goa/design/apidsl/apidsl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/design/apidsl/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/design/apidsl/apidsl/</guid>
+      <guid>http://goa.design/godoc/goa/design/apidsl/</guid>
       <description>
 
 &lt;h1 id=&#34;apidsl:aab4f9d6f98ed71f45bd470427dde2a7&#34;&gt;apidsl&lt;/h1&gt;
@@ -4940,10 +4941,10 @@ View(&amp;quot;extended&amp;quot;, func() {
     
     <item>
       <title>goa/design/apidsl/test</title>
-      <link>http://goa.design/godoc/goa/design/apidsl/test/test/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/design/apidsl/test/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/design/apidsl/test/test/</guid>
+      <guid>http://goa.design/godoc/goa/design/apidsl/test/</guid>
       <description>
 
 &lt;h1 id=&#34;test:b128b7694e4de962e0088bcb1bcb254f&#34;&gt;test&lt;/h1&gt;
@@ -4964,10 +4965,10 @@ This file is needed for &lt;code&gt;go get ./...&lt;/code&gt; and thus the build
     
     <item>
       <title>goa/dslengine</title>
-      <link>http://goa.design/godoc/goa/dslengine/dslengine/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/dslengine/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/dslengine/dslengine/</guid>
+      <guid>http://goa.design/godoc/goa/dslengine/</guid>
       <description>
 
 &lt;h1 id=&#34;dslengine:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;dslengine&lt;/h1&gt;
@@ -5421,10 +5422,10 @@ themselves.&lt;/p&gt;
     
     <item>
       <title>goa/goagen</title>
-      <link>http://goa.design/godoc/goa/goagen/goagen/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/goagen/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/</guid>
       <description>
 
 &lt;h1 id=&#34;goagen:0ac2dccfa61f3332beebe2cfea218c8f&#34;&gt;goagen&lt;/h1&gt;
@@ -5437,10 +5438,10 @@ themselves.&lt;/p&gt;
     
     <item>
       <title>goa/goagen/codegen</title>
-      <link>http://goa.design/godoc/goa/goagen/codegen/codegen/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/codegen/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/codegen/codegen/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/codegen/</guid>
       <description>
 
 &lt;h1 id=&#34;codegen:436ee794f96f051034db9b813b5594ba&#34;&gt;codegen&lt;/h1&gt;
@@ -6053,10 +6054,10 @@ goPath is the go package path used to import the package.&lt;/p&gt;
     
     <item>
       <title>goa/goagen/gen_app</title>
-      <link>http://goa.design/godoc/goa/goagen/gen_app/gen_app/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/gen_app/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/gen_app/gen_app/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/gen_app/</guid>
       <description>
 
 &lt;h1 id=&#34;genapp:0950d9b6f1dd6681888b1fb558093be3&#34;&gt;genapp&lt;/h1&gt;
@@ -6426,10 +6427,10 @@ User types contain custom data structured defined in the DSL with &amp;ldquo;Typ
     
     <item>
       <title>goa/goagen/gen_client</title>
-      <link>http://goa.design/godoc/goa/goagen/gen_client/gen_client/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/gen_client/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/gen_client/gen_client/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/gen_client/</guid>
       <description>
 
 &lt;h1 id=&#34;genclient:f960650cb3884d994cc1b51326b631cf&#34;&gt;genclient&lt;/h1&gt;
@@ -6525,10 +6526,10 @@ It implements meta.Command.&lt;/p&gt;
     
     <item>
       <title>goa/goagen/gen_gen</title>
-      <link>http://goa.design/godoc/goa/goagen/gen_gen/gen_gen/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/gen_gen/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/gen_gen/gen_gen/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/gen_gen/</guid>
       <description>
 
 &lt;h1 id=&#34;gengen:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;gengen&lt;/h1&gt;

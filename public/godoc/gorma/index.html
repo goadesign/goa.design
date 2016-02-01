@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>gorma</h1>
+		<p>godoc for gorma</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="gorma:14f3f094777b2d9e0fb6873db713d919">gorma</h1>
+
+<pre><code>import &quot;github.com/goadesign/gorma&quot;
+</code></pre>
+
+<p>Package gorma is a plugin generator for Goa (<a href="http://goa.design">http://goa.design</a>).
+See the documentation in the <code>dsl</code> package for details
+on how to create a definition for your API.</p>
+
+<p>The <code>example</code> folder contains an example Goa design package.
+The <code>models.go</code> file is the Gorma definition, which is responsible
+for generating all the files in the <code>example\genmodels</code> folder.</p>
+
+<h2 id="constants:14f3f094777b2d9e0fb6873db713d919">Constants</h2>
+
+<pre><code class="language-go">const (
+    // Gorma is the constant string used as the index in the
+    // goa DesignConstructs map
+    Gorma = &quot;gorma&quot;
+    // StorageGroup is the constant string used as the index in the
+    // GormaConstructs map
+    StorageGroup = &quot;storagegroup&quot;
+    // MySQL is the StorageType for MySQL databases
+    MySQL RelationalStorageType = &quot;mysql&quot;
+    // Postgres is the StorageType for Postgres
+    Postgres RelationalStorageType = &quot;postgres&quot;
+    // Boolean is a bool field type
+    Boolean FieldType = &quot;bool&quot;
+    // Integer is an integer field type
+    Integer FieldType = &quot;integer&quot;
+    // BigInteger is a large integer field type
+    BigInteger FieldType = &quot;biginteger&quot;
+    // AutoInteger is not implemented
+    AutoInteger FieldType = &quot;auto_integer&quot;
+    // AutoBigInteger is not implemented
+    AutoBigInteger FieldType = &quot;auto_biginteger&quot;
+    // Decimal is a float field type
+    Decimal FieldType = &quot;decimal&quot;
+    // BigDecimal is a large float field type
+    BigDecimal FieldType = &quot;bigdecimal&quot;
+    // String is a varchar field type
+    String FieldType = &quot;string&quot;
+    // Text is a large string field type
+    Text FieldType = &quot;text&quot;
+    // UUID is not implemented yet
+    UUID FieldType = &quot;uuid&quot;
+    // PKInteger is a field that will serve as the primary key
+    // and store as an integer
+    PKInteger FieldType = &quot;pkinteger&quot;
+    // PKBigInteger is a field that will serve as the primary key
+    // and store as a large integer
+    PKBigInteger FieldType = &quot;pkbiginteger&quot;
+    // PKUUID is not implemented yet
+    PKUUID FieldType = &quot;pkuuid&quot;
+    // Timestamp is a date/time field in the database
+    Timestamp FieldType = &quot;timestamp&quot;
+    // NullableTimestamp is a timestamp that may not be
+    // populated.  Fields with no value will be null in the database
+    NullableTimestamp FieldType = &quot;nulltimestamp&quot;
+    // NotFound is used internally
+    NotFound FieldType = &quot;notfound&quot;
+    // HasOne is used internally
+    HasOne FieldType = &quot;hasone&quot;
+    // HasOneKey is used internally
+    HasOneKey FieldType = &quot;hasonekey&quot;
+    // HasMany is used internally
+    HasMany FieldType = &quot;hasmany&quot;
+    // HasManyKey is used internally
+    HasManyKey FieldType = &quot;hasmanykey&quot;
+    // BelongsTo is used internally
+    BelongsTo FieldType = &quot;belongsto&quot;
+)
+</code></pre>
+
+<h2 id="variables:14f3f094777b2d9e0fb6873db713d919">Variables</h2>
+
+<pre><code class="language-go">var (
+    // TargetPackage is the name of the generated Go package.
+    TargetPackage string
+    // AppPackage is the name of the goa-generated Go app package.
+    AppPackage string
+)
+</code></pre>
+
+<h2 id="func-appoutputdir:14f3f094777b2d9e0fb6873db713d919">func AppOutputDir</h2>
+
+<pre><code class="language-go">func AppOutputDir() string
+</code></pre>
+
+<p>AppOutputDir returns the directory containing the generated files.</p>
+
+<h2 id="func-apppackagepath:14f3f094777b2d9e0fb6873db713d919">func AppPackagePath</h2>
+
+<pre><code class="language-go">func AppPackagePath() (string, error)
+</code></pre>
+
+<p>AppPackagePath returns the Go package path to the generated package.</p>
+
+<h2 id="func-generate:14f3f094777b2d9e0fb6873db713d919">func Generate</h2>
+
+<pre><code class="language-go">func Generate(api *design.APIDefinition) ([]string, error)
+</code></pre>
+
+<p>Generate is the generator entry point called by the meta generator.</p>
+
+<h2 id="func-init:14f3f094777b2d9e0fb6873db713d919">func Init</h2>
+
+<pre><code class="language-go">func Init()
+</code></pre>
+
+<p>Init creates the necessary data structures for parsing a DSL</p>
+
+<h2 id="func-modeloutputdir:14f3f094777b2d9e0fb6873db713d919">func ModelOutputDir</h2>
+
+<pre><code class="language-go">func ModelOutputDir() string
+</code></pre>
+
+<p>ModelOutputDir returns the directory containing the generated files.</p>
+
+<h2 id="func-modelpackagepath:14f3f094777b2d9e0fb6873db713d919">func ModelPackagePath</h2>
+
+<pre><code class="language-go">func ModelPackagePath() (string, error)
+</code></pre>
+
+<p>ModelPackagePath returns the Go package path to the generated package.</p>
+
+<h2 id="type-command:14f3f094777b2d9e0fb6873db713d919">type Command</h2>
+
+<pre><code class="language-go">type Command struct {
+    *codegen.BaseCommand
+}
+</code></pre>
+
+<p>Command is the goa application code generator command line data structure.</p>
+
+<h3 id="func-newcommand:14f3f094777b2d9e0fb6873db713d919">func NewCommand</h3>
+
+<pre><code class="language-go">func NewCommand() *Command
+</code></pre>
+
+<p>NewCommand instantiates a new command.</p>
+
+<h3 id="func-command-registerflags:14f3f094777b2d9e0fb6873db713d919">func (*Command) RegisterFlags</h3>
+
+<pre><code class="language-go">func (c *Command) RegisterFlags(r codegen.FlagRegistry)
+</code></pre>
+
+<p>RegisterFlags registers the command line flags with the given registry.</p>
+
+<h3 id="func-command-run:14f3f094777b2d9e0fb6873db713d919">func (*Command) Run</h3>
+
+<pre><code class="language-go">func (c *Command) Run() ([]string, error)
+</code></pre>
+
+<p>Run simply calls the meta generator.</p>
+
+<h2 id="type-fielditerator:14f3f094777b2d9e0fb6873db713d919">type FieldIterator</h2>
+
+<pre><code class="language-go">type FieldIterator func(m *RelationalFieldDefinition) error
+</code></pre>
+
+<p>FieldIterator is a function that iterates over Fields
+in a RelationalModel</p>
+
+<h2 id="type-fieldtype:14f3f094777b2d9e0fb6873db713d919">type FieldType</h2>
+
+<pre><code class="language-go">type FieldType string
+</code></pre>
+
+<p>FieldType is the storage data type for a database field</p>
+
+<h2 id="type-generator:14f3f094777b2d9e0fb6873db713d919">type Generator</h2>
+
+<pre><code class="language-go">type Generator struct {
+    // contains filtered or unexported fields
+}
+</code></pre>
+
+<p>Generator is the application code generator.</p>
+
+<h3 id="func-newgenerator:14f3f094777b2d9e0fb6873db713d919">func NewGenerator</h3>
+
+<pre><code class="language-go">func NewGenerator() (*Generator, error)
+</code></pre>
+
+<p>NewGenerator returns the application code generator.</p>
+
+<h3 id="func-generator-cleanup:14f3f094777b2d9e0fb6873db713d919">func (*Generator) Cleanup</h3>
+
+<pre><code class="language-go">func (g *Generator) Cleanup()
+</code></pre>
+
+<p>Cleanup removes the entire &ldquo;app&rdquo; directory if it was created by this generator.</p>
+
+<h3 id="func-generator-generate:14f3f094777b2d9e0fb6873db713d919">func (*Generator) Generate</h3>
+
+<pre><code class="language-go">func (g *Generator) Generate(api *design.APIDefinition) (_ []string, err error)
+</code></pre>
+
+<p>Generate the application code, implement codegen.Generator.</p>
+
+<h2 id="type-manytomanydefinition:14f3f094777b2d9e0fb6873db713d919">type ManyToManyDefinition</h2>
+
+<pre><code class="language-go">type ManyToManyDefinition struct {
+    design.Definition
+    DefinitionDSL    func()
+    Left             *RelationalModelDefinition
+    Right            *RelationalModelDefinition
+    RelationshipName string // ??
+    DatabaseField    string
+}
+</code></pre>
+
+<p>ManyToManyDefinition stores information about a ManyToMany
+relationship between two domain objects</p>
+
+<h3 id="func-manytomanydefinition-leftname:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) LeftName</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) LeftName() string
+</code></pre>
+
+<h3 id="func-manytomanydefinition-leftnameplural:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) LeftNamePlural</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) LeftNamePlural() string
+</code></pre>
+
+<h3 id="func-manytomanydefinition-lowerleftname:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) LowerLeftName</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) LowerLeftName() string
+</code></pre>
+
+<h3 id="func-manytomanydefinition-lowerrightname:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) LowerRightName</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) LowerRightName() string
+</code></pre>
+
+<h3 id="func-manytomanydefinition-rightname:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) RightName</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) RightName() string
+</code></pre>
+
+<h3 id="func-manytomanydefinition-rightnameplural:14f3f094777b2d9e0fb6873db713d919">func (*ManyToManyDefinition) RightNamePlural</h3>
+
+<pre><code class="language-go">func (m *ManyToManyDefinition) RightNamePlural() string
+</code></pre>
+
+<h2 id="type-mediatypeadapterdefinition:14f3f094777b2d9e0fb6873db713d919">type MediaTypeAdapterDefinition</h2>
+
+<pre><code class="language-go">type MediaTypeAdapterDefinition struct {
+    design.Definition
+    DefinitionDSL func()
+    Name          string
+    Description   string
+    Left          *design.MediaTypeDefinition
+    Right         *RelationalModelDefinition
+}
+</code></pre>
+
+<p>MediaTypeAdapterDefinition represents the transformation of a
+Goa media type into a Gorma Model
+Unimplemented at this time</p>
+
+<h2 id="type-modeliterator:14f3f094777b2d9e0fb6873db713d919">type ModelIterator</h2>
+
+<pre><code class="language-go">type ModelIterator func(m *RelationalModelDefinition) error
+</code></pre>
+
+<p>ModelIterator is a function that iterates over Models in a
+RelationalStore</p>
+
+<h2 id="type-payloadadapterdefinition:14f3f094777b2d9e0fb6873db713d919">type PayloadAdapterDefinition</h2>
+
+<pre><code class="language-go">type PayloadAdapterDefinition struct {
+    design.Definition
+    DefinitionDSL func()
+    Name          string
+    Description   string
+    Left          *design.UserTypeDefinition
+    Right         *RelationalModelDefinition
+}
+</code></pre>
+
+<p>PayloadAdapterDefinition represents the transformation of a Goa
+Payload (which is really a UserTypeDefinition
+into a Gorma model
+Unimplemented at this time</p>
+
+<h2 id="type-relationalfielddefinition:14f3f094777b2d9e0fb6873db713d919">type RelationalFieldDefinition</h2>
+
+<pre><code class="language-go">type RelationalFieldDefinition struct {
+    design.Definition
+    DefinitionDSL func()
+    Parent        *RelationalModelDefinition
+
+    Name              string
+    BuiltFrom         string
+    RenderTo          string
+    Datatype          FieldType
+    SQLTag            string
+    DatabaseFieldName string
+    Description       string
+    Nullable          bool
+    PrimaryKey        bool
+    Timestamp         bool
+    Size              int    // string field size
+    Alias             string // gorm:column
+    BelongsTo         string
+    HasOne            string
+    HasMany           string
+    Many2Many         string
+    // contains filtered or unexported fields
+}
+</code></pre>
+
+<p>RelationalFieldDefinition represents
+a field in a relational database</p>
+
+<h3 id="func-relationalfielddefinition-children:14f3f094777b2d9e0fb6873db713d919">func (RelationalFieldDefinition) Children</h3>
+
+<pre><code class="language-go">func (f RelationalFieldDefinition) Children() []design.Definition
+</code></pre>
+
+<p>Children returnsa slice of this objects children</p>
+
+<h3 id="func-relationalfielddefinition-context:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) Context</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h3 id="func-relationalfielddefinition-dsl:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) DSL</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) DSL() func()
+</code></pre>
+
+<p>DSL returns this object&rsquo;s DSL</p>
+
+<h3 id="func-relationalfielddefinition-fielddefinition:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) FieldDefinition</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) FieldDefinition() string
+</code></pre>
+
+<p>FieldDefinition returns the field&rsquo;s struct definition</p>
+
+<h3 id="func-relationalfielddefinition-lowername:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) LowerName</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) LowerName() string
+</code></pre>
+
+<p>LowerName returns the field name as a lowercase string.</p>
+
+<h3 id="func-relationalfielddefinition-tags:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) Tags</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) Tags() string
+</code></pre>
+
+<p>Tags returns the sql and gorm struct tags for the Definition</p>
+
+<h3 id="func-relationalfielddefinition-underscore:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) Underscore</h3>
+
+<pre><code class="language-go">func (f *RelationalFieldDefinition) Underscore() string
+</code></pre>
+
+<p>Underscore returns the field name as a lowercase string in snake case</p>
+
+<h3 id="func-relationalfielddefinition-validate:14f3f094777b2d9e0fb6873db713d919">func (*RelationalFieldDefinition) Validate</h3>
+
+<pre><code class="language-go">func (field *RelationalFieldDefinition) Validate() *design.ValidationErrors
+</code></pre>
+
+<p>Validate tests whether the RelationalField definition is consistent.</p>
+
+<h2 id="type-relationalmodeldefinition:14f3f094777b2d9e0fb6873db713d919">type RelationalModelDefinition</h2>
+
+<pre><code class="language-go">type RelationalModelDefinition struct {
+    design.Definition
+    DefinitionDSL    func()
+    Name             string
+    Description      string //
+    Parent           *RelationalStoreDefinition
+    BuiltFrom        []*design.UserTypeDefinition
+    RenderTo         *design.MediaTypeDefinition
+    BelongsTo        map[string]*RelationalModelDefinition
+    HasMany          map[string]*RelationalModelDefinition
+    HasOne           map[string]*RelationalModelDefinition
+    ManyToMany       map[string]*ManyToManyDefinition
+    Adapters         map[string]func()
+    Alias            string // gorm:tablename
+    Cached           bool
+    CacheDuration    int
+    Roler            bool
+    DynamicTableName bool
+    SQLTag           string
+    RelationalFields map[string]*RelationalFieldDefinition
+    PrimaryKeys      []*RelationalFieldDefinition
+    // contains filtered or unexported fields
+}
+</code></pre>
+
+<p>RelationalModelDefinition implements the storage of a domain model into a
+table in a relational database</p>
+
+<h3 id="func-relationalmodeldefinition-children:14f3f094777b2d9e0fb6873db713d919">func (RelationalModelDefinition) Children</h3>
+
+<pre><code class="language-go">func (f RelationalModelDefinition) Children() []design.Definition
+</code></pre>
+
+<p>Children returns a slice of this objects children.</p>
+
+<h3 id="func-relationalmodeldefinition-context:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) Context</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h3 id="func-relationalmodeldefinition-dsl:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) DSL</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) DSL() func()
+</code></pre>
+
+<p>DSL returns this object&rsquo;s DSL.</p>
+
+<h3 id="func-relationalmodeldefinition-iteratefields:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) IterateFields</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) IterateFields(it FieldIterator) error
+</code></pre>
+
+<p>IterateFields returns an iterator function useful for iterating through
+this model&rsquo;s field list.</p>
+
+<h3 id="func-relationalmodeldefinition-lowername:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) LowerName</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) LowerName() string
+</code></pre>
+
+<p>LowerName returns the model name as a lowercase string.</p>
+
+<h3 id="func-relationalmodeldefinition-pkattributes:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) PKAttributes</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) PKAttributes() string
+</code></pre>
+
+<p>PKAttributes constructs a pair of field + definition strings
+useful for method parameters.</p>
+
+<h3 id="func-relationalmodeldefinition-pkupdatefields:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) PKUpdateFields</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) PKUpdateFields(modelname string) string
+</code></pre>
+
+<p>PKUpdateFields returns something?  This function doesn&rsquo;t look useful in
+current form.  Perhaps it isn&rsquo;t.</p>
+
+<h3 id="func-relationalmodeldefinition-pkwhere:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) PKWhere</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) PKWhere() string
+</code></pre>
+
+<p>PKWhere returns an array of strings representing the where clause
+of a retrieval by primary key(s) &ndash; x = ? and y = ?.</p>
+
+<h3 id="func-relationalmodeldefinition-pkwherefields:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) PKWhereFields</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) PKWhereFields() string
+</code></pre>
+
+<p>PKWhereFields returns the fields for a where clause for the primary
+keys of a model.</p>
+
+<h3 id="func-relationalmodeldefinition-populatefrommodeledtype:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) PopulateFromModeledType</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) PopulateFromModeledType()
+</code></pre>
+
+<p>PopulateFromModeledType creates fields for the model
+based on the goa UserTypeDefinition it models.
+This happens before fields are processed, so it&rsquo;s
+ok to just assign without testing.</p>
+
+<h3 id="func-relationalmodeldefinition-structdefinition:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) StructDefinition</h3>
+
+<pre><code class="language-go">func (f *RelationalModelDefinition) StructDefinition() string
+</code></pre>
+
+<p>StructDefinition returns the struct definition for the model.</p>
+
+<h3 id="func-relationalmodeldefinition-tablename:14f3f094777b2d9e0fb6873db713d919">func (RelationalModelDefinition) TableName</h3>
+
+<pre><code class="language-go">func (f RelationalModelDefinition) TableName() string
+</code></pre>
+
+<p>TableName returns the table name for this model</p>
+
+<h3 id="func-relationalmodeldefinition-validate:14f3f094777b2d9e0fb6873db713d919">func (*RelationalModelDefinition) Validate</h3>
+
+<pre><code class="language-go">func (a *RelationalModelDefinition) Validate() *design.ValidationErrors
+</code></pre>
+
+<p>Validate tests whether the RelationalModel definition is consistent.</p>
+
+<h2 id="type-relationalstoragetype:14f3f094777b2d9e0fb6873db713d919">type RelationalStorageType</h2>
+
+<pre><code class="language-go">type RelationalStorageType string
+</code></pre>
+
+<p>RelationalStorageType is the type of database</p>
+
+<h2 id="type-relationalstoredefinition:14f3f094777b2d9e0fb6873db713d919">type RelationalStoreDefinition</h2>
+
+<pre><code class="language-go">type RelationalStoreDefinition struct {
+    design.Definition
+    DefinitionDSL    func()
+    Name             string
+    Description      string
+    Parent           *StorageGroupDefinition
+    Type             RelationalStorageType
+    RelationalModels map[string]*RelationalModelDefinition
+    NoAutoIDFields   bool
+    NoAutoTimestamps bool
+    NoAutoSoftDelete bool
+}
+</code></pre>
+
+<p>RelationalStoreDefinition is the parent configuration structure for Gorm relational model definitions</p>
+
+<h3 id="func-relationalstoredefinition-children:14f3f094777b2d9e0fb6873db713d919">func (RelationalStoreDefinition) Children</h3>
+
+<pre><code class="language-go">func (sd RelationalStoreDefinition) Children() []design.Definition
+</code></pre>
+
+<p>Children returns a slice of this objects children.</p>
+
+<h3 id="func-relationalstoredefinition-context:14f3f094777b2d9e0fb6873db713d919">func (*RelationalStoreDefinition) Context</h3>
+
+<pre><code class="language-go">func (sd *RelationalStoreDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h3 id="func-relationalstoredefinition-dsl:14f3f094777b2d9e0fb6873db713d919">func (*RelationalStoreDefinition) DSL</h3>
+
+<pre><code class="language-go">func (sd *RelationalStoreDefinition) DSL() func()
+</code></pre>
+
+<p>DSL returns this object&rsquo;s DSL.</p>
+
+<h3 id="func-relationalstoredefinition-iteratemodels:14f3f094777b2d9e0fb6873db713d919">func (*RelationalStoreDefinition) IterateModels</h3>
+
+<pre><code class="language-go">func (sd *RelationalStoreDefinition) IterateModels(it ModelIterator) error
+</code></pre>
+
+<p>IterateModels runs an iterator function once per Model in the Store&rsquo;s model list.</p>
+
+<h3 id="func-relationalstoredefinition-validate:14f3f094777b2d9e0fb6873db713d919">func (*RelationalStoreDefinition) Validate</h3>
+
+<pre><code class="language-go">func (a *RelationalStoreDefinition) Validate() *design.ValidationErrors
+</code></pre>
+
+<p>Validate tests whether the RelationalStore definition is consistent.</p>
+
+<h2 id="type-storagegroupdefinition:14f3f094777b2d9e0fb6873db713d919">type StorageGroupDefinition</h2>
+
+<pre><code class="language-go">type StorageGroupDefinition struct {
+    design.Definition
+    DefinitionDSL    func()
+    Name             string
+    Description      string
+    RelationalStores map[string]*RelationalStoreDefinition
+}
+</code></pre>
+
+<p>StorageGroupDefinition is the parent configuration structure for Gorma definitions</p>
+
+<pre><code class="language-go">var GormaDesign *StorageGroupDefinition
+</code></pre>
+
+<p>GormaDesign is the root definition for Gorma</p>
+
+<h3 id="func-storagegroupdefinition-children:14f3f094777b2d9e0fb6873db713d919">func (StorageGroupDefinition) Children</h3>
+
+<pre><code class="language-go">func (sd StorageGroupDefinition) Children() []design.Definition
+</code></pre>
+
+<p>Children returns a slice of this objects children.</p>
+
+<h3 id="func-storagegroupdefinition-context:14f3f094777b2d9e0fb6873db713d919">func (StorageGroupDefinition) Context</h3>
+
+<pre><code class="language-go">func (sd StorageGroupDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h3 id="func-storagegroupdefinition-dsl:14f3f094777b2d9e0fb6873db713d919">func (StorageGroupDefinition) DSL</h3>
+
+<pre><code class="language-go">func (sd StorageGroupDefinition) DSL() func()
+</code></pre>
+
+<p>DSL returns this object&rsquo;s DSL.</p>
+
+<h3 id="func-storagegroupdefinition-iteratesets:14f3f094777b2d9e0fb6873db713d919">func (*StorageGroupDefinition) IterateSets</h3>
+
+<pre><code class="language-go">func (sd *StorageGroupDefinition) IterateSets(iterator design.SetIterator)
+</code></pre>
+
+<p>IterateSets goes over all the definition sets of the StorageGroup: the
+StorageGroup definition itself, each store definition, models and fields.</p>
+
+<h3 id="func-storagegroupdefinition-iteratestores:14f3f094777b2d9e0fb6873db713d919">func (*StorageGroupDefinition) IterateStores</h3>
+
+<pre><code class="language-go">func (sd *StorageGroupDefinition) IterateStores(it StoreIterator) error
+</code></pre>
+
+<p>IterateStores runs an iterator function once per Relational Store in the
+StorageGroup&rsquo;s Store list.</p>
+
+<h3 id="func-storagegroupdefinition-validate:14f3f094777b2d9e0fb6873db713d919">func (*StorageGroupDefinition) Validate</h3>
+
+<pre><code class="language-go">func (a *StorageGroupDefinition) Validate() *design.ValidationErrors
+</code></pre>
+
+<p>Validate tests whether the StorageGroup definition is consistent.</p>
+
+<h2 id="type-storeiterator:14f3f094777b2d9e0fb6873db713d919">type StoreIterator</h2>
+
+<pre><code class="language-go">type StoreIterator func(m *RelationalStoreDefinition) error
+</code></pre>
+
+<p>StoreIterator is a function that iterates over Relational Stores in a
+StorageGroup</p>
+
+<h2 id="type-usertypeadapterdefinition:14f3f094777b2d9e0fb6873db713d919">type UserTypeAdapterDefinition</h2>
+
+<pre><code class="language-go">type UserTypeAdapterDefinition struct {
+    design.Definition
+    DefinitionDSL func()
+    Name          string
+    Description   string
+    Left          *RelationalModelDefinition
+    Right         *RelationalModelDefinition
+}
+</code></pre>
+
+<p>UserTypeAdapterDefinition represents the transformation of a Goa
+user type into a Gorma Model
+Unimplemented at this time</p>
+
+<h2 id="type-usertypetemplatedata:14f3f094777b2d9e0fb6873db713d919">type UserTypeTemplateData</h2>
+
+<pre><code class="language-go">type UserTypeTemplateData struct {
+    APIDefinition *design.APIDefinition
+    UserType      *RelationalModelDefinition
+    DefaultPkg    string
+    AppPkg        string
+}
+</code></pre>
+
+<p>UserTypeTemplateData contains all the information used by the template to redner the
+media types code.</p>
+
+<h2 id="type-usertypeswriter:14f3f094777b2d9e0fb6873db713d919">type UserTypesWriter</h2>
+
+<pre><code class="language-go">type UserTypesWriter struct {
+    *codegen.SourceFile
+    UserTypeTmpl *template.Template
+}
+</code></pre>
+
+<p>UserTypesWriter generate code for a goa application user types.
+User types are data structures defined in the DSL with &ldquo;Type&rdquo;.</p>
+
+<h3 id="func-newusertypeswriter:14f3f094777b2d9e0fb6873db713d919">func NewUserTypesWriter</h3>
+
+<pre><code class="language-go">func NewUserTypesWriter(filename string) (*UserTypesWriter, error)
+</code></pre>
+
+<p>NewUserTypesWriter returns a contexts code writer.
+User types contain custom data structured defined in the DSL with &ldquo;Type&rdquo;.</p>
+
+<h3 id="func-usertypeswriter-execute:14f3f094777b2d9e0fb6873db713d919">func (*UserTypesWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *UserTypesWriter) Execute(data *UserTypeTemplateData) error
+</code></pre>
+
+<p>Execute writes the code for the context types to the writer.</p>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+

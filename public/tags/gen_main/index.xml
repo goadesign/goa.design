@@ -6,14 +6,15 @@
     <description>Recent content in Gen_main on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/gen_main/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>goa/goagen/gen_main</title>
-      <link>http://goa.design/godoc/goa/goagen/gen_main/gen_main/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/goa/goagen/gen_main/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/goa/goagen/gen_main/gen_main/</guid>
+      <guid>http://goa.design/godoc/goa/goagen/gen_main/</guid>
       <description>
 
 &lt;h1 id=&#34;genmain:37f33a104050d7aa5c3a67946b590852&#34;&gt;genmain&lt;/h1&gt;
