@@ -1,5 +1,6 @@
 +++
 title="goa"
+date="2016-01-31"
 description="godoc for goa"
 categories=["godoc"]
 tags=["godoc","goa"]

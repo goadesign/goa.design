@@ -1,5 +1,6 @@
 +++
 title="middleware/jwt"
+date="2016-01-31"
 description="godoc for middleware/jwt"
 categories=["godoc"]
 tags=["godoc","jwt"]

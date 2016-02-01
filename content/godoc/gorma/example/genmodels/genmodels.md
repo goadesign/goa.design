@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="gorma/example/genmodels"
 description="godoc for gorma/example/genmodels"
 categories=["godoc"]

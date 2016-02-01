@@ -1,5 +1,6 @@
 +++
 title="middleware/encoding/msgpack"
+date="2016-01-31"
 description="godoc for middleware/encoding/msgpack"
 categories=["godoc"]
 tags=["godoc","msgpack"]

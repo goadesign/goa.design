@@ -1,5 +1,6 @@
 +++
 title="goa/goagen/codegen"
+date="2016-01-31"
 description="godoc for goa/goagen/codegen"
 categories=["godoc"]
 tags=["godoc","codegen"]

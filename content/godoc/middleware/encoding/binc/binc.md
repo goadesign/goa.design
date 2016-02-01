@@ -1,5 +1,6 @@
 +++
 title="middleware/encoding/binc"
+date="2016-01-31"
 description="godoc for middleware/encoding/binc"
 categories=["godoc"]
 tags=["godoc","binc"]

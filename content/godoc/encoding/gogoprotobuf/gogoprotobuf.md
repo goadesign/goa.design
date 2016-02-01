@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="encoding/gogoprotobuf"
 description="godoc for encoding/gogoprotobuf"
 categories=["godoc"]

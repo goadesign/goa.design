@@ -1,5 +1,6 @@
 +++
 title="goa/goagen/gen_client"
+date="2016-01-31"
 description="godoc for goa/goagen/gen_client"
 categories=["godoc"]
 tags=["godoc","gen_client"]

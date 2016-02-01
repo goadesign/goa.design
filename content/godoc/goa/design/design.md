@@ -1,5 +1,6 @@
 +++
 title="goa/design"
+date="2016-01-31"
 description="godoc for goa/design"
 categories=["godoc"]
 tags=["godoc","design"]

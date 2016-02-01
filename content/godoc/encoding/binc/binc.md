@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="encoding/binc"
 description="godoc for encoding/binc"
 categories=["godoc"]

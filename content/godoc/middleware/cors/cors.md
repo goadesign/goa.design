@@ -1,5 +1,6 @@
 +++
 title="middleware/cors"
+date="2016-01-31"
 description="godoc for middleware/cors"
 categories=["godoc"]
 tags=["godoc","cors"]

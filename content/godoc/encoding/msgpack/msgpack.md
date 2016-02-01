@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="encoding/msgpack"
 description="godoc for encoding/msgpack"
 categories=["godoc"]

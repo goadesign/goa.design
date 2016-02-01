@@ -1,5 +1,6 @@
 +++
 title="middleware"
+date="2016-01-31"
 description="godoc for middleware"
 categories=["godoc"]
 tags=["godoc","middleware"]

@@ -1,5 +1,6 @@
 +++
 title="middleware/encoding/gogoprotobuf"
+date="2016-01-31"
 description="godoc for middleware/encoding/gogoprotobuf"
 categories=["godoc"]
 tags=["godoc","gogoprotobuf"]

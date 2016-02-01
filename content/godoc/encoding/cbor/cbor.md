@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="encoding/cbor"
 description="godoc for encoding/cbor"
 categories=["godoc"]

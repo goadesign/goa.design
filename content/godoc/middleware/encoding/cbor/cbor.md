@@ -1,5 +1,6 @@
 +++
 title="middleware/encoding/cbor"
+date="2016-01-31"
 description="godoc for middleware/encoding/cbor"
 categories=["godoc"]
 tags=["godoc","cbor"]

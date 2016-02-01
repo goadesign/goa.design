@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="gorma/dsl"
 description="godoc for gorma/dsl"
 categories=["godoc"]

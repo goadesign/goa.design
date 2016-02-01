@@ -1,5 +1,6 @@
 +++
 title="goa/design/apidsl/test"
+date="2016-01-31"
 description="godoc for goa/design/apidsl/test"
 categories=["godoc"]
 tags=["godoc","test"]

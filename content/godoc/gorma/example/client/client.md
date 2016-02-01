@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="gorma/example/client"
 description="godoc for gorma/example/client"
 categories=["godoc"]

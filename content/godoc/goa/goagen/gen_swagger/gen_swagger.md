@@ -1,5 +1,6 @@
 +++
 title="goa/goagen/gen_swagger"
+date="2016-01-31"
 description="godoc for goa/goagen/gen_swagger"
 categories=["godoc"]
 tags=["godoc","gen_swagger"]

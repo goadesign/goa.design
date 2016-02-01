@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="gorma"
 description="godoc for gorma"
 categories=["godoc"]

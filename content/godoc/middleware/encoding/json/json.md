@@ -1,5 +1,6 @@
 +++
 title="middleware/encoding/json"
+date="2016-01-31"
 description="godoc for middleware/encoding/json"
 categories=["godoc"]
 tags=["godoc","json"]

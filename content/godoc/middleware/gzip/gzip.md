@@ -1,5 +1,6 @@
 +++
 title="middleware/gzip"
+date="2016-01-31"
 description="godoc for middleware/gzip"
 categories=["godoc"]
 tags=["godoc","gzip"]

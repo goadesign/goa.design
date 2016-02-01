@@ -1,4 +1,5 @@
 +++
+date="2016-01-31"
 title="gorma/example/client/cellar-cli"
 description="godoc for gorma/example/client/cellar-cli"
 categories=["godoc"]
