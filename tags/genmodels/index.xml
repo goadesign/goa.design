@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Genmodels on goa</title>
+    <link>http://goa.design/tags/genmodels/</link>
+    <description>Recent content in Genmodels on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/genmodels/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>gorma/example/genmodels</title>
+      <link>http://goa.design/godoc/gorma/example/genmodels/genmodels/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/gorma/example/genmodels/genmodels/</guid>
+      <description>
+
+&lt;h1 id=&#34;genmodels:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;genmodels&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/gorma/example/genmodels&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-bottle:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;type Bottle&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Bottle struct {
+    ID            int `sql:&amp;quot;index&amp;quot; gorm:&amp;quot;primary_key&amp;quot;`
+    Color         string
+    Country       string
+    Myvintage     int
+    Name          string
+    Region        string
+    Review        string
+    Sweetness     int
+    Varietal      string
+    Vineyard      string
+    Vintage       int        `sql:&amp;quot;index&amp;quot;`
+    VinyardCounty string     `gorm:&amp;quot;column:vinyardcounty&amp;quot;`
+    UpdatedAt     time.Time  // timestamp
+    DeletedAt     *time.Time // nullable timestamp (soft delete)
+    CreatedAt     time.Time  // timestamp
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This is the bottle model&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottle-tablename:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (Bottle) TableName&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m Bottle) TableName() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TableName overrides the table name settings in Gorm to force a specific table name
+in the database.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottledb:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;type BottleDB&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleDB struct {
+    Db gorm.DB
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleDB is the implementation of the storage interface for
+Bottle.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newbottledb:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func NewBottleDB&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewBottleDB(db gorm.DB) *BottleDB
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewBottleDB creates a new storage type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottledb-db:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (*BottleDB) DB&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *BottleDB) DB() interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DB returns the underlying database.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottledb-listbottle:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (*BottleDB) ListBottle&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *BottleDB) ListBottle(ctx context.Context) []app.Bottle
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListBottle returns an array of view: default&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottledb-listbottleviewfull:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (*BottleDB) ListBottleViewFull&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *BottleDB) ListBottleViewFull(ctx context.Context) []app.BottleViewFull
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListBottleViewFull returns an array of view: full&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottledb-listbottleviewtiny:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (*BottleDB) ListBottleViewTiny&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *BottleDB) ListBottleViewTiny(ctx context.Context) []app.BottleViewTiny
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListBottleViewTiny returns an array of view: tiny&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottledb-tablename:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;func (*BottleDB) TableName&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *BottleDB) TableName() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TableName overrides the table name settings in Gorm to force a specific table name
+in the database.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottlestorage:c62bb9eee27bb759e023c9536c69cfe1&#34;&gt;type BottleStorage&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleStorage interface {
+    DB() interface{}
+    List(ctx context.Context) []Bottle
+    One(ctx context.Context) (Bottle, error)
+    Add(ctx context.Context, bottle Bottle) (Bottle, error)
+    Update(ctx context.Context, bottle Bottle) error
+    Delete(ctx context.Context) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleStorage represents the storage interface.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

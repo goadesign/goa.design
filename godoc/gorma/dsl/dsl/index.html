@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>gorma/dsl</h1>
+		<p>godoc for gorma/dsl</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="dsl:b91f061e580551b58ef10f70a914bd76">dsl</h1>
+
+<pre><code>import &quot;github.com/goadesign/gorma/dsl&quot;
+</code></pre>
+
+<p>Package dsl uses the Goa DSL engine to generate a data storage layer
+for your Goa API.</p>
+
+<p>Using a few DSL definitions you can extend the Goa API to include
+database persistence.</p>
+
+<p>An example:</p>
+
+<pre><code>var sg = StorageGroup(&quot;MyStorageGroup&quot;, func() {
+    Description(&quot;This is the global storage group&quot;)
+    Store(&quot;mysql&quot;, gorma.MySQL, func() {
+        Description(&quot;This is the mysql relational store&quot;)
+        Model(&quot;Bottle&quot;, func() {
+            BuiltFrom(BottlePayload)
+            RenderTo(Bottle)
+            Description(&quot;This is the bottle model&quot;)
+            Field(&quot;ID&quot;, gorma.PKInteger, func() {
+                Description(&quot;This is the ID PK field&quot;)
+            })
+            Field(&quot;Vintage&quot;, gorma.Integer, func() {
+                SQLTag(&quot;index&quot;)
+            })
+            Field(&quot;CreatedAt&quot;, gorma.Timestamp, func() {})
+            Field(&quot;UpdatedAt&quot;, gorma.Timestamp, func() {})
+            Field(&quot;DeletedAt&quot;, gorma.NullableTimestamp, func() {})
+        })
+    })
+})
+</code></pre>
+
+<p>Gorma uses Gorm (<a href="https://github.com/jinzhu/gorm">https://github.com/jinzhu/gorm</a>) for database access.  Gorm was chosen
+as the best of the &lsquo;light-ORM&rsquo; libraries available for Go.  It does the mundane work and
+allows you to do anything manually if you choose.</p>
+
+<p>The base Gorma definition is a <code>StorageGroup</code> which represents all the storage needs for an
+application.  A StorageGroup will contain one or more <code>Store</code>, which represends a database or
+other persistence mechanism.  Gorma supports all the databases that Gorm supports, and
+it is possible in the future to support others &ndash; like Key/Value stores.</p>
+
+<p>Every <code>Store</code> will have one or more <code>Model</code> which maps a Go structure to a table in the database.
+Use the <code>BuiltFrom</code> and <code>RenderTo</code> DSL to tell the model which Goa types will be the payload (input)
+and return types.</p>
+
+<p>A <code>Model</code> will contain one or more fields.  Gorma will use the <code>BuiltFrom</code> definition to populate
+a base set of fields.  Custom DSL is provided to add additional fields:</p>
+
+<p>Each table will likely want a primary key.  To add one to your <code>Model</code>, create a Field definition
+with a type of <code>gorma.PKInteger</code> or <code>gorma.PKBigInteger</code>.  Gorma will support UUID primary keys
+at some point in the future.</p>
+
+<pre><code>Field(&quot;ID&quot;, gorma.PKInteger, func() {
+    Description(&quot;This is the ID PK field&quot;)
+})
+</code></pre>
+
+<p>Gorma generates all the helpers you need to translate to and from the Goa types (media types and payloads).
+This makes wiring up your Goa controllers almost too easy to be considered programming.</p>
+
+<h2 id="func-alias:b91f061e580551b58ef10f70a914bd76">func Alias</h2>
+
+<pre><code class="language-go">func Alias(d string)
+</code></pre>
+
+<p>Alias overrides the name of the SQL store&rsquo;s table or field.</p>
+
+<h2 id="func-belongsto:b91f061e580551b58ef10f70a914bd76">func BelongsTo</h2>
+
+<pre><code class="language-go">func BelongsTo(parent string)
+</code></pre>
+
+<p>BelongsTo signifies a relationship between this model and a
+Parent.  The Parent has the child, and the Child belongs
+to the Parent.
+Usage:  BelongsTo(&ldquo;User&rdquo;)</p>
+
+<h2 id="func-builtfrom:b91f061e580551b58ef10f70a914bd76">func BuiltFrom</h2>
+
+<pre><code class="language-go">func BuiltFrom(bf interface{})
+</code></pre>
+
+<p>BuiltFrom informs Gorma that this model will be populated
+from a Goa payload (User Type).  Conversion functions
+will be generated to convert from the payload to the model.
+Usage:  BuiltFrom(SomeGoaPayload)</p>
+
+<h2 id="func-cached:b91f061e580551b58ef10f70a914bd76">func Cached</h2>
+
+<pre><code class="language-go">func Cached(d string)
+</code></pre>
+
+<p>Cached caches the models for <code>duration</code> seconds.</p>
+
+<h2 id="func-description:b91f061e580551b58ef10f70a914bd76">func Description</h2>
+
+<pre><code class="language-go">func Description(d string)
+</code></pre>
+
+<p>Description sets the definition description.
+Description can be called inside StorageGroup, RelationalStore, RelationalModel, RelationalField</p>
+
+<h2 id="func-dynamictablename:b91f061e580551b58ef10f70a914bd76">func DynamicTableName</h2>
+
+<pre><code class="language-go">func DynamicTableName()
+</code></pre>
+
+<p>DynamicTableName sets a boolean flag that causes the generator to
+generate function definitions in the database models that specify
+the name of the database table.  Useful when using multiple tables
+with different names but same schema e.g. Users, AdminUsers.</p>
+
+<h2 id="func-field:b91f061e580551b58ef10f70a914bd76">func Field</h2>
+
+<pre><code class="language-go">func Field(name string, args ...interface{})
+</code></pre>
+
+<p>Field is a DSL definition for a field in a Relational Model.
+TODO: Examples and more docs here later.</p>
+
+<p>Parameter Options:
+Field(&ldquo;Title&rdquo;)
+Field(&ldquo;Title&rdquo;, gorma.String)
+Field(&ldquo;Title&rdquo;, func(){&hellip; other field level dsl &hellip;})
+Field(&ldquo;Title&rdquo;, gorma.String, func(){&hellip; other field level dsl &hellip;})</p>
+
+<h2 id="func-hasmany:b91f061e580551b58ef10f70a914bd76">func HasMany</h2>
+
+<pre><code class="language-go">func HasMany(name, child string)
+</code></pre>
+
+<p>HasMany signifies a relationship between this model and a
+set of Children.  The Parent has the children, and the Children belong
+to the Parent.  The first parameter becomes the name of the
+field in the model struct, the second parameter is the name
+of the child model.  The Child model will have a ParentID field
+appended to the field list.  The Parent model definition will use
+the first parameter as the field name in the struct definition.
+Usage:  HasMany(&ldquo;Orders&rdquo;, &ldquo;Order&rdquo;)
+Struct field definition:  Children  []Child</p>
+
+<h2 id="func-hasone:b91f061e580551b58ef10f70a914bd76">func HasOne</h2>
+
+<pre><code class="language-go">func HasOne(child string)
+</code></pre>
+
+<p>HasOne signifies a relationship between this model and another model.
+If this model HasOne(OtherModel), then OtherModel is expected
+to have a ThisModelID field as a Foreign Key to this model&rsquo;s
+Primary Key.  ThisModel will have a field named OtherModel of type
+OtherModel.
+Usage:  HasOne(&ldquo;Proposal&rdquo;)</p>
+
+<h2 id="func-manytomany:b91f061e580551b58ef10f70a914bd76">func ManyToMany</h2>
+
+<pre><code class="language-go">func ManyToMany(other, tablename string)
+</code></pre>
+
+<p>ManyToMany creates a join table to store the intersection relationship
+between this model and another model.  For example, in retail an Order can
+contain many products, and a product can belong to many orders.  To express
+this relationship use the following syntax:
+Model(&ldquo;Order&rdquo;, func(){</p>
+
+<pre><code>ManyToMany(&quot;Product&quot;, &quot;order_lines&quot;)
+</code></pre>
+
+<p>})
+This specifies that the Order and Product tables have a &ldquo;junction&rdquo; table
+called <code>order_lines</code> that contains the order and product information.
+The generated model will have a field called <code>Products</code> that will
+be an array of type <code>product.Product</code>.</p>
+
+<h2 id="func-model:b91f061e580551b58ef10f70a914bd76">func Model</h2>
+
+<pre><code class="language-go">func Model(name string, dsl func())
+</code></pre>
+
+<p>Model is the DSL that represents a Relational Model.
+Model name should be Title cased. Use RenderTo() and BuiltFrom()
+to have Gorma generate conversion helpers for your model.  Gorma
+will create appropriate fields for all of your database relationships
+too, using the BelongsTo(), HasMany(), HasOne(), and ManyToMany() DSL.</p>
+
+<h2 id="func-noautomaticidfields:b91f061e580551b58ef10f70a914bd76">func NoAutomaticIDFields</h2>
+
+<pre><code class="language-go">func NoAutomaticIDFields()
+</code></pre>
+
+<p>NoAutomaticIDFields applies to a <code>Store</code> type.  It allows you
+to turn off the default behavior that will automatically create
+an ID/int Primary Key for each model.</p>
+
+<h2 id="func-noautomaticsoftdelete:b91f061e580551b58ef10f70a914bd76">func NoAutomaticSoftDelete</h2>
+
+<pre><code class="language-go">func NoAutomaticSoftDelete()
+</code></pre>
+
+<p>NoAutomaticSoftDelete applies to a <code>Store</code> type.  It allows
+you to turn off the default behavior that will automatically
+create a <code>DeletedAt</code> field (*time.Time) that acts as a
+soft-delete filter for your models.</p>
+
+<h2 id="func-noautomatictimestamps:b91f061e580551b58ef10f70a914bd76">func NoAutomaticTimestamps</h2>
+
+<pre><code class="language-go">func NoAutomaticTimestamps()
+</code></pre>
+
+<p>NoAutomaticTimestamps applies to a <code>Store</code> type.  It allows you
+to turn off the default behavior that will automatically create
+an <code>CreatedAt</code> and <code>UpdatedAt</code> fields for each model.</p>
+
+<h2 id="func-renderto:b91f061e580551b58ef10f70a914bd76">func RenderTo</h2>
+
+<pre><code class="language-go">func RenderTo(rt interface{})
+</code></pre>
+
+<p>RenderTo informs Gorma that this model will need to be
+rendered to a Goa type.  Conversion functions
+will be generated to convert to/from the model.
+Usage:   RenderTo(SomeGoaMediaType)</p>
+
+<h2 id="func-roler:b91f061e580551b58ef10f70a914bd76">func Roler</h2>
+
+<pre><code class="language-go">func Roler()
+</code></pre>
+
+<p>Roler sets a boolean flag that cause the generation of a
+Role() function that returns the model&rsquo;s Role value
+Requires a field in the model named Role, type String</p>
+
+<h2 id="func-sqltag:b91f061e580551b58ef10f70a914bd76">func SQLTag</h2>
+
+<pre><code class="language-go">func SQLTag(d string)
+</code></pre>
+
+<p>SQLTag sets the model&rsquo;s struct tag <code>sql</code> value
+for indexing and other purposes.</p>
+
+<h2 id="func-sanitizedbfieldname:b91f061e580551b58ef10f70a914bd76">func SanitizeDBFieldName</h2>
+
+<pre><code class="language-go">func SanitizeDBFieldName(name string) string
+</code></pre>
+
+<p>SanitizeDBFieldName is exported for testing purposes</p>
+
+<h2 id="func-sanitizefieldname:b91f061e580551b58ef10f70a914bd76">func SanitizeFieldName</h2>
+
+<pre><code class="language-go">func SanitizeFieldName(name string) string
+</code></pre>
+
+<p>SanitizeFieldName is exported for testing purposes</p>
+
+<h2 id="func-storagegroup:b91f061e580551b58ef10f70a914bd76">func StorageGroup</h2>
+
+<pre><code class="language-go">func StorageGroup(name string, dsli func()) *gorma.StorageGroupDefinition
+</code></pre>
+
+<p>StorageGroup implements the top level Gorma DSL
+There should be one StorageGroup per Goa application.</p>
+
+<h2 id="func-store:b91f061e580551b58ef10f70a914bd76">func Store</h2>
+
+<pre><code class="language-go">func Store(name string, storeType gorma.RelationalStorageType, dsl func())
+</code></pre>
+
+<p>Store represents a database.  Gorma lets you specify
+a database type, but it&rsquo;s currently not used for any generation
+logic.</p>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+

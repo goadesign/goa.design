@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>goa/dslengine</h1>
+		<p>godoc for goa/dslengine</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="dslengine:1e0eb94feca2c8be53d3bd77a1934133">dslengine</h1>
+
+<pre><code>import &quot;github.com/goadesign/goa/dslengine&quot;
+</code></pre>
+
+<h2 id="func-caller:1e0eb94feca2c8be53d3bd77a1934133">func Caller</h2>
+
+<pre><code class="language-go">func Caller() string
+</code></pre>
+
+<p>Caller returns the name of calling function.</p>
+
+<h2 id="func-canuse:1e0eb94feca2c8be53d3bd77a1934133">func CanUse</h2>
+
+<pre><code class="language-go">func CanUse(client, provider Versioned) error
+</code></pre>
+
+<p>CanUse returns nil if the provider supports all the versions supported by the client or if the
+provider is unversioned.</p>
+
+<h2 id="func-execute:1e0eb94feca2c8be53d3bd77a1934133">func Execute</h2>
+
+<pre><code class="language-go">func Execute(dsl func(), def Definition) bool
+</code></pre>
+
+<p>Execute runs the given DSL to initialize the given definition. It returns true on success.
+It returns false and appends to Errors on failure.
+Note that <code>Run</code> takes care of calling <code>Execute</code> on all definitions that implement Source.
+This function is intended for use by definitions that run the DSL at declaration time rather than
+store the DSL for execution by the dsl (usually simple independent definitions).
+The DSL should use ReportError to record DSL execution errors.</p>
+
+<h2 id="func-incompatibledsl:1e0eb94feca2c8be53d3bd77a1934133">func IncompatibleDSL</h2>
+
+<pre><code class="language-go">func IncompatibleDSL(dslFunc string)
+</code></pre>
+
+<p>IncompatibleDSL should be called by DSL functions when they are
+invoked in an incorrect context (e.g. &ldquo;Params&rdquo; in &ldquo;Resource&rdquo;).</p>
+
+<h2 id="func-invalidargerror:1e0eb94feca2c8be53d3bd77a1934133">func InvalidArgError</h2>
+
+<pre><code class="language-go">func InvalidArgError(expected string, actual interface{})
+</code></pre>
+
+<p>InvalidArgError records an invalid argument error.
+It is used by DSL functions that take dynamic arguments.</p>
+
+<h2 id="func-reporterror:1e0eb94feca2c8be53d3bd77a1934133">func ReportError</h2>
+
+<pre><code class="language-go">func ReportError(fm string, vals ...interface{})
+</code></pre>
+
+<p>ReportError records a DSL error for reporting post DSL execution.</p>
+
+<h2 id="func-run:1e0eb94feca2c8be53d3bd77a1934133">func Run</h2>
+
+<pre><code class="language-go">func Run() error
+</code></pre>
+
+<p>Run runs the given root definitions. It iterates over the definition sets multiple times to
+first execute the DSL, the validate the resulting definitions and finally finalize them.
+The executed DSL may append new roots to the Roots Design package variable to have them be
+executed (last) in the same run.</p>
+
+<h2 id="func-topleveldefinition:1e0eb94feca2c8be53d3bd77a1934133">func TopLevelDefinition</h2>
+
+<pre><code class="language-go">func TopLevelDefinition(failItNotTopLevel bool) bool
+</code></pre>
+
+<p>TopLevelDefinition returns true if the currently evaluated DSL is a root
+DSL (i.e. is not being run in the context of another definition).</p>
+
+<h2 id="type-definition:1e0eb94feca2c8be53d3bd77a1934133">type Definition</h2>
+
+<pre><code class="language-go">type Definition interface {
+    // Context is used to build error messages that refer to the definition.
+    Context() string
+}
+</code></pre>
+
+<p>Definition is the common interface implemented by all definitions.</p>
+
+<h3 id="func-currentdefinition:1e0eb94feca2c8be53d3bd77a1934133">func CurrentDefinition</h3>
+
+<pre><code class="language-go">func CurrentDefinition() Definition
+</code></pre>
+
+<p>CurrentDefinition returns the definition whose initialization DSL is currently being executed.</p>
+
+<h2 id="type-definitionset:1e0eb94feca2c8be53d3bd77a1934133">type DefinitionSet</h2>
+
+<pre><code class="language-go">type DefinitionSet []Definition
+</code></pre>
+
+<p>DefinitionSet contains DSL definitions that are executed as one unit.
+The slice elements may implement the Validate an, Source interfaces to enable the
+corresponding behaviors during DSL execution.</p>
+
+<h2 id="type-enumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type EnumValidationDefinition</h2>
+
+<pre><code class="language-go">type EnumValidationDefinition struct {
+    Values []interface{}
+}
+</code></pre>
+
+<p>EnumValidationDefinition represents an enum validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor76">http://json-schema.org/latest/json-schema-validation.html#anchor76</a>.</p>
+
+<h3 id="func-enumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*EnumValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (v *EnumValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-error:1e0eb94feca2c8be53d3bd77a1934133">type Error</h2>
+
+<pre><code class="language-go">type Error struct {
+    GoError error
+    File    string
+    Line    int
+}
+</code></pre>
+
+<p>Error represents an error that occurred while running the API DSL.
+It contains the name of the file and line number of where the error
+occurred as well as the original Go error.</p>
+
+<h3 id="func-error-error:1e0eb94feca2c8be53d3bd77a1934133">func (*Error) Error</h3>
+
+<pre><code class="language-go">func (de *Error) Error() (res string)
+</code></pre>
+
+<p>Error returns the underlying error message.</p>
+
+<h2 id="type-finalize:1e0eb94feca2c8be53d3bd77a1934133">type Finalize</h2>
+
+<pre><code class="language-go">type Finalize interface {
+    Definition
+    // Finalize is run by the DSL runner once the definition DSL has executed and the
+    // definition has been validated.
+    Finalize()
+}
+</code></pre>
+
+<p>Finalize is the interface implemented by definitions that require an additional pass
+after the DSL has executed (e.g. to merge generated definitions or initialize default
+values)</p>
+
+<h2 id="type-formatvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type FormatValidationDefinition</h2>
+
+<pre><code class="language-go">type FormatValidationDefinition struct {
+    Format string
+}
+</code></pre>
+
+<p>FormatValidationDefinition represents a format validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor104">http://json-schema.org/latest/json-schema-validation.html#anchor104</a>.</p>
+
+<h3 id="func-formatvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*FormatValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (f *FormatValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-maxlengthvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type MaxLengthValidationDefinition</h2>
+
+<pre><code class="language-go">type MaxLengthValidationDefinition struct {
+    MaxLength int
+}
+</code></pre>
+
+<p>MaxLengthValidationDefinition represents an maximum length validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor26">http://json-schema.org/latest/json-schema-validation.html#anchor26</a>.</p>
+
+<h3 id="func-maxlengthvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*MaxLengthValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (m *MaxLengthValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-maximumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type MaximumValidationDefinition</h2>
+
+<pre><code class="language-go">type MaximumValidationDefinition struct {
+    Max float64
+}
+</code></pre>
+
+<p>MaximumValidationDefinition represents a maximum value validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor17">http://json-schema.org/latest/json-schema-validation.html#anchor17</a>.</p>
+
+<h3 id="func-maximumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*MaximumValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (m *MaximumValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-metadatadefinition:1e0eb94feca2c8be53d3bd77a1934133">type MetadataDefinition</h2>
+
+<pre><code class="language-go">type MetadataDefinition map[string][]string
+</code></pre>
+
+<p>MetadataDefinition is a set of key/value pairs</p>
+
+<h2 id="type-minlengthvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type MinLengthValidationDefinition</h2>
+
+<pre><code class="language-go">type MinLengthValidationDefinition struct {
+    MinLength int
+}
+</code></pre>
+
+<p>MinLengthValidationDefinition represents an minimum length validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor29">http://json-schema.org/latest/json-schema-validation.html#anchor29</a>.</p>
+
+<h3 id="func-minlengthvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*MinLengthValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (m *MinLengthValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-minimumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type MinimumValidationDefinition</h2>
+
+<pre><code class="language-go">type MinimumValidationDefinition struct {
+    Min float64
+}
+</code></pre>
+
+<p>MinimumValidationDefinition represents an minimum value validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor21">http://json-schema.org/latest/json-schema-validation.html#anchor21</a>.</p>
+
+<h3 id="func-minimumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*MinimumValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (m *MinimumValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-multierror:1e0eb94feca2c8be53d3bd77a1934133">type MultiError</h2>
+
+<pre><code class="language-go">type MultiError []*Error
+</code></pre>
+
+<p>MultiError collects all DSL errors. It implements error.</p>
+
+<pre><code class="language-go">var (
+    // Errors contains the DSL execution errors if any.
+    Errors MultiError
+
+    // Roots contains the root definition sets built by the DSLs.
+    // DSL implementations should append to it to ensure the DSL gets executed by the runner.
+    // Note that a root definition is a different concept from a &quot;top level&quot; definition (i.e. a
+    // definition that is an entry point in the DSL). In particular a root definition may include
+    // an arbitrary number of definition sets forming a tree of definitions.
+    // For example the API DSL only has one root definition (the API definition) but many top level
+    // definitions (API, Version, Type, MediaType etc.) all defining a definition set.
+    Roots []Root
+)
+</code></pre>
+
+<h3 id="func-multierror-error:1e0eb94feca2c8be53d3bd77a1934133">func (MultiError) Error</h3>
+
+<pre><code class="language-go">func (m MultiError) Error() string
+</code></pre>
+
+<p>Error returns the error message.</p>
+
+<h2 id="type-patternvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type PatternValidationDefinition</h2>
+
+<pre><code class="language-go">type PatternValidationDefinition struct {
+    Pattern string
+}
+</code></pre>
+
+<p>PatternValidationDefinition represents a pattern validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor33">http://json-schema.org/latest/json-schema-validation.html#anchor33</a></p>
+
+<h3 id="func-patternvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*PatternValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (f *PatternValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-requiredvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type RequiredValidationDefinition</h2>
+
+<pre><code class="language-go">type RequiredValidationDefinition struct {
+    Names []string
+}
+</code></pre>
+
+<p>RequiredValidationDefinition represents a required validation as described at
+<a href="http://json-schema.org/latest/json-schema-validation.html#anchor61">http://json-schema.org/latest/json-schema-validation.html#anchor61</a>.</p>
+
+<h3 id="func-requiredvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*RequiredValidationDefinition) Context</h3>
+
+<pre><code class="language-go">func (r *RequiredValidationDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h2 id="type-root:1e0eb94feca2c8be53d3bd77a1934133">type Root</h2>
+
+<pre><code class="language-go">type Root interface {
+    // IterateSets calls the given iterator passing in each definition set sorted in
+    // execution order.
+    IterateSets(SetIterator)
+}
+</code></pre>
+
+<p>Root is the interface implemented by the DSL root objects held by the Roots variable.
+These objects contains all the definition sets created by the DSL and can be passed to
+the dsl for execution.</p>
+
+<h2 id="type-setiterator:1e0eb94feca2c8be53d3bd77a1934133">type SetIterator</h2>
+
+<pre><code class="language-go">type SetIterator func(s DefinitionSet) error
+</code></pre>
+
+<p>SetIterator is the function signature used to iterate over definition sets with
+IterateSets.</p>
+
+<h2 id="type-source:1e0eb94feca2c8be53d3bd77a1934133">type Source</h2>
+
+<pre><code class="language-go">type Source interface {
+    Definition
+    // DSL returns the DSL used to initialize the definition if any.
+    DSL() func()
+}
+</code></pre>
+
+<p>Source is the interface implemented by definitions that can be initialized via DSL.</p>
+
+<h2 id="type-traitdefinition:1e0eb94feca2c8be53d3bd77a1934133">type TraitDefinition</h2>
+
+<pre><code class="language-go">type TraitDefinition struct {
+    // Trait name
+    Name string
+    // Trait DSL
+    DSLFunc func()
+}
+</code></pre>
+
+<p>TraitDefinition defines a set of reusable properties.</p>
+
+<h3 id="func-traitdefinition-context:1e0eb94feca2c8be53d3bd77a1934133">func (*TraitDefinition) Context</h3>
+
+<pre><code class="language-go">func (t *TraitDefinition) Context() string
+</code></pre>
+
+<p>Context returns the generic definition name used in error messages.</p>
+
+<h3 id="func-traitdefinition-dsl:1e0eb94feca2c8be53d3bd77a1934133">func (*TraitDefinition) DSL</h3>
+
+<pre><code class="language-go">func (t *TraitDefinition) DSL() func()
+</code></pre>
+
+<p>DSL returns the initialization DSL.</p>
+
+<h2 id="type-validate:1e0eb94feca2c8be53d3bd77a1934133">type Validate</h2>
+
+<pre><code class="language-go">type Validate interface {
+    Definition
+    // Validate returns nil if the definition contains no validation error.
+    // The Validate implementation may take advantage of ValidationErrors to report
+    // more than one errors at a time.
+    Validate() error
+}
+</code></pre>
+
+<p>Validate is the interface implemented by definitions that can be validated.
+Validation is done by the DSL dsl post execution.</p>
+
+<h2 id="type-validationdefinition:1e0eb94feca2c8be53d3bd77a1934133">type ValidationDefinition</h2>
+
+<pre><code class="language-go">type ValidationDefinition interface {
+    Definition
+}
+</code></pre>
+
+<p>ValidationDefinition is the common interface for all validation data structures.
+It doesn&rsquo;t expose any method and simply exists to help with documentation.</p>
+
+<h2 id="type-validationerrors:1e0eb94feca2c8be53d3bd77a1934133">type ValidationErrors</h2>
+
+<pre><code class="language-go">type ValidationErrors struct {
+    Errors      []error
+    Definitions []Definition
+}
+</code></pre>
+
+<p>ValidationErrors records the errors encountered when running Validate.</p>
+
+<h3 id="func-validationerrors-add:1e0eb94feca2c8be53d3bd77a1934133">func (*ValidationErrors) Add</h3>
+
+<pre><code class="language-go">func (verr *ValidationErrors) Add(def Definition, format string, vals ...interface{})
+</code></pre>
+
+<p>Add adds a validation error to the target.
+Add &ldquo;flattens&rdquo; validation errors so that the recorded errors are never ValidationErrors
+themselves.</p>
+
+<h3 id="func-validationerrors-aserror:1e0eb94feca2c8be53d3bd77a1934133">func (*ValidationErrors) AsError</h3>
+
+<pre><code class="language-go">func (verr *ValidationErrors) AsError() *ValidationErrors
+</code></pre>
+
+<p>AsError returns an error if there are validation errors, nil otherwise.</p>
+
+<h3 id="func-validationerrors-error:1e0eb94feca2c8be53d3bd77a1934133">func (*ValidationErrors) Error</h3>
+
+<pre><code class="language-go">func (verr *ValidationErrors) Error() string
+</code></pre>
+
+<p>Error implements the error interface.</p>
+
+<h3 id="func-validationerrors-merge:1e0eb94feca2c8be53d3bd77a1934133">func (*ValidationErrors) Merge</h3>
+
+<pre><code class="language-go">func (verr *ValidationErrors) Merge(err *ValidationErrors)
+</code></pre>
+
+<p>Merge merges validation errors into the target.</p>
+
+<h2 id="type-versioned:1e0eb94feca2c8be53d3bd77a1934133">type Versioned</h2>
+
+<pre><code class="language-go">type Versioned interface {
+    Definition
+    // Versions returns an array of supported versions if the object is versioned, nil
+    // othewise.
+    Versions() []string
+    // SupportsVersion returns true if the object supports the given version.
+    SupportsVersion(ver string) bool
+    // SupportsNoVersion returns true if the object is unversioned.
+    SupportsNoVersion() bool
+}
+</code></pre>
+
+<p>Versioned is implemented by potentially versioned definitions such as API resources.</p>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+

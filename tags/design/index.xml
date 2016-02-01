@@ -1,0 +1,2021 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Design on goa</title>
+    <link>http://goa.design/tags/design/</link>
+    <description>Recent content in Design on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/design/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>goa/design</title>
+      <link>http://goa.design/godoc/goa/design/design/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/goa/design/design/</guid>
+      <description>
+
+&lt;h1 id=&#34;design:83772ba7ad0304b1562d08f190539946&#34;&gt;design&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/goa/design&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Package design defines types which describe the data types used by action controllers.
+These are the data structures of the request payloads and parameters as well as the response
+payloads.
+There are primitive types corresponding to the JSON primitive types (bool, string, integer and
+number), array types which represent a collection of another type and object types corresponding
+to JSON objects (i.e. a map indexed by strings where each value may be any of the data types).
+On top of these the package also defines &amp;ldquo;user types&amp;rdquo; and &amp;ldquo;media types&amp;rdquo;. Both these types are
+named objects with additional properties (a description and for media types the media type
+identifier, links and views).&lt;/p&gt;
+
+&lt;h2 id=&#34;constants:83772ba7ad0304b1562d08f190539946&#34;&gt;Constants&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // BooleanKind represents a JSON bool.
+    BooleanKind = iota + 1
+    // IntegerKind represents a JSON integer.
+    IntegerKind
+    // NumberKind represents a JSON number including integers.
+    NumberKind
+    // StringKind represents a JSON string.
+    StringKind
+    // DateTimeKind represents a JSON string that is parsed as a Go time.Time
+    DateTimeKind
+    // AnyKind represents a generic interface{}.
+    AnyKind
+    // ArrayKind represents a JSON array.
+    ArrayKind
+    // ObjectKind represents a JSON object.
+    ObjectKind
+    // HashKind represents a JSON object where the keys are not known in advance.
+    HashKind
+    // UserTypeKind represents a user type.
+    UserTypeKind
+    // MediaTypeKind represents a media type.
+    MediaTypeKind
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // Boolean is the type for a JSON boolean.
+    Boolean = Primitive(BooleanKind)
+
+    // Integer is the type for a JSON number without a fraction or exponent part.
+    Integer = Primitive(IntegerKind)
+
+    // Number is the type for any JSON number, including integers.
+    Number = Primitive(NumberKind)
+
+    // String is the type for a JSON string.
+    String = Primitive(StringKind)
+
+    // DateTime is the type for a JSON string parsed as a Go time.Time
+    // DateTime expects an RFC3339 formatted value.
+    DateTime = Primitive(DateTimeKind)
+
+    // Any is the type for an arbitrary JSON value (interface{} in Go).
+    Any = Primitive(AnyKind)
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;variables:83772ba7ad0304b1562d08f190539946&#34;&gt;Variables&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var (
+    // Design is the API definition created via DSL.
+    Design *APIDefinition
+
+    // WildcardRegex is the regular expression used to capture path parameters.
+    WildcardRegex = regexp.MustCompile(`/(?::|\*)([a-zA-Z0-9_]+)`)
+
+    // GeneratedMediaTypes contains DSL definitions that were created by the design DSL and
+    // need to be executed as a second pass.
+    // An example of this are media types defined with CollectionOf: the element media type
+    // must be defined first then the definition created by CollectionOf must execute.
+    GeneratedMediaTypes MediaTypeRoot
+
+    // DefaultDecoders contains the decoding definitions used when no Consumes DSL is found.
+    DefaultDecoders []*EncodingDefinition
+
+    // DefaultEncoders contains the encoding definitions used when no Produces DSL is found.
+    DefaultEncoders []*EncodingDefinition
+
+    // KnownEncoders contains the list of encoding packages and factories known by goa indexed
+    // by MIME type.
+    KnownEncoders = map[string][3]string{
+        &amp;quot;application/json&amp;quot;:      [3]string{&amp;quot;json&amp;quot;, &amp;quot;JSONEncoderFactory&amp;quot;, &amp;quot;JSONDecoderFactory&amp;quot;},
+        &amp;quot;application/xml&amp;quot;:       [3]string{&amp;quot;xml&amp;quot;, &amp;quot;XMLEncoderFactory&amp;quot;, &amp;quot;XMLDecoderFactory&amp;quot;},
+        &amp;quot;text/xml&amp;quot;:              [3]string{&amp;quot;xml&amp;quot;, &amp;quot;XMLEncoderFactory&amp;quot;, &amp;quot;XMLDecoderFactory&amp;quot;},
+        &amp;quot;application/gob&amp;quot;:       [3]string{&amp;quot;gob&amp;quot;, &amp;quot;GobEncoderFactory&amp;quot;, &amp;quot;GobDecoderFactory&amp;quot;},
+        &amp;quot;application/x-gob&amp;quot;:     [3]string{&amp;quot;gob&amp;quot;, &amp;quot;GobEncoderFactory&amp;quot;, &amp;quot;GobDecoderFactory&amp;quot;},
+        &amp;quot;application/binc&amp;quot;:      [3]string{&amp;quot;github.com/goadesign/middleware/encoding/binc&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+        &amp;quot;application/x-binc&amp;quot;:    [3]string{&amp;quot;github.com/goadesign/middleware/encoding/binc&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+        &amp;quot;application/x-cbor&amp;quot;:    [3]string{&amp;quot;github.com/goadesign/middleware/encoding/cbor&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+        &amp;quot;application/cbor&amp;quot;:      [3]string{&amp;quot;github.com/goadesign/middleware/encoding/cbor&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+        &amp;quot;application/msgpack&amp;quot;:   [3]string{&amp;quot;github.com/goadesign/middleware/encoding/msgpack&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+        &amp;quot;application/x-msgpack&amp;quot;: [3]string{&amp;quot;github.com/goadesign/middleware/encoding/msgpack&amp;quot;, &amp;quot;EncoderFactory&amp;quot;, &amp;quot;DecoderFactory&amp;quot;},
+    }
+
+    // JSONContentTypes is a slice of default Content-Type headers that will use stdlib
+    // encoding/json to unmarshal unless overwritten using SetDecoder
+    JSONContentTypes = []string{&amp;quot;application/json&amp;quot;}
+
+    // XMLContentTypes is a slice of default Content-Type headers that will use stdlib
+    // encoding/xml to unmarshal unless overwritten using SetDecoder
+    XMLContentTypes = []string{&amp;quot;application/xml&amp;quot;, &amp;quot;text/xml&amp;quot;}
+
+    // GobContentTypes is a slice of default Content-Type headers that will use stdlib
+    // encoding/gob to unmarshal unless overwritten using SetDecoder
+    GobContentTypes = []string{&amp;quot;application/gob&amp;quot;, &amp;quot;application/x-gob&amp;quot;}
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;func-canonicalidentifier:83772ba7ad0304b1562d08f190539946&#34;&gt;func CanonicalIdentifier&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func CanonicalIdentifier(identifier string) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CanonicalIdentifier returns the media type identifier sans suffix
+which is what the DSL uses to store and lookup media types.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-extractwildcards:83772ba7ad0304b1562d08f190539946&#34;&gt;func ExtractWildcards&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ExtractWildcards(path string) []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ExtractWildcards returns the names of the wildcards that appear in path.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-hasknownencoder:83772ba7ad0304b1562d08f190539946&#34;&gt;func HasKnownEncoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func HasKnownEncoder(mimeType string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HasKnownEncoder returns true if the encoder for the given MIME type is known by goa.
+MIME types with unknown encoders must be associated with a package path explicitly in the DSL.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-isgoaencoder:83772ba7ad0304b1562d08f190539946&#34;&gt;func IsGoaEncoder&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func IsGoaEncoder(pkgPath string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsGoaEncoder returns true if the encoder for the given MIME type is implemented in the goa
+package.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-apidefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type APIDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type APIDefinition struct {
+    // APIVersionDefinition contains the default values for properties across all versions.
+    *APIVersionDefinition
+    // APIVersions contain the API properties indexed by version.
+    APIVersions map[string]*APIVersionDefinition
+    // Exposed resources indexed by name
+    Resources map[string]*ResourceDefinition
+    // Types indexes the user defined types by name.
+    Types map[string]*UserTypeDefinition
+    // MediaTypes indexes the API media types by canonical identifier.
+    MediaTypes map[string]*MediaTypeDefinition
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;APIDefinition defines the global properties of the API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) Example(dt DataType) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example returns a random value for the given data type.
+If the data type has validations then the example value validates them.
+Example returns the same random value for a given api name (the random
+generator is seeded after the api name).&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-iteratemediatypes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) IterateMediaTypes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) IterateMediaTypes(it MediaTypeIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateMediaTypes calls the given iterator passing in each media type sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateMediaTypes returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-iterateresources:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) IterateResources&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) IterateResources(it ResourceIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateResources calls the given iterator passing in each resource sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateResources returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-iteratesets:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) IterateSets&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) IterateSets(iterator dslengine.SetIterator)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateSets goes over all the definition sets of the API: The API definition itself, each
+version definition, user types, media types and finally resources.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-iterateusertypes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) IterateUserTypes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) IterateUserTypes(it UserTypeIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateUserTypes calls the given iterator passing in each user type sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateUserTypes returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-iterateversions:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) IterateVersions&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) IterateVersions(it VersionIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateVersions calls the given iterator passing in each API version definition sorted
+alphabetically by version name. It first calls the iterator on the embedded version definition
+which contains the definitions for all the unversioned resources.
+Iteration stops if an iterator returns an error and in this case IterateVersions returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-mediatypewithidentifier:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) MediaTypeWithIdentifier&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) MediaTypeWithIdentifier(id string) *MediaTypeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaTypeWithIdentifier returns the media type with a matching
+media type identifier. Two media type identifiers match if their
+values sans suffix match. So for example &amp;ldquo;application/vnd.foo+xml&amp;rdquo;,
+&amp;ldquo;application/vnd.foo+json&amp;rdquo; and &amp;ldquo;application/vnd.foo&amp;rdquo; all match.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-supportsnoversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) SupportsNoVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) SupportsNoVersion() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsNoVersion returns true if the API is unversioned.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-supportsversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) SupportsVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) SupportsVersion(ver string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsVersion returns true if the object supports the given version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate tests whether the API definition is consistent: all resource parent names resolve to
+an actual resource.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apidefinition-versions:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIDefinition) Versions&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *APIDefinition) Versions() (versions []string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Versions returns an array of supported versions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-apiversiondefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type APIVersionDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type APIVersionDefinition struct {
+    // API name
+    Name string
+    // API Title
+    Title string
+    // API description
+    Description string
+    // API version if any
+    Version string
+    // API hostname
+    Host string
+    // API URL schemes
+    Schemes []string
+    // Common base path to all API actions
+    BasePath string
+    // Common path parameters to all API actions
+    BaseParams *AttributeDefinition
+    // Consumes lists the mime types supported by the API controllers.
+    Consumes []*EncodingDefinition
+    // Produces lists the mime types generated by the API controllers.
+    Produces []*EncodingDefinition
+    // TermsOfService describes or links to the API terms of service
+    TermsOfService string
+    // Contact provides the API users with contact information
+    Contact *ContactDefinition
+    // License describes the API license
+    License *LicenseDefinition
+    // Docs points to the API external documentation
+    Docs *DocsDefinition
+    // Traits available to all API resources and actions indexed by name
+    Traits map[string]*dslengine.TraitDefinition
+    // Responses available to all API actions indexed by name
+    Responses map[string]*ResponseDefinition
+    // Response template factories available to all API actions indexed by name
+    ResponseTemplates map[string]*ResponseTemplateDefinition
+    // Built-in responses
+    DefaultResponses map[string]*ResponseDefinition
+    // Built-in response templates
+    DefaultResponseTemplates map[string]*ResponseTemplateDefinition
+    // DSLFunc contains the DSL used to create this definition if any.
+    DSLFunc func()
+    // Metadata is a list of key/value pairs
+    Metadata dslengine.MetadataDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;APIVersionDefinition defines the properties of the API for a given version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-dsl:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) DSL&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) DSL() func()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DSL returns the initialization DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-finalize:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) Finalize&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) Finalize()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finalize sets the Consumes and Produces fields to the defaults if empty.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-isdefault:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) IsDefault&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) IsDefault() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsDefault returns true if the version definition applies to all versions (i.e. is the API
+definition).&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-iteratemediatypes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) IterateMediaTypes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) IterateMediaTypes(it MediaTypeIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateMediaTypes calls the given iterator passing in each media type sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateMediaTypes returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-iterateresources:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) IterateResources&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) IterateResources(it ResourceIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateResources calls the given iterator passing in each resource sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateResources returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-iterateresponses:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) IterateResponses&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) IterateResponses(it ResponseIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateResponses calls the given iterator passing in each response sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateResponses returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apiversiondefinition-iterateusertypes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*APIVersionDefinition) IterateUserTypes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *APIVersionDefinition) IterateUserTypes(it UserTypeIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateUserTypes calls the given iterator passing in each user type sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateUserTypes returns that
+error.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-actiondefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ActionDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ActionDefinition struct {
+    // Action name, e.g. &amp;quot;create&amp;quot;
+    Name string
+    // Action description, e.g. &amp;quot;Creates a task&amp;quot;
+    Description string
+    // Docs points to the API external documentation
+    Docs *DocsDefinition
+    // Parent resource
+    Parent *ResourceDefinition
+    // Specific action URL schemes
+    Schemes []string
+    // Action routes
+    Routes []*RouteDefinition
+    // Map of possible response definitions indexed by name
+    Responses map[string]*ResponseDefinition
+    // Path and query string parameters
+    Params *AttributeDefinition
+    // Query string parameters only
+    QueryParams *AttributeDefinition
+    // Payload blueprint (request body) if any
+    Payload *UserTypeDefinition
+    // Request headers that need to be made available to action
+    Headers *AttributeDefinition
+    // Metadata is a list of key/value pairs
+    Metadata dslengine.MetadataDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ActionDefinition defines a resource action.
+It defines both an HTTP endpoint and the shape of HTTP requests and responses made to
+that endpoint.
+The shape of requests is defined via &amp;ldquo;parameters&amp;rdquo;, there are path parameters
+parameters and a payload parameter (request body).
+(i.e. portions of the URL that define parameter values), query string&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-allparams:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) AllParams&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) AllParams() *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AllParams returns the path and query string parameters of the action across all its routes.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-hasabsoluteroutes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) HasAbsoluteRoutes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) HasAbsoluteRoutes() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HasAbsoluteRoutes returns true if all the action routes are absolute.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-pathparams:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) PathParams&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) PathParams(version *APIVersionDefinition) *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PathParams returns the path parameters of the action across all its routes.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) Validate(version *APIVersionDefinition) *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate tests whether the action definition is consistent: parameters have unique names and it has at least
+one response.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-actiondefinition-validateparams:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ActionDefinition) ValidateParams&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *ActionDefinition) ValidateParams(version *APIVersionDefinition) *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ValidateParams checks the action parameters (make sure they have names, members and types).&lt;/p&gt;
+
+&lt;h2 id=&#34;type-actioniterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type ActionIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ActionIterator func(a *ActionDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ActionIterator is the type of functions given to IterateActions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-array:83772ba7ad0304b1562d08f190539946&#34;&gt;type Array&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Array struct {
+    ElemType *AttributeDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Array is the type for a JSON array.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup calls Dup on the array ElemType and creates an array with the result.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) Example(r *RandomGenerator) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example produces a random array value.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-isarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) IsArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) IsArray() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsArray returns true.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-iscompatible:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) IsCompatible&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) IsCompatible(val interface{}) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsCompatible returns true if val is compatible with p.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-ishash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) IsHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) IsHash() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsHash returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-isobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) IsObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) IsObject() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsObject returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-isprimitive:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) IsPrimitive&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) IsPrimitive() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitive returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-name:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the type name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-toarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) ToArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) ToArray() *Array
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToArray returns a.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-tohash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) ToHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) ToHash() *Hash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToHash returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-array-toobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Array) ToObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *Array) ToObject() Object
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToObject returns nil.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-attributedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type AttributeDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type AttributeDefinition struct {
+    // Attribute type
+    Type DataType
+    // Attribute reference type if any
+    Reference DataType
+    // Optional description
+    Description string
+    // Optional validation functions
+    Validations []dslengine.ValidationDefinition
+    // Metadata is a list of key/value pairs
+    Metadata dslengine.MetadataDefinition
+    // Optional member default value
+    DefaultValue interface{}
+    // Optional view used to render Attribute (only applies to media type attributes).
+    View string
+    // List of API versions that use the attribute.
+    APIVersions []string
+    // NonZeroAttributes lists the names of the child attributes that cannot have a
+    // zero value (and thus whose presence does not need to be validated).
+    NonZeroAttributes map[string]bool
+    // DSLFunc contains the initialization DSL. This is used for user types.
+    DSLFunc func()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AttributeDefinition defines a JSON object member with optional description, default
+value and validations.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-allnonzero:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) AllNonZero&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) AllNonZero() []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AllNonZero returns the complete list of all non-zero attribute name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-allrequired:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) AllRequired&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) AllRequired() (required []string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AllRequired returns the list of all required fields from the underlying object.
+An attribute type can be itself an attribute (e.g. a MediaTypeDefinition or a UserTypeDefinition)
+This happens when the DSL uses references for example. So traverse the hierarchy and collect
+all the required validations.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-dsl:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) DSL&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) DSL() func()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DSL returns the initialization DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-definition:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Definition&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Definition() *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Definition returns the underlying attribute definition.
+Note that this function is &amp;ldquo;inherited&amp;rdquo; by both UserTypeDefinition and
+MediaTypeDefinition.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Dup() *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup returns a copy of the attribute definition.
+Note: the primitive underlying types are not duplicated for simplicity.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Example(r *RandomGenerator) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example returns a random instance of the attribute that validates.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-inherit:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Inherit&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Inherit(parent *AttributeDefinition)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Inherit merges the properties of existing target type attributes with the argument&amp;rsquo;s.
+The algorithm is recursive so that child attributes are also merged.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-isnonzero:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) IsNonZero&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) IsNonZero(attName string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsNonZero returns true if the given string matches the name of a non-zero
+attribute, false otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-isprimitivepointer:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) IsPrimitivePointer&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) IsPrimitivePointer(attName string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitivePointer returns true if the field generated for the given attribute should be a
+pointer to a primitive type. The target attribute must be an object.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-isrequired:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) IsRequired&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) IsRequired(attName string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsRequired returns true if the given string matches the name of a required
+attribute, false otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-merge:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Merge&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Merge(other *AttributeDefinition) *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Merge merges the argument attributes into the target and returns the target overriding existing
+attributes with identical names.
+This only applies to attributes of type Object and Merge panics if the
+argument or the target is not of type Object.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-attributedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*AttributeDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (a *AttributeDefinition) Validate(ctx string, parent dslengine.Definition) *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate tests whether the attribute definition is consistent: required fields exist.
+Since attributes are unaware of their context, additional context information can be provided
+to be used in error messages.
+The parent definition context is automatically added to error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-attributeiterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type AttributeIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type AttributeIterator func(string, *AttributeDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AttributeIterator is the type of the function given to IterateAttributes.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-contactdefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ContactDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ContactDefinition struct {
+    // Name of the contact person/organization
+    Name string `json:&amp;quot;name,omitempty&amp;quot;`
+    // Email address of the contact person/organization
+    Email string `json:&amp;quot;email,omitempty&amp;quot;`
+    // URL pointing to the contact information
+    URL string `json:&amp;quot;url,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ContactDefinition contains the API contact information.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-contactdefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ContactDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *ContactDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-datastructure:83772ba7ad0304b1562d08f190539946&#34;&gt;type DataStructure&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DataStructure interface {
+    // Definition returns the data structure definition.
+    Definition() *AttributeDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DataStructure is the interface implemented by all data structure types.
+That is attribute definitions, user types and media types.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-datatype:83772ba7ad0304b1562d08f190539946&#34;&gt;type DataType&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DataType interface {
+    // Kind of data type, one of the Kind enum.
+    Kind() Kind
+    // Name returns the type name.
+    Name() string
+    // IsPrimitive returns true if the underlying type is one of the primitive types.
+    IsPrimitive() bool
+    // IsObject returns true if the underlying type is an object, a user type which
+    // is an object or a media type whose type is an object.
+    IsObject() bool
+    // IsArray returns true if the underlying type is an array, a user type which
+    // is an array or a media type whose type is an array.
+    IsArray() bool
+    // IsHash returns true if the underlying type is a hash map, a user type which
+    // is a hash map or a media type whose type is a hash map.
+    IsHash() bool
+    // ToObject returns the underlying object if any (i.e. if IsObject returns true),
+    // nil otherwise.
+    ToObject() Object
+    // ToArray returns the underlying array if any (i.e. if IsArray returns true),
+    // nil otherwise.
+    ToArray() *Array
+    // ToHash returns the underlying hash map if any (i.e. if IsHash returns true),
+    // nil otherwise.
+    ToHash() *Hash
+    // IsCompatible checks whether val has a Go type that is
+    // compatible with the data type.
+    IsCompatible(val interface{}) bool
+    // Dup creates a copy of the type. This is only relevant for types that are
+    // DSLDefinition (i.e. have an attribute definition).
+    Dup() DataType
+    // Example returns a random value for the given data type.
+    // If the data type has validations then the example value validates them.
+    Example(r *RandomGenerator) interface{}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DataType is the common interface to all types.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-docsdefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type DocsDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DocsDefinition struct {
+    // Description of documentation.
+    Description string `json:&amp;quot;description,omitempty&amp;quot;`
+    // URL to documentation.
+    URL string `json:&amp;quot;url,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DocsDefinition points to external documentation.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-docsdefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*DocsDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (d *DocsDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-encodingdefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type EncodingDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type EncodingDefinition struct {
+    // MIMETypes is the set of possible MIME types for the content being encoded or decoded.
+    MIMETypes []string
+    // PackagePath is the path to the Go package that implements the encoder / decoder.
+    // The package must expose a `EncoderFactory` or `DecoderFactory` function
+    // that the generated code calls. The methods must return objects that implement
+    // the goa.EncoderFactory or goa.DecoderFactory interface respectively.
+    PackagePath string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;EncodingDefinition defines an encoder supported by the API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-encodingdefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*EncodingDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (enc *EncodingDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-encodingdefinition-supportingpackages:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*EncodingDefinition) SupportingPackages&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (enc *EncodingDefinition) SupportingPackages() map[string][]string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportingPackages returns the package paths to the packages that implements the encoders and
+decoders that support the MIME types in the definition.
+The return value maps the package path to the corresponding list of supported MIME types.
+It is nil if no package could be found for &lt;em&gt;any&lt;/em&gt; of the MIME types in the definition (in which
+case the definition is invalid).&lt;/p&gt;
+
+&lt;h3 id=&#34;func-encodingdefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*EncodingDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (enc *EncodingDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate validates the encoding MIME type and Go package path if set.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-hash:83772ba7ad0304b1562d08f190539946&#34;&gt;type Hash&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Hash struct {
+    KeyType  *AttributeDefinition
+    ElemType *AttributeDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Hash is the type for a hash map.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup creates a copy of h.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) Example(r *RandomGenerator) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example returns a random hash value.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-isarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) IsArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) IsArray() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsArray returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-iscompatible:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) IsCompatible&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) IsCompatible(val interface{}) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsCompatible returns true if val is compatible with p.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-ishash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) IsHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) IsHash() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsHash returns true.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-isobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) IsObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) IsObject() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsObject returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-isprimitive:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) IsPrimitive&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) IsPrimitive() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitive returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-name:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the type name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-toarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) ToArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) ToArray() *Array
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToArray returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-tohash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) ToHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) ToHash() *Hash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToHash returns the underlying hash map.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-hash-toobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*Hash) ToObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (h *Hash) ToObject() Object
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToObject returns nil.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;type Kind&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Kind uint
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A Kind defines the JSON type that a DataType represents.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-licensedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type LicenseDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type LicenseDefinition struct {
+    // Name of license used for the API
+    Name string `json:&amp;quot;name,omitempty&amp;quot;`
+    // URL to the license used for the API
+    URL string `json:&amp;quot;url,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;LicenseDefinition contains the license information for the API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-licensedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*LicenseDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (l *LicenseDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-linkdefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type LinkDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type LinkDefinition struct {
+    // Link name
+    Name string
+    // View used to render link if not &amp;quot;link&amp;quot;
+    View string
+    // URITemplate is the RFC6570 URI template of the link Href.
+    URITemplate string
+
+    // Parent media Type
+    Parent *MediaTypeDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;LinkDefinition defines a media type link, it specifies a URL to a related resource.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-linkdefinition-attribute:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*LinkDefinition) Attribute&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (l *LinkDefinition) Attribute() *AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Attribute returns the linked attribute.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-linkdefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*LinkDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (l *LinkDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-linkdefinition-mediatype:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*LinkDefinition) MediaType&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (l *LinkDefinition) MediaType() *MediaTypeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaType returns the media type of the linked attribute.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-linkdefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*LinkDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (l *LinkDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the link definition is consistent: it has a media type or the name of an
+attribute part of the parent media type.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-mediatypedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type MediaTypeDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MediaTypeDefinition struct {
+    // A media type is a type
+    *UserTypeDefinition
+    // Identifier is the RFC 6838 media type identifier.
+    Identifier string
+    // Links list the rendered links indexed by name.
+    Links map[string]*LinkDefinition
+    // Views list the supported views indexed by name.
+    Views map[string]*ViewDefinition
+    // Resource this media type is the canonical representation for if any
+    Resource *ResourceDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaTypeDefinition describes the rendering of a resource using property and link
+definitions. A property corresponds to a single member of the media type,
+it has a name and a type as well as optional validation rules. A link has a
+name and a URL that points to a related resource.
+Media types also define views which describe which members and links to render when
+building the response body for the corresponding view.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newmediatypedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;func NewMediaTypeDefinition&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewMediaTypeDefinition(name, identifier string, dsl func()) *MediaTypeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewMediaTypeDefinition creates a media type definition but does not
+execute the DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-mediatypedefinition-computeviews:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*MediaTypeDefinition) ComputeViews&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MediaTypeDefinition) ComputeViews() map[string]*ViewDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ComputeViews returns the media type views recursing as necessary if the media type is a
+collection.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-mediatypedefinition-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*MediaTypeDefinition) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MediaTypeDefinition) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup returns a copy of m.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-mediatypedefinition-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*MediaTypeDefinition) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MediaTypeDefinition) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-mediatypedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*MediaTypeDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MediaTypeDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the media type definition is consistent: its identifier is a valid media
+type identifier.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-mediatypeiterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type MediaTypeIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MediaTypeIterator func(m *MediaTypeDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaTypeIterator is the type of functions given to IterateMediaTypes.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-mediatyperoot:83772ba7ad0304b1562d08f190539946&#34;&gt;type MediaTypeRoot&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MediaTypeRoot map[string]*MediaTypeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaTypeRoot is the data structure that represents the additional DSL definition root
+that contains the media type definition set created by CollectionOf.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-mediatyperoot-iteratesets:83772ba7ad0304b1562d08f190539946&#34;&gt;func (MediaTypeRoot) IterateSets&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r MediaTypeRoot) IterateSets(iterator dslengine.SetIterator)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateSets iterates over the one generated media type definition set.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-object:83772ba7ad0304b1562d08f190539946&#34;&gt;type Object&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Object map[string]*AttributeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Object is the type for a JSON object.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup creates a copy of o.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) Example(r *RandomGenerator) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example returns a random value of the object.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-isarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IsArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IsArray() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsArray returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-iscompatible:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IsCompatible&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IsCompatible(val interface{}) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsCompatible returns true if val is compatible with p.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-ishash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IsHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IsHash() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsHash returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-isobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IsObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IsObject() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsObject returns true.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-isprimitive:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IsPrimitive&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IsPrimitive() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitive returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-iterateattributes:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) IterateAttributes&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) IterateAttributes(it AttributeIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateAttributes calls the given iterator passing in each attribute sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateObject returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-merge:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) Merge&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) Merge(other Object)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Merge copies other&amp;rsquo;s attributes into o overridding any pre-existing attribute with the same name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-name:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the type name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-toarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) ToArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) ToArray() *Array
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToArray returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-tohash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) ToHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) ToHash() *Hash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToHash returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-object-toobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Object) ToObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (o Object) ToObject() Object
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToObject returns the underlying object.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-primitive:83772ba7ad0304b1562d08f190539946&#34;&gt;type Primitive&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Primitive Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Primitive is the type for null, boolean, integer, number, string, and time.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup returns the primitive type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-example:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) Example&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) Example(r *RandomGenerator) interface{}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example returns an instance of the given data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-isarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) IsArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) IsArray() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsArray returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-iscompatible:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) IsCompatible&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) IsCompatible(val interface{}) (ok bool)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsCompatible returns true if val is compatible with p.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-ishash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) IsHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) IsHash() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsHash returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-isobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) IsObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) IsObject() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsObject returns false.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-isprimitive:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) IsPrimitive&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) IsPrimitive() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitive returns true.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-name:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the type name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-toarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) ToArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) ToArray() *Array
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToArray returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-tohash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) ToHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) ToHash() *Hash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToHash returns nil.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-primitive-toobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (Primitive) ToObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (p Primitive) ToObject() Object
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToObject returns nil.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-randomgenerator:83772ba7ad0304b1562d08f190539946&#34;&gt;type RandomGenerator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type RandomGenerator struct {
+    Seed string
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RandomGenerator generates consistent random values of different types given a seed.
+The random values are consistent in that given the same seed the same random values get
+generated.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newrandomgenerator:83772ba7ad0304b1562d08f190539946&#34;&gt;func NewRandomGenerator&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewRandomGenerator(seed string) *RandomGenerator
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewRandomGenerator returns a random value generator seeded from the given string value.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-randomgenerator-bool:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RandomGenerator) Bool&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RandomGenerator) Bool() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Bool produces a random boolean.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-randomgenerator-datetime:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RandomGenerator) DateTime&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RandomGenerator) DateTime() time.Time
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DateTime produces a random date.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-randomgenerator-float64:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RandomGenerator) Float64&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RandomGenerator) Float64() float64
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Float64 produces a random float64 value.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-randomgenerator-int:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RandomGenerator) Int&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RandomGenerator) Int() int
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Int produces a random integer.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-randomgenerator-string:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RandomGenerator) String&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RandomGenerator) String() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;String produces a random string.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-resourcedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ResourceDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResourceDefinition struct {
+    // Resource name
+    Name string
+    // Common URL prefix to all resource action HTTP requests
+    BasePath string
+    // Object describing each parameter that appears in BasePath if any
+    BaseParams *AttributeDefinition
+    // Name of parent resource if any
+    ParentName string
+    // Optional description
+    Description string
+    // API versions that expose this resource.
+    APIVersions []string
+    // Default media type, describes the resource attributes
+    MediaType string
+    // Exposed resource actions indexed by name
+    Actions map[string]*ActionDefinition
+    // Action with canonical resource path
+    CanonicalActionName string
+    // Map of response definitions that apply to all actions indexed by name.
+    Responses map[string]*ResponseDefinition
+    // Path and query string parameters that apply to all actions.
+    Params *AttributeDefinition
+    // Request headers that apply to all actions.
+    Headers *AttributeDefinition
+    // DSLFunc contains the DSL used to create this definition if any.
+    DSLFunc func()
+    // metadata is a list of key/value pairs
+    Metadata dslengine.MetadataDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResourceDefinition describes a REST resource.
+It defines both a media type and a set of actions that can be executed through HTTP
+requests.
+A resource is versioned so that multiple versions of the same resource may be exposed
+by the API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newresourcedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;func NewResourceDefinition&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewResourceDefinition(name string, dsl func()) *ResourceDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewResourceDefinition creates a resource definition but does not
+execute the DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-canonicalaction:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) CanonicalAction&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) CanonicalAction() *ActionDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CanonicalAction returns the canonical action of the resource if any.
+The canonical action is used to compute hrefs to resources.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-dsl:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) DSL&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) DSL() func()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DSL returns the initialization DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-finalize:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) Finalize&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) Finalize()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finalize is run post DSL execution. It merges response definitions, creates implicit action
+parameters, initializes querystring parameters and sets path parameters as non zero attributes.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-fullpath:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) FullPath&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) FullPath(version *APIVersionDefinition) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;FullPath computes the base path to the resource actions concatenating the API and parent resource
+base paths as needed.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-iterateactions:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) IterateActions&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) IterateActions(it ActionIterator) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IterateActions calls the given iterator passing in each resource action sorted in alphabetical order.
+Iteration stops if an iterator returns an error and in this case IterateActions returns that
+error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-parent:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) Parent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) Parent() *ResourceDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Parent returns the parent resource if any, nil otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-supportsnoversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) SupportsNoVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) SupportsNoVersion() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsNoVersion returns true if the resource is exposed by an unversioned API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-supportsversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) SupportsVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) SupportsVersion(version string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsVersion returns true if the resource is exposed by the given API version.
+An empty string version means no version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-uritemplate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) URITemplate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) URITemplate(version *APIVersionDefinition) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;URITemplate returns a httprouter compliant URI template to this resource.
+The result is the empty string if the resource does not have a &amp;ldquo;show&amp;rdquo; action
+and does not define a different canonical action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) Validate(version *APIVersionDefinition) *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate tests whether the resource definition is consistent: action names are valid and each action is
+valid.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-resourcedefinition-versions:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResourceDefinition) Versions&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResourceDefinition) Versions() []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Versions returns the API versions that expose the resource.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-resourceiterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type ResourceIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResourceIterator func(r *ResourceDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResourceIterator is the type of functions given to IterateResources.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-responsedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ResponseDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResponseDefinition struct {
+    // Response name
+    Name string
+    // HTTP status
+    Status int
+    // Response description
+    Description string
+    // Response body media type if any
+    MediaType string
+    // Response header definitions
+    Headers *AttributeDefinition
+    // Parent action or resource
+    Parent dslengine.Definition
+    // Metadata is a list of key/value pairs
+    Metadata dslengine.MetadataDefinition
+    // Standard is true if the response definition comes from the goa default responses
+    Standard bool
+    // Global is true if the response definition comes from the global API properties
+    Global bool
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseDefinition defines a HTTP response status and optional validation rules.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-responsedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResponseDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResponseDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-responsedefinition-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResponseDefinition) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResponseDefinition) Dup() *ResponseDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup returns a copy of the response definition.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-responsedefinition-merge:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResponseDefinition) Merge&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResponseDefinition) Merge(other *ResponseDefinition)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Merge merges other into target. Only the fields of target that are not already set are merged.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-responsedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResponseDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResponseDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the response definition is consistent: its status is set and the media
+type definition if any is valid.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-responseiterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type ResponseIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResponseIterator func(r *ResponseDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseIterator is the type of functions given to IterateResponses.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-responsetemplatedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ResponseTemplateDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ResponseTemplateDefinition struct {
+    // Response template name
+    Name string
+    // Response template function
+    Template func(params ...string) *ResponseDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ResponseTemplateDefinition defines a response template.
+A response template is a function that takes an arbitrary number
+of strings and returns a response definition.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-responsetemplatedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ResponseTemplateDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *ResponseTemplateDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-routedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type RouteDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type RouteDefinition struct {
+    // Verb is the HTTP method, e.g. &amp;quot;GET&amp;quot;, &amp;quot;POST&amp;quot;, etc.
+    Verb string
+    // Path is the URL path e.g. &amp;quot;/tasks/:id&amp;quot;
+    Path string
+    // Parent is the action this route applies to.
+    Parent *ActionDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RouteDefinition represents an action route.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-routedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RouteDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RouteDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-routedefinition-fullpath:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RouteDefinition) FullPath&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RouteDefinition) FullPath(version *APIVersionDefinition) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;FullPath returns the action full path computed by concatenating the API and resource base paths
+with the action specific path.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-routedefinition-isabsolute:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RouteDefinition) IsAbsolute&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RouteDefinition) IsAbsolute() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsAbsolute returns true if the action path should not be concatenated to the resource and API
+base paths.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-routedefinition-params:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RouteDefinition) Params&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RouteDefinition) Params(version *APIVersionDefinition) []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Params returns the route parameters.
+For example for the route &amp;ldquo;GET /foo/:fooID&amp;rdquo; Params returns []string{&amp;ldquo;fooID&amp;rdquo;}.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-routedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*RouteDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RouteDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the route definition is consistent: it has a parent.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-usertypedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type UserTypeDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UserTypeDefinition struct {
+    // A user type is an attribute definition.
+    *AttributeDefinition
+    // Name of type
+    TypeName string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UserTypeDefinition is the type for user defined types that are not media types
+(e.g. payload types).&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newusertypedefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;func NewUserTypeDefinition&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewUserTypeDefinition(name string, dsl func()) *UserTypeDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewUserTypeDefinition creates a user type definition but does not
+execute the DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *UserTypeDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-dsl:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) DSL&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *UserTypeDefinition) DSL() func()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DSL returns the initialization DSL.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-dup:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Dup() DataType
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup returns a copy of u.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-finalize:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Finalize&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Finalize()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finalize merges base type attributes.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-isarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) IsArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) IsArray() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsArray calls IsArray on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-iscompatible:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) IsCompatible&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) IsCompatible(val interface{}) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsCompatible returns true if val is compatible with p.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-ishash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) IsHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) IsHash() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsHash calls IsHash on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-isobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) IsObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) IsObject() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsObject calls IsObject on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-isprimitive:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) IsPrimitive&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) IsPrimitive() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IsPrimitive calls IsPrimitive on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-kind:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Kind&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Kind() Kind
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kind implements DataKind.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-name:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Name&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Name() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Name returns the JSON type name.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-supportsnoversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) SupportsNoVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) SupportsNoVersion() bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsNoVersion returns true if the resource is exposed by an unversioned API.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-supportsversion:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) SupportsVersion&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) SupportsVersion(version string) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SupportsVersion returns true if the type is exposed by the given API version.
+An empty string version means no version.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-toarray:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) ToArray&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) ToArray() *Array
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToArray calls ToArray on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-tohash:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) ToHash&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) ToHash() *Hash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToHash calls ToHash on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-toobject:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) ToObject&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) ToObject() Object
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ToObject calls ToObject on the user type underlying data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Validate(ctx string, parent dslengine.Definition) *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the user type definition is consistent: it has a name and all user and media
+types used in fields support the API versions that use the type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-usertypedefinition-versions:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*UserTypeDefinition) Versions&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (u *UserTypeDefinition) Versions() []string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Versions returns all the API versions that use the type.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-usertypeiterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type UserTypeIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UserTypeIterator func(m *UserTypeDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UserTypeIterator is the type of functions given to IterateUserTypes.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-versioniterator:83772ba7ad0304b1562d08f190539946&#34;&gt;type VersionIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type VersionIterator func(v *APIVersionDefinition) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;VersionIterator is the type of functions given to IterateVersions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-viewdefinition:83772ba7ad0304b1562d08f190539946&#34;&gt;type ViewDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ViewDefinition struct {
+    // Set of properties included in view
+    *AttributeDefinition
+    // Name of view
+    Name string
+    // Parent media Type
+    Parent *MediaTypeDefinition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ViewDefinition defines which members and links to render when building a response.
+The view is a JSON object whose property names must match the names of the parent media
+type members.
+The members fields are inherited from the parent media type but may be overridden.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-viewdefinition-context:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ViewDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *ViewDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-viewdefinition-validate:83772ba7ad0304b1562d08f190539946&#34;&gt;func (*ViewDefinition) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *ViewDefinition) Validate() *dslengine.ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate checks that the view definition is consistent: it has a  parent media type and the
+underlying definition type is consistent.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>gorma/example/design</title>
+      <link>http://goa.design/godoc/gorma/example/design/design/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/gorma/example/design/design/</guid>
+      <description>
+
+&lt;h1 id=&#34;design:83772ba7ad0304b1562d08f190539946&#34;&gt;design&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/gorma/example/design&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;variables:83772ba7ad0304b1562d08f190539946&#34;&gt;Variables&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var Account = MediaType(&amp;quot;application/vnd.account+json&amp;quot;, func() {
+    Description(&amp;quot;A tenant account&amp;quot;)
+    Attributes(func() {
+        Attribute(&amp;quot;id&amp;quot;, Integer, &amp;quot;ID of account&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;, String, &amp;quot;API href of account&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;, String, &amp;quot;Name of account&amp;quot;)
+        Attribute(&amp;quot;created_at&amp;quot;, String, &amp;quot;Date of creation&amp;quot;, func() {
+            Format(&amp;quot;date-time&amp;quot;)
+        })
+        Attribute(&amp;quot;created_by&amp;quot;, String, &amp;quot;Email of account owner&amp;quot;, func() {
+            Format(&amp;quot;email&amp;quot;)
+        })
+
+        Required(&amp;quot;id&amp;quot;, &amp;quot;href&amp;quot;, &amp;quot;name&amp;quot;)
+    })
+
+    View(&amp;quot;default&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;)
+        Attribute(&amp;quot;created_at&amp;quot;)
+        Attribute(&amp;quot;created_by&amp;quot;)
+    })
+
+    View(&amp;quot;tiny&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;)
+    })
+    View(&amp;quot;link&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+    })
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Account is the account resource media type.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var Bottle = MediaType(&amp;quot;application/vnd.bottle+json&amp;quot;, func() {
+    Description(&amp;quot;A bottle of wine&amp;quot;)
+    Reference(BottlePayload)
+    Attributes(func() {
+        Attribute(&amp;quot;id&amp;quot;, Integer, &amp;quot;ID of bottle&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;, String, &amp;quot;API href of bottle&amp;quot;)
+        Attribute(&amp;quot;rating&amp;quot;, Integer, &amp;quot;Rating of bottle between 1 and 5&amp;quot;, func() {
+            Minimum(1)
+            Maximum(5)
+        })
+        Attribute(&amp;quot;account&amp;quot;, Account, &amp;quot;Account that owns bottle&amp;quot;)
+        Attribute(&amp;quot;created_at&amp;quot;, String, &amp;quot;Date of creation&amp;quot;, func() {
+            Format(&amp;quot;date-time&amp;quot;)
+        })
+        Attribute(&amp;quot;updated_at&amp;quot;, String, &amp;quot;Date of last update&amp;quot;, func() {
+            Format(&amp;quot;date-time&amp;quot;)
+        })
+
+        Attribute(&amp;quot;name&amp;quot;)
+        Attribute(&amp;quot;vineyard&amp;quot;)
+        Attribute(&amp;quot;varietal&amp;quot;)
+        Attribute(&amp;quot;vintage&amp;quot;)
+        Attribute(&amp;quot;color&amp;quot;)
+        Attribute(&amp;quot;sweetness&amp;quot;)
+        Attribute(&amp;quot;country&amp;quot;)
+        Attribute(&amp;quot;region&amp;quot;)
+        Attribute(&amp;quot;review&amp;quot;)
+        Attribute(&amp;quot;vinyard_county&amp;quot;)
+
+        Required(&amp;quot;id&amp;quot;, &amp;quot;href&amp;quot;, &amp;quot;name&amp;quot;, &amp;quot;vineyard&amp;quot;, &amp;quot;varietal&amp;quot;, &amp;quot;vintage&amp;quot;, &amp;quot;color&amp;quot;)
+    })
+
+    Links(func() {
+        Link(&amp;quot;account&amp;quot;)
+    })
+
+    View(&amp;quot;default&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;)
+        Attribute(&amp;quot;rating&amp;quot;)
+        Attribute(&amp;quot;vineyard&amp;quot;)
+        Attribute(&amp;quot;varietal&amp;quot;)
+        Attribute(&amp;quot;vintage&amp;quot;)
+        Attribute(&amp;quot;account&amp;quot;, func() {
+            View(&amp;quot;tiny&amp;quot;)
+        })
+        Attribute(&amp;quot;links&amp;quot;)
+    })
+
+    View(&amp;quot;tiny&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;)
+        Attribute(&amp;quot;rating&amp;quot;)
+        Attribute(&amp;quot;links&amp;quot;)
+    })
+
+    View(&amp;quot;full&amp;quot;, func() {
+        Attribute(&amp;quot;id&amp;quot;)
+        Attribute(&amp;quot;href&amp;quot;)
+        Attribute(&amp;quot;name&amp;quot;)
+        Attribute(&amp;quot;account&amp;quot;)
+        Attribute(&amp;quot;rating&amp;quot;)
+        Attribute(&amp;quot;vineyard&amp;quot;)
+        Attribute(&amp;quot;vinyard_county&amp;quot;)
+        Attribute(&amp;quot;varietal&amp;quot;)
+        Attribute(&amp;quot;vintage&amp;quot;)
+        Attribute(&amp;quot;color&amp;quot;)
+        Attribute(&amp;quot;sweetness&amp;quot;)
+        Attribute(&amp;quot;country&amp;quot;)
+        Attribute(&amp;quot;region&amp;quot;)
+        Attribute(&amp;quot;review&amp;quot;)
+        Attribute(&amp;quot;created_at&amp;quot;)
+        Attribute(&amp;quot;updated_at&amp;quot;)
+        Attribute(&amp;quot;links&amp;quot;)
+    })
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Bottle is the bottle resource media type.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var BottlePayload = Type(&amp;quot;BottlePayload&amp;quot;, func() {
+    Attribute(&amp;quot;name&amp;quot;, func() {
+        MinLength(2)
+    })
+    Attribute(&amp;quot;vineyard&amp;quot;, func() {
+        MinLength(2)
+    })
+    Attribute(&amp;quot;varietal&amp;quot;, func() {
+        MinLength(4)
+    })
+    Attribute(&amp;quot;myvintage&amp;quot;, Integer, func() {
+        Minimum(1900)
+        Maximum(2020)
+    })
+    Attribute(&amp;quot;vinyard_county&amp;quot;)
+    Attribute(&amp;quot;color&amp;quot;, func() {
+        Enum(&amp;quot;red&amp;quot;, &amp;quot;white&amp;quot;, &amp;quot;rose&amp;quot;, &amp;quot;yellow&amp;quot;, &amp;quot;sparkling&amp;quot;)
+    })
+    Attribute(&amp;quot;sweetness&amp;quot;, Integer, func() {
+        Minimum(1)
+        Maximum(5)
+    })
+    Attribute(&amp;quot;country&amp;quot;, func() {
+        MinLength(2)
+    })
+    Attribute(&amp;quot;region&amp;quot;)
+    Attribute(&amp;quot;review&amp;quot;, func() {
+        MinLength(3)
+        MaxLength(300)
+    })
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottlePayload defines the data structure used in the create bottle request body.
+It is also the base type for the bottle media type used to render bottles.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

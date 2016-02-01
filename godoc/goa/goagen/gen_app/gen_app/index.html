@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+
+
+
+<html class="not-ie" lang="en"> 
+<head>
+
+	
+	<meta charset="utf-8">
+	<title>goa :: Design-first API Generation</title>
+	<meta name="description" content="Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology.">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	
+	<link href="/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="/css/font-awesome/font-awesome.min.css" rel="stylesheet" />
+	
+	
+	
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800' rel='stylesheet' type='text/css' />
+
+	
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="/js/jquery-1.10.2.min.js"><\/script>')</script>
+	
+	
+	
+
+</head>
+
+<body>
+
+		
+	<header id="header">
+		
+		<nav class="navbar">
+			<div class="navbar-inner">
+				<div class="container">
+					
+					<a class="brand" href="/">
+						goa
+					</a>
+					<ul class="nav">
+						<li><a href="/" title="Home">Home</a></li>
+						<li><a href="/guide/" title="Getting Started">Getting Started</a></li>
+
+						<li class="dropdown">
+							<a href="/components/" title="components">Components</a>
+							
+							<ul>
+								<li><a href="/components/goagen/" title="">goagen</a></li>
+								<li><a href="/components/runtime/" title="">runtime</a></li>
+								<li><a href="/components/swagger/" title="">swagger</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/middleware/" title="middleware">Middleware</a>
+							
+							<ul>
+								<li><a href="/middleware/jwt/" title="">JWT</a></li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a href="/plugins/" title="plugins">Plugins</a>
+							
+							<ul>
+								<li><a href="/plugins/gorma/" title="">gorma</a></li>
+							</ul>
+						</li>
+						<li><a href="/tutorials/" title="Tutorials">Tutorials</a></li>
+						<li><a href="/blog/" title="Blog">Blog</a></li>
+						<li><a href="https://github.com/goadesign/goa" title="GitHub">GitHub</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+	</header>
+	
+	
+	<section id="content" class="container">
+
+	<div class="hero-unit">
+		<h1>goa/goagen/gen_app</h1>
+		<p>godoc for goa/goagen/gen_app</p>
+	</div>
+
+	<hr />
+
+	
+	<div class="row" id="blog">
+
+		
+		<div class="span8"> 
+			
+
+<h1 id="genapp:0950d9b6f1dd6681888b1fb558093be3">genapp</h1>
+
+<pre><code>import &quot;github.com/goadesign/goa/goagen/gen_app&quot;
+</code></pre>
+
+<h2 id="variables:0950d9b6f1dd6681888b1fb558093be3">Variables</h2>
+
+<pre><code class="language-go">var (
+    // TargetPackage is the name of the generated Go package.
+    TargetPackage string
+)
+</code></pre>
+
+<pre><code class="language-go">var WildcardRegex = regexp.MustCompile(&quot;(?:[^/]*/:([^/]+))+&quot;)
+</code></pre>
+
+<p>WildcardRegex is the regex used to capture path parameters.</p>
+
+<h2 id="func-appoutputdir:0950d9b6f1dd6681888b1fb558093be3">func AppOutputDir</h2>
+
+<pre><code class="language-go">func AppOutputDir() string
+</code></pre>
+
+<p>AppOutputDir returns the directory containing the generated files.</p>
+
+<h2 id="func-apppackagepath:0950d9b6f1dd6681888b1fb558093be3">func AppPackagePath</h2>
+
+<pre><code class="language-go">func AppPackagePath() (string, error)
+</code></pre>
+
+<p>AppPackagePath returns the Go package path to the generated package.</p>
+
+<h2 id="func-buildencodermap:0950d9b6f1dd6681888b1fb558093be3">func BuildEncoderMap</h2>
+
+<pre><code class="language-go">func BuildEncoderMap(info []*design.EncodingDefinition, encoder bool) (map[string]*EncoderTemplateData, error)
+</code></pre>
+
+<p>BuildEncoderMap builds the template data needed to render the given encoding definitions.
+This extra map is needed to handle the case where a single encoding definition maps to multiple
+encoding packages. The data is indexed by encoder Go package path.</p>
+
+<h2 id="func-generate:0950d9b6f1dd6681888b1fb558093be3">func Generate</h2>
+
+<pre><code class="language-go">func Generate(api *design.APIDefinition) (files []string, err error)
+</code></pre>
+
+<p>Generate is the generator entry point called by the meta generator.</p>
+
+<h2 id="func-mergeresponses:0950d9b6f1dd6681888b1fb558093be3">func MergeResponses</h2>
+
+<pre><code class="language-go">func MergeResponses(l, r map[string]*design.ResponseDefinition) map[string]*design.ResponseDefinition
+</code></pre>
+
+<p>MergeResponses merge the response maps overriding the first argument map entries with the
+second argument map entries in case of collision.</p>
+
+<h2 id="type-command:0950d9b6f1dd6681888b1fb558093be3">type Command</h2>
+
+<pre><code class="language-go">type Command struct {
+    *codegen.BaseCommand
+}
+</code></pre>
+
+<p>Command is the goa application code generator command line data structure.</p>
+
+<h3 id="func-newcommand:0950d9b6f1dd6681888b1fb558093be3">func NewCommand</h3>
+
+<pre><code class="language-go">func NewCommand() *Command
+</code></pre>
+
+<p>NewCommand instantiates a new command.</p>
+
+<h3 id="func-command-registerflags:0950d9b6f1dd6681888b1fb558093be3">func (*Command) RegisterFlags</h3>
+
+<pre><code class="language-go">func (c *Command) RegisterFlags(r codegen.FlagRegistry)
+</code></pre>
+
+<p>RegisterFlags registers the command line flags with the given registry.</p>
+
+<h3 id="func-command-run:0950d9b6f1dd6681888b1fb558093be3">func (*Command) Run</h3>
+
+<pre><code class="language-go">func (c *Command) Run() ([]string, error)
+</code></pre>
+
+<p>Run simply calls the meta generator.</p>
+
+<h2 id="type-contexttemplatedata:0950d9b6f1dd6681888b1fb558093be3">type ContextTemplateData</h2>
+
+<pre><code class="language-go">type ContextTemplateData struct {
+    Name         string // e.g. &quot;ListBottleContext&quot;
+    ResourceName string // e.g. &quot;bottles&quot;
+    ActionName   string // e.g. &quot;list&quot;
+    Params       *design.AttributeDefinition
+    Payload      *design.UserTypeDefinition
+    Headers      *design.AttributeDefinition
+    Routes       []*design.RouteDefinition
+    Responses    map[string]*design.ResponseDefinition
+    API          *design.APIDefinition
+    Version      *design.APIVersionDefinition
+    DefaultPkg   string
+}
+</code></pre>
+
+<p>ContextTemplateData contains all the information used by the template to render the context
+code for an action.</p>
+
+<h3 id="func-contexttemplatedata-ispathparam:0950d9b6f1dd6681888b1fb558093be3">func (*ContextTemplateData) IsPathParam</h3>
+
+<pre><code class="language-go">func (c *ContextTemplateData) IsPathParam(param string) bool
+</code></pre>
+
+<p>IsPathParam returns true if the given parameter name corresponds to a path parameter for all
+the context action routes. Such parameter is required but does not need to be validated as
+httprouter takes care of that.</p>
+
+<h3 id="func-contexttemplatedata-mustvalidate:0950d9b6f1dd6681888b1fb558093be3">func (*ContextTemplateData) MustValidate</h3>
+
+<pre><code class="language-go">func (c *ContextTemplateData) MustValidate(name string) bool
+</code></pre>
+
+<p>MustValidate returns true if code that checks for the presence of the given param must be
+generated.</p>
+
+<h3 id="func-contexttemplatedata-versioned:0950d9b6f1dd6681888b1fb558093be3">func (*ContextTemplateData) Versioned</h3>
+
+<pre><code class="language-go">func (c *ContextTemplateData) Versioned() bool
+</code></pre>
+
+<p>Versioned returns true if the context was built from an API version.</p>
+
+<h2 id="type-contextswriter:0950d9b6f1dd6681888b1fb558093be3">type ContextsWriter</h2>
+
+<pre><code class="language-go">type ContextsWriter struct {
+    *codegen.SourceFile
+    CtxTmpl     *template.Template
+    CtxNewTmpl  *template.Template
+    CtxRespTmpl *template.Template
+    PayloadTmpl *template.Template
+}
+</code></pre>
+
+<p>ContextsWriter generate codes for a goa application contexts.</p>
+
+<h3 id="func-newcontextswriter:0950d9b6f1dd6681888b1fb558093be3">func NewContextsWriter</h3>
+
+<pre><code class="language-go">func NewContextsWriter(filename string) (*ContextsWriter, error)
+</code></pre>
+
+<p>NewContextsWriter returns a contexts code writer.
+Contexts provide the glue between the underlying request data and the user controller.</p>
+
+<h3 id="func-contextswriter-execute:0950d9b6f1dd6681888b1fb558093be3">func (*ContextsWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *ContextsWriter) Execute(data *ContextTemplateData) error
+</code></pre>
+
+<p>Execute writes the code for the context types to the writer.</p>
+
+<h2 id="type-controllertemplatedata:0950d9b6f1dd6681888b1fb558093be3">type ControllerTemplateData</h2>
+
+<pre><code class="language-go">type ControllerTemplateData struct {
+    Resource   string                          // Lower case plural resource name, e.g. &quot;bottles&quot;
+    Actions    []map[string]interface{}        // Array of actions, each action has keys &quot;Name&quot;, &quot;Routes&quot;, &quot;Context&quot; and &quot;Unmarshal&quot;
+    Version    *design.APIVersionDefinition    // Controller API version
+    EncoderMap map[string]*EncoderTemplateData // Encoder data indexed by package path
+    DecoderMap map[string]*EncoderTemplateData // Decoder data indexed by package path
+}
+</code></pre>
+
+<p>ControllerTemplateData contains the information required to generate an action handler.</p>
+
+<h2 id="type-controllerswriter:0950d9b6f1dd6681888b1fb558093be3">type ControllersWriter</h2>
+
+<pre><code class="language-go">type ControllersWriter struct {
+    *codegen.SourceFile
+    CtrlTmpl      *template.Template
+    MountTmpl     *template.Template
+    UnmarshalTmpl *template.Template
+}
+</code></pre>
+
+<p>ControllersWriter generate code for a goa application handlers.
+Handlers receive a HTTP request, create the action context, call the action code and send the
+resulting HTTP response.</p>
+
+<h3 id="func-newcontrollerswriter:0950d9b6f1dd6681888b1fb558093be3">func NewControllersWriter</h3>
+
+<pre><code class="language-go">func NewControllersWriter(filename string) (*ControllersWriter, error)
+</code></pre>
+
+<p>NewControllersWriter returns a handlers code writer.
+Handlers provide the glue between the underlying request data and the user controller.</p>
+
+<h3 id="func-controllerswriter-execute:0950d9b6f1dd6681888b1fb558093be3">func (*ControllersWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *ControllersWriter) Execute(data []*ControllerTemplateData) error
+</code></pre>
+
+<p>Execute writes the handlers GoGenerator</p>
+
+<h2 id="type-encodertemplatedata:0950d9b6f1dd6681888b1fb558093be3">type EncoderTemplateData</h2>
+
+<pre><code class="language-go">type EncoderTemplateData struct {
+    // PackagePath is the Go package path to the package implmenting the encoder / decoder.
+    PackagePath string
+    // PackageName is the name of the Go package implementing the encoder / decoder.
+    PackageName string
+    // Factory is the name of the package variable implementing the decoder / encoder factory.
+    Factory string
+    // MIMETypes is the list of supported MIME types.
+    MIMETypes []string
+    // Default is true if this encoder / decoder should be set as the default.
+    Default bool
+}
+</code></pre>
+
+<p>EncoderTemplateData containes the data needed to render the registration code for a single
+encoder or decoder package.</p>
+
+<h2 id="type-generator:0950d9b6f1dd6681888b1fb558093be3">type Generator</h2>
+
+<pre><code class="language-go">type Generator struct {
+    // contains filtered or unexported fields
+}
+</code></pre>
+
+<p>Generator is the application code generator.</p>
+
+<h3 id="func-generator-cleanup:0950d9b6f1dd6681888b1fb558093be3">func (*Generator) Cleanup</h3>
+
+<pre><code class="language-go">func (g *Generator) Cleanup()
+</code></pre>
+
+<p>Cleanup removes the entire &ldquo;app&rdquo; directory if it was created by this generator.</p>
+
+<h3 id="func-generator-generate:0950d9b6f1dd6681888b1fb558093be3">func (*Generator) Generate</h3>
+
+<pre><code class="language-go">func (g *Generator) Generate(api *design.APIDefinition) (_ []string, err error)
+</code></pre>
+
+<p>Generate the application code, implement codegen.Generator.</p>
+
+<h2 id="type-mediatypetemplatedata:0950d9b6f1dd6681888b1fb558093be3">type MediaTypeTemplateData</h2>
+
+<pre><code class="language-go">type MediaTypeTemplateData struct {
+    MediaType  *design.MediaTypeDefinition
+    Versioned  bool
+    DefaultPkg string
+}
+</code></pre>
+
+<p>MediaTypeTemplateData contains all the information used by the template to redner the
+media types code.</p>
+
+<h2 id="type-mediatypeswriter:0950d9b6f1dd6681888b1fb558093be3">type MediaTypesWriter</h2>
+
+<pre><code class="language-go">type MediaTypesWriter struct {
+    *codegen.SourceFile
+    MediaTypeTmpl *template.Template
+}
+</code></pre>
+
+<p>MediaTypesWriter generate code for a goa application media types.
+Media types are data structures used to render the response bodies.</p>
+
+<h3 id="func-newmediatypeswriter:0950d9b6f1dd6681888b1fb558093be3">func NewMediaTypesWriter</h3>
+
+<pre><code class="language-go">func NewMediaTypesWriter(filename string) (*MediaTypesWriter, error)
+</code></pre>
+
+<p>NewMediaTypesWriter returns a contexts code writer.
+Media types contain the data used to render response bodies.</p>
+
+<h3 id="func-mediatypeswriter-execute:0950d9b6f1dd6681888b1fb558093be3">func (*MediaTypesWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *MediaTypesWriter) Execute(data *MediaTypeTemplateData) error
+</code></pre>
+
+<p>Execute writes the code for the context types to the writer.</p>
+
+<h2 id="type-resourcedata:0950d9b6f1dd6681888b1fb558093be3">type ResourceData</h2>
+
+<pre><code class="language-go">type ResourceData struct {
+    Name              string                      // Name of resource
+    Identifier        string                      // Identifier of resource media type
+    Description       string                      // Description of resource
+    Type              *design.MediaTypeDefinition // Type of resource media type
+    CanonicalTemplate string                      // CanonicalFormat represents the resource canonical path in the form of a fmt.Sprintf format.
+    CanonicalParams   []string                    // CanonicalParams is the list of parameter names that appear in the resource canonical path in order.
+}
+</code></pre>
+
+<p>ResourceData contains the information required to generate the resource GoGenerator</p>
+
+<h2 id="type-resourceswriter:0950d9b6f1dd6681888b1fb558093be3">type ResourcesWriter</h2>
+
+<pre><code class="language-go">type ResourcesWriter struct {
+    *codegen.SourceFile
+    ResourceTmpl *template.Template
+}
+</code></pre>
+
+<p>ResourcesWriter generate code for a goa application resources.
+Resources are data structures initialized by the application handlers and passed to controller
+actions.</p>
+
+<h3 id="func-newresourceswriter:0950d9b6f1dd6681888b1fb558093be3">func NewResourcesWriter</h3>
+
+<pre><code class="language-go">func NewResourcesWriter(filename string) (*ResourcesWriter, error)
+</code></pre>
+
+<p>NewResourcesWriter returns a contexts code writer.
+Resources provide the glue between the underlying request data and the user controller.</p>
+
+<h3 id="func-resourceswriter-execute:0950d9b6f1dd6681888b1fb558093be3">func (*ResourcesWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *ResourcesWriter) Execute(data *ResourceData) error
+</code></pre>
+
+<p>Execute writes the code for the context types to the writer.</p>
+
+<h2 id="type-usertypetemplatedata:0950d9b6f1dd6681888b1fb558093be3">type UserTypeTemplateData</h2>
+
+<pre><code class="language-go">type UserTypeTemplateData struct {
+    UserType   *design.UserTypeDefinition
+    Versioned  bool
+    DefaultPkg string
+}
+</code></pre>
+
+<p>UserTypeTemplateData contains all the information used by the template to redner the
+media types code.</p>
+
+<h2 id="type-usertypeswriter:0950d9b6f1dd6681888b1fb558093be3">type UserTypesWriter</h2>
+
+<pre><code class="language-go">type UserTypesWriter struct {
+    *codegen.SourceFile
+    UserTypeTmpl *template.Template
+}
+</code></pre>
+
+<p>UserTypesWriter generate code for a goa application user types.
+User types are data structures defined in the DSL with &ldquo;Type&rdquo;.</p>
+
+<h3 id="func-newusertypeswriter:0950d9b6f1dd6681888b1fb558093be3">func NewUserTypesWriter</h3>
+
+<pre><code class="language-go">func NewUserTypesWriter(filename string) (*UserTypesWriter, error)
+</code></pre>
+
+<p>NewUserTypesWriter returns a contexts code writer.
+User types contain custom data structured defined in the DSL with &ldquo;Type&rdquo;.</p>
+
+<h3 id="func-usertypeswriter-execute:0950d9b6f1dd6681888b1fb558093be3">func (*UserTypesWriter) Execute</h3>
+
+<pre><code class="language-go">func (w *UserTypesWriter) Execute(data *UserTypeTemplateData) error
+</code></pre>
+
+<p>Execute writes the code for the context types to the writer.</p>
+
+<hr />
+
+<p>Generated by <a href="http://godoc.org/github.com/davecheney/godoc2md">godoc2md</a></p>
+
+
+		</div>
+
+		
+	
+		<div class="sidebar span4">
+
+			
+			<div class="widget">
+				<input id="search" type="search" class="animated" placeholder="Search" />
+				 <ul id="results">
+    			        </ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Categories</h4>
+				<ul class="icons-ul list-style">
+					
+						<li><a href="/categories/dsl-engine/">dsl-engine</a></li>
+					
+						<li><a href="/categories/generation/">generation</a></li>
+					
+						<li><a href="/categories/godoc/">godoc</a></li>
+					
+						<li><a href="/categories/middleware/">middleware</a></li>
+					
+						<li><a href="/categories/runtime/">runtime</a></li>
+					
+						<li><a href="/categories/swagger/">swagger</a></li>
+					
+
+				</ul>
+			</div>
+
+			
+			<div class="widget">
+				<h4>All Tags</h4>
+				<ul class="tags">
+					
+						<li><a href="/tags/apidsl/">apidsl</a></li>
+					
+						<li><a href="/tags/app/">app</a></li>
+					
+						<li><a href="/tags/auth/">auth</a></li>
+					
+						<li><a href="/tags/binc/">binc</a></li>
+					
+						<li><a href="/tags/cbor/">cbor</a></li>
+					
+						<li><a href="/tags/cellar-cli/">cellar-cli</a></li>
+					
+						<li><a href="/tags/client/">client</a></li>
+					
+						<li><a href="/tags/codegen/">codegen</a></li>
+					
+						<li><a href="/tags/cors/">cors</a></li>
+					
+						<li><a href="/tags/design/">design</a></li>
+					
+						<li><a href="/tags/dsl/">dsl</a></li>
+					
+						<li><a href="/tags/dslengine/">dslengine</a></li>
+					
+						<li><a href="/tags/example/">example</a></li>
+					
+						<li><a href="/tags/gen_app/">gen_app</a></li>
+					
+						<li><a href="/tags/gen_client/">gen_client</a></li>
+					
+						<li><a href="/tags/gen_gen/">gen_gen</a></li>
+					
+						<li><a href="/tags/gen_js/">gen_js</a></li>
+					
+						<li><a href="/tags/gen_main/">gen_main</a></li>
+					
+						<li><a href="/tags/gen_schema/">gen_schema</a></li>
+					
+						<li><a href="/tags/gen_swagger/">gen_swagger</a></li>
+					
+						<li><a href="/tags/genmodels/">genmodels</a></li>
+					
+						<li><a href="/tags/goa/">goa</a></li>
+					
+						<li><a href="/tags/goagen/">goagen</a></li>
+					
+						<li><a href="/tags/godoc/">godoc</a></li>
+					
+						<li><a href="/tags/gogoprotobuf/">gogoprotobuf</a></li>
+					
+						<li><a href="/tags/gorma/">gorma</a></li>
+					
+						<li><a href="/tags/gzip/">gzip</a></li>
+					
+						<li><a href="/tags/json/">json</a></li>
+					
+						<li><a href="/tags/jwt/">jwt</a></li>
+					
+						<li><a href="/tags/meta/">meta</a></li>
+					
+						<li><a href="/tags/middleware/">middleware</a></li>
+					
+						<li><a href="/tags/msgpack/">msgpack</a></li>
+					
+						<li><a href="/tags/swagger/">swagger</a></li>
+					
+						<li><a href="/tags/test/">test</a></li>
+					
+						<li><a href="/tags/utils/">utils</a></li>
+					
+				</ul>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="/js/lunr.min.js"></script>
+
+    <script type="text/javascript">
+    var lunrIndex,
+        $results,
+        pagesIndex;
+
+    
+    function initLunr() {
+        
+        $.getJSON("/js/pindex.json")
+            .done(function(index) {
+                pagesIndex = index;
+                console.log("index:", pagesIndex);
+
+                
+                
+                lunrIndex = lunr(function() {
+                    this.field("title", {
+                        boost: 10
+                    });
+                    this.field("tags", {
+                        boost: 5
+                    });
+                    this.field("content");
+
+                    
+                    this.ref("href");
+                });
+
+                
+                pagesIndex.forEach(function(page) {
+                    lunrIndex.add(page);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ", " + error;
+                console.error("Error getting Hugo index flie:", err);
+            });
+    }
+
+    
+    function initUI() {
+        $results = $("#results");
+        $("#search").keyup(function() {
+            $results.empty();
+
+            
+            var query = $(this).val();
+            if (query.length < 2) {
+                return;
+            }
+
+            var results = search(query);
+
+            renderResults(results);
+        });
+    }
+
+    
+
+    function search(query) {
+        
+        
+        
+        
+        
+        return lunrIndex.search(query).map(function(result) {
+                return pagesIndex.filter(function(page) {
+                    return page.href === result.ref;
+                })[0];
+            });
+    }
+
+    
+
+    function renderResults(results) {
+        if (!results.length) {
+            return;
+        }
+
+        
+        results.slice(0, 10).forEach(function(result) {
+            var $result = $("<li>");
+            $result.append($("<a>", {
+                href: result.href,
+                text: "» " + result.title
+            }));
+            $results.append($result);
+        });
+    }
+
+    
+    initLunr();
+
+    $(document).ready(function() {
+        initUI();
+    });
+    </script>
+	
+
+	</div>
+	</section>
+		
+
+	<footer id="footer">
+		<div class="container">
+			<div class="row">
+				<div class="span4">
+					<a class="brand" href="/">
+						goa
+					</a>
+					<p>
+						Elegant code generation<br />for your API or microservice. <br />
+						Design First
+						
+					</p>
+				</div>
+				<div class="span4 social-networks">
+					<h3>Find us elsewhere</h3>
+					<p>
+						<a class="social-network twitter" href="https://twitter.com/goadesign"></a>
+					</p>
+				</div>
+				<div class="span4 newsletter">
+					<h3>Developer List</h3>
+					<a href="https://groups.google.com/forum/#!forum/goadesign">Join the Google Group</a>
+				</div> 
+			</div> 		
+		</div> 
+	</footer>
+
+	<footer id="copyright">
+		<div class="container">
+			<div class="row">
+				<div class="span8">
+					&copy; 2015—2016 by <a>Raphael Simon and the goa contributors</a>
+				</div>
+			</div> 		
+		</div> 
+	</footer>
+
+	
+
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.isotope.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.touchSwipe.min.js"></script>
+	<script type="text/javascript" src="/js/jquery.hotkeys.min.js" charset='utf-8'></script>
+	<script type="text/javascript" src="/js/functions.min.js"></script>
+	
+</body>
+</html>		
+
