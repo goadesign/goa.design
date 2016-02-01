@@ -10,5 +10,25 @@ do
 	cd ${base}${pkg}
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
 done
-
+for OUTPUT in $(go list github.com/goadesign/middleware/...)
+do
+ 	pkg=${OUTPUT#$prefix}
+	mkdir -p ${base}${pkg}
+	cd ${base}${pkg}
+	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+done
+for OUTPUT in $(go list github.com/goadesign/gorma/...)
+do
+ 	pkg=${OUTPUT#$prefix}
+	mkdir -p ${base}${pkg}
+	cd ${base}${pkg}
+	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+done
+for OUTPUT in $(go list github.com/goadesign/encoding/...)
+do
+ 	pkg=${OUTPUT#$prefix}
+	mkdir -p ${base}${pkg}
+	cd ${base}${pkg}
+	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+done
 
