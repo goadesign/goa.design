@@ -6,14 +6,15 @@
     <description>Recent content in Cellar Cli on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/cellar-cli/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>gorma/example/client/cellar-cli</title>
-      <link>http://goa.design/godoc/gorma/example/client/cellar-cli/cellar-cli/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/gorma/example/client/cellar-cli/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/gorma/example/client/cellar-cli/cellar-cli/</guid>
+      <guid>http://goa.design/godoc/gorma/example/client/cellar-cli/</guid>
       <description>
 
 &lt;h1 id=&#34;cellar-cli:6e6d5bfb9e12d45d4839ad8601b79733&#34;&gt;cellar-cli&lt;/h1&gt;

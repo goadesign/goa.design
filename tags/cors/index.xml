@@ -6,14 +6,15 @@
     <description>Recent content in Cors on goa</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 31 Jan 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://goa.design/tags/cors/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>middleware/cors</title>
-      <link>http://goa.design/godoc/middleware/cors/cors/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>http://goa.design/godoc/middleware/cors/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>http://goa.design/godoc/middleware/cors/cors/</guid>
+      <guid>http://goa.design/godoc/middleware/cors/</guid>
       <description>
 
 &lt;h1 id=&#34;cors:dcf9991619d3c40559795bfe4d699a98&#34;&gt;cors&lt;/h1&gt;

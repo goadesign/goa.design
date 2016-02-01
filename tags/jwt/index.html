@@ -99,6 +99,40 @@
 			
 			<article class="post">
 				<div class="entry-body">
+					<a href="http://goa.design/godoc/middleware/jwt/">
+						<h2 class="entry-title">middleware/jwt</h2>
+					</a>
+					<p>jwt import &quot;github.com/goadesign/middleware/jwt&quot; Package jwt makes it possible to authorize API requests using JSON Web Tokens, see https://jwt.io/introduction/ Middleware The package provides a middleware that can be mounted on controllers that require authentication. The JWT middleware is instantiated using the package Middleware function. This function accepts a specification that describes the various properties used by the JWT signature and validation algorithms. spec := &amp;jwt.Specification{ AllowParam: false, // Pass tokens in headers only AuthOptions: false, // Do not authorize OPTIONS requests TTLMinutes: 1440, // Tokens are valid for 24 hours Issuer: &quot;me.com&quot;, // me.com issued the token KeySigningMethod: jwt.RSA256, // Use the RSA256 hashing algorithm to sign tokens SigningKeyFunc: privateKey, // privateKey returns the key used to sign tokens ValidationFunc: pubKey, // pubKey returns the key used to validate tokens } authorizedController.Use(jwt.Middleware(spec)) Token Manager The package also exposes a token manager that creates the JWT tokens.</p>
+				</div>
+				<div class="entry-meta">
+					<span class="entry-type"></span>
+					<span class="entry-date">Sunday, Jan 31, 2016</span>
+					<span class="entry-date"></span>
+					<div class="entry-meta">
+						<ul class="categories">
+						
+							<li><a href="/categories/godoc/">godoc</a></li>
+						
+						</ul>
+					</div>
+					<div class="widget">
+						<ul class="tags">
+						
+							<li><a href="/tags/godoc/">godoc</a></li>
+						
+							<li><a href="/tags/jwt/">jwt</a></li>
+						
+						</ul>
+					</div>
+				</div>
+				<div class="clr"></div>
+
+			</article>
+		<hr />
+            
+			
+			<article class="post">
+				<div class="entry-body">
 					<a href="http://goa.design/middleware/jwt/">
 						<h2 class="entry-title">JWT</h2>
 					</a>
@@ -119,40 +153,6 @@
 						<ul class="tags">
 						
 							<li><a href="/tags/auth/">auth</a></li>
-						
-							<li><a href="/tags/jwt/">jwt</a></li>
-						
-						</ul>
-					</div>
-				</div>
-				<div class="clr"></div>
-
-			</article>
-		<hr />
-            
-			
-			<article class="post">
-				<div class="entry-body">
-					<a href="http://goa.design/godoc/middleware/jwt/jwt/">
-						<h2 class="entry-title">middleware/jwt</h2>
-					</a>
-					<p>jwt import &quot;github.com/goadesign/middleware/jwt&quot; Package jwt makes it possible to authorize API requests using JSON Web Tokens, see https://jwt.io/introduction/ Middleware The package provides a middleware that can be mounted on controllers that require authentication. The JWT middleware is instantiated using the package Middleware function. This function accepts a specification that describes the various properties used by the JWT signature and validation algorithms. spec := &amp;jwt.Specification{ AllowParam: false, // Pass tokens in headers only AuthOptions: false, // Do not authorize OPTIONS requests TTLMinutes: 1440, // Tokens are valid for 24 hours Issuer: &quot;me.com&quot;, // me.com issued the token KeySigningMethod: jwt.RSA256, // Use the RSA256 hashing algorithm to sign tokens SigningKeyFunc: privateKey, // privateKey returns the key used to sign tokens ValidationFunc: pubKey, // pubKey returns the key used to validate tokens } authorizedController.Use(jwt.Middleware(spec)) Token Manager The package also exposes a token manager that creates the JWT tokens.</p>
-				</div>
-				<div class="entry-meta">
-					<span class="entry-type"></span>
-					<span class="entry-date">Monday, Jan 1, 0001</span>
-					<span class="entry-date"></span>
-					<div class="entry-meta">
-						<ul class="categories">
-						
-							<li><a href="/categories/godoc/">godoc</a></li>
-						
-						</ul>
-					</div>
-					<div class="widget">
-						<ul class="tags">
-						
-							<li><a href="/tags/godoc/">godoc</a></li>
 						
 							<li><a href="/tags/jwt/">jwt</a></li>
 						
