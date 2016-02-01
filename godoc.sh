@@ -9,6 +9,15 @@ do
 	mkdir -p ${base}${pkg}
 	cd ${base}${pkg}
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+cat <<-EOF > $(basename $OUTPUT).md 
+$(echo +++)
+$(echo title=\"${pkg}\")
+$(echo description=\"godoc for ${pkg}\")
+$(echo categories=\[\"godoc\"\])
+$(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
+$(echo +++)
+$(cat $(basename $OUTPUT).md ))
+EOF
 done
 for OUTPUT in $(go list github.com/goadesign/middleware/...)
 do
@@ -16,6 +25,15 @@ do
 	mkdir -p ${base}${pkg}
 	cd ${base}${pkg}
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+cat <<-EOF > $(basename $OUTPUT).md 
+$(echo +++)
+$(echo title=\"${pkg}\")
+$(echo description=\"godoc for ${pkg}\")
+$(echo categories=\[\"godoc\"\])
+$(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
+$(echo +++)
+$(cat $(basename $OUTPUT).md ))
+EOF
 done
 for OUTPUT in $(go list github.com/goadesign/gorma/...)
 do
@@ -23,6 +41,15 @@ do
 	mkdir -p ${base}${pkg}
 	cd ${base}${pkg}
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+cat <<-EOF > $(basename $OUTPUT).md 
+$(echo +++)
+$(echo title=\"${pkg}\")
+$(echo description=\"godoc for ${pkg}\")
+$(echo categories=\[\"godoc\"\])
+$(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
+$(echo +++)
+$(cat $(basename $OUTPUT).md ))
+EOF
 done
 for OUTPUT in $(go list github.com/goadesign/encoding/...)
 do
@@ -30,5 +57,14 @@ do
 	mkdir -p ${base}${pkg}
 	cd ${base}${pkg}
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
+cat <<-EOF > $(basename $OUTPUT).md 
+$(echo +++)
+$(echo title=\"${pkg}\")
+$(echo description=\"godoc for ${pkg}\")
+$(echo categories=\[\"godoc\"\])
+$(echo tags=\[\"godoc\",\"$(basename $OUTPUT)\"\])
+$(echo +++)
+$(cat $(basename $OUTPUT).md ))
+EOF
 done
 
