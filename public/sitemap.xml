@@ -23,11 +23,6 @@
   </url>
   
   <url>
-    <loc>http://goa.design/godoc/goa/</loc>
-    <lastmod>2016-01-30T11:01:06-05:00</lastmod>
-  </url>
-  
-  <url>
     <loc>http://goa.design/components/goagen/</loc>
     <lastmod>2016-01-30T11:01:06-05:00</lastmod>
   </url>
@@ -40,6 +35,162 @@
   <url>
     <loc>http://goa.design/components/swagger/</loc>
     <lastmod>2016-01-30T11:01:06-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/encoding/binc/binc/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/encoding/cbor/cbor/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/encoding/gogoprotobuf/gogoprotobuf/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/encoding/json/json/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/encoding/msgpack/msgpack/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goa/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/design/design/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/design/apidsl/apidsl/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/design/apidsl/test/test/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/dslengine/dslengine/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/goagen/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/codegen/codegen/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_app/gen_app/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_client/gen_client/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_gen/gen_gen/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_js/gen_js/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_main/gen_main/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_schema/gen_schema/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/gen_swagger/gen_swagger/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/meta/meta/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/goa/goagen/utils/utils/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/gorma/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/dsl/dsl/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/example/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/app/app/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/client/client/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/client/cellar-cli/cellar-cli/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/design/design/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/genmodels/genmodels/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/gorma/example/swagger/swagger/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/middleware/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/cors/cors/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/encoding/binc/binc/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/encoding/cbor/cbor/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/encoding/gogoprotobuf/gogoprotobuf/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/encoding/json/json/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/encoding/msgpack/msgpack/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/gzip/gzip/</loc>
+  </url>
+  
+  <url>
+    <loc>http://goa.design/godoc/middleware/jwt/jwt/</loc>
   </url>
   
 </urlset>

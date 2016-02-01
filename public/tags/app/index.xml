@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>App on goa</title>
+    <link>http://goa.design/tags/app/</link>
+    <description>Recent content in App on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/app/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>gorma/example/app</title>
+      <link>http://goa.design/godoc/gorma/example/app/app/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/gorma/example/app/app/</guid>
+      <description>
+
+&lt;h1 id=&#34;app:fa48a1428a04477b93a032492644bb9c&#34;&gt;app&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/gorma/example/app&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;func-accounthref:fa48a1428a04477b93a032492644bb9c&#34;&gt;func AccountHref&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func AccountHref(accountID interface{}) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AccountHref returns the resource href.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-bottlehref:fa48a1428a04477b93a032492644bb9c&#34;&gt;func BottleHref&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func BottleHref(accountID, bottleID interface{}) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleHref returns the resource href.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalaccount:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalAccount&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalAccount(source *Account, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalAccount validates and renders an instance of Account into a interface{}
+using view &amp;ldquo;default&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalaccountlink:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalAccountLink&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalAccountLink(source *Account, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalAccountLink validates and renders an instance of Account into a interface{}
+using view &amp;ldquo;link&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalaccounttiny:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalAccountTiny&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalAccountTiny(source *Account, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalAccountTiny validates and renders an instance of Account into a interface{}
+using view &amp;ldquo;tiny&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottle:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottle&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottle(source *Bottle, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottle validates and renders an instance of Bottle into a interface{}
+using view &amp;ldquo;default&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottlecollection:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottleCollection&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottleCollection(source BottleCollection, inErr error) (target []map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottleCollection validates and renders an instance of BottleCollection into a interface{}
+using view &amp;ldquo;default&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottlecollectiontiny:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottleCollectionTiny&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottleCollectionTiny(source BottleCollection, inErr error) (target []map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottleCollectionTiny validates and renders an instance of BottleCollection into a interface{}
+using view &amp;ldquo;tiny&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottlefull:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottleFull&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottleFull(source *Bottle, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottleFull validates and renders an instance of Bottle into a interface{}
+using view &amp;ldquo;full&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottlepayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottlePayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottlePayload(source *BottlePayload, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottlePayload validates and renders an instance of BottlePayload into a interface{}&lt;/p&gt;
+
+&lt;h2 id=&#34;func-marshalbottletiny:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MarshalBottleTiny&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MarshalBottleTiny(source *Bottle, inErr error) (target map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MarshalBottleTiny validates and renders an instance of Bottle into a interface{}
+using view &amp;ldquo;tiny&amp;rdquo;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-mountaccountcontroller:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MountAccountController&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MountAccountController(service goa.Service, ctrl AccountController)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MountAccountController &amp;ldquo;mounts&amp;rdquo; a Account resource controller on the given service.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-mountbottlecontroller:fa48a1428a04477b93a032492644bb9c&#34;&gt;func MountBottleController&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MountBottleController(service goa.Service, ctrl BottleController)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MountBottleController &amp;ldquo;mounts&amp;rdquo; a Bottle resource controller on the given service.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-account:fa48a1428a04477b93a032492644bb9c&#34;&gt;type Account&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Account struct {
+    // Date of creation
+    CreatedAt *string `json:&amp;quot;created_at,omitempty&amp;quot;`
+    // Email of account owner
+    CreatedBy *string `json:&amp;quot;created_by,omitempty&amp;quot;`
+    // API href of account
+    Href string `json:&amp;quot;href&amp;quot;`
+    // ID of account
+    ID int `json:&amp;quot;id&amp;quot;`
+    // Name of account
+    Name string `json:&amp;quot;name&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A tenant account
+Identifier: application/vnd.account+json&lt;/p&gt;
+
+&lt;h3 id=&#34;func-account-dump:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*Account) Dump&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt *Account) Dump(view AccountViewEnum) (res map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dump produces raw data from an instance of Account running all the
+validations. See LoadAccount for the definition of raw data.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-account-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*Account) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt *Account) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate validates the media type instance.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-accountcontroller:fa48a1428a04477b93a032492644bb9c&#34;&gt;type AccountController&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type AccountController interface {
+    goa.Controller
+    Create(*CreateAccountContext) error
+    Delete(*DeleteAccountContext) error
+    Show(*ShowAccountContext) error
+    Update(*UpdateAccountContext) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AccountController is the controller interface for the Account actions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-accountviewenum:fa48a1428a04477b93a032492644bb9c&#34;&gt;type AccountViewEnum&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type AccountViewEnum string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Account views&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // Account default view
+    AccountDefaultView AccountViewEnum = &amp;quot;default&amp;quot;
+    // Account link view
+    AccountLinkView AccountViewEnum = &amp;quot;link&amp;quot;
+    // Account tiny view
+    AccountTinyView AccountViewEnum = &amp;quot;tiny&amp;quot;
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-bottle:fa48a1428a04477b93a032492644bb9c&#34;&gt;type Bottle&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Bottle struct {
+    // Account that owns bottle
+    Account *Account `json:&amp;quot;account,omitempty&amp;quot;`
+    Color   string   `json:&amp;quot;color&amp;quot;`
+    Country *string  `json:&amp;quot;country,omitempty&amp;quot;`
+    // Date of creation
+    CreatedAt *string `json:&amp;quot;created_at,omitempty&amp;quot;`
+    // API href of bottle
+    Href string `json:&amp;quot;href&amp;quot;`
+    // ID of bottle
+    ID   int    `json:&amp;quot;id&amp;quot;`
+    Name string `json:&amp;quot;name&amp;quot;`
+    // Rating of bottle between 1 and 5
+    Rating    *int    `json:&amp;quot;rating,omitempty&amp;quot;`
+    Region    *string `json:&amp;quot;region,omitempty&amp;quot;`
+    Review    *string `json:&amp;quot;review,omitempty&amp;quot;`
+    Sweetness *int    `json:&amp;quot;sweetness,omitempty&amp;quot;`
+    // Date of last update
+    UpdatedAt     *string `json:&amp;quot;updated_at,omitempty&amp;quot;`
+    Varietal      string  `json:&amp;quot;varietal&amp;quot;`
+    Vineyard      string  `json:&amp;quot;vineyard&amp;quot;`
+    Vintage       string  `json:&amp;quot;vintage&amp;quot;`
+    VinyardCounty *string `json:&amp;quot;vinyard_county,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A bottle of wine
+Identifier: application/vnd.bottle+json&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottle-dump:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*Bottle) Dump&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt *Bottle) Dump(view BottleViewEnum) (res map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dump produces raw data from an instance of Bottle running all the
+validations. See LoadBottle for the definition of raw data.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottle-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*Bottle) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt *Bottle) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate validates the media type instance.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottlecollection:fa48a1428a04477b93a032492644bb9c&#34;&gt;type BottleCollection&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleCollection []*Bottle
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleCollection media type
+Identifier: application/vnd.bottle+json; type=collection&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottlecollection-dump:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (BottleCollection) Dump&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt BottleCollection) Dump(view BottleCollectionViewEnum) (res []map[string]interface{}, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dump produces raw data from an instance of BottleCollection running all the
+validations. See LoadBottleCollection for the definition of raw data.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottlecollection-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (BottleCollection) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (mt BottleCollection) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate validates the media type instance.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottlecollectionviewenum:fa48a1428a04477b93a032492644bb9c&#34;&gt;type BottleCollectionViewEnum&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleCollectionViewEnum string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleCollection views&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // BottleCollection default view
+    BottleCollectionDefaultView BottleCollectionViewEnum = &amp;quot;default&amp;quot;
+    // BottleCollection tiny view
+    BottleCollectionTinyView BottleCollectionViewEnum = &amp;quot;tiny&amp;quot;
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-bottlecontroller:fa48a1428a04477b93a032492644bb9c&#34;&gt;type BottleController&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleController interface {
+    goa.Controller
+    Create(*CreateBottleContext) error
+    Delete(*DeleteBottleContext) error
+    List(*ListBottleContext) error
+    Rate(*RateBottleContext) error
+    Show(*ShowBottleContext) error
+    Update(*UpdateBottleContext) error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottleController is the controller interface for the Bottle actions.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottlepayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type BottlePayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottlePayload struct {
+    Color         *string `json:&amp;quot;color,omitempty&amp;quot;`
+    Country       *string `json:&amp;quot;country,omitempty&amp;quot;`
+    Myvintage     *int    `json:&amp;quot;myvintage,omitempty&amp;quot;`
+    Name          *string `json:&amp;quot;name,omitempty&amp;quot;`
+    Region        *string `json:&amp;quot;region,omitempty&amp;quot;`
+    Review        *string `json:&amp;quot;review,omitempty&amp;quot;`
+    Sweetness     *int    `json:&amp;quot;sweetness,omitempty&amp;quot;`
+    Varietal      *string `json:&amp;quot;varietal,omitempty&amp;quot;`
+    Vineyard      *string `json:&amp;quot;vineyard,omitempty&amp;quot;`
+    VinyardCounty *string `json:&amp;quot;vinyard_county,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BottlePayload type&lt;/p&gt;
+
+&lt;h3 id=&#34;func-bottlepayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*BottlePayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ut *BottlePayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate validates the type instance.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-bottleviewenum:fa48a1428a04477b93a032492644bb9c&#34;&gt;type BottleViewEnum&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type BottleViewEnum string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Bottle views&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // Bottle default view
+    BottleDefaultView BottleViewEnum = &amp;quot;default&amp;quot;
+    // Bottle full view
+    BottleFullView BottleViewEnum = &amp;quot;full&amp;quot;
+    // Bottle tiny view
+    BottleTinyView BottleViewEnum = &amp;quot;tiny&amp;quot;
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-createaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type CreateAccountContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type CreateAccountContext struct {
+    *goa.Context
+    Payload *CreateAccountPayload
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CreateAccountContext provides the account create action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newcreateaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewCreateAccountContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewCreateAccountContext(c *goa.Context) (*CreateAccountContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewCreateAccountContext parses the incoming request URL and body, performs validations and creates the
+context used by the account controller create action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-createaccountcontext-created:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*CreateAccountContext) Created&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *CreateAccountContext) Created() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Created sends a HTTP response with status code 201.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-createaccountpayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type CreateAccountPayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type CreateAccountPayload struct {
+    // Name of account
+    Name string `json:&amp;quot;name&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CreateAccountPayload is the account create action payload.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-createaccountpayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*CreateAccountPayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (payload *CreateAccountPayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate runs the validation rules defined in the design.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-createbottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type CreateBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type CreateBottleContext struct {
+    *goa.Context
+    AccountID int
+    Payload   *CreateBottlePayload
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CreateBottleContext provides the bottle create action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newcreatebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewCreateBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewCreateBottleContext(c *goa.Context) (*CreateBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewCreateBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller create action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-createbottlecontext-created:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*CreateBottleContext) Created&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *CreateBottleContext) Created() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Created sends a HTTP response with status code 201.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-createbottlepayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type CreateBottlePayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type CreateBottlePayload struct {
+    Color         string  `json:&amp;quot;color&amp;quot;`
+    Country       *string `json:&amp;quot;country,omitempty&amp;quot;`
+    Myvintage     int     `json:&amp;quot;myvintage&amp;quot;`
+    Name          string  `json:&amp;quot;name&amp;quot;`
+    Region        *string `json:&amp;quot;region,omitempty&amp;quot;`
+    Review        *string `json:&amp;quot;review,omitempty&amp;quot;`
+    Sweetness     *int    `json:&amp;quot;sweetness,omitempty&amp;quot;`
+    Varietal      string  `json:&amp;quot;varietal&amp;quot;`
+    Vineyard      string  `json:&amp;quot;vineyard&amp;quot;`
+    VinyardCounty *string `json:&amp;quot;vinyard_county,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CreateBottlePayload is the bottle create action payload.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-createbottlepayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*CreateBottlePayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (payload *CreateBottlePayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate runs the validation rules defined in the design.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-deleteaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type DeleteAccountContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DeleteAccountContext struct {
+    *goa.Context
+    AccountID int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DeleteAccountContext provides the account delete action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newdeleteaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewDeleteAccountContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewDeleteAccountContext(c *goa.Context) (*DeleteAccountContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewDeleteAccountContext parses the incoming request URL and body, performs validations and creates the
+context used by the account controller delete action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-deleteaccountcontext-nocontent:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*DeleteAccountContext) NoContent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *DeleteAccountContext) NoContent() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoContent sends a HTTP response with status code 204.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-deleteaccountcontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*DeleteAccountContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *DeleteAccountContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-deletebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type DeleteBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DeleteBottleContext struct {
+    *goa.Context
+    AccountID int
+    BottleID  int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DeleteBottleContext provides the bottle delete action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newdeletebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewDeleteBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewDeleteBottleContext(c *goa.Context) (*DeleteBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewDeleteBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller delete action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-deletebottlecontext-nocontent:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*DeleteBottleContext) NoContent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *DeleteBottleContext) NoContent() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoContent sends a HTTP response with status code 204.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-deletebottlecontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*DeleteBottleContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *DeleteBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-listbottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type ListBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ListBottleContext struct {
+    *goa.Context
+    AccountID int
+    Years     []int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ListBottleContext provides the bottle list action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newlistbottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewListBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewListBottleContext(c *goa.Context) (*ListBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewListBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller list action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-listbottlecontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ListBottleContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ListBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-listbottlecontext-ok:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ListBottleContext) OK&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ListBottleContext) OK(resp BottleCollection, view BottleCollectionViewEnum) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;OK sends a HTTP response with status code 200.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-ratebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type RateBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type RateBottleContext struct {
+    *goa.Context
+    AccountID int
+    BottleID  int
+    Payload   *RateBottlePayload
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RateBottleContext provides the bottle rate action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newratebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewRateBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewRateBottleContext(c *goa.Context) (*RateBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewRateBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller rate action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-ratebottlecontext-nocontent:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*RateBottleContext) NoContent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *RateBottleContext) NoContent() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoContent sends a HTTP response with status code 204.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-ratebottlecontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*RateBottleContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *RateBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-ratebottlepayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type RateBottlePayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type RateBottlePayload struct {
+    // Rating of bottle between 1 and 5
+    Rating int `json:&amp;quot;rating&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RateBottlePayload is the bottle rate action payload.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-ratebottlepayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*RateBottlePayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (payload *RateBottlePayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate runs the validation rules defined in the design.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-showaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type ShowAccountContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ShowAccountContext struct {
+    *goa.Context
+    AccountID int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ShowAccountContext provides the account show action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newshowaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewShowAccountContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewShowAccountContext(c *goa.Context) (*ShowAccountContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewShowAccountContext parses the incoming request URL and body, performs validations and creates the
+context used by the account controller show action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-showaccountcontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ShowAccountContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ShowAccountContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-showaccountcontext-ok:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ShowAccountContext) OK&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ShowAccountContext) OK(resp *Account, view AccountViewEnum) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;OK sends a HTTP response with status code 200.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-showbottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type ShowBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ShowBottleContext struct {
+    *goa.Context
+    AccountID int
+    BottleID  int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ShowBottleContext provides the bottle show action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newshowbottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewShowBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewShowBottleContext(c *goa.Context) (*ShowBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewShowBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller show action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-showbottlecontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ShowBottleContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ShowBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-showbottlecontext-ok:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*ShowBottleContext) OK&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *ShowBottleContext) OK(resp *Bottle, view BottleViewEnum) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;OK sends a HTTP response with status code 200.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-updateaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type UpdateAccountContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UpdateAccountContext struct {
+    *goa.Context
+    AccountID int
+    Payload   *UpdateAccountPayload
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UpdateAccountContext provides the account update action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newupdateaccountcontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewUpdateAccountContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewUpdateAccountContext(c *goa.Context) (*UpdateAccountContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewUpdateAccountContext parses the incoming request URL and body, performs validations and creates the
+context used by the account controller update action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updateaccountcontext-nocontent:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateAccountContext) NoContent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *UpdateAccountContext) NoContent() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoContent sends a HTTP response with status code 204.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updateaccountcontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateAccountContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *UpdateAccountContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-updateaccountpayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type UpdateAccountPayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UpdateAccountPayload struct {
+    // Name of account
+    Name string `json:&amp;quot;name&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UpdateAccountPayload is the account update action payload.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updateaccountpayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateAccountPayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (payload *UpdateAccountPayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate runs the validation rules defined in the design.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-updatebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;type UpdateBottleContext&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UpdateBottleContext struct {
+    *goa.Context
+    AccountID int
+    BottleID  int
+    Payload   *UpdateBottlePayload
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UpdateBottleContext provides the bottle update action context.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newupdatebottlecontext:fa48a1428a04477b93a032492644bb9c&#34;&gt;func NewUpdateBottleContext&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewUpdateBottleContext(c *goa.Context) (*UpdateBottleContext, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewUpdateBottleContext parses the incoming request URL and body, performs validations and creates the
+context used by the bottle controller update action.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updatebottlecontext-nocontent:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateBottleContext) NoContent&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *UpdateBottleContext) NoContent() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoContent sends a HTTP response with status code 204.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updatebottlecontext-notfound:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateBottleContext) NotFound&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (ctx *UpdateBottleContext) NotFound() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NotFound sends a HTTP response with status code 404.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-updatebottlepayload:fa48a1428a04477b93a032492644bb9c&#34;&gt;type UpdateBottlePayload&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type UpdateBottlePayload struct {
+    Color         *string `json:&amp;quot;color,omitempty&amp;quot;`
+    Country       *string `json:&amp;quot;country,omitempty&amp;quot;`
+    Myvintage     *int    `json:&amp;quot;myvintage,omitempty&amp;quot;`
+    Name          *string `json:&amp;quot;name,omitempty&amp;quot;`
+    Region        *string `json:&amp;quot;region,omitempty&amp;quot;`
+    Review        *string `json:&amp;quot;review,omitempty&amp;quot;`
+    Sweetness     *int    `json:&amp;quot;sweetness,omitempty&amp;quot;`
+    Varietal      *string `json:&amp;quot;varietal,omitempty&amp;quot;`
+    Vineyard      *string `json:&amp;quot;vineyard,omitempty&amp;quot;`
+    VinyardCounty *string `json:&amp;quot;vinyard_county,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;UpdateBottlePayload is the bottle update action payload.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-updatebottlepayload-validate:fa48a1428a04477b93a032492644bb9c&#34;&gt;func (*UpdateBottlePayload) Validate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (payload *UpdateBottlePayload) Validate() (err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate runs the validation rules defined in the design.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

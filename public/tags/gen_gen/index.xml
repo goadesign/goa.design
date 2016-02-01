@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Gen_gen on goa</title>
+    <link>http://goa.design/tags/gen_gen/</link>
+    <description>Recent content in Gen_gen on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/gen_gen/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>goa/goagen/gen_gen</title>
+      <link>http://goa.design/godoc/goa/goagen/gen_gen/gen_gen/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/goa/goagen/gen_gen/gen_gen/</guid>
+      <description>
+
+&lt;h1 id=&#34;gengen:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;gengen&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/goa/goagen/gen_gen&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Package gengen provides goagen with the ability to run user provided generators (&lt;em&gt;plugins&lt;/em&gt;).&lt;/p&gt;
+
+&lt;h3 id=&#34;how-to-write-a-goagen-plugin:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;How to Write a goagen Plugin&lt;/h3&gt;
+
+&lt;p&gt;The only requirement is that the package exposes a global Generate function with the following
+signature:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;func Generate(api *design.APIDefinition) ([]string, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;where api is the API definition computed from the design DSL. On success Generate should return
+the path to the generated files. On error the error message gets displayed to the user (and
+goagen exist with status 1).&lt;/p&gt;
+
+&lt;p&gt;The Generate method should take advantage of the APIDefinition IterateXXX methods to iterate
+through the API resources, media types and types to guarantee that the order doesn&amp;rsquo;t change
+between two invokation of the function (thereby generating different output even if the design
+hasn&amp;rsquo;t changed).&lt;/p&gt;
+
+&lt;p&gt;They may also take advantage of Metadata. The goa design language allows defining Metadata on a
+number of definitions: API, Resource, Action, Response and Attribute (which means Type and
+MediaType as well since these definitions are attributes). A metadata field consists of a
+key/value pair where both are simple strings. The generator can use these key/value pairs to
+produce different results, see example below. Metadata has no effect on the buit-in generators.
+The Output directory is available through the codegen.OutputDir global variable.&lt;/p&gt;
+
+&lt;p&gt;Package genresnames is an example of a goagen plugin. It creates a file &amp;ldquo;names.txt&amp;rdquo; containing
+the names of the API resources sorted in alphabetical order. If a resource has a
+metadata pair with the key &amp;ldquo;genresnames/name&amp;rdquo; then the plugin uses the metadata value instead.&lt;/p&gt;
+
+&lt;p&gt;Invoke the plugin with:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;goagen gen -d &amp;lt;Go package path to design package&amp;gt; --pkg-path=&amp;lt;Go package path to genresnames&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Source code:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;package genresnames
+
+import (
+    &amp;quot;io/ioutil&amp;quot;
+    &amp;quot;os&amp;quot;
+    &amp;quot;path/filepath&amp;quot;
+    &amp;quot;strings&amp;quot;
+
+    &amp;quot;gopkg.in/alecthomas/kingpin.v2&amp;quot;
+
+    &amp;quot;github.com/goadesign/goa/design&amp;quot;
+    &amp;quot;github.com/goadesign/goa/goagen/codegen&amp;quot;
+)
+
+// Generate is the function called by goagen to generate the names file.
+func Generate(api *design.APIDefinition) ([]string, error) {
+    // Make sure to parse the common flags so that codegen.OutputDir gets properly
+    // initialized.
+    app := kingpin.New(&amp;quot;Resource names&amp;quot;, &amp;quot;Resource name generator&amp;quot;)
+    codegen.RegisterFlags(app)
+    if _, err := app.Parse(os.Args[1:]); err != nil {
+        panic(err)
+    }
+
+    // Now iterate through the resources to gather their names
+    names := make([]string, len(api.Resources))
+    i := 0
+    api.IterateResources(func(res *design.ResourceDefinition) error {
+        if n, ok := res.Metadata[&amp;quot;genresnames/name&amp;quot;]; ok {
+            names[i] = n
+        } else {
+            names[i] = res.Name
+        }
+        i++
+        return nil
+    })
+    content := strings.Join(names, &amp;quot;\n&amp;quot;)
+
+    // Write the output file and return its name
+    outputFile := filepath.Join(codegen.OutputDir, &amp;quot;names.txt&amp;quot;)
+    ioutil.WriteFile(outputFile, []byte(content), 0644)
+    return []string{outputFile}, nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;variables:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;Variables&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var (
+    // GenPkgPath contains the path to the third party generator Go package.
+    GenPkgPath string
+
+    // GenPkgName contains the name of the third party generator Go package.
+    GenPkgName string
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;type-command:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;type Command&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Command struct {
+    *codegen.BaseCommand
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Command is the goa generic generator command line data structure.
+It implements meta.Command.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newcommand:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;func NewCommand&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewCommand() *Command
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewCommand instantiates a new command.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-command-registerflags:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;func (*Command) RegisterFlags&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Command) RegisterFlags(r codegen.FlagRegistry)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RegisterFlags registers the command line flags with the given registry.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-command-run:9a504bf7bd8a773c41a665bab47f73e1&#34;&gt;func (*Command) Run&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Command) Run() ([]string, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Run simply calls the meta generator.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

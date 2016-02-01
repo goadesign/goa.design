@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Dslengine on goa</title>
+    <link>http://goa.design/tags/dslengine/</link>
+    <description>Recent content in Dslengine on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/dslengine/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>goa/dslengine</title>
+      <link>http://goa.design/godoc/goa/dslengine/dslengine/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/goa/dslengine/dslengine/</guid>
+      <description>
+
+&lt;h1 id=&#34;dslengine:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;dslengine&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/goa/dslengine&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;func-caller:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func Caller&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Caller() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Caller returns the name of calling function.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-canuse:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func CanUse&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func CanUse(client, provider Versioned) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CanUse returns nil if the provider supports all the versions supported by the client or if the
+provider is unversioned.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-execute:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func Execute&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Execute(dsl func(), def Definition) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Execute runs the given DSL to initialize the given definition. It returns true on success.
+It returns false and appends to Errors on failure.
+Note that &lt;code&gt;Run&lt;/code&gt; takes care of calling &lt;code&gt;Execute&lt;/code&gt; on all definitions that implement Source.
+This function is intended for use by definitions that run the DSL at declaration time rather than
+store the DSL for execution by the dsl (usually simple independent definitions).
+The DSL should use ReportError to record DSL execution errors.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-incompatibledsl:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func IncompatibleDSL&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func IncompatibleDSL(dslFunc string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;IncompatibleDSL should be called by DSL functions when they are
+invoked in an incorrect context (e.g. &amp;ldquo;Params&amp;rdquo; in &amp;ldquo;Resource&amp;rdquo;).&lt;/p&gt;
+
+&lt;h2 id=&#34;func-invalidargerror:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func InvalidArgError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func InvalidArgError(expected string, actual interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;InvalidArgError records an invalid argument error.
+It is used by DSL functions that take dynamic arguments.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-reporterror:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func ReportError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ReportError(fm string, vals ...interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ReportError records a DSL error for reporting post DSL execution.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-run:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func Run&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Run() error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Run runs the given root definitions. It iterates over the definition sets multiple times to
+first execute the DSL, the validate the resulting definitions and finally finalize them.
+The executed DSL may append new roots to the Roots Design package variable to have them be
+executed (last) in the same run.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-topleveldefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func TopLevelDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func TopLevelDefinition(failItNotTopLevel bool) bool
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TopLevelDefinition returns true if the currently evaluated DSL is a root
+DSL (i.e. is not being run in the context of another definition).&lt;/p&gt;
+
+&lt;h2 id=&#34;type-definition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Definition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Definition interface {
+    // Context is used to build error messages that refer to the definition.
+    Context() string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Definition is the common interface implemented by all definitions.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-currentdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func CurrentDefinition&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func CurrentDefinition() Definition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CurrentDefinition returns the definition whose initialization DSL is currently being executed.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-definitionset:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type DefinitionSet&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type DefinitionSet []Definition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DefinitionSet contains DSL definitions that are executed as one unit.
+The slice elements may implement the Validate an, Source interfaces to enable the
+corresponding behaviors during DSL execution.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-enumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type EnumValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type EnumValidationDefinition struct {
+    Values []interface{}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;EnumValidationDefinition represents an enum validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor76&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor76&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-enumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*EnumValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (v *EnumValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-error:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Error&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Error struct {
+    GoError error
+    File    string
+    Line    int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error represents an error that occurred while running the API DSL.
+It contains the name of the file and line number of where the error
+occurred as well as the original Go error.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-error-error:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*Error) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (de *Error) Error() (res string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error returns the underlying error message.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-finalize:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Finalize&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Finalize interface {
+    Definition
+    // Finalize is run by the DSL runner once the definition DSL has executed and the
+    // definition has been validated.
+    Finalize()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Finalize is the interface implemented by definitions that require an additional pass
+after the DSL has executed (e.g. to merge generated definitions or initialize default
+values)&lt;/p&gt;
+
+&lt;h2 id=&#34;type-formatvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type FormatValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type FormatValidationDefinition struct {
+    Format string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;FormatValidationDefinition represents a format validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor104&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor104&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-formatvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*FormatValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (f *FormatValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-maxlengthvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MaxLengthValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MaxLengthValidationDefinition struct {
+    MaxLength int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MaxLengthValidationDefinition represents an maximum length validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor26&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor26&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-maxlengthvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*MaxLengthValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MaxLengthValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-maximumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MaximumValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MaximumValidationDefinition struct {
+    Max float64
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MaximumValidationDefinition represents a maximum value validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor17&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor17&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-maximumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*MaximumValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MaximumValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-metadatadefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MetadataDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MetadataDefinition map[string][]string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MetadataDefinition is a set of key/value pairs&lt;/p&gt;
+
+&lt;h2 id=&#34;type-minlengthvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MinLengthValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MinLengthValidationDefinition struct {
+    MinLength int
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MinLengthValidationDefinition represents an minimum length validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor29&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor29&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-minlengthvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*MinLengthValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MinLengthValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-minimumvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MinimumValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MinimumValidationDefinition struct {
+    Min float64
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MinimumValidationDefinition represents an minimum value validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor21&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor21&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-minimumvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*MinimumValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m *MinimumValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-multierror:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type MultiError&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type MultiError []*Error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MultiError collects all DSL errors. It implements error.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var (
+    // Errors contains the DSL execution errors if any.
+    Errors MultiError
+
+    // Roots contains the root definition sets built by the DSLs.
+    // DSL implementations should append to it to ensure the DSL gets executed by the runner.
+    // Note that a root definition is a different concept from a &amp;quot;top level&amp;quot; definition (i.e. a
+    // definition that is an entry point in the DSL). In particular a root definition may include
+    // an arbitrary number of definition sets forming a tree of definitions.
+    // For example the API DSL only has one root definition (the API definition) but many top level
+    // definitions (API, Version, Type, MediaType etc.) all defining a definition set.
+    Roots []Root
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;func-multierror-error:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (MultiError) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (m MultiError) Error() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error returns the error message.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-patternvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type PatternValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type PatternValidationDefinition struct {
+    Pattern string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;PatternValidationDefinition represents a pattern validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor33&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor33&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;func-patternvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*PatternValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (f *PatternValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-requiredvalidationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type RequiredValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type RequiredValidationDefinition struct {
+    Names []string
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RequiredValidationDefinition represents a required validation as described at
+&lt;a href=&#34;http://json-schema.org/latest/json-schema-validation.html#anchor61&#34;&gt;http://json-schema.org/latest/json-schema-validation.html#anchor61&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-requiredvalidationdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*RequiredValidationDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (r *RequiredValidationDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-root:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Root&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Root interface {
+    // IterateSets calls the given iterator passing in each definition set sorted in
+    // execution order.
+    IterateSets(SetIterator)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Root is the interface implemented by the DSL root objects held by the Roots variable.
+These objects contains all the definition sets created by the DSL and can be passed to
+the dsl for execution.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-setiterator:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type SetIterator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type SetIterator func(s DefinitionSet) error
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SetIterator is the function signature used to iterate over definition sets with
+IterateSets.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-source:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Source&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Source interface {
+    Definition
+    // DSL returns the DSL used to initialize the definition if any.
+    DSL() func()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Source is the interface implemented by definitions that can be initialized via DSL.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-traitdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type TraitDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type TraitDefinition struct {
+    // Trait name
+    Name string
+    // Trait DSL
+    DSLFunc func()
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TraitDefinition defines a set of reusable properties.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-traitdefinition-context:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*TraitDefinition) Context&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *TraitDefinition) Context() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Context returns the generic definition name used in error messages.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-traitdefinition-dsl:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*TraitDefinition) DSL&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (t *TraitDefinition) DSL() func()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DSL returns the initialization DSL.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-validate:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Validate&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Validate interface {
+    Definition
+    // Validate returns nil if the definition contains no validation error.
+    // The Validate implementation may take advantage of ValidationErrors to report
+    // more than one errors at a time.
+    Validate() error
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Validate is the interface implemented by definitions that can be validated.
+Validation is done by the DSL dsl post execution.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-validationdefinition:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type ValidationDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ValidationDefinition interface {
+    Definition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ValidationDefinition is the common interface for all validation data structures.
+It doesn&amp;rsquo;t expose any method and simply exists to help with documentation.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-validationerrors:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type ValidationErrors&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type ValidationErrors struct {
+    Errors      []error
+    Definitions []Definition
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ValidationErrors records the errors encountered when running Validate.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-validationerrors-add:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*ValidationErrors) Add&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (verr *ValidationErrors) Add(def Definition, format string, vals ...interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Add adds a validation error to the target.
+Add &amp;ldquo;flattens&amp;rdquo; validation errors so that the recorded errors are never ValidationErrors
+themselves.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-validationerrors-aserror:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*ValidationErrors) AsError&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (verr *ValidationErrors) AsError() *ValidationErrors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;AsError returns an error if there are validation errors, nil otherwise.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-validationerrors-error:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*ValidationErrors) Error&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (verr *ValidationErrors) Error() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Error implements the error interface.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-validationerrors-merge:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;func (*ValidationErrors) Merge&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (verr *ValidationErrors) Merge(err *ValidationErrors)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Merge merges validation errors into the target.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-versioned:1e0eb94feca2c8be53d3bd77a1934133&#34;&gt;type Versioned&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Versioned interface {
+    Definition
+    // Versions returns an array of supported versions if the object is versioned, nil
+    // othewise.
+    Versions() []string
+    // SupportsVersion returns true if the object supports the given version.
+    SupportsVersion(ver string) bool
+    // SupportsNoVersion returns true if the object is unversioned.
+    SupportsNoVersion() bool
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Versioned is implemented by potentially versioned definitions such as API resources.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

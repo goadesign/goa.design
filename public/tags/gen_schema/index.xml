@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Gen_schema on goa</title>
+    <link>http://goa.design/tags/gen_schema/</link>
+    <description>Recent content in Gen_schema on goa</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://goa.design/tags/gen_schema/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>goa/goagen/gen_schema</title>
+      <link>http://goa.design/godoc/goa/goagen/gen_schema/gen_schema/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/goa/goagen/gen_schema/gen_schema/</guid>
+      <description>
+
+&lt;h1 id=&#34;genschema:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;genschema&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/goa/goagen/gen_schema&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Package genschema provides a generator for the JSON schema controller.
+The schema controller responds to GET /schema requests with the API JSON Hyper-schema.
+This JSON schema can be used to generate API documentation, ruby and Go API clients.
+See the blog post (&lt;a href=&#34;https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api&#34;&gt;https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api&lt;/a&gt;)
+describing how Heroku leverages the JSON Hyper-schema standard (&lt;a href=&#34;http://json-schema.org/latest/json-schema-hypermedia.html&#34;&gt;http://json-schema.org/latest/json-schema-hypermedia.html&lt;/a&gt;)
+for more information.&lt;/p&gt;
+
+&lt;h2 id=&#34;constants:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;Constants&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const SchemaRef = &amp;quot;http://json-schema.org/draft-04/hyper-schema&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SchemaRef is the JSON Hyper-schema standard href.&lt;/p&gt;
+
+&lt;h2 id=&#34;variables:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;Variables&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var (
+    // Definitions contains the generated JSON schema definitions
+    Definitions map[string]*JSONSchema
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;var ServiceURL string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ServiceURL is used to build the JSON schema ID of the root document.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-generate:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func Generate&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Generate(api *design.APIDefinition) (files []string, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate is the generator entry point called by the meta generator.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-generatemediatypedefinition:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func GenerateMediaTypeDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func GenerateMediaTypeDefinition(api *design.APIDefinition, mt *design.MediaTypeDefinition)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GenerateMediaTypeDefinition produces the JSON schema corresponding to the given media type.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-generateresourcedefinition:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func GenerateResourceDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func GenerateResourceDefinition(api *design.APIDefinition, r *design.ResourceDefinition)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GenerateResourceDefinition produces the JSON schema corresponding to the given API resource.
+It stores the results in cachedSchema.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-generatetypedefinition:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func GenerateTypeDefinition&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func GenerateTypeDefinition(api *design.APIDefinition, ut *design.UserTypeDefinition)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;GenerateTypeDefinition produces the JSON schema corresponding to the given type.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-jsonschemadir:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func JSONSchemaDir&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func JSONSchemaDir() string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONSchemaDir is the path to the directory where the schema controller is generated.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-mediatyperef:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func MediaTypeRef&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func MediaTypeRef(api *design.APIDefinition, mt *design.MediaTypeDefinition) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;MediaTypeRef produces the JSON reference to the media type definition.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-typeref:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func TypeRef&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func TypeRef(api *design.APIDefinition, ut *design.UserTypeDefinition) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TypeRef produces the JSON reference to the type definition.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-command:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type Command&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Command struct {
+    *codegen.BaseCommand
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Command is the goa application code generator command line data structure.
+It implements meta.Command.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newcommand:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func NewCommand&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewCommand() *Command
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewCommand instantiates a new command.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-command-registerflags:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*Command) RegisterFlags&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Command) RegisterFlags(r codegen.FlagRegistry)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RegisterFlags registers the command line flags with the given registry.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-command-run:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*Command) Run&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (c *Command) Run() ([]string, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Run simply calls the meta generator.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-generator:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type Generator&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type Generator struct {
+    // contains filtered or unexported fields
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generator is the application code generator.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-generator-cleanup:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*Generator) Cleanup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (g *Generator) Cleanup()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Cleanup removes all the files generated by this generator during the last invokation of Generate.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-generator-generate:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*Generator) Generate&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (g *Generator) Generate(api *design.APIDefinition) (_ []string, err error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate produces the skeleton main.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-jsonlink:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type JSONLink&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type JSONLink struct {
+    Title        string      `json:&amp;quot;title,omitempty&amp;quot;`
+    Description  string      `json:&amp;quot;description,omitempty&amp;quot;`
+    Rel          string      `json:&amp;quot;rel,omitempty&amp;quot;`
+    Href         string      `json:&amp;quot;href,omitempty&amp;quot;`
+    Method       string      `json:&amp;quot;method,omitempty&amp;quot;`
+    Schema       *JSONSchema `json:&amp;quot;schema,omitempty&amp;quot;`
+    TargetSchema *JSONSchema `json:&amp;quot;targetSchema,omitempty&amp;quot;`
+    MediaType    string      `json:&amp;quot;mediaType,omitempty&amp;quot;`
+    EncType      string      `json:&amp;quot;encType,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONLink represents a &amp;ldquo;link&amp;rdquo; field in a JSON hyper schema.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-jsonmedia:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type JSONMedia&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type JSONMedia struct {
+    BinaryEncoding string `json:&amp;quot;binaryEncoding,omitempty&amp;quot;`
+    Type           string `json:&amp;quot;type,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONMedia represents a &amp;ldquo;media&amp;rdquo; field in a JSON hyper schema.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-jsonschema:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type JSONSchema&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type JSONSchema struct {
+    Schema string `json:&amp;quot;$schema,omitempty&amp;quot;`
+    // Core schema
+    ID           string                 `json:&amp;quot;id,omitempty&amp;quot;`
+    Title        string                 `json:&amp;quot;title,omitempty&amp;quot;`
+    Type         JSONType               `json:&amp;quot;type,omitempty&amp;quot;`
+    Items        *JSONSchema            `json:&amp;quot;items,omitempty&amp;quot;`
+    Properties   map[string]*JSONSchema `json:&amp;quot;properties,omitempty&amp;quot;`
+    Definitions  map[string]*JSONSchema `json:&amp;quot;definitions,omitempty&amp;quot;`
+    Description  string                 `json:&amp;quot;description,omitempty&amp;quot;`
+    DefaultValue interface{}            `json:&amp;quot;defaultValue,omitempty&amp;quot;`
+
+    // Hyper schema
+    Media     *JSONMedia  `json:&amp;quot;media,omitempty&amp;quot;`
+    ReadOnly  bool        `json:&amp;quot;readOnly,omitempty&amp;quot;`
+    PathStart string      `json:&amp;quot;pathStart,omitempty&amp;quot;`
+    Links     []*JSONLink `json:&amp;quot;links,omitempty&amp;quot;`
+    Ref       string      `json:&amp;quot;$ref,omitempty&amp;quot;`
+
+    // Validation
+    Enum                 []interface{} `json:&amp;quot;enum,omitempty&amp;quot;`
+    Format               string        `json:&amp;quot;format,omitempty&amp;quot;`
+    Pattern              string        `json:&amp;quot;pattern,omitempty&amp;quot;`
+    Minimum              float64       `json:&amp;quot;minimum,omitempty&amp;quot;`
+    Maximum              float64       `json:&amp;quot;maximum,omitempty&amp;quot;`
+    MinLength            int           `json:&amp;quot;minLength,omitempty&amp;quot;`
+    MaxLength            int           `json:&amp;quot;maxLength,omitempty&amp;quot;`
+    Required             []string      `json:&amp;quot;required,omitempty&amp;quot;`
+    AdditionalProperties bool          `json:&amp;quot;additionalProperties,omitempty&amp;quot;`
+
+    // Union
+    AnyOf []*JSONSchema `json:&amp;quot;anyOf,omitempty&amp;quot;`
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONSchema represents an instance of a JSON schema.
+See &lt;a href=&#34;http://json-schema.org/documentation.html&#34;&gt;http://json-schema.org/documentation.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;func-apischema:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func APISchema&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func APISchema(api *design.APIDefinition) *JSONSchema
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;APISchema produces the API JSON hyper schema.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-newjsonschema:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func NewJSONSchema&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewJSONSchema() *JSONSchema
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NewJSONSchema instantiates a new JSON schema.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-typeschema:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func TypeSchema&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func TypeSchema(api *design.APIDefinition, t design.DataType) *JSONSchema
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;TypeSchema produces the JSON schema corresponding to the given data type.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jsonschema-dup:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*JSONSchema) Dup&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *JSONSchema) Dup() *JSONSchema
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Dup creates a shallow clone of the given schema.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jsonschema-json:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*JSONSchema) JSON&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *JSONSchema) JSON() ([]byte, error)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSON serializes the schema into JSON.
+It makes sure the &amp;ldquo;$schema&amp;rdquo; standard field is set if needed prior to delegating to the standard
+JSON marshaler.&lt;/p&gt;
+
+&lt;h3 id=&#34;func-jsonschema-merge:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;func (*JSONSchema) Merge&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func (s *JSONSchema) Merge(other *JSONSchema)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Merge does a two level deep merge of other into s.&lt;/p&gt;
+
+&lt;h2 id=&#34;type-jsontype:aea1ef6a3078618c405dcf9c06909aa7&#34;&gt;type JSONType&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;type JSONType string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;JSONType is the JSON type enum.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;const (
+    // JSONArray represents a JSON array.
+    JSONArray JSONType = &amp;quot;array&amp;quot;
+    // JSONBoolean represents a JSON boolean.
+    JSONBoolean = &amp;quot;boolean&amp;quot;
+    // JSONInteger represents a JSON number without a fraction or exponent part.
+    JSONInteger = &amp;quot;integer&amp;quot;
+    // JSONNumber represents any JSON number. Number includes integer.
+    JSONNumber = &amp;quot;number&amp;quot;
+    // JSONNull represents the JSON null value.
+    JSONNull = &amp;quot;null&amp;quot;
+    // JSONObject represents a JSON object.
+    JSONObject = &amp;quot;object&amp;quot;
+    // JSONString represents a JSON string.
+    JSONString = &amp;quot;string&amp;quot;
+)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

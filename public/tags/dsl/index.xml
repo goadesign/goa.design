@@ -914,5 +914,292 @@ var _ = Resource(&#34;bottle&#34;, func() {
 </description>
     </item>
     
+    <item>
+      <title>gorma/dsl</title>
+      <link>http://goa.design/godoc/gorma/dsl/dsl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://goa.design/godoc/gorma/dsl/dsl/</guid>
+      <description>
+
+&lt;h1 id=&#34;dsl:b91f061e580551b58ef10f70a914bd76&#34;&gt;dsl&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;import &amp;quot;github.com/goadesign/gorma/dsl&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Package dsl uses the Goa DSL engine to generate a data storage layer
+for your Goa API.&lt;/p&gt;
+
+&lt;p&gt;Using a few DSL definitions you can extend the Goa API to include
+database persistence.&lt;/p&gt;
+
+&lt;p&gt;An example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;var sg = StorageGroup(&amp;quot;MyStorageGroup&amp;quot;, func() {
+    Description(&amp;quot;This is the global storage group&amp;quot;)
+    Store(&amp;quot;mysql&amp;quot;, gorma.MySQL, func() {
+        Description(&amp;quot;This is the mysql relational store&amp;quot;)
+        Model(&amp;quot;Bottle&amp;quot;, func() {
+            BuiltFrom(BottlePayload)
+            RenderTo(Bottle)
+            Description(&amp;quot;This is the bottle model&amp;quot;)
+            Field(&amp;quot;ID&amp;quot;, gorma.PKInteger, func() {
+                Description(&amp;quot;This is the ID PK field&amp;quot;)
+            })
+            Field(&amp;quot;Vintage&amp;quot;, gorma.Integer, func() {
+                SQLTag(&amp;quot;index&amp;quot;)
+            })
+            Field(&amp;quot;CreatedAt&amp;quot;, gorma.Timestamp, func() {})
+            Field(&amp;quot;UpdatedAt&amp;quot;, gorma.Timestamp, func() {})
+            Field(&amp;quot;DeletedAt&amp;quot;, gorma.NullableTimestamp, func() {})
+        })
+    })
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Gorma uses Gorm (&lt;a href=&#34;https://github.com/jinzhu/gorm&#34;&gt;https://github.com/jinzhu/gorm&lt;/a&gt;) for database access.  Gorm was chosen
+as the best of the &amp;lsquo;light-ORM&amp;rsquo; libraries available for Go.  It does the mundane work and
+allows you to do anything manually if you choose.&lt;/p&gt;
+
+&lt;p&gt;The base Gorma definition is a &lt;code&gt;StorageGroup&lt;/code&gt; which represents all the storage needs for an
+application.  A StorageGroup will contain one or more &lt;code&gt;Store&lt;/code&gt;, which represends a database or
+other persistence mechanism.  Gorma supports all the databases that Gorm supports, and
+it is possible in the future to support others &amp;ndash; like Key/Value stores.&lt;/p&gt;
+
+&lt;p&gt;Every &lt;code&gt;Store&lt;/code&gt; will have one or more &lt;code&gt;Model&lt;/code&gt; which maps a Go structure to a table in the database.
+Use the &lt;code&gt;BuiltFrom&lt;/code&gt; and &lt;code&gt;RenderTo&lt;/code&gt; DSL to tell the model which Goa types will be the payload (input)
+and return types.&lt;/p&gt;
+
+&lt;p&gt;A &lt;code&gt;Model&lt;/code&gt; will contain one or more fields.  Gorma will use the &lt;code&gt;BuiltFrom&lt;/code&gt; definition to populate
+a base set of fields.  Custom DSL is provided to add additional fields:&lt;/p&gt;
+
+&lt;p&gt;Each table will likely want a primary key.  To add one to your &lt;code&gt;Model&lt;/code&gt;, create a Field definition
+with a type of &lt;code&gt;gorma.PKInteger&lt;/code&gt; or &lt;code&gt;gorma.PKBigInteger&lt;/code&gt;.  Gorma will support UUID primary keys
+at some point in the future.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Field(&amp;quot;ID&amp;quot;, gorma.PKInteger, func() {
+    Description(&amp;quot;This is the ID PK field&amp;quot;)
+})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Gorma generates all the helpers you need to translate to and from the Goa types (media types and payloads).
+This makes wiring up your Goa controllers almost too easy to be considered programming.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-alias:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Alias&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Alias(d string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Alias overrides the name of the SQL store&amp;rsquo;s table or field.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-belongsto:b91f061e580551b58ef10f70a914bd76&#34;&gt;func BelongsTo&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func BelongsTo(parent string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BelongsTo signifies a relationship between this model and a
+Parent.  The Parent has the child, and the Child belongs
+to the Parent.
+Usage:  BelongsTo(&amp;ldquo;User&amp;rdquo;)&lt;/p&gt;
+
+&lt;h2 id=&#34;func-builtfrom:b91f061e580551b58ef10f70a914bd76&#34;&gt;func BuiltFrom&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func BuiltFrom(bf interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;BuiltFrom informs Gorma that this model will be populated
+from a Goa payload (User Type).  Conversion functions
+will be generated to convert from the payload to the model.
+Usage:  BuiltFrom(SomeGoaPayload)&lt;/p&gt;
+
+&lt;h2 id=&#34;func-cached:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Cached&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Cached(d string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Cached caches the models for &lt;code&gt;duration&lt;/code&gt; seconds.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-description:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Description&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Description(d string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Description sets the definition description.
+Description can be called inside StorageGroup, RelationalStore, RelationalModel, RelationalField&lt;/p&gt;
+
+&lt;h2 id=&#34;func-dynamictablename:b91f061e580551b58ef10f70a914bd76&#34;&gt;func DynamicTableName&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func DynamicTableName()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;DynamicTableName sets a boolean flag that causes the generator to
+generate function definitions in the database models that specify
+the name of the database table.  Useful when using multiple tables
+with different names but same schema e.g. Users, AdminUsers.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-field:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Field&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Field(name string, args ...interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Field is a DSL definition for a field in a Relational Model.
+TODO: Examples and more docs here later.&lt;/p&gt;
+
+&lt;p&gt;Parameter Options:
+Field(&amp;ldquo;Title&amp;rdquo;)
+Field(&amp;ldquo;Title&amp;rdquo;, gorma.String)
+Field(&amp;ldquo;Title&amp;rdquo;, func(){&amp;hellip; other field level dsl &amp;hellip;})
+Field(&amp;ldquo;Title&amp;rdquo;, gorma.String, func(){&amp;hellip; other field level dsl &amp;hellip;})&lt;/p&gt;
+
+&lt;h2 id=&#34;func-hasmany:b91f061e580551b58ef10f70a914bd76&#34;&gt;func HasMany&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func HasMany(name, child string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HasMany signifies a relationship between this model and a
+set of Children.  The Parent has the children, and the Children belong
+to the Parent.  The first parameter becomes the name of the
+field in the model struct, the second parameter is the name
+of the child model.  The Child model will have a ParentID field
+appended to the field list.  The Parent model definition will use
+the first parameter as the field name in the struct definition.
+Usage:  HasMany(&amp;ldquo;Orders&amp;rdquo;, &amp;ldquo;Order&amp;rdquo;)
+Struct field definition:  Children  []Child&lt;/p&gt;
+
+&lt;h2 id=&#34;func-hasone:b91f061e580551b58ef10f70a914bd76&#34;&gt;func HasOne&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func HasOne(child string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;HasOne signifies a relationship between this model and another model.
+If this model HasOne(OtherModel), then OtherModel is expected
+to have a ThisModelID field as a Foreign Key to this model&amp;rsquo;s
+Primary Key.  ThisModel will have a field named OtherModel of type
+OtherModel.
+Usage:  HasOne(&amp;ldquo;Proposal&amp;rdquo;)&lt;/p&gt;
+
+&lt;h2 id=&#34;func-manytomany:b91f061e580551b58ef10f70a914bd76&#34;&gt;func ManyToMany&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func ManyToMany(other, tablename string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ManyToMany creates a join table to store the intersection relationship
+between this model and another model.  For example, in retail an Order can
+contain many products, and a product can belong to many orders.  To express
+this relationship use the following syntax:
+Model(&amp;ldquo;Order&amp;rdquo;, func(){&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ManyToMany(&amp;quot;Product&amp;quot;, &amp;quot;order_lines&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;})
+This specifies that the Order and Product tables have a &amp;ldquo;junction&amp;rdquo; table
+called &lt;code&gt;order_lines&lt;/code&gt; that contains the order and product information.
+The generated model will have a field called &lt;code&gt;Products&lt;/code&gt; that will
+be an array of type &lt;code&gt;product.Product&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-model:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Model&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Model(name string, dsl func())
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Model is the DSL that represents a Relational Model.
+Model name should be Title cased. Use RenderTo() and BuiltFrom()
+to have Gorma generate conversion helpers for your model.  Gorma
+will create appropriate fields for all of your database relationships
+too, using the BelongsTo(), HasMany(), HasOne(), and ManyToMany() DSL.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-noautomaticidfields:b91f061e580551b58ef10f70a914bd76&#34;&gt;func NoAutomaticIDFields&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NoAutomaticIDFields()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoAutomaticIDFields applies to a &lt;code&gt;Store&lt;/code&gt; type.  It allows you
+to turn off the default behavior that will automatically create
+an ID/int Primary Key for each model.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-noautomaticsoftdelete:b91f061e580551b58ef10f70a914bd76&#34;&gt;func NoAutomaticSoftDelete&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NoAutomaticSoftDelete()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoAutomaticSoftDelete applies to a &lt;code&gt;Store&lt;/code&gt; type.  It allows
+you to turn off the default behavior that will automatically
+create a &lt;code&gt;DeletedAt&lt;/code&gt; field (*time.Time) that acts as a
+soft-delete filter for your models.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-noautomatictimestamps:b91f061e580551b58ef10f70a914bd76&#34;&gt;func NoAutomaticTimestamps&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NoAutomaticTimestamps()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;NoAutomaticTimestamps applies to a &lt;code&gt;Store&lt;/code&gt; type.  It allows you
+to turn off the default behavior that will automatically create
+an &lt;code&gt;CreatedAt&lt;/code&gt; and &lt;code&gt;UpdatedAt&lt;/code&gt; fields for each model.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-renderto:b91f061e580551b58ef10f70a914bd76&#34;&gt;func RenderTo&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func RenderTo(rt interface{})
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;RenderTo informs Gorma that this model will need to be
+rendered to a Goa type.  Conversion functions
+will be generated to convert to/from the model.
+Usage:   RenderTo(SomeGoaMediaType)&lt;/p&gt;
+
+&lt;h2 id=&#34;func-roler:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Roler&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Roler()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Roler sets a boolean flag that cause the generation of a
+Role() function that returns the model&amp;rsquo;s Role value
+Requires a field in the model named Role, type String&lt;/p&gt;
+
+&lt;h2 id=&#34;func-sqltag:b91f061e580551b58ef10f70a914bd76&#34;&gt;func SQLTag&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func SQLTag(d string)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SQLTag sets the model&amp;rsquo;s struct tag &lt;code&gt;sql&lt;/code&gt; value
+for indexing and other purposes.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-sanitizedbfieldname:b91f061e580551b58ef10f70a914bd76&#34;&gt;func SanitizeDBFieldName&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func SanitizeDBFieldName(name string) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SanitizeDBFieldName is exported for testing purposes&lt;/p&gt;
+
+&lt;h2 id=&#34;func-sanitizefieldname:b91f061e580551b58ef10f70a914bd76&#34;&gt;func SanitizeFieldName&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func SanitizeFieldName(name string) string
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;SanitizeFieldName is exported for testing purposes&lt;/p&gt;
+
+&lt;h2 id=&#34;func-storagegroup:b91f061e580551b58ef10f70a914bd76&#34;&gt;func StorageGroup&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func StorageGroup(name string, dsli func()) *gorma.StorageGroupDefinition
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;StorageGroup implements the top level Gorma DSL
+There should be one StorageGroup per Goa application.&lt;/p&gt;
+
+&lt;h2 id=&#34;func-store:b91f061e580551b58ef10f70a914bd76&#34;&gt;func Store&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func Store(name string, storeType gorma.RelationalStorageType, dsl func())
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Store represents a database.  Gorma lets you specify
+a database type, but it&amp;rsquo;s currently not used for any generation
+logic.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Generated by &lt;a href=&#34;http://godoc.org/github.com/davecheney/godoc2md&#34;&gt;godoc2md&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>
