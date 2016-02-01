@@ -7,8 +7,8 @@ fdate=$(date +"%Y-%m-%d")
 for OUTPUT in $(go list github.com/goadesign/goa/...)
 do
  	pkg=${OUTPUT#$prefix}
-	mkdir -p ${base}${pkg}
-	cd ${base}${pkg}
+	mkdir -p $(dirname ${base}${pkg})
+	cd $(dirname ${base}${pkg})
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
 cat <<-EOF > $(basename $OUTPUT).md 
 $(echo +++)
@@ -24,8 +24,8 @@ done
 for OUTPUT in $(go list github.com/goadesign/middleware/...)
 do
  	pkg=${OUTPUT#$prefix}
-	mkdir -p ${base}${pkg}
-	cd ${base}${pkg}
+	mkdir -p $(dirname ${base}${pkg})
+	cd $(dirname ${base}${pkg})
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
 cat <<-EOF > $(basename $OUTPUT).md 
 $(echo +++)
@@ -41,8 +41,8 @@ done
 for OUTPUT in $(go list github.com/goadesign/gorma/...)
 do
  	pkg=${OUTPUT#$prefix}
-	mkdir -p ${base}${pkg}
-	cd ${base}${pkg}
+	mkdir -p $(dirname ${base}${pkg})
+	cd $(dirname ${base}${pkg})
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
 cat <<-EOF > $(basename $OUTPUT).md 
 $(echo +++)
@@ -58,8 +58,8 @@ done
 for OUTPUT in $(go list github.com/goadesign/encoding/...)
 do
  	pkg=${OUTPUT#$prefix}
-	mkdir -p ${base}${pkg}
-	cd ${base}${pkg}
+	mkdir -p $(dirname ${base}${pkg})
+	cd $(dirname ${base}${pkg})
 	godoc2md $OUTPUT > $(basename $OUTPUT).md 
 cat <<-EOF > $(basename $OUTPUT).md 
 $(echo +++)
