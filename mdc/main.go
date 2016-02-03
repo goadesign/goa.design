@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"text/template"
+	"time"
 
 	"os"
 
@@ -20,6 +22,13 @@ var Cmd = &cobra.Command{
 	Run:   run,
 }
 
+// List of paths to exclude from processing
+var excludes []string
+
+func init() {
+	Cmd.Flags().StringSliceVarP(&excludes, "exclude", "x", nil, "list of paths to exclude from processing")
+}
+
 func main() {
 	if _, err := exec.LookPath("godoc2md"); err != nil {
 		fatal("could not find godoc2md in path, please install godoc2md with go get github.com/davecheney/godoc2md")
@@ -31,9 +40,25 @@ func main() {
 
 func run(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		fatal("usage: %s INPUTDIR OUTPUTDIR", os.Args[0])
+		fatal("usage: %s PACKAGE OUTPUTDIR [flags]", os.Args[0])
 	}
-	root, err := filepath.Abs(args[0])
+	packagePath := args[0]
+	var fullPath string
+	gopaths := filepath.SplitList(os.Getenv("GOPATH"))
+	for _, gopath := range gopaths {
+		candidate := filepath.Join(gopath, "src", packagePath)
+		if c, err := filepath.Abs(candidate); err == nil {
+			candidate = c
+		}
+		if _, err := os.Stat(candidate); err == nil {
+			fullPath = candidate
+			break
+		}
+	}
+	if fullPath == "" {
+		fatal("could not find package %s in %s", packagePath, os.Getenv("GOPATH"))
+	}
+	root, err := filepath.Abs(fullPath)
 	if err != nil {
 		fatal(err)
 	}
@@ -44,23 +69,16 @@ func run(cmd *cobra.Command, args []string) {
 	if err := os.MkdirAll(out, 0755); err != nil {
 		fatal(err)
 	}
-	var packagePath string
-	gopaths := filepath.SplitList(os.Getenv("GOPATH"))
-	for _, gopath := range gopaths {
-		if g, err := filepath.Abs(gopath); err == nil {
-			gopath = g
-		}
-		if strings.HasPrefix(root, gopath) {
-			packagePath = filepath.ToSlash(strings.TrimPrefix(root, filepath.Join(gopath, "src")))[1:]
-			break
-		}
-	}
-	if packagePath == "" {
-		fatal("path %s is not in a Go workspace", root)
+	ex := make(map[string]bool)
+	for _, e := range excludes {
+		ex[e] = true
 	}
 	fmt.Printf("* Packages root: %s\n* Output dir: %s\n", root, out)
+	if len(excludes) > 0 {
+		fmt.Printf("* Excludes: %s\n", strings.Join(excludes, ", "))
+	}
 	err = filepath.Walk(root, func(p string, i os.FileInfo, _ error) error {
-		if i.Name() == ".git" || strings.HasPrefix(i.Name(), "_") {
+		if i.Name() == ".git" || strings.HasPrefix(i.Name(), "_") || ex[i.Name()] {
 			return filepath.SkipDir
 		}
 		if !i.IsDir() {
@@ -101,6 +119,19 @@ func godoc2md(pkg, filename string) error {
 		fatal(err)
 	}
 	defer f.Close()
+	t, err := template.New("header").Parse(headerT)
+	if err != nil {
+		fatal(err)
+	}
+	data := map[string]interface{}{
+		"PackagePath": pkg,
+		"Date":        time.Now().Format(time.RFC3339),
+		"PackageName": path.Base(pkg),
+	}
+	err = t.Execute(f, data)
+	if err != nil {
+		fatal(err)
+	}
 	f.Write(b)
 
 	return nil
@@ -119,3 +150,12 @@ func fatal(format interface{}, val ...interface{}) {
 	fmt.Fprintf(os.Stderr, f, val...)
 	os.Exit(-1)
 }
+
+const headerT = `+++
+title="{{.PackagePath}}"
+date="{{.Date}}"
+description="godoc for {{.PackagePath}}"
+categories=["godoc"]
+tags=["godoc", "{{.PackageName}}"]
++++
+`
