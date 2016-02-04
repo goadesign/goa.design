@@ -21,5 +21,4 @@ If you generate the website with `hugo` (no `serve`), don't check in the public 
 
 ##  Deployment
 
-TBD after the site is ready we'll link the public directory to the gh-pages branch using git magic.
-
+Commits to the master branch cause the site to get redeployed via TravisCI.
