@@ -1,6 +1,5 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-draft = true
 title = "Authoring Plugins"
 tags = ["plugins"]
 categories = ["Plugins"]
@@ -420,6 +419,17 @@ func Cluster(name string) {
 }
 ```
 The generator will have access to the goa API definition to generate the artifacts.
+
+#### Attributes
+
+The goa API DSL defines an [attribute definition](https://godoc.org/github.com/goadesign/goa/design#AttributeDefinition)
+data structure which represents a generic field. Attributes have a type and may contain other
+attributes (if the type is [Object](https://godoc.org/github.com/goadesign/design#Object)). They
+also define validation rules (required fields and for each field additional validations). Attributes
+are useful to many DSLs and having the ability to define attributes inside plugin data structures
+is a common scenario. This scenario is supported via the use of the `ContainerDefinition`
+interface. Basically the `Attribute` DSL checks whether the including parent is an attribute itself,
+a media type or a generic/plugin Container definition.
 
 ### Wrapping-up
 
