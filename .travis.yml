@@ -22,5 +22,6 @@ deploy:
   local-dir: public
   skip-cleanup: true
   acl: public-read
+  cache-control: no-cache
   on:
     repo: goadesign/goa.design
