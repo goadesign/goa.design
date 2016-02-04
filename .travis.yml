@@ -11,7 +11,7 @@ install:
 - mv hugo_0.15_linux_amd64/hugo_0.15_linux_amd64 $HOME/bin/hugo
 - export PATH=$PATH:$HOME/bin
 script:
-- hugo --theme=goa
+- hugo --theme=goa --uglyURLs=true
 - grunt lunr-index
 deploy:
   provider: gcs
