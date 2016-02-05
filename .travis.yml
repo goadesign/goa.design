@@ -18,11 +18,13 @@ install:
 - go get github.com/goadesign/goa
 - go get github.com/goadesign/middleware
 - go get github.com/goadesign/encoding
+- go get github.com/goadesign/gorma
 - cd mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ..
 script:
 - mdc github.com/goadesign/goa content/reference
 - mdc github.com/goadesign/middleware content/reference
 - mdc github.com/goadesign/encoding content/reference
+- mdc github.com/goadesign/gorma content/reference
 - hugo --theme=goa --uglyURLs=true
 - grunt lunr-index
 deploy:
