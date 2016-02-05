@@ -9,4 +9,5 @@ _integration_tests/*/**/*.*
 website/public
 node_modules
 public/
+static/js/pindex.json
 
