@@ -1,10 +1,8 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-draft = true
-title = "gorma"
-tags = ["orm", "gorm", "database"]
-categories = ["Plugins"]
+title = "the gorma Plugin"
 +++
 
-hello gorma
-
+[gorma](../reference/gorma.md) is a goa plugin that makes it possible to describe database models.
+The gorma code generator uses the model definitions to generate code that automatically creates
+media types from models. More documentation to come.

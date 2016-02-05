@@ -1,44 +1,29 @@
 {{ partial "header.html" . }}
 <body>
-
-	{{ partial "navigation.html" . }}	
-	<!-- Content
-	================================================== -->
+	{{ partial "navigation.html" . }}
 	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
 
-	<div class="hero-unit">
-		<h1>{{ .Title  }}</h1>
-		<p>{{ .Description }}</p>
-	</div>
+		<hr />
 
-	<hr />
-
-	<!-- #blog -->
-	<div class="row" id="blog">
-
-		<!-- posts -->
-		<div class="span8"> 
-
-
-
-  <div>
-	<p>
-	There are many different middleware packages available.  Here's a list of the known ones.
-	</p>
-        <ul id="list">
-            {{ range .Data.Pages }}
-	    <li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
-            {{ end }}
-        </ul>
-  </div>
-
-			
-
-			
-		</div><!-- end .span8 -->
-
-			{{ partial "sidebar.html" . }}	
-	</div><!-- end #blog -->
-
+		<div class="row" id="blog">
+			<div class="span8">
+				<div>
+					<p>
+						The Design section introduces the <a href="/design/overview.html">goa API Design language</a>.
+						It also covers how to use <a href="/design/swagger.html"> during design.
+					</p>
+					<ul id="list">
+						{{ range .Data.Pages }}
+						<li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
+						{{ end }}
+					</ul>
+				</div>
+			</div>
+		</div>
 	</section>
 	{{ partial "footer.html" . }}
+</body>

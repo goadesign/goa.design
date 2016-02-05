@@ -1,29 +1,19 @@
 {{ partial "header.html" . }}
 <body>
-
-	{{ partial "navigation.html" . }}	
-	<!-- Content
-	================================================== -->
+	{{ partial "navigation.html" . }}
 	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
 
-	<div class="hero-unit">
-		<h1>{{ .Title  }}</h1>
-		<p>{{ .Description }}</p>
-	</div>
+		<hr />
 
-	<hr />
-
-	<!-- #blog -->
-	<div class="row" id="blog">
-
-		<!-- posts -->
-		<div class="span8"> 
-			{{ .Content  }}
-
-		</div><!-- end .span8 -->
-
-		{{ partial "sidebar.html" . }}	
-
-	</div><!-- end #blog -->
+		<div class="row" id="blog">
+			<div class="span12">
+				{{ .Content  }}
+			</div>
+		</div>
 	</section>
 	{{ partial "footer.html" . }}
+</body>

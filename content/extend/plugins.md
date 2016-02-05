@@ -1,24 +1,15 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Authoring Plugins"
-tags = ["plugins"]
-categories = ["Plugins"]
+title = "Extending goa with Plugins"
 +++
 
-# Extending goa with Plugins
+goa plugins make it possible to create new DSL and accompanying generators. Since DSLs are nothing
+more than Go functions their syntax is completely open. Plugins also make it possible to generate
+new kinds of outputs from any DSL. For example new generators that target different languages from
+the goa API design language.
 
-## What are goa Plugins?
-
-goa plugins act on two different levels:
-
-* They make it possible to extend goa with new DSLs. The syntax for the DSLs is completely up to
-  you which means new DSLs can be created that describe anything. Examples are database models,
-  runtime environments, related services that may not be implemented using the goa runtime etc.
-* Plugins also make it possible to generate new kinds of outputs from any DSL. For example new
-  generators that target different languages and use the built-in API DSL.
-
-The combination of these two dimensions make goa plugins very powerful allowing to create new DSLs and
-generators that target any use case where generating code, documentation, configuration or
+The combination of these two dimensions make goa plugins very powerful allowing to create new DSLs
+and generators that target any use case where generating code, documentation, configuration or
 anything else is useful.
 
 Another interesting aspect is that DSLs complete each other. It is not necessary to write a new DSL
@@ -28,9 +19,9 @@ implementation can create new artefacts or change how existing artefacts are cre
 ## Extending the DSL
 
 goa DSLs consist of Go package functions that construct recursive data structures called
-*definitions*. The roots of these definitions must be recorded in the goa *dslengine* package *Roots*
-variable. The actual content of the definitions is completely up to you. The generators use them to
-create the artefacts so they should contain all the required information.
+*definitions*. The roots of these definitions must be recorded in the goa *dslengine* package
+*Roots* variable. The actual content of the definitions is completely up to you. The generators use
+them to create the artefacts so they should contain all the required information.
 
 ### First Exposure
 
@@ -253,7 +244,7 @@ execution. `IterateSets` returns a slice of definitions allowing you to control 
 which different types of definitions should be executed.
 
 Imagine that the DSL in the example above was extended to make it possible to define the model
-types rather than having a hard coded list. Presumably the type definitions would have to be run 
+types rather than having a hard coded list. Presumably the type definitions would have to be run
 first before the model defintions. This could be done by having the DSL root `IterateSets` method
 first return all type definitions then all model definitions:
 
@@ -299,19 +290,22 @@ Real DSL implementations should not rely on `panic` to report user error. Instea
 package exposes a few functions that take care of reporting the error message together with
 contextual information including the line and column numbers of where the error occurred.
 
-The main error reporting function is [ReportError](https://godoc.org/github.com/goadesign/goa/dslengine#ReportError)
-which works very much like `fmt.Errorf`. Simply provide a error message optionally formatted a la
-`fmt.Sprintf`.
+The main error reporting function is
+[ReportError](https://godoc.org/github.com/goadesign/goa/dslengine#ReportError) which works very
+much like `fmt.Errorf`. Simply provide a error message optionally formatted a la `fmt.Sprintf`.
 
-Another useful function is [InvalidArgError](https://godoc.org/github.com/goadesign/goa/dslengine#InvalidArgError)
-which as its name indicates is meant to be called when a DSL function is called with incorrect
-arguments. This happens for example when the Go function parameters use `interface{}` to allow for
-an expressive DSL. The DSL function code validates the input and uses [InvalidArgError](https://godoc.org/github.com/goadesign/goa/dslengine#InvalidArgError)
-to report invalid values.
+Another useful function is
+[InvalidArgError](https://godoc.org/github.com/goadesign/goa/dslengine#InvalidArgError) which as its
+name indicates is meant to be called when a DSL function is called with incorrect arguments. This
+happens for example when the Go function parameters use `interface{}` to allow for an expressive
+DSL. The DSL function code validates the input and uses
+[InvalidArgError](https://godoc.org/github.com/goadesign/goa/dslengine#InvalidArgError) to report
+invalid values.
 
-Another function is [IncompatibelDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL).
-The use case for this function is covered in the paragraph below.
- `
+Another function is
+[IncompatibelDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL). The use
+case for this function is covered in the paragraph below.
+
 All the error reporting functions build user friendly error messages and append them to the
 `dslengine` package [Errors](https://godoc.org/github.com/goadesign/goa/dslengine#Errors) variable.
 
@@ -366,9 +360,10 @@ runs the source definitions.
 
 Some definitions may represent versioned concepts like an API. For these cases the DSL engine
 defines the [Versioned](https://godoc.org/github.com/goadesign/goa/dslengine#Versioned) interface
-which such definitions should implement. The DSL engine also provides a [CanUse](https://godoc.org/github.com/goadesign/goa/dslengine#CanUse)
-function that given two versioned definitions checks whether the second definition can be used
-to define the first. The rules it uses to check for compatiblity are:
+which such definitions should implement. The DSL engine also provides a
+[CanUse](https://godoc.org/github.com/goadesign/goa/dslengine#CanUse) function that given two
+versioned definitions checks whether the second definition can be used to define the first. The
+rules it uses to check for compatiblity are:
 
 * Versioned definitions may use other versioned definitions that support the exact same set of versions.
 * Versioned definitions may use unversioned definitions.
@@ -376,11 +371,13 @@ to define the first. The rules it uses to check for compatiblity are:
 
 #### Integrating DSLs
 
-DSL implementations make take advantage of definitions defined by other DSLs by simply importing
-the corresponding package. For example a DSL that extends the goa API DSL can use the same
-definitions used by goa itself. This makes it possible to easily add new keywords and extend any
-DSL. As an example let's add a `Cluster` function to the existing [API](https://godoc.org/github.com/goadesign/goa/design/apidsl#API)
-function of the goa DSL. This function takes a string and initializes a `ClusterDefinition`:
+DSL implementations make take advantage of definitions defined by other DSLs by simply importing the
+corresponding package. For example a DSL that extends the goa API DSL can use the same definitions
+used by goa itself. This makes it possible to easily add new keywords and extend any DSL. As an
+example let's add a `Cluster` function to the existing
+[API](https://godoc.org/github.com/goadesign/goa/design/apidsl#API) function of the goa DSL. This
+function takes a string and initializes a `ClusterDefinition`:
+
 ```go
 package clusterdsl
 
@@ -422,14 +419,15 @@ The generator will have access to the goa API definition to generate the artifac
 
 #### Attributes
 
-The goa API DSL defines an [attribute definition](https://godoc.org/github.com/goadesign/goa/design#AttributeDefinition)
-data structure which represents a generic field. Attributes have a type and may contain other
-attributes (if the type is [Object](https://godoc.org/github.com/goadesign/design#Object)). They
-also define validation rules (required fields and for each field additional validations). Attributes
-are useful to many DSLs and having the ability to define attributes inside plugin data structures
-is a common scenario. This scenario is supported via the use of the `ContainerDefinition`
-interface. Basically the `Attribute` DSL checks whether the including parent is an attribute itself,
-a media type or a generic/plugin Container definition.
+The goa API DSL defines an [attribute
+definition](https://godoc.org/github.com/goadesign/goa/design#AttributeDefinition) data structure
+which represents a generic field. Attributes have a type and may contain other attributes (if the
+type is [Object](https://godoc.org/github.com/goadesign/design#Object)). They also define validation
+rules (required fields and for each field additional validations). Attributes are useful to many
+DSLs and having the ability to define attributes inside plugin data structures is a common scenario.
+This scenario is supported via the use of the `ContainerDefinition` interface. Basically the
+`Attribute` DSL checks whether the including parent is an attribute itself, a media type or a
+generic/plugin Container definition.
 
 ### Wrapping-up
 
@@ -437,10 +435,11 @@ Writing a DSL consists of writing public package functions that build up definit
 [dslengine](https://godoc.org/github.com/goadesign/goa/dslengine) package provides a simple
 framework for executing the DSL and reporting errors to users. Definition data structures may
 implement a number of interfaces to plug into the engine and take advantage of the execution
-lifecycle. The DSL must register its root objects in the DSL engine package [Roots](https://godoc.org/github.com/goadesign/goa/dslengine#Roots)
-variable for the engine to execute the DSL.
+lifecycle. The DSL must register its root objects in the DSL engine package
+[Roots](https://godoc.org/github.com/goadesign/goa/dslengine#Roots) variable for the engine to
+execute the DSL.
 
-Now that we have a DSL and that it creates definitions the next step is to actually use them to 
+Now that we have a DSL and that it creates definitions the next step is to actually use them to
 produce outputs. Enters generators.
 
 ## Generators
@@ -461,9 +460,10 @@ error otherwise.
 
 #### Writing Generators for the goa API DSL
 
-The goa API DSL stores an instance of [APIDefinition](https://godoc.org/github.com/goadesign/goa/design#APIDefinition)
-in the first element of the DSL engine Roots slice so that generators that work off of that DSL
-output can safely do:
+The goa API DSL stores an instance of
+[APIDefinition](https://godoc.org/github.com/goadesign/goa/design#APIDefinition) in the first
+element of the DSL engine Roots slice so that generators that work off of that DSL output can safely
+do:
 
 ```go
 import "github.com/goadesign/goa/design"
@@ -477,7 +477,8 @@ func Generate(definitions []interface{}) ([]string, error) {
 
 The `Generate` method can take advantage of the `APIDefinition` `IterateXXX` methods to iterate
 through the API resources, media types and types to guarantee that the order doesn't change between
-two invocations of the function (thereby generating different outputs even if the design hasn't changed).
+two invocations of the function (thereby generating different outputs even if the design hasn't
+changed).
 
 Writing generators for the goa API DSL requires handling the corresponding definitions. These are
 all defined in the goa [design](https://godoc.org/github.com/goadesign/goa/design) package.
@@ -492,15 +493,17 @@ definitions are attributes). The DSL engine package defines the metadata definit
 
 #### Writing the Artifacts
 
-The output directory is available through the [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen)
-package [OutputDir](https://godoc.org/github.com/goadesign/goa/goagen/codegen#OutputDir) global
-variable. Generators should write all the artifacts in that directory (they may create 
-sub-directories as needed).
+The output directory is available through the
+[codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package
+[OutputDir](https://godoc.org/github.com/goadesign/goa/goagen/codegen#OutputDir) global variable.
+Generators should write all the artifacts in that directory (they may create sub-directories as
+needed).
 
 The [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package comes with a number
 of helper functions that help deal with generating Go code. For example it contains functions that
-can produce the code for definining a data structure given an instance of the [design](https://godoc.org/github.com/goadesign/goa/design)
-package [DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) interface.
+can produce the code for definining a data structure given an instance of the
+[design](https://godoc.org/github.com/goadesign/goa/design) package
+[DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) interface.
 
 ### Integrating With `goagen`
 

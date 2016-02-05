@@ -1,44 +1,31 @@
 {{ partial "header.html" . }}
 <body>
-
-	{{ partial "navigation.html" . }}	
-	<!-- Content
-	================================================== -->
+	{{ partial "navigation.html" . }}
 	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
 
-	<div class="hero-unit">
-		<h1>{{ .Title  }}</h1>
-		<p>{{ .Description }}</p>
-	</div>
+		<hr />
 
-	<hr />
-
-	<!-- #blog -->
-	<div class="row" id="blog">
-
-		<!-- posts -->
-		<div class="span8"> 
-
-
-
-  <div>
-	<p>
-	Goa is built from several pieces. Here's the list and we need more words here.
-	</p>
-        <ul id="list">
-            {{ range .Data.Pages }}
-	    <li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
-            {{ end }}
-        </ul>
-  </div>
-
-			
-
-			
-		</div><!-- end .span8 -->
-
-			{{ partial "sidebar.html" . }}	
-	</div><!-- end #blog -->
-
+		<div class="row" id="blog">
+			<div class="span8">
+				<div>
+					<p>
+						After design comes implementation. This section describes
+						what's involved in implementing a goa service. The
+						<a href="implement/overview.html">overview</a> page
+						presents the various pieces covered in the other pages.
+					</p>
+					<ul id="list">
+						{{ range .Data.Pages }}
+						<li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
+						{{ end }}
+					</ul>
+				</div>
+			</div>
+		</div>
 	</section>
 	{{ partial "footer.html" . }}
+</body>

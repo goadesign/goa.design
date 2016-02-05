@@ -1,44 +1,32 @@
 {{ partial "header.html" . }}
 <body>
 
-	{{ partial "navigation.html" . }}	
-	<!-- Content
-	================================================== -->
+	{{ partial "navigation.html" . }}
 	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
 
-	<div class="hero-unit">
-		<h1>{{ .Title  }}</h1>
-		<p>{{ .Description }}</p>
-	</div>
+		<hr />
 
-	<hr />
-
-	<!-- #blog -->
-	<div class="row" id="blog">
-
-		<!-- posts -->
-		<div class="span8"> 
-
-
-
-  <div>
-	<p>
-	Goa is extendable with plugins.  Here's a list of the plugins we've written and the ones we know about that are written by others.
-	</p>
-        <ul id="list">
-            {{ range .Data.Pages }}
-	    <li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
-            {{ end }}
-        </ul>
-  </div>
-
-			
-
-			
-		</div><!-- end .span8 -->
-
-		{{ partial "sidebar.html" . }}	
-
-	</div><!-- end #blog -->
+		<div class="row" id="blog">
+			<div class="span8">
+				<div>
+					<p>
+						Goa is extendable with <a href="extend/plugins.html">plugins</a>.
+						The section covers how to author new plugins and also covers
+						the <a href="extend/gorma.html">gorma</a> plugin as a good
+						reference for implementing your own.
+					</p>
+					<ul id="list">
+						{{ range .Data.Pages }}
+						<li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
+						{{ end }}
+					</ul>
+				</div>
+			</div>
+		</div>
 	</section>
 	{{ partial "footer.html" . }}
+</body>
