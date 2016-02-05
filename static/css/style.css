@@ -763,7 +763,7 @@ input[type=button]:hover,
   margin: 0;
   padding: 0;
   background: #444;
-  width: 160px;
+  width: 300px;
   border-bottom: 1px solid #555;
   -webkit-transition: all 0.3s ease-out;
   -moz-transition: all 0.3s ease-out;
