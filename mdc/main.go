@@ -1,3 +1,8 @@
+// mdc is a tool that wraps godoc2md so it can run recursively on all packages given a top level
+// package path. The tool also injects frontmatter tags in the generated markdown for processing
+// by hugo.
+// Usage:
+//     $ mdc github.com/goadesign/goa public/reference/goa --exclude goa.design
 package main
 
 import (

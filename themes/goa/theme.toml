@@ -3,16 +3,16 @@
 
 name = "Goa"
 license = "MIT"
-licenselink = "https://github.com/yourname/yourtheme/blob/master/LICENSE.md"
-description = ""
-homepage = "http://siteforthistheme.com/"
+licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
+description = "The goa website"
+homepage = "http://goa.design"
 tags = ["", ""]
 features = ["", ""]
 min_version = 0.15
 
 [author]
-  name = ""
-  homepage = ""
+  name = "goa contributors"
+  homepage = "https://github.com/goadesign/goa"
 
 # If porting an existing theme
 [original]

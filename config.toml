@@ -1,6 +1,8 @@
 baseurl = "http://artifacts.goa.design/"
 languageCode = "en-us"
 title = "goa"
+theme = "goa"
+uglyURLs = true
 
 [taxonomies]
 tag = "tags"
