@@ -3,7 +3,7 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Leveraging Swagger"
 +++
 
-[goagen](../implement/goagen.md) can generate the Swagger specification of an API given its design.
+[goagen](../implement/goagen.html) can generate the Swagger specification of an API given its design.
 The service hosted at [http://swagger.goa.design](http://swagger.goa.design) runs `goagen swagger`
 on a given (public) github repository and renders the corresponding Swagger UI. This provides a
 convenient way to quickly look at an API definition of an open source goa service and experiment

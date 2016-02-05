@@ -4,7 +4,7 @@ title = "Getting Started with goa"
 +++
 
 The best way to experience goa is to develop a service end-to-end, from design to implementation. So
-let's write a simplistic service implementing a tiny subset of the [cellar](cellar.md) example that
+let's write a simplistic service implementing a tiny subset of the [cellar](cellar.html) example that
 can be found in the github repository. The code deals with wine bottles, more specifically it makes
 it possible to retrieve pre-existing wine bottle models through simple GET requests.
 
