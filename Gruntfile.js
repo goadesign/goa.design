@@ -69,7 +69,7 @@ module.exports = function(grunt) {
 
             // Build Lunr index for this page
             pageIndex = {
-                title: frontMatter.title,
+                title: frontMatter.title || frontMatter.description,
                 tags: frontMatter.tags,
                 href: href,
                 content: S(content[2]).trim().stripTags().stripPunctuation().s
