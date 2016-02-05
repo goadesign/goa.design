@@ -17,7 +17,7 @@
 						the packages that make up the goa framework.
 					</p>
 					<ul id="list">
-						{{ range .Data.Pages }}
+						{{ range sort .Data.Pages }}
 						<li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
 						{{ end }}
 					</ul>
