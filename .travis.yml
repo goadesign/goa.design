@@ -26,6 +26,7 @@ script:
 - mdc github.com/goadesign/encoding content/reference
 - mdc github.com/goadesign/gorma content/reference
 - hugo --theme=goa --uglyURLs=true
+- rm public/.DS_Store
 - grunt lunr-index
 deploy:
   provider: gcs
