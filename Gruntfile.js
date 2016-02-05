@@ -1,7 +1,7 @@
 var toml = require("toml");
 var S = require("string");
 
-var CONTENT_PATH_PREFIX = "public";
+var CONTENT_PATH_PREFIX = "content";
 var SITE_IDX_DEST = "static/js/pindex.json";
 
 module.exports = function(grunt) {
@@ -59,11 +59,11 @@ module.exports = function(grunt) {
             if (frontMatter.url) {
                 var href = frontMatter.url;
             } else {
-                var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s;
-                // href for index.md files stops at the folder name
-                if (filename === "index.md") {
-                    href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(filename).s;
-                }
+                var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s + ".html";
+                // href for index.md files stops at the folder name - Not with ugly URLs
+                // if (filename === "index.md") {
+                //     href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(filename).s;
+                // }
             }
 
 
