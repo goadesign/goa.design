@@ -2,7 +2,7 @@ var toml = require("toml");
 var S = require("string");
 
 var CONTENT_PATH_PREFIX = "content";
-var SITE_IDX_DEST = "static/js/pindex.json";
+var SITE_IDX_DEST = "public/js/pindex.json";
 
 module.exports = function(grunt) {
 
