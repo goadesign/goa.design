@@ -1,65 +1,54 @@
-	<!-- Header
-	================================================== -->
-	<header id="header">
+<header id="header">
+	<nav class="navbar">
+		<div class="navbar-inner">
+			<div class="container">
+				<a class="brand" href="/">
+					goa
+				</a>
+				<ul class="nav">
+					<li class="dropdown">
+						<a href="/learn/" title="Learn">Learn</a>
+						<ul>
+							<li><a href="/learn/guide.html" title="Getting Started Guide">Getting Started Guide</a></li>
+							<li><a href="/learn/cellar.html" title="Cellar Example">Cellar Example</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/design/" title="Design">Design</a>
+						<ul>
+							<li><a href="/design/overview.html" title="Overview">Overview</a></li>
+							<li><a href="/design/swagger.html" title="Swagger">Swagger</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/implement/" title="Implement">Implement</a>
+						<ul>
+							<li><a href="/implement/overview.html" title="Overview">Overview</a></li>
+							<li><a href="/implement/goagen.html" title="goagen">goagen</a></li>
+							<li><a href="/implement/context.html" title="Request Context">Request Context</a></li>
+							<li><a href="/implement/components.html" title="Components">Components</a></li>
+							<li><a href="/implement/middleware.html" title="Middleware">Middleware</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/extend/" title="Extend">Extend</a>
+						<ul>
+							<li><a href="/extend/plugins.html" title="">Plugins</a></li>
+							<li><a href="/extend/gorma.html" title="">gorma</a></li>
+						</ul>
+					</li>
 
-		<!-- Navigation
-		================================================== -->
-		<nav class="navbar">
-			<div class="navbar-inner">
-				<div class="container">
-					<!-- Logo -->
-					<a class="brand" href="/">
-						goa
-					</a>
-					<ul class="nav">
-						<li class="dropdown">
-							<a href="/learn/" title="Learn">Learn</a>
-							<!-- Dropdown menu -->
-							<ul>
-								<li><a href="/learn/guide.html" title="Getting Started Guide">Getting Started Guide</a></li>
-								<li><a href="/learn/cellar.html" title="Cellar Example">Cellar Example</a></li>
-							</ul>
-						</li>
-						<li class="dropdown">
-							<a href="/design/" title="Design">Design</a>
-							<!-- Dropdown menu -->
-							<ul>
-								<li><a href="/design/overview.html" title="Overview">Overview</a></li>
-								<li><a href="/design/swagger.html" title="Swagger">Swagger</a></li>
-							</ul>
-						</li>
-						<li class="dropdown">
-							<a href="/implement/" title="Implement">Implement</a>
-							<!-- Dropdown menu -->
-							<ul>
-								<li><a href="/implement/overview.html" title="Overview">Overview</a></li>
-								<li><a href="/implement/goagen.html" title="goagen">goagen</a></li>
-								<li><a href="/implement/context.html" title="Request Context">Request Context</a></li>
-								<li><a href="/implement/components.html" title="Components">Components</a></li>
-								<li><a href="/implement/middleware.html" title="Middleware">Middleware</a></li>
-							</ul>
-						</li>
-						<li class="dropdown">
-							<a href="/extend/" title="Extend">Extend</a>
-							<!-- Dropdown menu -->
-							<ul>
-								<li><a href="/extend/plugins.html/" title="">Plugins</a></li>
-								<li><a href="/extend/gorma.html/" title="">gorma</a></li>
-							</ul>
-						</li>
+					<li>&nbsp;</li>
 
-						<li>
-							&nbsp;
-						</li>
-
-						<li><a href="/reference/" title="Reference"><i class="fa fa-book"></i></a></li>
-						<li><a href="/blog/" title="Blog"><i class="fa fa-feed"></i></a></li>
-						<li><a href="https://github.com/goadesign/goa" title="GitHub"><i class="fa fa-github"></i></a></li>
-					</ul>
-
-				</div><!-- end .container -->
-
-			</div><!-- end .navbar-inner -->
-
-		</nav>
-	</header>
+					<li class="input-group">
+						<input id="search" class="animated" type="search" class="form-control" placeholder="Search">
+						<ul id="results"></ul>
+					</li>
+					<li><a href="/reference/" title="Reference"><i class="fa fa-book"></i></a></li>
+					<li><a href="/blog/" title="Blog"><i class="fa fa-feed"></i></a></li>
+					<li><a href="https://github.com/goadesign/goa" title="GitHub"><i class="fa fa-github"></i></a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+</header>
