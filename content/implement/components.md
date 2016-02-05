@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Implementing Microservices"
+title = "Supporting Functionality"
 +++
 
 goa services leverage the goa package to implement the API handlers. The package includes the
