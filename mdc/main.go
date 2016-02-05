@@ -157,10 +157,7 @@ func fatal(format interface{}, val ...interface{}) {
 }
 
 const headerT = `+++
-title="{{.PackagePath}}"
 date="{{.Date}}"
-description="godoc for {{.PackagePath}}"
-categories=["godoc"]
-tags=["godoc", "{{.PackageName}}"]
+description="{{.PackagePath}}"
 +++
 `
