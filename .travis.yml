@@ -32,7 +32,7 @@ deploy:
   access_key_id: GOOGDIIIVPY7O6DG3PSZ
   secret_access_key:
     secure: BlsI10h4ATFPRJ2V2fqzwTr33SyQV9LiXUKgse9n8jcpnyJwRw01Y9qcfgk/6FpjcS+d7vBWyaD1Bx2MSs4V3ILSqu3NhCXNeW6CYmSeLK2ciNPZOHW/ISrJCH/gxvdRm1YLOqbsC9AUKh0c2/1xFl3NkTgrECF1XGXJJpCJX607dvnNRxWm++xUiI1sonMuy+b0fSZwgele4Upen99ZRZQgyBWlIpLAQtgKRyhy4kSzlITR7osj2eOUe2FQsbeZ94dMlA+dCAmat1bgnXfWd5giqjdQC3X9RtR1M+8rKuYscdfmlqn/FE+5OhTrbzz69PVRzbeFvQisfouEVVwqoiKNwgCcjfYh0/KeCu228g+7st4pYrDTuepk9IlB/kkwsZWNEjsUAR8GvSFvAcxxPkozAC1d9+6w7tGGl6G7Nxa3RrFcfM/jCcb0mDYfKVcHysJSxHllI9Hnqae88IqV7eDYUXpccP5tDa7qZV7tVOcg/IhLl1ntywM2v7xax+6iTeCS8oKYqSDM0E0ZPVF9Jvsx7zUCeWM4mFUVqJgWvnIDkusW2OuExM+Ds8NiGQgEgFfxR+/+fFNX8LM1uUwNQQsyd4Ixbc5ead3V8mR87f1Ih+WjZF+iJdb9K1BvTTB1d32BGr0Yp+H2KksGQpSSmZ+CpPhYdUAVYwEoKyPdPuc=
-  bucket: artifacts.goa.design
+  bucket: goa.design
   local-dir: public
   skip-cleanup: true
   acl: public-read

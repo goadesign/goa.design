@@ -1,4 +1,4 @@
-baseurl = "http://artifacts.goa.design/"
+baseurl = "http://goa.design/"
 languageCode = "en-us"
 title = "goa"
 theme = "goa"
