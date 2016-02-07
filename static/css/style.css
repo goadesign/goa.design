@@ -101,6 +101,7 @@ ul li:hover i[class^="icon-"] {
 code {
         font-family: "Droid Sans Mono";
         font-size: 13px;
+        line-height: 17px;
 }
 /* --------------------------------------------------------	*/
 /*	Classes	*/
