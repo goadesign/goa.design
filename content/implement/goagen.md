@@ -143,20 +143,21 @@ served from `/js`. The `resp` value returned to the promise is an object with th
 fields:
 
 ```javascript
-// `data` is the response that was provided by the server
-data: {},
+{
+        // `data` is the response that was provided by the server
+        data: {},
 
-// `status` is the HTTP status code from the server response
-status: 200,
+        // `status` is the HTTP status code from the server response
+        status: 200,
 
-// `statusText` is the HTTP status message from the server response
-statusText: 'OK',
+        // `statusText` is the HTTP status message from the server response
+        statusText: 'OK',
 
-// `headers` the headers that the server responded with
-headers: {},
+        // `headers` the headers that the server responded with
+        headers: {},
 
-// `config` is the config that was provided to `axios` for the request
-config: {}
+        // `config` is the config that was provided to `axios` for the request
+        config: {}
 }
 ```
 

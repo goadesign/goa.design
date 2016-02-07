@@ -22,8 +22,10 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
+  /*font-size: 13px;*/
+  font-size: 15px;
+  /*line-height: 18px;*/
+  line-height: 22px;
   color: #333333;
   -webkit-font-smoothing: subpixel-antialiased;
   -webkit-text-size-adjust: 100%;
@@ -95,6 +97,10 @@ ul li i[class^="icon-"] {
 }
 ul li:hover i[class^="icon-"] {
   color: #222;
+}
+code {
+        font-family: "Droid Sans Mono";
+        font-size: 13px;
 }
 /* --------------------------------------------------------	*/
 /*	Classes	*/
@@ -711,7 +717,7 @@ input[type=button]:hover,
 }
 .navbar .nav > li > a {
   color: #444!important;
-  padding: 9px 10px 11px;
+  padding: 14px 10px 11px;
   font-size: 1.1em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
@@ -755,7 +761,6 @@ input[type=button]:hover,
   background-clip: padding-box;
 }
 .navbar .nav li ul {
-  margin: 0;
   display: none;
   z-index: 99;
 }
@@ -770,6 +775,7 @@ input[type=button]:hover,
   -ms-transition: all 0.3s ease-out;
   -o-transition: all 0.3s ease-out;
   transition: all 0.3s ease-out;
+  font-size: 105%;
 }
 .navbar .nav li ul li:hover {
   background: #f26a46;
