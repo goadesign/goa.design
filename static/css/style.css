@@ -719,12 +719,17 @@ input[type=button]:hover,
 .navbar .nav > li > a {
   color: #444!important;
   padding: 14px 10px 11px;
-  font-size: 1.1em;
+  font-size: 1.0em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
 .navbar .nav > li > a:hover {
   color: #222;
+ }
+
+.navbar .nav > li > input {
+        margin-top:8px;
 }
+
 /* --------------------------------------------------------	*/
 /*	Navigation - dropdown */
 /* --------------------------------------------------------	*/
