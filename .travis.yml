@@ -14,12 +14,12 @@ install:
 - mv hugo_0.15_linux_amd64/hugo_0.15_linux_amd64 $HOME/bin/hugo
 - echo $GOPATH
 - export PATH=$PATH:$HOME/bin:$GOPATH/bin
-- go get github.com/davecheney/godoc2md
 - go get github.com/goadesign/goa
 - go get github.com/goadesign/middleware
 - go get github.com/goadesign/encoding
 - go get github.com/goadesign/gorma
-- cd mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ..
+- cd tools/godoc2md && go get -v ./... && go build -o $HOME/bin/godoc2md && cd ../..
+- cd tools/mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ../..
 script:
 - mdc github.com/goadesign/goa content/reference
 - mdc github.com/goadesign/middleware content/reference
