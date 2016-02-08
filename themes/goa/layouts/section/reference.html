@@ -10,7 +10,7 @@
 		<hr />
 
 		<div class="row" id="blog">
-			<div class="span12">
+			<div data-spy="scroll" data-target="toc" class="span8">
 				<div>
 					<p>
 						The reference section contains the GoDoc for all
@@ -23,6 +23,7 @@
 					</ul>
 				</div>
 			</div>
+			{{ partial "sidebar.html" . }}
 		</div>
 	</section>
 	{{ partial "footer.html" . }}

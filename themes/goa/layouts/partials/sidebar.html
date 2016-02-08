@@ -1,34 +1,3 @@
-
-	<!-- Sidebar with widgets
-		================================================== -->
-		<div class="sidebar span4">
-
-			<!-- search plugin -->
-			<div class="widget">
-				<input id="search" type="search" class="animated" placeholder="Search" />
-				 <ul id="results">
-    			        </ul>
-			</div>
-
-			<!-- Tags / categories -->
-			<!-- <div class="widget">
-				<h4>All Categories</h4>
-				<ul class="icons-ul list-style">
-					{{ range $cat, $tax := .Site.Taxonomies.categories}}
-						<li><a href="/categories/{{$cat | urlize}}/">{{$cat}}</a></li>
-					{{ end }}
-
-				</ul>
-			</div> -->
-
-			<!-- List widget with custom list icons -->
-			<!-- <div class="widget">
-				<h4>All Tags</h4>
-				<ul class="tags">
-					{{ range $cat, $tax := .Site.Taxonomies.tags}}
-						<li><a href="/tags/{{$cat | urlize}}/">{{$cat}}</a></li>
-					{{ end }}
-				</ul>
-			</div> -->
-
-		</div><!-- end sidebar -->
+		<div id="toc" class="sidebar span4">
+			{{ .TableOfContents }}
+		</div>

@@ -17,11 +17,11 @@ var pkgTemplate = `{{with .PDoc}}{{if $.IsMain}}
 {{with .Vars}}## Variables
 {{range .}}{{node $ .Decl | pre}}
 {{comment_md .Doc}}{{end}}{{end}}
-{{range .Funcs}}{{$name_html := html .Name}}## func {{$name_html}}{{anchor $ .Name}}
+{{range .Funcs}}{{$name_html := html .Name}}## func {{$name_html}}{{anchor $.PDoc.Name .Name}}
 {{node $ .Decl | pre}}
 {{comment_md .Doc}}
 {{example_html $ .Name}}{{end}}
-{{range .Types}}{{$tname := .Name}}{{$tname_html := html .Name}}## type {{$tname_html}}{{anchor $ .Name}}
+{{range .Types}}{{$tname := .Name}}{{$tname_html := html .Name}}## type {{$tname_html}}{{anchor $.PDoc.Name .Name}}
 {{node $ .Decl | pre}}
 {{comment_md .Doc}}
 
@@ -33,12 +33,12 @@ var pkgTemplate = `{{with .PDoc}}{{if $.IsMain}}
 
 {{example_html $ $tname}}
 
-{{range .Funcs}}{{$name_html := html .Name}}### func {{$name_html}}{{anchor $ $tname .Name}}
+{{range .Funcs}}{{$name_html := html .Name}}### func {{$name_html}}{{anchor $.PDoc.Name $tname .Name}}
 {{node $ .Decl | pre}}
 {{comment_md .Doc}}
 {{example_html $ .Name}}{{end}}
 
-{{range .Methods}}{{$name_html := html .Name}}### func ({{md .Recv}}) {{$name_html}}{{anchor $ $tname .Name}}
+{{range .Methods}}{{$name_html := html .Name}}### func ({{md .Recv}}) {{$name_html}}{{anchor $.PDoc.Name $tname .Name}}
 {{node $ .Decl | pre}}
 {{comment_md .Doc}}
 {{$name := printf "%s_%s" $tname .Name}}{{example_html $ $name}}

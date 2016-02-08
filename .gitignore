@@ -10,4 +10,5 @@ website/public
 node_modules
 public/
 static/js/pindex.json
+content/reference/
 

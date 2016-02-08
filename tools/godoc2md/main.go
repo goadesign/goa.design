@@ -78,7 +78,7 @@ func mdFunc(text string) string {
 }
 
 func preFunc(text string) string {
-	return "``` go\n" + text + "\n```"
+	return "```go\n" + text + "\n```"
 }
 
 func anchorFunc(elems ...string) string {
