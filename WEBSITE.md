@@ -2,7 +2,7 @@
 
 To modify the website you'll need [hugo](http://gohugo.io)
 
-```
+```bash
 cd website
 hugo serve --theme=goa --buildDrafts -v
 ```

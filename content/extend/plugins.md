@@ -511,7 +511,7 @@ can produce the code for definining a data structure given an instance of the
 specifying a Go package path to a generator package - that is a package that implements the
 `Generate` function. This command accepts two flags:
 
-```
+```bash
 --pkg-path=PKG-PATH specifies the Go package path to the plugin package.
 --pkg-name=PKG-NAME specifies the Go package name of the plugin package. It defaults to the name of the inner most directory in the Go package path.
 ```
@@ -573,6 +573,6 @@ func WriteNames(api *design.APIDefinition) ([]string, error) {
 ```
 
 Invoke the `genresnames` generator with:
-```
+```bash
 goagen gen -d /path/to/your/design --pkg-path=/go/path/to/genresnamnes
 ```

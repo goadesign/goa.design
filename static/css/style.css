@@ -98,11 +98,11 @@ ul li i[class^="icon-"] {
 ul li:hover i[class^="icon-"] {
   color: #222;
 }
-code {
+pre {
         font-family: "Droid Sans Mono";
         font-size: 13px;
-        line-height: 17px;
 }
+
 /* --------------------------------------------------------	*/
 /*	Classes	*/
 /* --------------------------------------------------------	*/

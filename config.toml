@@ -1,9 +1,14 @@
 baseurl = "http://goa.design/"
 languageCode = "en-us"
-title = "goa"
+title = "goa - Design First. Then Win."
 theme = "goa"
 uglyURLs = true
 pluralizelisttitles = false
+
+pygmentscodefences = true
+pygmentsoptions = ""
+pygmentsstyle = "friendly"
+pygmentsuseclasses = false
 
 [taxonomies]
 tag = "tags"
