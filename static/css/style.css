@@ -614,7 +614,7 @@ input[type=button]:hover,
 }
 .nav-tabs > li.active > a {
   border: 1px solid #ccc;
-  border-bottom: 1px solid #fff;
+  /*border-bottom: 1px solid #fff;*/
   background: #fff;
   color: #000000;
 }
@@ -692,10 +692,10 @@ input[type=button]:hover,
   float: right;
 }
 .navbar .nav > li:hover {
-  border-bottom: 1px solid #ccc;
+  /*border-bottom: 1px solid #ccc;*/
 }
 .navbar .nav > li.active {
-  border-bottom: 1px solid #aaa;
+  /*border-bottom: 1px solid #aaa;*/
 }
 .navbar .nav > li.active > a,
 .navbar .nav > li.active:hover > a {
@@ -775,7 +775,7 @@ input[type=button]:hover,
   padding: 0;
   background: #444;
   width: 300px;
-  border-bottom: 1px solid #555;
+  /*border-bottom: 1px solid #555;*/
   -webkit-transition: all 0.3s ease-out;
   -moz-transition: all 0.3s ease-out;
   -ms-transition: all 0.3s ease-out;
