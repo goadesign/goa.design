@@ -8,12 +8,12 @@ generated the low level handlers the next step consists of implementing the actu
 
 `goagen` generates a controller interface for each resource. It also generates `MountXXXController`
 methods all in the `app` package. The controller mounting methods accept an instance of an object
-that implements the corresponding controller interface and take care of hooking unp the low level
+that implements the corresponding controller interface and take care of hooking up the low level
 HTTP router with the corresponding methods.
 
 The glue code that binds the controller object methods with the HTTP router also takes care of
 instantiating the action specific [context](context.html) objects. These objects wrap the request
-state and make it available through properly types struct fields. This means that the handler code
+state and make it available through properly typed struct fields. This means that the handler code
 does not need to cast or otherwise "bind" the context fields.
 
 The controller methods can also log and send the response using the context methods. The service

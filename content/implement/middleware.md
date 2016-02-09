@@ -13,7 +13,7 @@ microservices:
 * [LogRequest](https://godoc.org/github.com/goadesign/middleware#LogRequest) enables logging of
   incoming requests and corresponding responses. The log format is entirely configurable. The default
   format logs the request HTTP method, path and parameters as well as the corresponding
-  action and controller names. It also logs the request duration and response length. It also logs
+  action and controller names. It also logs the request duration and response length, as well as the
   the request payload if the DEBUG log level is enabled. Finally if the RequestID middleware is
   mounted LogRequest logs the unique request ID with each log entry.
 
@@ -34,7 +34,7 @@ microservices:
 
 * [RequireHeader](https://godoc.org/github.com/goadesign/middleware#RequireHeader) checks for the
   presence of a header in the request with a value matching a given regular expression. If the
-  header is absent or does not match the regexp the middleware sends a HTTP response with a given
+  header is absent or does not match the regexp the middleware sends an HTTP response with a given
   HTTP status.
 
 Other middlewares listed below are provided as separate Go packages.

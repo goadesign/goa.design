@@ -22,10 +22,10 @@ to that action as described in the design. This alleviates the need for reflecti
 The same goes for writing responses: while the underlying http ResponseWriter is available to write
 the response, the action context also provides action specific methods for writing the responses
 described in the design. These generated methods take care of writing the correct status code and
-content-type header for example. They also make it possible to specificy the response payload using
+content-type header for example. They also make it possible to specify the response payload using
 custom data structures generated from the media type described in the design.
 
 As mentioned earlier each controller action context wraps a golang package context. This means that
-deadlines and cancelation signals are available to all action implemetations. The built-in
+deadlines and cancelation signals are available to all action implementations. The built-in
 [Timeout](https://godoc.org/github.com/goadesign/goa#Timeout") middleware takes advantage of
 this ability to let services or controllers define a timeout value for all requests.

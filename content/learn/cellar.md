@@ -7,7 +7,7 @@ The goa winecellar service provides an example for the [goa](http://goa.design) 
 framework.
 
 The service implements an API for managing wine bottles. The service is multitenant: bottles are
-created in the context of an account. At this time the database is emulated with a in-memory hash.
+created in the context of an account. At this time the database is emulated with an in-memory hash.
 An instance of this example is hosted at http://cellar.goa.design.
 
 Using the excellent [httpie client](https://github.com/jkbrzt/httpie):
@@ -74,4 +74,3 @@ Vary: Origin
 ```
 
 The complete documentation for the example is available on [swagger.goa.design](http://swagger.goa.design/?url=goadesign%2Fgoa-cellar%2Fdesign).
-my first goa api post
