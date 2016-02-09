@@ -5,10 +5,10 @@ theme = "goa"
 uglyURLs = true
 pluralizelisttitles = false
 
-# pygmentscodefences = true
-# pygmentsoptions = ""
-# pygmentsstyle = "monokai"
-# pygmentsuseclasses = false
+pygmentscodefences = true
+pygmentsoptions = ""
+pygmentsstyle = "friendly"
+pygmentsuseclasses = false
 
 [taxonomies]
 tag = "tags"

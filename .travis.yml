@@ -3,7 +3,7 @@ go:
 - 1.4
 node_js:
 - '0.11'
-sudo: false
+sudo: required
 install:
 - nvm install 0.11
 - npm install grunt-cli -g
@@ -20,6 +20,7 @@ install:
 - go get github.com/goadesign/gorma
 - cd tools/godoc2md && go get -v ./... && go build -o $HOME/bin/godoc2md && cd ../..
 - cd tools/mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ../..
+- sudo pip install Pygments
 script:
 - mdc github.com/goadesign/goa content/reference
 - mdc github.com/goadesign/middleware content/reference
