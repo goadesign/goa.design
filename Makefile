@@ -10,7 +10,8 @@
 # - "all" default target that runs all the above in order
 
 DEPEND=\
-	github.com/spf13/hugo
+	github.com/spf13/hugo \
+	github.com/davecheney/godoc2md
 
 all: depend install docs serve
 
@@ -18,14 +19,13 @@ depend:
 	@go get $(DEPEND)
 
 install:
-	@cd tools/godoc2md && go get ./... && go install
 	@cd tools/mdc      && go get ./... && go install
 
 docs:
-	@mdc github.com/goadesign/goa        content/reference
-	@mdc github.com/goadesign/middleware content/reference
-	@mdc github.com/goadesign/encoding   content/reference
-	@mdc github.com/goadesign/gorma      content/reference
+	@mdc github.com/goadesign/goa        content/reference --exclude public
+	@mdc github.com/goadesign/middleware content/reference --exclude public
+	@mdc github.com/goadesign/encoding   content/reference --exclude public
+	@mdc github.com/goadesign/gorma      content/reference --exclude public
 
 serve:
 	@hugo --theme goa serve --watch

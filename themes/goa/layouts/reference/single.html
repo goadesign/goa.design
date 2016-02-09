@@ -1,4 +1,5 @@
 {{ partial "header.html" . }}
+
 <body>
 	{{ partial "navigation.html" . }}
 	<section id="content" class="container">
@@ -10,9 +11,16 @@
 		<hr />
 
 		<div class="row" id="blog">
-			<div class="span12">
-				{{ .Content  }}
+			<div class="span8">
+				{{ .Content }}
+			</div>
+			<div id="toc" class="sidebar span4">
 			</div>
 		</div>
 	</section>
 	{{ partial "footer.html" . }}
+	<script type="text/javascript">
+		$('#toc').toc({
+			'container': '#blog'
+		});
+	</script>
