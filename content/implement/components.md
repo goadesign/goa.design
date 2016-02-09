@@ -20,7 +20,7 @@ interface which on top of the usual binding of HTTP method and path
 to handler also provides support for API versioning.
 
 The `ServeMux` interface `Handle` method associates a request HTTP method and path to a HandleFunc
-which is a function that accepts a http ResponseWriter and Request as well as a instance of url
+which is a function that accepts an http ResponseWriter and Request as well as an instance of url
 Values that contain all the path and querystring parameters.
 
 The interface also exposes a `Version` method that gives access to version specific muxes. This
@@ -53,14 +53,14 @@ name and unique request ID.
 
 All goa actions return an error. Error handlers can be defined at the controller or service level.
 If an action returns a non-nil error then the controller error handler is invoked. If the controller
-does not define a error handler then the service-wide error handler is invoked instead. The default
+does not define an error handler then the service-wide error handler is invoked instead. The default
 goa error handler simply returns a 500 response containing the error details in the body.
 
 #### Graceful Shutdown
 
 A goa service can be instantiated via `NewGraceful` in which case the http server is implemented by
 the <a href="https://godoc.org/github.com/tylerb/graceful">graceful package</a> which provides
-graceful shutdown behavior where upon receving a shutdown signal the service waits until all pending
+graceful shutdown behavior where upon receiving a shutdown signal the service waits until all pending
 requests are completed before terminating.
 
 ### Swapping the Batteries
@@ -138,5 +138,5 @@ generated controllers.
 The generated code relies on the `ServeMux` method exposed by the service to retrieve the
 top-level mux. The goa default mux implementation relies on the
 [httprouter](https://github.com/julienschmidt/httprouter) package to implement the low level
-dispatch. Other low level routers can easily be subsituted by providing an implementation of the
+dispatch. Other low level routers can easily be substituted by providing an implementation of the
 ServeMux interface.

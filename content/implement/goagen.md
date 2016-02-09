@@ -77,7 +77,7 @@ The `Client` object can be configured to use request signers that get invoked pr
 request. The signers modify the request to include auth headers for example. goa comes with signers that implement
 [basic auth](https://godoc.org/github.com/goadesign/goa#BasicSigner),
 [JWT auth](https://godoc.org/github.com/goadesign/goa#JWTSigner) and a subset of
-[OAuth2](https://godoc.org/github.com/goadesign/goa#OAuth2Signer). Custom signers my be used as well, they must
+[OAuth2](https://godoc.org/github.com/goadesign/goa#OAuth2Signer). Custom signers may be used as well, they must
 implement the [Signer](https://godoc.org/github.com/goadesign/goa#Signer) interface.
 This command accepts three additional flags:
 
@@ -89,7 +89,7 @@ This command accepts three additional flags:
 
 The `js` command generates a JavaScript API client suitable for both client-side and server-side
 applications. The generated code defines an anonymous AMD module and relies on the
-[axios](https://github.com/mzabriskie/axios) promised-based JavaScript library for making the actual
+[axios](https://github.com/mzabriskie/axios) promise-based JavaScript library for making the actual
 HTTP requests.
 
 The generated module wraps the `axios` client and adds API specific functions, for example:
@@ -153,7 +153,7 @@ fields:
         // `statusText` is the HTTP status message from the server response
         statusText: 'OK',
 
-        // `headers` the headers that the server responded with
+        // `headers` is the headers that the server responded with
         headers: {},
 
         // `config` is the config that was provided to `axios` for the request

@@ -14,14 +14,14 @@ anything else is useful.
 
 Another interesting aspect is that DSLs complete each other. It is not necessary to write a new DSL
 from scratch, one may add a few new keywords to the built-in API DSL for example. The new DSL
-implementation can create new artefacts or change how existing artefacts are created.
+implementation can create new artifacts or change how existing artifacts are created.
 
 ## Extending the DSL
 
 goa DSLs consist of Go package functions that construct recursive data structures called
 *definitions*. The roots of these definitions must be recorded in the goa *dslengine* package
 *Roots* variable. The actual content of the definitions is completely up to you. The generators use
-them to create the artefacts so they should contain all the required information.
+them to create the artifacts so they should contain all the required information.
 
 ### First Exposure
 
@@ -111,7 +111,7 @@ func Type(value string, extra ...interface{}) {
 	model.Type = value
 }
 ```
-OK stepping back a bit: DSLs are nothing more than package functions that build package variables.
+OK, stepping back a bit: DSLs are nothing more than package functions that build package variables.
 There are a few common patterns used to make the DSLs easier to use such as anonymous functions as
 argument or variadic functions. The example above also used `interface{}` as argument type making
 it possible for the DSL user to pass in any value which can be also very helpful to build
@@ -237,7 +237,7 @@ order and also of reporting errors in a consistent way to the user.
 #### The DSL Roots
 
 The last piece of the puzzle when creating a new DSL is to define the DSL *roots* that the DSL
-engine executes. The roots must be stored in the `dslengine` package `Roots` variabler. DSL roots
+engine executes. The roots must be stored in the `dslengine` package `Roots` variable. DSL roots
 implement the [Root](https://godoc.org/github.com/goadesign/goa/dslengine#Root) interface which
 exposes the `IterateSets` method that the engine uses to iterate through the definitions for
 execution. `IterateSets` returns a slice of definitions allowing you to control the order in
@@ -245,7 +245,7 @@ which different types of definitions should be executed.
 
 Imagine that the DSL in the example above was extended to make it possible to define the model
 types rather than having a hard coded list. Presumably the type definitions would have to be run
-first before the model defintions. This could be done by having the DSL root `IterateSets` method
+first before the model definitions. This could be done by having the DSL root `IterateSets` method
 first return all type definitions then all model definitions:
 
 ```go
@@ -303,7 +303,7 @@ DSL. The DSL function code validates the input and uses
 invalid values.
 
 Another function is
-[IncompatibelDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL). The use
+[IncompatibleDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL). The use
 case for this function is covered in the paragraph below.
 
 All the error reporting functions build user friendly error messages and append them to the
@@ -312,7 +312,7 @@ All the error reporting functions build user friendly error messages and append 
 #### The Context Stack
 
 While not strictly required to implement a DSL it may be useful to be aware of how the engine
-works to take full advantage of it. A particulary interesting concept is the context stack. When
+works to take full advantage of it. A particularly interesting concept is the context stack. When
 the engine executes it adds the currently executed definition to the context stack - that's the
 definition that implements the `Source` interface and whose DSL is being executed. The current
 definition at the top of the context stack can be retrieved via the [CurrentDefinition](https://godoc.org/github.com/goadesign/goa/dslengine#CurrentDefinition)
@@ -331,7 +331,7 @@ func Type(value string, extra ...interface{}) {
   // ... initialize "model"
 }
 ```
-In fact this case is so common that `dslengine` exposes a [IncompatibleDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL)
+In fact this case is so common that `dslengine` exposes an [IncompatibleDSL](https://godoc.org/github.com/goadesign/goa/dslengine#IncompatibleDSL)
 function that DSL implementations can call in this case:
 ```go
 // Type sets the type of the model being built.
@@ -363,7 +363,7 @@ defines the [Versioned](https://godoc.org/github.com/goadesign/goa/dslengine#Ver
 which such definitions should implement. The DSL engine also provides a
 [CanUse](https://godoc.org/github.com/goadesign/goa/dslengine#CanUse) function that given two
 versioned definitions checks whether the second definition can be used to define the first. The
-rules it uses to check for compatiblity are:
+rules it uses to check for compatibility are:
 
 * Versioned definitions may use other versioned definitions that support the exact same set of versions.
 * Versioned definitions may use unversioned definitions.
@@ -425,7 +425,7 @@ which represents a generic field. Attributes have a type and may contain other a
 type is [Object](https://godoc.org/github.com/goadesign/design#Object)). They also define validation
 rules (required fields and for each field additional validations). Attributes are useful to many
 DSLs and having the ability to define attributes inside plugin data structures is a common scenario.
-This scenario is supported via the use of the `ContainerDefinition` interface. Basically the
+This scenario is supported via the use of the `ContainerDefinition` interface. Basically, the
 `Attribute` DSL checks whether the including parent is an attribute itself, a media type or a
 generic/plugin Container definition.
 
@@ -440,12 +440,12 @@ lifecycle. The DSL must register its root objects in the DSL engine package
 execute the DSL.
 
 Now that we have a DSL and that it creates definitions the next step is to actually use them to
-produce outputs. Enters generators.
+produce outputs. Enter generators.
 
 ## Generators
 
 Generators consume the DSL output (the definitions) and produce artifacts from it. What a generator
-produce is entirely up to you. Generators can be written for new DSLs or existing DSLs.
+produces is entirely up to you. Generators can be written for new DSLs or existing DSLs.
 
 ### Implementing a Generator
 
@@ -501,7 +501,7 @@ needed).
 
 The [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package comes with a number
 of helper functions that help deal with generating Go code. For example it contains functions that
-can produce the code for definining a data structure given an instance of the
+can produce the code for defining a data structure given an instance of the
 [design](https://godoc.org/github.com/goadesign/goa/design) package
 [DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) interface.
 
@@ -574,5 +574,5 @@ func WriteNames(api *design.APIDefinition) ([]string, error) {
 
 Invoke the `genresnames` generator with:
 ```bash
-goagen gen -d /path/to/your/design --pkg-path=/go/path/to/genresnamnes
+goagen gen -d /path/to/your/design --pkg-path=/go/path/to/genresnames
 ```

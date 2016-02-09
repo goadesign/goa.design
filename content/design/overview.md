@@ -4,7 +4,7 @@ title = "The goa API design language"
 +++
 
 The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible
-to describe arbitrary microservice APIs. While the main focus is REST based HTTP APIas, the language
+to describe arbitrary microservice APIs. While the main focus is REST based HTTP APIs, the language
 is flexible enough to describe APIs that follow other methodologies as well.
 [Plugins](../extend/plugins.html) can extend the core DSL to allow describing other aspects of
 microservices such as database models, service discovery integrations, failure handlers etc.
@@ -51,7 +51,7 @@ resource exposing an `add` action (API endpoint):
 ```go
 var _ = Resource("Operands", func() {                            // Define the Operands resource
         Action("add", func() {                                   // Define the add action
-                Routing(GET("/add/:left/:right"))                 // The relative path to the add endpoint
+                Routing(GET("/add/:left/:right"))                // The relative path to the add endpoint
                 Description("add returns the sum of the left and right parameters in the response body")
                 Params(func() {                                  // Define the request parameters found in the URI (wildcards)
                         Param("left", Integer, "Left operand")   // Define left parameter as path segment captured by :left
@@ -159,7 +159,7 @@ var User = MediaType("vnd.application/goa.users+json", func() {
 ## Responses
 
 Defining API responses should also include specifying their status code and describing the valid
-values for other HTTP headers. The goa API design language allows definiting *response templates*
+values for other HTTP headers. The goa API design language allows defining *response templates*
 at the API level that any action may leverage to define its responses. Such templates may accept
 an arbitrary number of string arguments to define any of the response properties. goa provides
 response templates for all standard HTTP code that define the status so that it is not required to
@@ -212,5 +212,5 @@ sense for how it works. It doesn't take long for the language to feel natural wh
 possible to quickly iterate and refine the design. The [Swagger](swagger.html) specification generated
 from the design can be shared with stakeholders to gather feedback and iterate. Once finalized
 [goagen](../implement/goagen.html) generates the API scaffolding, request contexts and low level from
-the design thereby baking it in the implementation. The design becomes a living document always
+the design thereby baking it into the implementation. The design becomes a living document always
 up-to-date with the implementation.
