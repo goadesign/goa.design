@@ -9,7 +9,7 @@ can be found in the github repository. The code deals with wine bottles, more sp
 it possible to retrieve pre-existing wine bottle models through simple GET requests.
 
 The first thing to do when writing a goa service is to describe the API using the goa design
-language. Create a new directory under `$GOPATH/src` for the new goa service, say
+language. Create a new directory under `$GOPATH/src` for the new goa service, for example
 `$GOPATH/src/cellar`. In that directory create a design sub directory and the file design/design.go
 with the following content:  
 
@@ -59,17 +59,17 @@ var BottleMedia = MediaType("application/vnd.goa.example.bottle+json", func() {
 
 Let's break this down:
 
-* We define a design package and use an anonymous variable to declare the API, we could also have used a package init function. The actual name of the package could be anything, design is just a convention.
+* We define a design package and use an anonymous variable to declare the API, however we could also have used a package init function. The actual name of the package could be anything, design is just a convention.
 
-* The API function declares our API, it takes two arguments: the name of the API and an anonymous function that defines additional properties, here a title and a description.
+* The API function declares our API, which takes two arguments: the name of the API and an anonymous function that defines additional properties. In this cellar example, we use a title and a description.
 
 * The Resource function then declares a "bottle" resource. The function also takes a name and an anonymous function. Properties defined in the anonymous function includes all the actions supported by the resource as well as a default media type used to render the resource in responses.
 
-* Each resource action is declared using the Action function which follows the same pattern of name and anonymous function. Actions are defined in resources, they represent specific API endpoints complete with a HTTP method, a URL as well as parameter, payload and response definitions. The parameters may be defined using wildcards in the URL or may correspond to query strings appended to the URL. The payload describes the data structure of the request body if any. Here we define a single action (show) but resources may define an arbitrary number of them.
+* Each resource action is declared using the Action function which follows the same pattern of name and anonymous function. Actions are defined in resources, they represent specific API endpoints complete with an HTTP method, a URL as well as parameter, payload and response definitions. The parameters may be defined using wildcards in the URL or may correspond to query strings appended to the URL. The payload describes the data structure of the request body if any. Here we define a single action (show) but resources may define an arbitrary number of them.
 
-* The Action function defines the action endpoint, parameters, payload (not used here) and responses. goa defines default response templates for all standard HTTP status code. A response template defines the response HTTP status code, its media type if any (which describes the response body data structure) and headers it may define. The ResponseTemplate APIdesign language function (not used here) makes it possible to define additional response templates or override the existing ones.
+* The Action function defines the action endpoint, parameters, payload (not used here) and responses. goa defines default response templates for all standard HTTP status codes. A response template defines the response HTTP status code, its media type if any (which describes the response body data structure) and headers it may define. The ResponseTemplate APIdesign language function (not used here) makes it possible to define additional response templates or override the existing ones.
 
-* Finally we define the resource media type as a global variable so we can refer to it when declaring the OK response. A media type has an identifier as defined by RFC 6838 and describes the attributes of the response body (the JSON object fields in goa).
+* Finally, we define the resource media type as a global variable so we can refer to it when declaring the OK response. A media type has an identifier as defined by RFC 6838 and describes the attributes of the response body (the JSON object fields in goa).
 
 The media type data structure is described using the Attribute design language function. This
 function makes it possible to provide a recursive definition of the fields of the data structure. At
