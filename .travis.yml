@@ -22,12 +22,8 @@ install:
 - cd tools/mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ../..
 - sudo pip install Pygments
 script:
-- mdc github.com/goadesign/goa content/reference
-- mdc github.com/goadesign/middleware content/reference
-- mdc github.com/goadesign/encoding content/reference
-- mdc github.com/goadesign/gorma content/reference
-- hugo --theme=goa --uglyURLs=true
-- rm public/.DS_Store
+- make docs
+- hugo --theme=goa
 - grunt lunr-index
 deploy:
   provider: gcs
