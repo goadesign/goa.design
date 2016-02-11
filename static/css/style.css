@@ -168,15 +168,17 @@ pre {
 /*	TOC */
 /* --------------------------------------------------------	*/
 #toc {
-    /*top: 0px;
-    left: 0px;
-    height: 100%;*/
-    /*position: fixed;*/
-    background: #333;
-    box-shadow: inset -5px 0 5px 0px #000;
-    /*width: 150px;*/
-    padding-top: 20px;
-    color: #fff;
+    top: 230px;
+    bottom: 0;
+    position: fixed;
+    background: #eee;
+    /*box-shadow: inset -5px 0 5px 0px #eee;*/
+    padding-top: 0;
+    color: #333;
+    width: 220px;
+    font-size: 12px;
+    overflow-y:scroll;
+    overflow-x:hidden;
 }
 
 #toc ul {
@@ -186,11 +188,21 @@ pre {
 }
 
 #toc li {
-    padding: 5px 10px;
+    padding-left: 5px;
+    padding-bottom: 2px;
+    white-space: nowrap;
+}
+
+#toc li:first-child {
+        font-size: 16px;
+        border-bottom: solid 1px #333;
+        margin-bottom: 10px;
+        padding-top: 5px;
+        padding-bottom: 5px;
 }
 
 #toc a {
-    color: #fff;
+    color: #333;
     text-decoration: none;
     display: block;
 }
@@ -199,13 +211,15 @@ pre {
     padding-left: 10px;
 }
 
-#toc .toc-h3 {
+#toc .toc-h3 a {
     padding-left: 20px;
+    color: #666;
 }
 
 #toc .toc-active {
-    background: #336699;
-    box-shadow: inset -5px 0px 10px -5px #000;
+    background: #7ed090;/*#6699cc;*/
+    box-shadow: inset -5px 0px 10px -5px #fff;
+    font-weight: bold;
 }
 
 /* --------------------------------------------------------	*/
