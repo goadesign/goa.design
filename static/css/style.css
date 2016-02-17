@@ -23,9 +23,9 @@ body {
   padding: 0;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   /*font-size: 13px;*/
-  font-size: 15px;
+  font-size: 14px;
   /*line-height: 18px;*/
-  line-height: 22px;
+  line-height: 20px;
   color: #333333;
   -webkit-font-smoothing: subpixel-antialiased;
   -webkit-text-size-adjust: 100%;
@@ -57,6 +57,11 @@ h1 {
 }
 h2 {
   font-size: 24px;
+}
+#corpus h2 {
+  font-size: 20px;
+  border-top: solid 4px #ddd;
+  padding-top: 10px;
 }
 h3 {
   font-size: 18px;
@@ -100,7 +105,7 @@ ul li:hover i[class^="icon-"] {
 }
 pre {
         font-family: "Droid Sans Mono";
-        font-size: 13px;
+        font-size: 12px;
 }
 
 /* --------------------------------------------------------	*/
