@@ -25,6 +25,7 @@ docs:
 	@mdc github.com/goadesign/goa        content/reference --exclude public
 	@mdc github.com/goadesign/middleware content/reference --exclude public
 	@mdc github.com/goadesign/encoding   content/reference --exclude public
+	@mdc github.com/goadesign/logging    content/reference --exclude public
 	@mdc github.com/goadesign/gorma      content/reference --exclude public --exclude example
 
 serve:

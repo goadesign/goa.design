@@ -17,6 +17,7 @@ install:
 - go get github.com/goadesign/goa
 - go get github.com/goadesign/middleware
 - go get github.com/goadesign/encoding
+- go get github.com/goadesign/logging/...
 - go get github.com/goadesign/gorma
 - cd tools/godoc2md && go get -v ./... && go build -o $HOME/bin/godoc2md && cd ../..
 - cd tools/mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ../..
