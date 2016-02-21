@@ -704,7 +704,7 @@ input[type=button]:hover,
 /* --------------------------------------------------------	*/
 .navbar {
   background: white;
-  padding-bottom: 26px;
+  padding-bottom: 10px;
   margin-bottom: 32px;
   border-bottom: 1px solid #e6e6e6;
   -webkit-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
