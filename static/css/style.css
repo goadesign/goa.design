@@ -702,16 +702,29 @@ input[type=button]:hover,
 /* --------------------------------------------------------	*/
 /*	Navigation */
 /* --------------------------------------------------------	*/
+.logo {
+  width: 500px;
+  float: none;
+  margin: 0 auto;
+}
+
+.logo .fl {
+  float: left;
+  padding-right: 40px;
+  padding-top: 10px;
+  text-align: right;
+}
+
 .navbar {
   background: white;
   padding-bottom: 10px;
+  padding-top: 10px;
   margin-bottom: 32px;
   border-bottom: 1px solid #e6e6e6;
   -webkit-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -moz-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -o-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
-  padding-top: 0px;
 }
 .navbar li a {
   display: block!important;
@@ -721,11 +734,12 @@ input[type=button]:hover,
   padding-bottom: 0px;
   border-bottom: 0px solid #eee;
   margin-bottom: 0px;
+  position: relative;
 }
 .navbar .navbar-inner {
-  background: transparent!important;
+  background: transparent!importa20pxnt;
   background-image: none!important;
-  padding: 19px 0 0 0;
+  padding: 0;
   border: none;
   filter: none;
   -webkit-box-shadow: none;
@@ -1090,7 +1104,6 @@ input[type=button]:hover,
   line-height: 1.15em;
 }
 .hero-unit .main {
-        text-align: center;
         font-size: 2.2em;
         line-height: 2.4em;
         font-weight: 400;

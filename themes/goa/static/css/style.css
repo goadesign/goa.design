@@ -635,9 +635,15 @@ input[type=button]:hover,
 /* --------------------------------------------------------	*/
 /*	Navigation */
 /* --------------------------------------------------------	*/
+
+.logo {
+  float: left;
+  position: relative;
+}
+
 .navbar {
   background: white;
-  padding-bottom: 26px;
+  /*padding-bottom: 26px;*/
   margin-bottom: 32px;
   border-bottom: 1px solid #e6e6e6;
   -webkit-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
@@ -673,6 +679,8 @@ input[type=button]:hover,
   font-weight: bold;
   font-size: 36px;
   letter-spacing: -2px;
+  margin-left: 0;
+  padding: 0;
   line-height: 0.7em;
   color: #000;
   -webkit-transition: all 0.1s ease-out;
