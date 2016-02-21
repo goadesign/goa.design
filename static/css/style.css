@@ -106,6 +106,7 @@ ul li:hover i[class^="icon-"] {
 pre {
         font-family: "Droid Sans Mono";
         font-size: 12px;
+        background-color: #D6D6D6;
 }
 
 /* --------------------------------------------------------	*/
@@ -703,14 +704,13 @@ input[type=button]:hover,
 /*	Navigation */
 /* --------------------------------------------------------	*/
 .logo {
-  width: 500px;
   float: none;
   margin: 0 auto;
 }
 
 .logo .fl {
   float: left;
-  padding-right: 40px;
+  padding-right: 240px;
   padding-top: 10px;
   text-align: right;
 }
@@ -796,7 +796,7 @@ input[type=button]:hover,
 .navbar .nav > li > a {
   color: #444!important;
   padding: 14px 10px 11px;
-  font-size: 1.0em;
+  font-size: 1.4em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
 .navbar .nav > li > a:hover {
@@ -1094,6 +1094,7 @@ input[type=button]:hover,
   margin-bottom: 0;
   font-size: 13px;
   line-height: 1.3em;
+  text-align: center;
 }
 .hero-unit h1 {
   font-size: 2em;
