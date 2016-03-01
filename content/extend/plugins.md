@@ -356,19 +356,6 @@ function is useful to run DSL that don't depend on anything else and can be run 
 runtime does the initial evaluation of the global variables rather than when the goa DSL engine
 runs the source definitions.
 
-#### Versioned DSL Definitions
-
-Some definitions may represent versioned concepts like an API. For these cases the DSL engine
-defines the [Versioned](https://godoc.org/github.com/goadesign/goa/dslengine#Versioned) interface
-which such definitions should implement. The DSL engine also provides a
-[CanUse](https://godoc.org/github.com/goadesign/goa/dslengine#CanUse) function that given two
-versioned definitions checks whether the second definition can be used to define the first. The
-rules it uses to check for compatibility are:
-
-* Versioned definitions may use other versioned definitions that support the exact same set of versions.
-* Versioned definitions may use unversioned definitions.
-* Unversioned definitions may only use other unversioned definitions.
-
 #### Integrating DSLs
 
 DSL implementations make take advantage of definitions defined by other DSLs by simply importing the

@@ -189,22 +189,6 @@ Action("sum", func() {                         // Define the sum action
 })
 ```
 
-## Versioning
-
-The goa API design languages allows describing different versions of the same API. Each version is
-defined using the *Version* function. This function accepts the same DSL as the API function. The
-only difference is that instead of taking the API name as first argument it takes the version name.
-For example:
-
-```go
-var _ = Version("2.0", func() {
-        Description("The next big thing v2")
-})
-```
-
-The version definition inherits all its properties from the API definition so that only fields with
-different values need to be specified.
-
 ## Conclusion
 
 There is [a lot more](../reference) to the design language but this overview should have given you a
