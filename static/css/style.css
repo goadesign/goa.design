@@ -796,7 +796,7 @@ input[type=button]:hover,
 .navbar .nav > li > a {
   color: #444!important;
   padding: 14px 10px 11px;
-  font-size: 1.4em;
+  font-size: 1.2em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
 .navbar .nav > li > a:hover {
