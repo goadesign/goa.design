@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Extending goa with Plugins"
+title = "Extending goa with Plugin DSLs"
 +++
 
 goa plugins make it possible to create new DSL and accompanying generators. Since DSLs are nothing
@@ -20,8 +20,10 @@ implementation can create new artifacts or change how existing artifacts are cre
 
 goa DSLs consist of Go package functions that construct recursive data structures called
 *definitions*. The roots of these definitions must be recorded in the goa *dslengine* package
-*Roots* variable. The actual content of the definitions is completely up to you. The generators use
-them to create the artifacts so they should contain all the required information.
+[Register](http://goa.design/reference/goa/dslengine.html#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133)
+function. The actual content of the definitions is completely up to you. The generators use
+them to create the artifacts so they should contain all the required information to do the
+generation.
 
 ### First Exposure
 
@@ -237,10 +239,11 @@ order and also of reporting errors in a consistent way to the user.
 #### The DSL Roots
 
 The last piece of the puzzle when creating a new DSL is to define the DSL *roots* that the DSL
-engine executes. The roots must be stored in the `dslengine` package `Roots` variable. DSL roots
-implement the [Root](https://godoc.org/github.com/goadesign/goa/dslengine#Root) interface which
-exposes the `IterateSets` method that the engine uses to iterate through the definitions for
-execution. `IterateSets` returns a slice of definitions allowing you to control the order in
+engine executes. The roots must be registerd with the `dslengine` package using the
+[Register](http://goa.design/reference/goa/dslengine.html#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133)
+function. DSL roots implement the [Root](http://goa.design/reference/goa/dslengine.html#type-root-a-name-dslengine-root-a:1e0eb94feca2c8be53d3bd77a1934133)
+interface which exposes the `IterateSets` method that the engine uses to iterate through the
+definitions for execution. `IterateSets` returns a slice of definitions allowing you to control the order in
 which different types of definitions should be executed.
 
 Imagine that the DSL in the example above was extended to make it possible to define the model
@@ -428,138 +431,3 @@ execute the DSL.
 
 Now that we have a DSL and that it creates definitions the next step is to actually use them to
 produce outputs. Enter generators.
-
-## Generators
-
-Generators consume the DSL output (the definitions) and produce artifacts from it. What a generator
-produces is entirely up to you. Generators can be written for new DSLs or existing DSLs.
-
-### Implementing a Generator
-
-A generator is simply a package that implements the `Generate` function:
-```go
-func Generate(definitions []interface{}) ([]string, error)
-```
-Where `definitions` is the list of root definitions created by the DSL and stored in the DSL
-engine [Roots](https://godoc.org/github.com/goadesign/goa/dslengine#Roots) variable.
-This function should return the list of generated filenames in case of success and a descriptive
-error otherwise.
-
-#### Writing Generators for the goa API DSL
-
-The goa API DSL stores an instance of
-[APIDefinition](https://godoc.org/github.com/goadesign/goa/design#APIDefinition) in the first
-element of the DSL engine Roots slice so that generators that work off of that DSL output can safely
-do:
-
-```go
-import "github.com/goadesign/goa/design"
-
-// Generate generates artifacts from goa API DSL definitions.
-func Generate(definitions []interface{}) ([]string, error) {
-	api := definitions[0].(*design.APIDefinition)
-	// ... use api to generate stuff
-}
-```
-
-The `Generate` method can take advantage of the `APIDefinition` `IterateXXX` methods to iterate
-through the API resources, media types and types to guarantee that the order doesn't change between
-two invocations of the function (thereby generating different outputs even if the design hasn't
-changed).
-
-Writing generators for the goa API DSL requires handling the corresponding definitions. These are
-all defined in the goa [design](https://godoc.org/github.com/goadesign/goa/design) package.
-
-#### Metadata
-
-A simple way to tack on information to existing definitions for the benefit of generators is to use
-metadata. The goa design language allows defining metadata on a number of definitions: API,
-Resource, Action, Response and Attribute (which means Type and MediaType as well since these
-definitions are attributes). The DSL engine package defines the metadata definition data structure -
-[MetadataDefinition](https://godoc.org/github.com/goadesign/goa/dslengine#MetadataDefinition).
-
-#### Writing the Artifacts
-
-The output directory is available through the
-[codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package
-[OutputDir](https://godoc.org/github.com/goadesign/goa/goagen/codegen#OutputDir) global variable.
-Generators should write all the artifacts in that directory (they may create sub-directories as
-needed).
-
-The [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package comes with a number
-of helper functions that help deal with generating Go code. For example it contains functions that
-can produce the code for defining a data structure given an instance of the
-[design](https://godoc.org/github.com/goadesign/goa/design) package
-[DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) interface.
-
-### Integrating With `goagen`
-
-`goagen` is the tool used to generate the artifacts from DSLs in goa. The `gen` subcommand allows
-specifying a Go package path to a generator package - that is a package that implements the
-`Generate` function. This command accepts two flags:
-
-```bash
---pkg-path=PKG-PATH specifies the Go package path to the plugin package.
---pkg-name=PKG-NAME specifies the Go package name of the plugin package. It defaults to the name of the inner most directory in the Go package path.
-```
-
-### Example
-
-Let's implement a generator that traverses the definitions created by the goa API DSL and creates
-a single file `names.txt` containing the names of the API resources sorted in alphabetical order.
-If a resource has a metadata pair with the key "genresnames/name" then the plugin uses the metadata
-value instead.
-
-```go
-package genresnames
-
-import (
-		"io/ioutil"
-		"os"
-		"path/filepath"
-		"strings"
-
-		"github.com/goadesign/goa/design"
-		"github.com/goadesign/goa/goagen/codegen"
-		"github.com/spf13/cobra"
-		)
-
-// Generate is the function called by goagen to generate the names file.
-func Generate(definitions []interface{}) ([]string, error) {
-	api := definitions[0].(*design.APIDefinition)
-	// Make sure to parse the common flags so that codegen.OutputDir gets properly
-	// initialized.
-	root := cobra.Command{Use: "goagen", Run: func(*cobra.Command, []string) { files, err = WriteNames(api) }
-	codegen.RegisterFlags(root)
-	// This is where you'd register specific flags for this generator
-	root.Execute()
-	return
-}
-
-// WriteNames creates the names.txt file.
-func WriteNames(api *design.APIDefinition) ([]string, error) {
-	 // Now iterate through the resources to gather their names
-	names := make([]string, len(api.Resources))
-	i := 0
-	api.IterateResources(func(res *design.ResourceDefinition) error {
-		if n, ok := res.Metadata["genresnames/name"]; ok {
-			names[i] = n[0]
-		} else {
-			names[i] = res.Name
-		}
-		i++
-		return nil
-	})
-	content := strings.Join(names, "\n")
-
-	// Write the output file and return its name
-	outputFile := filepath.Join(codegen.OutputDir, "names.txt")
-	ioutil.WriteFile(outputFile, []byte(content), 0755)
-	return []string{outputFile}, nil
-}
-```
-
-Invoke the `genresnames` generator with:
-```bash
-goagen gen -d /path/to/your/design --pkg-path=/go/path/to/genresnames
-```
