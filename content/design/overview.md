@@ -62,7 +62,7 @@ var _ = Resource("Operands", func() {                            // Define the O
 })
 ```
 
-The `Resource` and `Action` DSLs support many more keywords described in the [reference](../reference/goa/design).
+The `Resource` and `Action` DSLs support many more keywords described in the [reference](../reference/goa/design.html).
 
 ## Data Types
 
