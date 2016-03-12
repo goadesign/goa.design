@@ -26,17 +26,10 @@ Values that contain all the path and querystring parameters.
 #### Logging
 
 goa uses structured logging so that logs created at each level contain all the contextual
-information. The root logger is the service-level `Logger` field. Loggers are derived from it for
-each controller and for each action. Finally a logger is also created for each request so that log
-entries created inside a request contain the full context: service name, controller name, action
-name and unique request ID.
-
-#### Error Handling
-
-All goa actions return an error. Error handlers can be defined at the controller or service level.
-If an action returns a non-nil error then the controller error handler is invoked. If the controller
-does not define an error handler then the service-wide error handler is invoked instead. The default
-goa error handler simply returns a 500 response containing the error details in the body.
+information. The root logger is the service-level `Logger` field. Logger contexts are
+created for each controller and for each action. Finally a logger context is also created for each
+request so that log entries created inside a request contain the full context: service name,
+controller name, action name and unique request ID.
 
 #### Graceful Shutdown
 
@@ -44,21 +37,3 @@ A goa service can be instantiated via `NewGraceful` in which case the http serve
 the <a href="https://godoc.org/github.com/tylerb/graceful">graceful package</a> which provides
 graceful shutdown behavior where upon receiving a shutdown signal the service waits until all pending
 requests are completed before terminating.
-
-### Swapping the Batteries
-
-#### Error Handling
-
-The service interface exposes a `SetHandler` method which allows overriding the default service
-error handler. goa comes with two built-in error handlers:
-
-* The `DefaultErrorHandler` returns a 400 if the error is an instance of `BadRequestError`, 500
-otherwise. It also always writes the error message to the response body.
-
-* The `TerseErrorHandler` behaves identically to the default error handler with the exception that
-it does not write the error message to the response body for internal errors (i.e. errors that are
-not instances of `BadRequestError`).
-
-Custom error handlers can be easily swapped in, they consist of a function that accepts an instance
-of an action context and of an error.
-
