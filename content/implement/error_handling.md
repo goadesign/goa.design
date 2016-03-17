@@ -59,16 +59,16 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
     endpoint := ctx.SomeServiceEndpoint
     // The convention for naming error class ids is <namespace.acronym> where the goa namespace
     // is reserved for goa.
-    invalidEndpointErr := goa.NewErrorClass("app.ien", "invalid endpoint", 400)
+    invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 400)
     // Assume endpoint must contain .mycompany.com
     if !strings.Contains(endpoint, ".mycompany.com") {
         // Create new goa.HTTPError
-        return invalidEndpointErr.Errorf("%s should contain mycompany.com", endpoint)
+        return invalidEndpointErr("%s should contain mycompany.com", endpoint)
     }
     err := useEndpoint(endpoint)
     if err != nil {
-        // Wrap err into an HTTPError
-        return invalidEndpointErr.Error(err)
+        // Wrap err into an HTTPError and add metadata
+        return invalidEndpointErr(err).Meta("endpoint", endpoint)
     }
     // ...
 }
