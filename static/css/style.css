@@ -3,13 +3,13 @@
 @import url("bootstrap/bootstrap-responsive.min.css");
 
 @import url("bootstrap-override.css");
-/* --------------------------------------------------------	*/
-/*	Twitter Bootstrap with Responsive media queries */
-/*	Custom override - max width of 1024px */
-/* --------------------------------------------------------	*/
-/* --------------------------------------------------------	*/
-/*	Base */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Twitter Bootstrap with Responsive media queries */
+/*  Custom override - max width of 1024px */
+/* -------------------------------------------------------- */
+/* -------------------------------------------------------- */
+/*  Base */
+/* -------------------------------------------------------- */
 :focus {
   outline-color: transparent!important;
   outline-style: none!important;
@@ -22,8 +22,10 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
+  /*font-size: 13px;*/
+  font-size: 14px;
+  /*line-height: 18px;*/
+  line-height: 20px;
   color: #333333;
   -webkit-font-smoothing: subpixel-antialiased;
   -webkit-text-size-adjust: 100%;
@@ -55,6 +57,11 @@ h1 {
 }
 h2 {
   font-size: 24px;
+}
+#corpus h2 {
+  font-size: 20px;
+  border-top: solid 4px #ddd;
+  padding-top: 10px;
 }
 h3 {
   font-size: 18px;
@@ -96,12 +103,15 @@ ul li i[class^="icon-"] {
 ul li:hover i[class^="icon-"] {
   color: #222;
 }
-code {
+pre {
         font-family: "Droid Sans Mono";
+        font-size: 12px;
+        background-color: #D6D6D6;
 }
-/* --------------------------------------------------------	*/
-/*	Classes	*/
-/* --------------------------------------------------------	*/
+
+/* -------------------------------------------------------- */
+/*  Classes */
+/* -------------------------------------------------------- */
 .fr {
   float: right;
 }
@@ -160,21 +170,79 @@ code {
   background-image: -ms-linear-gradient(100 100, #a0dbe8 10%, #83b7e0 55%);
   background-image: -webkit-gradient(linear, 100 100, 200 200, color-stop(0.1, #a0dbe8), color-stop(0.55, #83b7e0));
 }
-/* --------------------------------------------------------	*/
-/*	Footer */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  TOC */
+/* -------------------------------------------------------- */
+#toc {
+    top: 230px;
+    bottom: 0;
+    position: fixed;
+    background: #eee;
+    /*box-shadow: inset -5px 0 5px 0px #eee;*/
+    padding-top: 0;
+    color: #333;
+    width: 220px;
+    font-size: 12px;
+    overflow-y:scroll;
+    overflow-x:hidden;
+}
+
+#toc ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#toc li {
+    padding-left: 5px;
+    padding-bottom: 2px;
+    white-space: nowrap;
+}
+
+#toc li:first-child {
+        font-size: 16px;
+        border-bottom: solid 1px #333;
+        margin-bottom: 10px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+}
+
+#toc a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+}
+
+#toc .toc-h2 {
+    padding-left: 10px;
+}
+
+#toc .toc-h3 a {
+    padding-left: 20px;
+    color: #666;
+}
+
+#toc .toc-active {
+    background: #7ed090;/*#6699cc;*/
+    box-shadow: inset -5px 0px 10px -5px #fff;
+    font-weight: bold;
+}
+
+/* -------------------------------------------------------- */
+/*  Footer */
+/* -------------------------------------------------------- */
 footer {
   background: url(../img/footer.png);
   margin: 30px 0 0 0;
   padding: 36px 0 10px 0;
   color: #ccc;
-  /*	Footer - Social networks */
+  /*  Footer - Social networks */
 
-  /*	Footer - Newsletter signup */
+  /*  Footer - Newsletter signup */
 
-  /*	Copyright - bottom of each page */
+  /*  Copyright - bottom of each page */
 
-  /* --------------------------------------------------------	*/
+  /* -------------------------------------------------------- */
 
 }
 footer h3 {
@@ -248,7 +316,7 @@ footer#copyright a {
   color: #fff;
 }
 /* ---------------------------------------------------------------------- */
-/*	Tables
+/*  Tables
 /* ---------------------------------------------------------------------- */
 table {
   color: #444;
@@ -291,7 +359,7 @@ table tr:hover td {
   background: #EAF5FA;
 }
 /* ---------------------------------------------------------------------- */
-/*	Forms and input elements
+/*  Forms and input elements
 /* ---------------------------------------------------------------------- */
 label {
   cursor: pointer;
@@ -415,9 +483,9 @@ textarea:focus {
   -o-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) inset !important;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) inset !important;
 }
-/* --------------------------------------------------------	*/
-/*	Buttons */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Buttons */
+/* -------------------------------------------------------- */
 button,
 input[type=submit],
 input[type=button],
@@ -476,9 +544,9 @@ button i,
   color: #222!important;
   background-image: none!important;
 }
-/* --------------------------------------------------------	*/
-/*	Sizes */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Sizes */
+/* -------------------------------------------------------- */
 .button.block {
   display: block;
   padding: 12px 20px;
@@ -507,9 +575,9 @@ button i,
 .button.large i {
   font-size: 18px;
 }
-/* --------------------------------------------------------	*/
-/*	Colors */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Colors */
+/* -------------------------------------------------------- */
 button,
 input[type=submit],
 input[type=button],
@@ -585,9 +653,9 @@ input[type=button]:hover,
 .button.red:active {
   background: #de493a;
 }
-/* --------------------------------------------------------	*/
-/*	Tabs */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Tabs */
+/* -------------------------------------------------------- */
 .nav-tabs {
   padding-left: 0px;
 }
@@ -610,7 +678,7 @@ input[type=button]:hover,
 }
 .nav-tabs > li.active > a {
   border: 1px solid #ccc;
-  border-bottom: 1px solid #fff;
+  /*border-bottom: 1px solid #fff;*/
   background: #fff;
   color: #000000;
 }
@@ -632,25 +700,31 @@ input[type=button]:hover,
   -moz-background-clip: padding;
   background-clip: padding-box;
 }
-/* --------------------------------------------------------	*/
-/*	Navigation */
-/* --------------------------------------------------------	*/
-
+/* -------------------------------------------------------- */
+/*  Navigation */
+/* -------------------------------------------------------- */
 .logo {
+  float: none;
+  margin: 0 auto;
+}
+
+.logo .fl {
   float: left;
-  position: relative;
+  padding-right: 240px;
+  padding-top: 10px;
+  text-align: right;
 }
 
 .navbar {
   background: white;
-  /*padding-bottom: 26px;*/
+  padding-bottom: 10px;
+  padding-top: 10px;
   margin-bottom: 32px;
   border-bottom: 1px solid #e6e6e6;
   -webkit-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -moz-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -o-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
-  padding-top: 0px;
 }
 .navbar li a {
   display: block!important;
@@ -660,11 +734,12 @@ input[type=button]:hover,
   padding-bottom: 0px;
   border-bottom: 0px solid #eee;
   margin-bottom: 0px;
+  position: relative;
 }
 .navbar .navbar-inner {
-  background: transparent!important;
+  background: transparent!importa20pxnt;
   background-image: none!important;
-  padding: 19px 0 0 0;
+  padding: 0;
   border: none;
   filter: none;
   -webkit-box-shadow: none;
@@ -679,8 +754,6 @@ input[type=button]:hover,
   font-weight: bold;
   font-size: 36px;
   letter-spacing: -2px;
-  margin-left: 0;
-  padding: 0;
   line-height: 0.7em;
   color: #000;
   -webkit-transition: all 0.1s ease-out;
@@ -696,10 +769,10 @@ input[type=button]:hover,
   float: right;
 }
 .navbar .nav > li:hover {
-  border-bottom: 1px solid #ccc;
+  /*border-bottom: 1px solid #ccc;*/
 }
 .navbar .nav > li.active {
-  border-bottom: 1px solid #aaa;
+  /*border-bottom: 1px solid #aaa;*/
 }
 .navbar .nav > li.active > a,
 .navbar .nav > li.active:hover > a {
@@ -722,16 +795,21 @@ input[type=button]:hover,
 }
 .navbar .nav > li > a {
   color: #444!important;
-  padding: 9px 10px 11px;
-  font-size: 1.1em;
+  padding: 14px 10px 11px;
+  font-size: 1.2em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
 .navbar .nav > li > a:hover {
   color: #222;
+ }
+
+.navbar .nav > li > input {
+        margin-top:8px;
 }
-/* --------------------------------------------------------	*/
-/*	Navigation - dropdown */
-/* --------------------------------------------------------	*/
+
+/* -------------------------------------------------------- */
+/*  Navigation - dropdown */
+/* -------------------------------------------------------- */
 .navbar .nav li.dropdown:hover {
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
@@ -766,7 +844,6 @@ input[type=button]:hover,
   background-clip: padding-box;
 }
 .navbar .nav li ul {
-  margin: 0;
   display: none;
   z-index: 99;
 }
@@ -774,13 +851,14 @@ input[type=button]:hover,
   margin: 0;
   padding: 0;
   background: #444;
-  width: 160px;
-  border-bottom: 1px solid #555;
+  width: 300px;
+  /*border-bottom: 1px solid #555;*/
   -webkit-transition: all 0.3s ease-out;
   -moz-transition: all 0.3s ease-out;
   -ms-transition: all 0.3s ease-out;
   -o-transition: all 0.3s ease-out;
   transition: all 0.3s ease-out;
+  font-size: 105%;
 }
 .navbar .nav li ul li:hover {
   background: #f26a46;
@@ -800,9 +878,9 @@ input[type=button]:hover,
   position: absolute;
   top: 2.9em;
 }
-/* --------------------------------------------------------	*/
-/*	Carousel */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Carousel */
+/* -------------------------------------------------------- */
 .carousel {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
@@ -879,9 +957,9 @@ input[type=button]:hover,
 .lead-container .container {
   padding: 20px 0 20px 0;
 }
-/* --------------------------------------------------------	*/
-/*	Macbook carousel */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Macbook carousel */
+/* -------------------------------------------------------- */
 .lead-container {
   overflow: hidden;
   background: url(../img/carousel-macbook-background.png) 0 410px repeat-x;
@@ -940,9 +1018,9 @@ input[type=button]:hover,
   background-position: top center;
   background-size: contain;
 }
-/* --------------------------------------------------------	*/
-/*	Macbook carousel media queries*/
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Macbook carousel media queries*/
+/* -------------------------------------------------------- */
 @media (max-width: 979px) and (min-width: 768px) {
   .lead-container {
     background: url(../img/carousel-macbook-background.png) 0 360px repeat-x;
@@ -1006,9 +1084,9 @@ input[type=button]:hover,
     margin-top: -12px;
   }
 }
-/* --------------------------------------------------------	*/
-/*	Hero unit (page headings) */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Hero unit (page headings) */
+/* -------------------------------------------------------- */
 .hero-unit {
   position: relative;
   padding: 0 0 0 0;
@@ -1016,6 +1094,7 @@ input[type=button]:hover,
   margin-bottom: 0;
   font-size: 13px;
   line-height: 1.3em;
+  text-align: center;
 }
 .hero-unit h1 {
   font-size: 2em;
@@ -1025,23 +1104,29 @@ input[type=button]:hover,
   font-size: 1.8em;
   line-height: 1.15em;
 }
-/* --------------------------------------------------------	*/
-/*	Custom styled scrollbar */
-/* --------------------------------------------------------	*/
+.hero-unit .main {
+        font-size: 2.2em;
+        line-height: 2.4em;
+        font-weight: 400;
+}
+
+/* -------------------------------------------------------- */
+/*  Custom styled scrollbar */
+/* -------------------------------------------------------- */
 /*
 html:not(.osx) ::-webkit-scrollbar {
-	width: 6px;
+  width: 6px;
 }
 html:not(.osx) ::-webkit-scrollbar-track-piece {
-	background-color: white;
+  background-color: white;
 }
 html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
-	background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0,0,0,0.5);
 }
 */
-/* --------------------------------------------------------	*/
-/*	Thumbnails */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Thumbnails */
+/* -------------------------------------------------------- */
 .thumbnail {
   position: relative;
   overflow: hidden;
@@ -1070,9 +1155,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   -moz-opacity: 0.8;
   opacity: 0.8;
 }
-/* --------------------------------------------------------	*/
-/*	Section CTA Call to action */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Section CTA Call to action */
+/* -------------------------------------------------------- */
 .section-call-to-action {
   position: relative;
   background: #f4f3f2;
@@ -1093,9 +1178,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
 .section-call-to-action + footer {
   margin-top: 0;
 }
-/* --------------------------------------------------------	*/
-/*	Zoom and link overlays */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Zoom and link overlays */
+/* -------------------------------------------------------- */
 .zoom,
 .link {
   position: relative;
@@ -1143,9 +1228,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
 .link:hover .link-overlay {
   display: block;
 }
-/* --------------------------------------------------------	*/
-/*	Pricing */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Pricing */
+/* -------------------------------------------------------- */
 .pricing p {
   margin: 0;
 }
@@ -1229,9 +1314,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
   font-size: 20px;
 }
-/* --------------------------------------------------------	*/
-/*	Portfolio */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Portfolio */
+/* -------------------------------------------------------- */
 #portfolio-items .thumbnail {
   margin: 0 0 20px 0;
 }
@@ -1256,9 +1341,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   background: #74C676;
   color: #fff;
 }
-/* --------------------------------------------------------	*/
-/*	Portfolio - project */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Portfolio - project */
+/* -------------------------------------------------------- */
 .project {
   position: relative;
 }
@@ -1314,9 +1399,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   margin-top: -24px;
   left: 20px;
 }
-/* --------------------------------------------------------	*/
-/*	Portfolio - isotype (filtering tags) */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Portfolio - isotype (filtering tags) */
+/* -------------------------------------------------------- */
 .isotope-item {
   z-index: 2;
 }
@@ -1357,9 +1442,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   -o-transition-duration: 0s;
   transition-duration: 0s;
 }
-/* --------------------------------------------------------	*/
-/*	Portfolio - Single Project Page*/
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Portfolio - Single Project Page*/
+/* -------------------------------------------------------- */
 #project {
   font-size: 0.9em;
   color: #666;
@@ -1393,12 +1478,12 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
 #related-projects .project {
   margin-bottom: 20px;
 }
-/* --------------------------------------------------------	*/
-/*	Special elements */
-/* --------------------------------------------------------	*/
-/* --------------------------------------------------------	*/
-/*	Back-to-top */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Special elements */
+/* -------------------------------------------------------- */
+/* -------------------------------------------------------- */
+/*  Back-to-top */
+/* -------------------------------------------------------- */
 #back-to-top {
   position: fixed;
   bottom: -30px;
@@ -1447,9 +1532,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   -moz-opacity: 0.8;
   opacity: 0.8;
 }
-/* --------------------------------------------------------	*/
-/*	Ribbon */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Ribbon */
+/* -------------------------------------------------------- */
 .ribbon {
   margin: 0;
   line-height: 1;
@@ -1479,9 +1564,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   top: 0;
   padding: 3px;
 }
-/* --------------------------------------------------------	*/
-/*	Tags */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Tags */
+/* -------------------------------------------------------- */
 .tags {
   margin: 0;
   padding: 0;
@@ -1587,9 +1672,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   padding: 1px 8px;
   margin: 0;
 }
-/* --------------------------------------------------------	*/
-/*	Flickr feed */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Flickr feed */
+/* -------------------------------------------------------- */
 .flickr-feed img {
   margin: 0 2px 2px 0;
   padding: 2px;
@@ -1597,9 +1682,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   width: 25%;
   max-width: 64px;
 }
-/* --------------------------------------------------------	*/
-/*	Circle */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Circle */
+/* -------------------------------------------------------- */
 .circle {
   font-weight: bold;
   display: inline-block;
@@ -1619,9 +1704,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   -moz-background-clip: padding;
   background-clip: padding-box;
 }
-/* --------------------------------------------------------	*/
-/*	Our team */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Our team */
+/* -------------------------------------------------------- */
 .member {
   background: url(../img/member-separator.png) 180px center no-repeat;
   padding: 0px 40px 26px 242px;
@@ -1732,9 +1817,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
     padding-left: 112px;
   }
 }
-/* --------------------------------------------------------	*/
-/*	Accordion */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Accordion */
+/* -------------------------------------------------------- */
 .accordion {
   border: 1px solid #ccc;
 }
@@ -1842,12 +1927,12 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   font-size: 11px;
   background: transparent;
 }
-/* --------------------------------------------------------	*/
-/*	Blog */
-/* --------------------------------------------------------	*/
-/* --------------------------------------------------------	*/
-/*	Post */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Blog */
+/* -------------------------------------------------------- */
+/* -------------------------------------------------------- */
+/*  Post */
+/* -------------------------------------------------------- */
 .post {
   padding: 0 20px 0 0px;
   margin: 0px 0 30px 0;
@@ -1875,7 +1960,7 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   width: 70%;
   float: left;
   color: #888;
-  font-size: 16px;
+  font-size: 11px;
 }
 .post .entry-body h2 {
   font-size: 16px;
@@ -1956,16 +2041,16 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   width: 100%;
   height: 100%;
 }
-/* --------------------------------------------------------	*/
-/*	Single post */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Single post */
+/* -------------------------------------------------------- */
 .post .entry-content {
   font-size: 13px;
   line-height: 1.6em;
 }
-/* --------------------------------------------------------	*/
-/*	Comments */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Comments */
+/* -------------------------------------------------------- */
 #comments h4 {
   margin: 30px 0 0 0;
   padding: 16px 0 0 0;
@@ -2019,16 +2104,16 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   list-style-type: none;
   margin: 0 0 0 64px;
 }
-/* --------------------------------------------------------	*/
-/*	Sidebar */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Sidebar */
+/* -------------------------------------------------------- */
 .sidebar {
   color: #666;
   font-size: 0.9em;
 }
-/* --------------------------------------------------------	*/
-/*	Widget */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Widget */
+/* -------------------------------------------------------- */
 .widget {
   margin: 0 0 30px 0;
   position: relative;
@@ -2057,9 +2142,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
 .widget .widget .related-articles .thumbnail {
   width: 58px;
 }
-/* --------------------------------------------------------	*/
-/*	Pagination */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Pagination */
+/* -------------------------------------------------------- */
 .pagination ul {
   -webkit-box-shadow: none;
   -moz-box-shadow: none;
@@ -2082,9 +2167,9 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   background: #eee;
   color: #000;
 }
-/* --------------------------------------------------------	*/
-/*	Search - animated */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Search - animated */
+/* -------------------------------------------------------- */
 input[type=search],
 input.search {
   padding-left: 26px;
@@ -2102,9 +2187,9 @@ input.animated {
 input.animated:focus {
   width: 84%;
 }
-/* --------------------------------------------------------	*/
-/*	Services */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Services */
+/* -------------------------------------------------------- */
 .services h3 {
   color: #222;
 }
@@ -2209,9 +2294,9 @@ input.animated:focus {
   font-size: 60px;
   display: block;
 }
-/* --------------------------------------------------------	*/
-/*	Contact */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Contact */
+/* -------------------------------------------------------- */
 #map {
   padding: 6px;
   background: #fff;
@@ -2223,9 +2308,9 @@ input.animated:focus {
   width: 100%;
   margin-bottom: 20px;
 }
-/* --------------------------------------------------------	*/
-/*	Social networks icons - sprite */
-/* --------------------------------------------------------	*/
+/* -------------------------------------------------------- */
+/*  Social networks icons - sprite */
+/* -------------------------------------------------------- */
 .social-network {
   display: inline-block;
   background: url(../img/social-networks.png) no-repeat top left;
