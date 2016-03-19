@@ -22,10 +22,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  /*font-size: 13px;*/
-  font-size: 14px;
-  /*line-height: 18px;*/
-  line-height: 20px;
+  font-size: 13px;
+  line-height: 18px;
   color: #333333;
   -webkit-font-smoothing: subpixel-antialiased;
   -webkit-text-size-adjust: 100%;
@@ -57,11 +55,6 @@ h1 {
 }
 h2 {
   font-size: 24px;
-}
-#corpus h2 {
-  font-size: 20px;
-  border-top: solid 4px #ddd;
-  padding-top: 10px;
 }
 h3 {
   font-size: 18px;
@@ -103,12 +96,9 @@ ul li i[class^="icon-"] {
 ul li:hover i[class^="icon-"] {
   color: #222;
 }
-pre {
+code {
         font-family: "Droid Sans Mono";
-        font-size: 12px;
-        background-color: #D6D6D6;
 }
-
 /* --------------------------------------------------------	*/
 /*	Classes	*/
 /* --------------------------------------------------------	*/
@@ -170,64 +160,6 @@ pre {
   background-image: -ms-linear-gradient(100 100, #a0dbe8 10%, #83b7e0 55%);
   background-image: -webkit-gradient(linear, 100 100, 200 200, color-stop(0.1, #a0dbe8), color-stop(0.55, #83b7e0));
 }
-/* --------------------------------------------------------	*/
-/*	TOC */
-/* --------------------------------------------------------	*/
-#toc {
-    top: 230px;
-    bottom: 0;
-    position: fixed;
-    background: #eee;
-    /*box-shadow: inset -5px 0 5px 0px #eee;*/
-    padding-top: 0;
-    color: #333;
-    width: 220px;
-    font-size: 12px;
-    overflow-y:scroll;
-    overflow-x:hidden;
-}
-
-#toc ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-#toc li {
-    padding-left: 5px;
-    padding-bottom: 2px;
-    white-space: nowrap;
-}
-
-#toc li:first-child {
-        font-size: 16px;
-        border-bottom: solid 1px #333;
-        margin-bottom: 10px;
-        padding-top: 5px;
-        padding-bottom: 5px;
-}
-
-#toc a {
-    color: #333;
-    text-decoration: none;
-    display: block;
-}
-
-#toc .toc-h2 {
-    padding-left: 10px;
-}
-
-#toc .toc-h3 a {
-    padding-left: 20px;
-    color: #666;
-}
-
-#toc .toc-active {
-    background: #7ed090;/*#6699cc;*/
-    box-shadow: inset -5px 0px 10px -5px #fff;
-    font-weight: bold;
-}
-
 /* --------------------------------------------------------	*/
 /*	Footer */
 /* --------------------------------------------------------	*/
@@ -678,7 +610,7 @@ input[type=button]:hover,
 }
 .nav-tabs > li.active > a {
   border: 1px solid #ccc;
-  /*border-bottom: 1px solid #fff;*/
+  border-bottom: 1px solid #fff;
   background: #fff;
   color: #000000;
 }
@@ -703,28 +635,22 @@ input[type=button]:hover,
 /* --------------------------------------------------------	*/
 /*	Navigation */
 /* --------------------------------------------------------	*/
-.logo {
-  float: none;
-  margin: 0 auto;
-}
 
-.logo .fl {
+.logo {
   float: left;
-  padding-right: 240px;
-  padding-top: 10px;
-  text-align: right;
+  position: relative;
 }
 
 .navbar {
   background: white;
-  padding-bottom: 10px;
-  padding-top: 10px;
+  /*padding-bottom: 26px;*/
   margin-bottom: 32px;
   border-bottom: 1px solid #e6e6e6;
   -webkit-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -moz-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   -o-box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
   box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
+  padding-top: 0px;
 }
 .navbar li a {
   display: block!important;
@@ -734,12 +660,11 @@ input[type=button]:hover,
   padding-bottom: 0px;
   border-bottom: 0px solid #eee;
   margin-bottom: 0px;
-  position: relative;
 }
 .navbar .navbar-inner {
-  background: transparent!importa20pxnt;
+  background: transparent!important;
   background-image: none!important;
-  padding: 0;
+  padding: 19px 0 0 0;
   border: none;
   filter: none;
   -webkit-box-shadow: none;
@@ -754,6 +679,8 @@ input[type=button]:hover,
   font-weight: bold;
   font-size: 36px;
   letter-spacing: -2px;
+  margin-left: 0;
+  padding: 0;
   line-height: 0.7em;
   color: #000;
   -webkit-transition: all 0.1s ease-out;
@@ -769,10 +696,10 @@ input[type=button]:hover,
   float: right;
 }
 .navbar .nav > li:hover {
-  /*border-bottom: 1px solid #ccc;*/
+  border-bottom: 1px solid #ccc;
 }
 .navbar .nav > li.active {
-  /*border-bottom: 1px solid #aaa;*/
+  border-bottom: 1px solid #aaa;
 }
 .navbar .nav > li.active > a,
 .navbar .nav > li.active:hover > a {
@@ -795,18 +722,13 @@ input[type=button]:hover,
 }
 .navbar .nav > li > a {
   color: #444!important;
-  padding: 14px 10px 11px;
-  font-size: 1.2em;
+  padding: 9px 10px 11px;
+  font-size: 1.1em;
   text-shadow: 0 -1px 0 rgba(255, 255, 255, 0.25);
 }
 .navbar .nav > li > a:hover {
   color: #222;
- }
-
-.navbar .nav > li > input {
-        margin-top:8px;
 }
-
 /* --------------------------------------------------------	*/
 /*	Navigation - dropdown */
 /* --------------------------------------------------------	*/
@@ -844,6 +766,7 @@ input[type=button]:hover,
   background-clip: padding-box;
 }
 .navbar .nav li ul {
+  margin: 0;
   display: none;
   z-index: 99;
 }
@@ -851,14 +774,13 @@ input[type=button]:hover,
   margin: 0;
   padding: 0;
   background: #444;
-  width: 300px;
-  /*border-bottom: 1px solid #555;*/
+  width: 160px;
+  border-bottom: 1px solid #555;
   -webkit-transition: all 0.3s ease-out;
   -moz-transition: all 0.3s ease-out;
   -ms-transition: all 0.3s ease-out;
   -o-transition: all 0.3s ease-out;
   transition: all 0.3s ease-out;
-  font-size: 105%;
 }
 .navbar .nav li ul li:hover {
   background: #f26a46;
@@ -1094,7 +1016,6 @@ input[type=button]:hover,
   margin-bottom: 0;
   font-size: 13px;
   line-height: 1.3em;
-  text-align: center;
 }
 .hero-unit h1 {
   font-size: 2em;
@@ -1104,12 +1025,6 @@ input[type=button]:hover,
   font-size: 1.8em;
   line-height: 1.15em;
 }
-.hero-unit .main {
-        font-size: 2.2em;
-        line-height: 2.4em;
-        font-weight: 400;
-}
-
 /* --------------------------------------------------------	*/
 /*	Custom styled scrollbar */
 /* --------------------------------------------------------	*/
@@ -1960,7 +1875,7 @@ html:not(.osx) ::-webkit-scrollbar-thumb:vertical {
   width: 70%;
   float: left;
   color: #888;
-  font-size: 11px;
+  font-size: 16px;
 }
 .post .entry-body h2 {
   font-size: 16px;

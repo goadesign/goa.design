@@ -1,14 +1,22 @@
+name = "goa"
 baseurl = "http://goa.design/"
 languageCode = "en-us"
 title = "goa - Design First. Then Win."
-theme = "goa"
+description = "goa - Design First. Then Win."
+homepage = "http://goa.design"
+license = "MIT"
+licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
+
 uglyURLs = true
 pluralizelisttitles = false
-
 pygmentscodefences = true
 pygmentsoptions = ""
 pygmentsstyle = "friendly"
 pygmentsuseclasses = false
+
+[author]
+name = "goa contributors"
+homepage = "https://github.com/goadesign"
 
 [taxonomies]
 tag = "tags"
