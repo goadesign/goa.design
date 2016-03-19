@@ -24,7 +24,7 @@ install:
 - sudo pip install Pygments
 script:
 - make docs
-- hugo --theme=goa
+- hugo
 - grunt lunr-index
 deploy:
   provider: gcs
