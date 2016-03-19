@@ -32,5 +32,5 @@ serve:
 	@hugo --theme goa serve --watch
 
 deploy:
-	dpl --provider=gcs --access-key-id=$(GCS_ACCESS_KEY) --secret-access-key=$(GCS_SECRET_KEY) --bucket=goa.design --local-dir=public --cache-control=300 --acl=public-read
+	dpl --provider=gcs --access-key-id=$(GCS_ACCESS_KEY) --secret-access-key=$(GCS_SECRET_KEY) --bucket=goa.design --local-dir=public --cache-control=300 --acl=public-read --skip-cleanup=true
 
