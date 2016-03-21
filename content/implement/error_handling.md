@@ -8,17 +8,10 @@ title = "Error Handling"
 ## Goals
 
 Handling errors in services in a way that is consistent across all the software layers and provides
-a documented output to the clients is hard yet is a requirement for defining crisp API boundaries.
+a documented output to the clients is hard, yet is a requirement for defining crisp API boundaries.
 This problem is rarely addressed explicitly and error handling tends to “just happen” resulting in
 APIs where the error cases become impossible to document properly. This in turn makes it difficult
 to build client services that implement the proper retry strategies for example.
-
-Some of the difficulty involved in doing proper error handling originate from the fact that errors
-may happen at any point in any of the components. More often than not the component where the error
-occurs is not - and should not be - aware that it is being run as part of handling a request.
-Another pitfall is that trying to understand all the possible error cases to map them back to
-corresponding responses is often times impractical. The error handling code becomes invasive and
-distract from the initial purpose of the service.
 
 goa strives to strike the right balance of providing a simple way to classify all the possible
 errors without having to write special error handling code in all components. Specifically the goals
@@ -31,44 +24,79 @@ are:
 ## Introducing Error Classes
 
 The abstraction used in goa to achieve the goals listed above is the error class. An error class
-defines the shape of the response by specifying an HTTP response status code together with fixed
-program friendly identifier and human friendly title. Error classes can then be used to create
-instances of
-[HTTPError](http://goa.design/reference/goa.html#type-httperror-a-name-goa-httperror-a:f65b389c849e4c539b25815fbdc1fd8d) -
-each with their own specific error message. Error classes are implemented by the
-[ErrorClass](http://goa.design/reference/goa.html#type-errorclass-a-name-goa-errorclass-a:f65b389c849e4c539b25815fbdc1fd8d)
-struct.
+defines the shape of an error response. goa follows the [JSON API](http://jsonapi.org/format/#error-objects)
+format for error objects, the fields produced by goa are:
 
-Errors returned by components deep in the software stack can be wrapped with an error class
-providing the information needed to produce the corresponding response. The error class struct
-exposes the
-[Error](http://goa.design/reference/goa.html#func-errorclass-error-a-name-goa-errorclass-error-a:f65b389c849e4c539b25815fbdc1fd8d)
-method that takes an `error` and returns a wrapper
-[HTTPError](http://goa.design/reference/goa.html#type-httperror-a-name-goa-httperror-a:f65b389c849e4c539b25815fbdc1fd8d).
-goa comes with a [set of standard error
-classes](http://goa.design/reference/goa.html#constants:f65b389c849e4c539b25815fbdc1fd8d) that cover
-a number of generic invalid request cases (missing required parameter, invalid string value pattern,
-etc.). New error classes may also be defined to handle service specific errors via the
-[NewErrorClass](http://goa.design/reference/goa.html#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a:f65b389c849e4c539b25815fbdc1fd8d)
-function.
+* `id`: a unique identifier for this particular occurrence of the problem.
+* `status`: the HTTP status code applicable to this problem, expressed as a string value.
+* `code`: an application-specific error code, expressed as a string value.
+* `detail`: a human-readable explanation specific to this occurrence of the problem. Like title, this field's value can be localized.
+* `meta`: a meta object containing non-standard meta-information about the error.
+
+Error classes are created using the [NewErrorClass](http://goa.design/reference/goa.html#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a:f65b389c849e4c539b25815fbdc1fd8d)
+function. They are functions themselves that return instances of 
+[HTTPError](http://goa.design/reference/goa.html#type-httperror-a-name-goa-httperror-a:f65b389c849e4c539b25815fbdc1fd8d):
+```go
+type ErrorClass func(fm interface{}, v ...interface{}) *HTTPError
+```
+For example:
+```go
+  invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 422)
+```
+goa comes with a set of pre-existing error classes that can be leveraged to cover the common cases.
+One especially useful error class is `ErrBadRequest` which can be used to return generic bad
+request errors:
+```
+func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
+          if ctx.Divisor == 0 {
+                  return goa.ErrBadRequest("cannot divide by zero")
+          }
+          // ...
+}
+```
+## Using Error Classes
+
+There are two main use cases for error classes:
+* Error classes can be used to wrap errors returned by internal modules.
+* Error classes may be used to create new errors directly in the API endpoint (e.g. custom
+  validation errors).
+
+### Wrapping Existing Errors
+
+Wrapping an existing error is done simply by invoking the error class function on the `error`
+instance:
+```go
+        if err := someInternalMethod(); err != nil {
+               return goa.ErrBadRequest(err)
+        }
+```
+In some cases it may be useful to attach additional metadata to the error - this can be done using
+the [Meta](http://goa.design/reference/goa.html#func-httperror-meta-a-name-goa-httperror-meta-a:f65b389c849e4c539b25815fbdc1fd8d)
+method exposed by all instances of 
+[HTTPError](http://goa.design/reference/goa.html#type-httperror-a-name-goa-httperror-a:f65b389c849e4c539b25815fbdc1fd8d):
+```go
+        if err := someInternalMethod(); err != nil {
+               return goa.ErrBadRequest(err).Meta("module", "internal")
+        }
+```
+
+### Creating New Errors
+
+Sometimes it may be useful to create new error classes. For example it may be necessary for clients
+to handle this error in a specific way. Or the error needs to be easily differentiated in logs or
+by other tracing mechanisms. In this case the error class function acts in a similar fashion as
+`fmt.Errorf`:
 
 ```go
 // DoAction is a dummy example of a goa action implementation that defines a new error class and
 // uses it to create a new error then to wrap an existing error.
 func (c *MyController) DoAction(ctx *DoActionContext) error {
     endpoint := ctx.SomeServiceEndpoint
-    // The convention for naming error class ids is <namespace.acronym> where the goa namespace
-    // is reserved for goa.
     invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 400)
     // Assume endpoint must contain .mycompany.com
     if !strings.Contains(endpoint, ".mycompany.com") {
         // Create new goa.HTTPError
         return invalidEndpointErr("%s should contain mycompany.com", endpoint)
-    }
-    err := useEndpoint(endpoint)
-    if err != nil {
-        // Wrap err into an HTTPError and add metadata
-        return invalidEndpointErr(err).Meta("endpoint", endpoint)
     }
     // ...
 }
