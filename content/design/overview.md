@@ -191,7 +191,7 @@ Action("sum", func() {                         // Define the sum action
 
 ## Conclusion
 
-There is [a lot more](../reference) to the design language but this overview should have given you a
+There is [a lot more](../reference.html) to the design language but this overview should have given you a
 sense for how it works. It doesn't take long for the language to feel natural which makes it
 possible to quickly iterate and refine the design. The [Swagger](swagger.html) specification generated
 from the design can be shared with stakeholders to gather feedback and iterate. Once finalized
