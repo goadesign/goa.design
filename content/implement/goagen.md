@@ -192,4 +192,4 @@ This command accepts two flags:
 * `--pkg-name=PKG-NAME` specifies the Go package name of the plugin package. It defaults to the
 name of the inner most directory in the Go package path.
 
-Refer to the [Plugins](../extend/plugins.html) section for details on goa plugins.
+Refer to the [Generator Plugins](../extend/generators.html) section for details on goa plugins.
