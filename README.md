@@ -21,9 +21,7 @@ the page should refresh itself each time you save a content page).
 After a commit is pushed to the master branch the [TravisCI job](https://travis-ci.org/goadesign/goa.design)
 does the following:
 
-1. It clones the [goa](https://github.com/goadesign/goa), [middleware](https://github.com/goadesign/middleware)
-   [encoding](https://github.com/goadesign/encoding) and [logging](https://github.com/goadesign/logging)
-   repositories in a temporary directory.
+1. It clones the [goa](https://github.com/goadesign/goa) repository in a temporary directory.
 2. It runs a modified version of [godoc2md](https://github.com/davecheney/godoc2md) to produce
    Markdown files from the sources. The modified version also adds anchors to each title.
 3. It runs hugo which produces the HTML from the markdown files (both the static markdown files
