@@ -7,7 +7,7 @@ homepage = "http://goa.design"
 license = "MIT"
 licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
 
-uglyURLs = true
+uglyURLs = false
 pluralizelisttitles = false
 pygmentscodefences = true
 pygmentsoptions = ""
