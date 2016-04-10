@@ -27,5 +27,6 @@ custom data structures generated from the media type described in the design.
 
 As mentioned earlier each controller action context wraps a golang package context. This means that
 deadlines and cancelation signals are available to all action implementations. The built-in
-[Timeout](https://godoc.org/github.com/goadesign/goa#Timeout") middleware takes advantage of
-this ability to let services or controllers define a timeout value for all requests.
+[Timeout](http://goa.design/reference/goa/middleware.html#func-timeout-a-name-middleware-timeout-a:37ab2f15ff048f67959bcac0a6032f32)
+middleware takes advantage of this ability to let services or controllers define a timeout value
+for all requests.
