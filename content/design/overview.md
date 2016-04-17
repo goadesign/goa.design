@@ -1,5 +1,5 @@
 +++
-date = "2016-01-30T11:01:06-05:00"
+date = "2016-04-16T11:01:06-05:00"
 title = "The goa API design language"
 +++
 
@@ -33,7 +33,7 @@ var _ = API("My API", func() {                           // "My API" is the name
 ```
 
 There are more language keywords (functions) supported by the API DSL listed in the
-[reference](../reference/goa/design/).
+[reference](../extend/dsls/).
 
 *A side note on "dot import" as this question comes up often: the goa API design language is a DSL
 implemented in Go and is __not__ Go. The generated code or any of the actual Go code in goa does
