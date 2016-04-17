@@ -191,10 +191,10 @@ Action("sum", func() {                         // Define the sum action
 
 ## Conclusion
 
-There is [a lot more](../reference/goa/design/apidsl/) to the design language but this overview should have given you a
+There is [a lot more](../../reference/goa/design/apidsl/) to the design language but this overview should have given you a
 sense for how it works. It doesn't take long for the language to feel natural which makes it
 possible to quickly iterate and refine the design. The [Swagger](../swagger/) specification generated
 from the design can be shared with stakeholders to gather feedback and iterate. Once finalized
-[goagen](../implement/goagen/) generates the API scaffolding, request contexts and low level from
+[goagen](../../implement/goagen/) generates the API scaffolding, request contexts and low level from
 the design thereby baking it into the implementation. The design becomes a living document always
 up-to-date with the implementation.
