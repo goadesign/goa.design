@@ -140,17 +140,15 @@ The `client` command generates both an API client package and tool. The client p
 object that exposes one method for each resource action. The generated code of the CLI tool leverages the package to
 make the API requests to the service.
 
-The `Client` object can be configured to use request signers that get invoked prior to sending the
-request. The signers modify the request to include auth headers for example. goa comes with signers that implement
-[basic auth](https://godoc.org/github.com/goadesign/goa#BasicSigner),
-[JWT auth](https://godoc.org/github.com/goadesign/goa#JWTSigner) and a subset of
-[OAuth2](https://godoc.org/github.com/goadesign/goa#OAuth2Signer). Custom signers may be used as well, they must
-implement the [Signer](https://godoc.org/github.com/goadesign/goa#Signer) interface.
-This command accepts three additional flags:
+The `Client` object will be configured to use request signers that get invoked prior to sending the
+request if security is enabled for the Action. The signers modify the request to include auth headers for example.
+goa comes with signers that implement
+[basic auth](https://godoc.org/github.com/goadesign/goa/client#BasicSigner),
+[JWT auth](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner) and a subset of
+[OAuth2](https://godoc.org/github.com/goadesign/goa/client#OAuth2Signer).
+This command accepts one additional flag:
 
 * `--version` specifies the CLI tool version.
-* `--signer` specifies a signer object supported by the API. Signer objects generally perform auth.
-* `--signerPkg` specifies the path to the package implementing the signer objects if not goa.
 
 ## <a name="gen_js"></a> JavaScript: `goagen js`
 
