@@ -19,11 +19,11 @@ implementation can create new artifacts or change how existing artifacts are cre
 ## Extending the DSL
 
 goa DSLs consist of Go package functions that construct recursive data structures called
-*definitions*. The roots of these definitions must be recorded in the goa *dslengine* package
-[Register](http://goa.design/reference/goa/dslengine.html#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133)
-function. The actual content of the definitions is completely up to you. The generators use
-them to create the artifacts so they should contain all the required information to do the
-generation.
+*definitions*. The roots of these definitions must be recorded in the goa *dslengine* package via
+the
+[Register](http://goa.design/reference/goa/dslengine/#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133)
+function. The actual content of the definitions is completely up to you. The generators use them to
+create the artifacts so they should contain all the required information to do the generation.
 
 ### First Exposure
 
@@ -129,8 +129,8 @@ the recursive data structures and provide a standard framework for recording and
 #### DSL Engine Execution Flow
 
 Before jumping into the details of implementing a DSL on top of the goa engine it is helpful to
-understand the steps involved during execution at a high level. Backing off a bit: what is
-executing a DSL? two things:
+understand the steps involved during execution at a high level. Backing off: what is executing a
+DSL? two things:
 
 1. The `Go` runtime evaluates the global variables when the generator program loads. This causes
    all the DSL functions called that way to get run and produce a first set of definitions.
