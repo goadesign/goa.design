@@ -24,13 +24,13 @@ structures to write the output.
 Each generator registers a command with the `goagen` tool, `goagen --help` lists all the available
 commands. These are:
 
-* `app`: generates the service boilerplate code including controllers, contexts, media types and user types.
-* `main`: generates a skeleton file for each resource controller as well as a default `main`.
-* `client`: generates an API client Go package and tool.
-* `swagger`: generates the API Swagger specification.
-* `js`: generates a JavaScript API client.
-* `schema`: generates the API Hyper-schema JSON.
-* `gen`: invokes a third party generator.
+* [`app`](#gen_app): generates the service boilerplate code including controllers, contexts, media types and user types.
+* [`main`](#gen_main): generates a skeleton file for each resource controller as well as a default `main`.
+* [`client`](#gen_client): generates an API client Go package and tool.
+* [`js`](#gen_js): generates a JavaScript API client.
+* [`swagger`](#gen_swagger): generates the API Swagger specification.
+* [`schema`](#gen_schema): generates the API Hyper-schema JSON.
+* [`gen`](#gen_gen): invokes a third party generator.
 * `bootstrap`: invokes the `app`, `main`, `client` and `swagger` generators.
 
 The command `goagen --help-long` lists all the supported commands and their flags.
@@ -45,7 +45,7 @@ The following flags apply to all the `goagen` commands:
 files and to leave them around.
 * `--help|--help-long|--help-man` prints contextual help.
 
-## Contexts and Controllers: `goagen app`
+## <a name="gen_app"></a> Contexts and Controllers: `goagen app`
 
 The `app` command is arguably the most critical. It generates all the supporting code for the
 goa service. This command supports an additional flag:
@@ -56,7 +56,7 @@ name of the subdirectory that gets created to store the generated Go files.
 This command always deletes and re-creates any pre-existing directory with the same name. The idea
 being that these files should never be edited.
 
-## Scaffolding: `goagen main`
+## <a name="gen_main"></a> Scaffolding: `goagen main`
 
 The `main` command helps bootstrap a new goa service by generating a default `main.go` as
 well as a default (empty) implementation for each resource controller defined in the design package. By default
@@ -67,7 +67,7 @@ command accepts two additional flags:
         which case they get overwritten).
 * `name=API` specifies the name of the service to be used in the generated call to `goa.New`.
 
-## Client Package and Tool: `goagen client`
+## <a name="gen_client"></a> Client Package and Tool: `goagen client`
 
 The `client` command generates both an API client package and tool. The client package implements a `Client`
 object that exposes one method for each resource action. The generated code of the CLI tool leverages the package to
@@ -85,7 +85,7 @@ This command accepts three additional flags:
 * `--signer` specifies a signer object supported by the API. Signer objects generally perform auth.
 * `--signerPkg` specifies the path to the package implementing the signer objects if not goa.
 
-## JavaScript: `goagen js`
+## <a name="gen_js"></a> JavaScript: `goagen js`
 
 The `js` command generates a JavaScript API client suitable for both client-side and server-side
 applications. The generated code defines an anonymous AMD module and relies on the
@@ -167,13 +167,13 @@ package in your service main and mount the controller. The example HTML is serve
 under `/js` so that loading this path in a browser will trigger the generated
 JavaScript.
 
-## Swagger: `goagen swagger`
+## <a name="gen_swagger"></a> Swagger: `goagen swagger`
 
 The `swagger` command generates a [Swagger](http://swagger.io) specification of the API. The command
 does not accept additional flags. It generates both the Swagger JSON as well as a controller that
 can be mounted on the goa service to serve it under `/swagger.json`.
 
-## JSON Schema: `goagen schema`
+## <a name="gen_schema"></a> JSON Schema: `goagen schema`
 
 The `schema` command generates a
 [Heroku-like](https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api) JSON
@@ -183,7 +183,7 @@ flag:
 
 * `--url|-u=URL` specifies the base URL used to build the JSON schema ID.
 
-## Plugins: `goagen gen`
+## <a name="gen_gen"></a> Plugins: `goagen gen`
 
 The `gen` command makes it possible to invoke `goagen` plugins.
 This command accepts two flags:
