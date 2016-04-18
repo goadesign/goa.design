@@ -26,12 +26,13 @@ commands. These are:
 
 * [`app`](#gen_app): generates the service boilerplate code including controllers, contexts, media types and user types.
 * [`main`](#gen_main): generates a skeleton file for each resource controller as well as a default `main`.
+* [`test`](#gen_test): generates the API test helpers
 * [`client`](#gen_client): generates an API client Go package and tool.
 * [`js`](#gen_js): generates a JavaScript API client.
 * [`swagger`](#gen_swagger): generates the API Swagger specification.
 * [`schema`](#gen_schema): generates the API Hyper-schema JSON.
 * [`gen`](#gen_gen): invokes a third party generator.
-* `bootstrap`: invokes the `app`, `main`, `client` and `swagger` generators.
+* `bootstrap`: invokes the `app`, `main`, `test`, `client` and `swagger` generators.
 
 The command `goagen --help-long` lists all the supported commands and their flags.
 
@@ -66,6 +67,72 @@ command accepts two additional flags:
 * `--force` causes the files to be generated even if files with the same name already exist (in
         which case they get overwritten).
 * `name=API` specifies the name of the service to be used in the generated call to `goa.New`.
+
+## <a name="gen_test"></a> Testing: `goagen test`
+
+The `test` command generates test helpers for all the defined combinations of `Resource`, `Action`, `Response`,
+`Route` and `View` in the `API`. The test helpers will have the same `Params`, `Payload` and `MediaType` objects
+as defined by your `API`.
+
+```go
+// ShowVersionOK test setup
+func ShowVersionOK(t *testing.T, ctrl app.VersionController) *app.Version {
+	return ShowVersionOKCtx(t, context.Background(), ctrl)
+}
+
+// ShowVersionOKCtx test setup
+func ShowVersionOKCtx(t *testing.T, ctx context.Context, ctrl app.VersionController) *app.Version {
+	var logBuf bytes.Buffer
+	var resp interface{}
+	respSetter := func(r interface{}) { resp = r }
+	service := goatest.Service(&logBuf, respSetter)
+	rw := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", fmt.Sprintf("/api/version"), nil)
+	if err != nil {
+		panic("invalid test " + err.Error()) // bug
+	}
+	goaCtx := goa.NewContext(goa.WithAction(ctx, "VersionTest"), rw, req, nil)
+	showCtx, err := app.NewShowVersionContext(goaCtx, service)
+	if err != nil {
+		panic("invalid test data " + err.Error()) // bug
+	}
+	err = ctrl.Show(showCtx)
+	if err != nil {
+		t.Fatalf("controller returned %s, logs:\n%s", err, logBuf.String())
+	}
+
+	a, ok := resp.(*app.Version)
+	if !ok {
+		t.Errorf("invalid response media: got %+v, expected instance of app.Version", resp)
+	}
+
+	if rw.Code != 200 {
+		t.Errorf("invalid response status code: got %+v, expected 200", rw.Code)
+	}
+
+	err = a.Validate()
+	if err != nil {
+		t.Errorf("invalid response payload: got %v", err)
+	}
+	return a
+}
+```
+The test helpers have validation like `Type`, `Status`, `Payload.Validate()`
+and `MediaType.Validate()` out of the box.
+
+These test helpers only depend on `testing.T` so they can be used together with
+your favorite testing framework.
+
+```go
+func TestShowVersionOK(t *testing.T) {
+	controller := VersionController{}
+	resp := test.ShowVersionOK(t, &controller)
+
+	if resp.Commit == "" {
+		t.Error("Commit not found")
+	}
+}
+```
 
 ## <a name="gen_client"></a> Client Package and Tool: `goagen client`
 
