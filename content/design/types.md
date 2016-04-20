@@ -16,7 +16,7 @@ number of primitive types listed in the [Overview](overview) but also makes it p
 arbitrary data structures recursively via the
 [Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) function.
 
-# Request Payload
+## Request Payload
 
 One of the main application for types defined that way is to describe the request payload of a
 given action. The request payload describes the shape of the request body. `goagen` uses that
@@ -83,7 +83,7 @@ written as `Payload("CreatePayload")` because that's the name given in the `Crea
 definition. This makes it possible to define types that depend on each other and not have the `Go`
 compiler complain about the cycle.
 
-# Media Types
+## Media Types
 
 Another common use for types is for describing response media types. A response media type defines
 the shape of response bodies. Media types differ from types in that they also define *views* and
@@ -194,7 +194,7 @@ the names of attributes being referred to, this makes it possible to pick and ch
 attributes to "inherit". Also the media type may override properties of the `name` attribute if
 needed (e.g. to change the type, description, validations etc.).
 
-# Mixing Types and Media Types
+## Mixing Types and Media Types
 
 We've already seen how `Reference` makes it possible to reuse attribute definitions across types
 and media types. Media types are a specialized form of types. This means that they may be used in
