@@ -181,6 +181,7 @@ type is `String`. The possible types for attributes are:
 | `DateTime` | time.Time     | RFC3339 string    |
 | `Any`      | interface{}   | ?                 |
 
+
 Additionally type fields can be defined using `ArrayOf` or `HashOf` or by using a recursive DSL:
 
 ```go
