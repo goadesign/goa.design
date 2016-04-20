@@ -77,11 +77,12 @@ Action("create", func() {
 })
 ```
 
-That same flexibility exists wherever attributes are used. Predefined types may be referred to using
-a variable as shown above or using their name, that is `Payload(CreatePayload)` could also be
-written as `Payload("CreatePayload")` because that's the name given in the `CreatePayload` type
-definition. This makes it possible to define types that depend on each other and not have the `Go`
-compiler complain about the cycle.
+That same flexibility exists wherever attributes are used.
+
+Predefined types may be referred to using a variable as shown above or using their name, that is
+`Payload(CreatePayload)` could also be written as `Payload("CreatePayload")` since `"CreatePayload"`
+is the name given in the `CreatePayload` type definition. This makes it possible to define types
+that depend on each other and not have the `Go` compiler complain about the cycle.
 
 ## Media Types
 
@@ -154,7 +155,7 @@ Media types can be referred to using variables or the media type identifier simi
 can be referred to using variables or their names.
 
 It is often the case that the same attributes are used to define an action request payload and a
-response media type. This is especially true with REST APIs where sending a requet to create a 
+response media type. This is especially true with REST APIs where sending a request to create a
 resource often times returns a representation of it in the response. The goa design language helps
 with this common case by providing a `Reference` function that may be used in both `Type` and
 `MediaType` function calls alike. This function takes one argument which is either a variable
