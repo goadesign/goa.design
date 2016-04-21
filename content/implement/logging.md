@@ -10,9 +10,10 @@ code end up being logged properly.
 
 ## The Logger Adapter
 
-goa therefore defines a minimal interface that it expects the logger to implement. This interface is
-[LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a) and is
- defined as follows:
+goa defines a minimal interface that it expects the logger to implement. This
+interface is
+[LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a)
+and is defined as follows:
 
 ```go
  type LogAdapter interface {
@@ -68,21 +69,25 @@ context may also be additionally configured by middleware such as the
 [LogRequest](http://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a)
 middleware.
 
-User code may take advantage of the logging context in one of two ways:
-
-1. By logging via the [LogInfo](http://goa.design/reference/goa/#func-loginfo-a-name-goa-loginfo-a) and
-   [LogError](http://goa.design/reference/goa/#func-logerror-a-name-goa-logerror-a) goa package
-   functions.
-2. By retrieving the log adapter itself via
-   [ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a).
-
-Keeping with the `log15` example, the latter could look like this:
+The code may take advantage of the logging context by using the accessor functions provided by each
+adapter package. Keeping with the `log15` example:
 
 ```go
-logger := goa.ContextLogger(ctx).(*goalog15.Logger)
-// Now use logger as you would an instance of log15.Logger
-// since it's embedded in goalog15.Logger.
-logger.Warn("woops", "value", 15)
+logger := goalog15.Logger(ctx) // logger is a log15.Logger
+logger.Warn("whoops", "value", 15)
+```
+
+The service code may also define functions for each log method that combine the above for
+convenience:
+
+```go
+// define logInfo, logWarn, and logError globally:
+func logInfo(ctx context.Context, msg string, keyvals...interface{}) {
+	goalog15.Logger(ctx).Info(msg, keyvals...)
+}
+
+// which can be used as in:
+logInfo(ctx, "whoops", "value", 15)
 ```
 
 ## Usage in Middleware
@@ -91,13 +96,13 @@ Middlewares have access to the logger via the context and the
 [ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a)
 function. They may use the returned
 [LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a) to add to the
-logging context. Alternatively middleware may take advantage of the
-[WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a)
-function which takes care of storing the resulting adapter in the returned context.
+logger context or write logs.
 
-Middlewares should use the
+Alternatively middlewares may take advantage of the
+[WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a)
+function to add to the logger context and use the
 [LogInfo](http://goa.design/reference/goa/#func-loginfo-a-name-goa-loginfo-a) and
 [LogError](http://goa.design/reference/goa/#func-logerror-a-name-goa-logerror-a) goa package
-functions to produce logs.
+functions to write logs.
 
 
