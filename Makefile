@@ -27,7 +27,7 @@ docs:
 
 linkcheck:
 	@cd tools/linkcheck && go install
-	@(hugo serve >/dev/null &); linkcheck -root http://localhost:1313 && echo No broken links!
+	@(hugo serve >/dev/null &); sleep 2 && linkcheck -root http://localhost:1313 && echo No broken links!
 
 serve:
 	@hugo serve --watch
