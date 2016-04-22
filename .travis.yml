@@ -23,6 +23,7 @@ script:
 - make docs
 - hugo
 - grunt lunr-index
+- make linkcheck
 deploy:
   provider: gcs
   access_key_id: GOOGDIIIVPY7O6DG3PSZ

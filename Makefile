@@ -25,6 +25,10 @@ docs:
 	@mdc github.com/goadesign/goa   content/reference --exclude public
 	@mdc github.com/goadesign/gorma content/reference --exclude public --exclude example
 
+linkcheck:
+	@cd tools/linkcheck && go install
+	@(hugo serve >/dev/null &); linkcheck -root http://localhost:1313 && echo No broken links!
+
 serve:
 	@hugo serve --watch
 
