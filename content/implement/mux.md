@@ -39,7 +39,7 @@ Such handlers can be mounted on the service mux:
 ```
 func main() {
     service := goa.New("Service with assets")
-    service.Mux.Handle("GET", "/static/*asset", assetHandler)
+    service.Mux.Handle("GET", "/static/*asset", assetHandler())
     // ...
 }
 ```
