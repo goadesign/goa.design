@@ -77,8 +77,9 @@ logger := goalog15.Logger(ctx) // logger is a log15.Logger
 logger.Warn("whoops", "value", 15)
 ```
 
-The service code may also define functions for each log method that combine the above for
-convenience:
+The service code should not have to funnel all logging calls through goa. For example the database
+layer should probably not have to use the goa package at all. The idea to avoid the coupling is
+to define functions for each log method that combine the above:
 
 ```go
 // define logInfo, logWarn, and logError globally:
@@ -89,6 +90,9 @@ func logInfo(ctx context.Context, msg string, keyvals...interface{}) {
 // which can be used as in:
 logInfo(ctx, "whoops", "value", 15)
 ```
+
+The service should define the logging functions that make sense to it this way which allows it to
+take advantage of the context setup by goa without creating a strong coupling.
 
 ## Usage in Middleware
 

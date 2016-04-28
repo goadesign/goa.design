@@ -21,8 +21,9 @@ microservices:
 
 * [RequestID](https://goa.design/reference/goa/middleware#RequestID) injects a unique ID
   in the request context. This ID is used by the logger and can be used by controller actions as
-  well. The middleware looks for the ID in the [RequestIDHeader](https://goa.design/reference/goa/middleware#RequestIDHeader)
-  header and if not found creates one.
+  well. The middleware looks for the ID in the
+  [RequestIDHeader](https://goa.design/reference/goa/middleware#RequestIDHeader) header and if not
+  found creates one.
 
 * [Recover](https://goa.design/reference/goa/middleware#Recover) recover panics and logs
   the panic object and backtrace.

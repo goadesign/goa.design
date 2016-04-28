@@ -12,9 +12,9 @@ that implements the corresponding controller interface and take care of hooking 
 HTTP router with the corresponding methods.
 
 The glue code that binds the controller object methods with the HTTP router also takes care of
-instantiating the action specific [context](/implement/context) objects. These objects wrap the request
-state and make it available through properly typed struct fields. This means that the handler code
-does not need to cast or otherwise "bind" the context fields.
+instantiating the action specific [context](/implement/context) objects. These objects wrap the
+request state and make it available through properly typed struct fields. This means that the
+handler code does not need to cast or otherwise "bind" the context fields.
 
 The controller methods can also log and send the response using the context methods. The service
 implementation may also define [middleware](/implement/middleware) and mount them service-wide or on
