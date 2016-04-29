@@ -179,6 +179,7 @@ type is `String`. The possible types for attributes are:
 | `Number`   | float         | number            |
 | `String`   | string        | string            |
 | `DateTime` | time.Time     | RFC3339 string    |
+| `UUID`     | uuid.UUID     | RFC4122 string    |
 | `Any`      | interface{}   | ?                 |
 
 
@@ -203,7 +204,7 @@ Note the use of the `"user"` type name to define the `friends` field instead of 
 the `User` type variable. Both syntax are accepted. Using names instead of variable reference
 allows for building recursive definitions.
 
-The [examples](https://github.com/goadesign/examples) github repository contains a `types`
+The [examples](https://github.com/goadesign/examples) Github repository contains a `types`
 directory with a number of example demonstrating the mapping between design types and generated
 code.
 
@@ -255,7 +256,7 @@ var Results = MediaType("vnd.application/goa.results", func() {
 var User = MediaType("vnd.application/goa.users", func() {
     Description("A user of the API")
     Attributes(func() {
-        Attribute("id", String, "Unique identifier")
+        Attribute("id", UUID, "Unique identifier")
         Attribute("href", String, "User API href")
         Attribute("email", String, "User email", func() {
             Format("email")

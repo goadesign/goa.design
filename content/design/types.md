@@ -2,7 +2,7 @@
 date = "2016-04-20T11:01:06-05:00"
 title = "Working with Data Types"
 +++
-An impotant aspect of the goa DSL resides around how types are defined and used. The
+An important aspect of the goa DSL resides around how types are defined and used. The
 [Overview](overview) covers the basics of working with types and media types. This document takes
 a step back and explains the rationale for the DSL.
 
@@ -105,7 +105,7 @@ var MT = MediaType("application/vnd.app.mt", func() {
 })
 ```
 
-The first argument of `MediaType` is the media type identifier as defined by 
+The first argument of `MediaType` is the media type identifier as defined by
 [RFC 6838](https://tools.ietf.org/html/rfc6838). The DSL lists the attributes similarly to how
 attributes are defined in types, the views - here only the `default` view - and optionally links to
 other media types.
