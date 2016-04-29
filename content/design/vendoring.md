@@ -21,6 +21,10 @@ import:
   - dslengine
   - goagen
   - middleware
+- package: golang.org/x/tools
+  subpackages:
+  - go/ast/astutil
+- package: gopkg.in/yaml.v2
 ```
 
 running `glide install` installs `goagen` in the `vendor` directory so that running:
@@ -32,5 +36,5 @@ go build ./vendor/github.com/goadesign/goa/goagen
 always produces the same generator tool which can then be used with:
 
 ```bash
-./vendor/github.com/goadesign/goa/goagen app -d <import path to design package>
+./goagen app -d <import path to design package>
 ```
