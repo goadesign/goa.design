@@ -34,5 +34,5 @@ go build ./vendor/github.com/goadesign/goa/goagen
 always produces the same generator tool which can then be used with:
 
 ```bash
-./vendor/github.com/goadesign/goa/goagen app -d <import path to design package>
+./goagen app -d <import path to design package>
 ```
