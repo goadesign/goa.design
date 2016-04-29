@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Leveraging Swagger"
+weight = 4
 +++
 
 [goagen](/implement/goagen) can generate the Swagger specification of an API given its design.

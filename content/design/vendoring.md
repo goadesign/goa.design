@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Vendoring goa Services"
+weight = 3
 +++
 
 Code generation makes vendoring a little more complicated as the generation tool also needs to be
@@ -36,5 +37,17 @@ go build ./vendor/github.com/goadesign/goa/goagen
 always produces the same generator tool which can then be used with:
 
 ```bash
-./goagen app -d <import path to design package>
+./vendor/github.com/goadesign/goa/goagen/goagen app -d <import path to design package>
 ```
+
+Bootstrapping a project using vendoring can be done following these steps (assuming the design is
+already written):
+
+1. Generate the initial code with the `goagen boostrap` command
+2. Run `glide create`, this produces `glide.yaml`
+3. Edit `glide.yaml` and add the entries listed above
+4. Run `glide install`
+
+You now have a `vendor` directory that contains the sources for `goagen`, compile them and use hte
+tool as described above. Don't forget to recompile the tool after each `glide update` that updates
+`goa`.

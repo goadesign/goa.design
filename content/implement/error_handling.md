@@ -1,6 +1,7 @@
 +++
 date = "2016-03-12T01:01:06-05:00"
 title = "Error Handling"
+weight = 4
 +++
 
 # Error Handling in goa

@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Extending goa with Plugin DSLs"
+weight = 2
 +++
 
 goa plugins make it possible to create new DSL and accompanying generators. Since DSLs are nothing

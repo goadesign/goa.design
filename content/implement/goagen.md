@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "goagen, the goa Tool"
+weight = 2
 +++
 
 `goagen` is a tool that generates various artifacts from a goa design package.
@@ -26,13 +27,12 @@ commands. These are:
 
 * [`app`](#gen_app): generates the service boilerplate code including controllers, contexts, media types and user types.
 * [`main`](#gen_main): generates a skeleton file for each resource controller as well as a default `main`.
-* [`test`](#gen_test): generates the API test helpers
 * [`client`](#gen_client): generates an API client Go package and tool.
 * [`js`](#gen_js): generates a JavaScript API client.
 * [`swagger`](#gen_swagger): generates the API Swagger specification.
 * [`schema`](#gen_schema): generates the API Hyper-schema JSON.
 * [`gen`](#gen_gen): invokes a third party generator.
-* `bootstrap`: invokes the `app`, `main`, `test`, `client` and `swagger` generators.
+* `bootstrap`: invokes the `app`, `main`, `client` and `swagger` generators.
 
 The command `goagen --help-long` lists all the supported commands and their flags.
 

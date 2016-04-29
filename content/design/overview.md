@@ -1,6 +1,7 @@
 +++
 date = "2016-04-16T11:01:06-05:00"
 title = "The goa API design language"
+weight = 1
 +++
 
 The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible

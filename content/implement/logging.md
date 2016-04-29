@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Logging"
+weight = 5
 +++
 
 An important aspect of writing microservices is having a good logging strategy. This is a pretty

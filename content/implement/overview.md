@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Implementing goa Services"
+weight = 1
 +++
 
 Once the [design](/design/overview) of the API is completed and [goagen](/implement/goagen) has

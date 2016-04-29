@@ -1,6 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "The goa-cellar Reference Example"
+weight = 3
 +++
 
 The goa winecellar service provides an example for the [goa](http://goa.design) web application

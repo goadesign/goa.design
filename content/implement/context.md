@@ -1,6 +1,7 @@
 +++
 date = "2016-04-17T11:01:06-05:00"
 title = "The goa Request Context"
+weight = 3
 +++
 
 ## Overview
