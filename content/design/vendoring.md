@@ -22,6 +22,7 @@ import:
   - goagen
   - middleware
 - package: golang.org/x/tools/go/ast/astutil
+- package: gopkg.in/yaml.v2
 ```
 
 running `glide install` installs `goagen` in the `vendor` directory so that running:
