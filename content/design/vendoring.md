@@ -21,7 +21,9 @@ import:
   - dslengine
   - goagen
   - middleware
-- package: golang.org/x/tools/go/ast/astutil
+- package: golang.org/x/tools
+  subpackages:
+  - go/ast/astutil
 - package: gopkg.in/yaml.v2
 ```
 
