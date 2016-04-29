@@ -21,6 +21,7 @@ import:
   - dslengine
   - goagen
   - middleware
+- package: golang.org/x/tools/go/ast/astutil
 ```
 
 running `glide install` installs `goagen` in the `vendor` directory so that running:
