@@ -4,6 +4,8 @@ title = "goagen, the goa Tool"
 weight = 2
 +++
 
+## Code Generation Tool
+
 `goagen` is a tool that generates various artifacts from a goa design package.
 
 Install it with:

@@ -1,10 +1,10 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Request Middleware"
-weight = 7
+weight = 8
 +++
 
-# goa Middlewares
+## Built-in Middlewares
 
 The `middleware` package provides middlewares that do not depend on additional packages other than
 the ones already used by `goa`. These middlewares provide functionality that is useful to most
@@ -50,3 +50,76 @@ as specified in RFC 1952.
 
 package [security](https://goa.design/reference/goa/middleware/security.html) contains middleware
 that should be used in conjunction with the security DSL.
+
+## Writing Your Own
+
+A middleware is a function that accepts and returns a request handler. The idea is that middlewares
+are "chained" together, the actual action implementation being the last link. There are many good
+resources on the web describing middlewares in Go such as [Alex Edwards'
+writeup](http://www.alexedwards.net/blog/making-and-using-middleware).
+
+A request handler in goa has the following signature:
+
+```go
+// Handler defines the request handler signatures.
+Handler func(context.Context, http.ResponseWriter, *http.Request) error
+```
+
+And a middleware is:
+
+```go
+// Middleware represents the canonical goa middleware signature.
+Middleware func(Handler) Handler
+```
+
+Writing a middleware thus consists of writing a function that accepts a handler and returns one:
+
+```go
+// MyMiddleware does something interesting.
+func MyMiddleware(h goa.Handler) Handler {
+    return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
+        // Use ctx, rw and req - for example:
+        newctx = context.WithValue(ctx, "key", "value")
+        rw.Header().Set("X-Custom", "foo")
+
+        // Then call the next handler:
+        return h(newctx, rw, req)
+    }
+}
+```
+
+The middleware can then be mounted on a service or controller with the `Use` method:
+
+```go
+s := goa.New("my service")
+s.Use(MyMiddleware)
+```
+
+### Configuring Middleware
+
+Sometimes there's a need for passing configuration information to the middleware. For example the 
+goa [Timeout](https://goa.design/reference/goa/middleware/#Timeout) middleware needs a timeout
+value. This is easily accomplished by providing a constructor method that accepts the configuration
+information as parameters and uses closure to build the middleware:
+
+```go
+// MyConfiguredMiddleware does something interesting and needs a "config" string value.
+func MyConfiguredMiddleware(config string) goa.Middleware {
+    return func(h goa.Handler) Handler {
+        return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
+            // Use ctx, rw, req and any parameter given to the middleware constructor:
+            rw.Header().Set("X-Custom", config)
+        }
+    }
+}
+```
+
+Mounting the middleware above then looks like:
+
+```go
+s := goa.New("my service")
+s.Use(MyConfiguredMiddleware("value"))
+```
+
+The pattern above is the one followed by all built-in middlewares, even the ones not taking
+configuration values for consistency.

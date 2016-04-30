@@ -4,8 +4,6 @@ title = "Error Handling"
 weight = 4
 +++
 
-# Error Handling in goa
-
 ## Goals
 
 Handling errors in services in a way that is consistent across all the software layers and provides
