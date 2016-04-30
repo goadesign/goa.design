@@ -31,9 +31,9 @@ header or if its value does not match one of the known content types.
 ## Using Custom Decoders
 
 There are many reasons why your service may need to use different decoders. For example you may want
-to switch from the stdlib JSON package to a custom package that provides a significant performance
-improvement for your use case. You may also need to support binary serialization formats such as
-msgpack.
+to switch from the stdlib JSON package to a custom package that may provide a performance
+improvement for your use case. You may also need to support different serialization formats such as
+`msgpack`.
 
 goa defines the interface that a decoder must implement to be mounted on a goa service. The
 interface is:
@@ -96,6 +96,13 @@ the `Function` DSL:
         Function("CustomNewDecoder")
     })
 ```
+
+### Setting the Default Decoder
+
+The default decoder is the decoder used when the incoming request `Content-Type` header is missing
+or does not match any of the content types defined in the `Consumes` DSL. It is the first decoder to
+be listed in the `Consumes` DSL. If no decoder is listed then the generated code defaults to the
+stdlib JSON decoder.
 
 ### Built-in Custom Decoders
 
@@ -165,3 +172,7 @@ var _ = API("My API", func() {
 })
 ```
 
+As with decoders the first encoder listed in the DSL becomes the default encoder used when the
+incoming request `Accept` header is missing or does not match any of the content types listed in the
+design. If no encoder is listed in the design then the generated code defaults to the stdlib JSON
+encoder.
