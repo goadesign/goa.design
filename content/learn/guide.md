@@ -5,7 +5,7 @@ weight = 2
 +++
 
 This guide walks you through writing a complete service in goa. The simple service implements a
-small subset of the [cellar](cellar/) example found in the [github
+small subset of the [cellar](../cellar) example found in the [github
 repository](https://github.com/goadesign/goa-cellar). The service deals with wine bottles, more
 specifically it makes it possible to retrieve pre-existing wine bottle models through simple GET
 requests.
