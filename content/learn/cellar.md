@@ -9,7 +9,7 @@ framework.
 
 The service implements an API for managing wine bottles. The service is multitenant: bottles are
 created in the context of an account. At this time the database is emulated with an in-memory hash.
-An instance of this example is hosted at http://cellar.goa.design.
+An instance of this example is hosted at `http://cellar.goa.design`.
 
 Using the excellent [httpie client](https://github.com/jkbrzt/httpie):
 
