@@ -11,20 +11,19 @@ weight = 2
 Install it with:
 
 ```bash
-go get github.com/goadesign/goa/goagen
+go install github.com/goadesign/goa/goagen
 ```
 
 Each type of artifact is associated with a `goagen` command that exposes it own set of flags.
 Internally these commands map to "generators" that contain the logic for generating the artifacts.
 It works something like this:
 
-1. goagen parses the command line to determine the type of output desired and invokes the appropriate generator.
+1. `goagen` parses the command line to determine the type of output desired and invokes the appropriate generator.
 2. The generator writes the code of the tool that will produce the final output to a temporary directory.
-3. The tool composed of the design language package and the output producing code is compiled in the temporary directory.
-4. `goagen` runs the tool which evaluates the design functions and traverses the resulting in-memory data
-structures to write the output.
+3. The tool composed of the design package and the tool code is compiled in the temporary directory.
+4. The tool is run, it traverses the design data structures to write the final output.
 
-Each generator registers a command with the `goagen` tool, `goagen --help` lists all the available
+Each generator is exposed via a command of the `goagen` tool, `goagen --help` lists all the available
 commands. These are:
 
 * [`app`](#gen_app): generates the service boilerplate code including controllers, contexts, media types and user types.
@@ -36,8 +35,6 @@ commands. These are:
 * [`gen`](#gen_gen): invokes a third party generator.
 * `bootstrap`: invokes the `app`, `main`, `client` and `swagger` generators.
 
-The command `goagen --help-long` lists all the supported commands and their flags.
-
 ## Common flags
 
 The following flags apply to all the `goagen` commands:
@@ -46,7 +43,7 @@ The following flags apply to all the `goagen` commands:
 * `--out|-o=OUT` specifies where to generate the files, defaults to the current directory.
 * `--debug` enables `goagen` debug. This causes `goagen` to print the content of the temporary
 files and to leave them around.
-* `--help|--help-long|--help-man` prints contextual help.
+* `--help` prints contextual help.
 
 ## <a name="gen_app"></a> Contexts and Controllers: `goagen app`
 
@@ -54,40 +51,39 @@ The `app` command is arguably the most critical. It generates all the supporting
 goa service. The command also generates a `test` sub-package that contain test helpers, one per
 controller action and view they return. These helpers make it easy to test the action
 implementations by invoking them with controlled values and validating the returned media types.
-This command supports an additional flag:
+This command supports a couple of additional flags:
 
 * `--pkg=app` specifies the name of the generated Go package, defaults to `app`. That's also the
 name of the subdirectory that gets created to store the generated Go files.
+* `--notest` prevents the generation of the the test helpers.
 
 This command always deletes and re-creates any pre-existing directory with the same name. The idea
 being that these files should never be edited.
 
 ## <a name="gen_main"></a> Scaffolding: `goagen main`
 
-The `main` command helps bootstrap a new goa service by generating a default `main.go` as
-well as a default (empty) implementation for each resource controller defined in the design package. By default
-this command only generates the files if they don't exist yet in the output directory. This
-command accepts two additional flags:
+The `main` command helps bootstrap a new goa service by generating a default `main.go` as well as a
+default (empty) implementation for each resource controller defined in the design package. By
+default this command only generates the files if they don't exist in the output directory. This
+command accepts an additional flag:
 
-* `--force` causes the files to be generated even if files with the same name already exist (in
-        which case they get overwritten).
-* `name=API` specifies the name of the service to be used in the generated call to `goa.New`.
+* `--force` causes the files to be generated even if files with the same name already exist.
 
 ## <a name="gen_client"></a> Client Package and Tool: `goagen client`
 
-The `client` command generates both an API client package and tool. The client package implements a `Client`
-object that exposes one method for each resource action. The generated code of the CLI tool leverages the package to
-make the API requests to the service.
+The `client` command generates both an API client package and a CLI tool. The client package
+implements a `Client` object that exposes one method for each resource action. It also exposes
+methods to create the corresponding http request objects without sending them. The generated code of
+the CLI tool leverages the package to make the API requests to the service.
 
-The `Client` object will be configured to use request signers that get invoked prior to sending the
-request if security is enabled for the Action. The signers modify the request to include auth headers for example.
-goa comes with signers that implement
+The `Client` object is configured to use request signers that get invoked prior to sending the
+request if security is enabled for the Action (that is if the action DSL makes use of the `Security`
+function). The signers modify the request to include auth headers for example.  goa comes with
+signers that implement
 [basic auth](https://godoc.org/github.com/goadesign/goa/client#BasicSigner),
-[JWT auth](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner) and a subset of
+[JWT auth](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner),
+[API key](https://godoc.org/github.com/goadesign/goa/client/#APIKeySigner) and a subset of
 [OAuth2](https://godoc.org/github.com/goadesign/goa/client#OAuth2Signer).
-This command accepts one additional flag:
-
-* `--version` specifies the CLI tool version.
 
 ## <a name="gen_js"></a> JavaScript: `goagen js`
 
@@ -165,11 +161,10 @@ fields:
 }
 ```
 
-The generator also produces an example HTML and controller that can be mounted on a
-goa service to quickly test the JavaScript. Simply import the `js` Go
-package in your service main and mount the controller. The example HTML is served
-under `/js` so that loading this path in a browser will trigger the generated
-JavaScript.
+The generator also produces an example HTML and controller that can be mounted on a goa service to
+quickly test the JavaScript. Simply import the `js` Go package in your service main and mount the
+controller. The example HTML is served under `/js` so that loading this path in a browser will
+trigger the generated JavaScript.
 
 ## <a name="gen_swagger"></a> Swagger: `goagen swagger`
 
@@ -182,18 +177,13 @@ can be mounted on the goa service to serve it under `/swagger.json`.
 The `schema` command generates a
 [Heroku-like](https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api) JSON
 hyper-schema representation of the API. It generates both the JSON as well as a controller that can
-be mounted on the goa service to serve it under `/schema.json`. The command accepts an additional
-flag:
-
-* `--url|-u=URL` specifies the base URL used to build the JSON schema ID.
+be mounted on the goa service to serve it under `/schema.json`.
 
 ## <a name="gen_gen"></a> Plugins: `goagen gen`
 
 The `gen` command makes it possible to invoke `goagen` plugins.
-This command accepts two flags:
+This command accepts one flag:
 
-* `--pkg-path=PKG-PATH` specifies the Go package path to the plugin package.
-* `--pkg-name=PKG-NAME` specifies the Go package name of the plugin package. It defaults to the
-name of the inner most directory in the Go package path.
+* `--pkg-path=PKG-PATH` specifies the Go package import path to the plugin package.
 
-Refer to the [Generator Plugins](/extend/generators) section for details on goa plugins.
+Refer to the [Generator Plugins](../extend/generators) section for details on goa plugins.
