@@ -111,6 +111,36 @@ The syntax used to define parameters is the
 [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)
 DSL described in the section below.
 
+### File Servers
+
+The [Files](https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a)
+function makes it possible to define file servers on resources. A file server serves a static file
+or all files under a given file path if the route ends with a wildcard starting with `*`. The
+[Files](https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) function
+optionally accepts a child DSL (anonymous function as last argument) for defining a security scheme.
+The syntax is identical to the syntax used to define the security scheme of an action.
+
+The following example defines a `public` resource with two file servers, one serving the file
+`public/swagger/swagger.json` for requests sent to `/swagger.json` and the other all files under
+`public/js/` for requests sent to `/js/*filepath` where the value of `*filepath` corresponds to the
+path of the file relative to `/public/js`. The swagger endpoint also defines a security scheme
+requiring clients to auth before being able to retrieve the swagger specification.
+
+```go
+var _ = Resource("public", func() {
+
+    Origin("*", func() {        // CORS policy that applies to all actions and file servers
+        Methods("GET")          // of "public" resource
+    })
+
+    Files("/swagger.json", "public/swagger/swagger.json", func() {
+        Security("basic_auth")  // Security scheme implemented by /swagger.json endpoint
+    })
+
+    Files("/js/*filepath", "public/js/") // Serve all files under the public/js directory
+})
+```
+
 ## Data Types
 
 The goa API design language makes it possible to describe arbitrary data types that the API may
