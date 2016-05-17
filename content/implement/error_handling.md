@@ -125,6 +125,37 @@ response body and their status is used to form the response HTTP status.  Other 
 into the [ErrInternal](http://goa.design/reference/goa/#variables) which produces responses with a
 500 status code.
 
+## Designing Error Responses
+
+So far we've seen how controller code can adapt or create error responses. Ultimately though the API
+design dictates the correct content for responses. The goa design package provides the
+[ErrorMedia](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
+media type that action definitions can take advantage of to describe responses that correspond to
+errors created via error classes. Here is an example of such an action definition:
+
+```go
+var _ = Resource("bottle", func() {
+        Action("create", func() {
+                Routing(POST("/"))
+                Response(Created)
+                Response(BadRequest, ErrorMedia) // Maps errors return by the Create action
+        })
+})
+```
+
+The Go type generated for `ErrorMedia` is `goa.Error` so that the controller code can reuse the
+error directly to send the response in the generated response method:
+
+```go
+func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
+        if b, err := c.db.Create(ctx.Payload); err != nil {
+                // ctx.BadRequest accepts a *goa.Error as argument
+                return ctx.BadRequest(goa.ErrBadRequest(err.Error()))
+        }
+        return ctx.OK(b)
+}
+```
+
 ## Putting It All Together
 
 Going back to the initial goals, the API design defines the possible responses for each action
