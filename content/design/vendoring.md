@@ -48,6 +48,6 @@ already written):
 3. Edit `glide.yaml` and add the entries listed above
 4. Run `glide install`
 
-You now have a `vendor` directory that contains the sources for `goagen`, compile them and use hte
+You now have a `vendor` directory that contains the sources for `goagen`, compile them and use the
 tool as described above. Don't forget to recompile the tool after each `glide update` that updates
 `goa`.
