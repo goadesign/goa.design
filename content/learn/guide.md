@@ -150,7 +150,6 @@ client/datatypes.go
 swagger
 swagger/swagger.json
 swagger/swagger.yaml
-swagger/swagger.go
 ```
 
 Note how `goagen` generated a main for our app as well as a skeleton controller (`bottle.go`). These
@@ -164,8 +163,7 @@ Back to the list of generated files:
 * The app directory contains the generated code that glues the low level HTTP router to your code.
 * The client directory contains the generated code that implements a client Go package as well as a
   CLI tool that can be used to make requests to the cellar service.
-* The swagger directory contains a swagger specification of the API together with the implementation
-  of a controller that serves the file when GET requests are sent to `/swagger.json`.
+* The swagger directory contains a swagger specification of the API both in JSON and YAML formats.
 
 As discussed above the `main.go` and `bottle.go` files provide a starting point for implementing the
 service entry point and the bottle controller respectively. Looking at the content of the app
@@ -270,7 +268,7 @@ func (c *BottleController) Show(ctx *app.ShowBottleContext) error {
 
 Before we build and run the app, let's take a peek at main.go: the file contains a default
 implementation of main that instantiates a new goa service, initializes default middleware, mounts
-the bottle and swagger controllers and runs the HTTP server.
+the bottle controller and runs the HTTP server.
 
 ```go
 func main() {
@@ -286,8 +284,6 @@ func main() {
         // Mount "bottle" controller
         c := NewBottleController(service)
         app.MountBottleController(service, c)
-        // Mount Swagger spec provider controller
-        swagger.MountController(service)
 
         if err := service.ListenAndServe(":8080"); err != nil {
                 service.LogError("startup", "err", err)
@@ -309,7 +305,6 @@ This should produce something like:
 
 ```bash
 2016/04/10 16:20:37 [INFO] mount ctrl=Bottle action=Show route=GET /bottles/:bottleID
-2016/04/10 16:20:37 [INFO] mount file name=swagger/swagger.json route=GET /swagger.json
 2016/04/10 16:20:37 [INFO] listen transport=http addr=:8080
 ```
 
@@ -346,12 +341,6 @@ Date: Sun, 10 Apr 2016 23:22:46 GMT
 Content-Length: 117
 
 {"code":"invalid_request","status":400,"detail":"invalid value \"n\" for parameter \"bottleID\", must be a integer"}
-```
-
-Finally request the swagger specification with (response ommitted for the sake of brevity):
-
-```bash
-curl -i localhost:8080/swagger.json
 ```
 
 Instead of using curl, let's use the generated CLI tool to make requests to the service. First let's
