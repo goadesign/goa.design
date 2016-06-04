@@ -169,8 +169,9 @@ trigger the generated JavaScript.
 ## <a name="gen_swagger"></a> Swagger: `goagen swagger`
 
 The `swagger` command generates a [Swagger](http://swagger.io) specification of the API. The command
-does not accept additional flags. It generates both the Swagger JSON as well as a controller that
-can be mounted on the goa service to serve it under `/swagger.json`.
+does not accept additional flags. It generates both the Swagger JSON and YAML. The generated files
+can be served from the API itself using a file server defined in the design with
+[Files](http://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) 
 
 ## <a name="gen_schema"></a> JSON Schema: `goagen schema`
 
