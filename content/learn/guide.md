@@ -140,12 +140,14 @@ app/test
 app/test/bottle.go
 main.go
 bottle.go
+tool/cellar-cli
+tool/cli
 client
-client/cellar-cli
-client/cellar-cli/main.go
-client/cellar-cli/commands.go
+client
+tool/cellar-cli/main.go
+tool/cli/commands.go
 client/client.go
-client/bottle_client.go
+client/bottle.go
 client/datatypes.go
 swagger
 swagger/swagger.json
@@ -155,22 +157,22 @@ swagger/swagger.yaml
 Note how `goagen` generated a main for our app as well as a skeleton controller (`bottle.go`). These
 two files are meant to help bootstrap a new development, they won't be re-generated (by default) if
 already present (re-run the tool again and note how it only generates the files under the `app`,
-`client` and `swagger` directories this time). This behavior and many other aspects are configurable
-via command line arguments, see the goagen docs for details.
+`client`, `tool` and `swagger` directories this time). This behavior and many other aspects are
+configurable via command line arguments, see the goagen docs for details.
 
 Back to the list of generated files:
 
-* The app directory contains the generated code that glues the low level HTTP router to your code.
-* The client directory contains the generated code that implements a client Go package as well as a
-  CLI tool that can be used to make requests to the cellar service.
-* The swagger directory contains a swagger specification of the API both in JSON and YAML formats.
+* The `app` directory contains the generated code that glues the low level HTTP router to your code.
+* The `client` directory contains the generated code that implements a client Go package.
+* The `tool` directory contains a CLI tool that can be used to make requests to the cellar service.
+* The `swagger` directory contains a swagger specification of the API both in JSON and YAML formats.
 
 As discussed above the `main.go` and `bottle.go` files provide a starting point for implementing the
-service entry point and the bottle controller respectively. Looking at the content of the app
+service entry point and the bottle controller respectively. Looking at the content of the `app`
 package:
 
 * `controllers.go` contains the controller interface type definitions. There is one such interface
-  per resource defined in the design language. The file also contains the code that "mount"
+  per resource defined in the design language. The file also contains the code that "mounts"
   implementations of these controller interfaces onto the service. The exact meaning of "mounting" a
   controller is discussed further below.
 
@@ -182,14 +184,14 @@ package:
 * `hrefs.go` provide global functions for building resource hrefs. Resource hrefs make it possible
   for responses to link to related resources. goa knows how to build these hrefs by looking at the
   request path for the resource "canonical" action (by default the `show` action). See the
-  [Action](http://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a:aab4f9d6f98ed71f45bd470427dde2a7)
+  [Action](http://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a)
   design language function for additional information.
 
 * `media_types.go` contains the media type data structures used by resource actions to build the
   responses. There is one such data structure generated per view defined in the design.
 
 * `user_types.go` contains the data structures defined via the
-  [Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a:aab4f9d6f98ed71f45bd470427dde2a7)
+  [Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a)
   design language function. Such types may be used to define request payloads and response media
   types.
 
@@ -273,9 +275,9 @@ the bottle controller and runs the HTTP server.
 ```go
 func main() {
         // Create service
-        service := goa.New("API")
+        service := goa.New("cellar")
 
-        // Setup middleware
+        // Mount middleware
         service.Use(middleware.RequestID())
         service.Use(middleware.LogRequest(true))
         service.Use(middleware.ErrorHandler(service, true))
@@ -285,6 +287,7 @@ func main() {
         c := NewBottleController(service)
         app.MountBottleController(service, c)
 
+        // Start service
         if err := service.ListenAndServe(":8080"); err != nil {
                 service.LogError("startup", "err", err)
         }
@@ -347,7 +350,7 @@ Instead of using curl, let's use the generated CLI tool to make requests to the 
 compile the CLI client:
 
 ```bash
-cd client/cellar-cli
+cd tool/cellar-cli
 go build -o cellar-cli
 ./cellar-cli
 ```
