@@ -10,13 +10,12 @@ repository](https://github.com/goadesign/goa-cellar). The service deals with win
 specifically it makes it possible to retrieve pre-existing wine bottle models through simple GET
 requests.
 
-# Prerequesite
+# Prerequisite
 
 Install `goa` and `goagen`:
 
 ```
-go install github.com/goadesign/goa
-go install github.com/goadesign/goa/goagen
+go get -u github.com/goadesign/goa/...
 ```
 
 # Design
