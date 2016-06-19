@@ -1,7 +1,7 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
 title = "Vendoring goa Services"
-weight = 3
+weight = 4
 +++
 
 Code generation makes vendoring a little more complicated as the generation tool also needs to be
