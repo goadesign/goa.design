@@ -29,7 +29,7 @@ that contains the built-up API definition.
 
 ### Writing Generators for the goa API DSL
 
-On top the [Design](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
+On top of the [Design](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
 package variable the goa DSL also exposes [GeneratedMediaTypes](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
 which contains the set of media types that was generated dynamically by the engine rather than
 defined by the user (this happens when a Media Type is use inline with
@@ -72,12 +72,6 @@ The DSL engine package defines the metadata definition data structure -
 
 #### Writing the Artifacts
 
-The output directory is available through the
-[codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package
-[OutputDir](https://godoc.org/github.com/goadesign/goa/goagen/codegen#OutputDir) global variable.
-Generators should write all the artifacts in that directory (they may create sub-directories as
-needed).
-
 The [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package comes with a number
 of helper functions that help deal with generating Go code. For example it contains functions that
 can produce the code for defining a data structure given an instance of the
@@ -88,11 +82,10 @@ can produce the code for defining a data structure given an instance of the
 
 `goagen` is the tool used to generate the artifacts from DSLs in goa. The `gen` subcommand allows
 specifying a Go package path to a generator package - that is a package that implements the
-`Generate` function. This command accepts two flags:
+`Generate` function. This command accepts one flag:
 
 ```bash
---pkg-path=PKG-PATH specifies the Go package path to the plugin package.
---pkg-name=PKG-NAME specifies the Go package name of the plugin package. It defaults to the name of the inner most directory in the Go package path.
+--pkg-path=PKG-PATH specifies the Go package import path to the plugin package.
 ```
 
 ### Example
@@ -119,13 +112,21 @@ import (
 // Generate is the function called by goagen to generate the names file.
 func Generate() ([]string, error) {
 	api := design.Design
-	// Make sure to parse the common flags so that codegen.OutputDir gets properly
-	// initialized.
-	root := cobra.Command{Use: "goagen", Run: func(*cobra.Command, []string) { files, err = WriteNames(api) }
-	codegen.RegisterFlags(root)
-	// This is where you'd register specific flags for this generator
-	root.Execute()
-	return
+
+	var output string
+	set := flag.NewFlagSet("app", flag.PanicOnError)
+	set.String("design", "", "") // Consume design argument so Parse doesn't complain
+	set.StringVar(&outDir, "out", "", "")
+	set.StringVar(&ver, "version", "", "")
+	set.Parse(os.Args[2:])
+	outDir = filepath.Join(outDir, target)
+
+	// First check compatibility
+	if err := codegen.CheckVersion(ver); err != nil {
+		return nil, err
+	}
+
+	return WriteNames(design.Design)
 }
 
 // WriteNames creates the names.txt file.
