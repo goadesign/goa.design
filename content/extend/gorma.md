@@ -104,16 +104,7 @@ A Store represents a single data store; today that means a relational database. 
 ```go
 	Store("postgres", gorma.Postgres, ...)
 ```
-Today the type identifier isn't used in code generation, but may be used in the future to change the generated code in database specific ways.  The name is used to define the name of the entry point interface that is generated:
-
-```go
-var db gorm.Db
-...
-group := models.NewPostgresStorage(db)
-group.User().Get(...)
-```
-
-This interface, the corresponding factory method and the implement is provided as a single entry point for configuration and access to all the `Model`'s within the Store.
+Today these identifiers aren't used in code generation, but may be used in the future to change the generated code in database specific ways.  The name isn't special--you can use any name you like.
 
 The example Store above has a `Description` and several `Model` definitions:
 
