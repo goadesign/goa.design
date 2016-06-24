@@ -31,7 +31,9 @@ import:
 running `glide install` installs `goagen` in the `vendor` directory so that running:
 
 ```bash
-go build ./vendor/github.com/goadesign/goa/goagen
+cd ./vendor/github.com/goadesign/goa/goagen
+go build
+cd ../../../../../
 ```
 
 always produces the same generator tool which can then be used with:
