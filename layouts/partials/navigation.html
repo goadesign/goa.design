@@ -56,6 +56,7 @@
 					<li><a href="/reference" title="Reference"><i class="fa fa-book"></i></a></li>
 					<!-- <li><a href="/blog" title="Blog"><i class="fa fa-feed"></i></a></li> -->
 					<li><a href="https://github.com/goadesign/goa" title="GitHub"><i class="fa fa-github"></i></a></li>
+                    {{ if .IsPage }}<li><a href="https://github.com/goadesign/goa.design/edit/master/content/{{ trim .RelPermalink "/" }}.md" title="Edit"><i class="fa fa-edit"></i></a></li>{{ end }}
 				</ul>
 			</div>
 		</div>
