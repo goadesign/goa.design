@@ -58,9 +58,9 @@ Action("create", func() {
 	Routing(POST(""))
 	Payload(func() {
 		Member("address", func() {
-            Attribute("street")
-            Attribute("number", Integer)
-        })
+			Attribute("street")
+			Attribute("number", Integer)
+		})
 	})
 	Response(Created, "/accounts/[0-9]+")
 })
