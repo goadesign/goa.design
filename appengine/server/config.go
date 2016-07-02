@@ -30,6 +30,13 @@ var config appConfig
 
 // appConfig is the frontend server config.
 type appConfig struct {
+	// AbsoluteRedirects is a map of URLs the app will permanently redirect to
+	// when the request host and path match a key.
+	// Map values must not end with "/" and cannot contain query string.
+	// The redirected URL is written as is (as opposed to the entries in
+	// Redirects which are relative to the redirect host.
+	AbsoluteRedirects map[string]string `json:"absolute-redirects"`
+
 	// Redirects is a map of URLs the app will permanently redirect to
 	// when the request host and path match a key.
 	// Map values must not end with "/" and cannot contain query string.
@@ -45,10 +52,11 @@ type appConfig struct {
 	// The map must contain at least "default" key.
 	Buckets map[string]string `json:"buckets"`
 
-	WebRoot  string `json:"webroot"` // default handler pattern
-	Index    string `json:"index"`   // dir index file name
-	HookPath string `json:"hook"`    // GCS object change notification hook pattern
-	GCSBase  string `json:"gcs"`     // GCS base URL
+	WebRoot  string `json:"webroot"`   // default handler pattern
+	Index    string `json:"index"`     // dir index file name
+	HookPath string `json:"hook"`      // GCS object change notification hook pattern
+	GCSBase  string `json:"gcs"`       // GCS base URL
+	NotFound string `json:"not-found"` // File containing HTML to be displayed in case of 404
 }
 
 // readConfig reads file contents from configFile and populates config.
@@ -70,6 +78,9 @@ func readConfig() error {
 	}
 	if config.GCSBase == "" {
 		config.GCSBase = weasel.DefaultStorage.Base
+	}
+	if config.NotFound == "" {
+		config.NotFound = "404.html"
 	}
 	config.tlsOnly = make(map[string]struct{})
 	for _, v := range config.TLSOnly {

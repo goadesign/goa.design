@@ -33,8 +33,11 @@ func init() {
 		panic(err)
 	}
 	storage = &weasel.Storage{Base: config.GCSBase, Index: config.Index}
+	for path, redir := range config.AbsoluteRedirects {
+		http.Handle(path, redirectHandler(redir, http.StatusMovedPermanently, true))
+	}
 	for host, redir := range config.Redirects {
-		http.Handle(host, redirectHandler(redir, http.StatusMovedPermanently))
+		http.Handle(host, redirectHandler(redir, http.StatusMovedPermanently, false))
 	}
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
@@ -75,12 +78,19 @@ func serveObject(w http.ResponseWriter, r *http.Request) {
 		if errf, ok := err.(*weasel.FetchError); ok {
 			code = errf.Code
 		}
+		if code == http.StatusNotFound {
+			o, err = storage.OpenFile(ctx, bucket, config.NotFound)
+			if err == nil {
+				goto serve
+			}
+		}
 		serveError(w, code, "")
 		if code != http.StatusNotFound {
 			log.Errorf(ctx, "%s/%s: %v", bucket, oname, err)
 		}
 		return
 	}
+serve:
 	if err := storage.ServeObject(w, r, o); err != nil {
 		log.Errorf(ctx, "%s/%s: %v", bucket, oname, err)
 	}
@@ -89,11 +99,14 @@ func serveObject(w http.ResponseWriter, r *http.Request) {
 
 // redirectHandler creates a new handler which redirects all requests
 // to the specified url, preserving original path and raw query.
-func redirectHandler(url string, code int) http.Handler {
+func redirectHandler(url string, code int, abs bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u := url + r.URL.Path
-		if r.URL.RawQuery != "" {
-			u += "?" + r.URL.RawQuery
+		u := url
+		if !abs {
+			u += r.URL.Path
+			if r.URL.RawQuery != "" {
+				u += "?" + r.URL.RawQuery
+			}
 		}
 		http.Redirect(w, r, u, code)
 	})

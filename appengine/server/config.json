@@ -1,9 +1,9 @@
 {
-  "redirects": {
-    "/getting-started.html": "https://goa.design/learn/guide/",
-    "/goagen.html": "https://goa.design/implement/goagen/",
-    "/vice-framework": "https://goa.design/",
-    "/swagger.html": "https://goa.design/design/swagger/"
+  "absolute-redirects": {
+    "/getting-started.html": "https://goa.design/learn/guide",
+    "/goagen.html": "https://goa.design/implement/goagen",
+    "/vice-framework": "https://goa.design",
+    "/swagger.html": "https://goa.design/design/swagger"
   },
   "buckets": {
     "default": "goa.design"
@@ -11,5 +11,6 @@
   "webroot": "/",
   "index": "index.html",
   "hook": "/-/hook/gcs",
-  "gcs": "https://storage.googleapis.com"
+  "gcs": "https://storage.googleapis.com",
+  "not-found": "404.html"
 }
