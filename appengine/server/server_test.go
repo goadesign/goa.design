@@ -20,8 +20,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goadesign/goa.design/appengine"
-
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/memcache"
 )
@@ -58,16 +56,30 @@ func TestRedirect(t *testing.T) {
 	}
 }
 
+func TestTLSOnly(t *testing.T) {
+	config.tlsOnly = map[string]struct{}{"example.com": {}}
+	r, _ := testInstance.NewRequest("GET", "http://example.com/page?foo=bar", nil)
+	w := httptest.NewRecorder()
+	http.DefaultServeMux.ServeHTTP(w, r)
+	if w.Code != http.StatusMovedPermanently {
+		t.Errorf("w.Code = %d; want %d", w.Code, http.StatusMovedPermanently)
+	}
+	want := "https://example.com/page?foo=bar"
+	if l := w.Header().Get("location"); l != want {
+		t.Errorf("location = %q; want %q", l, want)
+	}
+}
+
 func TestServe_DefaultGCS(t *testing.T) {
 	const (
 		bucket       = "default-bucket"
 		reqFile      = "/dir/"
 		realFile     = bucket + "/dir/index.html"
-		contentType  = "text/plain"
 		contents     = "contents"
+		contentType  = "text/plain"
 		cacheControl = "public,max-age=0"
 		// dev_appserver app identity stub
-		authorization = "Bearer InvalidToken:" + weasel.ScopeStorageRead
+		authorization = "Bearer InvalidToken:https://www.googleapis.com/auth/devstorage.read_only"
 	)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -153,52 +165,6 @@ func TestServe_Methods(t *testing.T) {
 		if v := strings.TrimSpace(rw.Body.String()); v != test.body {
 			t.Errorf("%d: rw.Body = %q; want %q", i, v, test.body)
 		}
-	}
-}
-
-func TestServe_Memcache(t *testing.T) {
-	const (
-		bucket       = "default-bucket"
-		file         = "index.html"
-		contentType  = "text/html"
-		contents     = "cached file"
-		cacheControl = "public,max-age=10"
-	)
-	// make sure we don't hit real GCS
-	storage.Base = "invalid"
-	// overwrite global config
-	config.Buckets = map[string]string{"default": bucket}
-
-	req, _ := testInstance.NewRequest("GET", "/"+file, nil)
-	ctx := appengine.NewContext(req)
-	obj := &weasel.Object{
-		Meta: map[string]string{
-			"content-type":  contentType,
-			"cache-control": cacheControl,
-		},
-		Body: []byte(contents),
-	}
-	item := memcache.Item{
-		Key:    storage.CacheKey(bucket, file),
-		Object: obj,
-	}
-	if err := memcache.Gob.Set(ctx, &item); err != nil {
-		t.Fatal(err)
-	}
-
-	res := httptest.NewRecorder()
-	http.DefaultServeMux.ServeHTTP(res, req)
-	if res.Code != http.StatusOK {
-		t.Errorf("res.Code = %d; want %d", res.Code, http.StatusOK)
-	}
-	if v := res.Header().Get("cache-control"); v != cacheControl {
-		t.Errorf("cache-control = %q; want %q", v, cacheControl)
-	}
-	if v := res.Header().Get("content-type"); v != contentType {
-		t.Errorf("content-type = %q; want %q", v, contentType)
-	}
-	if s := res.Body.String(); s != contents {
-		t.Errorf("res.Body = %q; want %q", s, contents)
 	}
 }
 

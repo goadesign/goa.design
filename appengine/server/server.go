@@ -20,7 +20,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/goadesign/goa.design/appengine"
+	"github.com/google/weasel"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 )
@@ -38,6 +38,11 @@ func init() {
 	}
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
+	http.HandleFunc("/_ah/warmup", handleWarmup)
+}
+
+func handleWarmup(w http.ResponseWriter, r *http.Request) {
+	// nothing to do here
 }
 
 // serveObject responds with a GCS object contents, preserving its original headers
@@ -51,12 +56,20 @@ func serveObject(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
 	}
+	if _, force := config.tlsOnly[r.Host]; force && r.TLS == nil {
+		u := "https://" + r.Host + r.URL.Path
+		if r.URL.RawQuery != "" {
+			u += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, u, http.StatusMovedPermanently)
+		return
+	}
 
 	ctx := newContext(r)
 	bucket := bucketForHost(r.Host)
 	oname := r.URL.Path[1:]
 
-	o, err := storage.ReadFile(ctx, bucket, oname)
+	o, err := storage.OpenFile(ctx, bucket, oname)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errf, ok := err.(*weasel.FetchError); ok {
@@ -68,10 +81,10 @@ func serveObject(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	if err := weasel.ServeObject(w, o, r.Method == "GET"); err != nil {
+	if err := storage.ServeObject(w, r, o); err != nil {
 		log.Errorf(ctx, "%s/%s: %v", bucket, oname, err)
 	}
+	o.Body.Close()
 }
 
 // redirectHandler creates a new handler which redirects all requests
