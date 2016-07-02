@@ -1,4 +1,5 @@
 application: goa-design
+version: 3
 runtime: go
 api_version: go1
 
