@@ -4,7 +4,7 @@ title = "The goa API design language"
 weight = 1
 +++
 
-The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible
+The Goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible
 to describe arbitrary microservice APIs. While the main focus is REST based HTTP APIs, the language
 is flexible enough to describe APIs that follow other methodologies as well.
 [Plugins](/extend/dsls) can extend the core DSL to allow describing other aspects of
@@ -15,6 +15,7 @@ microservices such as database models, service discovery integrations, failure h
 At its core the design language consists of functions that are chained together to describe
 *definitions*. The goa design language root definition is the API definition, the DSL to define it
 looks like this:
+
 ```go
 import (
     . "github.com/goadesign/goa/design"
