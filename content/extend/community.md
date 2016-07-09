@@ -29,6 +29,16 @@ Found a bug? Create an [issue](https://github.com/goadesign/goa/issues/new) on G
 
 ## How to contribute
 
+### Documentation
+
+Contirubte to the [documentation and website](https://github.com/goadesign/goa.design).
+
+It's built with [Hugo](https://gohugo.io)
+
+1. Fork, clone, and branch the repository.
+1. Use the Makefile to simplify your workflow.
+1. Create a PR
+
 ### Examples
 
 Goa has a dedicated GitHug [repository](https://github.com/goadesign/examples) for examples.
