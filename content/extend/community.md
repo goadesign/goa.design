@@ -76,6 +76,7 @@ If you would like to have your example added here, let us know!
 ### DSLs
 
 [Gorma](/extend/gorma), A Database ORM.
+[GoaRedux](https://github.com/verdverm/goa-redux), A Redux state store
 
 
 
