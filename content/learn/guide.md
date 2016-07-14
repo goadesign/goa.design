@@ -153,7 +153,7 @@ swagger/swagger.json
 swagger/swagger.yaml
 ```
 
-Note how `goagen` generated a main for our app as well as a skeleton controller (`bottle.go`). These
+Note how `goagen` generated a `main.go` for our app as well as a skeleton controller (`bottle.go`). These
 two files are meant to help bootstrap a new development, they won't be re-generated (by default) if
 already present (re-run the tool again and note how it only generates the files under the `app`,
 `client`, `tool` and `swagger` directories this time). This behavior and many other aspects are
