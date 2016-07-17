@@ -877,6 +877,19 @@ input[type=button]:hover,
   position: absolute;
   top: 2.9em;
 }
+
+.alternate {
+	width:100%;
+	background-color:#e6e6e6;
+	padding-top:1em;
+	margin-top:1em;
+	padding-bottom:1em;
+}
+
+.alternate container {
+	background-color:#e6e6e6;
+}
+
 /* -------------------------------------------------------- */
 /*  Carousel */
 /* -------------------------------------------------------- */
@@ -1090,8 +1103,6 @@ input[type=button]:hover,
   position: relative;
   padding: 0 0 0 0;
   background: transparent;
-  margin-bottom: 0;
-  font-size: 13px;
   line-height: 1.3em;
   text-align: center;
 }
@@ -1104,9 +1115,9 @@ input[type=button]:hover,
   line-height: 1.15em;
 }
 .hero-unit .main {
-        font-size: 2.2em;
-        line-height: 2.4em;
-        font-weight: 400;
+  font-size: 2.2em;
+  line-height: 2.4em;
+  font-weight: 400;
 }
 
 /* -------------------------------------------------------- */
