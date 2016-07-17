@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -174,7 +175,7 @@ func (s *Storage) PurgeCache(ctx context.Context, bucket, name string) error {
 // CacheKey returns a key to cache an object under, computed from
 // s.Base, bucket and then name.
 func (s *Storage) CacheKey(bucket, name string) string {
-	return fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, name))
+	return fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, os.Getenv("CURRENT_VERSION_ID"), name))
 }
 
 // fetch retrieves object from the given url.
