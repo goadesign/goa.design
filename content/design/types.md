@@ -196,6 +196,21 @@ the names of attributes being referred to, this makes it possible to pick and ch
 attributes to "inherit". Also the media type may override properties of the `name` attribute if
 needed (e.g. to change the type, description, validations etc.).
 
+Media types can also reference themselves by using the media type identifier. This makes it possible to define recursive media types and not have the Go compiler complain about the cycles:
+
+```go
+var MT = MediaType("application/vnd.app.mt", func() {
+	Reference(CreatePayload)
+	Attributes(func() {
+		Attribute("name")
+		Attribute("children", CollectionOf("application/vnd.app.mt"))
+	})
+	View("default", func() {
+		Attribute("name")
+	})
+})
+```
+
 ## Mixing Types and Media Types
 
 We've already seen how `Reference` makes it possible to reuse attribute definitions across types
