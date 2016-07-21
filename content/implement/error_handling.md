@@ -48,7 +48,7 @@ For example:
 // Create a new error class:
 invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 422)
 // And use it to create errors:
-return invalidEndpointErr("endpoint cannot be resolved", "endpoint", endpoint, "error", error)
+return invalidEndpointErr("endpoint cannot be resolved", "endpoint", endpoint, "error", err)
 ```
 
 goa comes with a set of pre-existing error classes that can be leveraged to cover the common cases.
