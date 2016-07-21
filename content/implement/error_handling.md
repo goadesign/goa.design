@@ -22,25 +22,24 @@ The abstraction used in goa to achieve the goals listed above is the error class
 defines the shape of an error response using the following fields:
 
 * `id`: a unique identifier for this particular occurrence of the problem.
-* `status`: the HTTP status code applicable to this problem, expressed as a string value.
+* `status`: the HTTP status code applicable to this problem.
 * `code`: an application-specific error code, expressed as a string value.
 * `detail`: a human-readable explanation specific to this occurrence of the problem. Like title, this field's value can be localized.
 * `meta`: a meta object containing non-standard meta-information about the error.
 
 Error classes are created using the
-[NewErrorClass](http://goa.design/reference/goa/#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a)
+[NewErrorClass](https://goa.design/reference/goa/#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a)
 function which accepts the error code and status:
 
 ```go
 func NewErrorClass(code string, status int) ErrorClass
 ```
 
-Error classes are functions themselves that create instances of
-[Error](http://goa.design/reference/goa/#type-error-a-name-goa-error-a) given a format and
-optional values similarly to `fmt.Errorf`:
+Error classes are functions themselves that create instances of `error` given a message and
+optional key pair values:
 
 ```go
-type ErrorClass func(fm interface{}, v ...interface{}) *Error
+type ErrorClass func(message interface{}, keypairs ...interface{}) error
 ```
 
 For example:
@@ -49,7 +48,7 @@ For example:
 // Create a new error class:
 invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 422)
 // And use it to create errors:
-return invalidEndpointErr("The specified endpoint %s could not be resolved", endpoint)
+return invalidEndpointErr("endpoint cannot be resolved", "endpoint", endpoint, "error", error)
 ```
 
 goa comes with a set of pre-existing error classes that can be leveraged to cover the common cases.
@@ -64,6 +63,15 @@ func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
           // ...
 }
 ```
+
+All errors returned by calling error class functions implement the
+[ServiceError](https://goa.design/reference/goa/#type-serviceerror-a-name-goa-serviceerror-a) interface.
+This interface exposes the error response status and unique token that middlewares can take
+advantage of for logging or otherwise processing errors. It's also possible to determine whether a
+given error was created via a error class by checking the behavior of the error object:
+
+```go
+    
 
 ## Using Error Classes
 
@@ -83,22 +91,20 @@ instance:
         }
 ```
 
-In some cases it may be useful to attach additional metadata to the error - this can be done using
-the [Meta](http://goa.design/reference/goa/#func-error-meta-a-name-goa-error-meta-a) method exposed
-by all instances of [Error](http://goa.design/reference/goa/#type-error-a-name-goa-error-a):
+Additional metadata can be attached to the error using the optional key pair parameters:
 
 ```go
         if err := someInternalMethod(); err != nil {
-               return goa.ErrBadRequest(err).Meta("module", "internal")
+               return goa.ErrBadRequest(err, "module", "internal")
         }
 ```
 
 ### Creating New Errors
 
 Sometimes it may be useful to create new error classes. For example it may be necessary for clients
-to handle this error in a specific way. Or the error needs to be easily differentiated in logs or
-by other tracing mechanisms. In this case the error class function acts in a similar fashion as
-`fmt.Errorf`:
+to handle a specific class of errors in a specific way. The errors may need to be easily
+differentiated in logs or by other tracing mechanisms. In this case the error class function acts in
+a similar fashion as `errors.New`:
 
 ```go
 // DoAction is a dummy example of a goa action implementation that defines a new error class and
@@ -108,8 +114,7 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
         invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 400)
         // Assume endpoint must contain .mycompany.com
         if !strings.Contains(endpoint, ".mycompany.com") {
-              // Create new goa.HTTPError
-              return invalidEndpointErr("%s should contain mycompany.com", endpoint)
+              return invalidEndpointErr("endpoint must contain .mycompany.com", "endpoint", endpoint)
         }
         // ...
 }
@@ -118,18 +123,18 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
 ## Error Handlers
 
 The
-[ErrorHandler](http://goa.design/reference/goa/middleware/#func-errorhandler-a-name-middleware-errorhandler-a)
-middleware maps any returned error to HTTP responses.  Errors that are instances of
-[Error](http://goa.design/reference/goa/#type-error-a-name-goa-error-a) get serialized in the
+[ErrorHandler](https://goa.design/reference/goa/middleware/#func-errorhandler-a-name-middleware-errorhandler-a)
+middleware maps any returned error to HTTP responses.  Errors that are created via goa's
+[ErrorClass](https://goa.design/reference/goa/#type-error-a-name-goa-error-a) get serialized in the
 response body and their status is used to form the response HTTP status.  Other errors get wrapped
-into the [ErrInternal](http://goa.design/reference/goa/#variables) which produces responses with a
+into the [ErrInternal](https://goa.design/reference/goa/#variables) which produces responses with a
 500 status code.
 
 ## Designing Error Responses
 
 So far we've seen how controller code can adapt or create error responses. Ultimately though the API
 design dictates the correct content for responses. The goa design package provides the
-[ErrorMedia](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
+[ErrorMedia](https://goa.design/reference/goa/design.html#variables)
 media type that action definitions can take advantage of to describe responses that correspond to
 errors created via error classes. Here is an example of such an action definition:
 
@@ -143,14 +148,14 @@ var _ = Resource("bottle", func() {
 })
 ```
 
-The Go type generated for `ErrorMedia` is `goa.Error` so that the controller code can reuse the
+The Go type generated for `ErrorMedia` is `error` so that the controller code can reuse the
 error directly to send the response in the generated response method:
 
 ```go
 func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
         if b, err := c.db.Create(ctx.Payload); err != nil {
                 // ctx.BadRequest accepts a *goa.Error as argument
-                return ctx.BadRequest(goa.ErrBadRequest(err.Error()))
+                return ctx.BadRequest(goa.ErrBadRequest(err))
         }
         return ctx.OK(b)
 }
@@ -160,10 +165,9 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 
 Going back to the initial goals, the API design defines the possible responses for each action
 including the error responses via the
-[Response](http://goa.design/reference/goa/design/apidsl.html#func-response-a-name-apidsl-response-a)
+[Response](https://goa.design/reference/goa/design/apidsl.html#func-response-a-name-apidsl-response-a)
 DSL. Error classes provide a way to map the errors produced by the
-implementation back to the design by wrapping errors into
-[Error](http://goa.design/reference/goa/#type-error-a-name-goa-error-a).
+implementation back to the design by wrapping the errors using error classes.
 
 Services should create their own error classes to handle domain specific errors. The controllers
 must make sure to only return errors with attached error classes so the proper responses are sent.
@@ -171,4 +175,4 @@ They can do so by creating these errors or wrapping errors coming from deeper la
 
 Note that the controller actions are responsible for implementing the contract defined in the
 design. That is they should not define error classes that use HTTP status codes not listed in the
-[action definitions](http://goa.design/reference/goa/design/apidsl.html#func-action-a-name-apidsl-action-a).
+[action definitions](https://goa.design/reference/goa/design/apidsl.html#func-action-a-name-apidsl-action-a).

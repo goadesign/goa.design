@@ -1,7 +1,7 @@
 +++
 date = "2016-04-30T11:01:06-05:00"
 title = "Encoding"
-weight = 7
+weight = 6
 +++
 
 ## Overview
