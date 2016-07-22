@@ -9,7 +9,7 @@
 	</section><!-- end .container -->
 
 	<div class="container">
-		<div class="row">
+		<div class="row" style="margin-bottom:4em">
 			<div class="hero-unit">
 				<p>
 				goa provides a holistic approach to building microservices in
@@ -19,7 +19,7 @@
 		</div>
 	</div>
 
-	<div class="container">
+	<div class="container" style="margin-bottom:4em">
 		<div class="row">
 		<div class="span4">
 			<span class="circle" style="background:#ED3E3E;"><i class="fa fa-magic"></i></span>&nbsp;
@@ -65,12 +65,12 @@
 			</div>
 		</div>
 	</div>
-	<div class="container">
+	<div class="container" style="margin-bottom:2em">
 		<div class="row">
 			<h3>
 				<i class="fa fa-chevron-circle-right"></i> <a href="/design/overview">Design</a>
 			</h3>
-			<p>
+			<p style="margin-bottom:2em">
 				Creating a service with goa starts with the design. The
 				<a href="/design/overview/">goa DSL</a> lets you describe the global properties,
 				types and endpoints that make up the service API. The
@@ -84,7 +84,7 @@
 			<h3>
 				<i class="fa fa-chevron-circle-right"></i> <a href="/implement/overview">Implement</a>
 			</h3>
-			<p>
+			<p style="margin-bottom:2em">
 				Once the design of the API is in place <a href="/implement/goagen/">goagen</a>
 				generates the corresponding data structures, validation code and handlers. Handlers
 				are defined as interface methods. Implementing the service is thus as simple as
@@ -95,10 +95,11 @@
 			<h3>
 				<i class="fa fa-chevron-circle-right"></i> <a href="/extend/generators">Extend</a>
 			</h3>
-			<p>
-				The best part about the goa DSL is that the engine that executes it is completely
-				decoupled. This allows implementing <a href="/extend/dsls">custom DSLs</a> as well
-				as generating <a href="/extend/generators">arbitrary outputs</a>.
+			<p style="margin-bottom:2em">
+				The best part about the goa DSL is that the engine is completely decoupled. Plugins
+				can implement <a href="/extend/dsls">custom DSLs</a> to extend the concepts
+				described in the design. Plugins can also generate <a
+				href="/extend/generators">arbitrary outputs</a>.
 			</p>
 		</div>
 	</div>
@@ -111,31 +112,40 @@
 			</div>
 		</div>
 	</div>
-	<div class="container">
+	<div class="container" style="margin-bottom:4em">
 		<div class="row">
-			<h3>
-			As easy as 1, 2, 3:
-			</h3>
-			<ol>
-			<li>
-				The <a href="/learn/guide">Getting Started Guide</a> provides a quick walk through
-				of implementing a service using goa and is a good place to start.
-			</li>
-			<li>
-				Next the <a href="/design/overview">Design section</a> covers the DSL in greater
-				length. The <a href="https://github.com/goadesign/goa-cellar">Cellar</a> example
-				service provides a good reference.
-			</li>
-			<li>
-				The <a href="https://github.com/goadesign/examples">Examples</a> repo contains a
-				series of small examples show casing specific functionality.
-			</li>
-			</ol>
+			<p>
+				<span class="fa-stack fa-3x">
+					<i class="fa fa-circle fa-stack-2x" style="color:#d0d0d0"></i>
+					<strong class="fa-stack-1x text-primary" style="color:white">1</strong>
+				</span>
+				<span style="font-size:120%">
+					Implement a simple goa service with the <a href="/learn/guide">Getting Started Guide</a>.
+				</span>
+			</p>
+			<p>
+				<span class="fa-stack fa-3x">
+					<i class="fa fa-circle fa-stack-2x" style="color:#d0d0d0"></i>
+					<strong class="fa-stack-1x text-primary" style="color:white">2</strong>
+				</span>
+				<span style="font-size:120%">
+					Learn more about the goa <a href="/design/overview">DSL</a>.
+				</span>
+			</p>
+			<p>
+				<span class="fa-stack fa-3x">
+					<i class="fa fa-circle fa-stack-2x" style="color:#d0d0d0"></i>
+					<strong class="fa-stack-1x text-primary" style="color:white">3</strong>
+				</span>
+				<span style="font-size:120%">
+					Consult the <a href="https://github.com/goadesign/examples">examples</a> and the <a href="https://github.com/goadesign/goa-cellar">goa-cellar</a> service.
+				</span>
+			</p>
 		</div>
 	</div>
 
 	<div class="alternate">
-	<div class="container" style="margin-top:4em">
+	<div class="container" style="margin-top:4em;margin-bottom:2em">
 		<div class="row">
 			<div class="hero-unit">
 				<p>Learn more</p>
