@@ -213,7 +213,6 @@ type is `String`. The possible types for attributes are:
 | `UUID`     | uuid.UUID     | RFC4122 string    |
 | `Any`      | interface{}   | ?                 |
 
-
 Additionally type fields can be defined using `ArrayOf` or `HashOf` or by using a recursive DSL:
 
 ```go
@@ -401,6 +400,11 @@ Response("OK", func() {
 })
 ```
 
+### Resource vs. Action Responses
+
+Responses can be defined in two places: as part of a `Resource` definition or as part of a `Action`
+definition. Responses defined in a `Resource` definition apply to all the resource actions.
+
 ### Leveraging the Default Media Type
 
 Resources can define a default media type for all actions. Defining a default media type has two
@@ -499,7 +503,7 @@ Action("sum", func() {
 ```
 
 goa provides response templates for all standard HTTP code that define the status so that it is not
-required to define templates for the simple case. The name of the built-int templates match the name
+required to define templates for the simple case. The name of the built-in templates match the name
 of the corresponding HTTP status code. For example:
 
 ```go
