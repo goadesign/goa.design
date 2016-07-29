@@ -1,6 +1,6 @@
 +++
 date = "2016-04-16T11:01:06-05:00"
-title = "The goa API design language"
+title = "The goa API Design Language"
 weight = 1
 +++
 
