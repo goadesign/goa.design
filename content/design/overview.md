@@ -304,61 +304,205 @@ var User = MediaType("vnd.application/goa.users", func() {
 })
 ```
 
-### Other Response Fields
+### Defining Responses
 
-Apart from the response shape, defining API responses also requires specifying the status code and
-the valid values for other HTTP headers. This is done using the `Response` function which accepts
-the name of the response, the media type identifier and optionally an anonymous function listing
-additional properties (HTTP status, headers etc.). As always the
-[reference](https://goa.design/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a:aab4f9d6f98ed71f45bd470427dde2a7)
-lists all the possible DSL, here is an example:
+The [Response](http://goa.design/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a)
+function is used in action declarations to define a specific potential response. It describes the
+response status code, the media type if the response contains a body and the headers. Each response
+must have a unique name in the scope of the action, as with most other DSL functions the name is the
+first argument. The following DSL defines a response named "NoContent" that uses HTTP status code 
+204:
 
 ```go
-Action("sum", func() {    // Defines the sum action.
-    Routing(POST("/sum")) // The relative path to the sum endpoint.
-    Description("sum returns the sum of all the operands in the response body")
-    Payload(Series)       // Defines the action request body shape.
-    Response("created", "vnd.application/goa.results", func() { // Defines the response
-        Status(201)       // using the media type defined above and status code 201.
+Response("NoContent", func() {
+    Status(204)
+})
+```
+
+Note that this example as well as all the other examples in this section do not use response
+templates and therefore define all the properties of the response including its name. In reality in
+most cases responses are defined using one of the built-in templates so that for example the
+response above is equivalent to:
+
+```go
+Response(NoContent)
+```
+
+Response templates are covered in more details in the next section but before we can cover them we
+must first understand how `Response` works.
+
+If the response contains a body the corresponding media type is specificed using the
+[Media](http://goa.design/reference/goa/design/apidsl/#func-media-a-name-apidsl-media-a) function.
+This function accepts either the media type identifier or actual media type value as first argument
+and optionally the name of the media type view used to render the response body. The view is
+optional as the same action may return different views depending on the request state for example.
+Here is an example of a response definition for a "OK" response using status code 200 and the
+`Results` media type:
+
+```go
+Response("OK", func() {
+    Status(200)
+    Media(Results)
+})
+```
+
+Assuming the identifier of `Results` is `application/vnd.example.results` then the above is
+equivalent to:
+
+```go
+Response("OK", func() {
+    Status(200)
+    Media("application/vnd.example.results")
+})
+```
+
+Note that the media type identifier (`application/vnd.example.results` in the example above) may or
+may not correspond to the identifier of a media type defined via the `MediaType` function. The
+generated code uses the Go type `[]byte` to define the type of the response body when the media
+type identifier doesn't match a media type defined in the design.
+
+If the parent action always returns the default view then the response can be defined as:
+
+```go
+Response("OK", func() {
+    Status(200)
+    Media(Results, "default")
+})
+```
+
+The response headers are defined using the
+[Headers](http://goa.design/reference/goa/design/apidsl/#func-headers-a-name-apidsl-headers-a)
+function. The syntax for defining each header is the same syntax used to define attributes:
+
+```go
+Response("OK", func() {
+    Status(200)
+    Media(Results, "default")
+    Headers(func() {
+        Header("Location", String, "Resource location", func() {
+            Pattern("/results/[0-9]+")
+        })
+        Header("ETag") // assumes String type as with Attribute
     })
 })
 ```
 
-Note that the media type identifier (`vnd.application/goa.results` in the example above) may or
-may not correspond to the identifier of a media type defined via the `MediaType` function. The
-generated code uses the Go type `[]byte` to define the type of the response body when the media
-type identifier doesn't match a media type defined in the design.
+### Leveraging the Default Media Type
+
+Resources can define a default media type for all actions. Defining a default media type has two
+effects:
+
+1. The default media type is used for all `OK` responses that do not define a media type.
+2. Attributes defined on action payloads, action params and response media types that match the
+   names of attributes defined on the default media type automatically inherit all their
+   properties from it (description, type, validations etc.).
+
+Consider the following resource definition that uses the `Results` media type defined above as
+default media type and leverages that to define the `add` action `OK` response:
+
+```go
+var _ = Resource("Operands", func() {
+    DefaultMedia(Results)
+    Action("add", func() {
+        Routing(GET("/add/:left/:right"))
+        Params(func() {
+            Param("left", Integer, "Left operand")
+            Param("right", Integer, "Right operand")
+        })
+        Response(OK)         // Uses the resource default media type
+    })
+})
+```
+
+Now imagine the `Results` media type also returned the initial operands used to compute the sum:
+
+```go
+var Results = MediaType("vnd.application/goa.results", func() {
+    Description("The results of an operation")
+    Attributes(func() {
+        Attribute("left", Integer, "Left operand")
+        Attribute("right", Integer, "Right operand")
+        Attribute("value", Integer, "Results value")
+        Attribute("requester", User)
+    })
+    View("default", func() {
+        Attribute("left")
+        Attribute("right")
+        Attribute("value")
+        Attribute("requester")
+    })
+})
+```
+
+The `add` action definition could take advantage of that to avoid having to repeat the type and
+comments for the `left` and `right` params:
+
+```go
+var _ = Resource("Operands", func() {
+    DefaultMedia(Results)
+    Action("add", func() {
+        Routing(GET("/add/:left/:right"))
+        Params(func() {
+            Param("left")    // Inherits type and description from default media type
+            Param("right")   // Inherits type and description from default media type
+        })
+        Response(OK)         // Uses the resource default media type
+    })
+})
+```
+
+As the definition for these values evolve they only need to change in one place.
 
 ### Response Templates
 
 The goa API design language allows defining *response templates* at the API level that any
 action may leverage to define its responses. Such templates may accept an arbitrary number of
-string arguments to define any of the response properties. goa provides response templates for
-all standard HTTP code that define the status so that it is not required to define templates
-for the simple case. Here is an example of a response template definition:
+string arguments to define any of the response properties. Templates are defined with the following
+syntax:
 
 ```go
 var _ = API("My API", func() {
-    ResponseTemplate(Created, func(hrefPattern string) { // Defines the "created" template
-        Description("Resource created") // that takes one argument.
+    ResponseTemplate("created", func(hrefPattern string) { // Defines the "created" template
+        Description("Resource created")                    // that takes one argument "hrefPattern"
         Status(201)                     // using status code 201
         Header("Location", func() {     // and contains the "Location" header
             Pattern(hrefPattern)        // with a regex validation defined by the
-                                        // value of the argument.
+                                        // value of the "hrefPattern" argument.
         })
     })
 })
 ```
 
-Response templates are used in action definitions as follows:
+A template is then used by simply referring to it by name when defining a response:
 
 ```go
-Action("sum", func() {         // Defines the sum action
-    Routing(POST("/sum"))      // The relative path to the add endpoint
-    Description("sum returns the sum of all the operands in the response body")
-    Payload(Series)            // Payload defines the action request body shape.
-    Response(Created, "^/results/[0-9]+") // Response defines a response using the
-                               // Created response template.
+Action("sum", func() {
+    Routing(POST("/accounts"))
+    Payload(AccountPayload)
+    Response("created", "^/results/[0-9]+") // Response uses the "created" response template.
+})
+```
+
+goa provides response templates for all standard HTTP code that define the status so that it is not
+required to define templates for the simple case. The name so the built-int templates match the name
+of the corresponding HTTP status code. For example:
+
+```go
+Action("show", func() {
+    Routing(GET("/:id"))
+    Response("ok", func() {
+        Status(200)
+        Media(AccountMedia)
+    })
+})
+```
+
+is equivalent to:
+
+```go
+Action("show", func() {
+    Routing(GET("/:id"))
+    Response(OK, AccountMedia) // Uses the built-in "OK" response template that defines status 200
 })
 ```
 
