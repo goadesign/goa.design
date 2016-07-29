@@ -315,6 +315,7 @@ first argument. The following DSL defines a response named "NoContent" that uses
 
 ```go
 Response("NoContent", func() {
+    Description("This is the response returned in case of success")
     Status(204)
 })
 ```
@@ -322,13 +323,13 @@ Response("NoContent", func() {
 Note that this example as well as all the other examples in this section do not use response
 templates and therefore define all the properties of the response including its name. In reality in
 most cases responses are defined using one of the built-in templates so that for example the
-response above is equivalent to:
+response above (minus the description) can be short-circuited to:
 
 ```go
 Response(NoContent)
 ```
 
-Response templates are covered in more details in the next section but before we can cover them we
+Response templates are covered in more details in a section below but before we can cover them we
 must first understand how `Response` works.
 
 If the response contains a body the corresponding media type is specificed using the
@@ -341,8 +342,20 @@ Here is an example of a response definition for a "OK" response using status cod
 
 ```go
 Response("OK", func() {
+    Description("This is the success response")
     Status(200)
     Media(Results)
+})
+```
+
+As a convenience the media type of a response can be provided as second argument to the `Response`
+function (this is especially useful when using response templates as described in the corresponding
+section below). The above is thus equivalent to:
+
+```go
+Response("OK", Results, func() {
+    Description("This is the success response")
+    Status(200)
 })
 ```
 
@@ -350,9 +363,9 @@ Assuming the identifier of `Results` is `application/vnd.example.results` then t
 equivalent to:
 
 ```go
-Response("OK", func() {
+Response("OK", "application/vnd.example.results", func() {
+    Description("This is the success response")
     Status(200)
-    Media("application/vnd.example.results")
 })
 ```
 
@@ -365,6 +378,7 @@ If the parent action always returns the default view then the response can be de
 
 ```go
 Response("OK", func() {
+    Description("This is the success response")
     Status(200)
     Media(Results, "default")
 })
@@ -392,7 +406,8 @@ Response("OK", func() {
 Resources can define a default media type for all actions. Defining a default media type has two
 effects:
 
-1. The default media type is used for all `OK` responses that do not define a media type.
+1. The default media type is used for all responses that return status code 200 and do not define a
+   media type.
 2. Attributes defined on action payloads, action params and response media types that match the
    names of attributes defined on the default media type automatically inherit all their
    properties from it (description, type, validations etc.).
@@ -484,7 +499,7 @@ Action("sum", func() {
 ```
 
 goa provides response templates for all standard HTTP code that define the status so that it is not
-required to define templates for the simple case. The name so the built-int templates match the name
+required to define templates for the simple case. The name of the built-int templates match the name
 of the corresponding HTTP status code. For example:
 
 ```go
