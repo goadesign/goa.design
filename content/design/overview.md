@@ -405,6 +405,26 @@ Response("OK", func() {
 Responses can be defined in two places: as part of a `Resource` definition or as part of a `Action`
 definition. Responses defined in a `Resource` definition apply to all the resource actions.
 
+In this example all the `Operands` actions may return a `Unauthorized` response:
+
+```go
+var _ = Resource("Operands", func() {
+    Response("Unauthorized", func() {
+        Description("Response sent for unauthorized requests")
+        Status(401)
+    })
+    Action("add", func() {
+        Routing(GET("/add/:left/:right"))
+        Params(func() {
+            Param("left", Integer, "Left operand")
+            Param("right", Integer, "Right operand")
+        })
+        Response("OK", Results)
+        // Response "Unauthorized" is implicit
+    })
+})
+```
+
 ### Leveraging the Default Media Type
 
 Resources can define a default media type for all actions. Defining a default media type has two
