@@ -6,10 +6,10 @@ author = "Raphael Simon"
 +++
 
 Today I'm very excited to announce the release of [goa
-v1.0.0](https://github.com/goadesign/goa/releases/tag/v1.0.0). This release represents the
-culmination of 2 years of work spanning 5 complete rewrites. During this time goa evolved from
-being a pet experiment to becoming a strategic tool used by many organizations and with a striving
-and growing community.
+v1.0.0](https://github.com/goadesign/goa/releases/tag/v1.0.0). goa provides a design first
+approach for building microservices in Go. This release represents the culmination of 2 years of
+work spanning 5 complete rewrites. During this time goa evolved from being a pet experiment to
+becoming a strategic tool used by many organizations and with a striving and growing community.
 
 The reason for goa's success is clear: anyone working in an environment where multiple teams develop
 services concurrently understands its value immediately. In such environments developers need to
