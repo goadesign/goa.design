@@ -107,8 +107,8 @@ important to vendor the `goagen` tool. The website describes a
 [strategy](http://goa.design/design/vendoring/) for doing this using
 [glide](https://github.com/Masterminds/glide).
 
-Going forward goal is to follow [Semantic Versioning](http://semver.org/) and to release bug fixes
-as needed for v1 while working on vNext.
+Going forward the goal is to follow [Semantic Versioning](http://semver.org/) and to release bug
+fixes as needed for v1 while working on vNext.
 
 ## The Road To V2
 
