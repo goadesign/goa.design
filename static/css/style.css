@@ -880,14 +880,19 @@ input[type=button]:hover,
 
 .alternate {
 	width:100%;
-	background-color:#e6e6e6;
+	background-color:#262626;
 	padding-top:1em;
 	margin-top:1em;
 	padding-bottom:1em;
+    color: #f0f0f0;
 }
 
 .alternate container {
-	background-color:#e6e6e6;
+	background-color:#262626;
+}
+
+.alternate h3 {
+    color: #f0f0f0;
 }
 
 /* -------------------------------------------------------- */
