@@ -6,10 +6,13 @@ author = "Raphael Simon"
 +++
 
 Today I'm very excited to announce the release of [goa
-v1.0.0](https://github.com/goadesign/goa/releases/tag/v1.0.0). goa provides a design first
-approach for building microservices in Go. This release represents the culmination of 2 years of
-work spanning 5 complete rewrites. During this time goa evolved from being a pet experiment to
-becoming a strategic tool used by many organizations and with a striving and growing community.
+v1.0.0](https://github.com/goadesign/goa/releases/tag/v1.0.0). goa provides a design first approach
+for building microservices in Go. It consists of three parts: a DSL for describing the API design, a
+code generation tool that generates an [OpenAPI](https://openapis.org) specification as well as
+boilerplate code for the service and the clients, and a set of library packages leveraged by both
+the generated and non generated code. This release represents the culmination of 2 years of work
+spanning 5 complete rewrites. During this time goa evolved from being a pet experiment to becoming a
+strategic tool used by many organizations and with a striving and growing community.
 
 The reason for goa's success is clear: anyone working in an environment where multiple teams develop
 services concurrently understands its value immediately. In such environments developers need to
@@ -78,16 +81,16 @@ including encoder and decoder configuration, mux setup, input validation, marsha
 unmarshaling etc. You get test helpers, a client Go package, a self-documenting client tool - even a
 JavaScript client module.
 
-All of this wasn't immediately obvious but in retrospect makes a lot of sense: the design DSL is the
-single source of truth from which many aspects of the service can be derived. The DSL provides a
-nice way for humans to describe the design while the structs that result from its execution provide
-a great source for programs.
+The ability to generate all these outputs wasn't immediately obvious but in retrospect makes a lot
+of sense: the design DSL is the single source of truth from which many aspects of the service can be
+derived. The DSL provides a nice way for humans to describe the design while the structs that result
+from its execution provide a great source for programs.
 
 ## V1?
 
 So why release v1 now? As the first wave of goa services hit production at RightScale and many other
 places there is a need for establishing a stable base that the teams know they can rely on for
-maintaining these services. The current feature set feels complete enough and is nicely self 
+maintaining these services. The current feature set feels complete enough and is nicely self
 contained. Also while goa services are already running in production, goa is still young and many of
 the ideas being discussed in the [roadmap](https://github.com/goadesign/goa/blob/master/roadmap.md)
 require breaking changes. Releasing v1 thus makes it possible to start working on these new features
@@ -103,7 +106,7 @@ There is also a [v1 branch](https://github.com/goadesign/goa/tree/v1) which cont
 `v1.0.0` tag and will contain all future `v1.x.y` release tags.
 
 Note that vendoring goa is a bit more complicated than just vendoring a Go package as it is also
-important to vendor the `goagen` tool. The website describes a
+important to vendor the [goagen](http://goa.design/implement/goagen/) tool. The website describes a
 [strategy](http://goa.design/design/vendoring/) for doing this using
 [glide](https://github.com/Masterminds/glide).
 
@@ -119,14 +122,14 @@ fluid as the input of the community drives its content.
 ### Protocol Buffers And gRPC
 
 Today the sweet spot for goa is REST APIs and while non REST APIs can also be designed the end
-result must be an HTTP service. With the advent of microservices and the associated number of
-requests required to serve a single external request the performance of message serialization can
-have a major impact on the system overall performance. Protocol Buffers offer a promising
-alternative to serialization standards like JSON. It would thus be interesting to make it possible
-to use Protocol Buffers on top of HTTP2 as a substitute for e.g. JSON.
+result must be an HTTP service. Protocol Buffers offer a promising alternative to encodings
+such as JSON whose performance can become an issue at scale. It seems interesting to make it
+possible to use Protocol Buffers on top of HTTP2 as "just another encoding".
 
-The next step would be to make it possible to replace HTTP entirely and substitute it with
-[gRPC](https://www.grpc.io). This would add a completely new dimension to goa.
+The next step is to make it possible to replace HTTP entirely and substitute it with
+[gRPC](https://www.grpc.io). This adds a completely new dimension to goa better suited for people
+looking at building microservices using RPC rather than something like REST. The trick is to enable
+that integration while also improving the REST support.
 
 ### Extending The SSOT
 
@@ -153,6 +156,9 @@ since then has made countless contributions - not only to the code base - but al
 ideas, feedback and in general driving the development of goa. I know how it sounds, you've read it
 before and yet it's true: goa is a much better tool today thanks to the Go community. A big thank
 you to all of you that have made contributions - you know who you are.
+
+If you would like to hear more about goa I go into more details in
+[episode #7](https://changelog.com/gotime-7/) of Go Time.
 
 I am looking forward to seeing goa evolve as others join and start contributing as well, this is
 just the beginning!
