@@ -56,13 +56,23 @@ tool as described above. Don't forget to recompile the tool after each `glide up
 
 # Code-based generation and vendoring
 
+Another approach to vendoring consists of invoking the generators
+programmatically instead of via the `goagen` command line tool.
+
+By writing a small glue package in your repository, your preferred
+vendoring tool will be able to trace import dependencies and vendor
+everything for you.
+
+The result is simplified versioning and makes dependencies explicit to
+the vendoring utility.
+
 > For the impatients, here is a concise version of what we'll see here:
 >
 > ```
 > $ mkdir -p $GOPATH/src/github.com/your/pkg/design
 > $ cd !$
 > $ # Create your design in the `design` package
-> $ # Paste de content of `gen/main.go` below to `...github.com/your/pkg/gen/main.go`
+> $ # Paste the content of `gen/main.go` below to `...github.com/your/pkg/gen/main.go`
 > $ go run gen/main.go      # generates all the things
 > $ govendor init           # creates the vendor/ dir
 > $ govendor add +e         # pull needed packages in
@@ -71,10 +81,9 @@ tool as described above. Don't forget to recompile the tool after each `glide up
 > And you're set. Everyone in your team will be able to deterministically
 > regenerate your code if they tweak the design, without version conflicts.
 
-Instead of using `goagen` to get started, you can write code that'll
-do the same, but as it will mark import paths in code, your prefered
-vendoring tool will be able to pick up any dependencies by following
-the dependency graph of the code:
+We do this by creating a small package that invokes `goagen`'s code
+generation functions:
+
 
 ```
 cd $GOPATH/src/github.com/your/pkg
@@ -130,8 +139,8 @@ func main() {
 
 Remove the generators you don't need from the `Run()` call.
 
-Merely by having that little code in place, all the `goa` code
-generation code will be vendored in.
+The code above will cause all the `goa` code generation packages to be
+vendored appropriately.
 
 With `govendor` (you can use whatever vendoring tool you want in a
 similar way), you can simply do this:
@@ -169,9 +178,8 @@ $ wc -l vendor/vendor.json
 181 vendor/vendor.json
 ```
 
-This gives you assurance that the code generation libraries and
-templates will only change, for a given project, when you decide to
-explicitly do so, using your vendoring tool.
+This gives you control over when to change the code generation
+packages using your vendoring tool of choice.
 
 Any future runs will deterministically generate the same code, on
 anyone's machine, unless you explicitly upgrade `goa`.
@@ -179,8 +187,8 @@ anyone's machine, unless you explicitly upgrade `goa`.
 
 ## Generate your code
 
-Next step is to actually generate your code based on the design you
-wrote. Run your `gen/main.go` this way:
+The next step is to actually generate your code based on the design
+you wrote. Run your `gen/main.go` this way:
 
 ```
 $ cd $GOPATH/src/github.com/your/pkg
@@ -208,7 +216,7 @@ While you're at it, put that line near the top of `your/pkg/main.go`:
 ```
 
 Next time, you only need to remember to run `go generate`. See
-[this article](https://blog.golang.org/generate) for more infos..
+[this article](https://blog.golang.org/generate) for more info..
 
 
 ## Vendoring dependencies of _generated_ code
@@ -260,9 +268,9 @@ pl  github.com/your/pkg/gen
  ```
 
 See how we now have other external dependencies we need to pull in
-(marked `e` for `external`).  It includes the `goadesign/goa` package,
-which has most of the runtime components, to help you write your
-business logic.
+(marked `e` for `external`).  They include the `goadesign/goa`
+package - which holds runtime functions for goa services - to help you
+write your business logic.
 
 Vendor all of that in with:
 
@@ -271,6 +279,7 @@ $ govendor add +e
 $
 ```
 
-And we're all good!  Now, not only code generation will be
-deterministically built, but also any reliance on goa, its depencies
-or your own dependencies.
+You're all good!
+
+Not only are the code generation packages vendored but also `goa`, its
+dependencies and your own dependencies.
