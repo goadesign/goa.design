@@ -11,7 +11,8 @@
 
 DEPEND=\
 	github.com/spf13/hugo \
-	github.com/davecheney/godoc2md
+	github.com/davecheney/godoc2md \
+	github.com/goadesign/gorma
 
 all: depend install docs serve
 
