@@ -99,39 +99,37 @@ instead.
 package genresnames
 
 import (
-		"io/ioutil"
-		"os"
-		"path/filepath"
-		"strings"
+	"flag"
+	"github.com/goadesign/goa/design"
+	"github.com/goadesign/goa/goagen/codegen"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+)
 
-		"github.com/goadesign/goa/design"
-		"github.com/goadesign/goa/goagen/codegen"
-		"github.com/spf13/cobra"
-		)
-
-// Generate is the function called by goagen to generate the names file.
 func Generate() ([]string, error) {
-	api := design.Design
-
-	var output string
+	var (
+		ver    string
+		outDir string
+	)
 	set := flag.NewFlagSet("app", flag.PanicOnError)
 	set.String("design", "", "") // Consume design argument so Parse doesn't complain
-	set.StringVar(&outDir, "out", "", "")
 	set.StringVar(&ver, "version", "", "")
+	set.StringVar(&outDir, "out", "", "")
 	set.Parse(os.Args[2:])
-	outDir = filepath.Join(outDir, target)
 
 	// First check compatibility
 	if err := codegen.CheckVersion(ver); err != nil {
 		return nil, err
 	}
 
-	return WriteNames(design.Design)
+	return WriteNames(design.Design, outDir)
 }
 
 // WriteNames creates the names.txt file.
-func WriteNames(api *design.APIDefinition) ([]string, error) {
-	 // Now iterate through the resources to gather their names
+func WriteNames(api *design.APIDefinition, outDir string) ([]string, error) {
+	// Now iterate through the resources to gather their names
 	names := make([]string, len(api.Resources))
 	i := 0
 	api.IterateResources(func(res *design.ResourceDefinition) error {
@@ -143,13 +141,16 @@ func WriteNames(api *design.APIDefinition) ([]string, error) {
 		i++
 		return nil
 	})
-	content := strings.Join(names, "\n")
 
+	content := strings.Join(names, "\n")
 	// Write the output file and return its name
-	outputFile := filepath.Join(codegen.OutputDir, "names.txt")
-	ioutil.WriteFile(outputFile, []byte(content), 0755)
+	outputFile := filepath.Join(outDir, "names.txt")
+	if err := ioutil.WriteFile(outputFile, []byte(content), 0755); err != nil {
+		return nil, err
+	}
 	return []string{outputFile}, nil
 }
+
 ```
 
 Invoke the `genresnames` generator with:
