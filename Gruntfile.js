@@ -59,7 +59,7 @@ module.exports = function(grunt) {
             if (frontMatter.url) {
                 var href = frontMatter.url;
             } else {
-                var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s + ".html";
+                var href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(".md").s + "/";
                 // href for index.md files stops at the folder name - Not with ugly URLs
                 // if (filename === "index.md") {
                 //     href = S(abspath).chompLeft(CONTENT_PATH_PREFIX).chompRight(filename).s;
