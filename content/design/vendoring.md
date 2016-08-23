@@ -66,20 +66,20 @@ everything for you.
 The result is simplified versioning and makes dependencies explicit to
 the vendoring utility.
 
-> For the impatients, here is a concise version of what we'll see here:
->
-> ```
-> $ mkdir -p $GOPATH/src/github.com/your/pkg/design
-> $ cd !$
-> $ # Create your design in the `design` package
-> $ # Paste the content of `gen/main.go` below to `...github.com/your/pkg/gen/main.go`
-> $ go run gen/main.go      # generates all the things
-> $ govendor init           # creates the vendor/ dir
-> $ govendor add +e         # pull needed packages in
-> ```
->
-> And you're set. Everyone in your team will be able to deterministically
-> regenerate your code if they tweak the design, without version conflicts.
+For the impatients, here is a concise version of what we'll see here:
+
+```
+$ mkdir -p $GOPATH/src/github.com/your/pkg/design
+$ cd !$
+$ # Create your design in the `design` package
+$ # Paste the content of `gen/main.go` below to `...github.com/your/pkg/gen/main.go`
+$ go run gen/main.go      # generates all the things
+$ govendor init           # creates the vendor/ dir
+$ govendor add +e         # pull needed packages in
+```
+
+And you're set. Everyone in your team will be able to deterministically
+regenerate your code if they tweak the design, without version conflicts.
 
 We do this by creating a small package that invokes `goagen`'s code
 generation functions:
