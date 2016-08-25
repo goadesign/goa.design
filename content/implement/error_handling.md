@@ -71,13 +71,13 @@ advantage of for logging or otherwise processing errors. It's also possible to d
 given error was created via a error class by checking the behavior of the error object:
 
 ```go
-    if err, ok := err.(goa.ServiceError); ok {
-        // Error created via a error class
-        // Contains the data needed to build a proper response
-    } else {
-        // Error is a generic Go error
-        // Will result in an internal error unless wrapped with a error class
-    }
+if _, ok := err.(goa.ServiceError); ok {
+    // Error created via a error class
+    // Contains the data needed to build a proper response
+} else {
+    // Error is a generic Go error
+    // Will result in an internal error unless wrapped with a error class
+}
 ```
 
 ## Using Error Classes
