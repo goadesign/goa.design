@@ -54,6 +54,20 @@ You now have a `vendor` directory that contains the sources for `goagen`, compil
 tool as described above. Don't forget to recompile the tool after each `glide update` that updates
 `goa`.
 
+# Vendoring Clients
+
+Another issue to be aware of is that using a vendored goa causes the code generation tool generated
+by `goagen` to also use the vendored goa. This isn't an issue (and is actually a good thing) until
+you need to invoke `goagen` on non-vendored designs. This may happen if you are trying to generate
+the client of a dependent service for example. In this case the `design` package of the non-vendored
+service ends up using the non-vendored goa which means that the design gets initialized in the
+"wrong" `design` package.
+
+The symptoms of the problem above is goagen crashing with a panic because the design it is trying to
+use is not initialized (the `design.Design` variable of the vendored goa `design` package is nil).
+The best way to resolve this issue is to vendor the dependent `design` packages as well (which is
+probably a good thing to do in the first place).
+
 # Code-based generation and vendoring
 
 Another approach to vendoring consists of invoking the generators
