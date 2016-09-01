@@ -20,7 +20,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/google/weasel"
+	weasel "github.com/goadesign/goa.design/appengine"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 )

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/weasel/internal"
+	"github.com/goadesign/goa.design/appengine/internal"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"

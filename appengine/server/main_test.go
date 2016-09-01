@@ -24,7 +24,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 
-	"github.com/google/weasel/internal"
+	"github.com/goadesign/goa.design/appengine/internal"
 
 	"google.golang.org/appengine/aetest"
 )
