@@ -160,7 +160,8 @@ error directly to send the response in the generated response method:
 
 ```go
 func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
-        if b, err := c.db.Create(ctx.Payload); err != nil {
+        b, err := c.db.Create(ctx.Payload)
+        if err != nil {
                 // ctx.BadRequest accepts a *goa.Error as argument
                 return ctx.BadRequest(goa.ErrBadRequest(err))
         }
