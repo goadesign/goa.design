@@ -127,8 +127,8 @@ function and the generated code takes care of configuring the goa decoder.
 
 ## Using Custom Encoders
 
-The mechanism for using custom encoders is very similar to using custom decoders. A decoder must
-implement the `Decoder` interface:
+The mechanism for using custom encoders is very similar to using custom decoders. An encoder must
+implement the `Encoder` interface:
 
 ```go
 // An Encoder marshals from an interface into an io.Writer.
