@@ -137,7 +137,7 @@ Encoder interface {
 }
 ```
 
-It may also optionally implement the `ResettableDecoder` interface thereby enabling the use of sync
+It may also optionally implement the `ResettableEncoder` interface thereby enabling the use of sync
 pools:
 
 ```go
