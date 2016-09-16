@@ -739,7 +739,7 @@ input[type=button]:hover,
   display: block!important;
 }
 .navbar .container {
-  width: 940px;
+  width: 960px;
   padding-bottom: 0px;
   border-bottom: 0px solid #eee;
   margin-bottom: 0px;
@@ -791,7 +791,7 @@ input[type=button]:hover,
   color: #000;
 }
 .navbar .nav > li {
-  margin: 4px 0 0 10px;
+  margin: 4px 0 0 5px;
   position: relative;
 }
 .navbar .nav > li a,
