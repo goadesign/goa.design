@@ -1074,6 +1074,27 @@ input[type=button]:hover,
     width: 48px!important;
     height: 48px!important;
   }
+
+}
+@media (min-width: 576px) {
+  .hidden-el-sm{
+    display: none;
+  }
+}
+@media (min-width: 720px) {
+  .hidden-el-md{
+    display: none;
+  }
+}
+@media (min-width: 940px) {
+  .hidden-el-lg{
+    display: none;
+  }
+}
+@media (min-width: 1140px) {
+  .hidden-el-xl{
+    display: none;
+  }
 }
 @media (max-width: 767px) {
   .carousel.macbook {
