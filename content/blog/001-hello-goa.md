@@ -3,6 +3,7 @@ date = "2016-08-02T11:01:06-05:00"
 title = "Hello, goa"
 description = "Announcing goa v1.0.0"
 author = "Raphael Simon"
+weight = 1
 +++
 
 Today I'm very excited to announce the release of [goa
