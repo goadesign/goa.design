@@ -292,5 +292,5 @@ be automated: the actual domain logic.
 This is a real testament to the power of open standards, certainly a success story for the [Open API
 Initiative](https://openapis.org). It's also a good validation of the "Design first" approach
 promoted by goa. I can't wait to see what other cool integration it will enable in the future. In
-the mean time you get to rip the benefits: you can now deploy your goa services behind Google Cloud
+the mean time you get to reap the benefits: you can now deploy your goa services behind Google Cloud
 Endpoints with no extra work!
