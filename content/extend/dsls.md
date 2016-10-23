@@ -213,7 +213,7 @@ func (m *ModelDefinition) DSL() func() {
 }
 
 // Validate makes sure the model type is correct.
-func (m *ModelDefinition) Validate() erorr {
+func (m *ModelDefinition) Validate() error {
 	if m.Type != "TEXT" && m.Type != "INTEGER" && m.Type != "VARCHAR" {
 		return fmt.Errorf("invalid model type %#v, must be one of TEXT, INTEGER or VARCHAR", m.Type)
 	}
