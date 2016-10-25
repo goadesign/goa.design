@@ -1,0 +1,71 @@
+<header id="header">
+	<nav class="navbar">
+		<div class="navbar-inner">
+			<div class="container">
+        			<a class="brand" href="/">
+					<img alt="goa" width="100px" height="100px" src="/img/goa-logo.svg"/>
+				</a>
+				<ul class="nav">
+					<li class="dropdown">
+						<a href="/learn" title="Learn">学ぶ</a>
+						<ul>
+							<li><a href="/learn/intro" title="Introduction">イントロダクション</a></li>
+							<li><a href="/learn/guide" title="Getting Started Guide">はじめのガイド</a></li>
+							<li><a href="/learn/cellar" title="Cellar Example">セラーの例</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/design" title="Design">デザイン</a>
+						<ul>
+							<li><a href="/design/overview" title="Overview">概要</a></li>
+							<li><a href="/design/types" title="Working with Data Types">データ型を扱う</a></li>
+							<li><a href="/design/swagger" title="Swagger">Swagger</a></li>
+							<li><a href="/design/security" title="Security">セキュリティ</a></li>
+							<li><a href="/design/vendoring" title="Vendoring goa Services">goa サービスのベンダリング</a></li>
+							<li><a href="/reference/goa/design/apidsl/" title="">DSL リファレンス</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/implement" title="Implement">実装する</a>
+						<ul>
+							<li><a href="/implement/overview" title="Overview">概要</a></li>
+							<li><a href="/implement/goagen" title="goagen">goagen</a></li>
+							<li><a href="/implement/context" title="Request Context">リクエストコンテキスト</a></li>
+							<li><a href="/implement/error_handling" title="Error Handling">エラーハンドリング</a></li>
+							<li><a href="/implement/logging" title="Logging">ロギング</a></li>
+							<li><a href="/implement/encoding" title="Encoding">エンコーディング</a></li>
+							<li><a href="/implement/mux" title="Service Mux">マルチプレクサ</a></li>
+							<li><a href="/implement/middleware" title="Middleware">ミドルウェア</a></li>
+							<li><a href="/implement/security" title="Security">セキュリティ</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/extend" title="Extend">拡張する</a>
+						<ul>
+							<li><a href="/extend/generators" title="">ジェネレータプラグイン</a></li>
+							<li><a href="/extend/dsls" title="">DSL の作成</a></li>
+							<li><a href="/extend/gorma" title="">Gorma</a></li>
+						</ul>
+					</li>
+					<li><a href="/blog" title="Blog">ブログ</a></li>
+
+					<li>
+						<a href="" title="lang"><i class="fa fa-globe"></i> ja</a>
+						<ul>
+							<li><a href="/" title="">en</a></li>
+						</ul>
+					</li>
+
+					<li>
+						<input id="search" class="animated" type="search" placeholder="Search">
+						<ul id="results"></ul>
+					</li>
+
+					<li><a href="/reference" title="GoDoc">GoDoc <i class="fa fa-book"></i></a></li>
+					<li><a href="https://github.com/goadesign/goa" title="GitHub"><span style="display:none">Github</span> <i class="fa fa-github"></i></a></li>
+                    {{ if .IsPage }}<li><a href="https://github.com/goadesign/goa.design/edit/master/content/{{ trim .RelPermalink "/" }}.md" title="Edit"><i class="fa fa-edit"></i></a></li>{{ end }}
+				</ul>
+			</div>
+		</div>
+	</nav>
+</header>
