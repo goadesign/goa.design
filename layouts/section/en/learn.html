@@ -3,7 +3,7 @@
 	{{ partial "en/navigation.html" . }}
 	<section id="content" class="container">
 		<div class="hero-unit">
-			<h1>{{ .Title  }}</h1>
+			<h1>Learn</h1>
 			<p>{{ .Description }}</p>
 		</div>
 
@@ -13,10 +13,11 @@
 			<div class="span12">
 				<div>
 					<p>
-						After design comes implementation. This section describes
-						what's involved in implementing a goa service. The
-						<a href="overview">overview</a> page
-						presents the various pieces covered in the other pages.
+						If you're new to goa start by going through the
+						<a href="intro">introduction</a> and the
+						<a href="guide">Getting Started Guide</a>. The
+						<a href="cellar">Cellar Example</a> provides
+						a complete example of a goa service.
 					</p>
 					<ul id="list">
 						{{ range .Data.Pages }}

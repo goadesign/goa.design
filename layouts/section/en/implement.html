@@ -1,10 +1,9 @@
 {{ partial "en/header.html" . }}
 <body>
-
 	{{ partial "en/navigation.html" . }}
 	<section id="content" class="container">
 		<div class="hero-unit">
-			<h1>{{ .Title  }}</h1>
+			<h1>Implement</h1>
 			<p>{{ .Description }}</p>
 		</div>
 
@@ -14,12 +13,10 @@
 			<div class="span12">
 				<div>
 					<p>
-						goa is extensible with plugins both for
-						<a href="/generators">code generation</a> and
-						<a href="dsls">new DSL</a>.
-						The section covers how to author new plugins and also covers
-						the <a href="gorma">gorma</a> plugin as a good
-						reference for implementing your own.
+						After design comes implementation. This section describes
+						what's involved in implementing a goa service. The
+						<a href="overview">overview</a> page
+						presents the various pieces covered in the other pages.
 					</p>
 					<ul id="list">
 						{{ range .Data.Pages }}
