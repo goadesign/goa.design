@@ -1,9 +1,8 @@
 name = "goa"
-baseurl = "http://goa.design/"
-languageCode = "en-us"
+baseurl = "https://goa.design/"
 title = "goa - Design First. Then Win."
 description = "goa - Design First. Then Win."
-homepage = "http://goa.design"
+homepage = "https://goa.design"
 license = "MIT"
 licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
 

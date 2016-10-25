@@ -39,5 +39,8 @@ To start a new transation:
 5. Send PRs to the branch (this can be work in progress).
 6. When the translation is ready send a PR to the `master` branch.
 
-Each language has its own layout files, also the file `layouts/partials/navigation.html` contains a
-list of language links. See PR #42 to see the list of files required to support a new language.
+The files that support a given language are:
+
+* `layouts/<code>/`: contains the layout pages
+* `layouts/section/<code>.html`: contains the index page
+* `layouts/partials/<code>/`: contains the partials files

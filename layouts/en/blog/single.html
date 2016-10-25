@@ -1,18 +1,18 @@
 {{ partial "en/header.html" . }}
 <body>
-	{{ partial "ja/navigation.html" . }}
+	{{ partial "en/navigation.html" . }}
 	<section id="content" class="container">
 		<div class="hero-unit">
 			<h1>{{ .Title  }}</h1>
 			<p>{{ .Description }}</p>
+            <ul class="inline" style="font-size:85%">
+                <li><i class="fa fa-calendar"></i> {{ .Date.Format "January 2, 2006" }}</li>
+                <li><i class="fa fa-user"></i> {{ .Params.author }}</li>
+            </ul>
 		</div>
 
-		<hr />
-
 		<div class="row" id="blog">
-			<div class="span12">
-				{{ .Content  }}
-			</div>
+			{{ .Content  }}
 		</div>
 		<hr/>
 		<div class="row">
@@ -24,4 +24,4 @@
 			</div>
 		</div>
 	</section>
-	{{ partial "ja/footer.html" . }}
+	{{ partial "en/footer.html" . }}

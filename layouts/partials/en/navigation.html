@@ -1,0 +1,69 @@
+<header id="header">
+	<nav class="navbar">
+		<div class="navbar-inner">
+			<div class="container">
+        			<a class="brand" href="/">
+					<img alt="goa" width="100px" height="100px" src="/img/goa-logo.svg"/>
+				</a>
+				<ul class="nav">
+					<li class="dropdown">
+						<a href="/en/learn" title="Learn">Learn</a>
+						<ul>
+							<li><a href="/en/learn/intro" title="Introduction">Introduction</a></li>
+							<li><a href="/en/learn/guide" title="Getting Started Guide">Getting Started Guide</a></li>
+							<li><a href="/en/learn/cellar" title="Cellar Example">Cellar Example</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/en/design" title="Design">Design</a>
+						<ul>
+							<li><a href="/en/design/overview" title="Overview">Overview</a></li>
+							<li><a href="/en/design/types" title="Working with Data Types">Working with Data Types</a></li>
+							<li><a href="/en/design/swagger" title="Swagger">Swagger</a></li>
+							<li><a href="/en/design/security" title="Security">Security</a></li>
+							<li><a href="/en/design/vendoring" title="Vendoring goa Services">Vendoring goa Services</a></li>
+							<li><a href="/reference/goa/design/apidsl/" title="">DSL Reference</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/en/implement" title="Implement">Implement</a>
+						<ul>
+							<li><a href="/en/implement/overview" title="Overview">Overview</a></li>
+							<li><a href="/en/implement/goagen" title="goagen">goagen</a></li>
+							<li><a href="/en/implement/context" title="Request Context">Request Context</a></li>
+							<li><a href="/en/implement/error_handling" title="Error Handling">Error Handling</a></li>
+							<li><a href="/en/implement/logging" title="Logging">Logging</a></li>
+							<li><a href="/en/implement/encoding" title="Encoding">Encoding</a></li>
+							<li><a href="/en/implement/mux" title="Service Mux">Mux</a></li>
+							<li><a href="/en/implement/middleware" title="Middleware">Middleware</a></li>
+							<li><a href="/en/implement/security" title="Security">Security</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a href="/en/extend" title="Extend">Extend</a>
+						<ul>
+							<li><a href="/en/extend/generators" title="">Generator Plugins</a></li>
+							<li><a href="/en/extend/dsls" title="">Creating DSLs</a></li>
+							<li><a href="/en/extend/gorma" title="">Gorma</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+                        <a href="/en/blog" title="Blog">Blog</a>
+						<ul>
+							<li><a href="/en/blog/001-hello-goa" title="">Hello, goa</a></li>
+							<li><a href="/en/blog/002-endpoints" title="">Design to Production</a></li>
+						</ul>
+                    </li>
+					<li>
+						<input id="search" class="animated" type="search" placeholder="Search">
+						<ul id="results"></ul>
+					</li>
+
+					<li><a href="/reference" title="GoDoc">GoDoc <i class="fa fa-book"></i></a></li>
+					<li><a href="https://github.com/goadesign/goa" title="GitHub"><span style="display:none">Github</span> <i class="fa fa-github"></i></a></li>
+                    {{ if .IsPage }}<li><a href="https://github.com/goadesign/goa.design/edit/master/content/{{ trim .RelPermalink "/" }}.md" title="Edit"><i class="fa fa-edit"></i></a></li>{{ end }}
+				</ul>
+			</div>
+		</div>
+	</nav>
+</header>

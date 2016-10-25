@@ -1,0 +1,28 @@
+{{ partial "en/header.html" . }}
+<body>
+	{{ partial "en/navigation.html" . }}
+	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
+
+		<hr />
+
+		<div class="row" id="blog">
+			<div class="span12">
+				<div>
+					<p>
+						The Design section introduces the <a href="overview">goa API Design language</a>.
+						It also covers how to use <a href="swagger"> during design.
+					</p>
+					<ul id="list">
+						{{ range .Data.Pages }}
+						<li><a href="{{ .Permalink }}">{{ .Title}}</a></li>
+						{{ end }}
+					</ul>
+				</div>
+			</div>
+		</div>
+	</section>
+	{{ partial "en/footer.html" . }}
