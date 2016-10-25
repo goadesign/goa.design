@@ -24,13 +24,13 @@ code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
 
 To contribute to an existing translation:
 
-1. Fork and Clone the repo
+1. Fork and Clone the repo.
 2. Checkout the language specific branch.
 3. Make your changes in the branch in `content/<code>`.
 4. Send Pull Requests to the branch.
 5. When the translation is ready send a PR to the `master` branch.
 
-To start a new transation:
+To start a new translation:
 
 1. Open a new issue describing the new language being translated to
 2. [Figure out your language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/). For example: `ja`, `zh`, `es`, `de`, ...etc.
