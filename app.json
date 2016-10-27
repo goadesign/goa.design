@@ -1,0 +1,7 @@
+{
+    "name": "goa.design",
+    "description": "goa is a holistic approach for building microservices in Go",    
+    "env": {
+	"BUILDPACK_URL": "https://github.com/goadesign-jp/heroku-buildpack-hugo"
+    }
+}
