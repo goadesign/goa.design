@@ -5,9 +5,11 @@
 		<div class="hero-unit">
 			<h1>{{ .Title  }}</h1>
 			<p>{{ .Description }}</p>
+				<ul class="inline" style="font-size:85%">
+					<li><i class="fa fa-calendar"></i> {{ .Date.Format "January 2, 2006" }}</li>
+					<li><i class="fa fa-user"></i> {{ .Params.author }}</li>
+				</ul>
 		</div>
-
-		<hr />
 
 		<div class="row" id="blog">
 			<div class="span12">
@@ -24,4 +26,4 @@
 			</div>
 		</div>
 	</section>
-	{{ partial "footer.html" . }}
+{{ partial "footer.html" . }}
