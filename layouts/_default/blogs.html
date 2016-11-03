@@ -1,0 +1,56 @@
+{{ partial "header.html" . }}
+<body>
+	{{ partial "navigation.html" . }}	
+	<section id="content" class="container">
+	<div class="hero-unit">
+		<h1>{{ .Title }}</h1>
+	</div>
+
+	<hr />
+
+	<div class="row" id="blog">
+		<div class="span12"> 
+		{{ $section := .Section }}
+		{{ range $key, $value := .Site.Sections }}
+		{{ if eq $key $section }}
+		{{ range $index, $element := sort $value "Weight" "desc"}}
+		{{ if lt $index (sub (len $value) 1) }}
+			<article class="post">
+				<div class="entry-body">
+					<a href="{{ $element.Page.Permalink }}">
+						<h2 class="entry-title">{{ $element.Page.Title }}</h2>
+					</a>
+					<p>{{ $element.Page.Summary }}</p>
+				</div>
+				<div class="entry-meta">
+					<span class="entry-type"></span>
+					<span class="entry-date">{{ dateFormat "Monday, Jan 2, 2006" $element.Page.Date  }}</span>
+					<span class="entry-date">{{ $element.Page.Params.author }}</span>
+					<div class="entry-meta">
+						<ul class="categories">
+						{{ range $cat := $element.Page.Params.categories}}
+							<li><a href="/categories/{{$cat}}/">{{$cat}}</a></li>
+						{{ end }}
+						</ul>
+					</div>
+					<div class="widget">
+						<ul class="tags">
+						{{ range $cat := $element.Page.Params.tags}}
+							<li><a href="/tags/{{$cat}}/">{{$cat}}</a></li>
+						{{ end }}
+						</ul>
+					</div>
+				</div>
+				<div class="clr"></div>
+
+			</article><!-- end item -->
+		<hr />
+		{{ end }}
+		{{ end }}
+		{{ end }}
+		{{ end }}
+		</div><!-- end .span8 -->
+	</div><!-- end #blog -->
+
+	</section>
+	{{ partial "footer.html" . }}
