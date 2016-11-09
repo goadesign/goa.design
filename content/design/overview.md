@@ -509,9 +509,11 @@ var _ = API("My API", func() {
     ResponseTemplate("created", func(hrefPattern string) { // Defines the "created" template
         Description("Resource created")                    // that takes one argument "hrefPattern"
         Status(201)                     // using status code 201
-        Header("Location", func() {     // and contains the "Location" header
-            Pattern(hrefPattern)        // with a regex validation defined by the
-                                        // value of the "hrefPattern" argument.
+        Headers(func() {
+            Header("Location", func() {     // and contains the "Location" header
+                Pattern(hrefPattern)        // with a regex validation defined by the
+                                            // value of the "hrefPattern" argument.
+		    })                                           
         })
     })
 })
