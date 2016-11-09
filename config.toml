@@ -1,6 +1,5 @@
 name = "goa"
 baseurl = "https://goa.design/"
-title = "goa - Design First. Then Win."
 description = "goa - Design First. Then Win."
 homepage = "https://goa.design"
 license = "MIT"
@@ -27,10 +26,12 @@ DefaultContentLanguage = "en"
 [languages.en] 
 weight = 1 
 title = "goa - Design First. Then Win." 
+languageName = "English"
  
 [languages.ja] 
 weight = 2 
 title = "goa - はじめにデザインを。そして成功を。" 
+languageName = "日本語"
 
 [[languages.en.menu.main]]
 name = "Learn"
