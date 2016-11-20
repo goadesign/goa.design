@@ -16,9 +16,12 @@ package server
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"golang.org/x/net/context"
+
+	"html/template"
 
 	weasel "github.com/goadesign/goa.design/appengine"
 	"google.golang.org/appengine"
@@ -39,6 +42,7 @@ func init() {
 	for host, redir := range config.Redirects {
 		http.Handle(host, redirectHandler(redir, http.StatusMovedPermanently, false))
 	}
+	http.HandleFunc(config.ImportRoot, servePackage)
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
 	http.HandleFunc("/_ah/warmup", handleWarmup)
@@ -46,6 +50,22 @@ func init() {
 
 func handleWarmup(w http.ResponseWriter, r *http.Request) {
 	// nothing to do here
+}
+
+// importTmp is the template used to render the go-import meta tag response.
+var importTmpl = template.Must(template.New("import").Parse(importT))
+
+// versionRegexp captures the version from the URL
+const versionRegexp = regexp.MustCompile(`/goa\.(v[1-9]+[0-9]*)[$|/]`)
+
+func servePackage(w http.ResponseWriter, r *http.Request) {
+	branch = "master"
+	if matches := versionRegexp.FindAllStringSubmatch(req.URL.Path, 1); len(matches) == 1 {
+		branch = matches[1][1]
+	}
+	if err := importTmpl.Execute(w, branch); err != nil {
+		panic(err.Error())
+	}
 }
 
 // serveObject responds with a GCS object contents, preserving its original headers
@@ -137,3 +157,19 @@ func newContext(r *http.Request) context.Context {
 	c, _ = context.WithTimeout(c, 10*time.Second)
 	return c
 }
+
+const importT = `<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Go Imports -->
+  <meta name="go-import" content="goa.design/goa{{ if not eq . "master" }}.{{ . }}{{ end }} git https://gopkg.in/goadesign/goa.{{ if not eq . "master" }}.{{ . }}{{ end }}">
+  <meta name="go-source" content="goa.design/goa{{ if not eq . "master" }}.{{ . }}{{ end }} _ https://github.com/goadesign/goa/tree/{{ . }}{/dir} https://github.com/goadesign/goa/blob/{{ . }}{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; https://goa.design">
+
+</head>
+<body>
+</body>
+</html>
+`

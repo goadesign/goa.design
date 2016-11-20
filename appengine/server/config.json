@@ -9,6 +9,7 @@
     "default": "goa.design"
   },
   "webroot": "/",
+  "importroot": "/goa",
   "index": "index.html",
   "hook": "/-/hook/gcs",
   "gcs": "https://storage.googleapis.com",
