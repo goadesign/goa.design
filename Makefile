@@ -23,8 +23,8 @@ install:
 	@cd tools/mdc && go get ./... && go install
 
 docs:
-	@mdc github.com/goadesign/goa   content/reference --exclude public
-	@mdc github.com/goadesign/gorma content/reference --exclude public --exclude example
+	@mdc --exclude public         github.com/goadesign/goa   content/reference
+	@mdc --exclude public,example github.com/goadesign/gorma content/reference
 
 linkcheck:
 	@cd tools/linkcheck && go install
