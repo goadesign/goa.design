@@ -17,6 +17,7 @@ package server
 import (
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -52,16 +53,18 @@ func handleWarmup(w http.ResponseWriter, r *http.Request) {
 	// nothing to do here
 }
 
-// importTmp is the template used to render the go-import meta tag response.
-var importTmpl = template.Must(template.New("import").Parse(importT))
+var (
+	// importTmp is the template used to render the go-import meta tag response.
+	importTmpl = template.Must(template.New("import").Parse(importT))
 
-// versionRegexp captures the version from the URL
-const versionRegexp = regexp.MustCompile(`/goa\.(v[1-9]+[0-9]*)[$|/]`)
+	// versionRegexp captures the version from the URL
+	versionRegexp = regexp.MustCompile(`goa\.(v[1-9]+[0-9]*)(?:$|/)`)
+)
 
 func servePackage(w http.ResponseWriter, r *http.Request) {
-	branch = "master"
-	if matches := versionRegexp.FindAllStringSubmatch(req.URL.Path, 1); len(matches) == 1 {
-		branch = matches[1][1]
+	branch := "master"
+	if matches := versionRegexp.FindAllStringSubmatch(r.URL.Path, 1); len(matches) == 1 {
+		branch = matches[0][1]
 	}
 	if err := importTmpl.Execute(w, branch); err != nil {
 		panic(err.Error())
@@ -75,6 +78,10 @@ func servePackage(w http.ResponseWriter, r *http.Request) {
 //
 // Only GET, HEAD and OPTIONS methods are allowed.
 func serveObject(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, config.ImportRoot) {
+		servePackage(w, r)
+		return
+	}
 	if !weasel.ValidMethod(r.Method) {
 		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
@@ -164,8 +171,8 @@ const importT = `<!DOCTYPE html>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
   <!-- Go Imports -->
-  <meta name="go-import" content="goa.design/goa{{ if not eq . "master" }}.{{ . }}{{ end }} git https://gopkg.in/goadesign/goa.{{ if not eq . "master" }}.{{ . }}{{ end }}">
-  <meta name="go-source" content="goa.design/goa{{ if not eq . "master" }}.{{ . }}{{ end }} _ https://github.com/goadesign/goa/tree/{{ . }}{/dir} https://github.com/goadesign/goa/blob/{{ . }}{/dir}/{file}#L{line}">
+  <meta name="go-import" content="goa.design/goa{{ if not (eq . "master") }}.{{ . }}{{ end }} git https://{{ if not (eq . "master") }}gopkg.in{{ else }}github.com{{ end }}/goadesign/goa{{ if not (eq . "master") }}.{{ . }}{{ end }}">
+  <meta name="go-source" content="goa.design/goa{{ if not (eq . "master") }}.{{ . }}{{ end }} _ https://github.com/goadesign/goa/tree/{{ . }}{/dir} https://github.com/goadesign/goa/blob/{{ . }}{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; https://goa.design">
 
 </head>
