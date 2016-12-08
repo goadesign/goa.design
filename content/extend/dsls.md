@@ -378,7 +378,6 @@ package clusterdsl
 
 import (
 	"github.com/goadesign/goa/design"
-	"github.com/goadesign/goa/design/apidsl"
 	"github.com/goadesign/goa/dslengine"
 )
 
@@ -396,7 +395,7 @@ type Root struct {
 }
 
 // DSL root
-var dslRoot &Root{}
+var dslRoot = &Root{}
 
 // Register the DSL root with the DSL engine.
 func init() {
