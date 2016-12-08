@@ -394,6 +394,17 @@ type Root struct {
 	Clusters []*ClusterDefinition
 }
 
+func (r *Root) DSLName() string {
+	return "Cluster"
+}
+
+func (r *Root) DependsOn() []dslengine.Root {
+	return []dslengine.Root{}
+}
+
+func (r *Root) IterateSets(it dslengine.SetIterator) {}
+func (r *Root) Reset() {}
+
 // DSL root
 var dslRoot = &Root{}
 
