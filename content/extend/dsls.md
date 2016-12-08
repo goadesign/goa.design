@@ -376,14 +376,17 @@ function takes a string and initializes a `ClusterDefinition`:
 ```go
 package clusterdsl
 
-import "github.com/goadesign/goa/design/apidsl"
+import (
+	"github.com/goadesign/goa/design"
+	"github.com/goadesign/goa/dslengine"
+)
 
 // ClusterDefinition defines a cluster.
 type ClusterDefinition struct {
 	// Name of cluster
 	Name string
 	// API is the goa API DSL definition that belongs to cluster.
-	API *apidsl.APIDefinition
+	API *design.APIDefinition
 }
 
 // Root is the DSL root.
@@ -391,19 +394,30 @@ type Root struct {
 	Clusters []*ClusterDefinition
 }
 
+func (r *Root) DSLName() string {
+	return "Cluster"
+}
+
+func (r *Root) DependsOn() []dslengine.Root {
+	return []dslengine.Root{}
+}
+
+func (r *Root) IterateSets(it dslengine.SetIterator) {}
+func (r *Root) Reset() {}
+
 // DSL root
-var dslRoot &Root{}
+var dslRoot = &Root{}
 
 // Register the DSL root with the DSL engine.
 func init() {
-	dslengine.Roots = append(dslengine.Roots, dslRoot)
+	dslengine.Register(dslRoot)
 }
 
 // Cluster defines a cluster for an API.
 func Cluster(name string) {
-	api, ok := dslengine.CurrentDefinition().(*apidsl.APIDefinition)
+	api, ok := dslengine.CurrentDefinition().(*design.APIDefinition)
 	if !ok {
-		dslengine.InvalidDSL("Cluster")
+		dslengine.IncompatibleDSL()
 		return
 	}
 	c := &ClusterDefinition{Name: name, API: api}
