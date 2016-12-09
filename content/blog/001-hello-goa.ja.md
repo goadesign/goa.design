@@ -3,7 +3,7 @@ date = "2016-08-02T11:01:06-05:00"
 title = "Hello, goa"
 description = "Announcing goa v1.0.0"
 author = "Raphael Simon"
-weight = 1
+weight = 3
 
 [menu.main]
 name = "Hello, goa"
@@ -167,4 +167,3 @@ If you would like to hear more about goa I go into more details in
 
 I am looking forward to seeing goa evolve as others join and start contributing as well, this is
 just the beginning!
-
