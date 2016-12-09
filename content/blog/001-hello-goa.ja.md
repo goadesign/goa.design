@@ -4,6 +4,7 @@ title = "Hello, goa"
 description = "Announcing goa v1.0.0"
 author = "Raphael Simon"
 weight = 3
+layout = "blog"
 
 [menu.main]
 name = "Hello, goa"

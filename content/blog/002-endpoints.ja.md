@@ -4,6 +4,7 @@ title = "From Design To Production"
 description = "Leveraging Google Cloud Endpoints to deploy goa services"
 author = "Raphael Simon"
 weight = 2
+layout = "blog"
 
 [menu.main]
 name = "Design To Production"
@@ -12,7 +13,7 @@ parent = "blog"
 
 Google recently
 [announced](https://cloudplatform.googleblog.com/2016/09/manage-your-APIs-with-Google-Cloud-Endpoints.html)
-the open beta release of the newest set of features in 
+the open beta release of the newest set of features in
 [Google Cloud Endpoints](https://cloud.google.com/endpoints/). The part of the announcement that got
 me especially excited was:
 
@@ -245,7 +246,7 @@ sub-package which contains functions for creating tokens from Google Developers 
 account JSON key file.
 
 The JSON key file can be downloaded from the [Google API
-console](https://console.cloud.google.com/apis/credentials/serviceaccountkey). The generated client 
+console](https://console.cloud.google.com/apis/credentials/serviceaccountkey). The generated client
 tool `main.go` needs to be tweaked to read the file and use the aforementioned packages to create
 JWT tokens from the credentials in it. The code can be found in the [endpoints examples
 repo](https://github.com/goadesign/examples/blob/master/endpoints/tool/adder-cli/jwt.go). Note that
