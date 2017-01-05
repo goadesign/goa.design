@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "The goa-cellar Reference Example"
+title = "goa セラーの参考例"
 weight = 3
 
 [menu.main]
@@ -8,16 +8,13 @@ name = "セラーの例"
 parent = "learn"
 +++
 
-The goa winecellar service provides an example for the [goa](http://goa.design) web application
-framework.
+goa ワインセラーサービスは [goa](http://goa.design) Web アプリケーションフレームワークの例です。
 
-The service implements an API for managing wine bottles. The service is multitenant: bottles are
-created in the context of an account. At this time the database is emulated with an in-memory hash.
-An instance of this example is hosted at `http://cellar.goa.design`.
+このサービスはワインボトルを管理するための API を実装しています。このサービスはマルチテナントです。ボトルはアカウントのコンテキストで作成されます。この時点で、データベースはインメモリハッシュでエミュレートされます。この例のインスタンスは `http://cellar.goa.design` でホストされています。
 
-Using the excellent [httpie client](https://github.com/jkbrzt/httpie):
+優れた [httpie クライアント](https://github.com/jkbrzt/httpie)を使用します。
 
-Listing bottles in account 1:
+アカウント 1 のボトルの列挙。
 ```bash
 http http://cellar.goa.design/cellar/accounts/1/bottles
 HTTP/1.1 200 OK
@@ -47,7 +44,7 @@ Vary: Origin
 # ...
 ```
 
-Creating a new account:
+新しいアカウントの作成。
 ```bash
 http POST http://cellar.goa.design/cellar/accounts name=sonoma created_by=me
 HTTP/1.1 201 Created
@@ -59,7 +56,7 @@ Server: Google Frontend
 Vary: Origin
 ```
 
-Showing the newly created account:
+新しく作成したアカウントの表示。
 ```bash
 http  http://cellar.goa.design/cellar/accounts/3
 HTTP/1.1 200 OK
@@ -78,5 +75,4 @@ Vary: Origin
 }
 ```
 
-The complete documentation for the example is available on
-[swagger.goa.design](http://swagger.goa.design/?url=goadesign%2Fgoa-cellar%2Fdesign).
+このサンプルの完全なドキュメントは [swagger.goa.design](http://swagger.goa.design/?url=goadesign%2Fgoa-cellar%2Fdesign) にあります。
