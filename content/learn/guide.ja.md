@@ -8,26 +8,19 @@ name = "はじめのガイド"
 parent = "learn"
 +++
 
-This guide walks you through writing a complete service in goa. The simple service implements a
-small subset of the [cellar](../cellar) example found in the [github
-repository](https://github.com/goadesign/goa-cellar). The service deals with wine bottles, more
-specifically it makes it possible to retrieve pre-existing wine bottle models through simple GET
-requests.
+このガイドでは goa で完全なサービスを作成する方法について説明します。そのシンプルなサービスは [GitHub リポジトリ](https://github.com/goadesign/goa-cellar)にある[セラー](../cellar)のサンプルの小さなサブセットを実装します。このサービスはワインボトルを取り扱っています。より簡単に言えば、簡単な GET リクエストを通じて既存のワインボトルモデルを検索することができます。
 
-# Prerequisite
+# 前提条件
 
-Install `goa` and `goagen`:
+`goa` と `goagen` をインストールしてください。
 
 ```
 go get -u github.com/goadesign/goa/...
 ```
 
-# Design
+# デザイン
 
-The first thing to do when writing a goa service is to describe the API using the goa design
-language. Create a new directory under `$GOPATH/src` for the new goa service, for example
-`$GOPATH/src/cellar`. In that directory create a design sub directory and the file
-`design/design.go` with the following content:
+goa サービスを作成するとき最初に行うことは goa デザイン言語を使用して API を記述することです。`$GOPATH/src/cellar` のように `$GOPATH/src` の下に新しい goa サービスのためのディレクトリを作成します。そのディレクトリに design サブディレクトリと `design/design.go` ファイルを作成し、次の内容を記述します。
 
 ```go
 package design                                     // The convention consists of naming the design
@@ -76,61 +69,33 @@ var BottleMedia = MediaType("application/vnd.goa.example.bottle+json", func() {
 })
 ```
 
-Let's break this down:
+これを分析してみましょう。
 
-* We define a `design` package and use an anonymous variable to declare the API, we could have used
-  a package init function as well. The actual name of the package could be anything, `design` is
-  just a convention.
+* `design` パッケージを定義し、匿名変数を使用して API を宣言すると、パッケージの init 関数も使用できます。パッケージの実際の名前は何でもかまいません。 `design` は単なる慣例です。
 
-* The API function declares our API, which takes two arguments: the name of the API and an anonymous
-  function that defines additional properties. In this cellar example, we use a title and a
-  description.
+* API 関数は、 API の名前と、追加のプロパティを定義する無名関数の2つの引数をとり、 API を宣言します。このセラーの例では、タイトルと説明を使用します。
 
-* The Resource function then declares a `bottle` resource. The function also takes a name and an
-  anonymous function. Properties defined in the anonymous function includes all the actions
-  supported by the resource as well as a default media type used to render the resource in
-  responses.
+* Resource 関数は `bottle` リソースを宣言します。この関数は名前と無名関数も取ります。無名関数で定義されたプロパティには、リソースがサポートするすべてのアクションと、レスポンスでリソースを表示するために使用されるデフォルトのメディアタイプが含まれます。
 
-* Each resource action is declared using the `Action` function which follows the same pattern of
-  name and anonymous function. Actions are defined in resources, they represent specific API
-  endpoints complete with an HTTP method, a URL as well as parameter, payload and response
-  definitions. The parameters may be defined using wildcards in the URL or may correspond to query
-  strings appended to the URL. The payload describes the data structure of the request body if any.
-  Here we define a single action (`show`) but resources may define an arbitrary number of them.
+* 各リソースアクションは、名前と無名関数の同じパターンに続く `Action` 関数を使用して宣言されます。アクションはリソース内で定義され、 HTTP メソッド、 URL 、パラメータ、ペイロード、レスポンス定義を含む特定の API エンドポイントを表します。パラメータは、 URL にワイルドカードを使用して定義することも、 URL に追加したクエリ文字列に対応させることもできます。ペイロードは要求本体のデータ構造を記述します (存在する場合) 。ここでは単一のアクション (`show`) を定義しますが、リソースは任意の数を定義できます。
 
-* The `Action` function defines the action endpoint, parameters, payload (not used here) and
-  responses. goa defines default response templates for all standard HTTP status codes. A response
-  template defines the response HTTP status code, its media type if any (which describes the
-  response body shape) and headers it may define. The `ResponseTemplate` design language function
-  (not used here) makes it possible to define additional response templates or override the existing
-  ones.
+* `Action` 関数はそのアクションのエンドポイント、パラメータ、ペイロード (この例では使用されていません) および応答を定義します。goa はすべての標準 HTTP ステータスコードのデフォルトレスポンステンプレートを定義します。レスポンステンプレートは、レスポンスの HTTP ステータスコード、そのメディアタイプ (レスポンスボディシェイプを記述します) 、および定義可能なヘッダを定義します。`ResponseTemplate` デザイン言語関数 (ここでは使用されていません) では、追加の応答テンプレートを定義したり、既存の応答テンプレートを上書きすることができます。
 
-* Finally, we define the resource media type as a global variable so we can refer to it when
-  declaring the OK response. A media type has an identifier as defined by RFC 6838 and describes the
-  attributes of the response body (the JSON object fields in goa).
+* 最後に、リソースのメディアタイプをグローバル変数として定義し、 OK レスポンスを宣言するときに参照することができます。メディアタイプには RFC 6838 で定義されている識別子があり、レスポンスボディの属性 (goa の JSON オブジェクトフィールド) が記述されています。
 
-The media type data structure is described using the `Attribute` design language function. This
-function makes it possible to provide a recursive definition of the fields of the data structure. At
-each level it defines the name and type of the fields as well as their validation rules (not used
-here).
+メディアタイプのデータ構造は、 `Attribute`  デザイン言語関数を使用して記述されます。この関数はデータ構造のフィールドの再帰的な定義を提供することを可能にします。各レベルでは、フィールドの名前とタイプ、および検証ルール (ここでは使用されていません) が定義されています。
 
-The [apidsl package reference](/reference/goa/design/apidsl/) lists all the goa design language
-keywords together with a description and example usage.
+[apidsl パッケージリファレンス](/reference/goa/design/apidsl/)には、すべての goa デザイン言語のキーワードが説明や使用例と共に記載されています。
 
-# Implement
+# 実装
 
-Now that we have a design for our API we can use the `goagen` tool to generate all the boilerplate
-code. The tool takes the generation target and the import path to the Go design package as argument.
-Here we are starting a new service so we are going to use the `bootstrap` target to generate a
-complete implementation. If you created the design package under `$GOPATH/src/cellar`, the command
-line is:
+API の設計が完了したので、 `goagen` ツールを使用してすべての定型コードを生成することができます。このツールは生成ターゲットと Go デザインパッケージへのインポートパスを引数として取ります。ここでは新しいサービスを開始しているので `bootstrap` ターゲットを使用して完全な実装を生成します。`$GOPATH/src/cellar` の下にデザインパッケージを作成した場合、コマンドラインは次のようになります。
 
 ```bash
 goagen bootstrap -d cellar/design
 ```
 
-The tool outputs the names of the files it generates - by default it generates the files in the
-current working directory. The list should look something like this:
+このツールは生成されたファイルの名前を出力します。デフォルトでは現在の作業ディレクトリにファイルが生成されます。リストは次のようになります。
 
 ```bash
 app
@@ -157,53 +122,32 @@ swagger/swagger.json
 swagger/swagger.yaml
 ```
 
-Note how `goagen` generated a `main.go` for our app as well as a skeleton controller (`bottle.go`). These
-two files are meant to help bootstrap a new development, they won't be re-generated (by default) if
-already present (re-run the tool again and note how it only generates the files under the `app`,
-`client`, `tool` and `swagger` directories this time). This behavior and many other aspects are
-configurable via command line arguments, see the goagen docs for details.
+`goagen` がアプリケーション用の `main.go` とスケルトンコントローラ (`bottle.go`) を生成した方法に注目してください。
 
-Back to the list of generated files:
+これらの 2 つのファイルは、新しい開発をブートストラップするためのもので、すでに存在する場合は再生成されません (再度ツールを実行し、`app` 、`client` 、`tool` 、および `swagger` のディレクトリだけが生成されるのに注目してください) 。この動作とその他の多くの側面はコマンドライン引数で設定することができます。詳しくは `goagen` のドキュメントを参照してください。
 
-* The `app` directory contains the generated code that glues the low level HTTP router to your code.
-* The `client` directory contains the generated code that implements a client Go package.
-* The `tool` directory contains a CLI tool that can be used to make requests to the cellar service.
-* The `swagger` directory contains a swagger specification of the API both in JSON and YAML formats.
+生成されたファイルの一覧に戻りましょう。
 
-As discussed above the `main.go` and `bottle.go` files provide a starting point for implementing the
-service entry point and the bottle controller respectively. Looking at the content of the `app`
-package:
+* `app` ディレクトリには低レベルの HTTP ルータをコードに貼り付ける生成コードが含まれています。
+* `client` ディレクトリにはクライアント Go パッケージを実装する生成コードが含まれています。
+* `tool` ディレクトリにはセラーサービスへの要求を行うために使用できる CLI ツールが含まれています。
+* `swagger` ディレクトリには `JSON` と `YAML` 両方のフォーマットで API の swagger 仕様が含まれています。
 
-* `controllers.go` contains the controller interface type definitions. There is one such interface
-  per resource defined in the design language. The file also contains the code that "mounts"
-  implementations of these controller interfaces onto the service. The exact meaning of "mounting" a
-  controller is discussed further below.
+上述のように、 `main.go` および `bottle.go` ファイルはそれぞれサービスのエントリポイントおよび bottle コントローラを実装するための開始点を提供します。 `app` パッケージのコンテンツを見てみましょう。
 
-* `contexts.go` contains the context data structure definitions. Contexts play a similar role to
-  Martini's `martini.Context`, goji's `web.C` or echo's `echo.Context` to take a few arbitrary
-  examples: they are given as first argument to all controller actions and provide helper methods to
-  access the request state and write the response.
+* `controllers.go` にはコントローラの interface 型の定義が含まれています。デザイン言語で定義されたリソースごとにそのようなインターフェイスが 1 つあります。このファイルには、これらのコントローラ interface の実装をサービスに「マウント」するコードも含まれています。コントローラの「マウント」の正確な意味は以下でさらに説明されます。
 
-* `hrefs.go` provide global functions for building resource hrefs. Resource hrefs make it possible
-  for responses to link to related resources. goa knows how to build these hrefs by looking at the
-  request path for the resource "canonical" action (by default the `show` action). See the
-  [Action](http://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a)
-  design language function for additional information.
+* `contexts.go` にはコンテキストデータ構造定義が含まれています。コンテキストは Martini の `martini.Context` 、 goji の `web.C` または echo の `echo.Context` と同様の役割を果たします。これはすべてのコントローラアクションの最初の引数として与えられ、リクエスト状態にアクセスしてレスポンスを書くためのヘルパメソッドを提供します。
 
-* `media_types.go` contains the media type data structures used by resource actions to build the
-  responses. There is one such data structure generated per view defined in the design.
+* `hrefs.go` はリソースの href を構築するためのグローバル関数を提供します。リソースの href によって、レスポンスが関連リソースにリンクすることが可能になります。goa は、リソースの「標準的な」アクション (デフォルトでは `show` アクション) の要求パスを調べることによって、これらの href をどのように構築するかを知ります。追加情報については [Action](http://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a) デザイン言語関数を参照してください。
 
-* `user_types.go` contains the data structures defined via the
-  [Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a)
-  design language function. Such types may be used to define request payloads and response media
-  types.
+* `media_types.go` にはレスポンスを構築するためにリソースアクションによって使用されるメディアタイプのデータ構造が含まれています。デザインで定義されたビューごとに 1 つのそのようなデータ構造が生成されます。
 
-* `test/bottle.go` contains test helpers that make it convenient to test the controller code by
-  making it possible to call the action implementations with controller input and validate the
-  resulting media types.
+* `user_types.go` には、[Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) デザイン言語関数で定義されたデータ構造が含まれています。そのようなタイプはリクエストのペイロードおよびレスポンスのメディアタイプを定義するために使用することができます。
 
-Now that `goagen` did its work the only thing left for us to do is to provide an implementation of
-the `bottle` controller. The type definition generated by `goagen` is:
+* `test/bottle.go` にはコントローラのコードをテストするのに便利なテストヘルパが含まれています。コントローラの入力を使ってアクションの実装を呼び出し、結果のメディアタイプを検証することができます。
+
+`goagen` がその作業をしたので、あとは `bottle` コントローラの実装を提供するだけです。 `goagen` によって生成される型定義は次のとおりです。
 
 ```go
 type BottleController interface {
@@ -212,7 +156,7 @@ type BottleController interface {
 }
 ```
 
-Simple enough... Let's take a look at the definition of `ShowBottleContext` in `app/contexts.go`:
+十分シンプルです... `app/contexts.go` にある `ShowBottleContext` の定義を見てみましょう。
 
 ```go
 // ShowBottleContext provides the bottle show action context.
@@ -224,14 +168,9 @@ type ShowBottleContext struct {
 }
 ```
 
-The context data structure contains the id of the bottle declared as an int since that's the type
-specified in the design language. It also contains anonymous fields which give access to the raw
-underlying request and response states (including access to the http.Request and http.ResponseWriter
-objects). The goa context data structure also implements the golang context.Context interface which
-makes it possible to carry deadlines and cancelation signals for example across different goroutines
-involved in handling the request.
+コンテクストのデータ構造には、デザイン言語で指定された型の int として宣言されたボトルの ID が含まれています。また、未処理の基本リクエストおよび応答状態 (http.Request および http.ResponseWriter オブジェクトへのアクセスを含む) へのアクセスを与える匿名フィールドも含まれています。goa コンテクストのデータ構造はまた、golang の context.Context インタフェースを実装しており、デッドラインやキャンセル信号を、例えばリクエストの処理に関わる異なる goroutine に渡って送ることができます。
 
-The same file also defines two methods on the context data structure:
+同じファイルでは、コンテキストのデータ構造上に 2 つのメソッドも定義されています。
 
 ```go
 // OK sends a HTTP response with status code 200.
@@ -247,9 +186,7 @@ func (ctx *ShowBottleContext) NotFound() error {
 }
 ```
 
-goagen also generated an empty implementation of the controller in `bottle.go` so all we have left
-to do is provide an actual implementation. Open the file `bottle.go` and replace the existing `Show`
-method with:
+goagen はまた `bottle.go` にコントローラの空の実装を生成しています。あとは私たちが実際の実装を提供するだけです。 `bottle.go` ファイルを開き、既存の `Show` メソッドを以下のように置き換えてください。
 
 ```go
 // Show implements the "show" action of the "bottles" controller.
@@ -271,9 +208,7 @@ func (c *BottleController) Show(ctx *app.ShowBottleContext) error {
 }
 ```
 
-Before we build and run the app, let's take a peek at main.go: the file contains a default
-implementation of main that instantiates a new goa service, initializes default middleware, mounts
-the bottle controller and runs the HTTP server.
+アプリケーションをビルドして実行する前に main.go を見てみましょう。このファイルには、新しい goa サービスをインスタンス化し、デフォルトのミドルウェアを初期化し、 bottle コントローラをマウントし、 HTTP サーバーを実行する main のデフォルト実装が含まれています。
 
 ```go
 func main() {
@@ -297,24 +232,23 @@ func main() {
 }
 ```
 
-Mounting a controller onto a service registers all the controller action endpoints with the router.
-The code also makes sure that there is no conflict between routes of different actions.
+コントローラをサービスにマウントすると、すべてのコントローラアクションのエンドポイントがルータに登録されます。このコードでは、異なるアクションのルート間に矛盾がないことも確認しています。
 
-Now compile and run the service:
+サービスをコンパイルして実行します。
 
 ```bash
 go build -o cellar
 ./cellar
 ```
 
-This should produce something like:
+これは次のようになります。
 
 ```bash
 2016/04/10 16:20:37 [INFO] mount ctrl=Bottle action=Show route=GET /bottles/:bottleID
 2016/04/10 16:20:37 [INFO] listen transport=http addr=:8080
 ```
 
-You can now test the app using curl for example:
+これで curl を使ってアプリをテストすることができます。
 
 ```bash
 curl -i localhost:8080/bottles/1
@@ -336,7 +270,7 @@ Content-Length: 0
 Content-Type: text/plain; charset=utf-8
 ```
 
-You can exercise the validation code generated by goagen by passing an invalid (non-integer) id:
+無効な (非整数の) ID を渡すことによって goagen によって生成されたバリデーションコードを実行することができます。
 
 ```bash
 curl -i localhost:8080/bottles/n
@@ -349,8 +283,7 @@ Content-Length: 117
 {"code":"invalid_request","status":400,"detail":"invalid value \"n\" for parameter \"bottleID\", must be a integer"}
 ```
 
-Instead of using curl, let's use the generated CLI tool to make requests to the service. First let's
-compile the CLI client:
+curl を使用する代わりに、生成された CLI ツールを使用してサービスにリクエストを出してみます。最初に CLI クライアントをコンパイルしましょう。
 
 ```bash
 cd tool/cellar-cli
@@ -358,13 +291,13 @@ go build -o cellar-cli
 ./cellar-cli
 ```
 
-The command above prints the cli usage. The --help flag also provides contextual help:
+上記のコマンドは cli の使用法を表示します。 --help フラグはコンテキストヘルプも提供します。
 
 ```bash
 ./cellar-cli show bottle --help
 ```
 
-The command above shows how to call the show bottle action:
+上のコマンドは show bottle アクションを呼び出す方法を示しています。
 
 ```bash
 ./cellar-cli show bottle /bottles/1
@@ -373,9 +306,8 @@ The command above shows how to call the show bottle action:
 {"href":"/bottles/1","id":1,"name":"Bottle #1"}
 ```
 
-That's it! congratulations on writing you first goa service!
+それでおしまいです！はじめての goa サービス作成をおめでとうございます！
 
-This basic example only covers a fraction of what goa can do. Read on to learn more about how to
-design microservices and how to take advantage of the goa package and sub-packages to implement it.
+この基本的な例は goa ができることのほんの一部をカバーしています。マイクロサービスの設計方法と、それを実装するための goa パッケージとサブパッケージを活用する方法の詳細については、こちらを参照してください。
 
-More examples can be found in [github](https://github.com/goadesign/examples).
+その他の例は [github](https://github.com/goadesign/examples) にあります。
