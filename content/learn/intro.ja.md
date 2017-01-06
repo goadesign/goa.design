@@ -1,6 +1,6 @@
 +++
 date = "2016-04-10T11:01:06-05:00" 
-title = "Introduction to goa"
+title = "goa のイントロダクション"
 weight = 1
 
 [menu.main]
@@ -8,51 +8,26 @@ name = "イントロダクション"
 parent = "learn"
 +++
 
-# What is goa?
+# goa とは ?
 
-goa provides a novel approach for developing microservices that saves time when working on
-independent services and helps with keeping the overall system consistent. goa uses code generation
-to handle both the boilerplate and ancillary artifacts such as documentation, client modules and
-client tools. The content of the generated artifacts is computed from the *design* of the
-microservice. The design is thus the Single Source of Truth (SSOT) from which API implementation,
-documentation, clients and other generated artifacts are derived. Any change made to the design is
-reflected automatically throughout considerably simplifying the maintenance of the service.
+goa は、独立したサービスを扱う際に時間を節約し、システム全体の一貫性を維持するのに役立つ、マイクロサービスを開発するための新しいアプローチを提供します。 goa は、ドキュメント、クライアントモジュール、クライアントツールなどの定型的な成果物と補助的な成果物の両方を処理するためにコード生成を使用します。生成される成果物の内容はマイクロサービスの *デザイン* から計算されます。したがって、デザインは信頼できる唯一の情報源（Single Source of Truth）であり、そこから API 実装、ドキュメンテーション、クライアントおよびその他の生成される成果物が導出されます。設計の変更はサービスのメンテナンスを大幅に簡素化して自動的に反映されます。
 
-The goa framework can be divided into three parts:
+goa フレームワークは3つの部分に分けられます：
 
-* The goa *design language* is the built-in DSL that allows describing the design of the
-  microservice.
-* The *code generator* uses the output of the DSL to generate artifacts.
-* The *goa package* provides a complete pluggable framework leveraged by both generated and user
-  code to implement the service.
+* goa *デザイン言語* はマイクロサービスの設計を記述できるビルトイン DSL です。
+* *コードジェネレータ* は DSL の出力を使用して成果物を生成します。
+* *goa パッケージ* は、サービスを実装するために生成されたコードとユーザーコードの両方を利用する完全なプラガブル・フレームワークを提供します。
 
-Both the design language and code generators are extensible via [plugins](/extend/), for example
-the [gorma plugin](/extend/gorma/) allows defining database models in the design and generates
-code to both create and render them automatically. Plugins help with keeping the design the single
-source of truth.
+デザイン言語とコードジェネレータは[プラグイン](/extend/)を介して拡張可能です。たとえば、 [gorma プラグイン](/extend/gorma/)はデザインでデータベースモデルを定義し、自動的に作成およびレンダリングするコードを生成します。 プラグインはデザインを信頼できる唯一の情報源として維持するのに役立ちます。
 
-### The goa Design Language
+### goa デザイン言語
 
-The design of microservices is described using the built-in goa design language optionally
-supplemented with plugin DSLs. The language itself is implemented in Go, each "keyword" consisting
-of a package function. This makes the syntax familiar and allows for mixing in actual Go code when
-necessary. The [design](/design/) section introduces the language.
+マイクロサービスの設計は、プラグイン DSL で任意に補足されたビルトインの goa 設計言語を使用して記述されています。言語そのものは Go で実装されており、それぞれの「キーワード」はパッケージ関数で構成されています。これにより構文が分かりやすくなり、必要に応じて実際の Go コードをミキシングすることができます。[デザイン](/design/)のセクションにはその言語が紹介されています。
 
-### Artifact Generation
+### 成果物生成
 
-goa comes with the [goagen](/implement/goagen/) tool which produces various outputs from the
-microservice design. The way code generation works is that the DSL consisting of function calls is
-executed in order to build data structures that describe the microservice API in-memory. goagen puts
-together a complete program that contains the DSL functions with the output generation code specific
-to the generated artifact all wrapped into a single executable. It then runs the program which ends
-up generating the actual output. goagen is thus a *meta-generator*.
+goaには、マイクロサービスデザインからさまざまな出力を生成する [goagen](/implement/goagen/) ツールが付属しています。コード生成の仕方は、メモリ内のマイクロサービス API を記述するデータ構造を構築するために、関数呼び出しからなる DSL を実行することです。 goagen は、生成された成果物に固有の出力生成コードをすべて1つの実行可能ファイルにラップした DSL 関数を含む完全なプログラムをまとめます。その後、実際の出力を生成するプログラムを実行します。このように goagen は *メタジェネレータ* なのです。
 
-### The goa Package
+### goa パッケージ
 
-The [goa package and its sub-packages](/reference/) provide the service implementation scaffolding
-including data structures that represent the actual service, its controllers and router. The
-generated code takes advantage of these data structures and others to provide a completely working
-service out of the box. goa follows the "battery included" principle and makes it possible to swap
-out the logger, encoders, decoders, middleware or even the router itself. You get to keep your
-logging package of choice and still benefit from the design first approach. The
-[implement](/implement/) section describes these components.
+[goa パッケージとそのサブパッケージ](/reference/)は、実際のサービス、そのコントローラー、およびルーターを表すデータ構造を含むサービス実装の足場を提供します。生成されたコードは、これらのデータ構造などを利用して、完全に機能するサービスをそのまま提供します。 goaは 「バッテリー同梱 (battery included) 」の思想に従い、ロガー、エンコーダ、デコーダ、ミドルウェア、またはルータ自体を交換することができます。あなたのロギングパッケージを選択しても、デザイン・ファースト・アプローチの恩恵を得ることができます。[実装する](/implement/)のセクションではこれらのコンポーネントについて説明します。

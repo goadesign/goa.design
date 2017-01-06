@@ -1,10 +1,6 @@
 +++
-title = "Learn"
+title = "学ぶ"
 layout = "sections"
 +++
 
-If you're new to goa start by going through the
-<a href="intro">introduction</a> and the
-<a href="guide">Getting Started Guide</a>. The
-<a href="cellar">Cellar Example</a> provides
-a complete example of a goa service.
+goa がはじめての方は<a href="intro">イントロダクション</a>と<a href="guide">はじめのガイド</a>を参照してください。<a href="cellar">セラーの例</a>は goa サービスの完全な例を提供します。
