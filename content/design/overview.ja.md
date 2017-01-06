@@ -1,6 +1,6 @@
 +++
 date = "2016-04-16T11:01:06-05:00"
-title = "The goa API Design Language"
+title = "goa API デザイン言語"
 weight = 1
 
 [menu.main]
@@ -8,18 +8,14 @@ name = "概要"
 identifier = "design overview"
 parent = "design"
 +++
+goa API デザイン言語はGoで実装されたDSLで、任意のマイクロサービスAPIを記述することができます。
+デザイン言語はRESTベースのHTTP APIを主な焦点にしていますが、他の方法論によるAPIを記述するのにも十分柔軟です。
+[プラグイン](/extend/dsls)はコアDSLを拡張して、データベースモデル、サービスディスカバリ統合、障害ハンドラなどのマイクロサービスの他の側面を記述できるようにすることができます。
 
-The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible
-to describe arbitrary microservice APIs. While the main focus is REST based HTTP APIs, the language
-is flexible enough to describe APIs that follow other methodologies as well.
-[Plugins](/extend/dsls) can extend the core DSL to allow describing other aspects of
-microservices such as database models, service discovery integrations, failure handlers etc.
+## デザイン定義
+デザイン言語の主要部は、**定義** を記述するための関数の連鎖によって構成されています。
+goa デザイン言語のルート定義は、API定義です。DSLではこれを以下のように定義します：
 
-## Design Definitions
-
-At its core the design language consists of functions that are chained together to describe
-*definitions*. The goa design language root definition is the API definition, the DSL to define it
-looks like this:
 ```go
 import (
     . "github.com/goadesign/goa/design"
@@ -37,50 +33,34 @@ var _ = API("My API", func() {        // "My API" is the name of the API used in
 })
 ```
 
-*A side note on "dot import" as this question comes up often: the goa API design language is a DSL
-implemented in Go and is __not__ Go. The generated code or any of the actual Go code in goa does
-not make use of "dot imports". Using this technique for the DSL results in far cleaner looking
-code. It also allows mixing DSLs coming from plugins transparently, moving on...*
+*"dot import"をなぜ使うのかという質問がよく来るので以下を付け加えておきます：
+goa API デザイン言語はGoで実装されていますが__Goではありません__。
+生成されるコードや実際にgoaに含まれるGoのコードには"dot import"は使われていません。
+このテクニックをDSLに使用するのは、はるかに洗練されたコードが得られるからです。
+また、プラグインから来るDSLを透過的に混ぜることが出来ます。*
 
-The DSL makes heavy use of anonymous functions to describe the various definitions recursively.
-In the example above the
+DSLではさまざまな定義を再帰的に記述するために無名関数を頻繁に使用します。
+上の例では、[API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、第1引数として関数の名前を受け取り、第2引数として無名関数を受け取ります。
+ドキュメント内のこの無名関数もまた`DSL`であり、APIの追加のプロパティを定義しています。
+このname+DSLのパターンは他の多くのDSL関数でも利用されています。
+
 [API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function accepts the name of the API as first argument and an anonymous function as second
-argument. This anonymous function also referred to as `DSL` in this document defines additional
-properties of the API. This pattern (name+DSL) is used by many other DSL functions.
+関数はAPIの一般的なプロパティを定義します：ドキュメント内のタイトルと説明、サービス利用規約(上の例では設定されていません)、ドキュメントやクライアントで使われるのデフォルトホスト、スキーマ、そしてすべてのエンドポイントのベースとなるパス(ベースパスをワイルドカードで定義して、キャプチャされたパラメータと対応させることもできます)
 
-The
-[API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function defines the general properties of the API: the title and description used in the
-documentation, the terms of service (not shown in the example above) the default host and
-scheme used in the documentation and clients and the base path to all the API endpoints
-(optionally also corresponding base parameters captured via wildcards defined in the base
-path).
+この関数は、APIが定義するメディアタイプも定義します。
+[Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7)および
+[Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
+オプションで、生成されたコードがリクエスト・ペイロードをUnmarshalしたりレスポンスボディをMarshalをするように、使用するエンコーディングパッケージを指定することもできます。
 
-The function also defines the media types supported by the API. The
-[Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7)
-and
-[Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)
-functions make it possible to define the support media types for requests (`Consumes`) and
-responses (`Produces`) optionally also specifying an encoding package that the generated code
-uses to unmarshal request payloads and marshal response bodies.
+追加のメタデータ（連絡先情報）から、セキュリティ定義、[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)ポリシー、レスポンステンプレートまで、[API関数](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)で定義できるその他のプロパティがいくつかあります。 完全なリストについては、[リファレンス](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)を参照してください。
 
-There are a number of other properties that can be defined in the 
-[API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function ranging from
-additional metadata (contact information) to security definitions,
-[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) policies and
-response templates. See the
-[reference](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
-for the complete list.
+## API エンドポイント
 
-## API Endpoints
-
-Apart from the root API definition the goa API design language also makes it possible to describe
-the actual endpoints together with details on the shape of the requests and responses. The
-`Resource` function defines a set of related API endpoints - a resource if the API is RESTful. Each
-actual endpoint is described using the `Action` function. Here is an example of a simple `Operands`
-resource exposing an `add` action (API endpoint):
+ルートAPI定義とは別に、goa API設計言語では、実際のエンドポイントをリクエストとレスポンスの詳細形式とともに記述することもできます。
+リソース関数は、関連するAPIエンドポイントのセットを定義します。
+これは、APIがRESTfulである場合のリソースです。
+実際の各エンドポイントは、アクション関数を使用して記述されます。
+ここでは `add` アクションを(API エンドポイントとして)公開している単純な `Operand` リソースの例を示します。
 
 ```go
 var _ = Resource("Operands", func() {        // Defines the Operands resource
@@ -99,37 +79,32 @@ var _ = Resource("Operands", func() {        // Defines the Operands resource
 })
 ```
 
-A `Resource` function may define any arbitrary number of actions. The resource optionally
-defines a common base path, common path parameters and other properties shared by all its
-actions. An action may define multiple routes (the `Routing` function argument is variadic) in
-case the same endpoint can be requested from different paths or using different HTTP methods.
+リソース関数は任意の数のアクションを定義できます。
+リソースは、共通ベースパス、共通パスパラメータ、およびすべてのアクションで共有されるその他のプロパティを定義できます。
+アクションは、同じエンドポイントが異なるパスから要求されたり、異なるHTTPメソッドを使用したりする場合に備えて、複数のルートを定義できます（`Routing` 関数の引数は可変です）。
 
-The DSL used to define the action parameters allows for specifying validation rules ranging
-from minimum and maximum values for integer and number parameters to patterns defined via
-regular expressions for string parameters:
+アクションパラメータを定義するために使用されるDSLでは、整数(integer)パラメータや数値(number)パラメータなら最小値と最大値、文字列パラメータでは正規表現をで定義されたバリデーションを指定できます：
+
 ```go
 Param("left", Integer, "Left operand", func() {
     Minimum(0) // Do not allow for negative values.
 })
 ```
-The syntax used to define parameters is the
-[Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)
-DSL described in the section below.
 
-### File Servers
+パラメータを定義する構文は、下記のセクションで説明する [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) DSLです。
 
-The [Files](https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a)
-function makes it possible to define file servers on resources. A file server serves a static file
-or all files under a given file path if the route ends with a wildcard starting with `*`. The
-[Files](https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) function
-optionally accepts a child DSL (anonymous function as last argument) for defining a security scheme.
-The syntax is identical to the syntax used to define the security scheme of an action.
+### ファイルサーバー
 
-The following example defines a `public` resource with two file servers, one serving the file
-`public/swagger/swagger.json` for requests sent to `/swagger.json` and the other all files under
-`public/js/` for requests sent to `/js/*filepath` where the value of `*filepath` corresponds to the
-path of the file relative to `/public/js`. The swagger endpoint also defines a security scheme
-requiring clients to auth before being able to retrieve the swagger specification.
+[Files](https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a)関数を使用すると、リソース上にファイル・サーバーを定義することができます。
+ファイルサーバーは、ルートの最後が*で始まるワイルドカードの場合、静的なファイルや指定されたファイルパスのすべてのファイルを提供します。
+[Files]((https://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a))関数は、オプションでセキュリティスキームを定義するための子DSLを（無名関数を最後の引数として）受け入れます。
+構文は、アクションのセキュリティスキームを定義するために使用される構文と同じです。
+
+以下の例では、2つのファイルサーバーを持つ `public` リソースを定義しています。
+ひとつは `/swagger.json` に送られたリクエストに対して `public/swagger/swagger.json` を返します。
+もうひとつは、 `js/*filepath` に送られたリクエストに対して、`public/js`以下にあるすべてのファイルを返します。
+ここで、 `*filepath` の値は `public/js` を基準としたファイルのパスに対応します。
+swagger エンドポイントはまた、swagger 仕様を読み出す前に、クライアントに認証を要求するセキュリティスキームを定義しています。
 
 ```go
 var _ = Resource("public", func() {
@@ -146,16 +121,13 @@ var _ = Resource("public", func() {
 })
 ```
 
-## Data Types
+## データタイプ
 
-The goa API design language makes it possible to describe arbitrary data types that the API may
-use to define both request payloads and response media types. The
+goa API デザイン言語はリクエスト・ペイロードやレスポンス・メディアで定義される任意のデータタイプを記述することが可能です。
 [Type](https://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function describes a data structure by listing each field using the
-[Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function. It can also make use of the
-[ArrayOf](https://goa.design/reference/goa/design/apidsl/#func-arrayof-a-name-apidsl-arrayof-a:aab4f9d6f98ed71f45bd470427dde2a7)
-function to define arrays or fields that are arrays. Here is an example:
+関数は、[Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)関数を利用して各フィールドを並べることでデータ構造を記述します。
+また[ArrayOf](https://goa.design/reference/goa/design/apidsl/#func-arrayof-a-name-apidsl-arrayof-a:aab4f9d6f98ed71f45bd470427dde2a7)関数を利用して配列や配列のフィールドを定義することができます。
+以下に例を示します。
 
 ```go
 // Operand describes a single operand with a name and an integer value.
@@ -171,17 +143,14 @@ var Operand = Type("Operand", func() {
 var Series = ArrayOf(Operand)
 ```
 
-Note that like the `API` function the `Type` function accepts two arguments: a name and a DSL
-describing the type properties. The `Type` DSL consists of three functions:
+API関数のように、Type関数は2つの引数、名前とタイプのプロパティを記述するDSL、を受け取ります。
+`Type` DSLは、次の3つの関数で構成されています。
 
-* [Description](https://goa.design/reference/goa/design/apidsl/#func-description-a-name-apidsl-description-a:aab4f9d6f98ed71f45bd470427dde2a7)
-  sets the type description.
-* [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)
-  defines a single type field.
-* [Required](https://goa.design/reference/goa/design/apidsl/#func-required-a-name-apidsl-required-a:aab4f9d6f98ed71f45bd470427dde2a7)
-  lists the required fields: fields that must always be present in instances of the type.
+* [Description](https://goa.design/reference/goa/design/apidsl/#func-description-a-name-apidsl-description-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプの説明をセットします。
+* [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)はタイプフィールドをひとつ定義します。
+* [Required](https://goa.design/reference/goa/design/apidsl/#func-required-a-name-apidsl-required-a:aab4f9d6f98ed71f45bd470427dde2a7)は必須のフィールドをリストします。フィールドは必ずそのタイプのインスタンスで存在しなければなりません。
 
-Types can be used to define action payloads (amongst other things):
+Type はアクション・ペイロードを定義するのに利用できます：
 
 ```go
 Action("sum", func() {          // Defines the sum action
@@ -193,20 +162,21 @@ Action("sum", func() {          // Defines the sum action
 })
 ```
 
-### Attributes
+### Attribute
 
-Attributes play a special role in the goa DSL. They are the base used to define data
-structures. The attribute DSL is used to describe type fields, request parameters, request
-payloads, response headers, response bodies etc. basically anywhere that requires defining a
-data structure. The syntax for defining attributes is very flexible allowing to specify as
-little or as much as needed, the complete definition is:
+Attribute は、goa DSLにおいて特別な役割を果たします。
+これら Attribute は、データ構造を定義するために使用される基礎となります。
+Attribute DSLは、基本的にデータ構造の定義を必要とする場所であれば、タイプ・フィールド、リクエスト・パラメータ、リクエスト・ペイロード、レスポンス・ヘッダ、リクエスト・ボディなどを記述するために使用されます。
+Attribute を定義するための構文は非常に柔軟性があり、必要に応じて、少なくにも沢山にも指定できます。
+完全な定義は次のとおりです：
 
 ```go
 Attribute(<name>, <type>, <description>, <dsl>)
 ```
 
-Only the first argument is required, all other arguments are optional. The default attribute
-type is `String`. The possible types for attributes are:
+最初の引数だけが必須で、他のすべての引数はオプションです。
+デフォルトの Attribute タイプは `String` です。
+Attribute で指定可能なタイプは以下です。
 
 | Name       | Go equivalent | JSON equivalent   |
 |------------|---------------|-------------------|
@@ -218,7 +188,7 @@ type is `String`. The possible types for attributes are:
 | `UUID`     | uuid.UUID     | RFC4122 string    |
 | `Any`      | interface{}   | ?                 |
 
-Additionally type fields can be defined using `ArrayOf` or `HashOf` or by using a recursive DSL:
+さらに、タイプ・フィールドは、`ArrayOf` または `HashOf` を使用するか、再帰的DSLを使用して定義できます。
 
 ```go
 var User = Type("user", func() {
@@ -234,36 +204,29 @@ var User = Type("user", func() {
     Attribute("data", HashOf(String, String))
 })
 ```
+`friend` フィールドを定義するのに `User` という変数を参照する代わりに、`"user"` という名前を使っていることに注意してください。
+どちらの構文も受理されます。
+変数参照の代わりに名前を使用すると、再帰的定義を構築できます。
+Github の [examples](https://github.com/goadesign/examples) リポジトリの `types` ディレクトリにはタイプの設計と生成されるコード間の対応を示す数多くの例があります。
 
-Note the use of the `"user"` type name to define the `friends` field instead of referring to
-the `User` type variable. Both syntax are accepted. Using names instead of variable reference
-allows for building recursive definitions.
+## レスポンス
 
-The [examples](https://github.com/goadesign/examples) Github repository contains a `types`
-directory with a number of example demonstrating the mapping between design types and generated
-code.
+### レスポンス・メディアタイプ
 
-## Responses
+次にレスポンスを見ると、goa デザイン言語の `MediaType` 関数は、レスポンス・ボディの形状を表すメディアタイプを記述します。
+メディアタイプの定義はタイプの定義と似ています（メディアタイプはタイプの特殊な種類です）が、メディアタイプには2つの固有のプロパティがあります：
 
-### Response Media Types
+* **View** は、同じメディアタイプの異なるレンダリングを記述することを可能にします。
+多くの場合、APIはリスト化されたリソースを返すリクエストでは「短い」表現を使用し、単一のリソースを返すリクエストではより詳細な表現を使用します。
+View は、これらの異なる表現を定義する方法を提供することによって、ユースケースをカバーします。
+メディアタイプ定義は、リソースをレンダリングするために使用されるデフォルトのビューを定義しなければなりません（適切に `default` と名前が付けられます）。
 
-Looking at responses next, the goa design language `MediaType` function describes media types which
-represent the shape of response bodies. The definition of a media types is similar to the definition
-of types (media types are a specialized kind of type) however there are two properties unique to
-media types:
+* **Link** は、レスポンスに埋め込んでレンダリングされる関連するメディアタイプにを表します。
+リンクをレンダリングするために使われるビューは `link` です。これはリンクされるメディアタイプが、必ず `link` ビューを定義していなければならないということです。
+リンクは、メディアタイプ定義において、`Links` 関数の配下にリストアップされます。
+ビューは特殊な `Links` 関数を用いてすべてのリンクをレンダリングすることが出来ます。
 
-* **Views** make it possible to describe different renderings of the same media type. Often times an
-  API uses a "short" representation of a resource in listing requests and a more detailed
-  representation in requests that return a single resource. Views cover that use case by providing a
-  way to define these different representations. A media type definition *must* define the default
-  view used to render the resources (aptly named `default`).
-
-* **Links** represent related media types that should be rendered embedded in the response. The view
-  used to render links is `link` which means that media types being linked to must define a `link`
-  view. Links are listed under the `Links` function in the media type definition. Views may then
-  use the special `Links` function to render all the links.
-
-Here is an example of a media type definition:
+メディアタイプ定義の例を以下に示します：
 
 ```go
 // Results is the media type that defines the shape of the "add" action response.
@@ -308,14 +271,12 @@ var User = MediaType("vnd.application/goa.users", func() {
 })
 ```
 
-### Defining Responses
+### レスポンス定義
 
-The [Response](http://goa.design/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a)
-function is used in action declarations to define a specific potential response. It describes the
-response status code, the media type if the response contains a body and the headers. Each response
-must have a unique name in the scope of the action, as with most other DSL functions the name is the
-first argument. The following DSL defines a response named "NoContent" that uses HTTP status code 
-204:
+[Response](http://goa.design/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a) 関数は、特定の潜在的なレスポンスを定義するためにアクション宣言内で利用されます。
+レスポンスに本文とヘッダが含まれる場合には、レスポンス・ステータスコード、メディアタイプが記述されます。
+それぞれのレスポンスは、他のほとんどのDSL関数で名前が最初の引数となっているのと同様に、最初の引数にアクションのスコープ内で一意の名前を持つ必要があります。
+以下のの DSL は "NoContent" と名前づけられた HTTP ステータス 204 のレスポンスを定義しています：
 
 ```go
 Response("NoContent", func() {
@@ -324,25 +285,21 @@ Response("NoContent", func() {
 })
 ```
 
-Note that this example as well as all the other examples in this section do not use response
-templates and therefore define all the properties of the response including its name. In reality in
-most cases responses are defined using one of the built-in templates so that for example the
-response above (minus the description) can be short-circuited to:
+この例およびこのセクションの他のすべての例では、レスポンス・テンプレートを使用しないため、名前を含むレスポンスのすべてのプロパティを定義していることに注意してください。
+実際には、ほとんどの場合、組み込みテンプレートの1つを使用してレスポンスが定義されます。
+たとえば、上記のレスポンス（から Description を抜いたもの）を短縮して以下のようにすることができます：
 
 ```go
 Response(NoContent)
 ```
 
-Response templates are covered in more details in a section below but before we can cover them we
-must first understand how `Response` works.
+レスポンステンプレートについては、以下のセクションで詳しく説明しますが、レスポンステンプレートをカバーする前にまず `Response` の仕組みを理解する必要があります。
 
-If the response contains a body the corresponding media type is specificed using the
-[Media](http://goa.design/reference/goa/design/apidsl/#func-media-a-name-apidsl-media-a) function.
-This function accepts either the media type identifier or actual media type value as first argument
-and optionally the name of the media type view used to render the response body. The view is
-optional as the same action may return different views depending on the request state for example.
-Here is an example of a response definition for a "OK" response using status code 200 and the
-`Results` media type:
+レスポンスにボディが含まれている場合、対応するメディアタイプは[Media](http://goa.design/reference/goa/design/apidsl/#func-media-a-name-apidsl-media-a) 関数を使用して指定されます。
+この関数は、メディアタイプ識別子または実際のメディアタイプの値を第1引数として受け取り、オプションでレスポンス・ボディのレンダリングに使用されるメディアタイプビューの名前を受け取ります。
+ビューはオプションです。
+たとえば、レスポンスのステータスなどに応じて、同じアクションでも異なるビューが返される場合があります。
+ここではステータス・コード 200 で `Results` メディアタイプを持つ "OK" のレスポンス定義の例を示します：
 
 ```go
 Response("OK", func() {
@@ -351,10 +308,8 @@ Response("OK", func() {
     Media(Results)
 })
 ```
-
-As a convenience the media type of a response can be provided as second argument to the `Response`
-function (this is especially useful when using response templates as described in the corresponding
-section below). The above is thus equivalent to:
+便宜上、レスポンスのメディアタイプを `Response` 関数の第2引数として提供することができます（これは、以下の対応するセクションで説明する応答テンプレートを使用する場合に特に便利です）。
+したがって、上記は次のようになります。
 
 ```go
 Response("OK", Results, func() {
@@ -363,8 +318,7 @@ Response("OK", Results, func() {
 })
 ```
 
-Assuming the identifier of `Results` is `application/vnd.example.results` then the above is
-equivalent to:
+`Results` の識別子を `application/vnd.example.results` とすると、上記は次と同等です：
 
 ```go
 Response("OK", "application/vnd.example.results", func() {
@@ -373,12 +327,10 @@ Response("OK", "application/vnd.example.results", func() {
 })
 ```
 
-Note that the media type identifier (`application/vnd.example.results` in the example above) may or
-may not correspond to the identifier of a media type defined via the `MediaType` function. The
-generated code uses the Go type `[]byte` to define the type of the response body when the media
-type identifier doesn't match a media type defined in the design.
+メディアタイプ識別子（上記の例では `application/vnd.example.results`）は、`MediaType` 関数を介して定義されたメディアタイプの識別子に対応しても、そうでなくてもよいことに注意してください。
+生成されたコードは、メディアタイプ識別子がデザインで定義されたメディアタイプと一致しない場合には、Goの型 `[]byte` を使用してレスポンス・ボディのタイプを定義します。
 
-If the parent action always returns the default view then the response can be defined as:
+もし親アクションが常にデフォルト・ビューを返すなら、次のようにレスポンスを定義することが出来ます：
 
 ```go
 Response("OK", func() {
@@ -388,9 +340,8 @@ Response("OK", func() {
 })
 ```
 
-The response headers are defined using the
-[Headers](http://goa.design/reference/goa/design/apidsl/#func-headers-a-name-apidsl-headers-a)
-function. The syntax for defining each header is the same syntax used to define attributes:
+レスポンス・ヘッダーは、[Headers](http://goa.design/reference/goa/design/apidsl/#func-headers-a-name-apidsl-headers-a) 関数を用いて定義されます。
+各ヘッダーを定義する構文は、Attribute を定義するのに使用される構文と同じです。
 
 ```go
 Response("OK", func() {
@@ -405,12 +356,12 @@ Response("OK", func() {
 })
 ```
 
-### Resource vs. Action Responses
+### リソース vs. アクション・レスポンス
 
-Responses can be defined in two places: as part of a `Resource` definition or as part of a `Action`
-definition. Responses defined in a `Resource` definition apply to all the resource actions.
+レスポンスは、`Resource` 定義の一部として、または `Action` 定義の一部として、2つの場所で定義できます。
+`Resource`定義で定義されたレスポンスは、すべてのリソース・アクションに適用されます。
 
-In this example all the `Operands` actions may return a `Unauthorized` response:
+この例では、すべての `Operands` アクションは` Unauthorized` レスポンスを返します：
 
 ```go
 var _ = Resource("Operands", func() {
@@ -430,19 +381,14 @@ var _ = Resource("Operands", func() {
 })
 ```
 
-### Leveraging the Default Media Type
+### デフォルト・メディアタイプの活用
+リソースはすべてのアクションに対して、デフォルトのメディアタイプを定義することができます。
+デフォルトのメディアタイプを定義すると2つの効果があります：
 
-Resources can define a default media type for all actions. Defining a default media type has two
-effects:
+1. デフォルトのメディアタイプは、ステータスコード200を返しメディアタイプを定義しないすべてのレスポンスに使用されます。
+2. アクション・ペイロード、アクション・パラメータ、およびレスポンス・メディアタイプで定義された Attribute がデフォルト・メディアタイプで定義した Attrubite と名前が一致するものは、自動的にすべての Attribute のプロパティ（説明、タイプ、バリデーションなど）を継承します。
 
-1. The default media type is used for all responses that return status code 200 and do not define a
-   media type.
-2. Attributes defined on action payloads, action params and response media types that match the
-   names of attributes defined on the default media type automatically inherit all their
-   properties from it (description, type, validations etc.).
-
-Consider the following resource definition that uses the `Results` media type defined above as
-default media type and leverages that to define the `add` action `OK` response:
+上記で定義した `Results` メディアタイプをデフォルトのメディアタイプとして使用し、`add` アクションの `OK` レスポンスの定義に活用されているのを、次のリソース定義で見てみましょう：
 
 ```go
 var _ = Resource("Operands", func() {
@@ -458,7 +404,7 @@ var _ = Resource("Operands", func() {
 })
 ```
 
-Now imagine the `Results` media type also returned the initial operands used to compute the sum:
+今度は、 `Results` メディアタイプが合計を計算するために使用された最初に与えられた値を返したとしましょう：
 
 ```go
 var Results = MediaType("vnd.application/goa.results", func() {
@@ -478,8 +424,7 @@ var Results = MediaType("vnd.application/goa.results", func() {
 })
 ```
 
-The `add` action definition could take advantage of that to avoid having to repeat the type and
-comments for the `left` and `right` params:
+`add` アクションの定義は、` left` と `right` のタイプとコメントを繰り返さずにすませることができます：
 
 ```go
 var _ = Resource("Operands", func() {
@@ -495,14 +440,13 @@ var _ = Resource("Operands", func() {
 })
 ```
 
-As the definition for these values evolve they only need to change in one place.
+これらの値の定義が変化しても、変更点はただ1箇所ですみます。
 
-### Response Templates
+### レスポンス・テンプレート
 
-The goa API design language allows defining *response templates* at the API level that any
-action may leverage to define its responses. Such templates may accept an arbitrary number of
-string arguments to define any of the response properties. Templates are defined with the following
-syntax:
+goa API デザイン言語では、すべてのアクションで活用できるようになレスポンス定義を API レベルで *レスポンステンプレート* として定義できるようになっています。
+そのようなテンプレートは、レスポンス・プロパティのいずれかを定義するために任意の数の文字列引数を受け付けることができます。
+テンプレートは、次の構文で定義されます：
 
 ```go
 var _ = API("My API", func() {
@@ -517,7 +461,7 @@ var _ = API("My API", func() {
 })
 ```
 
-A template is then used by simply referring to it by name when defining a response:
+テンプレートは、レスポンスを定義するときに単に名前で参照するだけで使用されます：
 
 ```go
 Action("sum", func() {
@@ -527,9 +471,8 @@ Action("sum", func() {
 })
 ```
 
-goa provides response templates for all standard HTTP code that define the status so that it is not
-required to define templates for the simple case. The name of the built-in templates match the name
-of the corresponding HTTP status code. For example:
+goa はすべての標準的な HTTP ステータス・コードに対するレスポンス・テンプレートを提供しているため、単純なケースのテンプレートを定義する必要はありません。ビルトイン・テンプレートの名前は、対応するHTTPステータスコードの名前と一致します。
+例えば：
 
 ```go
 Action("show", func() {
@@ -541,7 +484,7 @@ Action("show", func() {
 })
 ```
 
-is equivalent to:
+は次と同じです：
 
 ```go
 Action("show", func() {
@@ -550,12 +493,10 @@ Action("show", func() {
 })
 ```
 
-## Conclusion
+## まとめ
 
-There is [a lot more](/reference/goa/design/apidsl/) to the design language but this overview
-should have given you a sense for how it works. It doesn't take long for the language to feel
-natural which makes it possible to quickly iterate and refine the design. The
-[Swagger](/design/swagger/) specification generated from the design can be shared with stakeholders
-to gather feedback and iterate. Once finalized [goagen](/implement/goagen/) generates the API
-scaffolding, request contexts and validation code from the design thereby baking it into the
-implementation. The design becomes a living document always up-to-date with the implementation.
+デザイン言語には[さらに多くのもの](/reference/goa/design/apidsl/)がありますが、この概要では、デザイン言語がどのように動作するかについてのひとつの感覚を与えているはずです。
+言語が自然に感じられるので、設計をすばやく反復して洗練することが可能になります。
+設計から生成された [Swagger](/design/swagger/) 仕様を、ステークホルダーと共有してフィードバックを収集し、反復することができます。
+完成したら [goagen](/implement/goagen/) は API スキャフォールディングやリクエスト・コンテキスト、バリデーション コードをデザインから生成し、それを実装に組み込みます。
+デザインは、実装に関して常に最新の生きたドキュメントになります。
