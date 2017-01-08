@@ -42,15 +42,14 @@ goa API デザイン言語はGoで実装されていますが__Goではありま
 DSLではさまざまな定義を再帰的に記述するために無名関数を頻繁に使用します。
 上の例では、[API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、第1引数として関数の名前を受け取り、第2引数として無名関数を受け取ります。
 ドキュメント内のこの無名関数もまた`DSL`であり、APIの追加のプロパティを定義しています。
-このname+DSLのパターンは他の多くのDSL関数でも利用されています。
+この name+DSL のパターンは他の多くのDSL関数でも利用されています。
 
 [API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
 関数はAPIの一般的なプロパティを定義します：ドキュメント内のタイトルと説明、サービス利用規約(上の例では設定されていません)、ドキュメントやクライアントで使われるのデフォルトホスト、スキーマ、そしてすべてのエンドポイントのベースとなるパス(ベースパスをワイルドカードで定義して、キャプチャされたパラメータと対応させることもできます)
 
 この関数は、APIが定義するメディアタイプも定義します。
-[Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7)および
-[Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
-オプションで、生成されたコードがリクエスト・ペイロードをUnmarshalしたりレスポンスボディをMarshalをするように、使用するエンコーディングパッケージを指定することもできます。
+[Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数および [Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
+オプションで、生成されたコードがリクエスト・ペイロードをUnmarshalしたりレスポンス・ボディをMarshalをするように、使用するエンコーディングパッケージを指定することもできます。
 
 追加のメタデータ（連絡先情報）から、セキュリティ定義、[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)ポリシー、レスポンステンプレートまで、[API関数](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)で定義できるその他のプロパティがいくつかあります。 完全なリストについては、[リファレンス](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)を参照してください。
 
@@ -125,8 +124,8 @@ var _ = Resource("public", func() {
 
 goa API デザイン言語はリクエスト・ペイロードやレスポンス・メディアで定義される任意のデータタイプを記述することが可能です。
 [Type](https://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a:aab4f9d6f98ed71f45bd470427dde2a7)
-関数は、[Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)関数を利用して各フィールドを並べることでデータ構造を記述します。
-また[ArrayOf](https://goa.design/reference/goa/design/apidsl/#func-arrayof-a-name-apidsl-arrayof-a:aab4f9d6f98ed71f45bd470427dde2a7)関数を利用して配列や配列のフィールドを定義することができます。
+関数は、[Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数を利用して各フィールドを並べることでデータ構造を記述します。
+また[ArrayOf](https://goa.design/reference/goa/design/apidsl/#func-arrayof-a-name-apidsl-arrayof-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数を利用して配列や配列のフィールドを定義することができます。
 以下に例を示します。
 
 ```go
@@ -146,9 +145,9 @@ var Series = ArrayOf(Operand)
 API関数のように、Type関数は2つの引数、名前とタイプのプロパティを記述するDSL、を受け取ります。
 `Type` DSLは、次の3つの関数で構成されています。
 
-* [Description](https://goa.design/reference/goa/design/apidsl/#func-description-a-name-apidsl-description-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプの説明をセットします。
-* [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7)はタイプフィールドをひとつ定義します。
-* [Required](https://goa.design/reference/goa/design/apidsl/#func-required-a-name-apidsl-required-a:aab4f9d6f98ed71f45bd470427dde2a7)は必須のフィールドをリストします。フィールドは必ずそのタイプのインスタンスで存在しなければなりません。
+* [Description](https://goa.design/reference/goa/design/apidsl/#func-description-a-name-apidsl-description-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプの説明を指定します。
+* [Attribute](https://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプフィールドをひとつ定義します。
+* [Required](https://goa.design/reference/goa/design/apidsl/#func-required-a-name-apidsl-required-a:aab4f9d6f98ed71f45bd470427dde2a7) は必須のフィールドをリストします。フィールドは必ずそのタイプのインスタンスで存在しなければなりません。
 
 Type はアクション・ペイロードを定義するのに利用できます：
 
