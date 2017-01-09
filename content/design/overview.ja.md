@@ -47,7 +47,7 @@ DSL ではさまざまな定義を再帰的に記述するために無名関数�
 [API](https://goa.design/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
 関数は API の一般的なプロパティを定義します：ドキュメント内のタイトルと説明、サービス利用規約(上の例では設定されていません)、ドキュメントやクライアントで使われるのデフォルトホスト、スキーマ、そしてすべてのエンドポイントのベースとなるパス(ベースパスをワイルドカードで定義して、キャプチャされたパラメータと対応させることもできます)
 
-この関数は、API が定義するメディアタイプも定義します。
+この関数は、API がサポートするメディアタイプも定義します。
 [Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数および [Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
 オプションで、生成されたコードがリクエスト・ペイロードを Unmarshal したりレスポンス・ボディを Marshal するように、使用するエンコーディングパッケージを指定することもできます。
 
@@ -56,10 +56,10 @@ DSL ではさまざまな定義を再帰的に記述するために無名関数�
 ## API エンドポイント
 
 ルートAPI 定義とは別に、goa API 設計言語では、実際のエンドポイントをリクエストとレスポンスの詳細形式とともに記述することもできます。
-リソース関数は、関連する API エンドポイントのセットを定義します。
+`Resource` 関数は、関連する API エンドポイントのセットを定義します。
 これは、API が RESTful である場合のリソースです。
-実際の各エンドポイントは、アクション関数を使用して記述されます。
-ここでは `add` アクションを(API エンドポイントとして)公開している単純な `Operand` リソースの例を示します。
+実際の各エンドポイントは、`Action` 関数を使用して記述されます。
+ここでは `add` アクションを(API エンドポイントとして)公開している単純な `Operands` リソースの例を示します。
 
 ```go
 var _ = Resource("Operands", func() {        // Defines the Operands resource
@@ -78,11 +78,11 @@ var _ = Resource("Operands", func() {        // Defines the Operands resource
 })
 ```
 
-リソース関数は任意の数のアクションを定義できます。
+`Resource` 関数は任意の数のアクションを定義できます。
 リソースは、共通ベースパス、共通パスパラメータ、およびすべてのアクションで共有されるその他のプロパティを定義できます。
 アクションは、同じエンドポイントが異なるパスから要求されたり、異なる HTTP メソッドを使用したりする場合に備えて、複数のルートを定義できます（`Routing` 関数の引数は可変です）。
 
-アクションパラメータを定義するために使用される DSL では、整数(integer)パラメータや数値(number)パラメータなら最小値と最大値、文字列パラメータでは正規表現をで定義されたバリデーションを指定できます：
+アクションパラメータを定義するために使用される DSL では、整数(integer)パラメータや数値(number)パラメータなら最小値と最大値、文字列パラメータでは正規表現で定義されたバリデーションを指定できます：
 
 ```go
 Param("left", Integer, "Left operand", func() {
