@@ -129,28 +129,28 @@ import (
 func main() {
 	codegen.ParseDSL()
 	codegen.Run(
-		&genmain.Generator{
-			API:    design.Design,
-			Target: "app",
-		},
-		&genswagger.Generator{
-			API: design.Design,
-		},
-		&genapp.Generator{
-			API:    design.Design,
-			OutDir: "app",
-			Target: "app",
-			NoTest: true,
-		},
-		&genclient.Generator{
-			API: design.Design,
-		},
-		&genschema.Generator{
-			API: design.Design,
-		},
-		&genjs.Generator{
-			API: design.Design,
-		},
+		genmain.NewGenerator(
+			genmain.API(design.Design),
+			genmain.Target("app"),
+		),
+		genswagger.NewGenerator(
+			genswagger.API(design.Design),
+		),
+		genapp.NewGenerator(
+			genapp.API(design.Design),
+			genapp.OutDir("app"),
+			genapp.Target("app"),
+			genapp.NoTest(true),
+		),
+		genclient.NewGenerator(
+			genclient.API(design.Design),
+		),
+		genschema.NewGenerator(
+			genschema.API(design.Design),
+		),
+		genjs.NewGenerator(
+			genjs.API(design.Design),
+		),
 	)
 }
 ```
