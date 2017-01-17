@@ -1,7 +1,7 @@
 +++
 date = "2017-01-19T11:01:06-05:00"
 title = "Tracing goa Services with AWS X-Ray"
-description = "A walkthrough of tracing micro-services written in goa using the AWS X-Ray service."
+description = "Introducing the new Tracer and X-Ray goa middlewares"
 author = "Raphael Simon"
 weight = 1
 layout = "blog"
@@ -44,7 +44,7 @@ on traces before shipping them and that takes a fair amount of work.
 
 At a high level tracing requests consists of:
 
-* Keeping track of a unique trace ID that flows through all the services
+* Keeping track of a unique *trace ID* that flows through all the services
   involved in serving the initial request.
 
 * Creating a unique *segment* (a.k.a span) in each service. Requests made
@@ -52,21 +52,21 @@ At a high level tracing requests consists of:
   service (X-Ray) may rebuild the entire tree with timing information.
 
 * Adding annotations and metadata to the segments. In X-Ray annotations can be
-  used to build queries against the traced requests while metadata can't.
+  used to build queries against the traced requests while metadata cannot.
 
 * Reporting the completion of segments.
 
 Each service receives the trace ID and parent segment ID in the incoming request
-headers and reports them to X-Ray. It then creates a unique segment and sends
-the segment ID as parent segment ID alongside the trace ID to all the downstream
-services in the request headers.
+headers and reports them to X-Ray. It then creates a unique segment for the
+request and sends the segment ID as parent segment ID alongside the trace ID to
+all the downstream services in the request headers.
 
 One case to consider here is when a service that is traced does not receive a
 trace ID in the incoming request. This happens when the service is an externally
-facing service that handles requests from external clients. In this case the
-service is in charge of generating the trace ID. Typically when running at scale
-it is not feasible to trace all requests - instead the algorithm that creates
-the initial trace ID is given a sample rate and only generates the header for
+facing service that handles requests from external clients for example. In this
+case the service is in charge of generating the trace ID. Typically when running
+at scale it is not feasible to trace all requests - instead the algorithm that
+creates the initial trace ID is given a sample rate and only generates IDs for
 the given sample.
 
 ### The goa Tracer Middleware
@@ -75,33 +75,32 @@ The new
 [Tracer](https://goa.design/reference/goa/middleware/#func-tracer-a-name-middleware-tracer-a)
 middleware implements the logic that looks for the trace and parent segment
 headers. If the headers are found it stores them in the request context
-otherwise it generates a new trace ID. It only generates the new header for a
-sample of requests, the corresponding percentage value is given to the
-middleware constructor.
+otherwise it generates a new trace ID. It only generates an ID for a sample of
+requests corresponding to the percentage value given to the middleware
+constructor.
 
 Both the trace ID and parent segment ID are available via the corresponding
-[Context functions](https://goa.design/reference/goa/middleware/#func-contexttraceid-a-name-middleware-contexttraceid-a).
+[ContextXXX functions](https://goa.design/reference/goa/middleware/#func-contexttraceid-a-name-middleware-contexttraceid-a).
 
 ## Integrating with AWS X-Ray
 
-Using AWS X-Ray requires running the
-[daemon](http://docs.aws.amazon.com/xray/latest/devguide/xray-daemon.html) on
-the box running the service. The daemon accepts the trace information in the
-form of UDP packets and takes care of aggregating multiple traces before
-shipping them to the AWS service.
+Using AWS X-Ray requires running
+a [daemon](http://docs.aws.amazon.com/xray/latest/devguide/xray-daemon.html)
+which accepts the trace information in the form of UDP packets and takes care of
+aggregating multiple traces before shipping them to the AWS service.
 
-> Note: technically the daemon is not required and the service can make direct
-> requests to the AWS X-Ray APIs. However using the daemon is the preferred
-> way as it takes care of handling the aggregation of traces and timing of
-> requests - both difficult problems to solve with no intimate knowledge of the
-> APIs and the X-Ray service performance limits.
+Note: technically the daemon is not required and the traced service can make
+direct requests to the AWS X-Ray APIs. However using the daemon is the preferred
+way as it takes care of handling the aggregation of traces and timing of
+requests - both difficult problems to solve with no intimate knowledge of the
+APIs and the X-Ray service performance limits.
 
 The traced service makes UDP requests to the daemon whenever a segment or
-subsegment completes. The daemon then ships the traces to AWS X-Ray.
+subsegment completes. The daemon then ships the traces to AWS X-Ray in batches.
 
 ### The goa X-Ray Middleware
 
-Writing the new [xray](https://goa.design/reference/goa/middleware/xray/)
+Back to goa, writing the new [xray](https://goa.design/reference/goa/middleware/xray/)
 middleware was an exercise in reverse engineering of JavaScript code as the
 documentation on X-Ray is still rather poor (the JSON schema for the segment
 type is not documented for example). The only reliable source of information
@@ -151,8 +150,8 @@ The code also annotates the traces with the request URL and response status code
 
 Here is the code that sets up the tracing middlewares in both services:
 
-```go
-    // Setup Tracer middleware
+```
+	// Setup Tracer middleware
 	service.Use(middleware.Tracer(100, xray.NewID, xray.NewTraceID))
 
 	// Setup AWS X-Ray middleware
@@ -168,20 +167,20 @@ The code sets up the tracer middleware to sample `100%` of the requests.
 The fetcher uses `WrapClient` to create the HTTP client it uses to make the
 external requests:
 
-```go
+```
 func (c *FetcherController) Fetch(ctx *app.FetchFetcherContext) error {
 	// Create traced client
 	cl := xray.WrapClient(ctx, http.DefaultClient)
-    // ...
+	// ...
 ```
 It also uses `TraceDoer` to wrap the goa generated `archiver` client:
-```go
+```
 // Archive stores a HTTP response in the archiver service and returns the
 // corresponding resource href.
 func (a *archiver) Archive(ctx context.Context, status int, body string) (string, error) {
 	// Wrap client with xray to trace request
 	c := client.New(middleware.TraceDoer(ctx, a.doer))
-    // ...
+	// ...
 ```
 
 With that setup AWS X-Ray is able to build the trace tree and service graph,
@@ -200,4 +199,6 @@ implemented (yet?) in the goa package.
 So far AWS X-Ray seems to check all the boxes, as always though it's going to
 take some time to properly understand the tool, what it's good at and what its
 limitations are. But at least now it's possible to integrate with AWS X-Ray
-using Go and goa, enjoy!
+using Go and goa. So go ahead, check out the new
+[xray example](https://github.com/goadesign/examples/tree/master/xray) and add
+traces to your goa micro-services which a few lines of code!
