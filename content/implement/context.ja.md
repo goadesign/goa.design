@@ -35,7 +35,7 @@ using custom data structures generated from the media type described in the desi
 The goa package exposes a set of functions all prefixed with `Context` that can be used to extract
 data stored in the request context. For example
 [ContextResponse](http://goa.design/reference/goa/#func-contextresponse-a-name-goa-responsedata-contextresponse-a)
-extracts the logger from the given context. These functions are mainly useful to code that does not
+extracts the response data from the given context. These functions are mainly useful to code that does not
 have access to the generated data structures but merely to the raw `context.Context` value such as
 middleware.
 

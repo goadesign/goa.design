@@ -87,6 +87,7 @@ if _, ok := err.(goa.ServiceError); ok {
 ## Using Error Classes
 
 There are two main use cases for error classes:
+
 * Error classes can be used to wrap errors returned by internal modules.
 * Error classes may be used to create new errors directly in the API endpoint (e.g. custom
   validation errors).
@@ -177,7 +178,7 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 
 Going back to the initial goals, the API design defines the possible responses for each action
 including the error responses via the
-[Response](https://goa.design/reference/goa/design/apidsl.html#func-response-a-name-apidsl-response-a)
+[Response]({{< ref "reference/goa/design/apidsl.md" >}}#Response)
 DSL. Error classes provide a way to map the errors produced by the
 implementation back to the design by wrapping the errors using error classes.
 
@@ -187,4 +188,4 @@ They can do so by creating these errors or wrapping errors coming from deeper la
 
 Note that the controller actions are responsible for implementing the contract defined in the
 design. That is they should not define error classes that use HTTP status codes not listed in the
-[action definitions](https://goa.design/reference/goa/design/apidsl.html#func-action-a-name-apidsl-action-a).
+[action definitions]({{< ref "reference/goa/design/apidsl.md" >}}#Action).
