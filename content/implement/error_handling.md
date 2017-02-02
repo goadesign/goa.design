@@ -59,10 +59,10 @@ goa comes with a set of pre-existing error classes that can be leveraged to cove
 One especially useful error class is `ErrBadRequest` which can be used to return generic bad
 request errors:
 
-```
+```go
 func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
           if ctx.Divisor == 0 {
-                  return goa.ErrBadRequest("cannot divide by zero")
+                  return ctx.BadRequest(goa.ErrBadRequest("cannot divide by zero"))
           }
           // ...
 }
@@ -140,7 +140,8 @@ middleware maps any returned error to HTTP responses.  Errors that are created v
 [ErrorClass](https://goa.design/reference/goa/#type-error-a-name-goa-error-a) get serialized in the
 response body and their status is used to form the response HTTP status.  Other errors get wrapped
 into the [ErrInternal](https://goa.design/reference/goa/#variables) which produces responses with a
-500 status code.
+500 status code. Note however that as best practice errors should be designed and the corresponding
+context methods used to write the response.
 
 ## Designing Error Responses
 
