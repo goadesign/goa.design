@@ -7,26 +7,22 @@ weight = 2
 name = "データ型を扱う"
 parent = "design"
 +++
-An important aspect of the goa DSL resides around how types are defined and used. The
-[Overview](/design/overview) covers the basics of working with types and media types. This document takes
-a step back and explains the rationale for the DSL.
 
-Data structures are described in the design using the
-[Attribute](http://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a)
-function or one of its aliases (`Member`, `Header` or `Param`). This description exists in the
-absolute - that is it is not relative to a given language (e.g. `Go`) or technology. This makes it
-possible to generate many outputs ranging from `Go` code to documentation in the form of JSON schema
-and Swagger or binding to other languages (e.g. JavaScript clients). The design language includes a
-number of primitive types listed in the [Overview](/design/overview) but also makes it possible to describe
-arbitrary data structures recursively via the
-[Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) function.
+goa DSL の重要な側面として、タイプがどのように定義され使用されるかがあります。
+[概要](/design/overview)では、タイプとメディアタイプの基本的な働きを取り上げました。
+この文書では一歩戻って、DSL の原理について説明していきます。
 
-## Request Payload
+データ構造は、[Attribute](http://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a) 関数またはそのエイリアス（`Member` や ` Header`, `Param`）を使用してデザインに記述されています。
+この記述は絶対的に存在します。つまり、指定された言語 （例えば、`Go`）やテクノロジーに関連しないものです。
+これにより、`Go`のコード、JSONスキーマ、Swagger、あるいは他の言語（JavaScriptクライアントなど）へのバインディングにいたるまで、多くの出力を生成することができます。
+デザイン言語には、[Overview](/design/overview) にリストされているいくつかのプリミティブ型が含まれていますが、[Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) 関数を使用して任意のデータ構造を再帰的に記述することができます。
 
-One of the main application for types defined that way is to describe the request payload of a
-given action. The request payload describes the shape of the request body. `goagen` uses that
-description to generate the corresponding `Go` struct that the action method receives in its
-request context. Payloads may be defined inline as follows:
+## リクエスト・ペイロード
+
+このように定義されたタイプの主な利用用途は、与えられたアクションのリクエスト・ペイロードを記述することです。
+リクエスト・ペイロードはリクエスト・ボディの形を特徴付けます。
+`goagen` はその記述を利用して、アクション・メソッドがそのリクエスト・コンテキストとして受け取るのに対応する `Go` の構造体を生成します。
+ペイロードは、次のようにインラインで定義できます：
 
 ```go
 Action("create", func() {
@@ -38,7 +34,7 @@ Action("create", func() {
 })
 ```
 
-or can use a predefined type:
+もしくは事前にタイプを定義しておくことも可能です：
 
 ```go
 var CreatePayload = Type("CreatePayload", func() {
@@ -52,10 +48,9 @@ Action("create", func() {
 })
 ```
 
-The former notation ends up creating an anonymous type used internally by the generators. Note that
-the DSL is recursive, the example above does not specify a type for the `name` attribute thereby
-defaulting to `String`. But it could have used any other type including a data structure defined
-inline or via a predefined type:
+前者の記法は、ジェネレータによって内部で使用される匿名のタイプを作成することになります。
+DSLが再帰的であることを思い出してください。上記の例では、`name` Attribute のタイプが指定されておらず、デフォルト設定の`String`が設定されています。
+しかし、インラインもしくは事前に定義されたデータ構造を含むその他のタイプを使用することもできます：
 
 ```go
 Action("create", func() {
@@ -70,7 +65,7 @@ Action("create", func() {
 })
 ```
 
-or:
+もしくは：
 
 ```go
 Action("create", func() {
@@ -82,22 +77,22 @@ Action("create", func() {
 })
 ```
 
-That same flexibility exists wherever attributes are used.
+`Attribute` が利用されている所ならどこでも同様の柔軟性があります。
 
-Predefined types may be referred to using a variable as shown above or using their name, that is
-`Payload(CreatePayload)` could also be written as `Payload("CreatePayload")` since `"CreatePayload"`
-is the name given in the `CreatePayload` type definition. This makes it possible to define types
-that depend on each other and not have the `Go` compiler complain about the cycle.
+定義済みの型は、上記のように変数を使って参照することもできますし、名前で参照することも出来ます。
+つまり、`Payload(CreatePayload)` は `Payload("CreatePayload")` として書くことができます。
+ここで、"CreatePayload" は `CreatePayload` タイプ定義で与えられる名前です。
+これにより、お互いに依存する型を定義することが可能になり、 `Go` コンパイラが循環参照にエラーを出すこともなくなります。
 
-## Media Types
+## メディアタイプ
 
-Another common use for types is for describing response media types. A response media type defines
-the shape of response bodies. Media types differ from types in that they also define *views* and
-*links*, see the [Overview](/design/overview) for details. Media types are defined using the
-[MediaType](http://goa.design/reference/goa/design/apidsl/#func-mediatype-a-name-apidsl-mediatype-a)
-function.
+他のよくあるタイプの利用は、メディアタイプを記述することです。
+レスポンス・メディアタイプはレスポンス・ボディの形を特徴付けます。
+メディアタイプは *views* と *links* を定義している点でタイプと異なります。
+詳細は、[Overview](/design/overview) を参照してください。
+メディアタイプは、[MediaType](http://goa.design/reference/goa/design/apidsl/#func-mediatype-a-name-apidsl-mediatype-a) 関数を利用して定義されます。
 
-A basic media type definition may looks like this:
+基本的なメディアタイプの定義は次のようになります：
 
 ```go
 var MT = MediaType("application/vnd.app.mt", func() {
@@ -109,13 +104,10 @@ var MT = MediaType("application/vnd.app.mt", func() {
 	})
 })
 ```
+`MediaType` の第一引数はメディアタイプの識別子で、これは [RFC 6838](https://tools.ietf.org/html/rfc6838) で定義されるものです。
+DSLは、タイプで Attribute が定義される方法と同様に、Attribute と View（ここでは `default` ビューのみ）をリストし、他のメディアタイプへのリンクがあればそれもリストします。
 
-The first argument of `MediaType` is the media type identifier as defined by
-[RFC 6838](https://tools.ietf.org/html/rfc6838). The DSL lists the attributes similarly to how
-attributes are defined in types, the views - here only the `default` view - and optionally links to
-other media types.
-
-Such a media type may then be used to define the response of an action as follows:
+そのようなメディアタイプを使用して、アクションのレスポンスを以下のように定義できます：
 
 ```go
 Action("show", func() {
@@ -130,7 +122,7 @@ Action("show", func() {
 })
 ```
 
-which is equivalent to:
+これは下記と同等です：
 
 ```go
 Action("show", func() {
@@ -143,7 +135,7 @@ Action("show", func() {
 })
 ```
 
-or:
+もしくは：
 
 ```go
 Action("show", func() {
@@ -156,19 +148,15 @@ Action("show", func() {
 })
 ```
 
-Media types can be referred to using variables or the media type identifier similarly to how types
-can be referred to using variables or their names.
+メディアタイプは、タイプが変数またはその名前を使用して参照するように、変数またはそのメディアタイプ識別子を使用して参照できます。
 
-It is often the case that the same attributes are used to define an action request payload and a
-response media type. This is especially true with REST APIs where sending a request to create a
-resource often times returns a representation of it in the response. The goa design language helps
-with this common case by providing a `Reference` function that may be used in both `Type` and
-`MediaType` function calls alike. This function takes one argument which is either a variable
-holding a type or a media type or the name of a type or media type. Using the `Reference` function
-makes it possible to reuse the attributes of the type being referred to without having to
-redefine all its properties (type, description, example, validations etc.).
+アクションのリクエスト・ペイロードとリクエスト・メディアタイプを定義するために同じ Attribute が使用されることがよくあります。
+特に、REST APIでは、リソースを作成するリクエストを送信すると、レスポンスにその表現が返されることがしばしばあります。
+goa デザイン言語では、 `Type` と `MediaType` 関数呼び出しの両方で使うことができる `Reference` 関数を提供することで、この共通のケースを支援します。
+この関数は、1つの引数を取ります。引数は、タイプまたはメディアタイプを保持する変数か、タイプまたはメディアタイプの名前です。
+`Reference` 関数を使うと、参照されているタイプの Attribute をすべて再定義せずに、そのタイプのプロパティ（タイプ、説明、例、バリデーションなど）を再利用することができます。
 
-Given the following type definition:
+次のタイプ定義があるとします：
 
 ```go
 var CreatePayload = Type("CreatePayload", func() {
@@ -179,8 +167,7 @@ var CreatePayload = Type("CreatePayload", func() {
 	})
 })
 ```
-
-A media type may take advantage of the `name` attribute definition like this:
+メディアタイプは、以下のように `name` Attribute 定義を利用することができます：
 
 ```go
 var MT = MediaType("application/vnd.app.mt", func() {
@@ -193,14 +180,12 @@ var MT = MediaType("application/vnd.app.mt", func() {
 	})
 })
 ```
+`name` Attribute は、対応する `CreatePayload` 定義された Attribute のタイプ、記述、バリデーションを自動的に継承します。
+メディアタイプ定義では、依然として参照される Attribute の名前をリストする必要があることに注意してください。これにより、「継承する」Attribute を選別することが出来ます。。
+また、メディアタイプは、必要に応じて（例えば、タイプ、記述、バリデーション等を変更するために） `name` Attribute のプロパティを上書きすることが出来ます。
 
-The `name` attribute automatically inherits from the type, description and validations defined in
-the corresponding `CreatePayload` attribute. Note that the media type definition still needs to list
-the names of attributes being referred to, this makes it possible to pick and choose which
-attributes to "inherit". Also the media type may override properties of the `name` attribute if
-needed (e.g. to change the type, description, validations etc.).
-
-Media types can also reference themselves by using the media type identifier. This makes it possible to define recursive media types and not have the Go compiler complain about the cycles:
+メディアタイプは、メディアタイプ識別子を使用して自分自身を参照することもできます。
+これにより、再帰的メディアタイプを定義することが可能になり、Goコンパイラが循環参照についてエラーを出すこともありません：
 
 ```go
 var MT = MediaType("application/vnd.app.mt", func() {
@@ -215,14 +200,11 @@ var MT = MediaType("application/vnd.app.mt", func() {
 })
 ```
 
-## Mixing Types and Media Types
+## タイプとメディアタイプを混ぜあわせについて
 
-We've already seen how `Reference` makes it possible to reuse attribute definitions across types
-and media types. Media types are a specialized form of types. This means that they may be used in
-place of types wherever types can be used (anywhere an attribute is defined).
-
-The best practice though consists of using media types solely for defining the response bodies as
-shown above and use types for everything else. This is because media types define additional
-properties such as an identifier, views and links that only apply to that use case. So define
-types and take advantage of the `Reference` keyword when the same attributes are shared between
-types and media types.
+`Reference` を使ってタイプとメディアタイプ間で Attribute 定義を再利用する方法を見てきました。
+メディアタイプは特殊な形式のタイプです。
+つまり、タイプを使用できる場所（Attribute が定義されている場所）であればどこでもタイプの代わりに使用できます。
+しかし、ベストプラクティスは、上に示したようにレスポンス・ボディを定義するためだけにメディアタイプを使用し、他のすべてに対してタイプを使用することです。
+これは、メディアタイプが、そのメディアタイプにのみ適用される識別子、ビュー、リンクなどの追加のプロパティを定義しているからです。
+したがって、タイプとメディアタイプの間で同じ Attribute が共有される場合、、`Reference` を利用してタイプを定義するのが良策です。
