@@ -8,22 +8,21 @@ name = "セキュリティ"
 identifier = "design security"
 parent = "design"
 +++
+goaには、Basic認証、APIキー（共有秘密鍵）、JWT、OAuth2など、複数のセキュリティスキームが組み込まれています。
+セキュリティスキームは、API全体、リソース、または単一のアクションに加えることができます。
+セキュリティスキームが添付されているアクションでは、クライアントはスキームで表現される認証をおこなう必要があります。
+個々のアクションで認証をおこなう必要性が上書きされる可能性もあります。
 
-goa has built-in support for multiple security schemes: basic auth, API key (a.k.a.  shared secret),
-JWT and OAuth2. Security schemes can be attached to the entire API, a resource or a single action.
-Actions that have security scheme(s) attached to them require clients to perform authentication as
-described by the scheme(s). Individual actions may also override the need for doing auth.
+## セキュリティ DSL
 
-## Security DSL
+セキュリティスキームは、
+[BasicAuthSecurity](http://goa.design/reference/goa/design/apidsl/#func-basicauthsecurity-a-name-apidsl-basicauthsecurity-a)、
+[APIKeySecurity](http://goa.design/reference/goa/design/apidsl/#func-apikeysecurity-a-name-apidsl-apikeysecurity-a)、
+[JWTSecurity](http://goa.design/reference/goa/design/apidsl/#func-jwtsecurity-a-name-apidsl-jwtsecurity-a) または
+[OAuth2Security](http://goa.design/reference/goa/design/apidsl/#func-oauth2security-a-name-apidsl-oauth2security-a) のいずれかを使用して定義されます。
+API、リソース、アクションで [Security](http://goa.design/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a) を使うことでスキームを加えることができます。
 
-A security scheme is defined using one of
-[BasicAuthSecurity](http://goa.design/reference/goa/design/apidsl/#func-basicauthsecurity-a-name-apidsl-basicauthsecurity-a),
-[APIKeySecurity](http://goa.design/reference/goa/design/apidsl/#func-apikeysecurity-a-name-apidsl-apikeysecurity-a),
-[JWTSecurity](http://goa.design/reference/goa/design/apidsl/#func-jwtsecurity-a-name-apidsl-jwtsecurity-a) or
-[OAuth2Security](http://goa.design/reference/goa/design/apidsl/#func-oauth2security-a-name-apidsl-oauth2security-a).
-The scheme is then attached to the API, resource or action using
-[Security](http://goa.design/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a).
-For example:
+例えば：
 
 ```go
 var BasicAuth = BasicAuthSecurity("BasicAuth", func() {
@@ -36,17 +35,15 @@ var _ = Resource("secured", func() {
 })
 ```
 
-Each scheme uses a DSL specific to the corresponding authentication mechanism, for example the API
-key scheme allows specifying whether the key should be set in the query string or a header. Check
-the [reference](http://goa.design/reference/goa/design/apidsl) for details on each DSL.
+各スキームは、対応する認証メカニズムに固有のDSLを使用します。
+たとえば、APIキーでは、キーをクエリ文字列に設定するかヘッダーに設定するかを指定できます。
+各 DSL の詳細については[リファレンス](http://goa.design/reference/goa/design/apidsl)を参照してください。
 
-## Scopes
+## スコープ
 
-Both the `JWT` and `OAuth2` schemes allow specifying scopes that must be set in the tokens
-presented by clients. The
-[Security](http://goa.design/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a)
-function allows specifying the scopes that are required for the actions attached to it. For example,
-a `OAuth2` scheme using the `OAuth2` authorization code flow may be defined as follows:
+`JWT` と ` OAuth2` の両方のスキームでは、クライアントで設定されていなければならないトークンのスコープを指定することができます。
+[Security](http://goa.design/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a) 関数を使うと、スキーマが添付されたアクションに対して、要求されるスコープを指定することができます。
+例えば、`OAuth2` スキームが利用する `OAuth2` 認可コードは以下のように定義できます：
 
 ```go
 var OAuth2 = OAuth2Security("OAuth2", func() {
@@ -57,8 +54,8 @@ var OAuth2 = OAuth2Security("OAuth2", func() {
 })
 ```
 
-The scheme defines two possible scopes. A resource may then declare that clients must present tokens
-with the "api:read" scope set:
+スキームは2つの可能なスコープを定義します。
+リソースは、クライアントが "api:read" スコープをセットしていることを提示しなければならないことを宣言できます：
 
 ```go
 var _ = Resource("secured", func() {
@@ -69,7 +66,7 @@ var _ = Resource("secured", func() {
 })
 ```
 
-An action may then additionally require the "api:write" scope:
+アクションはそれに加えて、"api:write" スコープを要求します：
 
 ```go
     Action("write", func() {
@@ -80,9 +77,8 @@ An action may then additionally require the "api:write" scope:
     })
 ```
 
-Actions may also opt-out of auth entirely using
-[NoSecurity](http://goa.design/reference/goa/design/apidsl/#func-nosecurity-a-name-apidsl-nosecurity-a),
-for example:
+以下の例のように、[NoSecurity](http://goa.design/reference/goa/design/apidsl/#func-nosecurity-a-name-apidsl-nosecurity-a) を利用すると、
+アクションで完全に認証をオプトアウトすることもできます：
 
 ```go
     Action("health-check", func() {
@@ -91,16 +87,16 @@ for example:
     })
 ```
 
-## Effects On Code Generation
+## コード生成に対する影響
 
-Defininig security schemes and attaching them to the API, a resource or an action causes the code
-generation to require clients to authenticate. It also causes the client package to use the
-corresponding signers. Finally the generated Swagger also reflects the security schemes.
 
-The generated code that implements authentication accepts middleware that does the actual
-enforcement. This makes it possible to customize the behavior as needed. goa comes with a set of
-security middleware that either partially or fully implement the security scheme.
+セキュリティスキームを定義し、、それらをAPI、リソース、アクションに加えることで、
+クライアントで認証が要求されるようにコードが生成されます。
+これにより、クライアントパッケージも対応する署名利用することになります。
+最終的には、生成される Swagger もセキュリティスキームを反映したものになります。
 
-See [security](https://goa.design/implement/security/) in the
-[Implement](https://goa.design/implement/) section for details on how to implement the security
-middlewares.
+認証を実装している生成されたコードは、実際の施行をおこなうミドルウェアを受け入れます。
+これにより、必要に応じて動作をカスタマイズすることができます。
+goaには、セキュリティスキームを部分的にまたは完全に実装する一連のセキュリティミドルウェアが付属しています。
+
+どのようにセキュリティミドルウエアを実装するかの詳細は、[実装する](https://goa.design/implement/) の [セキュリティ](https://goa.design/implement/security/) セクションを参照してください。
