@@ -113,6 +113,8 @@ func MyConfiguredMiddleware(config string) goa.Middleware {
         return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
             // Use ctx, rw, req and any parameter given to the middleware constructor:
             rw.Header().Set("X-Custom", config)
+            // Call the next handler
+            return h(ctx, rw, req)
         }
     }
 }
