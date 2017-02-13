@@ -15,7 +15,7 @@ goa DSL の重要な側面として、タイプがどのように定義され使
 データ構造は、[Attribute](http://goa.design/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a) 関数またはそのエイリアス（`Member` や ` Header`, `Param`）を使用してデザインに記述されています。
 この記述は絶対的に存在します。つまり、指定された言語 （例えば、`Go`）やテクノロジーに関連しないものです。
 これにより、`Go`のコード、JSONスキーマ、Swagger、あるいは他の言語（JavaScriptクライアントなど）へのバインディングにいたるまで、多くの出力を生成することができます。
-デザイン言語には、[Overview](/design/overview) にリストされているいくつかのプリミティブ型が含まれていますが、[Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) 関数を使用して任意のデータ構造を再帰的に記述することができます。
+デザイン言語には、[概要](/design/overview) にリストされているいくつかのプリミティブ型が含まれていますが、[Type](http://goa.design/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) 関数を使用して任意のデータ構造を再帰的に記述することができます。
 
 ## リクエスト・ペイロード
 
@@ -34,7 +34,7 @@ Action("create", func() {
 })
 ```
 
-もしくは事前にタイプを定義しておくことも可能です：
+もしくは事前に定義されたタイプを使用することもできます：
 
 ```go
 var CreatePayload = Type("CreatePayload", func() {
@@ -79,7 +79,7 @@ Action("create", func() {
 
 `Attribute` が利用されている所ならどこでも同様の柔軟性があります。
 
-定義済みの型は、上記のように変数を使って参照することもできますし、名前で参照することも出来ます。
+定義済みのタイプは、上記のように変数を使って参照することもできますし、名前で参照することも出来ます。
 つまり、`Payload(CreatePayload)` は `Payload("CreatePayload")` として書くことができます。
 ここで、"CreatePayload" は `CreatePayload` タイプ定義で与えられる名前です。
 これにより、お互いに依存する型を定義することが可能になり、 `Go` コンパイラが循環参照にエラーを出すこともなくなります。
@@ -89,7 +89,7 @@ Action("create", func() {
 他のよくあるタイプの利用は、メディアタイプを記述することです。
 レスポンス・メディアタイプはレスポンス・ボディの形を特徴付けます。
 メディアタイプは *views* と *links* を定義している点でタイプと異なります。
-詳細は、[Overview](/design/overview) を参照してください。
+詳細は、[概要](/design/overview) を参照してください。
 メディアタイプは、[MediaType](http://goa.design/reference/goa/design/apidsl/#func-mediatype-a-name-apidsl-mediatype-a) 関数を利用して定義されます。
 
 基本的なメディアタイプの定義は次のようになります：
@@ -181,7 +181,7 @@ var MT = MediaType("application/vnd.app.mt", func() {
 })
 ```
 `name` Attribute は、対応する `CreatePayload` 定義された Attribute のタイプ、記述、バリデーションを自動的に継承します。
-メディアタイプ定義では、依然として参照される Attribute の名前をリストする必要があることに注意してください。これにより、「継承する」Attribute を選別することが出来ます。。
+メディアタイプ定義では、依然として参照される Attribute の名前をリストする必要があることに注意してください。これにより、「継承する」Attribute を選別することが出来ます。
 また、メディアタイプは、必要に応じて（例えば、タイプ、記述、バリデーション等を変更するために） `name` Attribute のプロパティを上書きすることが出来ます。
 
 メディアタイプは、メディアタイプ識別子を使用して自分自身を参照することもできます。
@@ -200,7 +200,7 @@ var MT = MediaType("application/vnd.app.mt", func() {
 })
 ```
 
-## タイプとメディアタイプを混ぜあわせについて
+## タイプとメディアタイプの混ぜあわせについて
 
 `Reference` を使ってタイプとメディアタイプ間で Attribute 定義を再利用する方法を見てきました。
 メディアタイプは特殊な形式のタイプです。
