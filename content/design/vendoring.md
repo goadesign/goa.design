@@ -67,7 +67,7 @@ the client of a dependent service for example. In this case the `design` package
 service ends up using the non-vendored goa which means that the design gets initialized in the
 "wrong" `design` package.
 
-The symptoms of the problem above is goagen crashing with a panic because the design it is trying to
+The symptoms of the problem above is goagen outputting an error message because the design it is trying to
 use is not initialized (the `design.Design` variable of the vendored goa `design` package is nil).
 The best way to resolve this issue is to vendor the dependent `design` packages as well (which is
 probably a good thing to do in the first place).
