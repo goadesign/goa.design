@@ -10,6 +10,7 @@ parent = "design"
 
 [goagen](/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
 [http://swagger.goa.design](http://swagger.goa.design) でホストされているサービスは、（公開されている）Github レポジトリ上で `goagen swagger` を実行し、対応する Swagger UI をレンダリングします。
+これにより、オープンソースの goa サービスの API 定義をすばやく見て、それを試してみる便利な方法が提供されます。
 
 ## 「Try It!」ボタンと CORS
 
