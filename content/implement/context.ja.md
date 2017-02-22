@@ -36,4 +36,4 @@ goa パッケージは、`With` をプレフィックスとする関数を公開
 
 前述したように、各コントローラのアクションコンテキストは golang パッケージの context をラップしています。
 これは、デッドラインとキャンセル信号がすべてのアクション実装で利用可能であることを意味します。
-組み込みの [Timeout](http://goa.design/reference/goa/middleware.html#func-timeout-a-name-middleware-timeout-a) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。
+組み込みの [Timeout](https://goa.design/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。
