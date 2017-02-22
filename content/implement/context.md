@@ -48,6 +48,6 @@ logger in the returned context.
 
 As mentioned earlier each controller action context wraps a golang package context. This means that
 deadlines and cancelation signals are available to all action implementations. The built-in
-[Timeout](http://goa.design/reference/goa/middleware.html#func-timeout-a-name-middleware-timeout-a)
+[Timeout](https://goa.design/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a)
 middleware takes advantage of this ability to let services or controllers define a timeout value
 for all requests.
