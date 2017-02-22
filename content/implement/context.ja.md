@@ -8,46 +8,32 @@ name = "リクエストコンテキスト"
 parent = "implement"
 +++
 
-## Overview
+## 概要
 
-The request context is the data structure provided to all goa controller action methods as first
-parameter. It leverages the [work done](https://blog.golang.org/context) by the Go team around
-passing contexts across interface boundaries by wrapping the
-[context.Context](https://godoc.org/golang.org/x/net/context#Context) interface in a generated
-struct.
+リクエストコンテキストは、goa のすべてのコントローラーのアクションメソッドに最初のパラメータとして提供されるデータ構造です。
+これは、生成された構造体に [context.Context](https://godoc.org/golang.org/x/net/context#Context) インターフェースをラップすることで、インタフェース境界を越えてコンテキストを渡すという Go チームが行った[仕事](https://blog.golang.org/context)を活用しています。
 
-goa leverages code generation to define *action specific* fields that provide access to the request
-state using "typed" methods. So for example if a path parameter called `ID` is defined in the design
-as being of type `Integer` the corresponding controller action method accepts a context data
-structure which exposes a field named `ID` of type `int`. The same goes for the request payload so
-that accessing the `Payload` field of an action context returns a data structure that is specific to
-that action as described in the design. This alleviates the need for reflection or otherwise
-"binding" the context to a struct.
+goaは、コード生成を活用して、"型付き"メソッドを使用してリクエスト状態にアクセスを提供する *アクション固有の* フィールドを定義します。
+たとえば、`ID` というパス・パラメータがデザインで `Integer` 型として定義されている場合、対応するコントローラのアクションメソッドは `int` 型の `ID` という名前のフィールドを公開するコンテキストデータ構造を受け取ります。
+リクエスト・ペイロードについても同様であるため、アクションコンテキストの`Payload` フィールドにアクセスすると、デザインに記述されているアクションに固有のデータ構造が返されます。
+これにより、リフレクションやコンテキストを構造体に"バインド"する必要性が緩和されます。
 
-This also applies to writing responses: while the underlying http ResponseWriter is available to
-write the response, the action context also provides action specific methods for writing the
-responses described in the design. These generated methods take care of writing the correct status
-code and content-type header for example. They also make it possible to specify the response body
-using custom data structures generated from the media type described in the design.
+これは、レスポンスを書く場合にも当てはまります。基本的な http ResponseWriter がレスポンスを書くために利用可能である一方、アクションコンテキストは、デザインに記述されたレスポンスを記述するためのアクション固有のメソッドも提供します。
+これらの生成されたメソッドは、たとえば、正しいステータスコードと content-type ヘッダーを記述します。
+また、デザインに記述されているメディアタイプから生成されたカスタムデータ構造を使用してレスポンスボディを指定することもできます。
 
-## Context Functions
+## コンテキスト関数
 
-The goa package exposes a set of functions all prefixed with `Context` that can be used to extract
-data stored in the request context. For example
-[ContextResponse](http://goa.design/reference/goa/#func-contextresponse-a-name-goa-responsedata-contextresponse-a)
-extracts the logger from the given context. These functions are mainly useful to code that does not
-have access to the generated data structures but merely to the raw `context.Context` value such as
-middleware.
 
-The goa package also exposes functions prefixed with `With` that accept a context and return a new
-context that embeds the additional data provided to the function, for example
-[WithLogger](http://goa.design/reference/goa/#func-withlogger-a-name-goa-withlogger-a) sets the
-logger in the returned context.
+goaパッケージは、リクエストコンテキストに格納されたデータを抽出するために使用できる一連の関数を公開します。
+それらはすべて `Context` をプレフィックスとする関数です。
+たとえば [ContextResponse](http://goa.design/reference/goa/#func-contextresponse-a-name-goa-responsedata-contextresponse-a) は指定されたコンテキストからレスポンスデータを抽出します。
+これらの関数は、生成されたデータ構造にアクセスするのではなく、ミドルウエアのような生の `context.Context` の値にアクセスするコードとして有用です。
 
-## Setting Deadlines
+goa パッケージは、`With` をプレフィックスとする関数を公開し、コンテキストを受け入れ、関数に提供された追加データを埋め込んだ新しいコンテキストを返します。例えば、[WithLogger](http://goa.design/reference/goa/#func-withlogger-a-name-goa-withlogger-a)はコンテキストにロガーを設定して返します。
 
-As mentioned earlier each controller action context wraps a golang package context. This means that
-deadlines and cancelation signals are available to all action implementations. The built-in
-[Timeout](http://goa.design/reference/goa/middleware.html#func-timeout-a-name-middleware-timeout-a)
-middleware takes advantage of this ability to let services or controllers define a timeout value
-for all requests.
+## 締め切りの設定
+
+前述したように、各コントローラのアクションコンテキストは golang パッケージの context をラップしています。
+これは、デッドラインとキャンセル信号がすべてのアクション実装で利用可能であることを意味します。
+組み込みの [Timeout](http://goa.design/reference/goa/middleware.html#func-timeout-a-name-middleware-timeout-a) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。
