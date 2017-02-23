@@ -8,16 +8,15 @@ name = "Swagger"
 parent = "design"
 +++
 
-[goagen](/implement/goagen) can generate the Swagger specification of an API given its design.
-The service hosted at [http://swagger.goa.design](http://swagger.goa.design) runs `goagen swagger`
-on a given (public) Github repository and renders the corresponding Swagger UI. This provides a
-convenient way to quickly look at an API definition of an open source goa service and experiment
-with it.
+[goagen](/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
+[http://swagger.goa.design](http://swagger.goa.design) でホストされているサービスは、（公開されている）Github レポジトリ上で `goagen swagger` を実行し、対応する Swagger UI をレンダリングします。
+これにより、オープンソースの goa サービスの API 定義をすばやく見て、それを試してみる便利な方法が提供されます。
 
-## Try It! Buttons and CORS
+## 「Try It!」ボタンと CORS
 
-The Swagger UI renders "Try It!" buttons under each operation. Clicking on these buttons causes the
-UI to send the corresponding API request to the host defined in the design. The host must thus be
-actively running and hosting the API for the buttons to work. The HTTP responses must also contain
-CORS headers that authorize the UI JavaScript to access the JSON in the responses. The CORS package
-[reference](/reference/goa/cors) describes the details for how to setup CORS in a goa service.
+Swagger UI は各操作に対して "Try It!" ボタンをレンダリングします。
+これらのボタンをクリックすると、UI は対応する API リクエストをそのデザインで定義されたホストに送信します。
+したがって、ホストは、ボタンが動作するようにアクティブに実行してAPIをホストする必要があります。
+
+HTTP レスポンスには、レスポンスの JSON にアクセスするための UI JavaScript を認可する CORS ヘッダーも含まれている必要があります。
+CORS パッケージの[リファレンス](/reference/goa/cors) では CORS を goa サービスでどのようにセットアップするかの詳細を説明しています。
