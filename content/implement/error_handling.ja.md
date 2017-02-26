@@ -8,45 +8,45 @@ name = "エラーハンドリング"
 parent = "implement"
 +++
 
-## Goals
+## 目標
 
-Handling errors in services in a way that is consistent across all the software layers and provides
-a documented output to the clients is hard, yet is a requirement for defining crisp API boundaries.
-goa strives to strike the right balance of providing a simple way to classify all the possible
-errors without having to write special error handling code in all components. Specifically the goals
-are:
+すべてのソフトウェア層で一貫した方法でサービスのエラーをハンドリングし、
+クライアントに文書化された出力を提供することは困難ですが、
+しかしまたパリッとしたAPI境界を定義するための要件でもあります。 
+goaは、すべてのコンポーネントに特別なエラー処理コードを記述することなく、
+すべての起こりうるエラーを分類するシンプルな方法を提供するよう適切なバランスに努めています。
+具体的な目標は次のとおりです：
 
-* Make it possible to document all the possible responses.
-* Keep the error classification logic in the API endpoints (*controllers* in goa).
-* Provide a simple way to classify existing errors.
+* すべての起こりうるレスポンスを文書化することができます。
+* API エンドポイント（goa のコントローラー）にエラーの分類ロジックを保存します。
+* 既存のエラーの分類を簡単な方法で提供します。
 
-## Introducing Error Classes
+## エラークラスの導入
 
-The abstraction used in goa to achieve the goals listed above is the error class. An error class
-defines the shape of an error response using the following fields:
+上記の目標を達成するために goa で使用される抽象化はエラークラスです。
+エラークラスは、次のフィールドを使用してエラーレスポンスの形を定義します：
 
-* `id`: a unique identifier for this particular occurrence of the problem.
-* `status`: the HTTP status code applicable to this problem.
-* `code`: an application-specific error code, expressed as a string value.
-* `detail`: a human-readable explanation specific to this occurrence of the problem. Like title, this field's value can be localized.
-* `meta`: a meta object containing non-standard meta-information about the error.
+* `id`: この特定の発生した問題への一意の識別子。
+* `status`: この問題に適用される HTTP ステータス。
+* `code`: 文字列の値で表現される、アプリケーション特有のエラーコード。
+* `detail`: この発生した問題への人間が判読可能な説明。タイトルと同様に、このフィールドはローカライズ可能です。
+* `meta`: エラーに関する非標準のメタ情報を含むメタオブジェクト。
 
-Error classes are created using the
+エラークラスは、エラーコードとステータスを受け入れる
 [NewErrorClass](https://goa.design/reference/goa/#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a)
-function which accepts the error code and status:
+関数を使用して作成されます：
 
 ```go
 func NewErrorClass(code string, status int) ErrorClass
 ```
 
-Error classes are functions themselves that create instances of `error` given a message and
-optional key pair values:
+エラークラスは、メッセージとオプションでキーと値のペアを指定して `error` のインスタンスを生成する関数です：
 
 ```go
 type ErrorClass func(message interface{}, keypairs ...interface{}) error
 ```
 
-For example:
+例：
 
 ```go
 // Create a new error class:
@@ -54,10 +54,8 @@ invalidEndpointErr := goa.NewErrorClass("invalid_endpoint", 422)
 // And use it to create errors:
 return invalidEndpointErr("endpoint cannot be resolved", "endpoint", endpoint, "error", err)
 ```
-
-goa comes with a set of pre-existing error classes that can be leveraged to cover the common cases.
-One especially useful error class is `ErrBadRequest` which can be used to return generic bad
-request errors:
+goa では一般的なケースをカバーするために利用できる既存のエラークラスのセットが付属しています。
+特に有用なエラークラスのひとつは `ErrBadRequest` で bad request error を返すのに利用できます：
 
 ```
 func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
@@ -68,11 +66,9 @@ func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
 }
 ```
 
-All errors returned by calling error class functions implement the
-[ServiceError](https://goa.design/reference/goa/#type-serviceerror-a-name-goa-serviceerror-a) interface.
-This interface exposes the error response status and unique token that middlewares can take
-advantage of for logging or otherwise processing errors. It's also possible to determine whether a
-given error was created via a error class by checking the behavior of the error object:
+エラークラス関数の呼び出しによって返されるすべてのエラーは、[ServiceError](https://goa.design/reference/goa/#type-serviceerror-a-name-goa-serviceerror-a) インターフェイスを実装します。
+このインタフェースは、ミドルウェアがロギングなどのエラー処理に利用できるようなエラーレスポンスのステータスや固有のトークンを公開します。
+また、エラーオブジェクトの振る舞いをチェックすることによって、エラークラスを介して生成されたエラーがかどうかを判定することもできます。
 
 ```go
 if _, ok := err.(goa.ServiceError); ok {
@@ -84,17 +80,15 @@ if _, ok := err.(goa.ServiceError); ok {
 }
 ```
 
-## Using Error Classes
+## エラークラスを使う
 
-There are two main use cases for error classes:
-* Error classes can be used to wrap errors returned by internal modules.
-* Error classes may be used to create new errors directly in the API endpoint (e.g. custom
-  validation errors).
+エラークラスの主なユースケースは2つあります：
+* エラークラスを使用して、内部モジュールから返されたエラーをラップすることができます。
+* エラークラスを使用して API エンドポイントで新しいエラーを直接作成することができます（たとえばカスタムバリデーションエラー）。
 
-### Wrapping Existing Errors
+### 既存のエラーをラップする
 
-Wrapping an existing error is done simply by invoking the error class function on the `error`
-instance:
+既存のエラーをラップするには、単に `error` インスタンスにエラークラス関数を適用して呼び出すだけで完了します：
 
 ```go
         if err := someInternalMethod(); err != nil {
@@ -102,7 +96,7 @@ instance:
         }
 ```
 
-Additional metadata can be attached to the error using the optional key pair parameters:
+オプションの対になったキーのパラメータを用いることで、追加のメタデータをエラーに添付する事ができます：
 
 ```go
         if err := someInternalMethod(); err != nil {
@@ -110,12 +104,10 @@ Additional metadata can be attached to the error using the optional key pair par
         }
 ```
 
-### Creating New Errors
+### 新しいエラーを作る
 
-Sometimes it may be useful to create new error classes. For example it may be necessary for clients
-to handle a specific class of errors in a specific way. The errors may need to be easily
-differentiated in logs or by other tracing mechanisms. In this case the error class function acts in
-a similar fashion as `errors.New`:
+新しいエラーを作った方が便利な場合もしばしばあります。たとえば、クライアントが特定のエラーのクラスを特定の方法で扱う必要があるかもしれません。エラーはログや他のトレースする仕組みによって簡単に区別できる必要があるかもしれません。
+この場合、エラークラス関数は `errors.New と同様に動作します：
 
 ```go
 // DoAction is a dummy example of a goa action implementation that defines a new error class and
@@ -131,23 +123,21 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
 }
 ```
 
-## Error Handlers
+## エラーハンドラー
 
-The
 [ErrorHandler](https://goa.design/reference/goa/middleware/#func-errorhandler-a-name-middleware-errorhandler-a)
-middleware maps any returned error to HTTP responses.  Errors that are created via goa's
-[ErrorClass](https://goa.design/reference/goa/#type-error-a-name-goa-error-a) get serialized in the
-response body and their status is used to form the response HTTP status.  Other errors get wrapped
-into the [ErrInternal](https://goa.design/reference/goa/#variables) which produces responses with a
-500 status code.
+ミドルウエアは返されたエラーを HTTP レスポンスにマップします。
+goa の [ErrorClass](https://goa.design/reference/goa/#type-error-a-name-goa-error-a) を介して作成されたエラーは、レスポンスボディでシリアライズされ、それらのステータスはレスポンス HTTP ステータスを整形するために使用されます。
+それ以外のエラーはステータスコード 500 のレスポンスを生じさせる [ErrInternal](https://goa.design/reference/goa/#variables) 
+にラップされます。
 
-## Designing Error Responses
+## エラーレスポンスをデザインする
 
-So far we've seen how controller code can adapt or create error responses. Ultimately though the API
-design dictates the correct content for responses. The goa design package provides the
-[ErrorMedia](https://goa.design/reference/goa/design.html#variables)
-media type that action definitions can take advantage of to describe responses that correspond to
-errors created via error classes. Here is an example of such an action definition:
+これまで、コントローラのコードがエラーレスポンスをどのように適応また作成するかを見てきました。
+最終的には、APIのデザインによってレスポンスの正しい内容が決定されます。
+goa デザインパッケージは、エラークラスを介して作成されたエラーに対応するレスポンスの記述を利用してアクション定義が利用できる [ErrorMedia](https://goa.design/reference/goa/design.html#variables) メディアタイプを提供しています。
+
+そのようなアクション定義の例はこのようになります：
 
 ```go
 var _ = Resource("bottle", func() {
@@ -159,8 +149,7 @@ var _ = Resource("bottle", func() {
 })
 ```
 
-The Go type generated for `ErrorMedia` is `error` so that the controller code can reuse the
-error directly to send the response in the generated response method:
+`ErrorMedia` のために生成されたGoの型は `error` であるので、コントローラコードはエラーを直接再利用して、生成されたレスポンスメソッドでレスポンスを送信できます：
 
 ```go
 func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
@@ -173,18 +162,14 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 }
 ```
 
-## Putting It All Together
+## すべてを統合して
 
-Going back to the initial goals, the API design defines the possible responses for each action
-including the error responses via the
-[Response](https://goa.design/reference/goa/design/apidsl.html#func-response-a-name-apidsl-response-a)
-DSL. Error classes provide a way to map the errors produced by the
-implementation back to the design by wrapping the errors using error classes.
+最初の目標に戻ってみましょう。API デザインは、[Response](https://goa.design/reference/goa/design/apidsl.html#func-response-a-name-apidsl-response-a) DSL によるエラーレスポンスを含む各アクションの可能なレスポンスを定義しています。
+エラークラスは、エラークラスを利用してエラーをラップすることによって、実装によって生成されたエラーをデザインにマップする方法を提供します。
 
-Services should create their own error classes to handle domain specific errors. The controllers
-must make sure to only return errors with attached error classes so the proper responses are sent.
-They can do so by creating these errors or wrapping errors coming from deeper layers.
+サービスは、ドメイン固有のエラーを処理する独自のエラークラスを作成する必要があります。
+コントローラーは、適切なレスポンスが送信されるように、エラークラスを添付したエラーだけを返すようにする必要があります。
+これらのエラーを作成するか、より深いレイヤーからのエラーをラップすることで、そうすることができます。
 
-Note that the controller actions are responsible for implementing the contract defined in the
-design. That is they should not define error classes that use HTTP status codes not listed in the
-[action definitions](https://goa.design/reference/goa/design/apidsl.html#func-action-a-name-apidsl-action-a).
+コントローラアクションは、デザインで定義された約定を実装する責任があることに注意してください。
+つまり、[アクション定義](https://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a)にリストされていない HTTP ステータスコードを使用するエラークラスを定義するべきではありません。
