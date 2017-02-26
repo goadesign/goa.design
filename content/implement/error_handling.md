@@ -137,7 +137,7 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
 The
 [ErrorHandler](https://goa.design/reference/goa/middleware/#func-errorhandler-a-name-middleware-errorhandler-a)
 middleware maps any returned error to HTTP responses.  Errors that are created via goa's
-[ErrorClass](https://goa.design/reference/goa/#type-error-a-name-goa-error-a) get serialized in the
+[ErrorClass](https://goa.design/reference/goa/#type-errorclass-a-name-goa-errorclass-a) get serialized in the
 response body and their status is used to form the response HTTP status.  Other errors get wrapped
 into the [ErrInternal](https://goa.design/reference/goa/#variables) which produces responses with a
 500 status code. Note however that as best practice errors should be designed and the corresponding
@@ -147,7 +147,7 @@ context methods used to write the response.
 
 So far we've seen how controller code can adapt or create error responses. Ultimately though the API
 design dictates the correct content for responses. The goa design package provides the
-[ErrorMedia](https://goa.design/reference/goa/design.html#variables)
+[ErrorMedia](https://goa.design/reference/goa/#variables)
 media type that action definitions can take advantage of to describe responses that correspond to
 errors created via error classes. Here is an example of such an action definition:
 
@@ -179,7 +179,7 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 
 Going back to the initial goals, the API design defines the possible responses for each action
 including the error responses via the
-[Response]({{< ref "reference/goa/design/apidsl.md" >}}#Response)
+[Response](https://goa.design/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a)
 DSL. Error classes provide a way to map the errors produced by the
 implementation back to the design by wrapping the errors using error classes.
 
@@ -189,4 +189,4 @@ They can do so by creating these errors or wrapping errors coming from deeper la
 
 Note that the controller actions are responsible for implementing the contract defined in the
 design. That is they should not define error classes that use HTTP status codes not listed in the
-[action definitions]({{< ref "reference/goa/design/apidsl.md" >}}#Action).
+[action definitions](https://goa.design/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a).
