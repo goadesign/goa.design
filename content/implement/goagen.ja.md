@@ -30,12 +30,12 @@ go install github.com/goadesign/goa/goagen
 Each generator is exposed via a command of the `goagen` tool, `goagen --help` lists all the available
 commands. These are:
 
-* [`app`](#gen_app): app：コントローラー、コンテキスト、メディアタイプ、ユーザータイプなどのサービス定型コードを生成します。
+* [`app`](#gen_app): コントローラー、コンテキスト、メディアタイプ、ユーザータイプなどのサービス定型コードを生成します。
 * [`main`](#gen_main): デフォルトの `main` と同様に、リソースコントローラごとにスケルトンファイルを生成します。
 * [`client`](#gen_client): API クライアントの Go パッケージとツールを生成します。
 * [`js`](#gen_js): JavaScript APIクライアントを生成します。
 * [`swagger`](#gen_swagger): API の Swagger 仕様書を生成します。
-* [`schema`](#gen_schema): API のハイパースキーマ JSON を生成します。
+* [`schema`](#gen_schema): API の Hyper-schema JSON を生成します。
 * [`gen`](#gen_gen): サードパーティ製のジェネレーターを起動します。
 * `bootstrap`: `app`、`main`、`client`、`swagger` の各ジェネレータを呼び出します。
 
@@ -61,7 +61,7 @@ commands. These are:
 * `--pkg=app` は、生成されたGoパッケージの名前を指定します。デフォルトはappです。これは、生成された Go ファイルを格納するために作成されるサブディレクトリの名前でもあります。
 * `--notest` は、テストヘルパーの生成を止めます。
 
-このコマンドは、常に同じ名前の既存のディレクトリを削除して再作成します。
+このコマンドは毎回既存のディレクトリを削除して同じ名前で再作成します。
 それは、これらのファイルは決して編集されるべきではないという考えに基づいています。
 
 
@@ -82,7 +82,7 @@ commands. These are:
 
 `Client` オブジェクトは、アクションに対してセキュリティが有効になっている場合（アクション DSL がセキュリティ機能を使用する場合）、要求を送信する前に呼び出されるリクエストの認証方法を使用するように設定されています。
 認証方法は、たとえば、認証ヘッダーを含めるようにリクエストを変更します。
-goaには、Basic 認証、JWT 認証、API キー、OAuth2 
+goaには、
 [Basic 認証](https://godoc.org/github.com/goadesign/goa/client#BasicSigner)、
 [JWT 認証](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner)、
 [API キー](https://godoc.org/github.com/goadesign/goa/client/#APIKeySigner)、
