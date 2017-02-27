@@ -32,8 +32,8 @@ goaパッケージは、リクエストコンテキストに格納されたデ�
 
 goa パッケージは、`With` をプレフィックスとする関数を公開し、コンテキストを受け入れ、関数に提供された追加データを埋め込んだ新しいコンテキストを返します。例えば、[WithLogger](http://goa.design/reference/goa/#func-withlogger-a-name-goa-withlogger-a)はコンテキストにロガーを設定して返します。
 
-## デッドラインの設定
+## Deadline の設定
 
 前述したように、各コントローラのアクションコンテキストは golang パッケージの context をラップしています。
-これは、デッドラインとキャンセル信号がすべてのアクション実装で利用可能であることを意味します。
+これは、Deadline とキャンセル信号がすべてのアクション実装で利用可能であることを意味します。
 組み込みの [Timeout](https://goa.design/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。
