@@ -8,17 +8,16 @@ name = "ロギング"
 parent = "implement"
 +++
 
-An important aspect of writing microservices is having a good logging strategy. This is a pretty
-complex topic and goa makes as little assumption as possible about how the service implements it.
-However there needs to be some integration so that for example errors that are not caught by user
-code end up being logged properly.
+優れたログ戦略を持つことが、マイクロサービスを書くための重要な側面としてあります。
+これはかなり複雑なトピックですが、goa はサービス上でロギングがどのように実装されているかについて、可能な限り仮定しないようになっています。
+しかしながら、例えば、ユーザーコードによって補足されないエラーが最終的には正しくログに記録されるといったようないくつかの統合は必要です。
 
-## The Logger Adapter
+## ロガーアダプター
 
-goa defines a minimal interface that it expects the logger to implement. This
-interface is
+goaは、ロガーが実装することを期待する最小限のインターフェースを定義します。
+このインターフェイスは
 [LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a)
-and is defined as follows:
+で、次のように定義されています：
 
 ```go
  type LogAdapter interface {
@@ -31,34 +30,22 @@ and is defined as follows:
  }
 ```
 
-The `Info` and `Error` methods implement structured logging by making it possible to pass in
-optional key/value pairs with each message. This results in structured log entries for loggers that
-support it. The adapters should take care of properly logging the context even if the actual logger
-does not support it similarly to how the standard logger adapter that is part of goa does it.
+`Info` と `Error` メソッドは、各メッセージと共にオプションのキーと値のペアを渡すことができるようにすることで、構造化ログを実装します。
+これにより、それをサポートするロガーの構造化されたログエントリが生成されます。
+アダプターは、実際のロガーがそれをサポートしていない場合でも、goa の一部である標準ロガーアダプターと同様にコンテキストを適切にロギングする必要があります。
 
-Middlewares can take advantage of the `New` method to instantiate adapters with additional logging
-context that gets logged with each log entry. Such additional context may contain a unique request
-id for example as done by the
-[LogRequest](http://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a)
-middleware.
+ミドルウェアは `New` メソッドを利用して、各ログエントリでログに記録される追加のロギングコンテキストをともなったアダプタをインスタンス化できます。
+このような追加のコンテキストは、例えば [LogRequest](http://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a) ミドルウェアによって行われるような、一意のリクエスト ID を含むことができるでしょう。
+ログアダプター自体はリクエストコンテキストに保管され、[ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a) を使用して取り出すことができます。
+goa はまた、アダプタ上で `New` を呼び出し、結果のログアダプタを含む新しいコンテキストを作成する [WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a) 関数を公開しています。
 
-The log adapter itself is stored in the request context and can be retrieved using the
-[ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a)
-function. goa also exposes the
-[WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a)
-function which calls `New` on the adapter and creates a new context containing the resulting log
-adapter.
+## サービスでの利用方法
 
-## Usage in Services
+サービスは、goa とは独立に、必要に応じてロガーを設定する必要があります。
+goa は、[標準ログ](https://golang.org/pkg/log/)や [log15](https://github.com/inconshreveable/log15)、[logrus](https://github.com/Sirupsen/logrus)、[go-kit logger](https://github.com/go-kit/kit) などを含む共通ログパッケージに対するいくつかの `LogAdapter` の[実装](http://goa.design/reference/) を備えています。
 
-Services should setup their logger like they need to - independently of goa. goa comes with a
-number of `LogAdapter` [implementations](http://goa.design/reference/) for common logging packages
-including the [standard logger](https://golang.org/pkg/log/),
-[log15](https://github.com/inconshreveable/log15), [logrus](https://github.com/Sirupsen/logrus) and
-the go-kit [logger](https://github.com/go-kit/kit).
-
-Once instantiated the service should inject its logger in goa using one of these adapters. Taking
-`log15` as an example, this could look like the following:
+インスタンス化されるとすぐに、これらのアダプターの1つを利用して、サービスのロガーを goa に注入する必要があります。
+`log15` を例にとると、次のようになります：
 
 ```go
 // Create logger
@@ -69,22 +56,21 @@ logger.SetHandler(log.StreamHandler(os.Stderr, log.LogfmtFormat()))
 service.WithLogger(goalog15.New(logger))
 ```
 
-goa then takes care of setting up the logger context before the action handler gets invoked. The
-context may also be additionally configured by middleware such as the
-[LogRequest](http://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a)
-middleware.
+アクションハンドラが呼び出される前に、goa はロガーコンテキストを設定を処理します。
+コンテキストは、[LogRequest](http://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a)
+ミドルウェアなどのミドルウェアによって追加構成することもできます。
 
-The code may take advantage of the logging context by using the accessor functions provided by each
-adapter package. Keeping with the `log15` example:
+コードは各アダプタパッケージが提供するアクセサ関数を利用してロギングコンテキストを利用することができます。
+引き続き、`log15` の例では：
 
 ```go
 logger := goalog15.Logger(ctx) // logger is a log15.Logger
 logger.Warn("whoops", "value", 15)
 ```
 
-The service code should not have to funnel all logging calls through goa. For example the database
-layer should probably not have to use the goa package at all. The idea to avoid the coupling is
-to define functions for each log method that combine the above:
+サービスのコードは、すべてのロギングコールを goa 経由で流す必要はありません。
+たとえば、データベース層では、おそらく goa パッケージを使用する必要は全くありません。
+結合を避けるためのアイデアは、上記を組み合わせた各ログメソッドの関数を定義することです：
 
 ```go
 // define logInfo, logWarn, and logError globally:
@@ -96,22 +82,11 @@ func logInfo(ctx context.Context, msg string, keyvals...interface{}) {
 logInfo(ctx, "whoops", "value", 15)
 ```
 
-The service should define the logging functions that make sense to it this way which allows it to
-take advantage of the context setup by goa without creating a strong coupling.
+サービスは、goa によって設定されたコンテキストを利用できるこのような筋の通ったロギング関数を、強い結合なしに、定義しなくてはなりません。
 
-## Usage in Middleware
+## ミドルウエアでの利用方法
 
-Middlewares have access to the logger via the context and the
-[ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a)
-function. They may use the returned
-[LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a) to add to the
-logger context or write logs.
+ミドルウェアは、コンテキストと [ContextLogger](http://goa.design/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a) 関数を介してロガーにアクセスできます。
+返された [LogAdapter](http://goa.design/reference/goa/#type-logadapter-a-name-goa-logadapter-a) を使用して、ロガーコンテキストに追加したり、ログを書き込んだりすることができます。
 
-Alternatively middlewares may take advantage of the
-[WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a)
-function to add to the logger context and use the
-[LogInfo](http://goa.design/reference/goa/#func-loginfo-a-name-goa-loginfo-a) and
-[LogError](http://goa.design/reference/goa/#func-logerror-a-name-goa-logerror-a) goa package
-functions to write logs.
-
-
+あるいは、ミドルウェアは、[WithLogContext](http://goa.design/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a) 関数を利用してロガーコンテキストに追加し、goa パッケージの [LogInfo](http://goa.design/reference/goa/#func-loginfo-a-name-goa-loginfo-a) および [LogError](http://goa.design/reference/goa/#func-logerror-a-name-goa-logerror-a) 関数を使用してログを書き込むことができます。
