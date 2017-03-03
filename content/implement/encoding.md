@@ -21,7 +21,7 @@ By default `application/json` is mapped to the JSON decoder, `application/xml` t
 and `application/gob` to the gob decoder. The JSON decoder is also used when the `Content-Type`
 header is missing or does not match one of the known values. If decoding fails goa writes an error
 response using status code 400 using the
-[ErrInvalidEncoding](http://goa.design/reference/goa/#variables:f65b389c849e4c539b25815fbdc1fd8d)
+[ErrInvalidEncoding](https://goa.design/reference/goa/#variables)
 error to write the body (see [Error Handling](/implement/error_handling/) for more information on
 how errors translate to HTTP responses).
 
@@ -81,7 +81,7 @@ new decoder to decode incoming request payloads.
 Using a custom decoder is a simple two step process:
 
 1. The design of the service must use the
-   [Consumes](http://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7)
+   [Consumes](https://goa.design/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a)
    DSL function to list the content types and corresponding decoder packages and optionally
    function.
 
@@ -126,7 +126,7 @@ var _ = API("My API", func() {
 
 And that's all there is to do. The goa [msgpack](https://goa.design/reference/goa/encoding/msgpack/)
 package exposes the
-[NewDecoder](https://goa.design/reference/goa/encoding/msgpack/#func-newdecoder-a-name-msgpack-newdecoder-a:1574d51e403296c43e921da78612bc7c)
+[NewDecoder](https://goa.design/reference/goa/encoding/msgpack/#func-newdecoder-a-name-msgpack-newdecoder-a)
 function and the generated code takes care of configuring the goa decoder.
 
 ## Using Custom Encoders
@@ -163,7 +163,7 @@ EncoderFunc func(w io.Writer) Encoder
 ### Setting Up Custom Encoders
 
 The DSL function for specifying custom encoders is
-[Produces](http://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7),
+[Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a),
 it supports the same syntax as `Consumes`:
 
 ```go
