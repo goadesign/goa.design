@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Logging"
+title = "ロギング"
 weight = 5
 
 [menu.main]
