@@ -108,7 +108,7 @@ if _, ok := err.(goa.ServiceError); ok {
 ### 新しいエラーを作る
 
 新しいエラーを作った方が便利な場合もしばしばあります。たとえば、クライアントが特定のエラーのクラスを特定の方法で扱う必要があるかもしれません。エラーはログや他のトレースする仕組みによって簡単に区別できる必要があるかもしれません。
-この場合、エラークラス関数は `errors.New と同様に動作します：
+この場合、エラークラス関数は `errors.New` と同様に動作します：
 
 ```go
 // DoAction is a dummy example of a goa action implementation that defines a new error class and
