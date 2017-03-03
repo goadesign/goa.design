@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Implementing goa Services"
+title = "goa のサービスを実装する"
 weight = 1
 
 [menu.main]

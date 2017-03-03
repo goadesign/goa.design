@@ -1,6 +1,6 @@
 +++
 date = "2016-04-17T11:01:06-05:00"
-title = "The goa Request Context"
+title = "goa のリクエストコンテキスト"
 weight = 3
 
 [menu.main]
