@@ -13,7 +13,7 @@ parent = "implement"
 goa は、柔軟なエンコードとデコードの方法をサポートし、任意のエンコーダーとデコーダを、与えられたレスポンスとリクエストのコンテンツタイプと関連づけることを可能にします。
 デフォルトでは、すべての goa サービスは JSON、XML、[gob](https://golang.org/pkg/encoding/gob/) をデコードまたはエンコードできます。
 
-### デコード
+### デコーディング
 
 goa のデコーダは、やってくるリクエストの `Content-Type` ヘッダを調べ、それをデコーダと照合します。
 デフォルトでは、`application/json` は JSON デコーダに、`application/xml` は XML デコーダに、そして `application/gob` は gob デコーダにマッピングされます。
@@ -31,7 +31,7 @@ goa のエンコーダは、やってくるリクエストの `Accept` ヘッダ
 あなたのサービスで、いつもと異なるデコーダを使用する必要がある理由はたくさんあります。
 たとえば、標準ライブラリの JSON パッケージを、あなたのユースケースでパフォーマンスを向上させるカスタムパッケージに変更したいということもあるでしょう。また、`msgpack` などの異なるシリアライズフォーマットをサポートする必要があるかもしれません。
 goa は、デコーダを goa サービスにマウントするためにデコーダが実装する必要のあるインタフェースを定義します。
-インターフェイスは次のとおりです：
+インタフェースは次のとおりです：
 
 ```go
 // A Decoder unmarshals an io.Reader into an interface.
@@ -40,7 +40,7 @@ Decoder interface {
 }
 ```
 
-デコーダは、`Reset` メソッドを追加した、リセット可能なデコーダインターフェースを実装することになるかもしれません：
+デコーダは、`Reset` メソッドを追加した、リセット可能なデコーダインタフェースを実装することになるかもしれません：
 A decoder may also implement the resettable decoder interface which adds a `Reset` method:
 
 ```go
