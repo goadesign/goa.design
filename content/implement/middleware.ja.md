@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Request Middleware"
+title = "リクエストミドルウエア"
 weight = 8
 
 [menu.main]
@@ -8,75 +8,61 @@ name = "ミドルウェア"
 parent = "implement"
 +++
 
-## Built-in Middlewares
+## 組み込みミドルウエア
 
-The `middleware` package provides middlewares that do not depend on additional packages other than
-the ones already used by `goa`. These middlewares provide functionality that is useful to most
-microservices:
+`middleware` パッケージは、すでに `goa` によって使用されているパッケージ以外の追加パッケージに依存しないミドルウェアを提供します。
+これらのミドルウェアは、ほとんどのマイクロサービスに役立つ機能を提供します：
 
-* [LogRequest](https://goa.design/reference/goa/middleware#LogRequest) enables logging of
-  incoming requests and corresponding responses. The log format is entirely configurable. The default
-  format logs the request HTTP method, path and parameters as well as the corresponding
-  action and controller names. It also logs the request duration and response length. It also logs
-  the request payload if the DEBUG log level is enabled. Finally if the RequestID middleware is
-  mounted LogRequest logs the unique request ID with each log entry.
+* [LogRequest](https://goa.design/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a) は、やってくるリクエストとそれに対応するレスポンスのログを有効にします。ログの形式は全体的に設定可能になっています。デフォルトの形式ではアクションと対応するコントローラの名前だけでなく、リクエスト HTTP メソッド、パス、パラメータを記録します。
+また、リクエストの時刻、レスポンス長も記録します。
+もし DEBUG ログレベルが有効になっていれば、リクエスト・ペイロードも記録します。
+最後に RequestID ミドルウエアが LogRequest ログにマウントされていれば、一意のリクエスト ID が各ログエントリと一緒に記録されます。
 
-* [LogResponse](https://goa.design/reference/goa/middleware#LogResponse) logs the content
-  of the response body if the DEBUG log level is enabled.
+* [LogResponse](https://goa.design/reference/goa/middleware/#func-logresponse-a-name-middleware-logresponse-a) は DEBUG ログレベルが有効な場合、レスポンスボディの内容を記録します。
 
-* [RequestID](https://goa.design/reference/goa/middleware#RequestID) injects a unique ID
-  in the request context. This ID is used by the logger and can be used by controller actions as
-  well. The middleware looks for the ID in the
-  [RequestIDHeader](https://goa.design/reference/goa/middleware#RequestIDHeader) header and if not
-  found creates one.
+* [RequestID](https://goa.design/reference/goa/middleware/#func-requestid-a-name-middleware-requestid-a) は一意の ID をリクエストコンテキストに注入します。
+この ID はロガーで利用され、コントローラーアクションでも利用できます。
+ミドルウエアは [RequestIDHeader](https://goa.design/reference/goa/middleware/#func-requestidwithheader-a-name-middleware-requestidwithheader-a) でヘッダーの ID を調べて、もし見つからなければこれを作ります。
 
-* [Recover](https://goa.design/reference/goa/middleware#Recover) recover panics and logs
-  the panic object and backtrace.
+* [Recover](https://goa.design/reference/goa/middleware/#func-recover-a-name-middleware-recover-a) は panic をリカバーし、panic の内容とバックトレースを記録します。
 
-* [Timeout](https://goa.design/reference/goa/middleware#Timeout) sets a deadline in the
-  request context. Controller actions may subscribe to the context channel to get notified when
-  the timeout expires.
+* [Timeout](https://goa.design/reference/goa/middleware#Timeout) はリクエストコンテキストの Deadline を設定します。
+コントローラのアクションは、時間切れのときの通知を受け取るコンテキストチャネルを受信することができるようになるでしょう。
 
-* [RequireHeader](https://goa.design/reference/goa/middleware#RequireHeader) checks for the
-  presence of a header in the request with a value matching a given regular expression. If the
-  header is absent or does not match the regexp the middleware sends a HTTP response with a given
-  HTTP status.
+* [RequireHeader](https://goa.design/reference/goa/middleware#RequireHeader) は与えられた正規表現とマッチする値がリクエストのヘッダーに存在するかをチェックします。もしヘッダーがないとか正規表現とマッチしない場合には、ミドルウエアは指定された HTTP ステータスを持つ HTTP レスポンスを送信します。
 
-Other middlewares listed below are provided as separate Go packages.
+下記のミドルウエアは 別々の Go のパッケージとして提供されています。
 
 #### Gzip
 
-Package [gzip](https://goa.design/reference/goa/middleware/gzip.html) contributed by
-[@tylerb](https://github.com/tylerb) adds the ability to compress response bodies using gzip format
-as specified in RFC 1952.
+[@tylerb](https://github.com/tylerb) 氏によって提供されている [gzip](https://goa.design/reference/goa/middleware/gzip.html) パッケージは RFC 1952で指定された gzip 形式を使用して、レスポンスボディを圧縮する機能を追加します。
 
-#### Security
+#### セキュリティ
 
-package [security](https://goa.design/reference/goa/middleware/security.html) contains middleware
-that should be used in conjunction with the security DSL.
+[security](https://goa.design/reference/goa/middleware/security.html) パッケージは、セキュリティ DSL と合わせて使うミドルウエアを含んでいます。
 
-## Writing Your Own
+## あなた自身で書くこと
 
-A middleware is a function that accepts and returns a request handler. The idea is that middlewares
-are "chained" together, the actual action implementation being the last link. There are many good
-resources on the web describing middlewares in Go such as [Alex Edwards'
-writeup](http://www.alexedwards.net/blog/making-and-using-middleware).
+ミドルウエアはリクエストハンドラを受け付けて、リクエストハンドラを返す関数です。
+アイデアは、ミドルウェアが「連鎖」しており、実際のアクション実装が最後のリンクであるということです。
+アレックス・エドワーズの書き込みなど、Goのミドルウェアを記述するウェブには多くの優れたリソースがあります。
+[アレックス エドワーズ氏が書いているような](http://www.alexedwards.net/blog/making-and-using-middleware)
+Go でミドルウエアを記述しているよい記事が web には多くあります。
 
-A request handler in goa has the following signature:
+goa のリクエストハンドラは、次のようなシグネチャを持ちます：
 
 ```go
 // Handler defines the request handler signatures.
 Handler func(context.Context, http.ResponseWriter, *http.Request) error
 ```
 
-And a middleware is:
+そして、ミドルウエアは：
 
 ```go
 // Middleware represents the canonical goa middleware signature.
 Middleware func(Handler) Handler
 ```
-
-Writing a middleware thus consists of writing a function that accepts a handler and returns one:
+ミドルウエアを書くことは、すなわち、ハンドラを受け取ってハンドラを返す関数を書くことからなります：
 
 ```go
 // MyMiddleware does something interesting.
@@ -92,19 +78,19 @@ func MyMiddleware(h goa.Handler) Handler {
 }
 ```
 
-The middleware can then be mounted on a service or controller with the `Use` method:
+ミドルウェアは、 `Use` メソッドを使用してサービスまたはコントローラにマウントできます。
 
 ```go
 s := goa.New("my service")
 s.Use(MyMiddleware)
 ```
 
-### Configuring Middleware
+### ミドルウエアの設定
 
-Sometimes there's a need for passing configuration information to the middleware. For example the 
-goa [Timeout](https://goa.design/reference/goa/middleware/#Timeout) middleware needs a timeout
-value. This is easily accomplished by providing a constructor method that accepts the configuration
-information as parameters and uses closure to build the middleware:
+しばしばミドルウエアに設定情報を渡す必要があります。
+たとえば、goa の [Timeout](https://goa.design/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a)
+ミドルウエアはタイムアウトまでの時間が必要です。
+これは、設定情報をパラメータとして受け付け、クロージャを使用してミドルウェアを構築するコンストラクタ・メソッドを提供することで簡単に達成できます：
 
 ```go
 // MyConfiguredMiddleware does something interesting and needs a "config" string value.
@@ -118,12 +104,12 @@ func MyConfiguredMiddleware(config string) goa.Middleware {
 }
 ```
 
-Mounting the middleware above then looks like:
+上記のミドルウエアをマウントすると次のようになります：
 
 ```go
 s := goa.New("my service")
 s.Use(MyConfiguredMiddleware("value"))
 ```
 
-The pattern above is the one followed by all built-in middlewares, even the ones not taking
-configuration values for consistency.
+上記のパターンは、設定の値があろうと無かろうとすべての組み込みミドルウエアが一貫性のために従うものです。
+
