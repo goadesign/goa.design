@@ -1,6 +1,6 @@
 +++
 date = "2016-04-20T11:01:06-05:00"
-title = "Working with Data Types"
+title = "データ型を扱う"
 weight = 2
 
 [menu.main]
