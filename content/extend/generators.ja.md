@@ -1,6 +1,6 @@
 +++
 date = "2016-03-02T11:01:06-05:00"
-title = "goa Plugin Generators"
+title = "goa プラグインジェネレータ"
 weight = 1
 
 [menu.main]
@@ -8,38 +8,26 @@ name = "ジェネレータプラグイン"
 parent = "extend"
 +++
 
-goa Plugins make it possible to generate new kinds of outputs from any DSL. The possibilities are
-really endless, clients in different languages, domain specific type conversions, database bindings
-etc.
+goa プラグインを使うと、どんな DSL からでも新しい種類の出力を生成することができます。異なる言語のクライアント、ドメイン固有の型変換、データベースバインディングセットなど、可能性は本当に無限です。
 
-# Generators
+# ジェネレータ
 
-Generators consume the data structures produced by DSLs to generate artifacts.
-Generators can be written for existing and new DSLs (see [goa Plugin DSLs](/extend/dsls) for
-information on how to create new DSLs). The generated artifacts can be anything, the DSL engine
-provides the generation orchestration and is oblivious of the actual output.
+ジェネレータは DSL によって生成されたデータ構造を消費して成果物を生成します。ジェネレータは、既存の DSL と新しいDSL（新しい DSL の作成方法については [goa プラグイン DSL](/extend/dsls）を参照してください）用に記述することができます。生成する成果物は何でもかまいません。 DSL エンジンは生成の編成を提供し、実際の出力は認識しません。
 
-## Implementing a Generator
+## ジェネレータの実装
 
-A generator consists of a Go package that implements the `Generate` function:
+ジェネレータは `Generate` 関数を実装する Go パッケージで構成されています。
 ```go
 func Generate() ([]string, error)
 ```
-The function returns the list of generated filenames in case of success or a descriptive
-error otherwise. The generator accesses the DSL output data structures directly from the
-corresponding DSL packages. For example the goa API DSL exposes a `Design` package variable of type
-[APIDefinition](http://goa.design/reference/goa/design.html#type-apidefinition-a-name-design-apidefinition-a:83772ba7ad0304b1562d08f190539946)
-that contains the built-up API definition.
+この関数は、成功時には生成されたファイル名のリストを、それ以外の場合には解説的なエラーを返します。ジェネレータは、対応する DSL パッケージから直接 DSL 出力データ構造にアクセスします。例えば goa API DSL は、ビルドアップ API 定義を含む [APIDefinition](http://goa.design/reference/goa/design.html#type-apidefinition-a-name-design-apidefinition-a:83772ba7ad0304b1562d08f190539946) 型の `Design` パッケージ変数を公開します。
 
-### Writing Generators for the goa API DSL
+### goa API DSL のためのジェネレータの作成
+Writing Generators for the goa API DSL
 
-On top of the [Design](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
-package variable the goa DSL also exposes [GeneratedMediaTypes](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946)
-which contains the set of media types that was generated dynamically by the engine rather than
-defined by the user (this happens when a Media Type is use inline with
-[CollectionOf](http://goa.design/reference/goa/design/apidsl.html#func-collectionof-a-name-apidsl-collectionof-a:aab4f9d6f98ed71f45bd470427dde2a7).
+goa DSL はまた、ユーザに定義されたものではなく、エンジンによって動的に生成されたメディアタイプのセットを含む [GeneratedMediaTypes](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) を [Design](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) パッケージ変数の上に公開します (メディアタイプが [CollectionOf](http://goa.design/reference/goa/design/apidsl.html#func-collectionof-a-name-apidsl-collectionof-a:aab4f9d6f98ed71f45bd470427dde2a7) でインラインで使用されている場合に発生します) 。
 
-A generator wanting to act on a goa API DSL output would thus look like this:
+goa API DSL の出力に作用したいジェネレータは次のようになります。
 ```go
 import "github.com/goadesign/goa/design"
 
@@ -51,17 +39,11 @@ func Generate() ([]string, error) {
 	// ... user genMedia to generate stuff
 }
 ```
-The `Generate` method can take advantage of the `APIDefinition` `IterateXXX` methods to iterate
-through the API resources, media types and types to guarantee that the order doesn't change between
-two invocations of the function (thereby generating different outputs even if the design hasn't
-changed).
+`Generate` メソッドは、 `APIDefinition` `IterateXXX` メソッドを利用して API リソース、メディアタイプ、およびタイプを反復処理して、関数の2つの呼び出し間で順序が変わらないことを保証します (設計が変更されていなくても異なる出力を生成します) 。
 
-#### Metadata
+#### メタデータ
 
-A simple way to tack on information to existing definitions for the benefit of generators is to use
-metadata. The goa design language allows defining metadata on a number of definitions: API,
-Resource, Action, Response and Attribute (which means Type and MediaType as well since these
-definitions are attributes). Here is an example defining a "pseudo" metadata value on a resource:
+ジェネレータの恩恵のため、既存の定義に情報を取り込む簡単な方法は、メタデータを使用することです。 goa デザイン言語では、 API 、リソース、アクション、レスポンス、属性 (これらの定義は属性なので Type と MediaType をも意味します) の定義でメタデータを定義できます。リソース上に「疑似」メタデータ値を定義する例を次に示します。
 
 ```go
 var _ = Resource("Bottle", func() {
@@ -71,33 +53,26 @@ var _ = Resource("Bottle", func() {
 }
 ```
 
-The DSL engine package defines the metadata definition data structure -
+DSL エンジンパッケージは、メタデータ定義データ構造を定義します。
+-
 [MetadataDefinition](https://godoc.org/github.com/goadesign/goa/dslengine#MetadataDefinition).
 
-#### Writing the Artifacts
+#### 成果物の書き出し
 
-The [codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) package comes with a number
-of helper functions that help deal with generating Go code. For example it contains functions that
-can produce the code for defining a data structure given an instance of the
-[design](https://godoc.org/github.com/goadesign/goa/design) package
-[DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) interface.
+[codegen](https://godoc.org/github.com/goadesign/goa/goagen/codegen) パッケージには、 Go コードの生成に役立つさまざまなヘルパー関数が付属しています。例えば、 [design](https://godoc.org/github.com/goadesign/goa/design) パッケージの [DataStructure](https://godoc.org/github.com/goadesign/goa/design#DataStructure) インターフェイスのインスタンスを指定してデータ構造を定義するコードを生成できる関数が含まれています。
 
-### Integrating With `goagen`
+### `goagen` での統合
 
-`goagen` is the tool used to generate the artifacts from DSLs in goa. The `gen` subcommand allows
-specifying a Go package path to a generator package - that is a package that implements the
-`Generate` function. This command accepts one flag:
+`goagen` は goa の DSL から成果物を生成するために使用されるツールです。 `gen` サブコマンドを使用すると、 Go パッケージパスをジェネレータパッケージ（`Generate` 関数を実装するパッケージ）に指定できます。このコマンドは 1 つのフラグを受け取ります。
 
 ```bash
 --pkg-path=PKG-PATH specifies the Go package import path to the plugin package.
 ```
 
-### Example
+### 例
 
-Let's implement a generator that traverses the definitions created by the goa API DSL and creates
-a single file `names.txt` containing the names of the API resources sorted in alphabetical order.
-If a resource has a metadata pair with the key "pseudo" then the plugin uses the metadata value
-instead.
+goa API DSL によって作成された定義をトラバースし、アルファベット順にソートされた API リソースの名前を含む `names.txt` というひとつのファイルを作成するジェネレータを実装してみましょう。リソースが「擬似」キーを持つメタデータペアを持つ場合、プラグインはメタデータ値を代わりに使用します。
+
 
 ```go
 package genresnames
@@ -157,7 +132,7 @@ func WriteNames(api *design.APIDefinition, outDir string) ([]string, error) {
 
 ```
 
-Invoke the `genresnames` generator with:
+次のように `genresnames` ジェネレータを呼び出します。
 ```bash
 goagen gen -d /path/to/your/design --pkg-path=/go/path/to/genresnames
 ```
