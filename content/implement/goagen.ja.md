@@ -27,8 +27,8 @@ go install github.com/goadesign/goa/goagen
 3. デザインパッケージとツールコードで構成されるツールは、一時ディレクトリでコンパイルされる。
 4. このツールが実行され、最終的な出力を書き込むためにデザインのデータ構造をたどる。
 
-Each generator is exposed via a command of the `goagen` tool, `goagen --help` lists all the available
-commands. These are:
+各ジェネレータは `goagen` ツールのコマンドとして公開され、`goagen --help` で利用可能なすべてのコマンドを一覧できます。
+それらは以下になります：
 
 * [`app`](#gen_app): コントローラー、コンテキスト、メディアタイプ、ユーザータイプなどのサービス定型コードを生成します。
 * [`main`](#gen_main): デフォルトの `main` と同様に、リソースコントローラごとにスケルトンファイルを生成します。
