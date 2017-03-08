@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "goagen, the goa Tool"
+title = "goagen：goa のツール"
 weight = 2
 
 [menu.main]
@@ -8,94 +8,101 @@ name = "goagen"
 parent = "implement"
 +++
 
-## Code Generation Tool
+## コード生成ツール
 
-`goagen` is a tool that generates various artifacts from a goa design package.
+`goagen` は、goa デザインパッケージからさまざまなアーティファクト（中間生成物）を生成するツールです。
 
-Install it with:
+次のようにインストールします：
 
 ```bash
 go install github.com/goadesign/goa/goagen
 ```
 
-Each type of artifact is associated with a `goagen` command that exposes it own set of flags.
-Internally these commands map to "generators" that contain the logic for generating the artifacts.
-It works something like this:
+それぞれのタイプのアーティファクトは、独自のフラグセットを公開する `goagen` コマンドに関連付けられています。
+内部的には、これらのコマンドは、アーティファクトを生成するロジックを含む"ジェネレータ"にマップされます。
+これは次のように動作します：
 
-1. `goagen` parses the command line to determine the type of output desired and invokes the appropriate generator.
-2. The generator writes the code of the tool that will produce the final output to a temporary directory.
-3. The tool composed of the design package and the tool code is compiled in the temporary directory.
-4. The tool is run, it traverses the design data structures to write the final output.
+1. `goagen` はコマンドラインを解析して、必要な出力のタイプを判断し、適切なジェネレータを呼び出す。
+2. ジェネレータは、最終出力を生成するツールのコードを一時ディレクトリに書き込む。
+3. デザインパッケージとツールコードで構成されるツールは、一時ディレクトリでコンパイルされる。
+4. このツールが実行され、最終的な出力を書き込むためにデザインのデータ構造をたどる。
 
 Each generator is exposed via a command of the `goagen` tool, `goagen --help` lists all the available
 commands. These are:
 
-* [`app`](#gen_app): generates the service boilerplate code including controllers, contexts, media types and user types.
-* [`main`](#gen_main): generates a skeleton file for each resource controller as well as a default `main`.
-* [`client`](#gen_client): generates an API client Go package and tool.
-* [`js`](#gen_js): generates a JavaScript API client.
-* [`swagger`](#gen_swagger): generates the API Swagger specification.
-* [`schema`](#gen_schema): generates the API Hyper-schema JSON.
-* [`gen`](#gen_gen): invokes a third party generator.
-* `bootstrap`: invokes the `app`, `main`, `client` and `swagger` generators.
+* [`app`](#gen_app): コントローラー、コンテキスト、メディアタイプ、ユーザータイプなどのサービス定型コードを生成します。
+* [`main`](#gen_main): デフォルトの `main` と同様に、リソースコントローラごとにスケルトンファイルを生成します。
+* [`client`](#gen_client): API クライアントの Go パッケージとツールを生成します。
+* [`js`](#gen_js): JavaScript APIクライアントを生成します。
+* [`swagger`](#gen_swagger): API の Swagger 仕様書を生成します。
+* [`schema`](#gen_schema): API の Hyper-schema JSON を生成します。
+* [`gen`](#gen_gen): サードパーティ製のジェネレーターを起動します。
+* `bootstrap`: `app`、`main`、`client`、`swagger` の各ジェネレータを呼び出します。
 
-## Common flags
+## goagen での作業： Scaffold（足場） vs. 生成されるコード
 
-The following flags apply to all the `goagen` commands:
+デザインが発展するにつれ、`goagen` を何度も実行する必要があるので **Scaffold（足場）** と **生成された** コードとの区別を理解することが重要になってきます。
 
-* `--design|-d=DESIGN` defines the Go package path to the service design package.
-* `--out|-o=OUT` specifies where to generate the files, defaults to the current directory.
-* `--debug` enables `goagen` debug. This causes `goagen` to print the content of the temporary
-files and to leave them around.
-* `--help` prints contextual help.
+`main` コマンドによって生成された Scaffold コードは、すぐに開始する方法として一度生成されます。 このコードは、編集、テストされ、手動で書かれた他のファイル同様一般的な処理が行われることを意味します。`goagen` は Scaffold ファイルがすでに存在する場合には上書きしません。 `client` コマンドによって生成されるクライアントツールの `main` パッケージも Scaffold です。
 
-## <a name="gen_app"></a> Contexts and Controllers: `goagen app`
+他のすべてのコマンドの出力（および `client` コマンドの `main` パッケージを除く出力）から構成される生成されたアーティファクトは、編集できませし、すべきではありません。アーティファクトは `goagen` が実行されるたびに、一から作り直されます。
+それらがインポートされ、公開された関数と他の Go のパッケージと同様のデータ構造を消費して生成された Go パッケージを、ユーザーコードは利用します。
 
-The `app` command is arguably the most critical. It generates all the supporting code for the
-goa service. The command also generates a `test` sub-package that contain test helpers, one per
-controller action and view they return. These helpers make it easy to test the action
-implementations by invoking them with controlled values and validating the returned media types.
-This command supports a couple of additional flags:
+## 共通のフラグ
 
-* `--pkg=app` specifies the name of the generated Go package, defaults to `app`. That's also the
-name of the subdirectory that gets created to store the generated Go files.
-* `--notest` prevents the generation of the the test helpers.
+次のフラグは、すべてのgoagenコマンドに適用できます：
 
-This command always deletes and re-creates any pre-existing directory with the same name. The idea
-being that these files should never be edited.
+* `--design|-d=DESIGN` は、Go パッケージパスをサービスのデザインパッケージとして定義します。
+* `--out|-o=OUT` は、ファイルを生成する場所を指定します。デフォルトは現在のディレクトリです。
+* `--debug` は、`goagen` のデバッグを可能にします。 これにより、`goagen` は一時ファイルの内容を出力し、それらを残します。
+* `--help` は、コンテキスト・ヘルプを表示します。
 
-## <a name="gen_main"></a> Scaffolding: `goagen main`
+## <a name="gen_app"></a> コンテキストとコントローラ：`goagen app`
 
-The `main` command helps bootstrap a new goa service by generating a default `main.go` as well as a
-default (empty) implementation for each resource controller defined in the design package. By
-default this command only generates the files if they don't exist in the output directory. This
-command accepts an additional flag:
+`app` がおそらく最も重要なコマンドです。
+これは、goa サービスを支えるためのすべてのコードを生成します。
+このコマンドは、テストヘルパを含む `test` サブパッケージも生成します。
+テストヘルパは、コントローラのアクションとビューごとに1つずつ生成されます。
+これらのテスト・ヘルパーを使用すると、管理された値で呼び出して返されたメディアタイプを検証するよう実装することで、アクションを簡単にテストできます。
 
-* `--force` causes the files to be generated even if files with the same name already exist.
+このコマンドはいくつかの追加フラグをサポートしています：
 
-## <a name="gen_client"></a> Client Package and Tool: `goagen client`
+* `--pkg=app` は、生成されたGoパッケージの名前を指定します。デフォルトはappです。これは、生成された Go ファイルを格納するために作成されるサブディレクトリの名前でもあります。
+* `--notest` は、テストヘルパーの生成を止めます。
 
-The `client` command generates both an API client package and a CLI tool. The client package
-implements a `Client` object that exposes one method for each resource action. It also exposes
-methods to create the corresponding http request objects without sending them. The generated code of
-the CLI tool leverages the package to make the API requests to the service.
+このコマンドは毎回既存のディレクトリを削除して同じ名前で再作成します。
+それは、これらのファイルは決して編集されるべきではないという考えに基づいています。
 
-The `Client` object is configured to use request signers that get invoked prior to sending the
-request if security is enabled for the Action (that is if the action DSL makes use of the `Security`
-function). The signers modify the request to include auth headers for example.  goa comes with
-signers that implement
-[basic auth](https://godoc.org/github.com/goadesign/goa/client#BasicSigner),
-[JWT auth](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner),
-[API key](https://godoc.org/github.com/goadesign/goa/client/#APIKeySigner) and a subset of
-[OAuth2](https://godoc.org/github.com/goadesign/goa/client#OAuth2Signer).
 
-## <a name="gen_js"></a> JavaScript: `goagen js`
+## <a name="gen_main"></a> Scaffolding（足場）：`goagen main`
 
-The `js` command generates a JavaScript API client suitable for both client-side and server-side
-applications. The generated code defines an anonymous AMD module and relies on the
-[axios](https://github.com/mzabriskie/axios) promise-based JavaScript library for making the actual
-HTTP requests.
+`main` コマンドは、デザイン・パッケージに定義されている各リソースコントローラのデフォルトの（空の）実装と同様に、デフォルトの`main.go` を生成することによって、新しい goa サービスをブートストラップするのに役立ちます。
+デフォルトでは、このコマンドは出力ディレクトリに生成されるファイルが存在しない場合にのみファイルを生成します。
+このコマンドは、追加のフラグを受け取ります：
 
+* `--force` は、同じ名前のファイルがすでに存在していてもファイルを生成させます。
+
+## <a name="gen_client"></a> クライアント・パッケージとツール：`goagen client`
+
+`client` コマンドは、API クライアントパッケージと CLI ツールの両方を生成します。
+クライアント・パッケージは、各リソースアクションに対して1つのメソッドを公開した `Client` オブジェクトを実装します。
+また、対応する HTTP リクエストオブジェクトを、送信せずに、作成するメソッドも公開しています。
+生成された CLI ツールのコードは、パッケージを利用してサービスの API リクエストを作成します。
+
+`Client` オブジェクトは、アクションに対してセキュリティが有効になっている場合（アクション DSL がセキュリティ機能を使用する場合）、要求を送信する前に呼び出されるリクエストの認証方法を使用するように設定されています。
+認証方法は、たとえば、認証ヘッダーを含めるようにリクエストを変更します。
+goaには、
+[Basic 認証](https://godoc.org/github.com/goadesign/goa/client#BasicSigner)、
+[JWT 認証](https://godoc.org/github.com/goadesign/goa/client/#JWTSigner)、
+[API キー](https://godoc.org/github.com/goadesign/goa/client/#APIKeySigner)、
+[OAuth2](https://godoc.org/github.com/goadesign/goa/client#OAuth2Signer) のサブセットを実装する認証方法が付属しています。
+
+## <a name="gen_js"></a> JavaScript：`goagen js`
+
+`js` コマンドは、クライアント側とサーバー側の両方のアプリケーションに適した JavaScript API クライアントを生成します。
+生成されたコードは、匿名の AMD モジュールを定義し、実際のHTTPリクエストを作成するために [axios](https://github.com/mzabriskie/axios) の promise ベースの JavaScript ライブラリに依存しています。
+
+生成されたモジュールは `axios` クライアントをラップし、API 固有の関数を追加します。たとえば：
 The generated module wraps the `axios` client and adds API specific functions, for example:
 
 ```javascript
@@ -122,7 +129,7 @@ client.listBottle = function (path, years, config) {
 }
 ```
 
-The generated client module can be loaded using `requirejs`:
+生成されたクライアントモジュールは、`requirejs` を使用してロードできます：
 
 ```javascript
 requirejs.config({
@@ -142,9 +149,8 @@ requirejs(['client'], function (client) {
 });
 ```
 
-The code above assumes that the generated files `client.js` and `axios.min.js` are both
-served from `/js`. The `resp` value returned to the promise is an object with the following
-fields:
+上記のコードでは、生成されたファイル `client.js` と `axios.min.js` の両方が `/js` から提供されているものと仮定しています。
+promise に返される `resp` の値は次のフィールドを持つオブジェクトです：
 
 ```javascript
 {
@@ -165,30 +171,27 @@ fields:
 }
 ```
 
-The generator also produces an example HTML and controller that can be mounted on a goa service to
-quickly test the JavaScript. Simply import the `js` Go package in your service main and mount the
-controller. The example HTML is served under `/js` so that loading this path in a browser will
-trigger the generated JavaScript.
+また、ジェネレータは、JavaScript をすばやくテストするために サンプル HTML とgoa サービスにマウントできるコントローラを生成します。
+サービスのメインで `js` Go パッケージをインポートし、コントローラをマウントするだけです。
+サンプル HTML は `/js` の下で提供されるので、このパスをブラウザにロードすると、生成された JavaScript がトリガーされます。
 
-## <a name="gen_swagger"></a> Swagger: `goagen swagger`
+## <a name="gen_swagger"></a> Swagger：`goagen swagger`
 
-The `swagger` command generates a [Swagger](http://swagger.io) specification of the API. The command
-does not accept additional flags. It generates both the Swagger JSON and YAML. The generated files
-can be served from the API itself using a file server defined in the design with
-[Files](http://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) 
+`swagger` コマンドは、API の [Swagger](http://swagger.io) 仕様を生成します。
+コマンドは追加のフラグを受け付けません。 Swagger JSON とYAML の両方を生成します。
+生成されたファイルは、デザインの [Files](http://goa.design/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) で定義されたファイルサーバーを使用して API 自体から提供できます。
 
-## <a name="gen_schema"></a> JSON Schema: `goagen schema`
 
-The `schema` command generates a
-[Heroku-like](https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api) JSON
-hyper-schema representation of the API. It generates both the JSON as well as a controller that can
-be mounted on the goa service to serve it under `/schema.json`.
+## <a name="gen_schema"></a> JSON Schema：`goagen schema`
 
-## <a name="gen_gen"></a> Plugins: `goagen gen`
+`schema` コマンドは、API を表現する [Heroku ライク](https://blog.heroku.com/archives/2014/1/8/json_schema_for_heroku_platform_api) な JSON ハイパースキーマを生成します。
+goa サービスにマウントして `/schema.json` の下でそれを提供できるように JSON とコントローラの両方を生成します。
 
-The `gen` command makes it possible to invoke `goagen` plugins.
-This command accepts one flag:
+## <a name="gen_gen"></a> プラグイン：`goagen gen`
 
-* `--pkg-path=PKG-PATH` specifies the Go package import path to the plugin package.
+`gen` コマンドを使用すると、`goagen` プラグインを呼び出すことができます。 このコマンドは、1つのフラグを受け取ります：
 
-Refer to the [Generator Plugins](/extend/generators) section for details on goa plugins.
+* `--pkg-path=PKG-PATH` は、プラグインパッケージへの Go パッケージのインポートパスを指定します。
+
+goa プラグインの詳細については、[ジェネレータプラグイン](/extend/generators)のセクションを参照してください。
+
