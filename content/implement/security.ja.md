@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Security"
+title = "セキュリティ"
 weight = 9
 
 [menu.main]
@@ -9,68 +9,51 @@ identifier = "implement security"
 parent = "implement"
 +++
 
-Implementing security requires to first define the security schemes in the design, see
-[security](https://goa.design/design/security/) in the [Design](https://goa.design/design/) section
-for details.
+セキュリティを実装するには、最初にデザインでセキュリティスキームを定義する必要があります。
+詳しくは、[デザイン](https://goa.design/ja/design/) セクションの [セキュリティ](https://goa.design/ja/design/security/) を参照してください。
 
-## Service Security
+## サービスセキュリティ
 
-The service generated code define package functions for registering the security middlewares that
-actually implement the authorization. The functions are defined in the `app` package (unless the
-target package was overridden when running `goagen`) and follow naming pattern `UseXXXMiddleware`
-where `XXX` is the name of the security scheme, for example:
+生成されたサービスのコードは、実際に認証を実装するセキュリティミドルウェアを登録するためのパッケージ機能を定義します。
+関数は `UseXXXMiddleware` という命名パターンに従って `app` パッケージの中に（`goagen` の実行によって対象パッケージが上書きされていない限り）定義されます。ここで、`XXX` はセキュリティスキームの名前です。
+たとえば：
 
 ```go
 func UseAPIKeyMiddleware(service *goa.Service, middleware goa.Middleware)
 ```
 
-The middleware should either return an error (typically a
-[ErrUnauthorized](https://goa.design/reference/goa/#variables)) in case of authentication failure or
-proceed to calling the next handler in case of success.
-
-The generated code also includes functions for instantiating security scheme data structures that
-contains a copy of the information provided in the design. This contains information that can be
-leveraged by the security middleware implementations. These functions follow the naming pattern
-`NewXXXSecurity` where `XXX` is the name of the security scheme, for example:
+ミドルウェアは、認証に失敗した場合にエラー（通常は [ErrUnauthorized](https://goa.design/reference/goa/#variables)）を返すか、成功した場合には次のハンドラを呼び出す必要があります。
+生成されたコードは、デザインに提供された情報のコピーを含むセキュリティスキームのデータ構造をインスタンス化するための関数も含みます。
+これには、セキュリティミドルウェアの実装によって活用できる情報が含まれています。
+これらの関数は `NewXXXSecurity` という名前のパターンに従います。`XXX` はセキュリティスキームの名前です。たとえば：
 
 ```go
 func NewAPIKeySecurity() *goa.APIKeySecurity
 ```
 
-## Security Middlewares
+## セキュリティ ミドルウエア
 
-goa comes either complete or partial implementations of security middlewares for all security
-schemes.
+goa は、すべてのセキュリティスキームのセキュリティミドルウェアの完全、もしくは部分的な実装です。
 
-### Basic Auth
+### Basic 認証
 
-The
-[simplistic implementation](https://GitHub.com/goadesign/goa/blob/master/middleware/security/basicauth/basicauth.go)
-of a basic auth middleware can serve as a basis for more sophisticated implementations.
+Basic 認証ミドルウエアの[単純な実装](https://github.com/goadesign/goa/blob/master/middleware/security/basicauth/basicauth.go) はより高機能な実装の基礎として役立ちます。
 
-### API Key
+### API キー
 
-There is no security middleware implementation provided for the API key scheme as the validation
-simply consists of comparing two values. There is an
-[example implementation](https://GitHub.com/goadesign/examples/blob/master/security/api_key.go)
-though in the [examples](https://GitHub.com/goadesign/examples) GitHub repository.
 
-### JWT Key
+API キーのスキームの検証は単に2つの値を比較するだけなので、セキュリティミドルウェアの実装はありません。
+ただし、GitHub の [examples](https://github.com/goadesign/examples) リポジトリに[実装例](https://github.com/goadesign/examples/blob/master/security/api_key.go)があります。
 
-goa comes with a [complete implementation](https://goa.design/reference/goa/middleware/security/jwt/)
-for a JWT security middleware. The
-[JWT example](https://GitHub.com/goadesign/examples/blob/master/security/jwt.go) also demonstrates
-how to load keys to validate tokens.
+### JWT キー
+
+JWT セキュリティミドルウエアの[完全な実装](https://goa.design/reference/goa/middleware/security/jwt/)を備えています。
+[JWT の例](https://github.com/goadesign/examples/blob/master/security/jwt.go) がトークンを検証するためにどのようにキーをロードするかを示しています。
 
 ### OAuth2
 
-Implementing OAuth2 requires more work as OAuth2 is not simply an authentication mechanism, it's
-also a way to let third-parties impersonate service users. The
-[oauth2](https://GitHub.com/goadesign/oauth2) GitHub repository provides a framework for easily
-adding OAuth2 support to a goa service. Consult the
-[README](https://GitHub.com/goadesign/oauth2/blob/master/README.md) for additional information.
+OAuth2 の実装には、OAuth2 が単なる認証メカニズムではなく、サードパーティがサービスユーザーのふりをするための方法としても働くことを求められます。[oauth2](https://github.com/goadesign/oauth2) GitHub リポジトリは goa サービスに OAuth2 を簡単に追加するための枠組みを提供しています。詳細は [README](https://GitHub.com/goadesign/oauth2/blob/master/README.md) を参照してください。
 
-## Examples
+## セキュリティミドルウエアの例
 
-The [security examples](https://github.com/goadesign/examples/tree/master/security) demonstrate
-how to implement security middlewares for all the supported schemes.
+すべてのスキームをサポートするためのセキュリティミドルウエアの実装方法のデモが[セキュリティの例](https://github.com/goadesign/examples/tree/master/security)で示されています。

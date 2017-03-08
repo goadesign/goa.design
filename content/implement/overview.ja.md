@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Implementing goa Services"
+title = "goa のサービスを実装する"
 weight = 1
 
 [menu.main]
@@ -9,19 +9,17 @@ identifier = "implement overview"
 parent = "implement"
 +++
 
-Once the [design](/design/overview) of the API is completed and [goagen](/implement/goagen) has
-generated the low level handlers the next step consists of implementing the actual action handlers.
+APIの[デザイン](/design/overview)が完了し、[goagen](/implement/goagen) が低レベルハンドラを生成すると、次のステップは実際のアクションハンドラの実装です。
 
-`goagen` generates a controller interface for each resource. It also generates `MountXXXController`
-methods all in the `app` package. The controller mounting methods accept an instance of an object
-that implements the corresponding controller interface and take care of hooking up the low level
-HTTP router with the corresponding methods.
+`goagen` はリソースごとにコントローラーのインタフェースを生成します。
+また、`app` パッケージに `MountXXXController` メソッドを生成します。
 
-The glue code that binds the controller object methods with the HTTP router also takes care of
-instantiating the action specific [context](/implement/context) objects. These objects wrap the
-request state and make it available through properly typed struct fields. This means that the
-handler code does not need to cast or otherwise "bind" the context fields.
 
-The controller methods can also log and send the response using the context methods. The service
-implementation may also define [middleware](/implement/middleware) and mount them service-wide or on
-specific controllers.
+コントローラをマウンティングすることで、対応するコントローラインタフェースを実装するオブジェクトのインスタンスを受け入れ、対応するメソッドで低レベルの HTTP ルータを接続します。
+
+コントローラーオブジェクトメソッドと HTTP ルーターをバインドするコードも、アクション固有の[コンテキスト](/implement/context)オブジェクトをインスタンス化します。
+これらのオブジェクトはリクエストの状態をラップし、適切に型付けされた構造体フィールドを使用してこれを利用可能にします。
+つまり、ハンドラコードは、コンテキストフィールドをキャストしたり、"バインド"したりする必要がありません。
+
+コントローラメソッドは、コンテキストメソッドを使用してログをとったりレスポンスを送信することもできます。
+サービス実装は、[ミドルウェア](/implement/middleware)を定義し、それらをサービス全体に、または特定のコントローラにマウントすることもできます。
