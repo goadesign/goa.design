@@ -22,7 +22,7 @@ parent = "implement"
 func UseAPIKeyMiddleware(service *goa.Service, middleware goa.Middleware)
 ```
 
-ミドルウェアは、認証に失敗した場合にエラー（通常は [ErrUnauthorized](https://goa.design/reference/goa/#variables) を返すか、成功した場合には次のハンドラを呼び出す必要があります。
+ミドルウェアは、認証に失敗した場合にエラー（通常は [ErrUnauthorized](https://goa.design/reference/goa/#variables)）を返すか、成功した場合には次のハンドラを呼び出す必要があります。
 生成されたコードは、デザインに提供された情報のコピーを含むセキュリティスキームのデータ構造をインスタンス化するための関数も含みます。
 これには、セキュリティミドルウェアの実装によって活用できる情報が含まれています。
 これらの関数は `NewXXXSecurity` という名前のパターンに従います。`XXX` はセキュリティスキームの名前です。たとえば：
