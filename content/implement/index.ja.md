@@ -1,9 +1,8 @@
 +++
-title = "Implement"
+title = "実装する"
 layout = "sections"
 +++
 
-After design comes implementation. This section describes
-what's involved in implementing a goa service. The
-<a href="overview">overview</a> page
-presents the various pieces covered in the other pages.
+設計後に実装が行われます。
+このセクションでは、goa サービスの実装に関わる内容について説明します。
+<a href="overview">概要</a>には、他のページに記載されているさまざまな部分が示されています。
