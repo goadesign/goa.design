@@ -41,7 +41,6 @@ Decoder interface {
 ```
 
 デコーダは、`Reset` メソッドを追加した、リセット可能なデコーダインタフェースを実装することになるかもしれません：
-A decoder may also implement the resettable decoder interface which adds a `Reset` method:
 
 ```go
 // ResettableDecoder is used to determine whether or not a Decoder can be reset and thus
@@ -138,8 +137,6 @@ EncoderFunc func(w io.Writer) Encoder
 ### カスタムエンコーダの利用
 
 カスタムエンコーダを指定するための DSL 関数は [Produces](https://goa.design/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a) です。これは `Consumes` と同じ構文をサポートしています：
-
-it supports the same syntax as `Consumes`:
 
 ```go
 var _ = API("My API", func() {
