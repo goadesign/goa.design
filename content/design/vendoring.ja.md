@@ -1,6 +1,6 @@
 +++
 date = "2016-01-30T11:01:06-05:00"
-title = "Vendoring goa Services"
+title = "goa サービスのベンダリング"
 weight = 5
 
 [menu.main]
