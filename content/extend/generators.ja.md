@@ -23,7 +23,6 @@ func Generate() ([]string, error)
 この関数は、成功時には生成されたファイル名のリストを、それ以外の場合には解説的なエラーを返します。ジェネレータは、対応する DSL パッケージから直接 DSL 出力データ構造にアクセスします。例えば goa API DSL は、ビルドアップ API 定義を含む [APIDefinition](http://goa.design/reference/goa/design.html#type-apidefinition-a-name-design-apidefinition-a:83772ba7ad0304b1562d08f190539946) 型の `Design` パッケージ変数を公開します。
 
 ### goa API DSL のためのジェネレータの作成
-Writing Generators for the goa API DSL
 
 goa DSL はまた、ユーザに定義されたものではなく、エンジンによって動的に生成されたメディアタイプのセットを含む [GeneratedMediaTypes](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) を [Design](http://goa.design/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) パッケージ変数の上に公開します (メディアタイプが [CollectionOf](http://goa.design/reference/goa/design/apidsl.html#func-collectionof-a-name-apidsl-collectionof-a:aab4f9d6f98ed71f45bd470427dde2a7) でインラインで使用されている場合に発生します) 。
 
