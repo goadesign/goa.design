@@ -53,7 +53,6 @@ var _ = Resource("Bottle", func() {
 ```
 
 DSL エンジンパッケージは、メタデータ定義データ構造を定義します。
--
 [MetadataDefinition](https://godoc.org/github.com/goadesign/goa/dslengine#MetadataDefinition).
 
 #### 成果物の書き出し
