@@ -16,7 +16,7 @@ goa プラグインは、新しい DSL と付随するジェネレータを作�
 
 ## DSL の拡張
 
-goa DSL は、*定義*と呼ばれる再帰的なデータ構造を構築する Go パッケージ関数で構成されています。これらの定義の根源は [Register](http://goa.design/reference/goa/dslengine/#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133) 関数を介して goa *dslengine* パッケージに記録する必要があります。定義の実際の内容は完全にあなた次第です。ジェネレータはそれらを使用して成果物を作成するので、生成を行うために必要なすべての情報を含める必要があります。
+goa DSL は、*定義* と呼ばれる再帰的なデータ構造を構築する Go パッケージ関数で構成されています。これらの定義の根源は [Register](http://goa.design/reference/goa/dslengine/#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133) 関数を介して goa *dslengine* パッケージに記録する必要があります。定義の実際の内容は完全にあなた次第です。ジェネレータはそれらを使用して成果物を作成するので、生成を行うために必要なすべての情報を含める必要があります。
 
 ### 最初の露出
 
@@ -187,7 +187,7 @@ func (m *ModelDefinition) Finalize() {
 
 #### DSL ルート
 
-新しい　DSL　を作成するときのパズルの最後のピースは、 DSL エンジンが実行する DSL *ルート*を定義することです。ルートは [Register](http://goa.design/reference/goa/dslengine.html#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133) 関数を使用して `dslengine` パッケージで登録する必要があります。 DSL ルートは [Root](http://goa.design/reference/goa/dslengine.html#type-root-a-name-dslengine-root-a:1e0eb94feca2c8be53d3bd77a1934133) インタフェースを実装しています。このインタフェースは、エンジンが実行のための定義を反復処理するために使用する `IterateSets` メソッドを公開します。 `IterateSets` は定義のスライスを返します。異なるタイプの定義を実行する順番を制御できます。
+新しい　DSL　を作成するときのパズルの最後のピースは、 DSL エンジンが実行する DSL *ルート* を定義することです。ルートは [Register](http://goa.design/reference/goa/dslengine.html#func-register-a-name-dslengine-register-a:1e0eb94feca2c8be53d3bd77a1934133) 関数を使用して `dslengine` パッケージで登録する必要があります。 DSL ルートは [Root](http://goa.design/reference/goa/dslengine.html#type-root-a-name-dslengine-root-a:1e0eb94feca2c8be53d3bd77a1934133) インタフェースを実装しています。このインタフェースは、エンジンが実行のための定義を反復処理するために使用する `IterateSets` メソッドを公開します。 `IterateSets` は定義のスライスを返します。異なるタイプの定義を実行する順番を制御できます。
 
 上記の例の DSL を拡張して、ハードコードされたリストを持たずにモデルタイプを定義できるようにしたとします。おそらく型定義はモデル定義の前に実行されなければならないでしょう。これは DSL ルートの `IterateSets` メソッドで最初にすべての型定義を返し、その後すべてのモデル定義を返すことで実現できます。
 
