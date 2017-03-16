@@ -37,6 +37,7 @@ go install github.com/goadesign/goa/goagen
 * [`swagger`](#gen_swagger): API の Swagger 仕様書を生成します。
 * [`schema`](#gen_schema): API の Hyper-schema JSON を生成します。
 * [`gen`](#gen_gen): サードパーティ製のジェネレーターを起動します。
+* [`controller`](#gen_controller): 各リソースごとにコントローラーのひな形を生成します。
 * `bootstrap`: `app`、`main`、`client`、`swagger` の各ジェネレータを呼び出します。
 
 ## goagen での作業： Scaffold（足場） vs. 生成されるコード
@@ -194,3 +195,13 @@ goa サービスにマウントして `/schema.json` の下でそれを提供で
 
 goa プラグインの詳細については、[ジェネレータプラグイン](/extend/generators)のセクションを参照してください。
 
+## <a name="gen_controller"></a> Scaffolding（足場）：`goagen controller`
+
+`controller` コマンドは、デザインパッケージに定義された各リソースコントローラーに対して、デフォルトの（空の）実装を生成します。
+デフォルトでは、このコマンドはファイルが出力ディレクトリに存在しない場合にのみ生成します。
+このコマンドは次のフラグをとります：
+
+* `--force` 同名のファイルがすでに存在していてる場合でもファイルを生成します。
+* `--res` 強制的にリソースの名前を指定します。
+* `--pkg` 生成されるコントローラパッケージの名前を指定します。デフォルトは `controller` です。
+* `--app-pkg` コントローラをサポートするコード（コンテキスト、メディアタイプ、ユーザタイプなど）を含む Go パッケージの名前を設定します。デフォルトは `app` です。
