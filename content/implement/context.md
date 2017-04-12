@@ -13,7 +13,7 @@ parent = "implement"
 The request context is the data structure provided to all goa controller action methods as first
 parameter. It leverages the [work done](https://blog.golang.org/context) by the Go team around
 passing contexts across interface boundaries by wrapping the
-[context.Context](https://godoc.org/golang.org/x/net/context#Context) interface in a generated
+[context.Context](https://golang.org/pkg/context/#Context) interface in a generated
 struct.
 
 goa leverages code generation to define *action specific* fields that provide access to the request

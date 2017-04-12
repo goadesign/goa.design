@@ -274,7 +274,6 @@ $ govendor list
  e  github.com/satori/go.uuid
  e  github.com/spf13/cobra
  e  github.com/spf13/pflag
- e  golang.org/x/net/context
  e  golang.org/x/net/websocket
 pl  github.com/your/pkg
  l  github.com/your/pkg/app
