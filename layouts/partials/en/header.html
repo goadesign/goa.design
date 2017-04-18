@@ -7,7 +7,7 @@
     <!--<![endif]-->
 
     <head>
-        <title>goa :: Design-first API Generation</title>
+        <title>{{ if not .IsHome }}{{ print .Title " · " }}{{ end }}goa :: Design-first API Generation</title>
 
         <!-- Basic meta tags -->
         <meta charset="utf-8">
