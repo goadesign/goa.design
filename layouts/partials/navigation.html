@@ -1,35 +1,5 @@
-<header id="header">
-	<nav class="navbar">
-		<div class="navbar-inner">
-			<div class="container">
-				<a class="brand" href="/">
-					<img alt="goa" width="100px" height="100px" src="/img/goa-logo.svg"/>
-				</a>
-				<ul class="nav">
-
-					{{ range .Site.Menus.main }}
-					<li class="dropdown">
-						<a href="{{ .URL }}" title="{{ .Name }}">{{ .Name }}</a>
-						{{ if .HasChildren }}
-						<ul>
-							{{ range .Children }}
-							<li><a href="{{ .URL }}" title="{{ .Name }}">{{ .Name }}</a></li>
-							{{ end }}
-						</ul>
-						{{ end }}
-					</li>
-					{{ end }}
-
-					<li>
-						<input id="search" class="animated" type="search" placeholder="Search">
-						<ul id="results"></ul>
-					</li>
-
-					<li><a href="/reference" title="GoDoc">GoDoc <i class="fa fa-book"></i></a></li>
-					<li><a href="https://github.com/goadesign/goa" title="GitHub"><span style="display:none">Github</span> <i class="fa fa-github"></i></a></li>
-                    {{ if .IsPage }}<li><a href="https://github.com/goadesign/goa.design/edit/master/content/{{ trim .RelPermalink "/" }}.md" title="Edit"><i class="fa fa-edit"></i></a></li>{{ end }}
-				</ul>
-			</div>
-		</div>
-	</nav>
-</header>
+{{ if eq "ja" .Lang }}
+{{ template "partials/ja/navigation.html" . }}
+{{ else }}
+{{ template "partials/en/navigation.html" . }}
+{{ end }}
