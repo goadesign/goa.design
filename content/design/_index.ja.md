@@ -1,6 +1,5 @@
 +++
 title = "デザイン"
-layout = "sections"
 +++
 
 デザインのセクションでは、<a href="overview">goa API デザイン言語</a>について説明します。

@@ -1,6 +1,5 @@
 +++
 title = "Extend"
-layout = "sections"
 +++
 
 goa is extensible with plugins both for

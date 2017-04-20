@@ -10,7 +10,7 @@
 # - "all" default target that runs all the above in order
 
 DEPEND=\
-	github.com/raphael/hugo \
+	github.com/spf13/hugo \
 	github.com/davecheney/godoc2md \
 	github.com/goadesign/gorma
 

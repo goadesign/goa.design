@@ -14,7 +14,6 @@
 		{{ range $key, $value := .Site.Sections }}
 		{{ if eq $key $section }}
 		{{ range $index, $element := sort $value "Weight" "desc"}}
-		{{ if lt $index (sub (len $value) 1) }}
 			<article class="post">
 				<div class="entry-body">
 					<a href="{{ $element.Page.Permalink }}">
@@ -45,7 +44,6 @@
 
 			</article><!-- end item -->
 		<hr />
-		{{ end }}
 		{{ end }}
 		{{ end }}
 		{{ end }}

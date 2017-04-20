@@ -1,6 +1,5 @@
 +++
 title = "Implement"
-layout = "sections"
 +++
 
 After design comes implementation. This section describes

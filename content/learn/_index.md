@@ -1,6 +1,5 @@
 +++
 title = "Learn"
-layout = "sections"
 +++
 
 If you're new to goa start by going through the

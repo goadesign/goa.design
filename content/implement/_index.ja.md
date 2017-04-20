@@ -1,6 +1,5 @@
 +++
 title = "実装する"
-layout = "sections"
 +++
 
 設計後に実装が行われます。
