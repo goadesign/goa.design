@@ -17,9 +17,7 @@
           {{ range $key, $value := .Site.Sections }}
           {{ if eq $key $section }}
           {{ range $index, $element := $value }}
-          {{ if gt $index 0 }}
           <li><a href="{{ $element.Page.Permalink }}">{{ $element.Page.Title}}</a></li> 
-          {{ end }}
           {{ end }} 
           {{ end }}
           {{ end }}
