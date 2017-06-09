@@ -12,17 +12,16 @@
 		<div class="row" id="blog">
 			<div class="span12">
 				{{ .Content  }}
-        <ul id="list"> 
-          {{ $section := .Section }}
-          {{ range $key, $value := .Site.Sections }}
-          {{ if eq $key $section }}
-          {{ range $index, $element := $value }}
-          <li><a href="{{ $element.Page.Permalink }}">{{ $element.Page.Title}}</a></li> 
-          {{ end }} 
-          {{ end }}
-          {{ end }}
-        </ul> 
-	  	</div>
+				<ul id="list"> 
+					{{ $section := .Section }}
+					{{ $lang := .Lang }}
+					{{ range $page := sort $.Site.AllPages "Weight" "asc" }}
+					{{ if and (eq .Lang $lang) (eq .Section $section) .IsPage }}
+					<li><a href="{{ $page.Permalink }}">{{ $page.Title}}</a></li> 
+					{{ end }}
+					{{ end }}
+				</ul> 
+			</div>
 		</div>
 	</section>
 	{{ partial "footer.html" . }}
