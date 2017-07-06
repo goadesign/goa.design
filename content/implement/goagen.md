@@ -239,6 +239,16 @@ if they don't exist in the output directory. This command accepts the following 
 * `--force` causes the files to be generated even if files with the same name already exist, overwriting the files with new empty scaffolding.
 * `--regen` causes the scaffolding to be regenerated in existing files, leaving controller implementations in place. See the `main` documentation for more details.
 * `--res` specifies the name of the resource and is compulsory.
-* `--pkg` specifies the name of the generated controller package, defaults to `controller`.
+* `--pkg` specifies the name of the generated controller package, the behavior is as follows:
+    * `--out` is not specified (default)
+        * `--pkg` is not specified (default)
+            * the package is generated as `main`. (This behavior matches the `main` and `bootstrap` commands.)
+        * `--pkg` is specifield (`bar`)
+            * the package is generated as `bar`.
+    * `--out` is specified (`foo`)
+        * `--pkg` is not specified (default)
+            * the package is generated as `foo`.
+        * `--pkg` is specifield (`bar`)
+            * the package is generated as `bar`.
 * `--app-pkg` sets the name of the generated Go package containing the controllers
 supporting code (contexts, media types, user types etc.), defaults to `app`.
