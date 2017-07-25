@@ -1,5 +1,5 @@
 +++
-date = "2016-01-30T11:01:06-05:00"
+date = "2017-07-20T11:01:06-05:00"
 title = "Client"
 weight = 9
 
@@ -9,23 +9,25 @@ identifier = "implement client"
 parent = "implement"
 +++
 
-Once the API dsl is used to define types and resources, goagen automatically generates a
-native go client, and optionally a javascript client based on the [axios](ihttps://github.com/mzabriskie/axios) 
-javascript package. 
+`goagen` can generate a Go client package from an API design. The client package makes it
+possible to make requests programmatically to the service implemented using the same design.
+`goagen` also generates a client command line tool which uses the generated package to 
+make the requests. Finally, `goagen` can also generate a JavaScript client library based 
+on the [axios JavaScript library](https://github.com/mzabriskie/axios).
 
 ## Native Go Client
 
-In order to generate the go client `goagen client -d [design_path]` must be run. It is
-generates automatically in the bootstrap command as well. 
+In order to generate the Go client, `Goagen client -d [design_path]` must be run. It is
+generated automatically during the bootstrap command as well. 
 
-The native go client makes a few different things to make consuming the API easier...
+The native Go client makes a few different things to make consuming the API easier...
 
 #### A Payload struct (if applicable)
 
-If the endpoint you are consuming requires a payload, then it will auto generate a payload
-struct that mimics the type that is defined in the design package...
+The generated code contains a payload struct for each endpoint that requires a payload.
+The struct follows the definition provided in the API design.
 
-```go
+```Go
 // RateBottlePayload is the bottle rate action payload.
 type RateBottlePayload struct {
 	Rating int `form:"rating" json:"rating" xml:"rating"`
@@ -34,10 +36,9 @@ type RateBottlePayload struct {
 
 #### A Path Generator
 
-The path generator will take any url params that are defined in the definition and return
-the proper path that the request is supposed to go to...
+The path generator builds the request path from the URL parameters defined in the design.
 
-```go
+```Go
 // RateBottlePath computes a request path to the rate action of bottle.
 func RateBottlePath(accountID int, bottleID int) string {
 	param0 := strconv.Itoa(accountID)
@@ -49,10 +50,10 @@ func RateBottlePath(accountID int, bottleID int) string {
 
 #### A method that creates the request and executes it
 
-If there is no need to modify the request, then you can simply call the function that was
-made with the endpoint name...
+If there is no need to modify the request, then the function that was made with the
+endpoint name can be called directly...
 
-```go
+```Go
 // RateBottle makes a request to the rate action endpoint of the bottle resource
 func (c *Client) RateBottle(ctx context.Context, path string, payload *RateBottlePayload, contentType string) (*http.Response, error) {
 	req, err := c.NewRateBottleRequest(ctx, path, payload, contentType)
@@ -65,10 +66,11 @@ func (c *Client) RateBottle(ctx context.Context, path string, payload *RateBottl
 
 #### A method that creates the request and returns it
 
-If there is some need to alter the request in some way before executing it, you can get
-the request and then handle executing it later...
+If there is a need to alter the request in some way before executing it, the
+`New[name]Request` function can be used to get the request and then it can be executed at
+a later time.
 
-```go
+```Go
 // NewRateBottleRequest create the request corresponding to the rate action endpoint of the bottle resource.
 func (c *Client) NewRateBottleRequest(ctx context.Context, path string, payload *RateBottlePayload, contentType string) (*http.Request, error) {
 	var body bytes.Buffer
@@ -98,12 +100,12 @@ func (c *Client) NewRateBottleRequest(ctx context.Context, path string, payload 
 }
 ```
 
-#### A method which decodes the http response to a goa type
+#### A method which decodes the http response to a Goa type
 
-If there is data returned in the form of a `MediaType` then goa will also generate code to
+If there is data returned in the form of a `MediaType` then Goa will also generate code to
 take the http response and convert it back to a native data type...
 
-```go
+```Go
 // DecodeAccount decodes the Account instance encoded in resp body.
 func (c *Client) DecodeAccount(resp *http.Response) (*Account, error) {
 	var decoded Account
@@ -112,14 +114,14 @@ func (c *Client) DecodeAccount(resp *http.Response) (*Account, error) {
 }
 ```
 
-### Example:
+### Putting it all together:
 
-```go
-goaClientDoer := goaclient.HTTPClientDoer(http.DefaultClient)
-c := client.New(goaClientDoer)
+```Go
+GoaClientDoer := Goaclient.HTTPClientDoer(http.DefaultClient)
+c := client.New(GoaClientDoer)
 c.Host = "127.0.0.1:8081"
 
-// clientpackage is imported from the goagen generated client package
+// clientpackage is imported from the Goagen generated client package
 createAccountPayload := client.CreateAccountPayload{
     Name: "luvs2drink",
 }
@@ -137,7 +139,7 @@ if err != nil {
 Likewise if there was an endpoint that returned a `MediaType` to the caller, the response
 could be decided using the generated `MediaType` decoder methods.
 
-```go
+```Go
 // assuming the client object is already instantiated...
 
 path := c.ListBottlePath(accountID)
@@ -159,36 +161,36 @@ for _, bottle := range bottleCollection {
 }
 ```
 
-#### Authentication stuff(?)
+#### Security
 
-The generated go client includes signers that will set the proper `Authentication` headers
-to the request if needed, all you need to go is provide the client and the signers with
-the proper authentication credentials and it will take care of the rest based on the
+The generated Go client includes signers that will set the proper `Authentication` headers
+to the request if needed, all that needs to be done is provide the client and the signers with
+the proper authentication credentials and the client will take care of the rest based on the
 design of the API...
 
-```go
-goaClientDoer := goaclient.HTTPClientDoer(http.DefaultClient)
-c := client.New(goaClientDoer)
+```Go
+GoaClientDoer := Goaclient.HTTPClientDoer(http.DefaultClient)
+c := client.New(GoaClientDoer)
 c.Host = "127.0.0.1:8081"
 
-c.SetSigninBasicAuthSigner(&goaclient.BasicSigner{
+c.SetSigninBasicAuthSigner(&Goaclient.BasicSigner{
     Password: "drunkPasswordlsdjalsfj",
     Username: "luvs2drink",
 })
 
 // or if you had used JWT authentication instead of BasicAuth...
 
-staticToken := &goaclient.StaticToken{
+staticToken := &Goaclient.StaticToken{
     Type:  "Bearer",
-    Value: "sldkjdfsjdfljsdfl.slkdfjdsljflsdjfljdfjsdlfj.sdljasldklsajdsalkdj",
+    Value: "sldkjdfsjdfljsdfl.slkdfjDSLjflsdjfljdfjsdlfj.sdljasldklsajdsalkdj",
     // your JWT should look something like this...
 }
 
-tokenSource := &goaclient.StaticTokenSource{
+tokenSource := &Goaclient.StaticTokenSource{
     StaticToken: staticToken,
 }
 
-c.SetJWTSigner(&goaclient.JWTSigner{
+c.SetJWTSigner(&Goaclient.JWTSigner{
     TokenSource: tokenSource,
 })
 
@@ -203,7 +205,7 @@ log.Println(resp.StatusCode)
 
 ## Axios Javascript Client
 
-In order to generate the javascript client `goagen js -d [design_path]` must be run. The
-javascript client is not automatically generated in the `bootstrap`command.
+In order to generate the Javascript client `Goagen js -d [design_path]` must be run. The
+Javascript client is not automatically generated in the `bootstrap`command.
  
 
