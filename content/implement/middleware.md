@@ -46,13 +46,13 @@ Other middlewares listed below are provided as separate Go packages.
 
 #### Gzip
 
-Package [gzip](https://goa.design/reference/goa/middleware/gzip.html) contributed by
+Package [gzip](https://goa.design/reference/goa/middleware/gzip) contributed by
 [@tylerb](https://github.com/tylerb) adds the ability to compress response bodies using gzip format
 as specified in RFC 1952.
 
 #### Security
 
-package [security](https://goa.design/reference/goa/middleware/security.html) contains middleware
+package [security](https://goa.design/reference/goa/middleware/security) contains middleware
 that should be used in conjunction with the security DSL.
 
 ## Writing Your Own
