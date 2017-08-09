@@ -35,11 +35,11 @@ parent = "implement"
 
 #### Gzip
 
-[@tylerb](https://github.com/tylerb) 氏によって提供されている [gzip](https://goa.design/reference/goa/middleware/gzip.html) パッケージは RFC 1952で指定された gzip 形式を使用して、レスポンスボディを圧縮する機能を追加します。
+[@tylerb](https://github.com/tylerb) 氏によって提供されている [gzip](https://goa.design/reference/goa/middleware/gzip) パッケージは RFC 1952で指定された gzip 形式を使用して、レスポンスボディを圧縮する機能を追加します。
 
 #### セキュリティ
 
-[security](https://goa.design/reference/goa/middleware/security.html) パッケージは、セキュリティ DSL と合わせて使うミドルウエアを含んでいます。
+[security](https://goa.design/reference/goa/middleware/security) パッケージは、セキュリティ DSL と合わせて使うミドルウエアを含んでいます。
 
 ## あなた自身で書くこと
 
