@@ -62,7 +62,7 @@ var (
 )
 
 func servePackage(w http.ResponseWriter, r *http.Request) {
-	branch := "master"
+	branch := "v2" // default to v2
 	if matches := versionRegexp.FindAllStringSubmatch(r.URL.Path, 1); len(matches) == 1 {
 		branch = matches[0][1]
 	}
