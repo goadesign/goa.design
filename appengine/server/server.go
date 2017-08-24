@@ -171,8 +171,8 @@ const importT = `<!DOCTYPE html>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
   <!-- Go Imports -->
-  <meta name="go-import" content="goa.design/goa{{ if not (eq . "master") }}.{{ . }}{{ end }} git https://{{ if not (eq . "master") }}gopkg.in{{ else }}github.com{{ end }}/goadesign/goa{{ if not (eq . "master") }}.{{ . }}{{ end }}">
-  <meta name="go-source" content="goa.design/goa{{ if not (eq . "master") }}.{{ . }}{{ end }} _ https://github.com/goadesign/goa/tree/{{ . }}{/dir} https://github.com/goadesign/goa/blob/{{ . }}{/dir}/{file}#L{line}">
+  <meta name="go-import" content="goa.design/goa git https://gopkg.in/goadesign/goa.v2">
+  <meta name="go-source" content="goa.design/goa _ https://github.com/goadesign/goa/tree/v2/{/dir} https://github.com/goadesign/goa/blob/v2{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; https://goa.design">
 
 </head>
