@@ -60,7 +60,7 @@ var (
 
 	// pluginsImportTmp is the template used to render the go-import meta tag response for
 	// goa plugin packages.
-	pluginsImportTmpl = template.Must(template.New("pluginsImport").Parse(pluginssImssportT))
+	pluginsImportTmpl = template.Must(template.New("pluginsImport").Parse(pluginsImportT))
 
 	// versionRegexp captures the version from the URL
 	versionRegexp = regexp.MustCompile(`goa\.(v[1-9]+[0-9]*)(?:$|/)`)
