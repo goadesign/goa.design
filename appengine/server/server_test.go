@@ -35,7 +35,7 @@ func TestRedirect(t *testing.T) {
 		redirectTo = "https://www.example.com"
 		code       = http.StatusFound
 	)
-	handler := redirectHandler(redirectTo, code)
+	handler := redirectHandler(redirectTo, code, true)
 	urls := []string{"/", "/page", "/page/", "/page?with=query"}
 	for _, u := range urls {
 		req, err := testInstance.NewRequest("GET", u, nil)

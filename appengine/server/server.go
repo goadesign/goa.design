@@ -44,6 +44,7 @@ func init() {
 		http.Handle(host, redirectHandler(redir, http.StatusMovedPermanently, false))
 	}
 	http.HandleFunc(config.ImportRoot, servePackage)
+	http.HandleFunc(config.PluginsImportRoot, servePackage)
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
 	http.HandleFunc("/_ah/warmup", handleWarmup)
@@ -57,11 +58,21 @@ var (
 	// importTmp is the template used to render the go-import meta tag response.
 	importTmpl = template.Must(template.New("import").Parse(importT))
 
+	// pluginsImportTmp is the template used to render the go-import meta tag response for
+	// goa plugin packages.
+	pluginsImportTmpl = template.Must(template.New("pluginsImport").Parse(pluginssImssportT))
+
 	// versionRegexp captures the version from the URL
 	versionRegexp = regexp.MustCompile(`goa\.(v[1-9]+[0-9]*)(?:$|/)`)
 )
 
 func servePackage(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, "/plugins") {
+		if err := pluginsImportTmpl.Execute(w, nil); err != nil {
+			panic(err.Error())
+		}
+		return
+	}
 	branch := "v2" // default to v2
 	if matches := versionRegexp.FindAllStringSubmatch(r.URL.Path, 1); len(matches) == 1 {
 		branch = matches[0][1]
@@ -173,6 +184,22 @@ const importT = `<!DOCTYPE html>
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/goa git https://gopkg.in/goadesign/goa.v2">
   <meta name="go-source" content="goa.design/goa _ https://github.com/goadesign/goa/tree/v2/{/dir} https://github.com/goadesign/goa/blob/v2{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; https://goa.design">
+
+</head>
+<body>
+</body>
+</html>
+`
+
+const pluginsImportT = `<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Go Imports -->
+  <meta name="go-import" content="goa.design/plugins git https://github.com/goadesign/plugins">
+  <meta name="go-source" content="goa.design/plugins _ https://github.com/goadesign/plugins/tree/master/{/dir} https://github.com/goadesign/plugins/blob/master{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; https://goa.design">
 
 </head>
