@@ -67,7 +67,7 @@ var (
 )
 
 func servePackage(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, "/plugins") {
+	if strings.Contains(r.URL.Path, "/plugins") {
 		if err := pluginsImportTmpl.Execute(w, nil); err != nil {
 			panic(err.Error())
 		}
