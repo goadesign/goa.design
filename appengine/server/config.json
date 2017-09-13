@@ -10,7 +10,7 @@
   },
   "webroot": "/",
   "importroot": "/goa",
-  "pluginsimportroot": "/plugins",
+  "pluginsimportroot": "/plugins/",
   "index": "index.html",
   "hook": "/-/hook/gcs",
   "gcs": "https://storage.googleapis.com",
