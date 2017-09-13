@@ -47,11 +47,6 @@ func init() {
 	http.HandleFunc(config.PluginsImportRoot, servePackage)
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
-	http.HandleFunc("/_ah/warmup", handleWarmup)
-}
-
-func handleWarmup(w http.ResponseWriter, r *http.Request) {
-	// nothing to do here
 }
 
 var (
