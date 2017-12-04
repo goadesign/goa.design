@@ -35,7 +35,7 @@ func Generate() ([]string, error) {
 	api := design.Design
 	// ... use api to generate stuff
 	genMedia := design.GeneratedMediaTypes
-	// ... user genMedia to generate stuff
+	// ... use genMedia to generate stuff
 }
 ```
 `Generate` メソッドは、 `APIDefinition` `IterateXXX` メソッドを利用して API リソース、メディアタイプ、およびタイプを反復処理して、関数の2つの呼び出し間で順序が変わらないことを保証します (設計が変更されていなくても異なる出力を生成します) 。
