@@ -48,7 +48,7 @@ func Generate() ([]string, error) {
 	api := design.Design
 	// ... use api to generate stuff
 	genMedia := design.GeneratedMediaTypes
-	// ... user genMedia to generate stuff
+	// ... use genMedia to generate stuff
 }
 ```
 The `Generate` method can take advantage of the `APIDefinition` `IterateXXX` methods to iterate
