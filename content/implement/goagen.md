@@ -252,3 +252,57 @@ if they don't exist in the output directory. This command accepts the following 
             * the package is generated as `bar`.
 * `--app-pkg` sets the name of the generated Go package containing the controllers
 supporting code (contexts, media types, user types etc.), defaults to `app`.
+
+## Workaround when Subversion .svn directories are deleted by goagen executable
+
+When generating new code with goagen, and using Subversion < 1.7, all hidden repository metadata directories with name .svn were also deleted. Because of that, repository directory becomes unusable. For Subversion version >= 1.7 repository metadata is stored only in one root .svn directory, as by Git, and in that case this issue is not occuring.
+As workaround, I am calling goagen from start.bat file (on Windows):
+
+```
+rmdir /Q /S gentemp
+mkdir gentemp\app\.svn
+mkdir gentemp\app\test\.svn
+mkdir gentemp\client\.svn
+mkdir gentemp\swagger\.svn
+mkdir gentemp\tool\cli\.svn
+
+xcopy /s app\.svn\*.* gentemp\app\.svn
+xcopy /s app\test\.svn\*.* gentemp\app\test\.svn
+xcopy /s client\.svn\*.* gentemp\client\.svn
+xcopy /s swagger\.svn\*.* gentemp\swagger\.svn
+xcopy /s tool\cli\.svn\*.* gentemp\tool\cli\.svn
+
+goagen bootstrap -d myprojects/myapi/design
+
+mkdir app\.svn
+xcopy /s gentemp\app\.svn\*.* app\.svn
+mkdir app\.svn\tmp\prop-base
+mkdir app\.svn\tmp\props
+mkdir app\.svn\tmp\text-base
+
+mkdir app\test\.svn
+xcopy /s gentemp\app\test\.svn\*.* app\test\.svn
+mkdir app\test\.svn\tmp\prop-base
+mkdir app\test\.svn\tmp\props
+mkdir app\test\.svn\tmp\text-base
+
+mkdir client\.svn
+xcopy /s gentemp\client\.svn\*.* client\.svn
+mkdir client\.svn\tmp\prop-base
+mkdir client\.svn\tmp\props
+mkdir client\.svn\tmp\text-base
+
+mkdir swagger\.svn
+xcopy /s gentemp\swagger\.svn\*.* swagger\.svn
+mkdir swagger\.svn\tmp\prop-base
+mkdir swagger\.svn\tmp\props
+mkdir swagger\.svn\tmp\text-base
+
+mkdir tool\cli\.svn
+xcopy /s gentemp\tool\cli\.svn\*.* tool\cli\.svn
+mkdir tool\cli\.svn\tmp\prop-base
+mkdir tool\cli\.svn\tmp\props
+mkdir tool\cli\.svn\tmp\text-base
+
+rmdir /Q /S gentemp
+```
