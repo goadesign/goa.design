@@ -261,7 +261,7 @@ media types:
 * **Links** represent related media types that should be rendered embedded in the response. The view
   used to render links is `link` which means that media types being linked to must define a `link`
   view. Links are listed under the `Links` function in the media type definition. Views may then
-  use the special `Links` function to render all the links.
+  use the special `links` attribute to render all the links.
 
 Here is an example of a media type definition:
 
@@ -279,7 +279,7 @@ var Results = MediaType("vnd.application/goa.results", func() {
     })
     View("default", func() {   // Defines the default view
         Attribute("value")     // Includes the "value" field in the default view
-        Links()                // And render links
+        Attribute("links")     // And render links
     })
     View("extended", func() {  // Defines the extended view
         Attribute("value")     // Includes the value field
