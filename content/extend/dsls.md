@@ -270,11 +270,17 @@ var dslRoot = &Root{}
 
 // IterateSets first returns the type definitions then the model definitions.
 func (r *Root) IterateSets(it dslengine.SetIterator) {
-	err := it(r.Types)
-	if err != nil {
-		return // The errors will be reported to the user by the DSL engine.
+	var types dslengine.DefinitionSet
+	for _, v := range r.Types {
+		types = append(types, v)
 	}
-	it(r.Models)
+	err := it(types)
+	
+	var models dslengine.DefintionSet
+	for _, v := range r.Models {
+		models = append(models, v)
+	}
+	it(models)
 }
 ```
 Tying it all together the DSL functions would initialize the `dslRoot` variable, for example:
