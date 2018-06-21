@@ -2,9 +2,9 @@
   "name": "goa-design",
   "version": "0.1.0",
   "devDependencies": {
-    "conzole": "^0.2.0",
-    "grunt": "^0.4.5",
-    "string": "^3.3.3",
-    "toml": "^2.3.3"
+    "conzole": "latest",
+    "grunt": "latest",
+    "string": "latest",
+    "toml": "latest"
   }
 }
