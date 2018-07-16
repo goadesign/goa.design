@@ -2,10 +2,10 @@ language: go
 go:
 - 1.10.x
 node_js:
-- '0.11'
+- '10.6.0'
 sudo: required
 install:
-- nvm install 0.11
+- nvm install 10.6.0
 - npm install grunt-cli -g
 - npm install --save-dev grunt string toml conzole
 - wget https://github.com/spf13/hugo/releases/download/v0.20.2/hugo_0.20.2_Linux-64bit.tar.gz
