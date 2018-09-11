@@ -23,8 +23,8 @@ install:
 	@cd tools/godoc2md && export GO111MODULE=on && go get ./... && go install
 
 docs:
-	@mdc --exclude public         github.com/goadesign/goa   content/reference
-	@mdc --exclude public,example github.com/goadesign/gorma content/reference
+	@mdc --exclude public --branch v1 github.com/goadesign/goa content/v1/reference
+	@mdc --exclude public,example github.com/goadesign/gorma content/v1/reference
 
 linkcheck:
 	@cd tools/linkcheck && go install

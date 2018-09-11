@@ -1,6 +1,6 @@
 name = "goa"
 baseurl = "https://goa.design/"
-description = "goa - Design First. Then Win."
+description = "goa - Design First."
 homepage = "https://goa.design"
 license = "MIT"
 licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
@@ -13,8 +13,8 @@ pygmentsstyle = "friendly"
 pygmentsuseclasses = false
 
 [author]
-name = "goa contributors"
-homepage = "https://github.com/goadesign"
+name = "Raphael Simon and the goa contributors"
+homepage = "https://github.com/goadesign/goa/graphs/contributors"
 
 [taxonomies]
 tag = "tags"
@@ -25,18 +25,18 @@ DefaultContentLanguage = "en"
 
 [languages.en] 
 weight = 1 
-title = "goa - Design First. Then Win." 
+title = "goa - Design First." 
 languageName = "English"
  
 [languages.ja] 
 weight = 2 
-title = "goa - はじめにデザインを。そして成功を。" 
+title = "goa - はじめにデザインを。"
 languageName = "日本語"
 
 [[languages.en.menu.main]]
 name = "Learn"
 identifier = "learn"
-url = "/learn/"
+url = "/learn"
 weight = 1
 
 [[languages.en.menu.main]]
@@ -54,7 +54,7 @@ weight = 3
 [[languages.en.menu.main]]
 name = "Extend"
 identifier = "extend"
-url = "/extend/"
+url = "/extend"
 weight = 4
 
 [[languages.en.menu.main]]
@@ -84,11 +84,71 @@ weight = 3
 [[languages.ja.menu.main]]
 name = "拡張する"
 identifier = "extend"
-url = "/ja/extend/"
+url = "/ja/plugins/"
 weight = 4
 
 [[languages.ja.menu.main]]
 name = "ブログ"
 identifier = "blog"
 url = "/ja/blog/"
+weight = 5
+
+[[languages.en.menu.v1]]
+name = "Learn"
+identifier = "learn"
+url = "v1/learn"
+weight = 1
+
+[[languages.en.menu.v1]]
+name = "Design"
+identifier = "design"
+url = "v1/design/"
+weight = 2
+
+[[languages.en.menu.v1]]
+name = "Implement"
+identifier = "implement"
+url = "v1/implement/"
+weight = 3
+
+[[languages.en.menu.v1]]
+name = "Extend"
+identifier = "extend"
+url = "v1/extend"
+weight = 4
+
+[[languages.en.menu.v1]]
+name = "Blog"
+identifier = "blog"
+url = "v1/blog/"
+weight = 5
+
+[[languages.ja.menu.v1]]
+name = "学ぶ"
+identifier = "learn"
+url = "v1/ja/learn/"
+weight = 1
+
+[[languages.ja.menu.v1]]
+name = "デザイン"
+identifier = "design"
+url = "v1/ja/design/"
+weight = 2
+
+[[languages.ja.menu.v1]]
+name = "実装する"
+identifier = "implement"
+url = "v1/ja/implement/"
+weight = 3
+
+[[languages.ja.menu.v1]]
+name = "拡張する"
+identifier = "extend"
+url = "v1/ja/plugins/"
+weight = 4
+
+[[languages.ja.menu.v1]]
+name = "ブログ"
+identifier = "blog"
+url = "v1/ja/blog/"
 weight = 5

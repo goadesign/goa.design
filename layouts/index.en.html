@@ -4,7 +4,7 @@
 
     <section id="content" class="container">
         <div class="hero-unit">
-            <p class="main">Design first.	Then win. </p>
+            <p class="main">Design first.</p>
         </div>
     </section><!-- end .container -->
 
@@ -19,12 +19,6 @@
         </div>
     </div>
 
-    <div class="container">
-        <div class="row" style="margin-bottom:2em;text-align:center">
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/t1MxuSKVXPc" frameborder="0" allowfullscreen></iframe>
-        </div>
-    </div>
-
     <div class="alternate">
         <div class="container" >
             <div class="row" style="margin-top:2em;margin-bottom:2em">
@@ -32,11 +26,12 @@
                     <span class="circle" style="background:#ED3E3E;"><i class="fa fa-magic"></i></span>&nbsp;
                     <h3 class="inline">Code Generation</h3>
                     <p>
-                    goa relies on code generation to alleviate the need for reflection or repetitive
-                    coding.<br/> The <a href="/implement/goagen/">goagen</a> tool generates various artifacts
-                    including code, documentation, clients and even custom outputs via
-                    <a href="/extend/generators">plugins</a>. The end result is <b>application code that is
-                        clean and terse</b>.
+                    goa relies on code generation to alleviate the need for
+                    reflection or repetitive coding.<br/>
+                    The goa tool generates various artifacts including code,
+                    documentation, clients and even custom outputs via
+                    plugins. The end result is <b>application code that is
+                    clean and terse</b>.
                     </p>
                 </div>
 
@@ -44,21 +39,24 @@
                     <span class="circle" style="background:#80AD00;"><i class="fa fa-code"></i></span>
                     <h3 class="inline">Design Based</h3>
                     <p>
-                    The <a href="/design/overview">goa design language</a> is flexible and stays out of
-                    the way &ndash; you decide how your API works. The design is the <b>Single
-                        Source Of Truth</b> from which both behavior and docs are derived. The goa
-                    design language being a Go DSL is easy to <a href="/extend/dsls">customize</a> and
-                    the resulting designs are simple to share.
+                    The goa design language is flexible and stays out of the way
+                    &ndash; you decide how your API works. The design is the
+                    <b>Single Source Of Truth</b> from which both behavior and
+                    docs are derived. The goa design language being a Go DSL is
+                    easy to customize and the resulting designs are simple to
+                    share.
                     </p>
                 </div>
 
                 <div class="span4">
                     <span class="circle" style="background:#5DB9F2;"><i class="fa fa-bolt"></i></span>
-                    <h3 class="inline">Powerful Context</h3>
+                    <h3 class="inline">Built-in Best Practice</h3>
                     <p>
-                    Request handlers get handed over a <b>endpoint specific context</b> object that exposes
-                    both the request state through convenient fields and the response state through
-                    methods that write the response back.
+                    goa generates code that follows best practice and is
+                    specially well suited for building microservice based system
+                    architectures. The code is organized in layers so that for
+                    example transport specific concerns do not leak up to the
+                    business logic.
                     </p>
                 </div>
             </div>
@@ -68,45 +66,50 @@
     <div class="container" style="margin-top:4em">
         <div class="row">
             <div class="hero-unit">
-                <p>The API Design Life Cycle</p>
+                <p>The Service Development Life Cycle</p>
             </div>
         </div>
     </div>
     <div class="container" style="margin-bottom:2em">
         <div class="row">
             <h3>
-                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/design/overview">Design</a>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> Design
             </h3>
             <p style="margin-bottom:2em">
-            Creating a service with goa starts with the design. The
-            <a href="/design/overview/">goa DSL</a> lets you describe the global properties,
-            types and endpoints that make up the service API. The
-            <a href="/reference/goa/design/apidsl/">apidsl package docs</a> provides a quick
-            reference to all the DSL functions.
-            </p>
-            <p>
+            Creating a service with goa starts with the design. The goa DSL lets
+            you describe the service methods as well as their input and output
+            data structures. The DSL also lets you define how to construct and
+            serialize the data structures from and to transport specific data
+            such as HTTP body, HTTP headers or gRPC messages.
             </p>
         </div>
         <div class="row">
             <h3>
-                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/implement/overview">Implement</a>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> Implement
             </h3>
             <p style="margin-bottom:2em">
-            Once the design of the API is in place <a href="/implement/goagen/">goagen</a>
-            generates the corresponding data structures, validation code and handlers. Handlers
-            are defined as interface methods. Implementing the service is thus as simple as
-            implementing the generated interfaces.
+            The goa tool reads the service design and produces all the code
+            required to build the service and a client tool. The generated code
+            includes the transport layers and input validation. Implementing a
+            service is thus as simple as implementing generated Go interfaces no
+            matter what transport the service is listening to. In particular goa
+            makes it trivial to implement a service that accepts both HTTP and
+            gRPC requests.
             </p>
         </div>
         <div class="row">
             <h3>
-                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/extend/generators">Extend</a>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> Extend
             </h3>
             <p style="margin-bottom:2em">
-            The best part about the goa DSL is that the engine is completely decoupled. Plugins
-            can implement <a href="/extend/dsls">custom DSLs</a> to extend the concepts
-            described in the design. Plugins can also generate <a
-                             href="/extend/generators">arbitrary outputs</a>.
+            The best part about the goa DSL is that the evaluation engine is
+            completely decoupled. Plugins can implement custom DSLs to extend
+            the concepts described in the design. Plugins can also generate
+            arbitrary output or modify the output generated by the built-in code
+            generators. In particular the go-kit plugin makes it possible to
+            generate <a href="https://gokit.io">Go kit</a> compliant services
+            that can take advantage of the toolkit for operational and
+            infrastructure needs.
             </p>
         </div>
     </div>
@@ -146,7 +149,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">3</strong>
                     </span>
                     <span style="font-size:120%">
-                        Consult the <a href="https://github.com/goadesign/examples">examples</a> and the <a href="https://github.com/goadesign/goa-cellar">goa-cellar</a> service.
+                        Consult the <a href="https://github.com/goadesign/examples">examples</a>.
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -163,84 +166,6 @@
             </div>
         </div>
     </div>
-
-    <div class="container" style="margin-top:2em;margin-bottom:2em">
-        <div class="row">
-            <div class="hero-unit">
-                <p>Learn more</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="row">
-            <div class="span6 text-center">
-                <a href="https://vimeo.com/196251649">
-                    <img id="chicago-meetup" alt="Just Generate Everything with goa" src="/assets/resources/geneverything.png" />
-                </a>
-                <h3 style="padding-top:1em">
-                    <i>Just Generate Everything with goa</i>
-                </h3>
-                <p>
-                Kevin Keuning &ndash; Chicago Ultimate Golang, October 2016
-                </p>
-            </div>
-            <div class="span6 text-center">
-                <a href="https://www.youtube.com/embed/snMls3Bysa4/">
-                    <img id="goamicro" alt="goa for Microservices" src="/assets/resources/goamicro.png" />
-                </a>
-                <h3 style="padding-top:1em">
-                    <i>goa for Microservices</i>
-                </h3>
-                <p>
-                Alexandre Bourget &ndash; Golang Montréal, August 2016
-                </p>
-            </div>
-        </div>
-        <div class="row" style="margin-top:2em;margin-bottom:2em">
-            <div class="span4 text-center">
-                <a href="https://changelog.com/gotime-7/">
-                    <img id="gotime" alt="Go Time" src="/assets/resources/gotime.png" />
-                </a>
-                <h3 style="padding-top:1em">
-                    <i>Go Time #7: goa The Framework for Building Microservices</i>
-                </h3>
-                <p>
-                Raphael Simon &ndash; Interview, July 2016
-                </p>
-            </div>
-            <div class="span4 text-center">
-                <a href="http://talks.goa.design/slides/gophercon2016/goa.slide#2">
-                    <img id="slides" alt="goa GopherCon slides" src="/assets/resources/goaslides.png" />
-                </a>
-                <h3 style="padding-top:1em">
-                    <i>Building Microservices From Design</i> (slides)
-                </h3>
-                <p>
-                Raphael Simon &ndash; GopherCon, July 2016
-                </p>
-            </div>
-            <div class="span4 text-center">
-                <a href="https://www.youtube.com/embed/tCFrgWikEX8">
-                    <img id="video" alt="goa video" src="/assets/resources/goameetup.png" />
-                </a>
-                <h3 style="padding-top:1em">
-                    <i>Generate All The Things</i>
-                </h3>
-                <p>
-                Brian Ketelsen &ndash; Tempa Go Meetup, March 2016
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-$('#video').click(function() {
-    $("#carousel").hide(0)
-        $("#frame").fadeIn(1000)
-        $("#frame iframe").attr('src', "https://www.youtube.com/embed/tCFrgWikEX8?autoplay=1");
-});
-    </script>
 
     </section>
 

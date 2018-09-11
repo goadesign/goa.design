@@ -30,22 +30,63 @@ func main() {
 	if _, err := exec.LookPath("godoc2md"); err != nil {
 		fatal("could not find godoc2md in path, please install godoc2md with go get github.com/davecheney/godoc2md")
 	}
+
 	var (
-		excludes = parseExcludeFlag()
-		root     = packageDir()
-		base     = filepath.Base(root)
-		out, err = filepath.Abs(flag.CommandLine.Args()[1])
+		excludes []string
+		branch   string
+		verbose  bool
 	)
+	{
+		excl := flag.String("exclude", "", "comma separated `list` of excluded packages")
+		br := flag.String("branch", "", "git `branch` name to generate docs for")
+		verb := flag.Bool("verbose", false, "display additional information")
+		flag.Usage = func() {
+			fmt.Println("mdc - Generate markdown from GoDoc recursively")
+			fmt.Printf("usage: %s [flags] PACKAGE OUTPUTDIR\n", os.Args[0])
+			flag.PrintDefaults()
+		}
+		flag.Parse()
+		if flag.NArg() != 2 {
+			flag.Usage()
+			os.Exit(1)
+		}
+		excludes = strings.Split(*excl, ",")
+		for i, e := range excludes {
+			excludes[i] = strings.TrimSpace(e)
+		}
+		branch = *br
+		verbose = *verb
+	}
+
+	root := packageDir()
+	base := filepath.Base(root)
+	out, err := filepath.Abs(flag.CommandLine.Args()[1])
 	if err != nil {
 		fatal("invalid output dir: %s", err)
 	}
 	if err = os.MkdirAll(out, 0755); err != nil {
 		fatal("cannot create output dir: %s", err)
 	}
-	fmt.Printf("* Packages root: %s\n* Output dir: %s\n", root, out)
-	if len(excludes) > 0 {
-		fmt.Printf("* Excludes: %s\n", strings.Join(excludes, ", "))
+
+	if verbose {
+		fmt.Printf("* Packages root: %s\n* Output dir: %s\n", root, out)
+		if len(excludes) > 0 {
+			fmt.Printf("* Excludes: %s\n", strings.Join(excludes, ", "))
+		}
 	}
+
+	if branch != "" {
+		cmd := exec.Command("git", "checkout", branch)
+		cmd.Dir = root
+		_, err := cmd.Output()
+		if err != nil {
+			if ex, ok := err.(*exec.ExitError); ok {
+				fatal(ex.Error() + ": " + ex.String())
+			}
+			fatal(err)
+		}
+	}
+
 	var pkgs packages
 	err = filepath.Walk(root, func(p string, i os.FileInfo, _ error) error {
 		if i.Name() == ".git" || strings.HasPrefix(i.Name(), "_") || has(excludes, i.Name()) {
@@ -71,17 +112,21 @@ func main() {
 	}
 	sort.Sort(pkgs)
 	for _, p := range pkgs {
-		err = godoc2md(p[0], p[1])
+		err = godoc2md(p[0], p[1], verbose)
 		if err == nil {
-			fmt.Println("OK")
+			if verbose {
+				fmt.Println("OK")
+			}
 		} else {
 			fmt.Printf("FAIL: %s\n", err)
 		}
 	}
 }
 
-func godoc2md(pkg, filename string) error {
-	fmt.Printf("godoc2md %s > %s...", pkg, filename)
+func godoc2md(pkg, filename string, verbose bool) error {
+	if verbose {
+		fmt.Printf("godoc2md %s > %s...", pkg, filename)
+	}
 	cmd := exec.Command("godoc2md", pkg)
 	b, err := cmd.Output()
 	if err != nil {
@@ -109,28 +154,6 @@ func godoc2md(pkg, filename string) error {
 
 	return nil
 
-}
-
-func parseExcludeFlag() []string {
-	excl := flag.String("exclude", "", "comma separated `list` of excluded packages")
-	flag.Usage = func() {
-		fmt.Println("mdc - Generate markdown from GoDoc recursively")
-		fmt.Printf("usage: %s [flags] PACKAGE OUTPUTDIR\n", os.Args[0])
-		flag.PrintDefaults()
-	}
-	flag.Parse()
-	if flag.NArg() != 2 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if excl == nil {
-		return nil
-	}
-	excludes := strings.Split(*excl, ",")
-	for i, e := range excludes {
-		excludes[i] = strings.TrimSpace(e)
-	}
-	return excludes
 }
 
 func packageDir() string {

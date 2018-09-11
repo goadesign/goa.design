@@ -72,7 +72,7 @@ the given sample.
 ### The goa Tracer Middleware
 
 The new
-[Tracer](https://goa.design/reference/goa/middleware/#func-tracer-a-name-middleware-tracer-a)
+[Tracer](https://goa.design/v1/reference/goa/middleware/#func-tracer-a-name-middleware-tracer-a)
 middleware implements the logic that looks for the trace and parent segment
 headers. If the headers are found it stores them in the request context
 otherwise it generates a new trace ID. It only generates an ID for a sample of
@@ -80,7 +80,7 @@ requests corresponding to the percentage value given to the middleware
 constructor.
 
 Both the trace ID and parent segment ID are available via the corresponding
-[ContextXXX functions](https://goa.design/reference/goa/middleware/#func-contexttraceid-a-name-middleware-contexttraceid-a).
+[ContextXXX functions](https://goa.design/v1/reference/goa/middleware/#func-contexttraceid-a-name-middleware-contexttraceid-a).
 
 ## Integrating with AWS X-Ray
 
@@ -100,7 +100,7 @@ subsegment completes. The daemon then ships the traces to AWS X-Ray in batches.
 
 ### The goa X-Ray Middleware
 
-Back to goa, writing the new [xray](https://goa.design/reference/goa/middleware/xray/)
+Back to goa, writing the new [xray](https://goa.design/v1/reference/goa/middleware/xray/)
 middleware was an exercise in reverse engineering of JavaScript code as the
 documentation on X-Ray is still rather poor (the JSON schema for the segment
 type is not documented for example). The only reliable source of information
@@ -109,20 +109,20 @@ corresponding [npm package](https://www.npmjs.com/package/aws-xray-sdk).
 
 The middleware leverages the Tracer middleware described above to retrieve the
 trace and parent span IDs so it can build a
-[segment](https://goa.design/reference/goa/middleware/xray/#type-segment-a-name-xray-segment-a)
+[segment](https://goa.design/v1/reference/goa/middleware/xray/#type-segment-a-name-xray-segment-a)
 and store it in the request context. The segment can then be retrieved using the
-[ContextSegment](https://goa.design/reference/goa/middleware/xray/#func-contextsegment-a-name-xray-segment-contextsegment-a)
+[ContextSegment](https://goa.design/v1/reference/goa/middleware/xray/#func-contextsegment-a-name-xray-segment-contextsegment-a)
 function.
 
 Using the context segment one can:
 
-* trace requests made to external services via [WrapClient](https://goa.design/reference/goa/middleware/xray/#func-wrapclient-a-name-xray-doer-wrapclient-a)
-* trace arbitrary section of code via [Capture](https://goa.design/reference/goa/middleware/xray/#func-segment-capture-a-name-xray-segment-capture-a)
-* add annotations via [AddAnnotation](https://goa.design/reference/goa/middleware/xray/#func-segment-addannotation-a-name-xray-segment-addannotation-a)
-* add metadata via [AddMetadata](https://goa.design/reference/goa/middleware/xray/#func-segment-addmetadata-a-name-xray-segment-addmetadata-a)
-* create child segments via [NewSubsegment](https://goa.design/reference/goa/middleware/xray/#func-segment-newsubsegment-a-name-xray-segment-newsubsegment-a)
+* trace requests made to external services via [WrapClient](https://goa.design/v1/reference/goa/middleware/xray/#func-wrapclient-a-name-xray-doer-wrapclient-a)
+* trace arbitrary section of code via [Capture](https://goa.design/v1/reference/goa/middleware/xray/#func-segment-capture-a-name-xray-segment-capture-a)
+* add annotations via [AddAnnotation](https://goa.design/v1/reference/goa/middleware/xray/#func-segment-addannotation-a-name-xray-segment-addannotation-a)
+* add metadata via [AddMetadata](https://goa.design/v1/reference/goa/middleware/xray/#func-segment-addmetadata-a-name-xray-segment-addmetadata-a)
+* create child segments via [NewSubsegment](https://goa.design/v1/reference/goa/middleware/xray/#func-segment-newsubsegment-a-name-xray-segment-newsubsegment-a)
 
-The tracer middleware also exposes [TraceDoer](https://goa.design/reference/goa/middleware/#func-tracedoer-a-name-middleware-tracedoer-a)
+The tracer middleware also exposes [TraceDoer](https://goa.design/v1/reference/goa/middleware/#func-tracedoer-a-name-middleware-tracedoer-a)
 which takes care of setting the trace headers for requests made to other traced services.
 
 ## Putting It All Together

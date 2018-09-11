@@ -1,0 +1,229 @@
+{{ partial "header.html" . }}
+<body>
+    {{ partial "v1/navigation.html" . }}
+
+    <section id="content" class="container">
+        <div class="hero-unit">
+            <p class="main">はじめにデザインを。そして成功を。</p>
+        </div>
+    </section><!-- end .container -->
+
+    <div class="container">
+        <div class="row" style="margin-bottom:2em">
+            <div class="hero-unit">
+                <p>
+                goa は <a href="https://golang.org">Go</a> でマイクロサービスを構築する総体的なアプローチです。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row" style="margin-bottom:2em;text-align:center">
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/t1MxuSKVXPc" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <div class="alternate">
+        <div class="container" >
+            <div class="row" style="margin-top:2em;margin-bottom:2em">
+                <div class="span4">
+                    <span class="circle" style="background:#ED3E3E;"><i class="fa fa-magic"></i></span>&nbsp;
+                    <h3 class="inline">コード生成</h3>
+                    <p>
+                    goa はリフレクションや単調なコーディングの必要性を軽減するためコード生成に依存します。<br/>
+                    <a href="/implement/goagen/">goagen</a> ツールはコード、ドキュメント、クライアントを含むさまざまな成果物に加え、<a href="/extend/generators">プラグイン</a>を通してカスタム成果物も生成します。最終結果はクリーンで簡潔なアプリケーションコードです。
+                    </p>
+                </div>
+
+                <div class="span4">
+                    <span class="circle" style="background:#80AD00;"><i class="fa fa-code"></i></span>
+                    <h3 class="inline">デザインに基づく</h3>
+                    <p>
+                    <a href="/design/overview">goa デザイン言語</a>は柔軟で、あなたの API がどのように動くのか、あなたのやりたいように決めることができます。デザインは、動作とドキュメントの両方から<b>信頼できる唯一の情報源</b>です。 Go の DSL である goa デザイン言語は<a href="/extend/dsls">カスタマイズ</a>し易く、できあがったデザインは簡単に共有できます。
+                    </p>
+                </div>
+
+                <div class="span4">
+                    <span class="circle" style="background:#5DB9F2;"><i class="fa fa-bolt"></i></span>
+                    <h3 class="inline">パワフルなコンテキスト</h3>
+                    <p>
+                    リクエストハンドラは、<b>エンドポイント固有のコンテキスト</b>を手渡されます。それは、リクエスト状態を扱いやすいフィールドとして、レスポンス状態を応答書き込みのメソッドとして触れられるようにします。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top:4em">
+        <div class="row">
+            <div class="hero-unit">
+                <p>API デザインのライフサイクル</p>
+            </div>
+        </div>
+    </div>
+    <div class="container" style="margin-bottom:2em">
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/design/overview">デザイン</a>
+            </h3>
+            <p style="margin-bottom:2em">
+            goa でのサービス開発はデザインから始まります。
+            <a href="/design/overview/">goa DSL</a> はサービス API を作り上げるためのグローバルなプロパティ、タイプ、エンドポイントを記述できるようにします。
+            <a href="/reference/goa/design/apidsl/">apidsl パッケージのドキュメント</a>はすべての DSL 関数のクイックリファレンスを提供します。
+            </p>
+            <p>
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/implement/overview">実装する</a>
+            </h3>
+            <p style="margin-bottom:2em">
+            いったんデザインができたら <a href="/implement/goagen/">goagen</a> は対応するデータ構造やバリデーションコードとハンドラを生成します。ハンドラはインタフェースのメソッドとして定義されます。サービスの実装は生成されるインタフェースの実装のようにシンプルです。
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/extend/generators">拡張する</a>
+            </h3>
+            <p style="margin-bottom:2em">
+            goa DSL においてもっとも素晴らしいのはそのエンジンが完全に分離されている点です。プラグインはデザインに記述されるコンセプトを拡張するために<a href="/extend/dsls">カスタム DSL</a> を実装することができます。また、プラグインは<a href="/extend/generators">任意の成果物</a>も生成できます。
+            </p>
+        </div>
+    </div>
+
+    <div class="alternate">
+        <div class="container" style="margin-top:2em">
+            <div class="row">
+                <div class="hero-unit">
+                    <p>はじめに</p>
+                </div>
+            </div>
+        </div>
+        <div class="container" style="margin-bottom:2em">
+            <div class="row">
+                <div class="span4" style="margin-left: auto; margin-right: auto;">
+                    <p style="white-space: nowrap">
+                    <span class="fa-stack fa-3x">
+                        <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                        <strong class="fa-stack-1x text-primary" style="color:white">1</strong>
+                    </span>
+                    <span style="font-size:120%">
+                        <a href="/learn/guide">はじめのガイド</a>でシンプルな goa サービスを実装してみましょう。
+                    </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                    <span class="fa-stack fa-3x">
+                        <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                        <strong class="fa-stack-1x text-primary" style="color:white">2</strong>
+                    </span>
+                    <span style="font-size:120%">
+                        goa の <a href="/design/overview">DSL</a> についてさらに学びましょう。
+                    </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                    <span class="fa-stack fa-3x">
+                        <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                        <strong class="fa-stack-1x text-primary" style="color:white">3</strong>
+                    </span>
+                    <span style="font-size:120%">
+                        <a href="https://github.com/goadesign/examples">examples</a> や <a href="https://github.com/goadesign/goa-cellar">goa-cellar</a> のサービスを参照してみましょう。
+                    </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                    <span class="fa-stack fa-3x">
+                        <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                        <strong class="fa-stack-1x text-primary" style="color:white">4</strong>
+                    </span>
+                    <span style="font-size:120%">
+                        <a href="https://gophers.slack.com/messages/goa/">slack channel</a> に参加しましょう
+                        (<a href="https://gophersinvite.herokuapp.com/">ここ</a>でサインアップできます)。
+                    </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top:2em;margin-bottom:2em">
+        <div class="row">
+            <div class="hero-unit">
+                <p>もっと学ぶ</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="span6 text-center">
+                <a href="https://vimeo.com/196251649">
+                    <img id="chicago-meetup" alt="Just Generate Everything with goa" src="/assets/resources/geneverything.png" />
+                </a>
+                <h3 style="padding-top:1em">
+                    <i>Just Generate Everything with goa</i>
+                </h3>
+                <p>
+                Kevin Keuning &ndash; Chicago Ultimate Golang, October 2016
+                </p>
+            </div>
+            <div class="span6 text-center">
+                <a href="https://www.youtube.com/embed/snMls3Bysa4/">
+                    <img id="goamicro" alt="goa for Microservices" src="/assets/resources/goamicro.png" />
+                </a>
+                <h3 style="padding-top:1em">
+                    <i>goa for Microservices</i>
+                </h3>
+                <p>
+                Alexandre Bourget &ndash; Golang Montréal, August 2016
+                </p>
+            </div>
+        </div>
+        <div class="row" style="margin-top:2em;margin-bottom:2em">
+            <div class="span4 text-center">
+                <a href="https://changelog.com/gotime-7/">
+                    <img id="gotime" alt="Go Time" src="/assets/resources/gotime.png" />
+                </a>
+                <h3 style="padding-top:1em">
+                    <i>Go Time #7: goa The Framework for Building Microservices</i>
+                </h3>
+                <p>
+                Raphael Simon &ndash; Interview, July 2016
+                </p>
+            </div>
+            <div class="span4 text-center">
+                <a href="http://talks.goa.design/slides/gophercon2016/goa.slide#2">
+                    <img id="slides" alt="goa GopherCon slides" src="/assets/resources/goaslides.png" />
+                </a>
+                <h3 style="padding-top:1em">
+                    <i>Building Microservices From Design</i> (slides)
+                </h3>
+                <p>
+                Raphael Simon &ndash; GopherCon, July 2016
+                </p>
+            </div>
+            <div class="span4 text-center">
+                <a href="https://www.youtube.com/embed/tCFrgWikEX8">
+                    <img id="video" alt="goa video" src="/assets/resources/goameetup.png" />
+                </a>
+                <h3 style="padding-top:1em">
+                    <i>Generate All The Things</i>
+                </h3>
+                <p>
+                Brian Ketelsen &ndash; Tempa Go Meetup, March 2016
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+$('#video').click(function() {
+    $("#carousel").hide(0)
+        $("#frame").fadeIn(1000)
+        $("#frame iframe").attr('src', "https://www.youtube.com/embed/tCFrgWikEX8?autoplay=1");
+});
+    </script>
+
+    </section>
+
+    {{ partial "footer.html" . }}

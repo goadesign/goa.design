@@ -1,0 +1,5 @@
+{{ if eq "ja" .Lang }}
+{{ template "index.ja.html" . }}
+{{ else }}
+{{ template "index.en.html" . }}
+{{ end }}

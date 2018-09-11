@@ -1,0 +1,5 @@
+{{ if eq "ja" .Lang }}
+{{ template "partials/v1/ja/footer.html" . }}
+{{ else }}
+{{ template "partials/v1/en/footer.html" . }}
+{{ end }}
