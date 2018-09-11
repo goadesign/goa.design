@@ -3,10 +3,10 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Implementing goa Services"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "Overview"
 identifier = "implement overview"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 Once the [design](/design/overview) of the API is completed and [goagen](/implement/goagen) has

@@ -3,10 +3,10 @@ date = "2016-04-16T11:01:06-05:00"
 title = "goa API デザイン言語"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "概要"
 identifier = "design overview"
-parent = "design"
+parent = "design.v1"
 +++
 goa API デザイン言語は Go で実装された DSL で、任意のマイクロサービス API を記述することができます。
 デザイン言語は REST ベースの HTTP API を主な焦点にしていますが、他の方法論による API を記述するのにも十分柔軟です。

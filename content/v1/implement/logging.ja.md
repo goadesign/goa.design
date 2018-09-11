@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "ロギング"
 weight = 5
 
-[menu.main]
+[menu.v1]
 name = "ロギング"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 優れたログ戦略を持つことが、マイクロサービスを書くための重要な側面としてあります。

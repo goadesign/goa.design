@@ -3,9 +3,9 @@ date = "2016-04-10T11:01:06-05:00"
 title = "Introduction to goa"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "Introduction"
-parent = "learn"
+parent = "learn.v1"
 +++
 
 # What is goa?

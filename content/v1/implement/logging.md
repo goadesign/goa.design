@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Logging"
 weight = 5
 
-[menu.main]
+[menu.v1]
 name = "Logging"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 An important aspect of writing microservices is having a good logging strategy. This is a pretty

@@ -1,5 +1,5 @@
 +++
-date="2018-09-10T17:03:12-07:00"
+date="2018-09-11T15:21:35-07:00"
 description="github.com/goadesign/goa/design/apidsl"
 +++
 
@@ -207,7 +207,7 @@ default global property values. Here is an example showing all the possible API 
 				Param("param")
 			})
 			Security("JWT")
-			Origin("<a href="https://swagger.goa.design">https://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
+			Origin("<a href="http://swagger.goa.design">http://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
 				Headers("X-Shared-Secret")           // One or more authorized headers, use "*" to authorize all
 				Methods("GET", "POST")               // One or more authorized HTTP methods
 				Expose("X-Time")                     // One or more headers exposed to clients
@@ -574,7 +574,7 @@ func Default(def interface{})
 Default can be used in: Attribute
 
 Default sets the default value for an attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor10">https://json-schema.org/latest/json-schema-validation.html#anchor10</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor10">http://json-schema.org/latest/json-schema-validation.html#anchor10</a>.
 
 
 
@@ -636,7 +636,7 @@ func Enum(val ...interface{})
 Enum can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 Enum adds a "enum" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor76">https://json-schema.org/latest/json-schema-validation.html#anchor76</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor76">http://json-schema.org/latest/json-schema-validation.html#anchor76</a>.
 
 
 
@@ -715,7 +715,7 @@ func Format(f string)
 Format can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 Format adds a "format" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor104">https://json-schema.org/latest/json-schema-validation.html#anchor104</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor104">http://json-schema.org/latest/json-schema-validation.html#anchor104</a>.
 The formats supported by goa are:
 
 "date": RFC3339 date
@@ -924,7 +924,7 @@ func MaxLength(val int)
 MaxLength can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 MaxLength adds a "maxItems" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor42">https://json-schema.org/latest/json-schema-validation.html#anchor42</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor42">http://json-schema.org/latest/json-schema-validation.html#anchor42</a>.
 
 
 
@@ -935,7 +935,7 @@ func Maximum(val interface{})
 Maximum can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 Maximum adds a "maximum" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor17">https://json-schema.org/latest/json-schema-validation.html#anchor17</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor17">http://json-schema.org/latest/json-schema-validation.html#anchor17</a>.
 
 
 
@@ -1090,7 +1090,7 @@ Applicable to resources and actions.
 
 	Metadata("swagger:tag:Backend")
 	Metadata("swagger:tag:Backend:desc", "Quick description of what 'Backend' is")
-	Metadata("swagger:tag:Backend:url", "<a href="https://example.com">https://example.com</a>")
+	Metadata("swagger:tag:Backend:url", "<a href="http://example.com">http://example.com</a>")
 	Metadata("swagger:tag:Backend:url:desc", "See more docs here")
 
 `swagger:extension:xxx`: sets the Swagger extensions xxx. It can have any valid JSON format value.
@@ -1134,7 +1134,7 @@ func MinLength(val int)
 MinLength can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 MinLength adds a "minItems" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor45">https://json-schema.org/latest/json-schema-validation.html#anchor45</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor45">http://json-schema.org/latest/json-schema-validation.html#anchor45</a>.
 
 
 
@@ -1145,7 +1145,7 @@ func Minimum(val interface{})
 Minimum can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 Minimum adds a "minimum" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor21">https://json-schema.org/latest/json-schema-validation.html#anchor21</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor21">http://json-schema.org/latest/json-schema-validation.html#anchor21</a>.
 
 
 
@@ -1251,7 +1251,7 @@ The origin can also be a regular expression wrapped into "/".
 Example:
 
 
-	Origin("<a href="https://swagger.goa.design">https://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
+	Origin("<a href="http://swagger.goa.design">http://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
 	        Headers("X-Shared-Secret")           // One or more authorized headers, use "*" to authorize all
 	        Methods("GET", "POST")               // One or more authorized HTTP methods
 	        Expose("X-Time")                     // One or more headers exposed to clients
@@ -1378,7 +1378,7 @@ func Pattern(p string)
 Pattern can be used in: Attribute, Header, Param, HashOf, ArrayOf
 
 Pattern adds a "pattern" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor33">https://json-schema.org/latest/json-schema-validation.html#anchor33</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor33">http://json-schema.org/latest/json-schema-validation.html#anchor33</a>.
 
 
 
@@ -1477,7 +1477,7 @@ func Required(names ...string)
 Required can be used in: Attributes, Headers, Payload, Type, Params
 
 Required adds a "required" validation to the attribute.
-See <a href="https://json-schema.org/latest/json-schema-validation.html#anchor61">https://json-schema.org/latest/json-schema-validation.html#anchor61</a>.
+See <a href="http://json-schema.org/latest/json-schema-validation.html#anchor61">http://json-schema.org/latest/json-schema-validation.html#anchor61</a>.
 
 
 
@@ -1512,7 +1512,7 @@ via CanonicalActionName to override that default. Here is an example of a resour
 		CanonicalActionName("get")	// Name of action that returns canonical representation if not "show"
 		UseTrait("Authenticated")	// Included trait if any, can appear more than once
 	
-		Origin("<a href="https://swagger.goa.design">https://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
+		Origin("<a href="http://swagger.goa.design">http://swagger.goa.design</a>", func() { // Define CORS policy, may be prefixed with "*" wildcard
 			Headers("X-Shared-Secret")           // One or more authorized headers, use "*" to authorize all
 			Methods("GET", "POST")               // One or more authorized HTTP methods
 			Expose("X-Time")                     // One or more headers exposed to clients
@@ -1848,4 +1848,4 @@ specified then the view named "default" is used. Examples:
 
 
 - - -
-Generated by [godoc2md](https://godoc.org/github.com/davecheney/godoc2md)
+Generated by [godoc2md](http://godoc.org/github.com/davecheney/godoc2md)

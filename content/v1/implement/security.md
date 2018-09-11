@@ -3,10 +3,10 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Security"
 weight = 9
 
-[menu.main]
+[menu.v1]
 name = "Security"
 identifier = "implement security"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 Implementing security requires to first define the security schemes in the design, see

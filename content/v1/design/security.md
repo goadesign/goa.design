@@ -3,10 +3,10 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Security"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "Security"
 identifier = "design security"
-parent = "design"
+parent = "design.v1"
 +++
 
 goa has built-in support for multiple security schemes: basic auth, API key (a.k.a.  shared secret),

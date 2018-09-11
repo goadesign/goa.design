@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "リクエストミドルウエア"
 weight = 8
 
-[menu.main]
+[menu.v1]
 name = "ミドルウェア"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 ## 組み込みミドルウエア

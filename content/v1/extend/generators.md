@@ -3,9 +3,9 @@ date = "2016-03-02T11:01:06-05:00"
 title = "goa Plugin Generators"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "Generator Plugin"
-parent = "extend"
+parent = "extend.v1"
 +++
 
 goa Plugins make it possible to generate new kinds of outputs from any DSL. The possibilities are

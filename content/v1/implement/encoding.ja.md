@@ -3,9 +3,9 @@ date = "2016-04-30T11:01:06-05:00"
 title = "エンコーディング"
 weight = 6
 
-[menu.main]
+[menu.v1]
 name = "エンコーディング"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 ## 概要

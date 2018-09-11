@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "gorma プラグイン"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "Gorma"
-parent = "extend"
+parent = "extend.v1"
 +++
 
 [gorma](/reference/gorma) はデータベースモデルを記述することを可能にする goa のプラグインです。 gorma コードジェネレータは、モデル定義を使用して、モデルから自動的にメディア・タイプを作成するコードを生成します。まだドキュメントはあまりありません。

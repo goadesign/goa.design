@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "goa セラーの参考例"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "セラーの例"
-parent = "learn"
+parent = "learn.v1"
 +++
 
 goa ワインセラーサービスは [goa](https://goa.design) Web アプリケーションフレームワークの例です。

@@ -3,9 +3,9 @@ date = "2016-04-07T11:01:06-05:00"
 title = "Getting Started with goa"
 weight = 2
 
-[menu.main]
+[menu.v1]
 name = "Getting Started Guide"
-parent = "learn"
+parent = "learn.v1"
 +++
 
 This guide walks you through writing a complete service in goa. The simple service implements a

@@ -3,9 +3,9 @@ date = "2016-04-20T11:01:06-05:00"
 title = "Working with Data Types"
 weight = 2
 
-[menu.main]
+[menu.v1]
 name = "Working with Data Types"
-parent = "design"
+parent = "design.v1"
 +++
 An important aspect of the goa DSL resides around how types are defined and used. The
 [Overview](/design/overview) covers the basics of working with types and media types. This document takes

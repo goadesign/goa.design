@@ -3,10 +3,10 @@ date = "2016-01-30T11:01:06-05:00"
 title = "goa のサービスを実装する"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "概要"
 identifier = "implement overview"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 APIの[デザイン](/design/overview)が完了し、[goagen](/implement/goagen) が低レベルハンドラを生成すると、次のステップは実際のアクションハンドラの実装です。

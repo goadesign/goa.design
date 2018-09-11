@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "the gorma Plugin"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "Gorma"
-parent = "extend"
+parent = "extend.v1"
 +++
 
 [gorma](/reference/gorma) is a goa plugin that makes it possible to describe database models.

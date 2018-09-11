@@ -3,9 +3,9 @@ date = "2016-04-17T11:01:06-05:00"
 title = "goa のリクエストコンテキスト"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "リクエストコンテキスト"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 ## 概要

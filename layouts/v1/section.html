@@ -1,0 +1,27 @@
+{{ partial "v1/header.html" . }}
+<body>
+	{{ partial "v1/navigation.html" . }}
+	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
+
+		<hr />
+
+		<div class="row" id="blog">
+			<div class="span12">
+				{{ .Content  }}
+				<ul id="list"> 
+					{{ $path := replaceRE "^(.*)/.*\\.md$" "$1" .Path }}
+					{{ $lang := .Lang }}
+					{{ range $page := sort $.Site.AllPages "Weight" "asc" }}
+					{{ if and (eq .Lang $lang) (hasPrefix .Path $path) .IsPage }}
+					<li><a href="{{ $page.Permalink }}">{{ $page.Title}}</a></li> 
+					{{ end }}
+					{{ end }}
+				</ul> 
+			</div>
+		</div>
+	</section>
+	{{ partial "v1/footer.html" . }}

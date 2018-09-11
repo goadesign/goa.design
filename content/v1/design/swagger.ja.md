@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "Swagger の活用"
 weight = 4
 
-[menu.main]
+[menu.v1]
 name = "Swagger"
-parent = "design"
+parent = "design.v1"
 +++
 
 [goagen](/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。

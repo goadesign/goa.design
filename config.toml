@@ -21,17 +21,12 @@ tag = "tags"
 category = "categories"
 series = "series"
 
-DefaultContentLanguage = "en" 
+DefaultContentLanguage = "en"
 
 [languages.en] 
-weight = 1 
-title = "goa - Design First." 
+weight = 1
+title = "goa - Design First."
 languageName = "English"
- 
-[languages.ja] 
-weight = 2 
-title = "goa - はじめにデザインを。"
-languageName = "日本語"
 
 [[languages.en.menu.main]]
 name = "Learn"
@@ -63,6 +58,41 @@ identifier = "blog"
 url = "/blog/"
 weight = 5
 
+[[languages.en.menu.v1]]
+name = "Learn"
+identifier = "learn.v1"
+url = "/v1/learn"
+weight = 1
+
+[[languages.en.menu.v1]]
+name = "Design"
+identifier = "design.v1"
+url = "/v1/design/"
+weight = 2
+
+[[languages.en.menu.v1]]
+name = "Implement"
+identifier = "implement.v1"
+url = "/v1/implement/"
+weight = 3
+
+[[languages.en.menu.v1]]
+name = "Extend"
+identifier = "extend.v1"
+url = "/v1/extend"
+weight = 4
+
+[[languages.en.menu.v1]]
+name = "Blog"
+identifier = "blog.v1"
+url = "/v1/blog/"
+weight = 5
+
+[languages.ja] 
+weight = 2
+title = "goa - はじめにデザインを。"
+languageName = "日本語"
+
 [[languages.ja.menu.main]]
 name = "学ぶ"
 identifier = "learn"
@@ -93,62 +123,32 @@ identifier = "blog"
 url = "/ja/blog/"
 weight = 5
 
-[[languages.en.menu.v1]]
-name = "Learn"
-identifier = "learn"
-url = "v1/learn"
-weight = 1
-
-[[languages.en.menu.v1]]
-name = "Design"
-identifier = "design"
-url = "v1/design/"
-weight = 2
-
-[[languages.en.menu.v1]]
-name = "Implement"
-identifier = "implement"
-url = "v1/implement/"
-weight = 3
-
-[[languages.en.menu.v1]]
-name = "Extend"
-identifier = "extend"
-url = "v1/extend"
-weight = 4
-
-[[languages.en.menu.v1]]
-name = "Blog"
-identifier = "blog"
-url = "v1/blog/"
-weight = 5
-
 [[languages.ja.menu.v1]]
 name = "学ぶ"
-identifier = "learn"
-url = "v1/ja/learn/"
+identifier = "learn.v1"
+url = "/v1/ja/learn/"
 weight = 1
 
 [[languages.ja.menu.v1]]
 name = "デザイン"
-identifier = "design"
-url = "v1/ja/design/"
+identifier = "design.v1"
+url = "/v1/ja/design/"
 weight = 2
 
 [[languages.ja.menu.v1]]
 name = "実装する"
-identifier = "implement"
-url = "v1/ja/implement/"
+identifier = "implement.v1"
+url = "/v1/ja/implement/"
 weight = 3
 
 [[languages.ja.menu.v1]]
 name = "拡張する"
-identifier = "extend"
-url = "v1/ja/plugins/"
+identifier = "extend.v1"
+url = "/v1/ja/plugins/"
 weight = 4
 
 [[languages.ja.menu.v1]]
 name = "ブログ"
-identifier = "blog"
-url = "v1/ja/blog/"
+identifier = "blog.v1"
+url = "/v1/ja/blog/"
 weight = 5

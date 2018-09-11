@@ -1,0 +1,27 @@
+{{ partial "v1/header.html" . }}
+<body>
+	{{ partial "v1/navigation.html" . }}
+	<section id="content" class="container">
+		<div class="hero-unit">
+			<h1>{{ .Title  }}</h1>
+			<p>{{ .Description }}</p>
+		</div>
+
+		<hr />
+
+		<div class="row" id="blog">
+			<div class="span12">
+				{{ .Content  }}
+			</div>
+		</div>
+		<hr/>
+		<div class="row">
+			<div class="span6">
+				{{ if .NextInSection }}<a href="{{ .NextInSection.Permalink }}"><i class="fa fa-arrow-left"></i> {{ .NextInSection.Title }}</a>{{ end }}
+			</div>
+			<div class="span6 text-right">
+				{{ if .PrevInSection }}<a href="{{ .PrevInSection.Permalink }}">{{ .PrevInSection.Title }} <i class="fa fa-arrow-right"></i> </a>{{ end }}
+			</div>
+		</div>
+	</section>
+	{{ partial "v1/footer.html" . }}

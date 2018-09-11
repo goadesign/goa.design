@@ -3,10 +3,10 @@ date = "2016-04-16T11:01:06-05:00"
 title = "The goa API Design Language"
 weight = 1
 
-[menu.main]
+[menu.v1]
 name = "Overview"
 identifier = "design overview"
-parent = "design"
+parent = "design.v1"
 +++
 
 The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible

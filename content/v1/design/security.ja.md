@@ -3,10 +3,10 @@ date = "2016-01-30T11:01:06-05:00"
 title = "セキュリティ"
 weight = 3
 
-[menu.main]
+[menu.v1]
 name = "セキュリティ"
 identifier = "design security"
-parent = "design"
+parent = "design.v1"
 +++
 goaには、Basic認証、APIキー（共有秘密鍵）、JWT、OAuth2など、複数のセキュリティスキームが組み込まれています。
 セキュリティスキームは、API全体、リソース、または単一のアクションに加えることができます。

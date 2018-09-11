@@ -3,9 +3,9 @@ date = "2016-04-20T11:01:06-05:00"
 title = "データ型を扱う"
 weight = 2
 
-[menu.main]
+[menu.v1]
 name = "データ型を扱う"
-parent = "design"
+parent = "design.v1"
 +++
 
 goa DSL の重要な側面として、タイプがどのように定義され使用されるかがあります。

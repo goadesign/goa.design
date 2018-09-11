@@ -3,9 +3,9 @@ date = "2016-01-30T11:01:06-05:00"
 title = "goagen, the goa Tool"
 weight = 2
 
-[menu.main]
+[menu.v1]
 name = "goagen"
-parent = "implement"
+parent = "implement.v1"
 +++
 
 ## Code Generation Tool

@@ -3,9 +3,9 @@ date = "2016-04-07T11:01:06-05:00"
 title = "goa をはじめる"
 weight = 2
 
-[menu.main]
+[menu.v1]
 name = "はじめのガイド"
-parent = "learn"
+parent = "learn.v1"
 +++
 
 このガイドでは goa で完全なサービスを作成する方法について説明します。そのシンプルなサービスは [GitHub リポジトリ](https://github.com/goadesign/goa-cellar)にある[セラー](../cellar)のサンプルの小さなサブセットを実装します。このサービスはワインボトルを取り扱っています。より簡単に言えば、簡単な GET リクエストを通じて既存のワインボトルモデルを検索することができます。
