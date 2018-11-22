@@ -96,7 +96,7 @@ func readTemplate(name, data string) *template.Template {
 }
 
 func readTemplates(p *godoc.Presentation, html bool) {
-	p.PackageText = readTemplate("package.txt", pkgTemplate)
+	p.PackageHTML = readTemplate("package.txt", pkgTemplate)
 }
 
 func main() {
@@ -123,14 +123,14 @@ func main() {
 	pres.TabWidth = *tabWidth
 	pres.ShowTimestamps = *showTimestamps
 	pres.ShowPlayground = *showPlayground
-	pres.ShowExamples = *showExamples
 	pres.DeclLinks = *declLinks
 	pres.SrcMode = false
 	pres.HTMLMode = false
 
 	readTemplates(pres, false)
 
-	if err := godoc.CommandLine(os.Stdout, fs, pres, flag.Args()); err != nil {
-		log.Print(err)
-	}
+	// FIXME: update to use "go doc", RIP godoc https://github.com/golang/tools/commit/e5fe289229602997ae560753d57bbbe888c1d34f
+	//	if err := godoc.CommandLine(os.Stdout, fs, pres, flag.Args()); err != nil {
+	//	log.Print(err)
+	//}
 }
