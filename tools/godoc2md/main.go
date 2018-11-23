@@ -185,8 +185,7 @@ func main() {
 		pres.PackageText = readTemplate("package.txt", pkgTemplate)
 	}
 
-	// FIXME: update to use "go doc", RIP godoc https://github.com/golang/tools/commit/e5fe289229602997ae560753d57bbbe888c1d34f
-	//	if err := godoc.CommandLine(os.Stdout, fs, pres, flag.Args()); err != nil {
-	//	log.Print(err)
-	//}
+	if err := godoc.CommandLine(os.Stdout, fs, pres, flag.Args()); err != nil {
+		log.Print(err)
+	}
 }
