@@ -1,3 +1,5 @@
+tools/mdc/mdc
+tools/godoc2md/godoc2md
 examples/cellar/cellar
 examples/cellar/client/cellar-cli/cellar-cli
 **/*.coverprofile

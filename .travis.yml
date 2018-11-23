@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.10.x
+- 1.11.x
 node_js:
 - '10.6.0'
 sudo: required

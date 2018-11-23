@@ -11,7 +11,6 @@
 
 DEPEND=\
 	github.com/spf13/hugo \
-	github.com/davecheney/godoc2md \
 	github.com/goadesign/gorma
 
 all: depend install docs serve
@@ -21,6 +20,7 @@ depend:
 
 install:
 	@cd tools/mdc && go get ./... && go install
+	@cd tools/godoc2md && export GO111MODULE=on && go get ./... && go install
 
 docs:
 	@mdc --exclude public         github.com/goadesign/goa   content/reference
