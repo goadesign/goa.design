@@ -98,6 +98,15 @@ func srcLinkFunc(s string) string {
 	return s
 }
 
+// Original Source https://github.com/golang/tools/blob/master/godoc/godoc.go#L562
+func srcLinkFunc(s string) string {
+	s = path.Clean("/" + s)
+	if !strings.HasPrefix(s, "/src/") {
+		s = "/src" + s
+	}
+	return s
+}
+
 // Removed code line that always substracted 10 from the value of `line`.
 // Made format for the source link hash configurable to support source control platforms other than Github.
 // Original Source https://github.com/golang/tools/blob/master/godoc/godoc.go#L540
