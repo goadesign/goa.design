@@ -3,7 +3,7 @@ date = "2017-01-19T11:01:06-05:00"
 title = "Tracing goa Services with AWS X-Ray"
 description = "Introducing the new Tracer and X-Ray goa middlewares"
 author = "Raphael Simon"
-weight = 4
+weight = 5
 layout = "blog"
 
 [menu.main]
