@@ -10,7 +10,7 @@
 # - "all" default target that runs all the above in order
 
 DEPEND=\
-	github.com/spf13/hugo \
+	github.com/gohugoio/hugo \
 	github.com/goadesign/gorma
 
 all: depend install docs serve
