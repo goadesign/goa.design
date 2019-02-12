@@ -34,61 +34,77 @@ title = "goa - はじめにデザインを。そして成功を。"
 languageName = "日本語"
 
 [[languages.en.menu.main]]
+name = "goa2"
+identifier = "goa2"
+url = "/goa2/"
+weight = 1
+
+[[languages.en.menu.main]]
+name = "v1"
+identifier = "v1"
+url = "/v1/"
+weight = 2
+
+[[languages.en.menu.main]]
 name = "Learn"
 identifier = "learn"
-url = "/learn/"
+url = "/v1/learn/"
+parent = "v1"
 weight = 1
 
 [[languages.en.menu.main]]
 name = "Design"
 identifier = "design"
-url = "/design/"
+url = "/v1/design/"
+parent = "v1"
 weight = 2
 
 [[languages.en.menu.main]]
 name = "Implement"
 identifier = "implement"
-url = "/implement/"
+url = "/v1/implement/"
+parent = "v1"
 weight = 3
 
 [[languages.en.menu.main]]
 name = "Extend"
 identifier = "extend"
-url = "/extend/"
+url = "/v1/extend/"
+parent = "v1"
 weight = 4
 
 [[languages.en.menu.main]]
 name = "Blog"
 identifier = "blog"
 url = "/blog/"
-weight = 5
+weight = 3
 
 [[languages.ja.menu.main]]
 name = "学ぶ"
 identifier = "learn"
 url = "/ja/learn/"
-weight = 1
+weight = 2
 
 [[languages.ja.menu.main]]
 name = "デザイン"
 identifier = "design"
 url = "/ja/design/"
-weight = 2
+weight = 3
 
 [[languages.ja.menu.main]]
 name = "実装する"
 identifier = "implement"
 url = "/ja/implement/"
-weight = 3
+weight = 4
 
 [[languages.ja.menu.main]]
 name = "拡張する"
 identifier = "extend"
 url = "/ja/extend/"
-weight = 4
+weight = 5
 
 [[languages.ja.menu.main]]
 name = "ブログ"
 identifier = "blog"
 url = "/ja/blog/"
-weight = 5
+weight = 6

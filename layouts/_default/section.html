@@ -15,7 +15,7 @@
 				<ul id="list"> 
 					{{ $section := .Section }}
 					{{ $lang := .Lang }}
-					{{ range $page := sort $.Site.AllPages "Weight" "asc" }}
+					{{ range $page := sort $.Pages "Weight" "asc" }}
 					{{ if and (eq .Lang $lang) (eq .Section $section) .IsPage }}
 					<li><a href="{{ $page.Permalink }}">{{ $page.Title}}</a></li> 
 					{{ end }}

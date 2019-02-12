@@ -1,11 +1,5 @@
 +++
-date = "2016-04-10T11:01:06-05:00" 
 title = "Introduction to goa"
-weight = 1
-
-[menu.main]
-name = "Introduction"
-parent = "learn"
 +++
 
 # What is goa?
@@ -56,3 +50,10 @@ service out of the box. goa follows the "battery included" principle and makes i
 out the logger, encoders, decoders, middleware or even the router itself. You get to keep your
 logging package of choice and still benefit from the design first approach. The
 [implement](/implement/) section describes these components.
+
+<ul>
+<li><a href="learn">Learn</a></li>
+<li><a href="design">Design</a></li>
+<li><a href="implement">Implement</a></li>
+<li><a href="extend">Extend</a></li>
+</ul>

@@ -19,12 +19,6 @@
         </div>
     </div>
 
-    <div class="container">
-        <div class="row" style="margin-bottom:2em;text-align:center">
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/t1MxuSKVXPc" frameborder="0" allowfullscreen></iframe>
-        </div>
-    </div>
-
     <div class="alternate">
         <div class="container" >
             <div class="row" style="margin-top:2em;margin-bottom:2em">
@@ -33,10 +27,10 @@
                     <h3 class="inline">Code Generation</h3>
                     <p>
                     goa relies on code generation to alleviate the need for reflection or repetitive
-                    coding.<br/> The <a href="/implement/goagen/">goagen</a> tool generates various artifacts
-                    including code, documentation, clients and even custom outputs via
-                    <a href="/extend/generators">plugins</a>. The end result is <b>application code that is
-                        clean and terse</b>.
+                    coding.<br/> The <a href="/goa2/getting-started/#code-generation">code generation</a>
+                    commands generate various artifacts including code, documentation, clients and even
+                    custom outputs via <a href="/goa2/plugins">plugins</a>. The end result is
+                    <b>application code that is clean and terse</b>.
                     </p>
                 </div>
 
@@ -44,21 +38,24 @@
                     <span class="circle" style="background:#80AD00;"><i class="fa fa-code"></i></span>
                     <h3 class="inline">Design Based</h3>
                     <p>
-                    The <a href="/design/overview">goa design language</a> is flexible and stays out of
-                    the way &ndash; you decide how your API works. The design is the <b>Single
-                        Source Of Truth</b> from which both behavior and docs are derived. The goa
-                    design language being a Go DSL is easy to <a href="/extend/dsls">customize</a> and
-                    the resulting designs are simple to share.
+                    The <a href="https://godoc.org/goa.design/goa/dsl">goa design language</a> is
+                    flexible and stays out of the way &ndash; you decide how your API works.
+                    The design is the <b>Single Source Of Truth</b> from which both behavior and
+                    docs are derived. The goa design language being a Go DSL is easy to
+                    <a href="/extend/dsls">customize</a> and the resulting designs are simple to share.
                     </p>
                 </div>
 
                 <div class="span4">
                     <span class="circle" style="background:#5DB9F2;"><i class="fa fa-bolt"></i></span>
-                    <h3 class="inline">Powerful Context</h3>
+                    <h3 class="inline">Separation of Concerns</h3>
                     <p>
-                    Request handlers get handed over a <b>endpoint specific context</b> object that exposes
-                    both the request state through convenient fields and the response state through
-                    methods that write the response back.
+                    The <a href="https://godoc.org/goa.design/goa/dsl">goa design language</a> allows
+                    defining services in a transport agnostic way. The generated
+                    <a href="https://godoc.org/goa.design/goa#Endpoint">goa endpoint</a> decouples the
+                    transport-independent service logic from the tranport code making it possible to
+                    describe multiple transports for each service endpoint. goa supports <b>HTTP</b> and
+                    <b>gRPC</b> transports.
                     </p>
                 </div>
             </div>
@@ -81,7 +78,7 @@
             Creating a service with goa starts with the design. The
             <a href="/design/overview/">goa DSL</a> lets you describe the global properties,
             types and endpoints that make up the service API. The
-            <a href="/reference/goa/design/apidsl/">apidsl package docs</a> provides a quick
+            <a href="https://godoc.org/goa.design/goa/dsl">dsl package docs</a> provides a quick
             reference to all the DSL functions.
             </p>
             <p>
@@ -92,10 +89,10 @@
                 <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/implement/overview">Implement</a>
             </h3>
             <p style="margin-bottom:2em">
-            Once the design of the API is in place <a href="/implement/goagen/">goagen</a>
-            generates the corresponding data structures, validation code and handlers. Handlers
-            are defined as interface methods. Implementing the service is thus as simple as
-            implementing the generated interfaces.
+            Once the design of the API is in place, code generation commands generates the corresponding
+            service and transport code including the necessary data structures and their validation code.
+            Methods described in a service are generated as interface methods. Implementing the service
+            is thus as simple as implementing the generated interfaces.
             </p>
         </div>
         <div class="row">
@@ -103,10 +100,9 @@
                 <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i> <a href="/extend/generators">Extend</a>
             </h3>
             <p style="margin-bottom:2em">
-            The best part about the goa DSL is that the engine is completely decoupled. Plugins
-            can implement <a href="/extend/dsls">custom DSLs</a> to extend the concepts
-            described in the design. Plugins can also generate <a
-                             href="/extend/generators">arbitrary outputs</a>.
+            The best part about the goa DSL is that the DSL engine is completely decoupled from the
+            code generation. Plugins can implement <a href="/extend/dsls">custom DSLs</a> to extend the
+            concepts described in the design. Plugins can also generate <a href="/extend/generators">arbitrary outputs</a>.
             </p>
         </div>
     </div>
@@ -128,7 +124,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">1</strong>
                     </span>
                     <span style="font-size:120%">
-                        Implement a simple goa service with the <a href="/learn/guide">Getting Started Guide</a>.
+                        Implement a simple goa service with the <a href="/goa2/getting-started">Getting Started Guide</a>.
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -137,7 +133,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">2</strong>
                     </span>
                     <span style="font-size:120%">
-                        Learn more about the goa <a href="/design/overview">DSL</a>.
+                        Learn more about the goa <a href="/goa2/design">DSL</a>.
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -146,7 +142,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">3</strong>
                     </span>
                     <span style="font-size:120%">
-                        Consult the <a href="https://github.com/goadesign/examples">examples</a> and the <a href="https://github.com/goadesign/goa-cellar">goa-cellar</a> service.
+                        Consult the <a href="https://github.com/goadesign/goa/blob/v2/examples">examples</a>.
                     </span>
                     </p>
                     <p style="white-space: nowrap">

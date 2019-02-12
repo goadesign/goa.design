@@ -1,5 +1,11 @@
 +++
 title = "Implement"
+
+[[languages.en.menu.main]]
+name = "Implement"
+identifier = "implement"
+parent = "v1"
+weight = 3
 +++
 
 After design comes implementation. This section describes

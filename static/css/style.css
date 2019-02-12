@@ -173,17 +173,17 @@ pre {
 /*  TOC */
 /* -------------------------------------------------------- */
 #toc {
-    top: 230px;
-    bottom: 0;
+    top: auto;
+    bottom: auto;
     position: fixed;
     background: #eee;
     /*box-shadow: inset -5px 0 5px 0px #eee;*/
     padding-top: 0;
     color: #333;
-    width: 220px;
+    width: 175px;
     font-size: 12px;
     overflow-y:scroll;
-    overflow-x:hidden;
+    overflow-x:auto;
 }
 
 #toc ul {
@@ -195,11 +195,11 @@ pre {
 #toc li {
     padding-left: 5px;
     padding-bottom: 2px;
-    white-space: nowrap;
+    white-space: wrap;
 }
 
 #toc li:first-child {
-        font-size: 16px;
+        font-size: 13px;
         border-bottom: solid 1px #333;
         margin-bottom: 10px;
         padding-top: 5px;
