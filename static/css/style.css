@@ -57,6 +57,7 @@ h1 {
 }
 h2 {
   font-size: 24px;
+  margin: 25px 0 15px 0;
 }
 #corpus h2 {
   font-size: 20px;
@@ -64,9 +65,11 @@ h2 {
 }
 h3 {
   font-size: 18px;
+  margin: 25px 0 15px 0;
 }
 h4 {
   font-size: 14px;
+  margin: 25px 0 15px 0;
 }
 a {
   color: #0088cc;
@@ -94,7 +97,10 @@ blockquote {
   color: #666;
 }
 ul {
-  margin: 20px 0;
+  margin: 10px 0 20px 20px;
+}
+ul li {
+  line-height: 1.5em;
 }
 ul li i[class^="icon-"] {
   color: #999;
