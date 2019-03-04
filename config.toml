@@ -34,9 +34,9 @@ title = "goa - はじめにデザインを。そして成功を。"
 languageName = "日本語"
 
 [[languages.en.menu.main]]
-name = "goa2"
-identifier = "goa2"
-url = "/goa2/"
+name = "v2"
+identifier = "v2"
+url = "/v2/"
 weight = 1
 
 [[languages.en.menu.main]]
@@ -82,25 +82,25 @@ weight = 3
 [[languages.ja.menu.main]]
 name = "学ぶ"
 identifier = "learn"
-url = "/ja/learn/"
+url = "/ja/v1/learn/"
 weight = 2
 
 [[languages.ja.menu.main]]
 name = "デザイン"
 identifier = "design"
-url = "/ja/design/"
+url = "/ja/v1/design/"
 weight = 3
 
 [[languages.ja.menu.main]]
 name = "実装する"
 identifier = "implement"
-url = "/ja/implement/"
+url = "/ja/v1/implement/"
 weight = 4
 
 [[languages.ja.menu.main]]
 name = "拡張する"
 identifier = "extend"
-url = "/ja/extend/"
+url = "/ja/v1/extend/"
 weight = 5
 
 [[languages.ja.menu.main]]

@@ -4,7 +4,7 @@ title = "Request Middleware"
 weight = 8
 
 [menu.main]
-name = "Middleware"
+name = "Request Middleware"
 parent = "implement"
 +++
 

@@ -1,20 +1,19 @@
 +++
-date = "2019-02-08T22:57:06-05:00"
-title = "Getting Started with goa2"
+title = "Getting Started with goa"
 weight = 2
 
 [menu.main]
 name = "Getting Started"
-parent = "goa2"
+parent = "v2"
 +++
 
-This guide walks you through writing a complete service in goa2.
+This guide walks you through writing a complete service in goa.
 The simple service implements the basic example found in the
 [github repository](https://github.com/goadesign/goa/tree/v2/examples/basic).
 
 ## Prerequisites
 
-Install `goa2`
+Install `goa`
 
 ```
 go get -u goa.design/goa/...
@@ -22,14 +21,12 @@ go get -u goa.design/goa/...
 
 ## Design
 
-Describe the service using the goa2 DSLs. Create a new directory under
+Describe the service using the goa DSLs. Create a new directory under
 `$GOPATH/src` for the new goa service (e.g. `$GOPATH/src/basic`). In the root
-of the newly created directory create a sub-directory called `design` with a
-Go file containing
+of the newly created directory create a sub-directory called `design` (or any
+other name, `design` is just a convention) with a Go file containing
 
 ```go
-// > $GOPATH/src/basic/design/design.go
-
 package design
 
 import (
@@ -39,25 +36,6 @@ import (
 var _ = API("calc", func() {
 	Title("Calculator Service")
 	Description("Service for adding numbers, a goa teaser")
-
-	Server("calc", func() {
-		Description("calc hosts the Calculator Service.")
-		Services("calc")
-		Host("development", func() {
-			Description("Development hosts.")
-			URI("http://localhost:8000/calc")
-			URI("grpc://localhost:8080")
-		})
-
-		Host("production", func() {
-			Description("Production hosts.")
-			URI("https://{version}.goa.design/calc")
-			URI("grpcs://{version}.goa.design")
-			Variable("version", String, "API version", func() {
-				Default("v1")
-			})
-		})
-	})
 })
 
 var _ = Service("calc", func() {
@@ -90,19 +68,15 @@ var _ = Service("calc", func() {
 
 The above design describes a service named `calc` containing a single method
 `add` which takes a payload as input and returns an integer containing the sum.
-The `add` method describes `HTTP` and `GRPC` DSLs which enables HTTP and gRPC
-transports respectively. As per the design, the payload is encoded and decoded
-as path parameters and the result is serialized in the response body of the
-`200 OK` response in HTTP, whereas, the payload and the result are encoded and
-decoded as a [protocol buffer message](https://developers.google.com/protocol-buffers/docs/proto3#simple)
-in gRPC.
+The `add` method describes `HTTP` and `GRPC` DSLs which generates code for the
+HTTP and gRPC transports respectively.
 
 The design also exposes a HTTP file server endpoint which serves the goa
 generated Open API specification.
 
-The above example only covers a fraction of what goa2 can do. More examples can
-be found on [goa2 repository](https://github.com/goadesign/goa/blob/v2/examples).
-The [goa2 DSL package](https://godoc.org/goa.design/goa/dsl) lists all the DSL
+The above example only covers a fraction of what goa can do. More examples can
+be found in the [goa repository](https://github.com/goadesign/goa/blob/v2/examples).
+The [goa DSL package](https://godoc.org/goa.design/goa/dsl) lists all the DSL
 keywords together with a description and example usage.
 
 ## Code Generation
@@ -111,9 +85,9 @@ keywords together with a description and example usage.
 
 Once we have a design for our service, run the `goa gen` command to generate
 the boilerplate code. The command takes the design package as an argument.
-Optionally, it also takes the target directory to house the generated code as
-an argument. Since the design package is created under `$GOPATH/src/basic`, the
-command line is:
+Optionally, it also takes the target directory as an argument to house the
+generated code. Since the design package is created under `$GOPATH/src/basic`,
+the command line is:
 
 ```
 $ goa gen basic/design -o $GOPATH/src/basic
@@ -170,19 +144,20 @@ working directory. The generated files should look like this:
 
 The `gen` directory contains the `calc` sub-directory which contains the
 transport-independent service code. The `endpoints.go` file creates a
-[goa endpoint](https://godoc.org/goa.design/goa#Endpoint) exposes the transport
-agnostic service code to the transport layers.
+[goa endpoint](https://godoc.org/goa.design/goa#Endpoint) which exposes
+the transport-agnostic service code to the transport layers.
 
 The `grpc` sub-directory contains protocol buffer file (`pb/calc.proto`)
 describing the `calc` gRPC service and the [protoc compiled protocol buffer Go
 file](https://developers.google.com/protocol-buffers/docs/proto3#generating)
-(`pb/calc.pb.go`) along with the server and client code with the logic to
-encode and decode requests and responses and the CLI code to build a gRPC
-request from the command line.
+(`pb/calc.pb.go`). It also contains the server and client code which hooks up
+the protoc-generated gRPC server and client code along with the logic to
+encode and decode requests and responses and the CLI code to build gRPC
+requests from the command line.
 
 The `http` sub-directory describes the HTTP transport which defines server and
 client code with the logic to encode and decode requests and responses and the
-CLI code to build a HTTP request from the command line. It also contains the
+CLI code to build HTTP requests from the command line. It also contains the
 Open API 2.0 specification files in both json and yaml formats.
 
 We **MUST NOT** edit the code generated by `goa gen` command.
