@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:53-08:00"
 description="github.com/goadesign/gorma"
 +++
 
@@ -1083,7 +1083,7 @@ User types are data structures defined in the DSL with "Type".
 
 
 
-### <a name="NewUserHelperWriter">func</a> [NewUserHelperWriter](/src/target/writers.go?s=9649:9717#L327)
+### <a name="NewUserHelperWriter">func</a> [NewUserHelperWriter](/src/target/writers.go?s=9643:9711#L327)
 ``` go
 func NewUserHelperWriter(filename string) (*UserHelperWriter, error)
 ```
@@ -1094,7 +1094,7 @@ User types contain custom data structured defined in the DSL with "Type".
 
 
 
-### <a name="UserHelperWriter.Execute">func</a> (\*UserHelperWriter) [Execute](/src/target/writers.go?s=9920:9988#L336)
+### <a name="UserHelperWriter.Execute">func</a> (\*UserHelperWriter) [Execute](/src/target/writers.go?s=9914:9982#L336)
 ``` go
 func (w *UserHelperWriter) Execute(data *UserTypeTemplateData) error
 ```
@@ -1169,7 +1169,7 @@ User types are data structures defined in the DSL with "Type".
 
 
 
-### <a name="NewUserTypesWriter">func</a> [NewUserTypesWriter](/src/target/writers.go?s=10667:10733#L355)
+### <a name="NewUserTypesWriter">func</a> [NewUserTypesWriter](/src/target/writers.go?s=10661:10727#L355)
 ``` go
 func NewUserTypesWriter(filename string) (*UserTypesWriter, error)
 ```
@@ -1180,7 +1180,7 @@ User types contain custom data structured defined in the DSL with "Type".
 
 
 
-### <a name="UserTypesWriter.Execute">func</a> (\*UserTypesWriter) [Execute](/src/target/writers.go?s=10935:11002#L364)
+### <a name="UserTypesWriter.Execute">func</a> (\*UserTypesWriter) [Execute](/src/target/writers.go?s=10929:10996#L364)
 ``` go
 func (w *UserTypesWriter) Execute(data *UserTypeTemplateData) error
 ```

@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:53-08:00"
 description="github.com/goadesign/goa/middleware/security/jwt"
 +++
 

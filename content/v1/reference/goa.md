@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:52-08:00"
 description="github.com/goadesign/goa"
 +++
 
@@ -378,7 +378,7 @@ var (
 ```
 
 
-## <a name="AddSample">func</a> [AddSample](/src/target/metrics.go?s=3224:3265#L106)
+## <a name="AddSample">func</a> [AddSample](/src/target/metrics.go?s=3232:3273#L106)
 ``` go
 func AddSample(key []string, val float32)
 ```
@@ -425,7 +425,7 @@ JWT or OAuth2 token.
 
 
 
-## <a name="EmitKey">func</a> [EmitKey](/src/target/metrics.go?s=3425:3464#L115)
+## <a name="EmitKey">func</a> [EmitKey](/src/target/metrics.go?s=3433:3472#L115)
 ``` go
 func EmitKey(key []string, val float32)
 ```
@@ -437,7 +437,7 @@ Usage:
 
 
 
-## <a name="IncrCounter">func</a> [IncrCounter](/src/target/metrics.go?s=3645:3688#L124)
+## <a name="IncrCounter">func</a> [IncrCounter](/src/target/metrics.go?s=3653:3696#L124)
 ``` go
 func IncrCounter(key []string, val float32)
 ```
@@ -540,7 +540,7 @@ Logger returns the logger stored in the context if any, nil otherwise.
 
 
 
-## <a name="MeasureSince">func</a> [MeasureSince](/src/target/metrics.go?s=4032:4080#L136)
+## <a name="MeasureSince">func</a> [MeasureSince](/src/target/metrics.go?s=4040:4088#L136)
 ``` go
 func MeasureSince(key []string, start time.Time)
 ```
@@ -632,7 +632,7 @@ If ctx is nil then context.Background() is used.
 
 
 
-## <a name="NewMetrics">func</a> [NewMetrics](/src/target/metrics.go?s=2564:2638#L80)
+## <a name="NewMetrics">func</a> [NewMetrics](/src/target/metrics.go?s=2572:2646#L80)
 ``` go
 func NewMetrics(conf *metrics.Config, sink metrics.MetricSink) (err error)
 ```
@@ -642,7 +642,7 @@ This method is deprecated and SetMetrics should be used instead.
 
 
 
-## <a name="NewNoOpSink">func</a> [NewNoOpSink](/src/target/metrics.go?s=1614:1651#L62)
+## <a name="NewNoOpSink">func</a> [NewNoOpSink](/src/target/metrics.go?s=1622:1659#L62)
 ``` go
 func NewNoOpSink() metrics.MetricSink
 ```
@@ -659,7 +659,7 @@ security scheme defined in the design.
 
 
 
-## <a name="SetGauge">func</a> [SetGauge](/src/target/metrics.go?s=4261:4301#L145)
+## <a name="SetGauge">func</a> [SetGauge](/src/target/metrics.go?s=4269:4309#L145)
 ``` go
 func SetGauge(key []string, val float32)
 ```
@@ -671,7 +671,7 @@ Usage:
 
 
 
-## <a name="SetMetrics">func</a> [SetMetrics](/src/target/metrics.go?s=2807:2835#L88)
+## <a name="SetMetrics">func</a> [SetMetrics](/src/target/metrics.go?s=2815:2843#L88)
 ``` go
 func SetMetrics(m Collector)
 ```
@@ -799,7 +799,7 @@ accessible through Request.BasicAuth().
 
 
 
-## <a name="Collector">type</a> [Collector](/src/target/metrics.go?s=729:953#L35)
+## <a name="Collector">type</a> [Collector](/src/target/metrics.go?s=737:961#L35)
 ``` go
 type Collector interface {
     AddSample(key []string, val float32)
@@ -817,14 +817,14 @@ Collector is the interface used for collecting metrics.
 
 
 
-### <a name="GetMetrics">func</a> [GetMetrics](/src/target/metrics.go?s=2957:2984#L95)
+### <a name="GetMetrics">func</a> [GetMetrics](/src/target/metrics.go?s=2965:2992#L95)
 ``` go
 func GetMetrics() Collector
 ```
 GetMetrics returns goa's metrics collector adapter interface.
 
 
-### <a name="NewNoOpCollector">func</a> [NewNoOpCollector](/src/target/metrics.go?s=1514:1547#L57)
+### <a name="NewNoOpCollector">func</a> [NewNoOpCollector](/src/target/metrics.go?s=1522:1555#L57)
 ``` go
 func NewNoOpCollector() Collector
 ```
@@ -1455,7 +1455,7 @@ Muxer implements an adapter that given a request handler can produce a mux handl
 
 
 
-## <a name="NoOpSink">type</a> [NoOpSink](/src/target/metrics.go?s=1719:1741#L67)
+## <a name="NoOpSink">type</a> [NoOpSink](/src/target/metrics.go?s=1727:1749#L67)
 ``` go
 type NoOpSink struct{}
 
@@ -1471,49 +1471,49 @@ NoOpSink default NOOP metrics recorder
 
 
 
-### <a name="NoOpSink.AddSample">func</a> (\*NoOpSink) [AddSample](/src/target/metrics.go?s=2208:2261#L74)
+### <a name="NoOpSink.AddSample">func</a> (\*NoOpSink) [AddSample](/src/target/metrics.go?s=2216:2269#L74)
 ``` go
 func (*NoOpSink) AddSample(key []string, val float32)
 ```
 
 
 
-### <a name="NoOpSink.AddSampleWithLabels">func</a> (\*NoOpSink) [AddSampleWithLabels](/src/target/metrics.go?s=2301:2388#L75)
+### <a name="NoOpSink.AddSampleWithLabels">func</a> (\*NoOpSink) [AddSampleWithLabels](/src/target/metrics.go?s=2309:2396#L75)
 ``` go
 func (*NoOpSink) AddSampleWithLabels(key []string, val float32, labels []metrics.Label)
 ```
 
 
 
-### <a name="NoOpSink.EmitKey">func</a> (\*NoOpSink) [EmitKey](/src/target/metrics.go?s=1929:1980#L71)
+### <a name="NoOpSink.EmitKey">func</a> (\*NoOpSink) [EmitKey](/src/target/metrics.go?s=1937:1988#L71)
 ``` go
 func (*NoOpSink) EmitKey(key []string, val float32)
 ```
 
 
 
-### <a name="NoOpSink.IncrCounter">func</a> (\*NoOpSink) [IncrCounter](/src/target/metrics.go?s=2022:2077#L72)
+### <a name="NoOpSink.IncrCounter">func</a> (\*NoOpSink) [IncrCounter](/src/target/metrics.go?s=2030:2085#L72)
 ``` go
 func (*NoOpSink) IncrCounter(key []string, val float32)
 ```
 
 
 
-### <a name="NoOpSink.IncrCounterWithLabels">func</a> (\*NoOpSink) [IncrCounterWithLabels](/src/target/metrics.go?s=2115:2204#L73)
+### <a name="NoOpSink.IncrCounterWithLabels">func</a> (\*NoOpSink) [IncrCounterWithLabels](/src/target/metrics.go?s=2123:2212#L73)
 ``` go
 func (*NoOpSink) IncrCounterWithLabels(key []string, val float32, labels []metrics.Label)
 ```
 
 
 
-### <a name="NoOpSink.SetGauge">func</a> (\*NoOpSink) [SetGauge](/src/target/metrics.go?s=1743:1795#L69)
+### <a name="NoOpSink.SetGauge">func</a> (\*NoOpSink) [SetGauge](/src/target/metrics.go?s=1751:1803#L69)
 ``` go
 func (*NoOpSink) SetGauge(key []string, val float32)
 ```
 
 
 
-### <a name="NoOpSink.SetGaugeWithLabels">func</a> (\*NoOpSink) [SetGaugeWithLabels](/src/target/metrics.go?s=1836:1922#L70)
+### <a name="NoOpSink.SetGaugeWithLabels">func</a> (\*NoOpSink) [SetGaugeWithLabels](/src/target/metrics.go?s=1844:1930#L70)
 ``` go
 func (*NoOpSink) SetGaugeWithLabels(key []string, val float32, labels []metrics.Label)
 ```

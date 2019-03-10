@@ -52,13 +52,14 @@ type appConfig struct {
 	// The map must contain at least "default" key.
 	Buckets map[string]string `json:"buckets"`
 
-	WebRoot           string `json:"webroot"`           // default handler pattern
-	ImportRoot        string `json:"importroot"`        // root for goa remote packages (go get support)
-	PluginsImportRoot string `json:"pluginsimportroot"` // root for plugin remote packages (go get support)
-	Index             string `json:"index"`             // dir index file name
-	HookPath          string `json:"hook"`              // GCS object change notification hook pattern
-	GCSBase           string `json:"gcs"`               // GCS base URL
-	NotFound          string `json:"not-found"`         // File containing HTML to be displayed in case of 404
+	WebRoot            string `json:"webroot"`            // default handler pattern
+	ImportRoot         string `json:"importroot"`         // root for goa remote packages (go get support)
+	PluginsImportRoot  string `json:"pluginsimportroot"`  // root for plugin remote packages (go get support)
+	ExamplesImportRoot string `json:"examplesimportroot"` // root for example remote packages (go get support)
+	Index              string `json:"index"`              // dir index file name
+	HookPath           string `json:"hook"`               // GCS object change notification hook pattern
+	GCSBase            string `json:"gcs"`                // GCS base URL
+	NotFound           string `json:"not-found"`          // File containing HTML to be displayed in case of 404
 }
 
 // readConfig reads file contents from configFile and populates config.

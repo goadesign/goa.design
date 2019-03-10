@@ -45,6 +45,7 @@ func init() {
 	}
 	http.HandleFunc(config.ImportRoot, servePackage)
 	http.HandleFunc(config.PluginsImportRoot, servePackage)
+	http.HandleFunc(config.ExamplesImportRoot, servePackage)
 	http.HandleFunc(config.WebRoot, serveObject)
 	http.HandleFunc(config.HookPath, storage.HandleChangeHook)
 }
@@ -57,13 +58,23 @@ var (
 	// goa plugin packages.
 	pluginsImportTmpl = template.Must(template.New("pluginsImport").Parse(pluginsImportT))
 
+	// examplesImportTmp is the template used to render the go-import meta tag response for
+	// goa example packages.
+	examplesImportTmpl = template.Must(template.New("examplesImport").Parse(examplesImportT))
+
 	// versionRegexp captures the version from the URL
 	versionRegexp = regexp.MustCompile(`goa\.(v[1-9]+[0-9]*)(?:$|/)`)
 )
 
 func servePackage(w http.ResponseWriter, r *http.Request) {
-	if strings.Contains(r.URL.Path, "/plugins") {
+	if strings.HasPrefix(r.URL.Path, "/plugins/") {
 		if err := pluginsImportTmpl.Execute(w, nil); err != nil {
+			panic(err.Error())
+		}
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/examples/") {
+		if err := examplesImportTmpl.Execute(w, nil); err != nil {
 			panic(err.Error())
 		}
 		return
@@ -195,6 +206,21 @@ const pluginsImportT = `<!DOCTYPE html>
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/plugins git https://github.com/goadesign/plugins">
   <meta name="go-source" content="goa.design/plugins _ https://github.com/goadesign/plugins/tree/master/{/dir} https://github.com/goadesign/plugins/blob/master{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; https://goa.design">
+
+</head>
+<body>
+</body>
+</html>
+`
+const examplesImportT = `<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Go Imports -->
+  <meta name="go-import" content="goa.design/examples git https://github.com/goadesign/examples">
+  <meta name="go-source" content="goa.design/examples _ https://github.com/goadesign/examples/tree/master/{/dir} https://github.com/goadesign/examples/blob/master{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; https://goa.design">
 
 </head>

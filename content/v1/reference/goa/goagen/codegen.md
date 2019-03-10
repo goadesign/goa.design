@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:52-08:00"
 description="github.com/goadesign/goa/goagen/codegen"
 +++
 
@@ -188,7 +188,7 @@ var (
 ```
 
 
-## <a name="Add">func</a> [Add](/src/target/helpers.go?s=2809:2831#L110)
+## <a name="Add">func</a> [Add](/src/target/helpers.go?s=2975:2997#L120)
 ``` go
 func Add(a, b int) int
 ```
@@ -196,7 +196,7 @@ Add adds two integers and returns the sum of the two.
 
 
 
-## <a name="CanonicalParams">func</a> [CanonicalParams](/src/target/helpers.go?s=3296:3355#L120)
+## <a name="CanonicalParams">func</a> [CanonicalParams](/src/target/helpers.go?s=3462:3521#L130)
 ``` go
 func CanonicalParams(r *design.ResourceDefinition) []string
 ```
@@ -205,7 +205,7 @@ resource. It returns nil if the resource does not have a canonical action.
 
 
 
-## <a name="CanonicalTemplate">func</a> [CanonicalTemplate](/src/target/helpers.go?s=2979:3038#L114)
+## <a name="CanonicalTemplate">func</a> [CanonicalTemplate](/src/target/helpers.go?s=3145:3204#L124)
 ``` go
 func CanonicalTemplate(r *design.ResourceDefinition) string
 ```
@@ -214,7 +214,7 @@ fmt.Printf function family.
 
 
 
-## <a name="CheckVersion">func</a> [CheckVersion](/src/target/helpers.go?s=321:356#L17)
+## <a name="CheckVersion">func</a> [CheckVersion](/src/target/helpers.go?s=333:368#L18)
 ``` go
 func CheckVersion(ver string) error
 ```
@@ -223,7 +223,7 @@ a version number that is not compatible with the version of this repo.
 
 
 
-## <a name="CommandLine">func</a> [CommandLine](/src/target/helpers.go?s=650:675#L30)
+## <a name="CommandLine">func</a> [CommandLine](/src/target/helpers.go?s=662:687#L31)
 ``` go
 func CommandLine() string
 ```
@@ -231,7 +231,7 @@ CommandLine return the command used to run this process.
 
 
 
-## <a name="Comment">func</a> [Comment](/src/target/helpers.go?s=1700:1736#L64)
+## <a name="Comment">func</a> [Comment](/src/target/helpers.go?s=1866:1902#L74)
 ``` go
 func Comment(elems ...string) string
 ```
@@ -343,7 +343,7 @@ value if present or the given name otherwise.
 
 
 
-## <a name="Indent">func</a> [Indent](/src/target/helpers.go?s=2121:2157#L80)
+## <a name="Indent">func</a> [Indent](/src/target/helpers.go?s=2287:2323#L90)
 ``` go
 func Indent(s, prefix string) string
 ```
@@ -352,7 +352,7 @@ end-of-line marker is NL.
 
 
 
-## <a name="IndentBytes">func</a> [IndentBytes](/src/target/helpers.go?s=2327:2368#L86)
+## <a name="IndentBytes">func</a> [IndentBytes](/src/target/helpers.go?s=2493:2534#L96)
 ``` go
 func IndentBytes(b, prefix []byte) []byte
 ```
@@ -361,7 +361,7 @@ The end-of-line marker is NL.
 
 
 
-## <a name="KebabCase">func</a> [KebabCase](/src/target/helpers.go?s=4451:4485#L170)
+## <a name="KebabCase">func</a> [KebabCase](/src/target/helpers.go?s=4617:4651#L180)
 ``` go
 func KebabCase(name string) string
 ```
@@ -369,7 +369,7 @@ KebabCase produces the kebab-case version of the given CamelCase string.
 
 
 
-## <a name="PackageName">func</a> [PackageName](/src/target/workspace.go?s=9536:9581#L349)
+## <a name="PackageName">func</a> [PackageName](/src/target/workspace.go?s=10721:10766#L387)
 ``` go
 func PackageName(path string) (string, error)
 ```
@@ -377,7 +377,7 @@ PackageName returns the name of a package at the given path
 
 
 
-## <a name="PackagePath">func</a> [PackagePath](/src/target/workspace.go?s=8557:8602#L314)
+## <a name="PackagePath">func</a> [PackagePath](/src/target/workspace.go?s=9256:9301#L338)
 ``` go
 func PackagePath(path string) (string, error)
 ```
@@ -386,7 +386,7 @@ file path.
 
 
 
-## <a name="PackageSourcePath">func</a> [PackageSourcePath](/src/target/workspace.go?s=9158:9208#L334)
+## <a name="PackageSourcePath">func</a> [PackageSourcePath](/src/target/workspace.go?s=10325:10375#L372)
 ``` go
 func PackageSourcePath(pkg string) (string, error)
 ```
@@ -460,7 +460,7 @@ the rendered string.
 
 
 
-## <a name="SnakeCase">func</a> [SnakeCase](/src/target/helpers.go?s=3719:3753#L137)
+## <a name="SnakeCase">func</a> [SnakeCase](/src/target/helpers.go?s=3885:3919#L147)
 ``` go
 func SnakeCase(name string) string
 ```
@@ -468,7 +468,7 @@ SnakeCase produces the snake_case version of the given CamelCase string.
 
 
 
-## <a name="Tabs">func</a> [Tabs](/src/target/helpers.go?s=2597:2624#L100)
+## <a name="Tabs">func</a> [Tabs](/src/target/helpers.go?s=2763:2790#L110)
 ``` go
 func Tabs(depth int) string
 ```
@@ -592,7 +592,7 @@ Code returns the Go import statement for the ImportSpec.
 
 
 
-## <a name="Package">type</a> [Package](/src/target/workspace.go?s=532:648#L35)
+## <a name="Package">type</a> [Package](/src/target/workspace.go?s=627:743#L38)
 ``` go
 type Package struct {
     // (Go) Path of package
@@ -610,7 +610,7 @@ Package represents a temporary Go package
 
 
 
-### <a name="PackageFor">func</a> [PackageFor](/src/target/workspace.go?s=4097:4145#L162)
+### <a name="PackageFor">func</a> [PackageFor](/src/target/workspace.go?s=4588:4636#L178)
 ``` go
 func PackageFor(source string) (*Package, error)
 ```
@@ -620,7 +620,7 @@ PackageFor returns the package for the given source file.
 
 
 
-### <a name="Package.Abs">func</a> (\*Package) [Abs](/src/target/workspace.go?s=4451:4481#L175)
+### <a name="Package.Abs">func</a> (\*Package) [Abs](/src/target/workspace.go?s=5058:5088#L195)
 ``` go
 func (p *Package) Abs() string
 ```
@@ -629,7 +629,7 @@ Abs returns the absolute path to the package source directory
 
 
 
-### <a name="Package.Compile">func</a> (\*Package) [Compile](/src/target/workspace.go?s=5259:5312#L199)
+### <a name="Package.Compile">func</a> (\*Package) [Compile](/src/target/workspace.go?s=5958:6011#L223)
 ``` go
 func (p *Package) Compile(bin string) (string, error)
 ```
@@ -638,7 +638,7 @@ Compile compiles a package and returns the path to the compiled binary.
 
 
 
-### <a name="Package.CreateSourceFile">func</a> (\*Package) [CreateSourceFile](/src/target/workspace.go?s=4658:4726#L181)
+### <a name="Package.CreateSourceFile">func</a> (\*Package) [CreateSourceFile](/src/target/workspace.go?s=5357:5425#L205)
 ``` go
 func (p *Package) CreateSourceFile(name string) (*SourceFile, error)
 ```
@@ -648,7 +648,7 @@ already exists it is overwritten.
 
 
 
-### <a name="Package.OpenSourceFile">func</a> (\*Package) [OpenSourceFile](/src/target/workspace.go?s=4922:4988#L188)
+### <a name="Package.OpenSourceFile">func</a> (\*Package) [OpenSourceFile](/src/target/workspace.go?s=5621:5687#L212)
 ``` go
 func (p *Package) OpenSourceFile(name string) (*SourceFile, error)
 ```
@@ -658,7 +658,7 @@ exist OpenSourceFile creates it.
 
 
 
-## <a name="SourceFile">type</a> [SourceFile](/src/target/workspace.go?s=701:878#L43)
+## <a name="SourceFile">type</a> [SourceFile](/src/target/workspace.go?s=796:973#L46)
 ``` go
 type SourceFile struct {
     // Name of the source file
@@ -677,7 +677,7 @@ SourceFile represents a single Go source file
 
 
 
-### <a name="SourceFileFor">func</a> [SourceFileFor](/src/target/workspace.go?s=5898:5950#L223)
+### <a name="SourceFileFor">func</a> [SourceFileFor](/src/target/workspace.go?s=6597:6649#L247)
 ``` go
 func SourceFileFor(path string) (*SourceFile, error)
 ```
@@ -687,7 +687,7 @@ SourceFileFor returns a SourceFile for the file at the given path.
 
 
 
-### <a name="SourceFile.Abs">func</a> (\*SourceFile) [Abs](/src/target/workspace.go?s=8017:8050#L299)
+### <a name="SourceFile.Abs">func</a> (\*SourceFile) [Abs](/src/target/workspace.go?s=8716:8749#L323)
 ``` go
 func (f *SourceFile) Abs() string
 ```
@@ -696,7 +696,7 @@ Abs returne the source file absolute filename
 
 
 
-### <a name="SourceFile.Close">func</a> (\*SourceFile) [Close](/src/target/workspace.go?s=6786:6814#L256)
+### <a name="SourceFile.Close">func</a> (\*SourceFile) [Close](/src/target/workspace.go?s=7485:7513#L280)
 ``` go
 func (f *SourceFile) Close()
 ```
@@ -705,7 +705,7 @@ Close closes the underlying OS file.
 
 
 
-### <a name="SourceFile.ExecuteTemplate">func</a> (\*SourceFile) [ExecuteTemplate](/src/target/workspace.go?s=8179:8286#L304)
+### <a name="SourceFile.ExecuteTemplate">func</a> (\*SourceFile) [ExecuteTemplate](/src/target/workspace.go?s=8878:8985#L328)
 ``` go
 func (f *SourceFile) ExecuteTemplate(name, source string, funcMap template.FuncMap, data interface{}) error
 ```
@@ -714,7 +714,7 @@ ExecuteTemplate executes the template and writes the output to the file.
 
 
 
-### <a name="SourceFile.FormatCode">func</a> (\*SourceFile) [FormatCode](/src/target/workspace.go?s=6961:7000#L263)
+### <a name="SourceFile.FormatCode">func</a> (\*SourceFile) [FormatCode](/src/target/workspace.go?s=7660:7699#L287)
 ``` go
 func (f *SourceFile) FormatCode() error
 ```
@@ -723,7 +723,7 @@ FormatCode performs the equivalent of "goimports -w" on the source file.
 
 
 
-### <a name="SourceFile.Write">func</a> (\*SourceFile) [Write](/src/target/workspace.go?s=6665:6714#L251)
+### <a name="SourceFile.Write">func</a> (\*SourceFile) [Write](/src/target/workspace.go?s=7364:7413#L275)
 ``` go
 func (f *SourceFile) Write(b []byte) (int, error)
 ```
@@ -733,7 +733,7 @@ used in template.Execute.
 
 
 
-### <a name="SourceFile.WriteHeader">func</a> (\*SourceFile) [WriteHeader](/src/target/workspace.go?s=6204:6285#L236)
+### <a name="SourceFile.WriteHeader">func</a> (\*SourceFile) [WriteHeader](/src/target/workspace.go?s=6903:6984#L260)
 ``` go
 func (f *SourceFile) WriteHeader(title, pack string, imports []*ImportSpec) error
 ```
@@ -776,7 +776,7 @@ Code produces Go code that runs the validation checks recursively over the given
 
 
 
-## <a name="Workspace">type</a> [Workspace](/src/target/workspace.go?s=338:483#L27)
+## <a name="Workspace">type</a> [Workspace](/src/target/workspace.go?s=349:578#L28)
 ``` go
 type Workspace struct {
     // Path is the absolute path to the workspace directory.
@@ -793,7 +793,7 @@ Workspace represents a temporary Go workspace
 
 
 
-### <a name="NewWorkspace">func</a> [NewWorkspace](/src/target/workspace.go?s=1951:2003#L81)
+### <a name="NewWorkspace">func</a> [NewWorkspace](/src/target/workspace.go?s=2046:2098#L84)
 ``` go
 func NewWorkspace(prefix string) (*Workspace, error)
 ```
@@ -801,7 +801,7 @@ NewWorkspace returns a newly created temporary Go workspace.
 Use Delete to delete the corresponding temporary directory when done.
 
 
-### <a name="WorkspaceFor">func</a> [WorkspaceFor](/src/target/workspace.go?s=2519:2571#L100)
+### <a name="WorkspaceFor">func</a> [WorkspaceFor](/src/target/workspace.go?s=2632:2684#L103)
 ``` go
 func WorkspaceFor(source string) (*Workspace, error)
 ```
@@ -811,7 +811,7 @@ WorkspaceFor returns the Go workspace for the given Go source file.
 
 
 
-### <a name="Workspace.Delete">func</a> (\*Workspace) [Delete](/src/target/workspace.go?s=3178:3206#L123)
+### <a name="Workspace.Delete">func</a> (\*Workspace) [Delete](/src/target/workspace.go?s=3669:3697#L139)
 ``` go
 func (w *Workspace) Delete()
 ```
@@ -820,7 +820,7 @@ Delete deletes the workspace temporary directory.
 
 
 
-### <a name="Workspace.NewPackage">func</a> (\*Workspace) [NewPackage](/src/target/workspace.go?s=3805:3868#L152)
+### <a name="Workspace.NewPackage">func</a> (\*Workspace) [NewPackage](/src/target/workspace.go?s=4296:4359#L168)
 ``` go
 func (w *Workspace) NewPackage(goPath string) (*Package, error)
 ```
@@ -830,7 +830,7 @@ goPath is the go package path used to import the package.
 
 
 
-### <a name="Workspace.Reset">func</a> (\*Workspace) [Reset](/src/target/workspace.go?s=3339:3372#L131)
+### <a name="Workspace.Reset">func</a> (\*Workspace) [Reset](/src/target/workspace.go?s=3830:3863#L147)
 ``` go
 func (w *Workspace) Reset() error
 ```

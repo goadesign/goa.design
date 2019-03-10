@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:52-08:00"
 description="github.com/goadesign/goa/design"
 +++
 
@@ -478,7 +478,7 @@ ExtractWildcards returns the names of the wildcards that appear in path.
 
 
 
-## <a name="HasFile">func</a> [HasFile](/src/target/types.go?s=18476:18506#L604)
+## <a name="HasFile">func</a> [HasFile](/src/target/types.go?s=18472:18502#L604)
 ``` go
 func HasFile(dt DataType) bool
 ```
@@ -495,7 +495,7 @@ MIME types with unknown encoders must be associated with a package path explicit
 
 
 
-## <a name="UserTypes">func</a> [UserTypes](/src/target/types.go?s=17148:17206#L555)
+## <a name="UserTypes">func</a> [UserTypes](/src/target/types.go?s=17144:17202#L555)
 ``` go
 func UserTypes(dt DataType) map[string]*UserTypeDefinition
 ```
@@ -931,7 +931,7 @@ ActionIterator is the type of functions given to IterateActions.
 
 
 
-## <a name="Array">type</a> [Array](/src/target/types.go?s=3754:3803#L90)
+## <a name="Array">type</a> [Array](/src/target/types.go?s=3750:3799#L90)
 ``` go
 type Array struct {
     ElemType *AttributeDefinition
@@ -949,7 +949,7 @@ Array is the type for a JSON array.
 
 
 
-### <a name="Array.CanHaveDefault">func</a> (\*Array) [CanHaveDefault](/src/target/types.go?s=10990:11027#L351)
+### <a name="Array.CanHaveDefault">func</a> (\*Array) [CanHaveDefault](/src/target/types.go?s=10986:11023#L351)
 ``` go
 func (a *Array) CanHaveDefault() bool
 ```
@@ -960,7 +960,7 @@ have a default value.
 
 
 
-### <a name="Array.GenerateExample">func</a> (\*Array) [GenerateExample](/src/target/types.go?s=11539:11617#L372)
+### <a name="Array.GenerateExample">func</a> (\*Array) [GenerateExample](/src/target/types.go?s=11535:11613#L372)
 ``` go
 func (a *Array) GenerateExample(r *RandomGenerator, seen []string) interface{}
 ```
@@ -969,7 +969,7 @@ GenerateExample produces a random array value.
 
 
 
-### <a name="Array.HasAttributes">func</a> (\*Array) [HasAttributes](/src/target/types.go?s=10299:10335#L326)
+### <a name="Array.HasAttributes">func</a> (\*Array) [HasAttributes](/src/target/types.go?s=10295:10331#L326)
 ``` go
 func (a *Array) HasAttributes() bool
 ```
@@ -978,7 +978,7 @@ HasAttributes returns true if the array's element type is user defined.
 
 
 
-### <a name="Array.IsArray">func</a> (\*Array) [IsArray](/src/target/types.go?s=10483:10513#L334)
+### <a name="Array.IsArray">func</a> (\*Array) [IsArray](/src/target/types.go?s=10479:10509#L334)
 ``` go
 func (a *Array) IsArray() bool
 ```
@@ -987,7 +987,7 @@ IsArray returns true.
 
 
 
-### <a name="Array.IsCompatible">func</a> (\*Array) [IsCompatible](/src/target/types.go?s=11132:11182#L356)
+### <a name="Array.IsCompatible">func</a> (\*Array) [IsCompatible](/src/target/types.go?s=11128:11178#L356)
 ``` go
 func (a *Array) IsCompatible(val interface{}) bool
 ```
@@ -996,7 +996,7 @@ IsCompatible returns true if val is compatible with p.
 
 
 
-### <a name="Array.IsHash">func</a> (\*Array) [IsHash](/src/target/types.go?s=10556:10585#L337)
+### <a name="Array.IsHash">func</a> (\*Array) [IsHash](/src/target/types.go?s=10552:10581#L337)
 ``` go
 func (a *Array) IsHash() bool
 ```
@@ -1005,7 +1005,7 @@ IsHash returns false.
 
 
 
-### <a name="Array.IsObject">func</a> (\*Array) [IsObject](/src/target/types.go?s=10408:10439#L331)
+### <a name="Array.IsObject">func</a> (\*Array) [IsObject](/src/target/types.go?s=10404:10435#L331)
 ``` go
 func (a *Array) IsObject() bool
 ```
@@ -1014,7 +1014,7 @@ IsObject returns false.
 
 
 
-### <a name="Array.IsPrimitive">func</a> (\*Array) [IsPrimitive](/src/target/types.go?s=10171:10205#L323)
+### <a name="Array.IsPrimitive">func</a> (\*Array) [IsPrimitive](/src/target/types.go?s=10167:10201#L323)
 ``` go
 func (a *Array) IsPrimitive() bool
 ```
@@ -1023,7 +1023,7 @@ IsPrimitive returns false.
 
 
 
-### <a name="Array.Kind">func</a> (\*Array) [Kind](/src/target/types.go?s=10009:10036#L315)
+### <a name="Array.Kind">func</a> (\*Array) [Kind](/src/target/types.go?s=10005:10032#L315)
 ``` go
 func (a *Array) Kind() Kind
 ```
@@ -1032,7 +1032,7 @@ Kind implements DataKind.
 
 
 
-### <a name="Array.MakeSlice">func</a> (\*Array) [MakeSlice](/src/target/types.go?s=11971:12025#L383)
+### <a name="Array.MakeSlice">func</a> (\*Array) [MakeSlice](/src/target/types.go?s=11967:12021#L383)
 ``` go
 func (a *Array) MakeSlice(s []interface{}) interface{}
 ```
@@ -1042,7 +1042,7 @@ The idea is to avoid generating []interface{} and produce more known types.
 
 
 
-### <a name="Array.Name">func</a> (\*Array) [Name](/src/target/types.go?s=10090:10119#L318)
+### <a name="Array.Name">func</a> (\*Array) [Name](/src/target/types.go?s=10086:10115#L318)
 ``` go
 func (a *Array) Name() string
 ```
@@ -1051,7 +1051,7 @@ Name returns the type name.
 
 
 
-### <a name="Array.ToArray">func</a> (\*Array) [ToArray](/src/target/types.go?s=10701:10733#L343)
+### <a name="Array.ToArray">func</a> (\*Array) [ToArray](/src/target/types.go?s=10697:10729#L343)
 ``` go
 func (a *Array) ToArray() *Array
 ```
@@ -1060,7 +1060,7 @@ ToArray returns a.
 
 
 
-### <a name="Array.ToHash">func</a> (\*Array) [ToHash](/src/target/types.go?s=10771:10801#L346)
+### <a name="Array.ToHash">func</a> (\*Array) [ToHash](/src/target/types.go?s=10767:10797#L346)
 ``` go
 func (a *Array) ToHash() *Hash
 ```
@@ -1069,7 +1069,7 @@ ToHash returns nil.
 
 
 
-### <a name="Array.ToObject">func</a> (\*Array) [ToObject](/src/target/types.go?s=10629:10662#L340)
+### <a name="Array.ToObject">func</a> (\*Array) [ToObject](/src/target/types.go?s=10625:10658#L340)
 ``` go
 func (a *Array) ToObject() Object
 ```
@@ -1078,7 +1078,7 @@ ToObject returns nil.
 
 
 
-## <a name="ArrayVal">type</a> [ArrayVal](/src/target/types.go?s=3879:3901#L95)
+## <a name="ArrayVal">type</a> [ArrayVal](/src/target/types.go?s=3875:3897#L95)
 ``` go
 type ArrayVal []interface{}
 ```
@@ -1093,7 +1093,7 @@ ArrayVal is the value of an array used to specify the default value.
 
 
 
-### <a name="ArrayVal.ToSlice">func</a> (ArrayVal) [ToSlice](/src/target/types.go?s=19335:19376#L646)
+### <a name="ArrayVal.ToSlice">func</a> (ArrayVal) [ToSlice](/src/target/types.go?s=19331:19372#L646)
 ``` go
 func (a ArrayVal) ToSlice() []interface{}
 ```
@@ -1197,7 +1197,7 @@ DSL returns the initialization DSL.
 
 
 
-### <a name="AttributeDefinition.Definition">func</a> (\*AttributeDefinition) [Definition](/src/target/types.go?s=31181:31244#L1019)
+### <a name="AttributeDefinition.Definition">func</a> (\*AttributeDefinition) [Definition](/src/target/types.go?s=31177:31240#L1019)
 ``` go
 func (a *AttributeDefinition) Definition() *AttributeDefinition
 ```
@@ -1349,7 +1349,7 @@ The parent definition context is automatically added to error messages.
 
 
 
-### <a name="AttributeDefinition.Walk">func</a> (\*AttributeDefinition) [Walk](/src/target/types.go?s=31416:31497#L1025)
+### <a name="AttributeDefinition.Walk">func</a> (\*AttributeDefinition) [Walk](/src/target/types.go?s=31412:31493#L1025)
 ``` go
 func (a *AttributeDefinition) Walk(walker func(*AttributeDefinition) error) error
 ```
@@ -1359,7 +1359,7 @@ on each attribute starting with the attribute returned by Definition.
 
 
 
-## <a name="AttributeIterator">type</a> [AttributeIterator](/src/target/types.go?s=16460:16523#L532)
+## <a name="AttributeIterator">type</a> [AttributeIterator](/src/target/types.go?s=16456:16519#L532)
 ``` go
 type AttributeIterator func(string, *AttributeDefinition) error
 ```
@@ -1512,7 +1512,7 @@ This makes it possible for plugins to use attributes in their own data structure
 
 
 
-## <a name="DataStructure">type</a> [DataStructure](/src/target/types.go?s=3084:3614#L75)
+## <a name="DataStructure">type</a> [DataStructure](/src/target/types.go?s=3080:3610#L75)
 ``` go
 type DataStructure interface {
     // Definition returns the data structure definition.
@@ -1537,7 +1537,7 @@ That is attribute definitions, user types and media types.
 
 
 
-## <a name="DataType">type</a> [DataType](/src/target/types.go?s=1209:2942#L34)
+## <a name="DataType">type</a> [DataType](/src/target/types.go?s=1205:2938#L34)
 ``` go
 type DataType interface {
     // Kind of data type, one of the Kind enum.
@@ -1755,7 +1755,7 @@ FileServerIterator is the type of functions given to IterateFileServers.
 
 
 
-## <a name="Hash">type</a> [Hash](/src/target/types.go?s=4024:4104#L101)
+## <a name="Hash">type</a> [Hash](/src/target/types.go?s=4020:4100#L101)
 ``` go
 type Hash struct {
     KeyType  *AttributeDefinition
@@ -1774,7 +1774,7 @@ Hash is the type for a hash map.
 
 
 
-### <a name="Hash.CanHaveDefault">func</a> (\*Hash) [CanHaveDefault](/src/target/types.go?s=14986:15022#L490)
+### <a name="Hash.CanHaveDefault">func</a> (\*Hash) [CanHaveDefault](/src/target/types.go?s=14982:15018#L490)
 ``` go
 func (h *Hash) CanHaveDefault() bool
 ```
@@ -1785,7 +1785,7 @@ the element type can have a default value.
 
 
 
-### <a name="Hash.GenerateExample">func</a> (\*Hash) [GenerateExample](/src/target/types.go?s=15655:15732#L512)
+### <a name="Hash.GenerateExample">func</a> (\*Hash) [GenerateExample](/src/target/types.go?s=15651:15728#L512)
 ``` go
 func (h *Hash) GenerateExample(r *RandomGenerator, seen []string) interface{}
 ```
@@ -1794,7 +1794,7 @@ GenerateExample returns a random hash value.
 
 
 
-### <a name="Hash.HasAttributes">func</a> (\*Hash) [HasAttributes](/src/target/types.go?s=14226:14261#L465)
+### <a name="Hash.HasAttributes">func</a> (\*Hash) [HasAttributes](/src/target/types.go?s=14222:14257#L465)
 ``` go
 func (h *Hash) HasAttributes() bool
 ```
@@ -1804,7 +1804,7 @@ or the element type is user defined.
 
 
 
-### <a name="Hash.IsArray">func</a> (\*Hash) [IsArray](/src/target/types.go?s=14443:14472#L473)
+### <a name="Hash.IsArray">func</a> (\*Hash) [IsArray](/src/target/types.go?s=14439:14468#L473)
 ``` go
 func (h *Hash) IsArray() bool
 ```
@@ -1813,7 +1813,7 @@ IsArray returns false.
 
 
 
-### <a name="Hash.IsCompatible">func</a> (\*Hash) [IsCompatible](/src/target/types.go?s=15162:15211#L495)
+### <a name="Hash.IsCompatible">func</a> (\*Hash) [IsCompatible](/src/target/types.go?s=15158:15207#L495)
 ``` go
 func (h *Hash) IsCompatible(val interface{}) bool
 ```
@@ -1822,7 +1822,7 @@ IsCompatible returns true if val is compatible with p.
 
 
 
-### <a name="Hash.IsHash">func</a> (\*Hash) [IsHash](/src/target/types.go?s=14515:14543#L476)
+### <a name="Hash.IsHash">func</a> (\*Hash) [IsHash](/src/target/types.go?s=14511:14539#L476)
 ``` go
 func (h *Hash) IsHash() bool
 ```
@@ -1831,7 +1831,7 @@ IsHash returns true.
 
 
 
-### <a name="Hash.IsObject">func</a> (\*Hash) [IsObject](/src/target/types.go?s=14368:14398#L470)
+### <a name="Hash.IsObject">func</a> (\*Hash) [IsObject](/src/target/types.go?s=14364:14394#L470)
 ``` go
 func (h *Hash) IsObject() bool
 ```
@@ -1840,7 +1840,7 @@ IsObject returns false.
 
 
 
-### <a name="Hash.IsPrimitive">func</a> (\*Hash) [IsPrimitive](/src/target/types.go?s=14058:14091#L461)
+### <a name="Hash.IsPrimitive">func</a> (\*Hash) [IsPrimitive](/src/target/types.go?s=14054:14087#L461)
 ``` go
 func (h *Hash) IsPrimitive() bool
 ```
@@ -1849,7 +1849,7 @@ IsPrimitive returns false.
 
 
 
-### <a name="Hash.Kind">func</a> (\*Hash) [Kind](/src/target/types.go?s=13901:13927#L455)
+### <a name="Hash.Kind">func</a> (\*Hash) [Kind](/src/target/types.go?s=13897:13923#L455)
 ``` go
 func (h *Hash) Kind() Kind
 ```
@@ -1858,7 +1858,7 @@ Kind implements DataKind.
 
 
 
-### <a name="Hash.MakeMap">func</a> (\*Hash) [MakeMap](/src/target/types.go?s=16147:16212#L523)
+### <a name="Hash.MakeMap">func</a> (\*Hash) [MakeMap](/src/target/types.go?s=16143:16208#L523)
 ``` go
 func (h *Hash) MakeMap(m map[interface{}]interface{}) interface{}
 ```
@@ -1868,7 +1868,7 @@ The idea is to avoid generating map[interface{}]interface{}, which cannot be han
 
 
 
-### <a name="Hash.Name">func</a> (\*Hash) [Name](/src/target/types.go?s=13980:14008#L458)
+### <a name="Hash.Name">func</a> (\*Hash) [Name](/src/target/types.go?s=13976:14004#L458)
 ``` go
 func (h *Hash) Name() string
 ```
@@ -1877,7 +1877,7 @@ Name returns the type name.
 
 
 
-### <a name="Hash.ToArray">func</a> (\*Hash) [ToArray](/src/target/types.go?s=14659:14690#L482)
+### <a name="Hash.ToArray">func</a> (\*Hash) [ToArray](/src/target/types.go?s=14655:14686#L482)
 ``` go
 func (h *Hash) ToArray() *Array
 ```
@@ -1886,7 +1886,7 @@ ToArray returns nil.
 
 
 
-### <a name="Hash.ToHash">func</a> (\*Hash) [ToHash](/src/target/types.go?s=14750:14779#L485)
+### <a name="Hash.ToHash">func</a> (\*Hash) [ToHash](/src/target/types.go?s=14746:14775#L485)
 ``` go
 func (h *Hash) ToHash() *Hash
 ```
@@ -1895,7 +1895,7 @@ ToHash returns the underlying hash map.
 
 
 
-### <a name="Hash.ToObject">func</a> (\*Hash) [ToObject](/src/target/types.go?s=14586:14618#L479)
+### <a name="Hash.ToObject">func</a> (\*Hash) [ToObject](/src/target/types.go?s=14582:14614#L479)
 ``` go
 func (h *Hash) ToObject() Object
 ```
@@ -1904,7 +1904,7 @@ ToObject returns nil.
 
 
 
-## <a name="HashVal">type</a> [HashVal](/src/target/types.go?s=4177:4212#L107)
+## <a name="HashVal">type</a> [HashVal](/src/target/types.go?s=4173:4208#L107)
 ``` go
 type HashVal map[interface{}]interface{}
 ```
@@ -1919,7 +1919,7 @@ HashVal is the value of a hash used to specify the default value.
 
 
 
-### <a name="HashVal.ToMap">func</a> (HashVal) [ToMap](/src/target/types.go?s=19653:19705#L662)
+### <a name="HashVal.ToMap">func</a> (HashVal) [ToMap](/src/target/types.go?s=19649:19701#L662)
 ``` go
 func (h HashVal) ToMap() map[interface{}]interface{}
 ```
@@ -1943,7 +1943,7 @@ HeaderIterator is the type of functions given to IterateHeaders.
 
 
 
-## <a name="Kind">type</a> [Kind](/src/target/types.go?s=1146:1155#L31)
+## <a name="Kind">type</a> [Kind](/src/target/types.go?s=1142:1151#L31)
 ``` go
 type Kind uint
 ```
@@ -2082,7 +2082,7 @@ attribute part of the parent media type.
 
 
 
-## <a name="MediaTypeDefinition">type</a> [MediaTypeDefinition](/src/target/types.go?s=4906:5476#L124)
+## <a name="MediaTypeDefinition">type</a> [MediaTypeDefinition](/src/target/types.go?s=4902:5472#L124)
 ``` go
 type MediaTypeDefinition struct {
     // A media type is a type
@@ -2114,7 +2114,7 @@ building the response body for the corresponding view.
 
 
 
-### <a name="NewMediaTypeDefinition">func</a> [NewMediaTypeDefinition](/src/target/types.go?s=22334:22419#L737)
+### <a name="NewMediaTypeDefinition">func</a> [NewMediaTypeDefinition](/src/target/types.go?s=22330:22415#L737)
 ``` go
 func NewMediaTypeDefinition(name, identifier string, dsl func()) *MediaTypeDefinition
 ```
@@ -2125,7 +2125,7 @@ execute the DSL.
 
 
 
-### <a name="MediaTypeDefinition.ComputeViews">func</a> (\*MediaTypeDefinition) [ComputeViews](/src/target/types.go?s=23198:23269#L762)
+### <a name="MediaTypeDefinition.ComputeViews">func</a> (\*MediaTypeDefinition) [ComputeViews](/src/target/types.go?s=23194:23265#L762)
 ``` go
 func (m *MediaTypeDefinition) ComputeViews() map[string]*ViewDefinition
 ```
@@ -2135,7 +2135,7 @@ collection.
 
 
 
-### <a name="MediaTypeDefinition.Finalize">func</a> (\*MediaTypeDefinition) [Finalize](/src/target/types.go?s=23523:23563#L775)
+### <a name="MediaTypeDefinition.Finalize">func</a> (\*MediaTypeDefinition) [Finalize](/src/target/types.go?s=23519:23559#L775)
 ``` go
 func (m *MediaTypeDefinition) Finalize()
 ```
@@ -2144,7 +2144,7 @@ Finalize sets the value of ContentType to the identifier if not set.
 
 
 
-### <a name="MediaTypeDefinition.IsError">func</a> (\*MediaTypeDefinition) [IsError](/src/target/types.go?s=22810:22854#L751)
+### <a name="MediaTypeDefinition.IsError">func</a> (\*MediaTypeDefinition) [IsError](/src/target/types.go?s=22806:22850#L751)
 ``` go
 func (m *MediaTypeDefinition) IsError() bool
 ```
@@ -2153,7 +2153,7 @@ IsError returns true if the media type is implemented via a goa struct.
 
 
 
-### <a name="MediaTypeDefinition.IterateViews">func</a> (\*MediaTypeDefinition) [IterateViews](/src/target/types.go?s=23977:24042#L788)
+### <a name="MediaTypeDefinition.IterateViews">func</a> (\*MediaTypeDefinition) [IterateViews](/src/target/types.go?s=23973:24038#L788)
 ``` go
 func (m *MediaTypeDefinition) IterateViews(it ViewIterator) error
 ```
@@ -2164,7 +2164,7 @@ error.
 
 
 
-### <a name="MediaTypeDefinition.Kind">func</a> (\*MediaTypeDefinition) [Kind](/src/target/types.go?s=22667:22708#L748)
+### <a name="MediaTypeDefinition.Kind">func</a> (\*MediaTypeDefinition) [Kind](/src/target/types.go?s=22663:22704#L748)
 ``` go
 func (m *MediaTypeDefinition) Kind() Kind
 ```
@@ -2173,7 +2173,7 @@ Kind implements DataKind.
 
 
 
-### <a name="MediaTypeDefinition.Project">func</a> (\*MediaTypeDefinition) [Project](/src/target/types.go?s=24696:24797#L811)
+### <a name="MediaTypeDefinition.Project">func</a> (\*MediaTypeDefinition) [Project](/src/target/types.go?s=24692:24793#L811)
 ``` go
 func (m *MediaTypeDefinition) Project(view string) (*MediaTypeDefinition, *UserTypeDefinition, error)
 ```
@@ -2262,7 +2262,7 @@ Reset deletes all the keys.
 
 
 
-## <a name="Object">type</a> [Object](/src/target/types.go?s=3946:3984#L98)
+## <a name="Object">type</a> [Object](/src/target/types.go?s=3942:3980#L98)
 ``` go
 type Object map[string]*AttributeDefinition
 ```
@@ -2277,7 +2277,7 @@ Object is the type for a JSON object.
 
 
 
-### <a name="Object.CanHaveDefault">func</a> (Object) [CanHaveDefault](/src/target/types.go?s=13018:13055#L422)
+### <a name="Object.CanHaveDefault">func</a> (Object) [CanHaveDefault](/src/target/types.go?s=13014:13051#L422)
 ``` go
 func (o Object) CanHaveDefault() bool
 ```
@@ -2286,7 +2286,7 @@ CanHaveDefault returns false.
 
 
 
-### <a name="Object.GenerateExample">func</a> (Object) [GenerateExample](/src/target/types.go?s=13521:13599#L438)
+### <a name="Object.GenerateExample">func</a> (Object) [GenerateExample](/src/target/types.go?s=13517:13595#L438)
 ``` go
 func (o Object) GenerateExample(r *RandomGenerator, seen []string) interface{}
 ```
@@ -2295,7 +2295,7 @@ GenerateExample returns a random value of the object.
 
 
 
-### <a name="Object.HasAttributes">func</a> (Object) [HasAttributes](/src/target/types.go?s=12474:12510#L401)
+### <a name="Object.HasAttributes">func</a> (Object) [HasAttributes](/src/target/types.go?s=12470:12506#L401)
 ``` go
 func (o Object) HasAttributes() bool
 ```
@@ -2304,7 +2304,7 @@ HasAttributes returns true.
 
 
 
-### <a name="Object.IsArray">func</a> (Object) [IsArray](/src/target/types.go?s=12629:12659#L407)
+### <a name="Object.IsArray">func</a> (Object) [IsArray](/src/target/types.go?s=12625:12655#L407)
 ``` go
 func (o Object) IsArray() bool
 ```
@@ -2313,7 +2313,7 @@ IsArray returns false.
 
 
 
-### <a name="Object.IsCompatible">func</a> (Object) [IsCompatible](/src/target/types.go?s=13327:13377#L432)
+### <a name="Object.IsCompatible">func</a> (Object) [IsCompatible](/src/target/types.go?s=13323:13373#L432)
 ``` go
 func (o Object) IsCompatible(val interface{}) bool
 ```
@@ -2322,7 +2322,7 @@ IsCompatible returns true if val is compatible with p.
 
 
 
-### <a name="Object.IsHash">func</a> (Object) [IsHash](/src/target/types.go?s=12703:12732#L410)
+### <a name="Object.IsHash">func</a> (Object) [IsHash](/src/target/types.go?s=12699:12728#L410)
 ``` go
 func (o Object) IsHash() bool
 ```
@@ -2331,7 +2331,7 @@ IsHash returns false.
 
 
 
-### <a name="Object.IsObject">func</a> (Object) [IsObject](/src/target/types.go?s=12554:12585#L404)
+### <a name="Object.IsObject">func</a> (Object) [IsObject](/src/target/types.go?s=12550:12581#L404)
 ``` go
 func (o Object) IsObject() bool
 ```
@@ -2340,7 +2340,7 @@ IsObject returns true.
 
 
 
-### <a name="Object.IsPrimitive">func</a> (Object) [IsPrimitive](/src/target/types.go?s=12390:12424#L398)
+### <a name="Object.IsPrimitive">func</a> (Object) [IsPrimitive](/src/target/types.go?s=12386:12420#L398)
 ``` go
 func (o Object) IsPrimitive() bool
 ```
@@ -2349,7 +2349,7 @@ IsPrimitive returns false.
 
 
 
-### <a name="Object.IterateAttributes">func</a> (Object) [IterateAttributes](/src/target/types.go?s=16732:16793#L537)
+### <a name="Object.IterateAttributes">func</a> (Object) [IterateAttributes](/src/target/types.go?s=16728:16789#L537)
 ``` go
 func (o Object) IterateAttributes(it AttributeIterator) error
 ```
@@ -2360,7 +2360,7 @@ error.
 
 
 
-### <a name="Object.Kind">func</a> (Object) [Kind](/src/target/types.go?s=12227:12254#L392)
+### <a name="Object.Kind">func</a> (Object) [Kind](/src/target/types.go?s=12223:12250#L392)
 ``` go
 func (o Object) Kind() Kind
 ```
@@ -2369,7 +2369,7 @@ Kind implements DataKind.
 
 
 
-### <a name="Object.Merge">func</a> (Object) [Merge](/src/target/types.go?s=13175:13210#L425)
+### <a name="Object.Merge">func</a> (Object) [Merge](/src/target/types.go?s=13171:13206#L425)
 ``` go
 func (o Object) Merge(other Object)
 ```
@@ -2378,7 +2378,7 @@ Merge copies other's attributes into o overridding any pre-existing attribute wi
 
 
 
-### <a name="Object.Name">func</a> (Object) [Name](/src/target/types.go?s=12309:12338#L395)
+### <a name="Object.Name">func</a> (Object) [Name](/src/target/types.go?s=12305:12334#L395)
 ``` go
 func (o Object) Name() string
 ```
@@ -2387,7 +2387,7 @@ Name returns the type name.
 
 
 
-### <a name="Object.ToArray">func</a> (Object) [ToArray](/src/target/types.go?s=12866:12898#L416)
+### <a name="Object.ToArray">func</a> (Object) [ToArray](/src/target/types.go?s=12862:12894#L416)
 ``` go
 func (o Object) ToArray() *Array
 ```
@@ -2396,7 +2396,7 @@ ToArray returns nil.
 
 
 
-### <a name="Object.ToHash">func</a> (Object) [ToHash](/src/target/types.go?s=12938:12968#L419)
+### <a name="Object.ToHash">func</a> (Object) [ToHash](/src/target/types.go?s=12934:12964#L419)
 ``` go
 func (o Object) ToHash() *Hash
 ```
@@ -2405,7 +2405,7 @@ ToHash returns nil.
 
 
 
-### <a name="Object.ToObject">func</a> (Object) [ToObject](/src/target/types.go?s=12794:12827#L413)
+### <a name="Object.ToObject">func</a> (Object) [ToObject](/src/target/types.go?s=12790:12823#L413)
 ``` go
 func (o Object) ToObject() Object
 ```
@@ -2414,7 +2414,7 @@ ToObject returns the underlying object.
 
 
 
-## <a name="Primitive">type</a> [Primitive](/src/target/types.go?s=3697:3711#L87)
+## <a name="Primitive">type</a> [Primitive](/src/target/types.go?s=3693:3707#L87)
 ``` go
 type Primitive Kind
 ```
@@ -2429,7 +2429,7 @@ Primitive is the type for null, boolean, integer, number, string, and time.
 
 
 
-### <a name="Primitive.CanHaveDefault">func</a> (Primitive) [CanHaveDefault](/src/target/types.go?s=8351:8396#L248)
+### <a name="Primitive.CanHaveDefault">func</a> (Primitive) [CanHaveDefault](/src/target/types.go?s=8347:8392#L248)
 ``` go
 func (p Primitive) CanHaveDefault() (ok bool)
 ```
@@ -2438,7 +2438,7 @@ CanHaveDefault returns whether the primitive can have a default value.
 
 
 
-### <a name="Primitive.GenerateExample">func</a> (Primitive) [GenerateExample](/src/target/types.go?s=9388:9469#L290)
+### <a name="Primitive.GenerateExample">func</a> (Primitive) [GenerateExample](/src/target/types.go?s=9384:9465#L290)
 ``` go
 func (p Primitive) GenerateExample(r *RandomGenerator, seen []string) interface{}
 ```
@@ -2447,7 +2447,7 @@ GenerateExample returns an instance of the given data type.
 
 
 
-### <a name="Primitive.HasAttributes">func</a> (Primitive) [HasAttributes](/src/target/types.go?s=7758:7797#L227)
+### <a name="Primitive.HasAttributes">func</a> (Primitive) [HasAttributes](/src/target/types.go?s=7754:7793#L227)
 ``` go
 func (p Primitive) HasAttributes() bool
 ```
@@ -2456,7 +2456,7 @@ HasAttributes returns false.
 
 
 
-### <a name="Primitive.IsArray">func</a> (Primitive) [IsArray](/src/target/types.go?s=7922:7955#L233)
+### <a name="Primitive.IsArray">func</a> (Primitive) [IsArray](/src/target/types.go?s=7918:7951#L233)
 ``` go
 func (p Primitive) IsArray() bool
 ```
@@ -2465,7 +2465,7 @@ IsArray returns false.
 
 
 
-### <a name="Primitive.IsCompatible">func</a> (Primitive) [IsCompatible](/src/target/types.go?s=8545:8598#L257)
+### <a name="Primitive.IsCompatible">func</a> (Primitive) [IsCompatible](/src/target/types.go?s=8541:8594#L257)
 ``` go
 func (p Primitive) IsCompatible(val interface{}) bool
 ```
@@ -2474,7 +2474,7 @@ IsCompatible returns true if val is compatible with p.
 
 
 
-### <a name="Primitive.IsHash">func</a> (Primitive) [IsHash](/src/target/types.go?s=7999:8031#L236)
+### <a name="Primitive.IsHash">func</a> (Primitive) [IsHash](/src/target/types.go?s=7995:8027#L236)
 ``` go
 func (p Primitive) IsHash() bool
 ```
@@ -2483,7 +2483,7 @@ IsHash returns false.
 
 
 
-### <a name="Primitive.IsObject">func</a> (Primitive) [IsObject](/src/target/types.go?s=7843:7877#L230)
+### <a name="Primitive.IsObject">func</a> (Primitive) [IsObject](/src/target/types.go?s=7839:7873#L230)
 ``` go
 func (p Primitive) IsObject() bool
 ```
@@ -2492,7 +2492,7 @@ IsObject returns false.
 
 
 
-### <a name="Primitive.IsPrimitive">func</a> (Primitive) [IsPrimitive](/src/target/types.go?s=7671:7708#L224)
+### <a name="Primitive.IsPrimitive">func</a> (Primitive) [IsPrimitive](/src/target/types.go?s=7667:7704#L224)
 ``` go
 func (p Primitive) IsPrimitive() bool
 ```
@@ -2501,7 +2501,7 @@ IsPrimitive returns true.
 
 
 
-### <a name="Primitive.Kind">func</a> (Primitive) [Kind](/src/target/types.go?s=7249:7279#L201)
+### <a name="Primitive.Kind">func</a> (Primitive) [Kind](/src/target/types.go?s=7245:7275#L201)
 ``` go
 func (p Primitive) Kind() Kind
 ```
@@ -2510,7 +2510,7 @@ Kind implements DataKind.
 
 
 
-### <a name="Primitive.Name">func</a> (Primitive) [Name](/src/target/types.go?s=7336:7368#L204)
+### <a name="Primitive.Name">func</a> (Primitive) [Name](/src/target/types.go?s=7332:7364#L204)
 ``` go
 func (p Primitive) Name() string
 ```
@@ -2519,7 +2519,7 @@ Name returns the JSON type name.
 
 
 
-### <a name="Primitive.ToArray">func</a> (Primitive) [ToArray](/src/target/types.go?s=8152:8187#L242)
+### <a name="Primitive.ToArray">func</a> (Primitive) [ToArray](/src/target/types.go?s=8148:8183#L242)
 ``` go
 func (p Primitive) ToArray() *Array
 ```
@@ -2528,7 +2528,7 @@ ToArray returns nil.
 
 
 
-### <a name="Primitive.ToHash">func</a> (Primitive) [ToHash](/src/target/types.go?s=8227:8260#L245)
+### <a name="Primitive.ToHash">func</a> (Primitive) [ToHash](/src/target/types.go?s=8223:8256#L245)
 ``` go
 func (p Primitive) ToHash() *Hash
 ```
@@ -2537,7 +2537,7 @@ ToHash returns nil.
 
 
 
-### <a name="Primitive.ToObject">func</a> (Primitive) [ToObject](/src/target/types.go?s=8075:8111#L239)
+### <a name="Primitive.ToObject">func</a> (Primitive) [ToObject](/src/target/types.go?s=8071:8107#L239)
 ``` go
 func (p Primitive) ToObject() Object
 ```
@@ -2546,7 +2546,7 @@ ToObject returns nil.
 
 
 
-## <a name="RandomGenerator">type</a> [RandomGenerator](/src/target/random.go?s=339:422#L17)
+## <a name="RandomGenerator">type</a> [RandomGenerator](/src/target/random.go?s=335:418#L17)
 ``` go
 type RandomGenerator struct {
     Seed string
@@ -2564,7 +2564,7 @@ generated.
 
 
 
-### <a name="NewRandomGenerator">func</a> [NewRandomGenerator](/src/target/random.go?s=515:568#L24)
+### <a name="NewRandomGenerator">func</a> [NewRandomGenerator](/src/target/random.go?s=511:564#L24)
 ``` go
 func NewRandomGenerator(seed string) *RandomGenerator
 ```
@@ -2574,7 +2574,7 @@ NewRandomGenerator returns a random value generator seeded from the given string
 
 
 
-### <a name="RandomGenerator.Bool">func</a> (\*RandomGenerator) [Bool](/src/target/random.go?s=1591:1628#L68)
+### <a name="RandomGenerator.Bool">func</a> (\*RandomGenerator) [Bool](/src/target/random.go?s=1587:1624#L68)
 ``` go
 func (r *RandomGenerator) Bool() bool
 ```
@@ -2583,7 +2583,7 @@ Bool produces a random boolean.
 
 
 
-### <a name="RandomGenerator.DateTime">func</a> (\*RandomGenerator) [DateTime](/src/target/random.go?s=1155:1201#L54)
+### <a name="RandomGenerator.DateTime">func</a> (\*RandomGenerator) [DateTime](/src/target/random.go?s=1151:1197#L54)
 ``` go
 func (r *RandomGenerator) DateTime() time.Time
 ```
@@ -2592,7 +2592,7 @@ DateTime produces a random date.
 
 
 
-### <a name="RandomGenerator.File">func</a> (\*RandomGenerator) [File](/src/target/random.go?s=1812:1851#L78)
+### <a name="RandomGenerator.File">func</a> (\*RandomGenerator) [File](/src/target/random.go?s=1808:1847#L78)
 ``` go
 func (r *RandomGenerator) File() string
 ```
@@ -2601,7 +2601,7 @@ File produces a random file.
 
 
 
-### <a name="RandomGenerator.Float64">func</a> (\*RandomGenerator) [Float64](/src/target/random.go?s=1706:1749#L73)
+### <a name="RandomGenerator.Float64">func</a> (\*RandomGenerator) [Float64](/src/target/random.go?s=1702:1745#L73)
 ``` go
 func (r *RandomGenerator) Float64() float64
 ```
@@ -2610,7 +2610,7 @@ Float64 produces a random float64 value.
 
 
 
-### <a name="RandomGenerator.Int">func</a> (\*RandomGenerator) [Int](/src/target/random.go?s=938:973#L43)
+### <a name="RandomGenerator.Int">func</a> (\*RandomGenerator) [Int](/src/target/random.go?s=934:969#L43)
 ``` go
 func (r *RandomGenerator) Int() int
 ```
@@ -2619,7 +2619,7 @@ Int produces a random integer.
 
 
 
-### <a name="RandomGenerator.String">func</a> (\*RandomGenerator) [String](/src/target/random.go?s=1036:1077#L48)
+### <a name="RandomGenerator.String">func</a> (\*RandomGenerator) [String](/src/target/random.go?s=1032:1073#L48)
 ``` go
 func (r *RandomGenerator) String() string
 ```
@@ -2628,7 +2628,7 @@ String produces a random string.
 
 
 
-### <a name="RandomGenerator.UUID">func</a> (\*RandomGenerator) [UUID](/src/target/random.go?s=1476:1518#L63)
+### <a name="RandomGenerator.UUID">func</a> (\*RandomGenerator) [UUID](/src/target/random.go?s=1472:1514#L63)
 ``` go
 func (r *RandomGenerator) UUID() uuid.UUID
 ```
@@ -3215,7 +3215,7 @@ const (
 
 
 
-## <a name="UserTypeDefinition">type</a> [UserTypeDefinition](/src/target/types.go?s=4324:4458#L111)
+## <a name="UserTypeDefinition">type</a> [UserTypeDefinition](/src/target/types.go?s=4320:4454#L111)
 ``` go
 type UserTypeDefinition struct {
     // A user type is an attribute definition.
@@ -3234,7 +3234,7 @@ UserTypeDefinition is the type for user defined types that are not media types
 
 
 
-### <a name="NewUserTypeDefinition">func</a> [NewUserTypeDefinition](/src/target/types.go?s=20036:20107#L679)
+### <a name="NewUserTypeDefinition">func</a> [NewUserTypeDefinition](/src/target/types.go?s=20032:20103#L679)
 ``` go
 func NewUserTypeDefinition(name string, dsl func()) *UserTypeDefinition
 ```
@@ -3245,7 +3245,7 @@ execute the DSL.
 
 
 
-### <a name="UserTypeDefinition.CanHaveDefault">func</a> (\*UserTypeDefinition) [CanHaveDefault](/src/target/types.go?s=21724:21774#L717)
+### <a name="UserTypeDefinition.CanHaveDefault">func</a> (\*UserTypeDefinition) [CanHaveDefault](/src/target/types.go?s=21720:21770#L717)
 ``` go
 func (u *UserTypeDefinition) CanHaveDefault() bool
 ```
@@ -3272,7 +3272,7 @@ DSL returns the initialization DSL.
 
 
 
-### <a name="UserTypeDefinition.Finalize">func</a> (\*UserTypeDefinition) [Finalize](/src/target/types.go?s=22029:22068#L725)
+### <a name="UserTypeDefinition.Finalize">func</a> (\*UserTypeDefinition) [Finalize](/src/target/types.go?s=22025:22064#L725)
 ``` go
 func (u *UserTypeDefinition) Finalize()
 ```
@@ -3281,7 +3281,7 @@ Finalize merges base type attributes.
 
 
 
-### <a name="UserTypeDefinition.HasAttributes">func</a> (\*UserTypeDefinition) [HasAttributes](/src/target/types.go?s=20683:20732#L696)
+### <a name="UserTypeDefinition.HasAttributes">func</a> (\*UserTypeDefinition) [HasAttributes](/src/target/types.go?s=20679:20728#L696)
 ``` go
 func (u *UserTypeDefinition) HasAttributes() bool
 ```
@@ -3290,7 +3290,7 @@ HasAttributes calls the HasAttributes on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.IsArray">func</a> (\*UserTypeDefinition) [IsArray](/src/target/types.go?s=20990:21033#L702)
+### <a name="UserTypeDefinition.IsArray">func</a> (\*UserTypeDefinition) [IsArray](/src/target/types.go?s=20986:21029#L702)
 ``` go
 func (u *UserTypeDefinition) IsArray() bool
 ```
@@ -3299,7 +3299,7 @@ IsArray calls IsArray on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.IsCompatible">func</a> (\*UserTypeDefinition) [IsCompatible](/src/target/types.go?s=21869:21932#L720)
+### <a name="UserTypeDefinition.IsCompatible">func</a> (\*UserTypeDefinition) [IsCompatible](/src/target/types.go?s=21865:21928#L720)
 ``` go
 func (u *UserTypeDefinition) IsCompatible(val interface{}) bool
 ```
@@ -3308,7 +3308,7 @@ IsCompatible returns true if val is compatible with u.
 
 
 
-### <a name="UserTypeDefinition.IsHash">func</a> (\*UserTypeDefinition) [IsHash](/src/target/types.go?s=21142:21184#L705)
+### <a name="UserTypeDefinition.IsHash">func</a> (\*UserTypeDefinition) [IsHash](/src/target/types.go?s=21138:21180#L705)
 ``` go
 func (u *UserTypeDefinition) IsHash() bool
 ```
@@ -3317,7 +3317,7 @@ IsHash calls IsHash on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.IsObject">func</a> (\*UserTypeDefinition) [IsObject](/src/target/types.go?s=20834:20878#L699)
+### <a name="UserTypeDefinition.IsObject">func</a> (\*UserTypeDefinition) [IsObject](/src/target/types.go?s=20830:20874#L699)
 ``` go
 func (u *UserTypeDefinition) IsObject() bool
 ```
@@ -3326,7 +3326,7 @@ IsObject calls IsObject on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.IsPrimitive">func</a> (\*UserTypeDefinition) [IsPrimitive](/src/target/types.go?s=20505:20552#L693)
+### <a name="UserTypeDefinition.IsPrimitive">func</a> (\*UserTypeDefinition) [IsPrimitive](/src/target/types.go?s=20501:20548#L693)
 ``` go
 func (u *UserTypeDefinition) IsPrimitive() bool
 ```
@@ -3335,7 +3335,7 @@ IsPrimitive calls IsPrimitive on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.Kind">func</a> (\*UserTypeDefinition) [Kind](/src/target/types.go?s=20262:20302#L687)
+### <a name="UserTypeDefinition.Kind">func</a> (\*UserTypeDefinition) [Kind](/src/target/types.go?s=20258:20298#L687)
 ``` go
 func (u *UserTypeDefinition) Kind() Kind
 ```
@@ -3344,7 +3344,7 @@ Kind implements DataKind.
 
 
 
-### <a name="UserTypeDefinition.Name">func</a> (\*UserTypeDefinition) [Name](/src/target/types.go?s=20364:20406#L690)
+### <a name="UserTypeDefinition.Name">func</a> (\*UserTypeDefinition) [Name](/src/target/types.go?s=20360:20402#L690)
 ``` go
 func (u *UserTypeDefinition) Name() string
 ```
@@ -3353,7 +3353,7 @@ Name returns the JSON type name.
 
 
 
-### <a name="UserTypeDefinition.ToArray">func</a> (\*UserTypeDefinition) [ToArray](/src/target/types.go?s=21437:21482#L711)
+### <a name="UserTypeDefinition.ToArray">func</a> (\*UserTypeDefinition) [ToArray](/src/target/types.go?s=21433:21478#L711)
 ``` go
 func (u *UserTypeDefinition) ToArray() *Array
 ```
@@ -3362,7 +3362,7 @@ ToArray calls ToArray on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.ToHash">func</a> (\*UserTypeDefinition) [ToHash](/src/target/types.go?s=21574:21617#L714)
+### <a name="UserTypeDefinition.ToHash">func</a> (\*UserTypeDefinition) [ToHash](/src/target/types.go?s=21570:21613#L714)
 ``` go
 func (u *UserTypeDefinition) ToHash() *Hash
 ```
@@ -3371,7 +3371,7 @@ ToHash calls ToHash on the user type underlying data type.
 
 
 
-### <a name="UserTypeDefinition.ToObject">func</a> (\*UserTypeDefinition) [ToObject](/src/target/types.go?s=21296:21342#L708)
+### <a name="UserTypeDefinition.ToObject">func</a> (\*UserTypeDefinition) [ToObject](/src/target/types.go?s=21292:21338#L708)
 ``` go
 func (u *UserTypeDefinition) ToObject() Object
 ```
@@ -3390,7 +3390,7 @@ backing the type is valid.
 
 
 
-### <a name="UserTypeDefinition.Walk">func</a> (\*UserTypeDefinition) [Walk](/src/target/types.go?s=31706:31786#L1031)
+### <a name="UserTypeDefinition.Walk">func</a> (\*UserTypeDefinition) [Walk](/src/target/types.go?s=31702:31782#L1031)
 ``` go
 func (u *UserTypeDefinition) Walk(walker func(*AttributeDefinition) error) error
 ```
@@ -3460,7 +3460,7 @@ underlying definition type is consistent.
 
 
 
-## <a name="ViewIterator">type</a> [ViewIterator](/src/target/types.go?s=23729:23774#L783)
+## <a name="ViewIterator">type</a> [ViewIterator](/src/target/types.go?s=23725:23770#L783)
 ``` go
 type ViewIterator func(*ViewDefinition) error
 ```

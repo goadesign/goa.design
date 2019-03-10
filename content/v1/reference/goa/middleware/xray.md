@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:53-08:00"
 description="github.com/goadesign/goa/middleware/xray"
 +++
 
@@ -42,6 +42,7 @@ description="github.com/goadesign/goa/middleware/xray"
   * [func (s *Segment) RecordError(e error)](#Segment.RecordError)
   * [func (s *Segment) RecordRequest(req *http.Request, namespace string)](#Segment.RecordRequest)
   * [func (s *Segment) RecordResponse(resp *http.Response)](#Segment.RecordResponse)
+  * [func (s *Segment) SubmitInProgress()](#Segment.SubmitInProgress)
 * [type StackEntry](#StackEntry)
 * [type TestClientExpectation](#TestClientExpectation)
   * [func NewTestClientExpectation() *TestClientExpectation](#NewTestClientExpectation)
@@ -68,7 +69,7 @@ description="github.com/goadesign/goa/middleware/xray"
 
 
 
-## <a name="New">func</a> [New](/src/target/middleware.go?s=1442:1498#L49)
+## <a name="New">func</a> [New](/src/target/middleware.go?s=2214:2270#L65)
 ``` go
 func New(service, daemon string) (goa.Middleware, error)
 ```
@@ -101,9 +102,28 @@ closing the top level segment. Typical usage:
 	}
 	return
 
+An X-Ray trace is limited to 500 KB of segment data (JSON) being submitted
+for it. See: <a href="https://aws.amazon.com/xray/pricing/">https://aws.amazon.com/xray/pricing/</a>
+
+Traces running for multiple minutes may encounter additional dynamic limits,
+resulting in the trace being limited to less than 500 KB. The workaround is
+to send less data -- fewer segments, subsegments, annotations, or metadata.
+And perhaps split up a single large trace into several different traces.
+
+Here are some observations of the relationship between trace duration and
+the number of bytes that could be sent successfully:
 
 
-## <a name="NewID">func</a> [NewID](/src/target/middleware.go?s=2423:2442#L90)
+	- 49 seconds: 543 KB
+	- 2.4 minutes: 51 KB
+	- 6.8 minutes: 14 KB
+	- 1.4 hours:   14 KB
+
+Besides those varying size limitations, a trace may be open for up to 7 days.
+
+
+
+## <a name="NewID">func</a> [NewID](/src/target/middleware.go?s=3195:3214#L106)
 ``` go
 func NewID() string
 ```
@@ -112,7 +132,7 @@ compatible with AWS X-Ray.
 
 
 
-## <a name="NewTraceID">func</a> [NewTraceID](/src/target/middleware.go?s=2621:2645#L98)
+## <a name="NewTraceID">func</a> [NewTraceID](/src/target/middleware.go?s=3393:3417#L114)
 ``` go
 func NewTraceID() string
 ```
@@ -121,7 +141,7 @@ compatible with AWS X-Ray.
 
 
 
-## <a name="WithSegment">func</a> [WithSegment](/src/target/middleware.go?s=2865:2930#L106)
+## <a name="WithSegment">func</a> [WithSegment](/src/target/middleware.go?s=3637:3702#L122)
 ``` go
 func WithSegment(ctx context.Context, s *Segment) context.Context
 ```
@@ -157,7 +177,7 @@ Example of how to wrap http.Client's transport:
 
 
 
-## <a name="Cause">type</a> [Cause](/src/target/segment.go?s=3497:3910#L100)
+## <a name="Cause">type</a> [Cause](/src/target/segment.go?s=3490:3903#L98)
 ``` go
 type Cause struct {
     // ID to segment where error originated, exclusive with other
@@ -182,7 +202,7 @@ Cause list errors that happens during the request.
 
 
 
-## <a name="Exception">type</a> [Exception](/src/target/segment.go?s=3947:4175#L112)
+## <a name="Exception">type</a> [Exception](/src/target/segment.go?s=3940:4168#L110)
 ``` go
 type Exception struct {
     // Message contains the error message.
@@ -204,7 +224,7 @@ Exception describes an error.
 
 
 
-## <a name="HTTP">type</a> [HTTP](/src/target/segment.go?s=2740:2985#L77)
+## <a name="HTTP">type</a> [HTTP](/src/target/segment.go?s=2733:2978#L75)
 ``` go
 type HTTP struct {
     // Request contains the data reported about the incoming request.
@@ -225,7 +245,7 @@ HTTP describes a HTTP request.
 
 
 
-## <a name="Request">type</a> [Request](/src/target/segment.go?s=3026:3292#L85)
+## <a name="Request">type</a> [Request](/src/target/segment.go?s=3019:3285#L83)
 ``` go
 type Request struct {
     Method        string `json:"method,omitempty"`
@@ -247,7 +267,7 @@ Request describes a HTTP request.
 
 
 
-## <a name="Response">type</a> [Response](/src/target/segment.go?s=3335:3439#L94)
+## <a name="Response">type</a> [Response](/src/target/segment.go?s=3328:3432#L92)
 ``` go
 type Response struct {
     Status        int   `json:"status"`
@@ -266,7 +286,7 @@ Response describes a HTTP response.
 
 
 
-## <a name="Segment">type</a> [Segment](/src/target/segment.go?s=231:2702#L20)
+## <a name="Segment">type</a> [Segment](/src/target/segment.go?s=231:2695#L20)
 ``` go
 type Segment struct {
     // Mutex used to synchronize access to segment.
@@ -285,11 +305,11 @@ type Segment struct {
     // remote service. It is only initialized for the root segment.
     ParentID string `json:"parent_id,omitempty"`
     // StartTime is the segment start time.
-    StartTime float64 `json:"start_time,omitempty"`
+    StartTime float64 `json:"start_time"`
     // EndTime is the segment end time.
     EndTime float64 `json:"end_time,omitempty"`
     // InProgress is true if the segment hasn't completed yet.
-    InProgress bool `json:"in_progress"`
+    InProgress bool `json:"in_progress,omitempty""`
     // HTTP contains the HTTP request and response information and is
     // only initialized for the root segment.
     HTTP *HTTP `json:"http,omitempty"`
@@ -299,21 +319,19 @@ type Segment struct {
     // Error is true when a request causes an internal error. It is
     // automatically set by Close when the response status code is
     // 500 or more.
-    Error bool `json:"error"`
+    Error bool `json:"error,omitempty""`
     // Fault is true when a request results in an error that is due
     // to the user. Typically it should be set when the response
     // status code is between 400 and 500 (but not 429).
-    Fault bool `json:"fault"`
+    Fault bool `json:"fault,omitempty""`
     // Throttle is true when a request is throttled. It is set to
     // true when the segment closes and the response status code is
     // 429. Client code may set it to true manually as well.
-    Throttle bool `json:"throttle"`
+    Throttle bool `json:"throttle,omitempty""`
     // Annotations contains the segment annotations.
     Annotations map[string]interface{} `json:"annotations,omitempty"`
     // Metadata contains the segment metadata.
     Metadata map[string]map[string]interface{} `json:"metadata,omitempty"`
-    // Subsegments contains all the subsegments.
-    Subsegments []*Segment `json:"subsegments,omitempty"`
     // Parent is the subsegment parent, it's nil for the root
     // segment.
     Parent *Segment `json:"-"`
@@ -329,14 +347,14 @@ Segment represents a AWS X-Ray segment document.
 
 
 
-### <a name="ContextSegment">func</a> [ContextSegment](/src/target/middleware.go?s=3054:3103#L111)
+### <a name="ContextSegment">func</a> [ContextSegment](/src/target/middleware.go?s=3826:3875#L127)
 ``` go
 func ContextSegment(ctx context.Context) *Segment
 ```
 ContextSegment extracts the segment set in the context with WithSegment.
 
 
-### <a name="NewSegment">func</a> [NewSegment](/src/target/segment.go?s=4904:4973#L153)
+### <a name="NewSegment">func</a> [NewSegment](/src/target/segment.go?s=4897:4966#L151)
 ``` go
 func NewSegment(name, traceID, spanID string, conn net.Conn) *Segment
 ```
@@ -347,7 +365,7 @@ on close.
 
 
 
-### <a name="Segment.AddAnnotation">func</a> (\*Segment) [AddAnnotation](/src/target/segment.go?s=8092:8149#L287)
+### <a name="Segment.AddAnnotation">func</a> (\*Segment) [AddAnnotation](/src/target/segment.go?s=8052:8109#L284)
 ``` go
 func (s *Segment) AddAnnotation(key string, value string)
 ```
@@ -356,7 +374,7 @@ AddAnnotation adds a key-value pair that can be queried by AWS X-Ray.
 
 
 
-### <a name="Segment.AddBoolAnnotation">func</a> (\*Segment) [AddBoolAnnotation](/src/target/segment.go?s=8435:8494#L297)
+### <a name="Segment.AddBoolAnnotation">func</a> (\*Segment) [AddBoolAnnotation](/src/target/segment.go?s=8395:8454#L294)
 ``` go
 func (s *Segment) AddBoolAnnotation(key string, value bool)
 ```
@@ -365,7 +383,7 @@ AddBoolAnnotation adds a key-value pair that can be queried by AWS X-Ray.
 
 
 
-### <a name="Segment.AddBoolMetadata">func</a> (\*Segment) [AddBoolMetadata](/src/target/segment.go?s=9329:9386#L325)
+### <a name="Segment.AddBoolMetadata">func</a> (\*Segment) [AddBoolMetadata](/src/target/segment.go?s=9289:9346#L322)
 ``` go
 func (s *Segment) AddBoolMetadata(key string, value bool)
 ```
@@ -374,7 +392,7 @@ AddBoolMetadata adds a key-value pair that can be queried by AWS X-Ray.
 
 
 
-### <a name="Segment.AddInt64Annotation">func</a> (\*Segment) [AddInt64Annotation](/src/target/segment.go?s=8262:8323#L292)
+### <a name="Segment.AddInt64Annotation">func</a> (\*Segment) [AddInt64Annotation](/src/target/segment.go?s=8222:8283#L289)
 ``` go
 func (s *Segment) AddInt64Annotation(key string, value int64)
 ```
@@ -383,7 +401,7 @@ AddInt64Annotation adds a key-value pair that can be queried by AWS X-Ray.
 
 
 
-### <a name="Segment.AddInt64Metadata">func</a> (\*Segment) [AddInt64Metadata](/src/target/segment.go?s=9162:9221#L320)
+### <a name="Segment.AddInt64Metadata">func</a> (\*Segment) [AddInt64Metadata](/src/target/segment.go?s=9122:9181#L317)
 ``` go
 func (s *Segment) AddInt64Metadata(key string, value int64)
 ```
@@ -392,7 +410,7 @@ AddInt64Metadata adds a key-value pair that can be queried by AWS X-Ray.
 
 
 
-### <a name="Segment.AddMetadata">func</a> (\*Segment) [AddMetadata](/src/target/segment.go?s=8998:9053#L315)
+### <a name="Segment.AddMetadata">func</a> (\*Segment) [AddMetadata](/src/target/segment.go?s=8958:9013#L312)
 ``` go
 func (s *Segment) AddMetadata(key string, value string)
 ```
@@ -402,7 +420,7 @@ Metadata is not queryable, but is recorded.
 
 
 
-### <a name="Segment.Capture">func</a> (\*Segment) [Capture](/src/target/segment.go?s=7909:7958#L280)
+### <a name="Segment.Capture">func</a> (\*Segment) [Capture](/src/target/segment.go?s=7845:7894#L276)
 ``` go
 func (s *Segment) Capture(name string, fn func())
 ```
@@ -418,7 +436,7 @@ Usage:
 
 
 
-### <a name="Segment.Close">func</a> (\*Segment) [Close](/src/target/segment.go?s=9885:9910#L343)
+### <a name="Segment.Close">func</a> (\*Segment) [Close](/src/target/segment.go?s=9845:9870#L340)
 ``` go
 func (s *Segment) Close()
 ```
@@ -427,7 +445,7 @@ Close closes the segment by setting its EndTime.
 
 
 
-### <a name="Segment.NewSubsegment">func</a> (\*Segment) [NewSubsegment](/src/target/segment.go?s=7282:7335#L251)
+### <a name="Segment.NewSubsegment">func</a> (\*Segment) [NewSubsegment](/src/target/segment.go?s=7275:7328#L249)
 ``` go
 func (s *Segment) NewSubsegment(name string) *Segment
 ```
@@ -436,7 +454,7 @@ NewSubsegment creates a subsegment of s.
 
 
 
-### <a name="Segment.RecordContextResponse">func</a> (\*Segment) [RecordContextResponse](/src/target/segment.go?s=5881:5941#L199)
+### <a name="Segment.RecordContextResponse">func</a> (\*Segment) [RecordContextResponse](/src/target/segment.go?s=5874:5934#L197)
 ``` go
 func (s *Segment) RecordContextResponse(ctx context.Context)
 ```
@@ -447,7 +465,7 @@ It sets Throttle, Fault, Error and HTTP.Response
 
 
 
-### <a name="Segment.RecordError">func</a> (\*Segment) [RecordError](/src/target/segment.go?s=6514:6552#L222)
+### <a name="Segment.RecordError">func</a> (\*Segment) [RecordError](/src/target/segment.go?s=6507:6545#L220)
 ``` go
 func (s *Segment) RecordError(e error)
 ```
@@ -461,7 +479,7 @@ github.com/pkg/errors package. Otherwise the Stack and Cause fields are empty.
 
 
 
-### <a name="Segment.RecordRequest">func</a> (\*Segment) [RecordRequest](/src/target/segment.go?s=5244:5312#L168)
+### <a name="Segment.RecordRequest">func</a> (\*Segment) [RecordRequest](/src/target/segment.go?s=5237:5305#L166)
 ``` go
 func (s *Segment) RecordRequest(req *http.Request, namespace string)
 ```
@@ -472,7 +490,7 @@ It sets Http.Request & Namespace (ex: "remote")
 
 
 
-### <a name="Segment.RecordResponse">func</a> (\*Segment) [RecordResponse](/src/target/segment.go?s=5542:5595#L183)
+### <a name="Segment.RecordResponse">func</a> (\*Segment) [RecordResponse](/src/target/segment.go?s=5535:5588#L181)
 ``` go
 func (s *Segment) RecordResponse(resp *http.Response)
 ```
@@ -483,7 +501,24 @@ It sets Throttle, Fault, Error and HTTP.Response
 
 
 
-## <a name="StackEntry">type</a> [StackEntry](/src/target/segment.go?s=4236:4427#L121)
+### <a name="Segment.SubmitInProgress">func</a> (\*Segment) [SubmitInProgress](/src/target/segment.go?s=10465:10501#L356)
+``` go
+func (s *Segment) SubmitInProgress()
+```
+SubmitInProgress sends this in-progress segment to the AWS X-Ray daemon.
+This way, the segment will be immediately visible in the UI, with status "Pending".
+When this segment is closed, the final version will overwrite any in-progress version.
+This method should be called no more than once for this segment. Subsequent calls will have no effect.
+
+See the `in_progress` docs:
+
+
+	<a href="https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-fields">https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-fields</a>
+
+
+
+
+## <a name="StackEntry">type</a> [StackEntry](/src/target/segment.go?s=4229:4420#L119)
 ``` go
 type StackEntry struct {
     // Path to code file

@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:53-08:00"
 description="github.com/goadesign/goa/uuid"
 +++
 
@@ -45,14 +45,14 @@ UUID This is needed to build with gopherjs
 
 
 
-### <a name="FromString">func</a> [FromString](/src/target/uuid.go?s=237:280#L11)
+### <a name="FromString">func</a> [FromString](/src/target/uuid.go?s=233:276#L11)
 ``` go
 func FromString(input string) (UUID, error)
 ```
 FromString Wrapper around the real FromString
 
 
-### <a name="NewV4">func</a> [NewV4](/src/target/uuid.go?s=385:402#L17)
+### <a name="NewV4">func</a> [NewV4](/src/target/uuid.go?s=381:398#L17)
 ``` go
 func NewV4() UUID
 ```
@@ -62,7 +62,7 @@ NewV4 Wrapper over the real NewV4 method
 
 
 
-### <a name="UUID.MarshalBinary">func</a> (UUID) [MarshalBinary](/src/target/uuid.go?s=766:811#L32)
+### <a name="UUID.MarshalBinary">func</a> (UUID) [MarshalBinary](/src/target/uuid.go?s=762:807#L32)
 ``` go
 func (u UUID) MarshalBinary() ([]byte, error)
 ```
@@ -71,7 +71,7 @@ MarshalBinary Wrapper over the real MarshalBinary method
 
 
 
-### <a name="UUID.MarshalText">func</a> (UUID) [MarshalText](/src/target/uuid.go?s=613:665#L27)
+### <a name="UUID.MarshalText">func</a> (UUID) [MarshalText](/src/target/uuid.go?s=609:661#L27)
 ``` go
 func (u UUID) MarshalText() (text []byte, err error)
 ```
@@ -80,7 +80,7 @@ MarshalText Wrapper over the real MarshalText method
 
 
 
-### <a name="UUID.String">func</a> (UUID) [String](/src/target/uuid.go?s=492:521#L22)
+### <a name="UUID.String">func</a> (UUID) [String](/src/target/uuid.go?s=488:517#L22)
 ``` go
 func (u UUID) String() string
 ```
@@ -89,7 +89,7 @@ String Wrapper over the real String method
 
 
 
-### <a name="UUID.UnmarshalBinary">func</a> (\*UUID) [UnmarshalBinary](/src/target/uuid.go?s=918:967#L37)
+### <a name="UUID.UnmarshalBinary">func</a> (\*UUID) [UnmarshalBinary](/src/target/uuid.go?s=914:963#L37)
 ``` go
 func (u *UUID) UnmarshalBinary(data []byte) error
 ```
@@ -98,7 +98,7 @@ UnmarshalBinary Wrapper over the real UnmarshalBinary method
 
 
 
-### <a name="UUID.UnmarshalText">func</a> (\*UUID) [UnmarshalText](/src/target/uuid.go?s=1140:1187#L47)
+### <a name="UUID.UnmarshalText">func</a> (\*UUID) [UnmarshalText](/src/target/uuid.go?s=1136:1183#L47)
 ``` go
 func (u *UUID) UnmarshalText(text []byte) error
 ```

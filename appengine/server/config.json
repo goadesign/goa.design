@@ -11,6 +11,7 @@
   "webroot": "/",
   "importroot": "/goa",
   "pluginsimportroot": "/plugins/",
+  "examplesimportroot": "/examples/",
   "index": "index.html",
   "hook": "/-/hook/gcs",
   "gcs": "https://storage.googleapis.com",

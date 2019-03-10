@@ -1,5 +1,5 @@
 +++
-date="2018-09-11T15:21:35-07:00"
+date="2019-03-09T22:12:52-08:00"
 description="github.com/goadesign/goa/goagen/gen_app"
 +++
 
@@ -242,7 +242,7 @@ resulting HTTP response.
 
 
 
-### <a name="NewControllersWriter">func</a> [NewControllersWriter](/src/target/writers.go?s=9510:9580#L296)
+### <a name="NewControllersWriter">func</a> [NewControllersWriter](/src/target/writers.go?s=9583:9653#L298)
 ``` go
 func NewControllersWriter(filename string) (*ControllersWriter, error)
 ```
@@ -253,7 +253,7 @@ Handlers provide the glue between the underlying request data and the user contr
 
 
 
-### <a name="ControllersWriter.Execute">func</a> (\*ControllersWriter) [Execute](/src/target/writers.go?s=10165:10238#L319)
+### <a name="ControllersWriter.Execute">func</a> (\*ControllersWriter) [Execute](/src/target/writers.go?s=10238:10311#L321)
 ``` go
 func (w *ControllersWriter) Execute(data []*ControllerTemplateData) error
 ```
@@ -262,7 +262,7 @@ Execute writes the handlers GoGenerator
 
 
 
-### <a name="ControllersWriter.WriteInitService">func</a> (\*ControllersWriter) [WriteInitService](/src/target/writers.go?s=9854:9947#L309)
+### <a name="ControllersWriter.WriteInitService">func</a> (\*ControllersWriter) [WriteInitService](/src/target/writers.go?s=9927:10020#L311)
 ``` go
 func (w *ControllersWriter) WriteInitService(encoders, decoders []*EncoderTemplateData) error
 ```
@@ -373,7 +373,7 @@ Media types are data structures used to render the response bodies.
 
 
 
-### <a name="NewMediaTypesWriter">func</a> [NewMediaTypesWriter](/src/target/writers.go?s=12128:12196#L379)
+### <a name="NewMediaTypesWriter">func</a> [NewMediaTypesWriter](/src/target/writers.go?s=12305:12373#L384)
 ``` go
 func NewMediaTypesWriter(filename string) (*MediaTypesWriter, error)
 ```
@@ -384,7 +384,7 @@ Media types contain the data used to render response bodies.
 
 
 
-### <a name="MediaTypesWriter.Execute">func</a> (\*MediaTypesWriter) [Execute](/src/target/writers.go?s=12434:12506#L388)
+### <a name="MediaTypesWriter.Execute">func</a> (\*MediaTypesWriter) [Execute](/src/target/writers.go?s=12611:12683#L393)
 ``` go
 func (w *MediaTypesWriter) Execute(mt *design.MediaTypeDefinition) error
 ```
@@ -499,7 +499,7 @@ actions.
 
 
 
-### <a name="NewResourcesWriter">func</a> [NewResourcesWriter](/src/target/writers.go?s=11616:11682#L364)
+### <a name="NewResourcesWriter">func</a> [NewResourcesWriter](/src/target/writers.go?s=11793:11859#L369)
 ``` go
 func NewResourcesWriter(filename string) (*ResourcesWriter, error)
 ```
@@ -510,7 +510,7 @@ Resources provide the glue between the underlying request data and the user cont
 
 
 
-### <a name="ResourcesWriter.Execute">func</a> (\*ResourcesWriter) [Execute](/src/target/writers.go?s=11884:11943#L373)
+### <a name="ResourcesWriter.Execute">func</a> (\*ResourcesWriter) [Execute](/src/target/writers.go?s=12061:12120#L378)
 ``` go
 func (w *ResourcesWriter) Execute(data *ResourceData) error
 ```
@@ -535,7 +535,7 @@ SecurityWriter generate code for action-level security handlers.
 
 
 
-### <a name="NewSecurityWriter">func</a> [NewSecurityWriter](/src/target/writers.go?s=11020:11084#L349)
+### <a name="NewSecurityWriter">func</a> [NewSecurityWriter](/src/target/writers.go?s=11197:11261#L354)
 ``` go
 func NewSecurityWriter(filename string) (*SecurityWriter, error)
 ```
@@ -546,7 +546,7 @@ Those functionalities are there to support action-middleware related to security
 
 
 
-### <a name="SecurityWriter.Execute">func</a> (\*SecurityWriter) [Execute](/src/target/writers.go?s=11305:11387#L358)
+### <a name="SecurityWriter.Execute">func</a> (\*SecurityWriter) [Execute](/src/target/writers.go?s=11482:11564#L363)
 ``` go
 func (w *SecurityWriter) Execute(schemes []*design.SecuritySchemeDefinition) error
 ```
@@ -617,7 +617,7 @@ User types are data structures defined in the DSL with "Type".
 
 
 
-### <a name="NewUserTypesWriter">func</a> [NewUserTypesWriter](/src/target/writers.go?s=13177:13243#L416)
+### <a name="NewUserTypesWriter">func</a> [NewUserTypesWriter](/src/target/writers.go?s=13354:13420#L421)
 ``` go
 func NewUserTypesWriter(filename string) (*UserTypesWriter, error)
 ```
@@ -628,7 +628,7 @@ User types contain custom data structured defined in the DSL with "Type".
 
 
 
-### <a name="UserTypesWriter.Execute">func</a> (\*UserTypesWriter) [Execute](/src/target/writers.go?s=13527:13596#L429)
+### <a name="UserTypesWriter.Execute">func</a> (\*UserTypesWriter) [Execute](/src/target/writers.go?s=13704:13773#L434)
 ``` go
 func (w *UserTypesWriter) Execute(t *design.UserTypeDefinition) error
 ```
