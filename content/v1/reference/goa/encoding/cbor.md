@@ -1,5 +1,5 @@
 +++
-date="2019-03-09T22:12:52-08:00"
+date="2019-03-10T18:05:49-07:00"
 description="github.com/goadesign/goa/encoding/cbor"
 +++
 

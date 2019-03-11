@@ -4,6 +4,8 @@ description = "goa - Design First."
 homepage = "https://goa.design"
 license = "MIT"
 licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
+disableKinds = ["taxonomy", "taxonomyTerm"]
+
 
 uglyURLs = false
 pluralizelisttitles = false
@@ -15,11 +17,6 @@ pygmentsuseclasses = false
 [author]
 name = "Raphael Simon and the goa contributors"
 homepage = "https://github.com/goadesign/goa/graphs/contributors"
-
-[taxonomies]
-tag = "tags"
-category = "categories"
-series = "series"
 
 DefaultContentLanguage = "en"
 
