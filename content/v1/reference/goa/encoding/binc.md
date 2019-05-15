@@ -1,5 +1,5 @@
 +++
-date="2019-03-10T18:05:49-07:00"
+date="2019-05-09T20:22:43-07:00"
 description="github.com/goadesign/goa/encoding/binc"
 +++
 

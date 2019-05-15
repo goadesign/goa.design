@@ -7,56 +7,64 @@ name = "Plugins"
 parent = "extend"
 +++
 
-[goa plugins](https://godoc.org/github.com/goadesign/plugins) makes it possible to
-create new DSLs and accompanying generators. They run before rendering
-the final artifacts which makes it possible to alter the templates
-exposed by the goa code generators, thereby, producing new kinds of outputs
-from any DSL.
+[Goa plugins](https://godoc.org/github.com/goadesign/plugins) make it possible
+to create new DSLs and accompanying generators. They run before rendering the
+final artifacts which makes it possible to alter the templates exposed by the
+Goa code generators, thereby, producing new kinds of outputs from any DSL.
 
-[goa plugins repository](https://github.com/goadesign/plugins) houses all the goa
-plugins. Refer to the README in every plugin for instructions on how to use the
-plugin.
+[Goa plugins repository](https://github.com/goadesign/plugins) houses a set of
+public the goa plugins. Refer to the README in every plugin for instructions on
+how to use it.
 
-## Build Your Own Plugin
+## Building Your Own Plugin
 
-The important steps to write your own plugin are:
+Plugins can be used to do a few different things:
 
-* A plugin may adds its own DSLs which must be usable along with the existing
-  goa DSLs. The plugin DSLs may produce completely different code or modify
-  the existing code from goa code generators.
-* A plugin code generator may implement the [GenerateFunc type](https://godoc.org/goa.design/goa/codegen#GenerateFunc)
-  if it wants to modify the goa generated files or to generate new files and
-  return them to the final artifact generation.
+* A plugin may add its own DSL which is used alongside with the existing Goa
+  DSL. The plugin DSL may produce completely different code or modify the
+  existing code produced by Goa code generators.
+
+* A plugin may provide a
+  [GenerateFunc](https://godoc.org/goa.design/goa/codegen#GenerateFunc) to
+  modify the Goa generated files or to generate new files and return them to the
+  final artifact generation.
+
 ```go
 type GenerateFunc func(genpkg string, roots []eval.Root, files []*File) ([]*File, error)
 ```
 
-* A plugin may implement the [PrepareFunc type](https://godoc.org/goa.design/goa/codegen#PrepareFunc),
-  which runs before the goa code generators, if it wants to modify the existing
-  design roots (for e.g. add custom validations) or to prepare the plugin for
-  execution.
+* A plugin may provide a
+  [PrepareFunc](https://godoc.org/goa.design/goa/codegen#PrepareFunc), to modify
+  the design prior to the code being generated.
+
 ```go
 type PrepareFunc func(genpkg string, roots []eval.Root) error
 ```
 
-* A plugin must register itself to the goa code generator using one of
-  [RegisterPlugin](https://godoc.org/goa.design/goa/codegen#RegisterPlugin),
-  [RegisterPluginFirst](https://godoc.org/goa.design/goa/codegen#RegisterPluginFirst),
-  or [RegisterPluginLast](https://godoc.org/goa.design/goa/codegen#RegisterPlugin)
-  functions.
+Plugins register themselves using one of the
+[RegisterPlugin](https://godoc.org/goa.design/goa/codegen#RegisterPlugin),
+[RegisterPluginFirst](https://godoc.org/goa.design/goa/codegen#RegisterPluginFirst),
+or
+[RegisterPluginLast](https://godoc.org/goa.design/goa/codegen#RegisterPlugin)
+functions.
 
-Let us look at the [CORS plugin](https://github.com/goadesign/plugins/tree/master/cors)
-to understand more about writing a custom plugin.
+## CORS Plugin
 
-The CORS plugin adds its own [DSLs](https://godoc.org/github.com/goadesign/plugins/cors/dsl)
-which can be used in the design along with the other DSLs as shown below:
+One of the built-in plugins is the
+[CORS plugin](https://github.com/goadesign/plugins/tree/master/cors) which adds
+the ability to define CORS properties on HTTP endpoints and uses the
+corresponding expressions to generate code that implements CORS for the API.
+
+The CORS plugin adds its own
+[DSL](https://godoc.org/github.com/goadesign/plugins/cors/dsl)
+which can be used in the design as shown below:
 
 ```go
 package design
 
 import (
-	. "goa.design/goa/dsl"
-	cors "goa.design/plugins/cors/dsl"
+	. "goa.design/goa/v3/dsl"
+	cors "goa.design/plugins/v3/cors/dsl"
 )
 
 var _ = Service("calc", func() {
@@ -90,19 +98,20 @@ var _ = Service("calc", func() {
 })
 ```
 
-The above design sets up a CORS policy on all the endpoints defined in the
+The design above sets up a CORS policy on all the endpoints defined in the
 `calc` service.
 
-The CORS plugin registers itself to goa code generator by calling the
-`RegisterPlugin` function in the goa `codegen` package and adds its own
-[code generator](https://godoc.org/github.com/goadesign/plugins/cors#Generate)
-which implements the `GenerateFunc` type.
+The CORS plugin registers itself by calling the `RegisterPlugin` function in the
+Goa `codegen` package and adds its own code
+[generator](https://godoc.org/github.com/goadesign/plugins/cors#Generate) which
+implements the `GenerateFunc` type.
+
 ```go
 package cors
 
 import (
-	"goa.design/goa/codegen"
-	"goa.design/goa/eval"
+	"goa.design/goa/v3/codegen"
+	"goa.design/goa/v3/eval"
 )
 
 func init() {
@@ -121,44 +130,11 @@ func Generate(genpkg string, roots []eval.Root, files []*codegen.File) ([]*codeg
 package dsl
 
 // Register code generators for the CORS plugin
-import _ "goa.design/plugins/cors"
+import _ "goa.design/plugins/v3/cors"
 ```
+
 This generator modifies the generated HTTP server code to handle preflight
 requests by mounting the `CORS` endpoint.
 
-Now when we run the [goa gen command](/v2/getting-started/#code-generation),
-we will observe the following code generation changes in the HTTP server
-package which we would normally not find if we didn't use the CORS DSLs in the
-design.
-
-```go
-// gen/http/calc/server/server.go
-
-package server
-
-...
-
-// Mount configures the mux to serve the calc endpoints.
-func Mount(mux goahttp.Muxer, h *Server) {
-	MountAddHandler(mux, h.Add)
-	MountCORSHandler(mux, h.CORS)
-}
-
-...
-
-// MountCORSHandler configures the mux to serve the CORS endpoints for the
-// service calc.
-func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
-	h = handleCalcOrigin(h)
-  ...
-	mux.Handle("OPTIONS", "/add/{a}/{b}", f)
-}
-
-...
-
-// handleCalcOrigin applies the CORS response headers corresponding to the
-// origin for the service calc.
-func handleCalcOrigin(h http.Handler) http.Handler {
-  ...
-}
-```
+The Goa code generation algorithms then invoke the function which modifies the
+generated HTTP server package.

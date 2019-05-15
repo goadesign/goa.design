@@ -18,14 +18,14 @@ a browser to [http://localhost:1313](http://localhost:1313) and browse to the pa
 
 ## Translations
 
-Translations are kept under the `content` directory. Each language has its own top level directory
-and its own branch both named after the [language
-code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
+Translations are kept under the `content` directory. Each language has its own file extension of
+the form `<code>.md` where `<code>` is the ISO 2 letter
+[language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
 
 To contribute to an existing translation:
 
 1. Fork and Clone the repo.
-2. Checkout the language specific branch.
+2. Checkout the language specific branch (named after the language code).
 3. Make your changes in the branch in `content/<code>`.
 4. Send Pull Requests to the branch.
 5. When the translation is ready send a PR to the `master` branch.
@@ -33,7 +33,8 @@ To contribute to an existing translation:
 To start a new translation:
 
 1. Open a new issue describing the new language being translated to
-2. [Figure out your language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/). For example: `ja`, `zh`, `es`, `de`, ...etc.
+2. [Figure out your language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
+   For example: `ja`, `zh`, `es`, `de`, ...etc.
 3. A team member will make a new branch. For example `fr` or `ja`.
 4. Fork the branch and add the required files, see below.
 5. Send PRs to the branch (this can be work in progress).
@@ -42,5 +43,4 @@ To start a new translation:
 The files that support a given language are:
 
 * `layouts/<code>/`: contains the layout pages
-* `layouts/section/<code>.html`: contains the index page
 * `layouts/partials/<code>/`: contains the partials files

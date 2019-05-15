@@ -1,39 +1,40 @@
 +++
 title = "Handling Errors"
-weight = 4
+weight = 3
 
 [menu.main]
 name = "Handling Errors"
 parent = "design"
 +++
 
-goa makes it possible to describe the errors that a service method may return.
-This allows goa to generate documentation and code that support the encoding of
-the errors. Errors have a name, a type which may be a primitive type or a user
-defined type and a description that is used to generate comments and
-documentation.
+Goa makes it possible to describe the errors that a service method may return.
+From this description Goa can generate both code and documentation. The code
+provides the transport specific marshalling and unmarshalling logic. Errors have
+a name, a type which may be a primitive type or a user defined type and a
+description that is used to generate comments and documentation.
 
-Refer [error handling example](https://github.com/goadesign/goa/tree/v2/examples/error)
-for more information on how to handle errors in goa.
+This document describes how to define errors in Goa designs and how to leverage
+the generated code to return errors from service methods.
 
-## Error Expression
+## Design
 
-The goa DSL makes it possible to define error results on methods and on entire
-services using the [Error DSL](https://godoc.org/goa.design/goa/dsl#Error):
+The Goa DSL makes it possible to define error results on methods and on entire
+services using the [Error](https://godoc.org/goa.design/goa/dsl#Error)
+expression:
 
 ```go
 var _ = Service("divider", func() {
-    // The "div_by_zero" error is defined at the service level and
-    // thus may be returned by both "divide" and "integer_divide".
-    Error("div_by_zero", func() {
-        Description("div_by_zero is the error result returned by the service methods when the right operand is 0.")
+    // The "DivByZero" error is defined at the service level and
+    // thus may be returned by both "divide" and "integral_divide".
+    Error("DivByZero", func() {
+        Description("DivByZero is the error returned by the service methods when the right operand is 0.")
     })
 
-    Method("integer_divide", func() {
-        // The "has_remainder" error is defined at the method
-        // level and is thus specific to "integer_divide".
-        Error("has_remainder", func() {
-            Description("has_remainder is the error result returned when an integer division has a remainder.")
+    Method("integral_divide", func() {
+        // The "HasRemainder" error is defined at the method
+        // level and is thus specific to "integral_divide".
+        Error("HasRemainder", func() {
+            Description("HasRemainder is the error returned when an integer division has a remainder.")
         })
         // ...
     })
@@ -44,7 +45,7 @@ var _ = Service("divider", func() {
 })
 ```
 
-In this example both the `div_by_zero` and `has_remainder` errors use the default
+In this example both the `DivByZero` and `HasRemainder` errors use the default
 error type [ErrorResult](https://godoc.org/goa.design/goa/expr#pkg-variables).
 This type defines the following fields:
 
@@ -86,31 +87,31 @@ error response.
 
 ## Designing Responses
 
-The [Response DSL](https://godoc.org/goa.design/goa/dsl#Response) makes it
+The [Response](https://godoc.org/goa.design/goa/dsl#Response) function makes it
 possible to define the HTTP/gRPC responses associated with a given error.
 
 ```go
 var _ = Service("divider", func() {
-    Error("div_by_zero")
+    Error("DivByZero")
     HTTP(func() {
-        // Use HTTP status code 400 Bad Request for "div_by_zero"
+        // Use HTTP status code 400 Bad Request for "DivByZero"
         // errors.
-        Response("div_by_zero", StatusBadRequest)
+        Response("DivByZero", StatusBadRequest)
     })
     GRPC(func() {
-        // Use gRPC status code "InvalidArgument" for "div_by_zero"
+        // Use gRPC status code "InvalidArgument" for "DivByZero"
         // errors.
-        Response("div_by_zero", CodeInvalidArgument)
+        Response("DivByZero", CodeInvalidArgument)
     })
 
-    Method("integer_divide", func() {
-        Error("has_remainder")
+    Method("integral_divide", func() {
+        Error("HasRemainder")
         HTTP(func() {
-            Response("has_remainder", StatusExpectationFailed)
+            Response("HasRemainder", StatusExpectationFailed)
             // ...
         })
         GRPC(func() {
-          Response("has_remainder", CodeUnknown)
+          Response("HasRemainder", CodeUnknown)
         })
     })
     // ...
@@ -124,9 +125,11 @@ build the corresponding errors: `MakeDivByZero` and `MakeHasRemainder`. These
 functions accept a Go error as argument making it convenient to map a business
 logic error to a specific error result.
 
-Here is an example of what an implementation of `integer_divide` could look like:
+Here is an example of what an implementation of `integral_divide` could look
+like:
+
 ```go
-func (s *dividerSvc) IntegerDivide(ctx context.Context, p *dividersvc.IntOperands) (int, error) {
+func (s *dividerSvc) IntegralDivide(ctx context.Context, p *dividersvc.IntOperands) (int, error) {
     if p.B == 0 {
         // Use generated function to create error result
         return 0, dividersvc.MakeDivByZero(fmt.Errorf("right operand cannot be 0"))
@@ -143,15 +146,27 @@ And that's it! Given this, goa knows to initialize a `ErrorResult` using the
 provided error to initiliaze the message field and initializes all the other
 fields from the information provided in the design. The generated transport code
 also writes the proper HTTP/gRPC status code as defined in the Response DSL.
+Using the generated command line tool to verify:
+
+```bash
+./dividercli -v divider integer-divide -a 1 -b 2
+> GET http://localhost:8080/idiv/1/2
+< 417 Expectation Failed
+< Content-Length: 68
+< Content-Type: application/json
+< Date: Thu, 22 Mar 2018 01:34:33 GMT
+{"name":"HasRemainder","id":"dlqvenWL","message":"remainder is 1"}
+```
 
 ## Using Custom Error Types
 
 The `Error` DSL allows specifying a type for the error result thereby
 overridding the default consisting of `ErrorResult`. Any type can be used for
-defining the shape of the error result. Here is an example using string as
-error result type:
+defining the shape of the error result. Here is an example using string as error
+result type:
+
 ```go
-Error("not_found", String, "not_found is the result returned when there is no bottle with the given ID.")
+Error("NotFound", String, "NotFound is the error returned when there is no bottle with the given ID.")
 ```
 
 Note how the description can be defined inline when the type is defined
@@ -160,16 +175,17 @@ a description inline in this case as well.
 
 There are a couple of caveats to be aware of when using custom error result types:
 
-* The `Temporary`, `Timeout`, and `Fault` expressions have no effect on code
-  generation in this case as they otherwise set the corresponding field values on
-  the `ErrorResult` struct.
-* If the custom type is a user defined type and if it is used to define multiple
-  errors on the same method then goa must be told which attribute contains the
-  error name. The value of this attribute is compared with the names of the
-  errors as defined in the design by the encoding and decoding code to infer the
-  proper encoding details (e.g. HTTP status code). The attribute is identified
-  using the special `struct:error:name` meta, must be a string and must be
-  required:
+1. The `Temporary`, `Timeout`, and `Fault` expressions have no effect on code
+   generation in this case as they otherwise set the corresponding field values
+   on the `ErrorResult` struct.
+
+2. If the custom type is a user defined type and if it is used to define
+   multiple errors on the same method then goa must be told which attribute
+   contains the error name. The value of this attribute is compared with the
+   names of the errors as defined in the design by the encoding and decoding
+   code to infer the proper encoding details (e.g. HTTP status code). The
+   attribute is identified using the special `struct:error:name` meta, must be a
+   string and must be required:
 
 ```go
 var InsertConflict = ResultType("application/vnd.service.insertconflict", func() {
@@ -191,6 +207,6 @@ var InsertConflict = ResultType("application/vnd.service.insertconflict", func()
 })
 ```
 
-* User types used to define custom error types cannot have an attribute named
-`error_name` as the generated code defines a ErrorName function on the error
-struct.
+3. User types used to define custom error types cannot have an attribute named
+   `error_name` as the generated code defines a `ErrorName` function on the
+   error struct.
