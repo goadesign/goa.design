@@ -9,7 +9,7 @@ install:
 - nvm install 10.6.0
 - npm install grunt-cli -g
 - npm install --save-dev grunt string toml conzole
-- wget https://github.com/spf13/hugo/releases/download/v0.54.0/hugo_0.54.0_Linux-64bit.tar.gz
+- wget https://github.com/gohugoio/hugo/releases/download/v0.54.0/hugo_0.54.0_Linux-64bit.tar.gz
 - tar zxvf hugo_0.54.0_Linux-64bit.tar.gz
 - mkdir -p $HOME/bin
 - mv hugo_0.54.0_linux_amd64/hugo_0.54.0_linux_amd64 $HOME/bin/hugo
