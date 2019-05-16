@@ -15,13 +15,8 @@ install:
 - mv hugo $HOME/bin/hugo
 - echo $GOPATH
 - export PATH=$PATH:$HOME/bin:$GOPATH/bin
-- go get github.com/goadesign/goa
-- go get github.com/goadesign/gorma
-- cd tools/mdc && go get -v ./... && go build -o $HOME/bin/mdc && cd ../..
-- cd tools/godoc2md && export GO111MODULE=on && go get -v ./... && go build -o $HOME/bin/godoc2md && cd ../..
 - sudo pip install Pygments
 script:
-- make docs
 - hugo
 - grunt lunr-index
 - make linkcheck
