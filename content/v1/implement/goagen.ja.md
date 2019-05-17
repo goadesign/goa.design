@@ -209,7 +209,7 @@ goa サービスにマウントして `/schema.json` の下でそれを提供で
 
 * `--pkg-path=PKG-PATH` は、プラグインパッケージへの Go パッケージのインポートパスを指定します。
 
-goa プラグインの詳細については、[ジェネレータプラグイン](/extend/generators)のセクションを参照してください。
+goa プラグインの詳細については、[ジェネレータプラグイン](/v1/extend/generators)のセクションを参照してください。
 
 ## <a name="gen_controller"></a> Scaffolding（足場）：`goagen controller`
 

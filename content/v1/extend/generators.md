@@ -15,7 +15,7 @@ etc.
 # Generators
 
 Generators consume the data structures produced by DSLs to generate artifacts.
-Generators can be written for existing and new DSLs (see [goa Plugin DSLs](/extend/dsls) for
+Generators can be written for existing and new DSLs (see [goa Plugin DSLs](/v1/extend/dsls) for
 information on how to create new DSLs). The generated artifacts can be anything, the DSL engine
 provides the generation orchestration and is oblivious of the actual output.
 

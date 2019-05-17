@@ -8,7 +8,7 @@ name = "Swagger"
 parent = "design.v1"
 +++
 
-[goagen](/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
+[goagen](/v1/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
 [https://swagger.goa.design](https://swagger.goa.design) でホストされているサービスは、（公開されている）Github レポジトリ上で `goagen swagger` を実行し、対応する Swagger UI をレンダリングします。
 これにより、オープンソースの goa サービスの API 定義をすばやく見て、それを試してみる便利な方法が提供されます。
 
@@ -19,4 +19,4 @@ Swagger UI は各操作に対して "Try It!" ボタンをレンダリングし�
 したがって、ホストは、ボタンが動作するようにアクティブに実行してAPIをホストする必要があります。
 
 HTTP レスポンスには、レスポンスの JSON にアクセスするための UI JavaScript を認可する CORS ヘッダーも含まれている必要があります。
-CORS パッケージの[リファレンス](/reference/goa/cors) では CORS を goa サービスでどのようにセットアップするかの詳細を説明しています。
+CORS パッケージの[リファレンス](/v1/reference/goa/cors) では CORS を goa サービスでどのようにセットアップするかの詳細を説明しています。

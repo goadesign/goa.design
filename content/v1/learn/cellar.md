@@ -8,7 +8,7 @@ name = "Cellar Example"
 parent = "learn.v1"
 +++
 
-The goa winecellar service provides an example for the [goa](https://goa.design) web application
+The goa winecellar service provides an example for the [goa](https://goa.design/v1) web application
 framework.
 
 The service implements an API for managing wine bottles. The service is multitenant: bottles are

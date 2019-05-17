@@ -85,7 +85,7 @@ var BottleMedia = MediaType("application/vnd.goa.example.bottle+json", func() {
 
 メディアタイプのデータ構造は、 `Attribute`  デザイン言語関数を使用して記述されます。この関数はデータ構造のフィールドの再帰的な定義を提供することを可能にします。各レベルでは、フィールドの名前とタイプ、および検証ルール (ここでは使用されていません) が定義されています。
 
-[apidsl パッケージリファレンス](/reference/goa/design/apidsl/)には、すべての goa デザイン言語のキーワードが説明や使用例と共に記載されています。
+[apidsl パッケージリファレンス](/v1/reference/goa/design/apidsl/)には、すべての goa デザイン言語のキーワードが説明や使用例と共に記載されています。
 
 # 実装
 

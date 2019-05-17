@@ -18,7 +18,7 @@ goa は、柔軟なエンコードとデコードの方法をサポートし、�
 goa のデコーダは、やってくるリクエストの `Content-Type` ヘッダを調べ、それをデコーダと照合します。
 デフォルトでは、`application/json` は JSON デコーダに、`application/xml` は XML デコーダに、そして `application/gob` は gob デコーダにマッピングされます。
 JSON デコーダは、`Content-Type` ヘッダーが見つからないか、既知の値のいずれとも一致しない場合にも使用されます。
-もしデコードに失敗した場合には goa は、ステータスコードは 400 で、ボディは [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使って、エラーレスポンスを書き込みます。（エラーがどのように HTTP レスポンスに変換されるかついての詳細は[エラーハンドリング](/implement/error_handling/)を参照してください）。
+もしデコードに失敗した場合には goa は、ステータスコードは 400 で、ボディは [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使って、エラーレスポンスを書き込みます。（エラーがどのように HTTP レスポンスに変換されるかついての詳細は[エラーハンドリング](/v1/implement/error_handling/)を参照してください）。
 
 ### エンコーディング
 

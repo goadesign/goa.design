@@ -8,7 +8,7 @@ name = "Gorma"
 parent = "extend.v1"
 +++
 
-[gorma](/reference/gorma) is a goa plugin that makes it possible to describe database models.
+[gorma](/v1/reference/gorma) is a goa plugin that makes it possible to describe database models.
 The gorma code generator uses the model definitions to generate code that automatically creates
 media types from models. More documentation to come.
 

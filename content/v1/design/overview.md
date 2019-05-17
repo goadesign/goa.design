@@ -12,7 +12,7 @@ parent = "design.v1"
 The goa API Design Language is a DSL implemented in [Go](https://golang.org) that makes it possible
 to describe arbitrary microservice APIs. While the main focus is REST based HTTP APIs, the language
 is flexible enough to describe APIs that follow other methodologies as well.
-[Plugins](/extend/dsls) can extend the core DSL to allow describing other aspects of
+[Plugins](/v1/extend/dsls) can extend the core DSL to allow describing other aspects of
 microservices such as database models, service discovery integrations, failure handlers etc.
 
 ## Design Definitions
@@ -554,10 +554,10 @@ Action("show", func() {
 
 ## Conclusion
 
-There is [a lot more](/reference/goa/design/apidsl/) to the design language but this overview
+There is [a lot more](/v1/reference/goa/design/apidsl/) to the design language but this overview
 should have given you a sense for how it works. It doesn't take long for the language to feel
 natural which makes it possible to quickly iterate and refine the design. The
-[Swagger](/design/swagger/) specification generated from the design can be shared with stakeholders
-to gather feedback and iterate. Once finalized [goagen](/implement/goagen/) generates the API
+[Swagger](/v1/design/swagger/) specification generated from the design can be shared with stakeholders
+to gather feedback and iterate. Once finalized [goagen](/v1/implement/goagen/) generates the API
 scaffolding, request contexts and validation code from the design thereby baking it into the
 implementation. The design becomes a living document always up-to-date with the implementation.

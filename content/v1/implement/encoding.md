@@ -22,7 +22,7 @@ and `application/gob` to the gob decoder. The JSON decoder is also used when the
 header is missing or does not match one of the known values. If decoding fails goa writes an error
 response using status code 400 using the
 [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables)
-error to write the body (see [Error Handling](/implement/error_handling/) for more information on
+error to write the body (see [Error Handling](/v1/implement/error_handling/) for more information on
 how errors translate to HTTP responses).
 
 ### Encoding

@@ -8,7 +8,7 @@ name = "Working with Data Types"
 parent = "design.v1"
 +++
 An important aspect of the goa DSL resides around how types are defined and used. The
-[Overview](/design/overview) covers the basics of working with types and media types. This document takes
+[Overview](/v1/design/overview) covers the basics of working with types and media types. This document takes
 a step back and explains the rationale for the DSL.
 
 Data structures are described in the design using the
@@ -17,7 +17,7 @@ function or one of its aliases (`Member`, `Header` or `Param`). This description
 absolute - that is it is not relative to a given language (e.g. `Go`) or technology. This makes it
 possible to generate many outputs ranging from `Go` code to documentation in the form of JSON schema
 and Swagger or binding to other languages (e.g. JavaScript clients). The design language includes a
-number of primitive types listed in the [Overview](/design/overview) but also makes it possible to describe
+number of primitive types listed in the [Overview](/v1/design/overview) but also makes it possible to describe
 arbitrary data structures recursively via the
 [Type](https://goa.design/v1/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) function.
 
@@ -93,7 +93,7 @@ that depend on each other and not have the `Go` compiler complain about the cycl
 
 Another common use for types is for describing response media types. A response media type defines
 the shape of response bodies. Media types differ from types in that they also define *views* and
-*links*, see the [Overview](/design/overview) for details. Media types are defined using the
+*links*, see the [Overview](/v1/design/overview) for details. Media types are defined using the
 [MediaType](https://goa.design/v1/reference/goa/design/apidsl/#func-mediatype-a-name-apidsl-mediatype-a)
 function.
 

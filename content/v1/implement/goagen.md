@@ -228,7 +228,7 @@ This command accepts one flag:
 
 * `--pkg-path=PKG-PATH` specifies the Go package import path to the plugin package.
 
-Refer to the [Generator Plugins](/extend/generators) section for details on goa plugins.
+Refer to the [Generator Plugins](/v1/extend/generators) section for details on goa plugins.
 
 ## <a name="gen_controller"></a> Scaffolding: `goagen controller`
 

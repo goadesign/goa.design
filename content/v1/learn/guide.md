@@ -114,7 +114,7 @@ function makes it possible to provide a recursive definition of the fields of th
 each level it defines the name and type of the fields as well as their validation rules (not used
 here).
 
-The [apidsl package reference](/reference/goa/design/apidsl/) lists all the goa design language
+The [apidsl package reference](/v1/reference/goa/design/apidsl/) lists all the goa design language
 keywords together with a description and example usage.
 
 # Implement
