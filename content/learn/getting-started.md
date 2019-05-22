@@ -34,6 +34,13 @@ go get -u goa.design/goa/v3
 go get -u goa.design/goa/v3/...
 ```
 
+The service makes use of gRPC and as such requires both `protoc` and
+`protoc-gen-go`.
+
+* Download the `protoc` binary from [releases](https://github.com/google/protobuf/releases).
+* Make sure `protoc` is in your path.
+* Install the protoc plugin for Go: `go get -u github.com/golang/protobuf/protoc-gen-go`
+
 ## Design
 
 In this next step we are going to design our service API. This step being
