@@ -34,6 +34,13 @@ go get -u goa.design/goa/v3
 go get -u goa.design/goa/v3/...
 ```
 
+The service makes use of gRPC and as such requires both `protoc` and
+`protoc-gen-go`.
+
+* Download the `protoc` binary from [releases](https://github.com/google/protobuf/releases).
+* Make sure `protoc` is in your path.
+* Install the protoc plugin for Go: `go get -u github.com/golang/protobuf/protoc-gen-go`
+
 ## Design
 
 In this next step we are going to design our service API. This step being
@@ -54,7 +61,13 @@ import (
 
 var _ = API("calc", func() {
 	Title("Calculator Service")
-	Description("Service for adding numbers, a goa teaser")
+	Description("Service for adding numbers, a Goa teaser")
+    Server("calc", func() {
+        Host("localhost", func() {
+            URI("http://localhost:8000")
+            URI("grpc://localhost:8080")
+        })
+    })
 })
 
 var _ = Service("calc", func() {
@@ -108,7 +121,7 @@ flag. Since our design package was created under the `calc` module the command
 line is:
 
 ```bash
-goa gen adder/design
+goa gen calc/design
 ```
 
 The command outputs the names of the files it generates. If the target
@@ -116,48 +129,46 @@ directory is not specified, the command generates the files in the current
 working directory. The generated files should look like this:
 
 ```
-├── design
-│   └── design.go
-└── gen
+gen
+├── calc
+│   ├── client.go
+│   ├── endpoints.go
+│   └── service.go
+├── grpc
+│   ├── calc
+│   │   ├── client
+│   │   │   ├── cli.go
+│   │   │   ├── client.go
+│   │   │   ├── encode_decode.go
+│   │   │   └── types.go
+│   │   ├── pb
+│   │   │   ├── calc.pb.go
+│   │   │   └── calc.proto
+│   │   └── server
+│   │       ├── encode_decode.go
+│   │       ├── server.go
+│   │       └── types.go
+│   └── cli
+│       └── calc
+│           └── cli.go
+└── http
     ├── calc
-    │   ├── client.go
-    │   ├── endpoints.go
-    │   └── service.go
-    ├── grpc
-    │   ├── calc
-    │   │   ├── client
-    │   │   │   ├── client.go
-    │   │   │   ├── cli.go
-    │   │   │   ├── encode_decode.go
-    │   │   │   └── types.go
-    │   │   ├── pb
-    │   │   │   ├── calc.pb.go
-    │   │   │   └── calc.proto
-    │   │   └── server
-    │   │       ├── encode_decode.go
-    │   │       ├── server.go
-    │   │       └── types.go
-    │   └── cli
-    │       └── calc
-    │           └── cli.go
-    └── http
-        ├── calc
-        │   ├── client
-        │   │   ├── client.go
-        │   │   ├── cli.go
-        │   │   ├── encode_decode.go
-        │   │   ├── paths.go
-        │   │   └── types.go
-        │   └── server
-        │       ├── encode_decode.go
-        │       ├── paths.go
-        │       ├── server.go
-        │       └── types.go
-        ├── cli
-        │   └── calc
-        │       └── cli.go
-        ├── openapi.json
-        └── openapi.yaml
+    │   ├── client
+    │   │   ├── cli.go
+    │   │   ├── client.go
+    │   │   ├── encode_decode.go
+    │   │   ├── paths.go
+    │   │   └── types.go
+    │   └── server
+    │       ├── encode_decode.go
+    │       ├── paths.go
+    │       ├── server.go
+    │       └── types.go
+    ├── cli
+    │   └── calc
+    │       └── cli.go
+    ├── openapi.json
+    └── openapi.yaml
 ```
 
 The `gen` directory contains the `calc` sub-directory which houses the
@@ -195,7 +206,7 @@ a HTTP and a gRPC server and client files that can make requests to the server.
 > accordingly.
 
 ```bash
-goa example adder/design
+goa example calc/design
 ```
 
 The `goa example` command creates the following files
@@ -212,8 +223,6 @@ The `goa example` command creates the following files
 │       ├── grpc.go
 │       ├── http.go
 │       └── main.go
-├── design
-└── gen
 ```
 
 `calc.go` contains a dummy implementation of the `add` method described in the
@@ -223,17 +232,17 @@ implementation, build, and run the server and client.
 Open the file `calc.go` and implement the `Add` method:
 
 ```go
-func (s *calcSvc) Add(ctx context.Context, p *calcsvc.AddPayload) (int, error) {
+func (s *calcsrvc) Add(ctx context.Context, p *calc.AddPayload) (res int, err error) {
   return p.A + p.B, nil
 }
 ```
 
-The `goa example` command uses the optional [Server DSL](https://godoc.org/goa.design/goa/dsl#Server)
+The `goa example` command uses the optional
+[Server DSL](https://godoc.org/goa.design/goa/dsl#Server)
 described in the design to generate buildable server and client files.
 It builds one directory in `cmd` for each `Server` DSL specified in the
-design. If a `Server` DSL is not specified in the design, goa creates a default
-server exposing the `calc` service in a single host listening on "localhost"
-and using port 80 for HTTP endpoints and port 8080 for gRPC endpoints.
+design. Here we defined a single server `calc` which listens for HTTP
+requests on port 8000.
 
 ## Building and Running the Service
 
@@ -245,20 +254,20 @@ go build ./cmd/calc && go build ./cmd/calc-cli
 # Run the server
 
 ./calc
-[calc] 12:27:57 HTTP "Add" mounted on GET /add/{a}/{b}
-[calc] 12:27:57 HTTP "../../gen/http/openapi.json" mounted on GET /swagger.json
-[calc] 12:27:57 serving gRPC method calc.Calc/Add
-[calc] 12:27:57 HTTP server listening on "localhost:8000"
-[calc] 12:27:57 gRPC server listening on "localhost:8080"
+[calcapi] 21:35:36 HTTP "Add" mounted on GET /add/{a}/{b}
+[calcapi] 21:35:36 HTTP "../../gen/http/openapi.json" mounted on GET /openapi.json
+[calcapi] 21:35:36 serving gRPC method calc.Calc/Add
+[calcapi] 21:35:36 HTTP server listening on "localhost:8000"
+[calcapi] 21:35:36 gRPC server listening on "localhost:8080"
 
 # Run the client
 
 # Contact HTTP server
-$ calc-cli --url="http://localhost:8000" calc add --a 1 --b 2
+$ ./calc-cli --url="http://localhost:8000" calc add --a 1 --b 2
 3
 
 # Contact gRPC server
-$ calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
+$ ./calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
 3
 ```
 
