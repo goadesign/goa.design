@@ -90,7 +90,7 @@ var _ = Service("calc", func() {
 		})
 	})
 
-	Files("/openapi.json", "../../gen/http/openapi.json")
+	Files("/openapi.json", "./gen/http/openapi.json")
 })
 ```
 
@@ -255,7 +255,7 @@ go build ./cmd/calc && go build ./cmd/calc-cli
 
 ./calc
 [calcapi] 21:35:36 HTTP "Add" mounted on GET /add/{a}/{b}
-[calcapi] 21:35:36 HTTP "../../gen/http/openapi.json" mounted on GET /openapi.json
+[calcapi] 21:35:36 HTTP "./gen/http/openapi.json" mounted on GET /openapi.json
 [calcapi] 21:35:36 serving gRPC method calc.Calc/Add
 [calcapi] 21:35:36 HTTP server listening on "localhost:8000"
 [calcapi] 21:35:36 gRPC server listening on "localhost:8080"
