@@ -9,14 +9,11 @@
 # - "serve" starts the HTTP server that serves the site
 # - "all" default target that runs all the above in order
 
-DEPEND=\
-	github.com/gohugoio/hugo \
-	github.com/goadesign/gorma
-
 all: depend install docs serve
 
 depend:
-	@go get $(DEPEND)
+	export GO111MODULE=on && go get github.com/gohugoio/hugo
+	export GO111MODULE=off && go get github.com/goadesign/gorma
 
 install:
 	@cd tools/mdc && go get ./... && go install
