@@ -10,7 +10,7 @@ parent = "implement.v1"
 +++
 
 セキュリティを実装するには、最初にデザインでセキュリティスキームを定義する必要があります。
-詳しくは、[デザイン](https://goa.design/v1/ja/design/) セクションの [セキュリティ](https://goa.design/v1/ja/design/security/) を参照してください。
+詳しくは、[デザイン](/ja/v1/design/) セクションの [セキュリティ](/ja/v1/design/security/) を参照してください。
 
 ## サービスセキュリティ
 
@@ -22,7 +22,7 @@ parent = "implement.v1"
 func UseAPIKeyMiddleware(service *goa.Service, middleware goa.Middleware)
 ```
 
-ミドルウェアは、認証に失敗した場合にエラー（通常は [ErrUnauthorized](https://goa.design/v1/reference/goa/#variables)）を返すか、成功した場合には次のハンドラを呼び出す必要があります。
+ミドルウェアは、認証に失敗した場合にエラー（通常は [ErrUnauthorized](/v1/reference/goa/#a-name-pkg-variables-variables-a)）を返すか、成功した場合には次のハンドラを呼び出す必要があります。
 生成されたコードは、デザインに提供された情報のコピーを含むセキュリティスキームのデータ構造をインスタンス化するための関数も含みます。
 これには、セキュリティミドルウェアの実装によって活用できる情報が含まれています。
 これらの関数は `NewXXXSecurity` という名前のパターンに従います。`XXX` はセキュリティスキームの名前です。たとえば：
@@ -37,18 +37,18 @@ goa は、すべてのセキュリティスキームのセキュリティミド�
 
 ### Basic 認証
 
-Basic 認証ミドルウエアの[単純な実装](https://github.com/goadesign/goa/blob/master/middleware/security/basicauth/basicauth.go) はより高機能な実装の基礎として役立ちます。
+Basic 認証ミドルウエアの[単純な実装](https://github.com/goadesign/goa/blob/v1/middleware/security/basicauth/basicauth.go) はより高機能な実装の基礎として役立ちます。
 
 ### API キー
 
 
 API キーのスキームの検証は単に2つの値を比較するだけなので、セキュリティミドルウェアの実装はありません。
-ただし、GitHub の [examples](https://github.com/goadesign/examples) リポジトリに[実装例](https://github.com/goadesign/examples/blob/master/security/api_key.go)があります。
+ただし、GitHub の [examples](https://github.com/goadesign/examples/tree/v1) リポジトリに[実装例](https://github.com/goadesign/examples/blob/v1/security/api_key.go)があります。
 
 ### JWT キー
 
-JWT セキュリティミドルウエアの[完全な実装](https://goa.design/v1/reference/goa/middleware/security/jwt/)を備えています。
-[JWT の例](https://github.com/goadesign/examples/blob/master/security/jwt.go) がトークンを検証するためにどのようにキーをロードするかを示しています。
+JWT セキュリティミドルウエアの[完全な実装](/v1/reference/goa/middleware/security/jwt/)を備えています。
+[JWT の例](https://github.com/goadesign/examples/blob/v1/security/jwt.go) がトークンを検証するためにどのようにキーをロードするかを示しています。
 
 ### OAuth2
 
@@ -56,4 +56,4 @@ OAuth2 の実装には、OAuth2 が単なる認証メカニズムではなく、
 
 ## セキュリティミドルウエアの例
 
-すべてのスキームをサポートするためのセキュリティミドルウエアの実装方法のデモが[セキュリティの例](https://github.com/goadesign/examples/tree/master/security)で示されています。
+すべてのスキームをサポートするためのセキュリティミドルウエアの実装方法のデモが[セキュリティの例](https://github.com/goadesign/examples/tree/v1/security)で示されています。

@@ -10,7 +10,7 @@ parent = "design.v1"
 +++
 goa API デザイン言語は Go で実装された DSL で、任意のマイクロサービス API を記述することができます。
 デザイン言語は REST ベースの HTTP API を主な焦点にしていますが、他の方法論による API を記述するのにも十分柔軟です。
-[プラグイン](/v1/extend/dsls)はコアDSLを拡張して、データベースモデル、サービスディスカバリ統合、障害ハンドラなどのマイクロサービスの他の側面を記述できるようにすることができます。
+[プラグイン](/ja/v1/extend/dsls)はコアDSLを拡張して、データベースモデル、サービスディスカバリ統合、障害ハンドラなどのマイクロサービスの他の側面を記述できるようにすることができます。
 
 ## デザイン定義
 デザイン言語の主要部は、*定義* を記述するための関数の連鎖によって構成されています。
@@ -40,18 +40,18 @@ goa API デザイン言語はGoで実装されていますが__Goではありま
 また、プラグインから来る DSL を透過的に混ぜることができます。*
 
 DSL ではさまざまな定義を再帰的に記述するために無名関数を頻繁に使用します。
-上の例では、[API](https://goa.design/v1/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数は、第1引数として関数の名前を受け取り、第2引数として無名関数を受け取ります。
+上の例では、[API](/v1/reference/goa/design/apidsl/#API) 関数は、第1引数として関数の名前を受け取り、第2引数として無名関数を受け取ります。
 ドキュメント内のこの無名関数もまた`DSL`であり、APIの追加のプロパティを定義しています。
 この name+DSL のパターンは他の多くのDSL関数でも利用されています。
 
-[API](https://goa.design/v1/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)
+[API](/v1/reference/goa/design/apidsl/#API)
 関数は API の一般的なプロパティを定義します：ドキュメント内のタイトルと説明、サービス利用規約(上の例では設定されていません)、ドキュメントやクライアントで使われるのデフォルトホスト、スキーマ、そしてすべてのエンドポイントのベースとなるパス(ベースパスをワイルドカードで定義して、キャプチャされたパラメータと対応させることもできます)
 
 この関数は、API がサポートするメディアタイプも定義します。
-[Consumes](https://goa.design/v1/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数および [Produces](https://goa.design/v1/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a:aab4f9d6f98ed71f45bd470427dde2a7)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
+[Consumes](/v1/reference/goa/design/apidsl/#Consumes) 関数および [Produces](/v1/reference/goa/design/apidsl/#Produces)関数は、リクエスト（Consumes）およびレスポンス（Produces）のサポートメディアタイプを定義することもできます。
 オプションで、生成されたコードがリクエスト・ペイロードを Unmarshal したりレスポンス・ボディを Marshal するように、使用するエンコーディングパッケージを指定することもできます。
 
-追加のメタデータ（連絡先情報）から、セキュリティ定義、[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) ポリシー、レスポンステンプレートまで、[API 関数](https://goa.design/v1/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)で定義できるその他のプロパティがいくつかあります。 完全なリストについては、[リファレンス](https://goa.design/v1/reference/goa/design/apidsl/#func-api-a-name-apidsl-api-a:aab4f9d6f98ed71f45bd470427dde2a7)を参照してください。
+追加のメタデータ（連絡先情報）から、セキュリティ定義、[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS) ポリシー、レスポンステンプレートまで、[API 関数](/v1/reference/goa/design/apidsl/#API)で定義できるその他のプロパティがいくつかあります。 完全なリストについては、[リファレンス](/v1/reference/goa/design/apidsl/#API)を参照してください。
 
 ## API エンドポイント
 
@@ -90,13 +90,13 @@ Param("left", Integer, "Left operand", func() {
 })
 ```
 
-パラメータを定義する構文は、下記のセクションで説明する [Attribute](https://goa.design/v1/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) DSL です。
+パラメータを定義する構文は、下記のセクションで説明する [Attribute](/v1/reference/goa/design/apidsl/#Attribute) DSL です。
 
 ### ファイルサーバー
 
-[Files](https://goa.design/v1/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) 関数を使用すると、リソース上にファイル・サーバーを定義することができます。
+[Files](/v1/reference/goa/design/apidsl/#Files) 関数を使用すると、リソース上にファイル・サーバーを定義することができます。
 ファイルサーバーは、ルートの最後が*で始まるワイルドカードの場合、静的なファイルや指定されたファイルパスのすべてのファイルを提供します。
-[Files]((https://goa.design/v1/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a)) 関数は、オプションでセキュリティスキームを定義するための子 DSL を（無名関数を最後の引数として）受け入れます。
+[Files](/v1/reference/goa/design/apidsl/#Files) 関数は、オプションでセキュリティスキームを定義するための子 DSL を（無名関数を最後の引数として）受け入れます。
 構文は、アクションのセキュリティスキームを定義するために使用される構文と同じです。
 
 以下の例では、2つのファイルサーバーを持つ `public` リソースを定義しています。
@@ -123,8 +123,8 @@ var _ = Resource("public", func() {
 ## データタイプ
 
 goa API デザイン言語はリクエスト・ペイロードやレスポンス・メディアで定義される任意のデータタイプを記述することが可能です。
-[Type](https://goa.design/v1/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数は、[Attribute](https://goa.design/v1/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数を利用して各フィールドを並べることでデータ構造を記述します。
-また[ArrayOf](https://goa.design/v1/reference/goa/design/apidsl/#func-arrayof-a-name-apidsl-arrayof-a:aab4f9d6f98ed71f45bd470427dde2a7) 関数を利用して配列や配列のフィールドを定義することができます。
+[Type](/v1/reference/goa/design/apidsl/#Type) 関数は、[Attribute](/v1/reference/goa/design/apidsl/#Attribute) 関数を利用して各フィールドを並べることでデータ構造を記述します。
+また[ArrayOf](/v1/reference/goa/design/apidsl/#Arrayof) 関数を利用して配列や配列のフィールドを定義することができます。
 以下に例を示します。
 
 ```go
@@ -144,9 +144,9 @@ var Series = ArrayOf(Operand)
 API 関数のように、Type 関数は2つの引数、名前とタイプのプロパティを記述する DSL、を受け取ります。
 `Type` DSLは、次の3つの関数で構成されています。
 
-* [Description](https://goa.design/v1/reference/goa/design/apidsl/#func-description-a-name-apidsl-description-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプの説明を指定します。
-* [Attribute](https://goa.design/v1/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a:aab4f9d6f98ed71f45bd470427dde2a7) はタイプフィールドをひとつ定義します。
-* [Required](https://goa.design/v1/reference/goa/design/apidsl/#func-required-a-name-apidsl-required-a:aab4f9d6f98ed71f45bd470427dde2a7) は必須のフィールドをリストします。フィールドは必ずそのタイプのインスタンスで存在しなければなりません。
+* [Description](/v1/reference/goa/design/apidsl/#Description) はタイプの説明を指定します。
+* [Attribute](/v1/reference/goa/design/apidsl/#Attribute) はタイプフィールドをひとつ定義します。
+* [Required](/v1/reference/goa/design/apidsl/#Required) は必須のフィールドをリストします。フィールドは必ずそのタイプのインスタンスで存在しなければなりません。
 
 Type はアクション・ペイロードを定義するのに利用できます：
 
@@ -205,7 +205,7 @@ var User = Type("user", func() {
 `friends` フィールドを定義するのに `User` という変数を参照する代わりに、`"user"` という名前を使っていることに注意してください。
 どちらの構文も受理されます。
 変数参照の代わりに名前を使用すると、再帰的定義を構築できます。
-Github の [examples](https://github.com/goadesign/examples) リポジトリの `types` ディレクトリにはタイプの設計と生成されるコード間の対応を示す数多くの例があります。
+Github の [examples](https://github.com/goadesign/examples/tree/v1) リポジトリの `types` ディレクトリにはタイプの設計と生成されるコード間の対応を示す数多くの例があります。
 
 ## レスポンス
 
@@ -271,7 +271,7 @@ var User = MediaType("vnd.application/goa.users", func() {
 
 ### レスポンス定義
 
-[Response](https://goa.design/v1/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a) 関数は、特定の潜在的なレスポンスを定義するためにアクション宣言内で利用されます。
+[Response](/v1/reference/goa/design/apidsl/#Response) 関数は、特定の潜在的なレスポンスを定義するためにアクション宣言内で利用されます。
 レスポンスに本文とヘッダが含まれる場合には、レスポンス・ステータスコード、メディアタイプが記述されます。
 それぞれのレスポンスは、他のほとんどの DSL 関数で名前が最初の引数となっているのと同様に、最初の引数にアクションのスコープ内で一意の名前を持つ必要があります。
 以下の DSL は "NoContent" と名前づけられた HTTP ステータス 204 のレスポンスを定義しています：
@@ -293,7 +293,7 @@ Response(NoContent)
 
 レスポンステンプレートについては、以下のセクションで詳しく説明しますが、レスポンステンプレートをカバーする前にまず `Response` の仕組みを理解する必要があります。
 
-レスポンスにボディが含まれている場合、対応するメディアタイプは[Media](https://goa.design/v1/reference/goa/design/apidsl/#func-media-a-name-apidsl-media-a) 関数を使用して指定されます。
+レスポンスにボディが含まれている場合、対応するメディアタイプは[Media](/v1/reference/goa/design/apidsl/#Media) 関数を使用して指定されます。
 この関数は、メディアタイプ識別子または実際のメディアタイプの値を第1引数として受け取り、オプションでレスポンス・ボディのレンダリングに使用されるメディアタイプビューの名前を受け取ります。
 ビューはオプションです。
 たとえば、レスポンスのステータスなどに応じて、同じアクションでも異なるビューが返される場合があります。
@@ -339,7 +339,7 @@ Response("OK", func() {
 })
 ```
 
-レスポンス・ヘッダーは、[Headers](https://goa.design/v1/reference/goa/design/apidsl/#func-headers-a-name-apidsl-headers-a) 関数を用いて定義されます。
+レスポンス・ヘッダーは、[Headers](/v1/reference/goa/design/apidsl/#Headers) 関数を用いて定義されます。
 各ヘッダーを定義する構文は、Attribute を定義するのに使用される構文と同じです。
 
 ```go
@@ -496,6 +496,6 @@ Action("show", func() {
 
 デザイン言語には[さらに多くのもの](/v1/reference/goa/design/apidsl/)がありますが、この概要では、デザイン言語がどのように動作するかについてのひとつの感覚を与えているはずです。
 言語が自然に感じられるので、設計をすばやく反復して洗練することが可能になります。
-設計から生成された [Swagger](/v1/design/swagger/) 仕様を、ステークホルダーと共有してフィードバックを収集し、反復することができます。
-完成したら [goagen](/v1/implement/goagen/) は API スキャフォールディングやリクエスト・コンテキスト、バリデーション コードをデザインから生成し、それを実装に組み込みます。
+設計から生成された [Swagger](/ja/v1/design/swagger/) 仕様を、ステークホルダーと共有してフィードバックを収集し、反復することができます。
+完成したら [goagen](/ja/v1/implement/goagen/) は API スキャフォールディングやリクエスト・コンテキスト、バリデーション コードをデザインから生成し、それを実装に組み込みます。
 デザインは、実装に関して常に最新の生きたドキュメントになります。

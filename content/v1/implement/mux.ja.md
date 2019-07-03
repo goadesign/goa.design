@@ -11,9 +11,9 @@ parent = "implement.v1"
 # サービスマルチプレクサ
 
 goa HTTP リクエストマルチプレクサは、やってくるリクエストの正しいコントローラアクションへの発送を管理しています。
-それは、よく使う HTTP メソッドとハンドラへのパスのバインディングを掌握した goa [ServeMux](https://goa.design/v1/reference/goa/#type-servemux-a-name-goa-servemux-a) を実装し、登録されたハンドラを検索する機能も提供します。
+それは、よく使う HTTP メソッドとハンドラへのパスのバインディングを掌握した goa [ServeMux](/v1/reference/goa/#ServeMux) を実装し、登録されたハンドラを検索する機能も提供します。
 
-`ServeMux` インタフェースの [Handle](https://goa.design/v1/reference/goa/#type-servemux-a-name-goa-servemux-a) メソッドは、リクエスト HTTP メソッドを [MuxHandler](https://goa.design/v1/reference/goa/#type-muxhandler-a-name-goa-muxhandler-a) へのパスに関連づけます。MuxHandler は HTTP レスポンスライターならびにリクエスト、すべてのパスやクエリパラメータを含む URL Value インスタンスを受け付ける関数です。
+`ServeMux` インタフェースの [Handle](/v1/reference/goa/#ServeMux) メソッドは、リクエスト HTTP メソッドを [MuxHandler](/v1/reference/goa/#MuxHandler) へのパスに関連づけます。MuxHandler は HTTP レスポンスライターならびにリクエスト、すべてのパスやクエリパラメータを含む URL Value インスタンスを受け付ける関数です。
 
 `goagen` によって生成されたコードは自動的に `Handle` 関数を呼び出します。
 この関数を直接呼び出すことは、生成されたものでないハンドラ、たとえばサードパーティのパッケージからのサポート機能を提供するようなハンドラ、をマウントする場合にのみ必要です。
