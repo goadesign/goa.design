@@ -36,7 +36,7 @@ go install github.com/goadesign/goa/goagen
 * [`js`](#gen_js): JavaScript APIクライアントを生成します。
 * [`swagger`](#gen_swagger): API の Swagger 仕様書を生成します。
 * [`schema`](#gen_schema): API の Hyper-schema JSON を生成します。
-* [`gen`](#gen_gen): サードパーティ製のジェネレーターを起動します。
+* [`gen`](#gen_gen): サードパーティ製のジェネレータを起動します。
 * [`controller`](#gen_controller): 各リソースごとにコントローラーのひな形を生成します。
 * `bootstrap`: `app`、`main`、`client`、`swagger` の各ジェネレータを呼び出します。
 
@@ -195,7 +195,7 @@ promise に返される `resp` の値は次のフィールドを持つオブジ�
 
 `swagger` コマンドは、API の [Swagger](https://swagger.io) 仕様を生成します。
 コマンドは追加のフラグを受け付けません。 Swagger JSON とYAML の両方を生成します。
-生成されたファイルは、デザインの [Files](https://goa.design/v1/reference/goa/design/apidsl/#func-files-a-name-apidsl-files-a) で定義されたファイルサーバーを使用して API 自体から提供できます。
+生成されたファイルは、デザインの [Files](/v1/reference/goa/design/apidsl/#Files) で定義されたファイルサーバーを使用して API 自体から提供できます。
 
 
 ## <a name="gen_schema"></a> JSON Schema：`goagen schema`
@@ -209,7 +209,7 @@ goa サービスにマウントして `/schema.json` の下でそれを提供で
 
 * `--pkg-path=PKG-PATH` は、プラグインパッケージへの Go パッケージのインポートパスを指定します。
 
-goa プラグインの詳細については、[ジェネレータプラグイン](/v1/extend/generators)のセクションを参照してください。
+goa プラグインの詳細については、[ジェネレータプラグイン](/ja/v1/extend/generators)のセクションを参照してください。
 
 ## <a name="gen_controller"></a> Scaffolding（足場）：`goagen controller`
 

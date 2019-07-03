@@ -17,7 +17,11 @@
 					<p class="text-center">
 						{{ $currentNode := . }}
 						{{ range .Site.Languages }}
-						<a href="{{ .Lang | absURL }}">{{ .LanguageName }}</a>
+							{{ if eq .Lang "en" }}
+								<a href="/v1">{{ .LanguageName }}</a>
+							{{ else }}
+								<a href="{{ .Lang | absURL }}/v1">{{ .LanguageName }}</a>
+							{{end}}
 						{{ end }}
 					</p>
 				</div>

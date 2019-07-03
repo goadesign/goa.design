@@ -33,7 +33,7 @@ goaは、すべてのコンポーネントに特別なエラー処理コード�
 * `meta`: エラーに関する非標準のメタ情報を含むメタオブジェクト。
 
 エラークラスは、エラーコードとステータスを受け入れる
-[NewErrorClass](https://goa.design/v1/reference/goa/#func-newerrorclass-a-name-goa-errorclass-newerrorclass-a)
+[NewErrorClass](/v1/reference/goa/#NewErrorClass)
 関数を使用して作成されます：
 
 ```go
@@ -66,7 +66,7 @@ func (c *OperandsController) Divide(ctx *app.OperandsContext) error {
 }
 ```
 
-エラークラス関数の呼び出しによって返されるすべてのエラーは、[ServiceError](https://goa.design/v1/reference/goa/#type-serviceerror-a-name-goa-serviceerror-a) インターフェイスを実装します。
+エラークラス関数の呼び出しによって返されるすべてのエラーは、[ServiceError](/v1/reference/goa/#ServiceError) インターフェイスを実装します。
 このインタフェースは、ミドルウェアがロギングなどのエラー処理に利用できるようなエラーレスポンスのステータスや固有のトークンを公開します。
 また、エラーオブジェクトの振る舞いをチェックすることによって、エラークラスを介して生成されたエラーがかどうかを判定することもできます。
 
@@ -126,17 +126,17 @@ func (c *MyController) DoAction(ctx *DoActionContext) error {
 
 ## エラーハンドラー
 
-[ErrorHandler](https://goa.design/v1/reference/goa/middleware/#func-errorhandler-a-name-middleware-errorhandler-a)
+[ErrorHandler](/v1/reference/goa/middleware/#ErrorHandler)
 ミドルウエアは返されたエラーを HTTP レスポンスにマップします。
-goa の [ErrorClass](https://goa.design/v1/reference/goa/#type-errorclass-a-name-goa-errorclass-a) を介して作成されたエラーは、レスポンスボディでシリアライズされ、それらのステータスはレスポンス HTTP ステータスを整形するために使用されます。
-それ以外のエラーはステータスコード 500 のレスポンスを生じさせる [ErrInternal](https://goa.design/v1/reference/goa/#variables) 
+goa の [ErrorClass](/v1/reference/goa/#ErrorClass) を介して作成されたエラーは、レスポンスボディでシリアライズされ、それらのステータスはレスポンス HTTP ステータスを整形するために使用されます。
+それ以外のエラーはステータスコード 500 のレスポンスを生じさせる [ErrInternal](/v1/reference/goa/#a-name-pkg-variables-variables-a) 
 にラップされます。
 
 ## エラーレスポンスをデザインする
 
 これまで、コントローラのコードがエラーレスポンスをどのように適応また作成するかを見てきました。
 最終的には、APIのデザインによってレスポンスの正しい内容が決定されます。
-goa デザインパッケージは、エラークラスを介して作成されたエラーに対応するレスポンスの記述を利用してアクション定義が利用できる [ErrorMedia](https://goa.design/v1/reference/goa/#variables) メディアタイプを提供しています。
+goa デザインパッケージは、エラークラスを介して作成されたエラーに対応するレスポンスの記述を利用してアクション定義が利用できる [ErrorMedia](/v1/reference/goa/#a-name-pkg-variables-variables-a) メディアタイプを提供しています。
 
 そのようなアクション定義の例はこのようになります：
 
@@ -165,7 +165,7 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 
 ## すべてを統合して
 
-最初の目標に戻ってみましょう。API デザインは、[Response](https://goa.design/v1/reference/goa/design/apidsl/#func-response-a-name-apidsl-response-a) DSL によるエラーレスポンスを含む各アクションの可能なレスポンスを定義しています。
+最初の目標に戻ってみましょう。API デザインは、[Response](/v1/reference/goa/design/apidsl/#Response) DSL によるエラーレスポンスを含む各アクションの可能なレスポンスを定義しています。
 エラークラスは、エラークラスを利用してエラーをラップすることによって、実装によって生成されたエラーをデザインにマップする方法を提供します。
 
 サービスは、ドメイン固有のエラーを処理する独自のエラークラスを作成する必要があります。
@@ -173,4 +173,4 @@ func (c *BottleController) Create(ctx *app.CreateBottleContext) error {
 これらのエラーを作成するか、より深いレイヤーからのエラーをラップすることで、そうすることができます。
 
 コントローラアクションは、デザインで定義された約定を実装する責任があることに注意してください。
-つまり、[アクション定義](https://goa.design/v1/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a)にリストされていない HTTP ステータスコードを使用するエラークラスを定義するべきではありません。
+つまり、[アクション定義](/v1/reference/goa/design/apidsl/#Action)にリストされていない HTTP ステータスコードを使用するエラークラスを定義するべきではありません。

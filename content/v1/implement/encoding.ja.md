@@ -18,7 +18,7 @@ goa は、柔軟なエンコードとデコードの方法をサポートし、�
 goa のデコーダは、やってくるリクエストの `Content-Type` ヘッダを調べ、それをデコーダと照合します。
 デフォルトでは、`application/json` は JSON デコーダに、`application/xml` は XML デコーダに、そして `application/gob` は gob デコーダにマッピングされます。
 JSON デコーダは、`Content-Type` ヘッダーが見つからないか、既知の値のいずれとも一致しない場合にも使用されます。
-もしデコードに失敗した場合には goa は、ステータスコードは 400 で、ボディは [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使って、エラーレスポンスを書き込みます。（エラーがどのように HTTP レスポンスに変換されるかついての詳細は[エラーハンドリング](/v1/implement/error_handling/)を参照してください）。
+もしデコードに失敗した場合には goa は、ステータスコードは 400 で、ボディは [ErrInvalidEncoding](/v1/reference/goa/#a-name-pkg-variables-variables-a) エラーを使って、エラーレスポンスを書き込みます。（エラーがどのように HTTP レスポンスに変換されるかついての詳細は[エラーハンドリング](/ja/v1/implement/error_handling/)を参照してください）。
 
 ### エンコーディング
 
@@ -67,7 +67,7 @@ goa によって生成されたコードは、やってくるリクエストペ�
 
 シンプルな2段階の行程でカスタムデコーダが利用できます：
 
-1. サービスのデザインは、[Consumes](https://goa.design/v1/reference/goa/design/apidsl/#func-consumes-a-name-apidsl-consumes-a) DSL 関数を利用する必要があります。これは、コンテンツタイプと対応するデコーダパッケージ、オプション関数をリストします。
+1. サービスのデザインは、[Consumes](/v1/reference/goa/design/apidsl/#Consumes) DSL 関数を利用する必要があります。これは、コンテンツタイプと対応するデコーダパッケージ、オプション関数をリストします。
 コンテンツタイプと対応するデコーダパッケージをリストし、オプションで機能するために、Consumer DSL機能を使用する必要があります。
 2. 上記の`DecoderFunc` 関数を実装しているパッケージは、サービスによってインポートされなければなりません。
 
@@ -102,7 +102,7 @@ var _ = API("My API", func() {
 ```
 
 これだけです。
-goa [msgpack](https://goa.design/v1/reference/goa/encoding/msgpack/) パッケージは [NewDecoder](https://goa.design/v1/reference/goa/encoding/msgpack/#func-newdecoder-a-name-msgpack-newdecoder-a) 関数を公開し、生成されたコードは goa デコーダを設定します。
+goa [msgpack](/v1/reference/goa/encoding/msgpack/) パッケージは [NewDecoder](/v1/reference/goa/encoding/msgpack/#NewDecoder) 関数を公開し、生成されたコードは goa デコーダを設定します。
 
 ## カスタムエンコーダの利用
 
@@ -136,7 +136,7 @@ EncoderFunc func(w io.Writer) Encoder
 
 ### カスタムエンコーダの利用
 
-カスタムエンコーダを指定するための DSL 関数は [Produces](https://goa.design/v1/reference/goa/design/apidsl/#func-produces-a-name-apidsl-produces-a) です。これは `Consumes` と同じ構文をサポートしています：
+カスタムエンコーダを指定するための DSL 関数は [Produces](/v1/reference/goa/design/apidsl/#Produces) です。これは `Consumes` と同じ構文をサポートしています：
 
 ```go
 var _ = API("My API", func() {
