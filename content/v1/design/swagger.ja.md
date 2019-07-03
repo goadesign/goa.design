@@ -8,7 +8,7 @@ name = "Swagger"
 parent = "design.v1"
 +++
 
-[goagen](/v1/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
+[goagen](/ja/v1/implement/goagen) はデザインによって与えられた API の Swagger 仕様を生成することができます。
 [https://swagger.goa.design](https://swagger.goa.design) でホストされているサービスは、（公開されている）Github レポジトリ上で `goagen swagger` を実行し、対応する Swagger UI をレンダリングします。
 これにより、オープンソースの goa サービスの API 定義をすばやく見て、それを試してみる便利な方法が提供されます。
 

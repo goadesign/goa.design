@@ -13,33 +13,33 @@ parent = "implement.v1"
 `middleware` パッケージは、すでに `goa` によって使用されているパッケージ以外の追加パッケージに依存しないミドルウェアを提供します。
 これらのミドルウェアは、ほとんどのマイクロサービスに役立つ機能を提供します：
 
-* [LogRequest](https://goa.design/v1/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a) は、やってくるリクエストとそれに対応するレスポンスのログを有効にします。ログの形式は全体的に設定可能になっています。デフォルトの形式ではアクションと対応するコントローラの名前だけでなく、リクエスト HTTP メソッド、パス、パラメータを記録します。
+* [LogRequest](/v1/reference/goa/middleware/#LogRequest) は、やってくるリクエストとそれに対応するレスポンスのログを有効にします。ログの形式は全体的に設定可能になっています。デフォルトの形式ではアクションと対応するコントローラの名前だけでなく、リクエスト HTTP メソッド、パス、パラメータを記録します。
 また、リクエストの時刻、レスポンス長も記録します。
 もし DEBUG ログレベルが有効になっていれば、リクエスト・ペイロードも記録します。
 最後に RequestID ミドルウエアが LogRequest ログにマウントされていれば、一意のリクエスト ID が各ログエントリと一緒に記録されます。
 
-* [LogResponse](https://goa.design/v1/reference/goa/middleware/#func-logresponse-a-name-middleware-logresponse-a) は DEBUG ログレベルが有効な場合、レスポンスボディの内容を記録します。
+* [LogResponse](/v1/reference/goa/middleware/#LogResponse) は DEBUG ログレベルが有効な場合、レスポンスボディの内容を記録します。
 
-* [RequestID](https://goa.design/v1/reference/goa/middleware/#func-requestid-a-name-middleware-requestid-a) は一意の ID をリクエストコンテキストに注入します。
+* [RequestID](/v1/reference/goa/middleware/#RequestID) は一意の ID をリクエストコンテキストに注入します。
 この ID はロガーで利用され、コントローラーアクションでも利用できます。
-ミドルウエアは [RequestIDHeader](https://goa.design/v1/reference/goa/middleware/#func-requestidwithheader-a-name-middleware-requestidwithheader-a) でヘッダーの ID を調べて、もし見つからなければこれを作ります。
+ミドルウエアは [RequestIDHeader](/v1/reference/goa/middleware/#RequestIDWithHeader) でヘッダーの ID を調べて、もし見つからなければこれを作ります。
 
-* [Recover](https://goa.design/v1/reference/goa/middleware/#func-recover-a-name-middleware-recover-a) は panic をリカバーし、panic の内容とバックトレースを記録します。
+* [Recover](/v1/reference/goa/middleware/#Recover) は panic をリカバーし、panic の内容とバックトレースを記録します。
 
-* [Timeout](https://goa.design/v1/reference/goa/middleware#Timeout) はリクエストコンテキストの Deadline を設定します。
+* [Timeout](/v1/reference/goa/middleware#Timeout) はリクエストコンテキストの Deadline を設定します。
 コントローラのアクションは、時間切れのときの通知を受け取るコンテキストチャネルを受信することができるようになるでしょう。
 
-* [RequireHeader](https://goa.design/v1/reference/goa/middleware#RequireHeader) は与えられた正規表現とマッチする値がリクエストのヘッダーに存在するかをチェックします。もしヘッダーがないとか正規表現とマッチしない場合には、ミドルウエアは指定された HTTP ステータスを持つ HTTP レスポンスを送信します。
+* [RequireHeader](/v1/reference/goa/middleware#RequireHeader) は与えられた正規表現とマッチする値がリクエストのヘッダーに存在するかをチェックします。もしヘッダーがないとか正規表現とマッチしない場合には、ミドルウエアは指定された HTTP ステータスを持つ HTTP レスポンスを送信します。
 
 下記のミドルウエアは 別々の Go のパッケージとして提供されています。
 
 #### Gzip
 
-[@tylerb](https://github.com/tylerb) 氏によって提供されている [gzip](https://goa.design/v1/reference/goa/middleware/gzip) パッケージは RFC 1952で指定された gzip 形式を使用して、レスポンスボディを圧縮する機能を追加します。
+[@tylerb](https://github.com/tylerb) 氏によって提供されている [gzip](/v1/reference/goa/middleware/gzip) パッケージは RFC 1952で指定された gzip 形式を使用して、レスポンスボディを圧縮する機能を追加します。
 
 #### セキュリティ
 
-[security](https://goa.design/v1/reference/goa/middleware/security) パッケージは、セキュリティ DSL と合わせて使うミドルウエアを含んでいます。
+[security](/v1/reference/goa/middleware/security) パッケージは、セキュリティ DSL と合わせて使うミドルウエアを含んでいます。
 
 ## あなた自身で書くこと
 
@@ -87,7 +87,7 @@ s.Use(MyMiddleware)
 ### ミドルウエアの設定
 
 しばしばミドルウエアに設定情報を渡す必要があります。
-たとえば、goa の [Timeout](https://goa.design/v1/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a)
+たとえば、goa の [Timeout](/v1/reference/goa/middleware/#Timeout)
 ミドルウエアはタイムアウトまでの時間が必要です。
 これは、設定情報をパラメータとして受け付け、クロージャを使用してミドルウェアを構築するコンストラクタ・メソッドを提供することで簡単に達成できます：
 

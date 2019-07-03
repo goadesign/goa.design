@@ -12,10 +12,10 @@ goa DSL の重要な側面として、タイプがどのように定義され使
 [概要](/v1/design/overview)では、タイプとメディアタイプの基本的な働きを取り上げました。
 この文書では一歩戻って、DSL の原理について説明していきます。
 
-データ構造は、[Attribute](https://goa.design/v1/reference/goa/design/apidsl/#func-attribute-a-name-apidsl-attribute-a) 関数またはそのエイリアス（`Member` や ` Header`, `Param`）を使用してデザインに記述されています。
+データ構造は、[Attribute](/v1/reference/goa/design/apidsl/#Attribute) 関数またはそのエイリアス（`Member` や ` Header`, `Param`）を使用してデザインに記述されています。
 この記述は絶対的に存在します。つまり、指定された言語 （例えば、`Go`）やテクノロジーに関連しないものです。
 これにより、`Go`のコード、JSONスキーマ、Swagger、あるいは他の言語（JavaScriptクライアントなど）へのバインディングにいたるまで、多くの出力を生成することができます。
-デザイン言語には、[概要](/v1/design/overview) にリストされているいくつかのプリミティブ型が含まれていますが、[Type](https://goa.design/v1/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) 関数を使用して任意のデータ構造を再帰的に記述することができます。
+デザイン言語には、[概要](/v1/design/overview) にリストされているいくつかのプリミティブ型が含まれていますが、[Type](/v1/reference/goa/design/apidsl/#Type) 関数を使用して任意のデータ構造を再帰的に記述することができます。
 
 ## リクエスト・ペイロード
 
@@ -90,7 +90,7 @@ Action("create", func() {
 レスポンス・メディアタイプはレスポンス・ボディの形を特徴付けます。
 メディアタイプは *views* と *links* を定義している点でタイプと異なります。
 詳細は、[概要](/v1/design/overview) を参照してください。
-メディアタイプは、[MediaType](https://goa.design/v1/reference/goa/design/apidsl/#func-mediatype-a-name-apidsl-mediatype-a) 関数を利用して定義されます。
+メディアタイプは、[MediaType](/v1/reference/goa/design/apidsl/#MediaType) 関数を利用して定義されます。
 
 基本的なメディアタイプの定義は次のようになります：
 

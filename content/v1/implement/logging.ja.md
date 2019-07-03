@@ -16,7 +16,7 @@ parent = "implement.v1"
 
 goaは、ロガーが実装することを期待する最小限のインターフェースを定義します。
 このインターフェイスは
-[LogAdapter](https://goa.design/v1/reference/goa/#type-logadapter-a-name-goa-logadapter-a)
+[LogAdapter](/v1/reference/goa/#LogAdapter)
 で、次のように定義されています：
 
 ```go
@@ -35,14 +35,14 @@ goaは、ロガーが実装することを期待する最小限のインター�
 アダプターは、実際のロガーがそれをサポートしていない場合でも、goa の一部である標準ロガーアダプターと同様にコンテキストを適切にロギングする必要があります。
 
 ミドルウェアは `New` メソッドを利用して、各ログエントリでログに記録される追加のロギングコンテキストをともなったアダプタをインスタンス化できます。
-このような追加のコンテキストは、例えば [LogRequest](https://goa.design/v1/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a) ミドルウェアによって行われるような、一意のリクエスト ID を含むことができるでしょう。
-ログアダプター自体はリクエストコンテキストに保管され、[ContextLogger](https://goa.design/v1/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a) を使用して取り出すことができます。
-goa はまた、アダプタ上で `New` を呼び出し、結果のログアダプタを含む新しいコンテキストを作成する [WithLogContext](https://goa.design/v1/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a) 関数を公開しています。
+このような追加のコンテキストは、例えば [LogRequest](/v1/reference/goa/middleware/#LogRequest) ミドルウェアによって行われるような、一意のリクエスト ID を含むことができるでしょう。
+ログアダプター自体はリクエストコンテキストに保管され、[ContextLogger](/v1/reference/goa/#ContextLogger) を使用して取り出すことができます。
+goa はまた、アダプタ上で `New` を呼び出し、結果のログアダプタを含む新しいコンテキストを作成する [WithLogContext](/v1/reference/goa/#WithLogContext) 関数を公開しています。
 
 ## サービスでの利用方法
 
 サービスは、goa とは独立に、必要に応じてロガーを設定する必要があります。
-goa は、[標準ログ](https://golang.org/pkg/log/)や [log15](https://github.com/inconshreveable/log15)、[logrus](https://github.com/Sirupsen/logrus)、[go-kit logger](https://github.com/go-kit/kit) などを含む共通ログパッケージに対するいくつかの `LogAdapter` の[実装](https://goa.design/v1/reference/) を備えています。
+goa は、[標準ログ](https://golang.org/pkg/log/)や [log15](https://github.com/inconshreveable/log15)、[logrus](https://github.com/Sirupsen/logrus)、[go-kit logger](https://github.com/go-kit/kit) などを含む共通ログパッケージに対するいくつかの `LogAdapter` の[実装](/v1/reference/) を備えています。
 
 インスタンス化されるとすぐに、これらのアダプターの1つを利用して、サービスのロガーを goa に注入する必要があります。
 `log15` を例にとると、次のようになります：
@@ -57,7 +57,7 @@ service.WithLogger(goalog15.New(logger))
 ```
 
 アクションハンドラが呼び出される前に、goa はロガーコンテキストを設定を処理します。
-コンテキストは、[LogRequest](https://goa.design/v1/reference/goa/middleware/#func-logrequest-a-name-middleware-logrequest-a)
+コンテキストは、[LogRequest](/v1/reference/goa/middleware/#LogRequest)
 ミドルウェアなどのミドルウェアによって追加構成することもできます。
 
 コードは各アダプタパッケージが提供するアクセサ関数を利用してロギングコンテキストを利用することができます。
@@ -86,7 +86,7 @@ logInfo(ctx, "whoops", "value", 15)
 
 ## ミドルウエアでの利用方法
 
-ミドルウェアは、コンテキストと [ContextLogger](https://goa.design/v1/reference/goa/#func-contextlogger-a-name-goa-logadapter-contextlogger-a) 関数を介してロガーにアクセスできます。
-返された [LogAdapter](https://goa.design/v1/reference/goa/#type-logadapter-a-name-goa-logadapter-a) を使用して、ロガーコンテキストに追加したり、ログを書き込んだりすることができます。
+ミドルウェアは、コンテキストと [ContextLogger](/v1/reference/goa/#ContextLogger) 関数を介してロガーにアクセスできます。
+返された [LogAdapter](/v1/reference/goa/#LogAdapter) を使用して、ロガーコンテキストに追加したり、ログを書き込んだりすることができます。
 
-あるいは、ミドルウェアは、[WithLogContext](https://goa.design/v1/reference/goa/#func-withlogcontext-a-name-goa-withlogcontext-a) 関数を利用してロガーコンテキストに追加し、goa パッケージの [LogInfo](https://goa.design/v1/reference/goa/#func-loginfo-a-name-goa-loginfo-a) および [LogError](https://goa.design/v1/reference/goa/#func-logerror-a-name-goa-logerror-a) 関数を使用してログを書き込むことができます。
+あるいは、ミドルウェアは、[WithLogContext](/v1/reference/goa/#WithLogContext) 関数を利用してロガーコンテキストに追加し、goa パッケージの [LogInfo](/v1/reference/goa/#LogInfo) および [LogError](/v1/reference/goa/#LogError) 関数を使用してログを書き込むことができます。

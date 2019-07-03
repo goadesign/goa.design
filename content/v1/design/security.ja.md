@@ -16,11 +16,11 @@ goaには、Basic認証、APIキー（共有秘密鍵）、JWT、OAuth2など、
 ## セキュリティ DSL
 
 セキュリティスキームは、
-[BasicAuthSecurity](https://goa.design/v1/reference/goa/design/apidsl/#func-basicauthsecurity-a-name-apidsl-basicauthsecurity-a)、
-[APIKeySecurity](https://goa.design/v1/reference/goa/design/apidsl/#func-apikeysecurity-a-name-apidsl-apikeysecurity-a)、
-[JWTSecurity](https://goa.design/v1/reference/goa/design/apidsl/#func-jwtsecurity-a-name-apidsl-jwtsecurity-a) または
-[OAuth2Security](https://goa.design/v1/reference/goa/design/apidsl/#func-oauth2security-a-name-apidsl-oauth2security-a) のいずれかを使用して定義されます。
-API、リソース、アクションで [Security](https://goa.design/v1/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a) を使うことでスキームを加えることができます。
+[BasicAuthSecurity](/v1/reference/goa/design/apidsl/#BasicAuthSecurity)、
+[APIKeySecurity](/v1/reference/goa/design/apidsl/#APIKeySecurity)、
+[JWTSecurity](/v1/reference/goa/design/apidsl/#JWTSecurity) または
+[OAuth2Security](/v1/reference/goa/design/apidsl/#OAuth2Security) のいずれかを使用して定義されます。
+API、リソース、アクションで [Security](/v1/reference/goa/design/apidsl/#Security) を使うことでスキームを加えることができます。
 
 例えば：
 
@@ -37,12 +37,12 @@ var _ = Resource("secured", func() {
 
 各スキームは、対応する認証メカニズムに固有のDSLを使用します。
 たとえば、APIキーでは、キーをクエリ文字列に設定するかヘッダーに設定するかを指定できます。
-各 DSL の詳細については[リファレンス](https://goa.design/v1/reference/goa/design/apidsl)を参照してください。
+各 DSL の詳細については[リファレンス](/v1/reference/goa/design/apidsl)を参照してください。
 
 ## スコープ
 
 `JWT` と ` OAuth2` の両方のスキームでは、クライアントで設定されていなければならないトークンのスコープを指定することができます。
-[Security](https://goa.design/v1/reference/goa/design/apidsl/#func-security-a-name-apidsl-security-a) 関数を使うと、スキーマが添付されたアクションに対して、要求されるスコープを指定することができます。
+[Security](/v1/reference/goa/design/apidsl/#Security) 関数を使うと、スキーマが添付されたアクションに対して、要求されるスコープを指定することができます。
 例えば、`OAuth2` スキームが利用する `OAuth2` 認可コードは以下のように定義できます：
 
 ```go
@@ -77,7 +77,7 @@ var _ = Resource("secured", func() {
     })
 ```
 
-以下の例のように、[NoSecurity](https://goa.design/v1/reference/goa/design/apidsl/#func-nosecurity-a-name-apidsl-nosecurity-a) を利用すると、
+以下の例のように、[NoSecurity](/v1/reference/goa/design/apidsl/#NoSecurity) を利用すると、
 アクションで完全に認証をオプトアウトすることもできます：
 
 ```go
@@ -99,4 +99,4 @@ var _ = Resource("secured", func() {
 これにより、必要に応じて動作をカスタマイズすることができます。
 goaには、セキュリティスキームを部分的にまたは完全に実装する一連のセキュリティミドルウェアが付属しています。
 
-どのようにセキュリティミドルウェアを実装するかの詳細は、[実装する](https://goa.design/v1/implement/) の [セキュリティ](https://goa.design/v1/implement/security/) セクションを参照してください。
+どのようにセキュリティミドルウェアを実装するかの詳細は、[実装する](/ja/v1/implement) の [セキュリティ](/ja/v1/implement/security) セクションを参照してください。
