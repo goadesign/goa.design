@@ -123,29 +123,29 @@ weight = 5
 [[languages.ja.menu.v1]]
 name = "学ぶ"
 identifier = "learn.v1"
-url = "/v1/ja/learn/"
+url = "/ja/v1/learn/"
 weight = 1
 
 [[languages.ja.menu.v1]]
 name = "デザイン"
 identifier = "design.v1"
-url = "/v1/ja/design/"
+url = "/ja/v1/design/"
 weight = 2
 
 [[languages.ja.menu.v1]]
 name = "実装する"
 identifier = "implement.v1"
-url = "/v1/ja/implement/"
+url = "/ja/v1/implement/"
 weight = 3
 
 [[languages.ja.menu.v1]]
 name = "拡張する"
 identifier = "extend.v1"
-url = "/v1/ja/plugins/"
+url = "/ja/v1/extend/"
 weight = 4
 
 [[languages.ja.menu.v1]]
 name = "ブログ"
 identifier = "blog.v1"
-url = "/v1/ja/blog/"
+url = "/ja/v1/blog/"
 weight = 5

@@ -12,7 +12,7 @@ goa プラグインを使うと、どんな DSL からでも新しい種類の�
 
 # ジェネレータ
 
-ジェネレータは DSL によって生成されたデータ構造を消費して成果物を生成します。ジェネレータは、既存の DSL と新しいDSL（新しい DSL の作成方法については [goa プラグイン DSL](/v1/extend/dsls) を参照してください）用に記述することができます。生成する成果物は何でもかまいません。 DSL エンジンは生成の編成を提供し、実際の出力は認識しません。
+ジェネレータは DSL によって生成されたデータ構造を消費して成果物を生成します。ジェネレータは、既存の DSL と新しいDSL（新しい DSL の作成方法については [goa プラグイン DSL](/ja/v1/extend/dsls) を参照してください）用に記述することができます。生成する成果物は何でもかまいません。 DSL エンジンは生成の編成を提供し、実際の出力は認識しません。
 
 ## ジェネレータの実装
 
@@ -20,11 +20,11 @@ goa プラグインを使うと、どんな DSL からでも新しい種類の�
 ```go
 func Generate() ([]string, error)
 ```
-この関数は、成功時には生成されたファイル名のリストを、それ以外の場合には解説的なエラーを返します。ジェネレータは、対応する DSL パッケージから直接 DSL 出力データ構造にアクセスします。例えば goa API DSL は、ビルドアップ API 定義を含む [APIDefinition](https://goa.design/v1/reference/goa/design.html#type-apidefinition-a-name-design-apidefinition-a:83772ba7ad0304b1562d08f190539946) 型の `Design` パッケージ変数を公開します。
+この関数は、成功時には生成されたファイル名のリストを、それ以外の場合には解説的なエラーを返します。ジェネレータは、対応する DSL パッケージから直接 DSL 出力データ構造にアクセスします。例えば goa API DSL は、ビルドアップ API 定義を含む [APIDefinition](/v1/reference/goa/design#APIDefinition) 型の `Design` パッケージ変数を公開します。
 
 ### goa API DSL のためのジェネレータの作成
 
-goa DSL はまた、ユーザに定義されたものではなく、エンジンによって動的に生成されたメディアタイプのセットを含む [GeneratedMediaTypes](https://goa.design/v1/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) を [Design](https://goa.design/v1/reference/goa/design.html#variables:83772ba7ad0304b1562d08f190539946) パッケージ変数の上に公開します (メディアタイプが [CollectionOf](https://goa.design/v1/reference/goa/design/apidsl.html#func-collectionof-a-name-apidsl-collectionof-a:aab4f9d6f98ed71f45bd470427dde2a7) でインラインで使用されている場合に発生します) 。
+goa DSL はまた、ユーザに定義されたものではなく、エンジンによって動的に生成されたメディアタイプのセットを含む [GeneratedMediaTypes](/v1/reference/goa/design#a-name-pkg-variables-variables-a) を [Design](/v1/reference/goa/design#a-name-pkg-variables-variables-a) パッケージ変数の上に公開します (メディアタイプが [CollectionOf](/v1/reference/goa/design/apidsl#CollectionOf) でインラインで使用されている場合に発生します) 。
 
 goa API DSL の出力に作用したいジェネレータは次のようになります。
 ```go
