@@ -27,13 +27,13 @@ goaは、コード生成を活用して、"型付き"メソッドを使用して
 
 goaパッケージは、リクエストコンテキストに格納されたデータを抽出するために使用できる一連の関数を公開します。
 それらはすべて `Context` をプレフィックスとする関数です。
-たとえば [ContextResponse](https://goa.design/v1/reference/goa/#func-contextresponse-a-name-goa-responsedata-contextresponse-a) は指定されたコンテキストからレスポンスデータを抽出します。
+たとえば [ContextResponse](/v1/reference/goa/#ContextResponse) は指定されたコンテキストからレスポンスデータを抽出します。
 これらの関数は、生成されたデータ構造にアクセスするのではなく、ミドルウエアのような生の `context.Context` の値にアクセスするコードとして有用です。
 
-goa パッケージは、`With` をプレフィックスとする関数を公開し、コンテキストを受け入れ、関数に提供された追加データを埋め込んだ新しいコンテキストを返します。例えば、[WithLogger](https://goa.design/v1/reference/goa/#func-withlogger-a-name-goa-withlogger-a)はコンテキストにロガーを設定して返します。
+goa パッケージは、`With` をプレフィックスとする関数を公開し、コンテキストを受け入れ、関数に提供された追加データを埋め込んだ新しいコンテキストを返します。例えば、[WithLogger](/v1/reference/goa/#WithLogger)はコンテキストにロガーを設定して返します。
 
 ## Deadline の設定
 
 前述したように、各コントローラのアクションコンテキストは golang パッケージの context をラップしています。
 これは、Deadline とキャンセル信号がすべてのアクション実装で利用可能であることを意味します。
-組み込みの [Timeout](https://goa.design/v1/reference/goa/middleware/#func-timeout-a-name-middleware-timeout-a) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。
+組み込みの [Timeout](/v1/reference/goa/middleware/#Timeout) ミドルウェアは、サービスまたはコントローラがすべてのリクエストに対してタイムアウト値を定義できるようにするこの機能を利用しています。

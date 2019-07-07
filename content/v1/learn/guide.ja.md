@@ -139,11 +139,11 @@ swagger/swagger.yaml
 
 * `contexts.go` にはコンテキストデータ構造定義が含まれています。コンテキストは Martini の `martini.Context` 、 goji の `web.C` または echo の `echo.Context` と同様の役割を果たします。これはすべてのコントローラアクションの最初の引数として与えられ、リクエスト状態にアクセスしてレスポンスを書くためのヘルパメソッドを提供します。
 
-* `hrefs.go` はリソースの href を構築するためのグローバル関数を提供します。リソースの href によって、レスポンスが関連リソースにリンクすることが可能になります。goa は、リソースの「標準的な」アクション (デフォルトでは `show` アクション) の要求パスを調べることによって、これらの href をどのように構築するかを知ります。追加情報については [Action](https://goa.design/v1/reference/goa/design/apidsl/#func-action-a-name-apidsl-action-a) デザイン言語関数を参照してください。
+* `hrefs.go` はリソースの href を構築するためのグローバル関数を提供します。リソースの href によって、レスポンスが関連リソースにリンクすることが可能になります。goa は、リソースの「標準的な」アクション (デフォルトでは `show` アクション) の要求パスを調べることによって、これらの href をどのように構築するかを知ります。追加情報については [Action](/v1/reference/goa/design/apidsl/#Action) デザイン言語関数を参照してください。
 
 * `media_types.go` にはレスポンスを構築するためにリソースアクションによって使用されるメディアタイプのデータ構造が含まれています。デザインで定義されたビューごとに 1 つのそのようなデータ構造が生成されます。
 
-* `user_types.go` には、[Type](https://goa.design/v1/reference/goa/design/apidsl/#func-type-a-name-apidsl-type-a) デザイン言語関数で定義されたデータ構造が含まれています。そのようなタイプはリクエストのペイロードおよびレスポンスのメディアタイプを定義するために使用することができます。
+* `user_types.go` には、[Type](/v1/reference/goa/design/apidsl/#Type) デザイン言語関数で定義されたデータ構造が含まれています。そのようなタイプはリクエストのペイロードおよびレスポンスのメディアタイプを定義するために使用することができます。
 
 * `test/bottle.go` にはコントローラのコードをテストするのに便利なテストヘルパが含まれています。コントローラの入力を使ってアクションの実装を呼び出し、結果のメディアタイプを検証することができます。
 
@@ -310,4 +310,4 @@ go build -o cellar-cli
 
 この基本的な例は goa ができることのほんの一部をカバーしています。マイクロサービスの設計方法と、それを実装するための goa パッケージとサブパッケージを活用する方法の詳細については、こちらを参照してください。
 
-その他の例は [github](https://github.com/goadesign/examples) にあります。
+その他の例は [github](https://github.com/goadesign/examples/tree/v1) にあります。
