@@ -35,7 +35,7 @@ DSL may specify that one of the attributes is read from the incoming request
 headers while the others from the request body.
 
 This clean decoupling means that the same service implementation can expose
-endpoints accessible via multiple transports such as HTTP or gRPC. goa takes
+endpoints accessible via multiple transports such as HTTP or gRPC. Goa takes
 care of generating all the transport specific code including encoding, decoding
 and validations. User code only has to focus on the actual service method
 implementations.
