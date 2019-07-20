@@ -71,5 +71,5 @@ generators.
   to focus on the actual service method implementations.
 * Goa v2 generates code that **relies mostly on Go standard library types**
   making it easier to interface with external code.
-* The [goa-kit](https://github.com/goadesign/plugins/goakit) plugin makes it
+* The [goa-kit](https://github.com/goadesign/plugins/tree/v3/goakit) plugin makes it
   possible to generate go-kit microservices from Goa designs.
