@@ -168,7 +168,7 @@ gen
 最後に `cli` サブディレクトリはコマンドラインから gRPC リクエストをビルドするための CLI コードを含みます。 
 
 `http` サブディレクトリは HTTP トランスポートを記述しており、リクエストとレスポンスをエンコード・デコードするロジックを持つサーバとクライアントのコード、コマンドラインから HTTP リクエストを構築する CLI コードを定義しています。
-また、Open API 2.0 仕様のファイルも json と yaml の両方の形式で含まれています。
+また、Open API 2.0 仕様のファイルも json と yaml 両方の形式で含まれています。
 
 ### `goa example` コマンド
 
@@ -177,7 +177,7 @@ gen
 サーバーにリクエストを送ることができるクライアントファイルを伴います。
 
 > 注：`goa gen` によって生成されたコードは編集できません。 このディレクトリは、コマンドが実行されるたびに（たとえば、デザインが変更された後に）完全に最初から再生成されます。
-> これは、生成されたコードと生成されていないコードとの間のインターフェースをきれいに保ち、標準のGo構成（つまり関数呼び出し）を使用するための仕様です。
+> これは、生成されたコードと生成されていないコードとの間のインターフェースをきれいに保ち、標準の Go 構成（つまり関数呼び出し）を使用するための仕様です。
 > しかし `goa example` によって生成されたコードは **あなたの** コードです。
 > 修正したり、テストを追加したりする必要があります。
 > このコマンドは、自力の開発を助けるサービスの開始点を生成します - 特に、デザインが変更されたときに再実行することを意図して **いません** 。 
@@ -204,8 +204,8 @@ goa example calc/design
 │       └── main.go
 ```
 
-`calc.go` はデザインに記述された `add` メソッドのダミーの実装を含みます。
-私たちの残された唯一することは、実際の実装を与え、ビルドし、サーバやクライアントを実行することだけです。
+`calc.go` はデザインに記述された `add` メソッドのダミー実装を含みます。
+すべきこととして残されているのは、実際の実装を与え、ビルドし、サーバやクライアントを実行することだけです。
 
 `calc.go` ファイルを開き、`Add` メソッドを実装します：
 
@@ -226,7 +226,7 @@ func (s *calcsrvc) Add(ctx context.Context, p *calc.AddPayload) (res int, err er
 ```bash
 go build ./cmd/calc && go build ./cmd/calc-cli
 
-# Run the server
+# サーバーの実行
 
 ./calc
 [calcapi] 21:35:36 HTTP "Add" mounted on GET /add/{a}/{b}
@@ -235,13 +235,13 @@ go build ./cmd/calc && go build ./cmd/calc-cli
 [calcapi] 21:35:36 HTTP server listening on "localhost:8000"
 [calcapi] 21:35:36 gRPC server listening on "localhost:8080"
 
-# Run the client
+# クライアントの実行
 
-# Contact HTTP server
+# HTTP サーバーと交信
 $ ./calc-cli --url="http://localhost:8000" calc add --a 1 --b 2
 3
 
-# Contact gRPC server
+# gRPC サーバーと交信
 $ ./calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
 3
 ```
