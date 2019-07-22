@@ -254,4 +254,4 @@ API デザインに焦点を当てることができるため、実装を開始�
 
 この例は Goa の基本にのみ触れています。デザインの<a href="../design/overview">デザイン概要</a> では他の多くの側面もカバーしています。
 ぜひ他の[例](https://github.com/goadesign/examples)も見てみてください。
-最後に、DSLパッケージ [GoDoc](https://godoc.org/goa.design/goa/dsl) には多くのコードスニペットが含まれており、デザインを作成する際の参考資料として役立ちます。
+最後に、DSL パッケージ [GoDoc](https://godoc.org/goa.design/goa/dsl) には多くのコードスニペットが含まれており、デザインを作成する際の参考資料として役立ちます。
