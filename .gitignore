@@ -1,15 +1,4 @@
-tools/mdc/mdc
-tools/godoc2md/godoc2md
-examples/cellar/cellar
-examples/cellar/client/cellar-cli/cellar-cli
-**/*.coverprofile
-goagen/goagen
-**/autogen
-vendor
-_integration_tests/*/**/*.*
-.DS_Store
 website/public
-node_modules
 public/
 static/js/pindex.json
 content/reference/
