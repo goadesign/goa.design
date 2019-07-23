@@ -283,7 +283,7 @@ marshaling and unmarshaling of data including input validation (try calling the
 calc service using a non-integer value for example).
 
 This example only touches on the basics of Goa, the
-<a href="../design/overview">design overview</a> covers many other aspects. You
+<a href="../../design/overview">design overview</a> covers many other aspects. You
 may also want to take a look at the other
 [examples](https://github.com/goadesign/examples). Finally, the DSL package
 [GoDoc](https://godoc.org/goa.design/goa/dsl) includes many code snippets and

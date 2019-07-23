@@ -35,7 +35,7 @@ DSL may specify that one of the attributes is read from the incoming request
 headers while the others from the request body.
 
 This clean decoupling means that the same service implementation can expose
-endpoints accessible via multiple transports such as HTTP or gRPC. goa takes
+endpoints accessible via multiple transports such as HTTP or gRPC. Goa takes
 care of generating all the transport specific code including encoding, decoding
 and validations. User code only has to focus on the actual service method
 implementations.
@@ -71,5 +71,5 @@ generators.
   to focus on the actual service method implementations.
 * Goa v2 generates code that **relies mostly on Go standard library types**
   making it easier to interface with external code.
-* The [goa-kit](https://github.com/goadesign/plugins/goakit) plugin makes it
+* The [goa-kit](https://github.com/goadesign/plugins/tree/v3/goakit) plugin makes it
   possible to generate go-kit microservices from Goa designs.
