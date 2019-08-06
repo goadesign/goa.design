@@ -312,7 +312,7 @@ Method("index", func() {
 The HTTP response body for requests sent to the "index" method are of the form
 `[{"name":"foo"},{"name":"bar"}]`. The same example but with the line defining
 the response body removed (`Body("accounts")`) produces response bodies of the
-form: `{"accounts":[{"name":"foo"},{"name":"bar"}]` since the shape of the
+form: `{"accounts":[{"name":"foo"},{"name":"bar"}]}` since the shape of the
 response body is now an object containing all the attributes of the result type
 not used to defined headers (only `accounts` is left).
 
