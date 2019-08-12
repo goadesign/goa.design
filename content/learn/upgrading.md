@@ -136,7 +136,7 @@ The following changes have been made to the [API](https://godoc.org/goa.design/g
 
 * The `Host`, `Scheme` and `BasePath` DSLs are replaced with [Server](https://godoc.org/goa.design/goa/dsl#Server).
 * The [Server](https://godoc.org/goa.design/goa/dsl#Server) DSL makes it possible to define server properties for different environments. Each server may list the services it hosts making it possible to define multiple servers in one design.
-* `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/master/cors).
+* `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/v3/cors).
 * `ResponseTemplate` and `Trait` have been deprecated.
 
 #### Example
@@ -204,7 +204,7 @@ specific sections then map these errors to HTTP status code or gRPC response cod
 * `CanonicalActionName` is now called [CanonicalMethod](https://godoc.org/goa.design/goa/dsl#CanonicalMethod)
   and appears in the [HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL.
 * `Response` is replaced with [Error](https://godoc.org/goa.design/goa/dsl#Error).
-* `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/master/cors).
+* `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/v3/cors).
 * `DefaultMedia` is deprecated.
 
 #### Example

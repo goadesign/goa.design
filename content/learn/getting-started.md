@@ -9,7 +9,7 @@ parent = "learn"
 
 This guide walks you through writing a complete service in goa. The simple
 service implements the basic example found in the
-[github repository](https://github.com/goadesign/examples/basic). The
+[GitHub repository](https://github.com/goadesign/examples/tree/master/basic). The
 instructions assume the use of Go modules and as such require Go version 1.11 or
 greater.
 
