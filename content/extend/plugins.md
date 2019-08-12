@@ -51,7 +51,7 @@ functions.
 ## CORS Plugin
 
 One of the built-in plugins is the
-[CORS plugin](https://github.com/goadesign/plugins/tree/master/cors) which adds
+[CORS plugin](https://github.com/goadesign/plugins/tree/v3/cors) which adds
 the ability to define CORS properties on HTTP endpoints and uses the
 corresponding expressions to generate code that implements CORS for the API.
 
