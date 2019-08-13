@@ -126,7 +126,7 @@ var Person = ResultType("application/vnd.goa.person", func() {
 * `Host`, `Scheme` ならびに `BasePath` DSL は [Server](https://godoc.org/goa.design/goa/dsl#Server) に置き換えられます。
 * [Server](https://godoc.org/goa.design/goa/dsl#Server) DSL を使用するとさまざまな環境のサーバプロパティを定義できます。
   各サーバは、サーバがホストするサービスをリストして、1つのデザインで複数のサーバーの定義を可能にします。
-* `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/master/cors)の一部として実装されました。 
+* `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/v3/cors)の一部として実装されました。 
 * `ResponseTemplate` と `Trait` は廃止になりました。
 
 #### Example
@@ -192,7 +192,7 @@ var _ = API("cellar", func() {
 * `BasePath` は [Path](https://godoc.org/goa.design/goa/dsl#Path) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL に現れます。
 * `CanonicalActionName` は [CanonicalMethod](https://godoc.org/goa.design/goa/dsl#CanonicalMethod) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL に現れます。
 * `Response` は [Error](https://godoc.org/goa.design/goa/dsl#Error) に置き換えられました。
-* `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/master/cors)の一部として実装されました。 
+* `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/v3/cors)の一部として実装されました。 
 * `DefaultMedia` は廃止されました。
 
 #### 例
