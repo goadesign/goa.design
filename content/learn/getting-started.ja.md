@@ -8,7 +8,7 @@ parent = "learn"
 +++
 
 このガイドでは Goa による完全なサービスの書き方についてひと通り説明します。
-この単純なサービスは、[github リポジトリ](https://github.com/goadesign/examples/basic)にある基本的な例を実装しています。
+この単純なサービスは、[Github リポジトリ](https://github.com/goadesign/examples/tree/master/basic)にある基本的な例を実装しています。
 説明では Go モジュールの使用を前提としていて、Go のバージョン1.11以降が必要です。 
 
 ## 前もって必要なこと
