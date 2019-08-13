@@ -46,7 +46,8 @@ Goa v3 では、下層のトランスポートとは無関係にサービス API
 トランスポート固有の DSL は、各トランスポート（HTTP と gRPC）のマッピングを提供することを可能にします。
 それで `Resources` と `Actions` の代わりに DSL は `Services` と `Methods` に重点を置いています。 
 各メソッドはそれぞれの入力と出力を記述します。
-トランスポート固有の DSL は、入力タイプが HTTP リクエストまたは入力される gRPC メッセージがどのように組み立てられているか、また、出力タイプが HTTP レスポンスまたは出力される gRPC メッセージがどのように書き込まれるべきかを記述します。
+トランスポート固有の DSL は、入力タイプが HTTP リクエストまたは入力される gRPC メッセージからどのように組み立てられているか、
+また、出力タイプが HTTP レスポンスまたは出力される gRPC メッセージへどのように書き込まれるべきかを記述します。
 
 > 注： v3 DSL は [godoc](https://godoc.org/goa.design/goa/dsl) に大々的に文書化されています。
 
@@ -60,7 +61,6 @@ Goa v3 では、下層のトランスポートとは無関係にサービス API
 * 新しい [Field](https://godoc.org/goa.design/goa/dsl#Field) DSL は [Attribute](https://godoc.org/goa.design/goa/dsl#Attribute) と同等ですが、
   gRPC のフィールドナンバーに対応するインデックスを指定することが可能です。
 * `HashOf` は [MapOf](https://godoc.org/goa.design/goa/dsl#MapOf) になりました。Go 開発者にはより直感的になりました。
-
 * データのバイナリレイアウトをより正確に記述するために、新しい基本型が導入されました：
   [Int](https://godoc.org/goa.design/goa/dsl#Int),
   [Int32](https://godoc.org/goa.design/goa/dsl#Int32),
@@ -93,7 +93,7 @@ var Person = MediaType("application/vnd.goa.person", func() {
 })
 ```
 
-対応する v3 ResultType：
+対応する v3 の ResultType：
 
 ```go
 var Person = ResultType("application/vnd.goa.person", func() {
@@ -131,7 +131,7 @@ var Person = ResultType("application/vnd.goa.person", func() {
 
 #### Example
 
-v1 API：
+v1 の API：
 
 ```go
 var _ = API("cellar", func() {
@@ -143,7 +143,7 @@ var _ = API("cellar", func() {
 })
 ```
 
-対応する v3 API：
+対応する v3 の API：
 
 ```go
 var _ = API("cellar", func() {
@@ -157,7 +157,7 @@ var _ = API("cellar", func() {
 })
 ```
 
-対応する v3 API （複数サーバー）:
+対応する v3 の API （複数サーバー）:
 
 ```go
 var _ = API("cellar", func() {
@@ -197,7 +197,7 @@ var _ = API("cellar", func() {
 
 #### 例
 
-v1 デザイン：
+v1 のデザイン：
 
 ```go
 	Resource("bottle", func() {
@@ -212,7 +212,7 @@ v1 デザイン：
 	})
 ```
 
-同等の v3 デザイン：
+同等な v3 のデザイン：
 
 ```go
 	Service("bottle", func() {
@@ -244,7 +244,7 @@ v1 デザイン：
 
 入力と出力の対応は、
 
-v1 Action デザインの例：
+v1 Action のデザイン例：
 
 ```go
 	Action("update", func() {
@@ -265,7 +265,7 @@ v1 Action デザインの例：
 	})
 ```
 
-同等の v3 デザイン：
+同等な v3 のデザイン：
 
 ```go
 	Method("update", func() {
