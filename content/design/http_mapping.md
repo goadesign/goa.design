@@ -37,7 +37,7 @@ user provided decoder in the (hopefully rare) cases when that's needed.
 #### Mapping payload with non-object types
 
 When the payload type is a primitive type (i.e. one of String, any of the
-integer of float types, Boolean or Bytes), an array or a map then the value is
+integer or float types, Boolean or Bytes), an array or a map then the value is
 loaded from:
 
 * the first URL path parameter defined in the design if any
