@@ -143,7 +143,7 @@ func (s *dividerSvc) IntegralDivide(ctx context.Context, p *dividersvc.IntOperan
 ```
 
 And that's it! Given this, goa knows to initialize a `ErrorResult` using the
-provided error to initiliaze the message field and initializes all the other
+provided error to initialize the message field and initializes all the other
 fields from the information provided in the design. The generated transport code
 also writes the proper HTTP/gRPC status code as defined in the Response DSL.
 Using the generated command line tool to verify:
