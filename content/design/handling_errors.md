@@ -175,11 +175,11 @@ a description inline in this case as well.
 
 There are a couple of caveats to be aware of when using custom error result types:
 
-1. The `Temporary`, `Timeout`, and `Fault` expressions have no effect on code
+* The `Temporary`, `Timeout`, and `Fault` expressions have no effect on code
    generation in this case as they otherwise set the corresponding field values
    on the `ErrorResult` struct.
 
-2. If the custom type is a user defined type and if it is used to define
+* If the custom type is a user defined type and if it is used to define
    multiple errors on the same method then goa must be told which attribute
    contains the error name. The value of this attribute is compared with the
    names of the errors as defined in the design by the encoding and decoding
@@ -207,6 +207,6 @@ var InsertConflict = ResultType("application/vnd.service.insertconflict", func()
 })
 ```
 
-3. User types used to define custom error types cannot have an attribute named
+* User types used to define custom error types cannot have an attribute named
    `error_name` as the generated code defines a `ErrorName` function on the
    error struct.
