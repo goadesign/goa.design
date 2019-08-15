@@ -364,6 +364,7 @@ gRPC transport. Note that the protocol buffer language only supports primitives
 (except floats or bytes) as map keys.
 
 **Arrays** can be defined in two ways:
+
 * [ArrayOf](https://godoc.org/goa.design/goa/dsl#ArrayOf) which accepts any type
   and returns a type.
 * [CollectionOf](https://godoc.org/goa/design/goa/dsl#CollectionOf) which
