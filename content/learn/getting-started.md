@@ -273,7 +273,7 @@ $ ./calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
 
 ## Summary and Next Steps
 
-As you can Goa accelerates service development by making it possible to write
+As you can see Goa accelerates service development by making it possible to write
 the single source of truth from which server and client code as well as
 documentation is automatically generated. The ability to focus on API design
 enables a robust and scalable development process where teams can review and
