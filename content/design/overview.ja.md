@@ -377,7 +377,6 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 
 * [Header](https://godoc.org/goa.design/goa/dsl#Header) 関数は HTTPヘッダからロードされる値を定義します。
 * [Body](https://godoc.org/goa.design/goa/dsl#Body) 関数はレスポンスボディからロードされる値を定義します。
-  loaded from the response body.
 
 デフォルトでは、結果のアトリビュートは HTTP レスポンスボディにマッピングされます。
 結果の型が基本型、配列、マップの場合、次のような制限が適用されます：
