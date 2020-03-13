@@ -60,7 +60,7 @@ var _ = API("calc", func() {
 ## Service の表現
 
 [Service](https://godoc.org/goa.design/goa/dsl#Service) 関数はメソッドのグループを定義します。
-これは、REST のリソースか、gRPG の [サービス宣言](https://grpc.io/docs/guides/concepts.html#service-definition) に対応します。 
+これは、REST のリソースか、gRPC の [サービス宣言](https://grpc.io/docs/guides/concepts.html#service-definition) に対応します。 
 サービスはすべてのサービスメソッドに共通のエラーレスポンスを定義することができます。
 エラー定義に関する追加情報については、[エラー処理](/design/handling_errors/) を参照してください。
 
