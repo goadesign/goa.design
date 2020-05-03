@@ -255,7 +255,7 @@ payload and result type attributes to transport specific constructs such as HTTP
 * Error responses now use the [Error](https://godoc.org/goa.design/goa/dsl#Error) DSL.
 * HTTP path parameters are now defined using curly braces instead of colons: `/foo/{id}` instead of `/foo/:id`.
 
-The mapping of input and output types
+#### The mapping of input and output types
 
 v1 action design example:
 

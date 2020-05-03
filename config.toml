@@ -149,3 +149,68 @@ name = "ブログ"
 identifier = "blog.v1"
 url = "/ja/v1/blog/"
 weight = 5
+
+[languages.it] 
+weight = 1
+title = "goa - Design First."
+languageName = "Italiano"
+
+[[languages.it.menu.main]]
+name = "Impara"
+identifier = "learn"
+url = "/it/learn"
+weight = 1
+
+[[languages.it.menu.main]]
+name = "Progetta"
+identifier = "design"
+url = "/it/design/"
+weight = 2
+
+[[languages.it.menu.main]]
+name = "Implementa"
+identifier = "implement"
+url = "/it/implement/"
+weight = 3
+
+[[languages.it.menu.main]]
+name = "Estendi"
+identifier = "extend"
+url = "/it/extend"
+weight = 4
+
+[[languages.it.menu.main]]
+name = "Blog"
+identifier = "blog"
+url = "/it/blog/"
+weight = 5
+
+[[languages.it.menu.v1]]
+name = "Impara"
+identifier = "learn.v1"
+url = "/it/v1/learn"
+weight = 1
+
+[[languages.it.menu.v1]]
+name = "Progetta"
+identifier = "design.v1"
+url = "/it/v1/design/"
+weight = 2
+
+[[languages.it.menu.v1]]
+name = "Implementa"
+identifier = "implement.v1"
+url = "/it/v1/implement/"
+weight = 3
+
+[[languages.it.menu.v1]]
+name = "Estendi"
+identifier = "extend.v1"
+url = "/it/v1/extend"
+weight = 4
+
+[[languages.it.menu.v1]]
+name = "Blog"
+identifier = "blog.v1"
+url = "/it/v1/blog/"
+weight = 5

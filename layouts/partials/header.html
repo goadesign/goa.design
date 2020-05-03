@@ -1,5 +1,7 @@
 {{ if eq "ja" .Lang }}
 {{ template "partials/ja/header.html" . }}
+{{ else if eq "it" .Lang }}
+{{ template "partials/it/header.html" . }}
 {{ else }}
 {{ template "partials/en/header.html" . }}
 {{ end }}
