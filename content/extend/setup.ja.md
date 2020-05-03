@@ -4,7 +4,7 @@ weight = 2
 
 [menu.main]
 name = "Goa の開発"
-parent = "design"
+parent = "extend"
 +++
 
 # 開発環境の構築

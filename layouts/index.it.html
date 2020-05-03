@@ -1,0 +1,176 @@
+{{ partial "header.html" . }}
+
+<body>
+    {{ partial "navigation.html" . }}
+
+    <section id="content" class="container">
+        <div class="hero-unit">
+            <p class="main">Design first.</p>
+        </div>
+    </section><!-- end .container -->
+
+    <div class="container">
+        <div class="row" style="margin-bottom:2em">
+            <div class="hero-unit">
+                <p>
+                    <a href="https://github.com/goadesign/goa">Goa</a> fornisce un approccio olistico per
+                    lo sviluppo di remote API e microservizi in <a href="https://golang.org">Go</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="alternate">
+        <div class="container">
+            <div class="row" style="margin-top:2em;margin-bottom:2em">
+                <div class="span4">
+                    <span class="circle" style="background:#ED3E3E;"><i class="fa fa-magic"></i></span>&nbsp;
+                    <h3 class="inline">Genera codice</h3>
+                    <p>
+                        Goa si appoggia alla generazione automatica di codice per
+                        alleviare il bisogno delle reflection o del codice ripetitivo.<br />
+                        Il tool goa genera vari artefatti tra cui codice, documentazione
+                        clients e perfino output personalizzati attraverso i plugin.
+                        Il risultato finale &egrave; <b>un codice applicativo
+                            pulito e conciso</b>.
+                    </p>
+                </div>
+
+                <div class="span4">
+                    <span class="circle" style="background:#80AD00;"><i class="fa fa-code"></i></span>
+                    <h3 class="inline">Design Based</h3>
+                    <p>
+                        Il linguaggio di design di Goa &egrave; flessibile e sta fuori
+                        dal contesto applicativo &ndash; Tu decidi come la tua API funziona.
+                        Il design &egrave; <b>l'unica fonte di verit&aacute;</b> dalla cui costruzione
+                        sono derivati sia il comportamente che la documentazione.
+                        Il linguaggio di design di Goa &egrave;, essendo una DSL in GO, &egrave;
+                        facile da customizzare e i design risultanti sono facili da condividere.
+                    </p>
+                </div>
+
+                <div class="span4">
+                    <span class="circle" style="background:#5DB9F2;"><i class="fa fa-bolt"></i></span>
+                    <h3 class="inline">Basato su Best Practice</h3>
+                    <p>
+                        Goa genera codice che segue le best practice ed &egrave;
+                        particolarmente adatto per costruire architetture di sistemi
+                        basati su microservizi. Il codice &egrave; organizzato in modo che
+                        problemi specifici di trasporto dati non vadano a impattare sulla
+                        logica di business.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top:4em">
+        <div class="row">
+            <div class="hero-unit">
+                <p>Il Life Cycle dello sviluppo dei Servizi</p>
+            </div>
+        </div>
+    </div>
+    <div class="container" style="margin-bottom:2em">
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/design">Progetta</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                La creazione di un servizio con Goa parte dal design. Il DSL di Goa
+                ti permette di descrivere i cosiddetti "service methods", cos&iacute; come
+                le sue strutture dati di input e output.
+                Il DSL ti permette anche di definire come costruire e serializzare le tue strutture dati
+                a partire da e attraverso protocolli specifici, come HTTP Body, HTTP Headers o messaggi gRPC.
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/implement">Implementa</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                Il tool Goa legge i tuoi design e produce tutto il codice necessario a
+                costruire i vari servizi e un client tool. Il codice generato include
+                i vari transport layers e la validazione dei vari input.
+                L'implementazione di un servizio &egrave; quindi semplice come implementare
+                delle interfacce Go, non importa quale protocollo di trasporto il servizio decide
+                di adottare e seguire. In particolare Goa rende banale implementare un servizio
+                che accetta sia richieste HTTP che gRPC.
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/extend">Estendi</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                La parte migliore del DSL di Goa &egrave; che il suo motore di valutazione
+                &egrave; completamente disaccoppiato. I Plugin possono anche implementare dei
+                DSL personalizzati per estendere i concetti descritti nel design.
+                I Plugins possono anche generare output arbitrari o modificare quello generato
+                dai generatori pre-costruiti nel tool. In particolar modo, il plugin go-kit rende
+                possibile generare dei servizi compatibili con <a href="https://gokit.io">Go kit</a>,
+                i quali possono trarre vantaggio dal toolkit per necessita operative e infrastrutturali.
+            </p>
+        </div>
+    </div>
+
+    <div class="alternate">
+        <div class="container" style="margin-top:2em">
+            <div class="row">
+                <div class="hero-unit">
+                    <p>Getting Started</p>
+                </div>
+            </div>
+        </div>
+        <div class="container" style="margin-bottom:2em">
+            <div class="row">
+                <div class="span4" style="margin-left: auto; margin-right: auto;">
+                    <p style="white-space: nowrap">
+                        <span class="fa-stack fa-3x">
+                            <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                            <strong class="fa-stack-1x text-primary" style="color:white">1</strong>
+                        </span>
+                        <span style="font-size:120%">
+                            <a href="/learn">Impara</a> le basi con la nostra <a href="/learn/getting-started">Getting
+                                Started Guide</a>.
+                        </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                        <span class="fa-stack fa-3x">
+                            <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                            <strong class="fa-stack-1x text-primary" style="color:white">2</strong>
+                        </span>
+                        <span style="font-size:120%">
+                            Impara di pi&ugrave; sul Goa <a href="/design/overview">DSL</a>.
+                        </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                        <span class="fa-stack fa-3x">
+                            <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                            <strong class="fa-stack-1x text-primary" style="color:white">3</strong>
+                        </span>
+                        <span style="font-size:120%">
+                            Consulta i vari <a href="https://github.com/goadesign/examples">esempi</a>.
+                        </span>
+                    </p>
+                    <p style="white-space: nowrap">
+                        <span class="fa-stack fa-3x">
+                            <i class="fa fa-circle fa-stack-2x" style="color:#80AD00"></i>
+                            <strong class="fa-stack-1x text-primary" style="color:white">4</strong>
+                        </span>
+                        <span style="font-size:120%">
+                            Unisciti al nostro <a href="https://gophers.slack.com/messages/goa/">canale Slack</a>
+                            (puoi iscriverti <a href="https://gophersinvite.herokuapp.com/">qui</a>).
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </section>
+
+    {{ partial "footer.html" . }}
