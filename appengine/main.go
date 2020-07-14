@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"log"
 	"net/http"
@@ -10,43 +11,46 @@ import (
 	"google.golang.org/appengine"
 )
 
+var goaImportT = template.Must(template.New("goaImport").Parse(goaImport))
+var packageImportT = template.Must(template.New("packageImport").Parse(packageImport))
+
 func main() {
+	http.HandleFunc("/goa", serveGoa("v2"))
+	http.HandleFunc("/goa/v3", serveGoa("v3"))
 	http.HandleFunc("/plugins/", servePackage("plugins"))
 	http.HandleFunc("/examples/", servePackage("examples"))
 	http.HandleFunc("/structurizr", servePackage("structurizr"))
 	http.HandleFunc("/", serveAsset(DefaultStorage))
 	appengine.Main()
-
-	// mux := http.DefaultServeMux
-	// mux.HandleFunc("/goa", serveGoa)
-	// mux.HandleFunc("/plugins/", servePackage("plugins"))
-	// mux.HandleFunc("/examples/", servePackage("examples"))
-	// mux.HandleFunc("/structurizr", servePackage("structurizr"))
-	// mux.HandleFunc("/", serveAsset(DefaultStorage))
-
-	// port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = "8080"
-	// 	log.Printf("Defaulting to port %s", port)
-	// }
-
-	// log.Printf("Listening on port %s", port)
-	// if err := http.ListenAndServe(":"+port, mux); err != nil {
-	// 	log.Fatal(err)
-	// }
 }
 
-func serveGoa(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte(goaImport))
-}
-
-var t = template.Must(template.New("packageImport").Parse(packageImport))
-
-func servePackage(pkg string) func(w http.ResponseWriter, _ *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := t.Execute(w, map[string]string{"pkg": pkg}); err != nil {
+func serveGoa(v string) func(http.ResponseWriter, *http.Request) {
+	var buf bytes.Buffer
+	{
+		p := ""
+		if v != "v2" {
+			p = "/" + v
+		}
+		data := map[string]string{"version": v, "prefix": p}
+		if err := goaImportT.Execute(&buf, data); err != nil {
 			panic(err.Error())
 		}
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write(buf.Bytes())
+	}
+}
+
+func servePackage(pkg string) func(w http.ResponseWriter, _ *http.Request) {
+	var buf bytes.Buffer
+	{
+		data := map[string]string{"pkg": pkg}
+		if err := packageImportT.Execute(&buf, data); err != nil {
+			panic(err.Error())
+		}
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write(buf.Bytes())
 	}
 }
 
@@ -79,8 +83,8 @@ const goaImport = `<!DOCTYPE html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
-  <meta name="go-import" content="goa.design/goa git https://gopkg.in/goadesign/goa.v2">
-  <meta name="go-source" content="goa.design/goa _ https://github.com/goadesign/goa/tree/v2/{/dir} https://github.com/goadesign/goa/blob/v2{/dir}/{file}#L{line}">
+  <meta name="go-import" content="goa.design/goa{{ .prefix }} git https://gopkg.in/goadesign/goa.{{ .version }}">
+  <meta name="go-source" content="goa.design/goa{{ .prefix }} _ https://github.com/goadesign/goa/tree/{{ .version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .version }}{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; https://goa.design">
 </head>
 <body>
