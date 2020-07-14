@@ -1,45 +1,25 @@
-// Copyright 2015 Google Inc. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package weasel
+package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/goadesign/goa.design/appengine/internal"
-
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-
-	"google.golang.org/appengine/log"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/appengine/memcache"
 	"google.golang.org/appengine/urlfetch"
 )
 
-// Google Cloud Storage OAuth2 scopes
-const (
-	scopeStorageRead  = "https://www.googleapis.com/auth/devstorage.read_only"
-	scopeStorageOwner = "https://www.googleapis.com/auth/devstorage.full_control"
-)
+// Google Cloud Storage OAuth2 scopes.
+const scopeStorageRead = "https://www.googleapis.com/auth/devstorage.read_only"
 
 // DefaultStorage is a Storage with sensible default parameters.
 var DefaultStorage = &Storage{
@@ -91,8 +71,10 @@ func (s *Storage) OpenFile(ctx context.Context, bucket, name string) (*Object, e
 	if err == nil || !checkStat {
 		return o, err
 	}
-	// return non-404 errors right away, even when checkStat == true
-	if ferr, ok := err.(*FetchError); ok && ferr.Code != http.StatusNotFound {
+	// Return non-404 errors right away, even when checkStat == true.
+	// Note that GCS now may respond with 403 Forbidden
+	// for nonexistent objects.
+	if ferr, ok := err.(*FetchError); ok && ferr.Code != 404 && ferr.Code != 403 {
 		return nil, err
 	}
 
@@ -100,7 +82,7 @@ func (s *Storage) OpenFile(ctx context.Context, bucket, name string) (*Object, e
 	// TODO: use ctxhttp
 	select {
 	case <-time.After(5 * time.Second):
-		log.Errorf(ctx, "s.Stat(bucket=%q) timeout", bucket)
+		log.Printf("[ERROR] s.Stat(bucket=%q) timeout", bucket)
 		// return original Open error
 		return nil, err
 	case res := <-ch:
@@ -175,7 +157,7 @@ func (s *Storage) PurgeCache(ctx context.Context, bucket, name string) error {
 // CacheKey returns a key to cache an object under, computed from
 // s.Base, bucket and then name.
 func (s *Storage) CacheKey(bucket, name string) string {
-	return fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, os.Getenv("CURRENT_VERSION_ID"), name))
+	return fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, name))
 }
 
 // fetch retrieves object from the given url.
@@ -228,7 +210,7 @@ func getCache(ctx context.Context, key string) (*Object, error) {
 	var b objectBuf
 	if _, err := memcache.Gob.Get(ctx, key, &b); err != nil {
 		if err != memcache.ErrCacheMiss {
-			log.Errorf(ctx, "memcache.Gob.Get(%q): %v", key, err)
+			log.Printf("[ERROR] memcache.Gob.Get(%q): %v", key, err)
 		}
 		return nil, err
 	}
@@ -249,7 +231,7 @@ func purgeCache(ctx context.Context, key string) error {
 
 func httpClient(ctx context.Context, scopes ...string) *http.Client {
 	t := &oauth2.Transport{
-		Source: internal.AETokenSource(ctx, scopes...),
+		Source: AETokenSource(ctx, scopes...),
 		Base:   &urlfetch.Transport{Context: ctx},
 	}
 	return &http.Client{Transport: t}
@@ -264,4 +246,15 @@ type FetchError struct {
 // Error returns formatted FetchError.
 func (e *FetchError) Error() string {
 	return fmt.Sprintf("FetchError %d: %s", e.Code, e.Msg)
+}
+
+// AETokenSource returns App Engine OAuth2 token source
+// given a context.Context and a slice of scopes.
+// It is a stubbed static token source during testing.
+var AETokenSource = func(ctx context.Context, scope ...string) oauth2.TokenSource {
+	ts, err := google.DefaultTokenSource(ctx, scope...)
+	if err != nil {
+		panic(err)
+	}
+	return ts
 }
