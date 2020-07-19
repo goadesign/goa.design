@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -34,17 +35,18 @@ func serveGoa(v string) func(http.ResponseWriter, *http.Request) {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "goa.design/goa"+p)
-		w.Header().Set("Cache-Control", "public, max-age=86400")
+		// w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Cache-Control", "no-cache")
 		if err := goaImportT.Execute(w, struct {
-			version string
-			prefix  string
-			path    string
+			Version string
+			Prefix  string
+			Path    string
 		}{
-			version: v,
-			prefix:  p,
-			path:    path,
+			Version: v,
+			Prefix:  p,
+			Path:    path,
 		}); err != nil {
-			http.Error(w, "cannot render the page", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to render the page (%s)", err.Error()), http.StatusInternalServerError)
 		}
 	}
 }
@@ -52,15 +54,16 @@ func serveGoa(v string) func(http.ResponseWriter, *http.Request) {
 func servePackage(pkg string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "goa.design/"+pkg)
-		w.Header().Set("Cache-Control", "public, max-age=86400")
-		if err := goaImportT.Execute(w, struct {
-			pkg  string
-			path string
+		// w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Cache-Control", "no-cache")
+		if err := packageImportT.Execute(w, struct {
+			Pkg  string
+			Path string
 		}{
-			pkg:  pkg,
-			path: path,
+			Pkg:  pkg,
+			Path: path,
 		}); err != nil {
-			http.Error(w, "cannot render the page", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to render the page (%s)", err.Error()), http.StatusInternalServerError)
 		}
 	}
 }
@@ -94,9 +97,9 @@ const goaImport = `<!DOCTYPE html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
-  <meta name="go-import" content="goa.design/goa{{ .prefix }} git https://gopkg.in/goadesign/goa.{{ .version }}">
-  <meta name="go-source" content="goa.design/goa{{ .prefix }} https://github.com/goadesign/goa https://github.com/goadesign/goa/tree/{{ .version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .version }}{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/goa/{{ .path }}">
+  <meta name="go-import" content="goa.design/goa{{ .Prefix }} git https://gopkg.in/goadesign/goa.{{ .Version }}">
+  <meta name="go-source" content="goa.design/goa{{ .Prefix }} https://github.com/goadesign/goa https://github.com/goadesign/goa/tree/{{ .Version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .Version }}{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/goa/{{ .Path }}">
 </head>
 <body>
 </body>
@@ -108,9 +111,9 @@ const packageImport = `<!DOCTYPE html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
-  <meta name="go-import" content="goa.design/{{ .pkg }} git https://github.com/goadesign/{{ .pkg }}">
-  <meta name="go-source" content="goa.design/{{ .pkg }} https://github.com/goadesign/{{ .pkg }} https://github.com/goadesign/{{ .pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .pkg }}/blob/master{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/{{ .pkg }}/{{ .path }}">
+  <meta name="go-import" content="goa.design/{{ .Pkg }} git https://github.com/goadesign/{{ .Pkg }}">
+  <meta name="go-source" content="goa.design/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .Pkg }}/blob/master{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/{{ .Pkg }}/{{ .Path }}">
 </head>
 <body>
 </body>
