@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"text/template"
 	"time"
 
@@ -15,42 +15,53 @@ var goaImportT = template.Must(template.New("goaImport").Parse(goaImport))
 var packageImportT = template.Must(template.New("packageImport").Parse(packageImport))
 
 func main() {
+	http.HandleFunc("/", serveAsset(DefaultStorage))
 	http.HandleFunc("/goa", serveGoa("v2"))
+	http.HandleFunc("/goa/", serveGoa("v2"))
 	http.HandleFunc("/goa/v3", serveGoa("v3"))
+	http.HandleFunc("/goa/v3/", serveGoa("v3"))
 	http.HandleFunc("/plugins/", servePackage("plugins"))
 	http.HandleFunc("/examples/", servePackage("examples"))
 	http.HandleFunc("/structurizr", servePackage("structurizr"))
-	http.HandleFunc("/", serveAsset(DefaultStorage))
+	http.HandleFunc("/structurizr/", servePackage("structurizr"))
 	appengine.Main()
 }
 
 func serveGoa(v string) func(http.ResponseWriter, *http.Request) {
-	var buf bytes.Buffer
-	{
-		p := ""
-		if v != "v2" {
-			p = "/" + v
-		}
-		data := map[string]string{"version": v, "prefix": p}
-		if err := goaImportT.Execute(&buf, data); err != nil {
-			panic(err.Error())
-		}
+	p := ""
+	if v != "v2" {
+		p = "/" + v
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write(buf.Bytes())
+		path := strings.TrimPrefix(r.URL.Path, "goa.design/goa"+p)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		if err := goaImportT.Execute(w, struct {
+			version string
+			prefix  string
+			path    string
+		}{
+			version: v,
+			prefix:  p,
+			path:    path,
+		}); err != nil {
+			http.Error(w, "cannot render the page", http.StatusInternalServerError)
+		}
 	}
 }
 
-func servePackage(pkg string) func(w http.ResponseWriter, _ *http.Request) {
-	var buf bytes.Buffer
-	{
-		data := map[string]string{"pkg": pkg}
-		if err := packageImportT.Execute(&buf, data); err != nil {
-			panic(err.Error())
-		}
-	}
+func servePackage(pkg string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write(buf.Bytes())
+		path := strings.TrimPrefix(r.URL.Path, "goa.design/"+pkg)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		if err := goaImportT.Execute(w, struct {
+			pkg  string
+			path string
+		}{
+			pkg:  pkg,
+			path: path,
+		}); err != nil {
+			http.Error(w, "cannot render the page", http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -84,8 +95,8 @@ const goaImport = `<!DOCTYPE html>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/goa{{ .prefix }} git https://gopkg.in/goadesign/goa.{{ .version }}">
-  <meta name="go-source" content="goa.design/goa{{ .prefix }} _ https://github.com/goadesign/goa/tree/{{ .version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .version }}{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; https://goa.design">
+  <meta name="go-source" content="goa.design/goa{{ .prefix }} https://github.com/goadesign/goa https://github.com/goadesign/goa/tree/{{ .version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .version }}{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/goa/{{ .path }}">
 </head>
 <body>
 </body>
@@ -98,8 +109,8 @@ const packageImport = `<!DOCTYPE html>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/{{ .pkg }} git https://github.com/goadesign/{{ .pkg }}">
-  <meta name="go-source" content="goa.design/{{ .pkg }} _ https://github.com/goadesign/{{ .pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .pkg }}/blob/master{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; https://goa.design">
+  <meta name="go-source" content="goa.design/{{ .pkg }} https://github.com/goadesign/{{ .pkg }} https://github.com/goadesign/{{ .pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .pkg }}/blob/master{/dir}/{file}#L{line}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/{{ .pkg }}/{{ .path }}">
 </head>
 <body>
 </body>
