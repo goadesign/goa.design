@@ -101,12 +101,14 @@ var _ = Service("calc", func() {
         Error("div_by_zero")
         HTTP(func() {
             POST("/")
-            Response("div_by_zero", StatusBadRequest, func() { // Use HTTP status code 400 (BadRequest) to write "div_by_zero" errors
+            Response("div_by_zero", StatusBadRequest, func() { 
+                // Use HTTP status code 400 (BadRequest) to write "div_by_zero" errors
                 Description("Response used for division by zero errors")
             })
         })
         GRPC(func() {
-            Response("div_by_zero", CodeInvalidArgument, func() { // Use gRPC status code 3 (InvalidArgument) to write "div_by_zero" errors
+            Response("div_by_zero", CodeInvalidArgument, func() {
+                // Use gRPC status code 3 (InvalidArgument) to write "div_by_zero" errors
                 Description("Response used for division by zero errors")
             })
         })
@@ -321,22 +323,22 @@ A custom formatter can inspect the given error value similarly to how client
 code does it to format validation errors differently, for example:
 
 ```go
-// MissingFieldError is the type used to serialize missing required field
+// missingFieldError is the type used to serialize missing required field
 // errors. It overrides the default provided by Goa.
-type MissingFieldError string
+type missingFieldError string
 
 // StatusCode returns 400 (BadRequest).
-func (_ *MissingFieldError) StatusCode() int {
+func (_ *missingFieldError) StatusCode() int {
     return http.StatusBadRequest
 }
 
-// CustomErrorResponse converts err into a MissingField error if err corresponds
+// customErrorResponse converts err into a MissingField error if err corresponds
 // to a missing required field validation error.
-func CustomErrorResponse(err error) Statuser {
+func customErrorResponse(err error) Statuser {
     if serr, ok := err.(*goa.ServiceError); ok {
         switch serr.Name {
             case "missing_field":
-                return MissingFieldError(serr.Message)
+                return missingFieldError(serr.Message)
             default:
                 // Use Goa default
                 return goahttp.NewErrorResponse(err)
@@ -355,6 +357,6 @@ var (
 )
 {
     eh := errorHandler(logger)
-    calcServer = calcsvr.New(calcEndpoints, mux, dec, enc, eh, CustomErrorResponse)
+    calcServer = calcsvr.New(calcEndpoints, mux, dec, enc, eh, customErrorResponse)
     // ...
 ```
