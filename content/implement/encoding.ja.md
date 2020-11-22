@@ -21,17 +21,18 @@ Goa には、JSON、XML、および [gob](https://golang.org/pkg/encoding/gob/) 
 ```go
 // New は、すべての calc サービスのエンドポイントに対して HTTP ハンドラーをインスタンス化します。
 func New(
-	e *calc.Endpoints,
+	e *divider.Endpoints,
 	mux goahttp.Muxer,
-	dec func(*http.Request) goahttp.Decoder,
-	enc func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	eh func(context.Context, http.ResponseWriter, error),
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(err error) goahttp.Statuser
 ) *Server
 ```
 
-引数 `dec` は、リクエストを受け取りデコーダーを返す関数です。
+引数 `decoder` は、リクエストを受け取りデコーダーを返す関数です。
 Goa はリクエストごとにこの関数を呼び出し、異なる HTTP リクエストに異なるデコーダーを提供できるようにします。
-引数 `enc` は、コンテキストと HTTP レスポンスライターを受け取り、エンコーダーを返す関数です。
+引数 `encoder` は、コンテキストと HTTP レスポンスライターを受け取り、エンコーダーを返す関数です。
 
 ### デフォルトのエンコーダー/デコーダーのコンストラクター
 
@@ -62,7 +63,7 @@ Goa パッケージは、JSON、XML、および gob をエンコード/デコー
 デフォルトのリクエストデコーダーは、受け取ったリクエストの `Content-Type` をみて、それをデコーダーと照合します。
 値が `application/json` なら JSON デコーダーに、`application/xml` なら XML デコーダーに、`application/gob` なら gob デコーダーに割り当てられます。
 JSON デコーダーは、`Content-Type` ヘッダーが欠落している場合や、既知の値と一致しない場合にも使用されます。
-デコードが失敗した場合、Goa はステータスコード 400 で、[ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使用してボディを書き込みます
+デコードが失敗した場合、Goa はエラーレスポンスにステータスコード 400 を用い、そのボディを書き込みに [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使用します
 （エラーがどのように HTTP レスポンスに変換されるかの詳細については、[エラー処理](/v1/implement/error_handling/) を参照してください）。
 
 
@@ -74,7 +75,7 @@ JSON デコーダーは、`Content-Type` ヘッダーが欠落している場合
 ```go
 func(r *http.Request) (goahttp.Decoder, error)
 ```
-ここで、`goahttp` は、`goa.design/goa/http` というパスを持つパッケージのエイリアスです。
+ここで、`goahttp` は、`goa.design/goa/v3/http` というパスを持つパッケージのエイリアスです。
 コンストラクター関数はリクエストオブジェクトにアクセスできるため、その状態を検査して、可能な限り最良のデコーダーを推測できます。
 この関数は、概要に示したように、生成されたサーバーコンストラクターに与えられます。
 
@@ -88,7 +89,7 @@ func(r *http.Request) (goahttp.Decoder, error)
 
 ### カスタムエンコーダーの作成
 
-あなたの作成したサービスが、異なるデコーダーを使用する必要がある理由はたくさんあります。
+あなたの作成したサービスが、異なるエンコーダーを使用する必要がある理由はたくさんあります。
 たとえば、あなたのユースケースでは、stdlib JSON パッケージからカスタムパッケージに切り替えるとパフォーマンスが向上しそうだという場合には、
 デコーダーを切り替えたくなるでしょう。
 また、msgpack などのさまざまなシリアル化形式をサポートする必要がある場合もあります。
