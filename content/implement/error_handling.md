@@ -51,8 +51,9 @@ var _ = Service("calc", func() {
 
 Both the `invalid_arguments` and `div_by_zero` errors in the examples above
 make use of the default error type
-[ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult). Custom
-types can also be used when defining errors as follows:
+[ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult).
+
+Custom types can also be used when defining errors as follows:
 
 ```go
 var DivByZero = Type("DivByZero", func() {
@@ -78,7 +79,51 @@ var _ = Service("calc", func() {
 })
 ```
 
-The `Error` function also accepts an optional description as last argument.
+If a type is used to define multiple errors it must define an attribute that
+contains the error name so that the generated code can infer the
+corresponding design definition. The attribute must be identified via the
+`struct:error:name` field
+[metadata](https://pkg.go.dev/goa.design/goa/v3/dsl#Meta), for example:
+
+```go
+var DivByZero = Type("DivByZero", func() {
+    Description("DivByZero is the error returned when using value 0 as divisor.")
+    Field(1, "message", String, "division by zero leads to infinity.")
+    Field(2, "error_name", String, "Name of the error", func() {
+        // Tell Goa to use the `error_name` field to match the error definition.
+        Meta("struct:error:name")
+    })
+
+    Required("message")
+})
+```
+
+The field must be initialized by the server code that returns the error. The
+generated code uses it to match the error definition and compute the proper
+status code.
+
+### Temporary Errors, Faults and Timeouts
+
+The `Error` function accepts an optional DSL function as last argument which
+makes it possible to specify additional properties on the error. The `Error`
+function DSL accepts three child functions:
+
+* `Timeout()` identifies the error as being due to a server timeout.
+* `Fault()` identifies the error as a server side fault (e.g. a bug, a panic etc.).
+* `Temporary()` identifies the error as being retryable.
+
+The following definition would be appropriate to define a timeout error:
+
+```go
+Error("Timeout", ErrorResult, "Request timeout exceeded", func() {
+    Timeout()
+})
+```
+
+The `Timeout`, `Fault` and `Temporary` functions instruct the Goa code
+generator to initialize the fields with the same names in the returned
+`ErrorResponse` object. They have no effect (other than documentation) when
+using a custom error repsonse type.
 
 ### Mapping Errors to Transport Status Codes
 
@@ -328,9 +373,7 @@ code does it to format validation errors differently, for example:
 type missingFieldError string
 
 // StatusCode returns 400 (BadRequest).
-func (_ *missingFieldError) StatusCode() int {
-    return http.StatusBadRequest
-}
+func (missingFieldError) StatusCode() int { return http.StatusBadRequest }
 
 // customErrorResponse converts err into a MissingField error if err corresponds
 // to a missing required field validation error.
@@ -360,3 +403,10 @@ var (
     calcServer = calcsvr.New(calcEndpoints, mux, dec, enc, eh, customErrorResponse)
     // ...
 ```
+
+## Example
+
+The [error](https://github.com/goadesign/examples/tree/master/error) example
+illustrates how to use custom error types and how to override the default
+error response used for validation errors.
+
