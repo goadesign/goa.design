@@ -4,7 +4,7 @@ weight = 2
 
 [menu.main]
 name = "Goa Development"
-parent = "design"
+parent = "extend"
 +++
 
 # Development Setup
