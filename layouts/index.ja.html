@@ -4,7 +4,7 @@
 
     <section id="content" class="container">
         <div class="hero-unit">
-            <p class="main">Design first.</p>
+            <p class="main">はじめにデザインを。</p>
         </div>
     </section><!-- end .container -->
 
@@ -12,8 +12,7 @@
         <div class="row" style="margin-bottom:2em">
             <div class="hero-unit">
                 <p>
-                <a href="https://github.com/goadesign/goa">Goa</a> provides a holistic approach for
-                developing remote APIs and microservices in <a href="https://golang.org">Go</a>.
+                <a href="https://github.com/goadesign/goa">Goa</a> は <a href="https://golang.org">Go</a> でリモート API やマイクロサービスを構築する総体的なアプローチを提供します。
                 </p>
             </div>
         </div>
@@ -24,39 +23,26 @@
             <div class="row" style="margin-top:2em;margin-bottom:2em">
                 <div class="span4">
                     <span class="circle" style="background:#ED3E3E;"><i class="fa fa-magic"></i></span>&nbsp;
-                    <h3 class="inline">Code Generation</h3>
+                    <h3 class="inline">コード生成</h3>
                     <p>
-                    Goa relies on code generation to alleviate the need for
-                    reflection or repetitive coding.<br/>
-                    The goa tool generates various artifacts including code,
-                    documentation, clients and even custom outputs via
-                    plugins. The end result is <b>application code that is
-                    clean and terse</b>.
+                    Goa はコード生成に頼ることでリフレクションや単調なコーディングの必要性を軽減します。<br/>
+                    Goa ツールは、コード、ドキュメント、クライアントを含むさまざまな成果物に加え、プラグインを通してカスタム成果物をも生成します。最終結果は<b>クリーンで簡潔なアプリケーションコード</b>です。
                     </p>
                 </div>
 
                 <div class="span4">
                     <span class="circle" style="background:#80AD00;"><i class="fa fa-code"></i></span>
-                    <h3 class="inline">Design Based</h3>
+                    <h3 class="inline">デザインに基づく</h3>
                     <p>
-                    The Goa design language is flexible and stays out of the way
-                    &ndash; you decide how your API works. The design is the
-                    <b>Single Source Of Truth</b> from which both behavior and
-                    docs are derived. The Goa design language being a Go DSL is
-                    easy to customize and the resulting designs are simple to
-                    share.
+                    Goa デザイン言語は柔軟で、API がどのように動くのかあなたの望むように決めることができます。デザインは実装とドキュメントの両方から<b>信頼できる唯一の情報源</b>です。 Go の DSL である Goa デザイン言語はカスタマイズし易く、できあがったデザインは簡単に共有できます。
                     </p>
                 </div>
 
                 <div class="span4">
                     <span class="circle" style="background:#5DB9F2;"><i class="fa fa-bolt"></i></span>
-                    <h3 class="inline">Built-in Best Practice</h3>
+                    <h3 class="inline">内臓のベストプラクティス</h3>
                     <p>
-                    Goa generates code that follows best practice and is
-                    specially well suited for building microservice based system
-                    architectures. The code is organized in layers so that for
-                    example transport specific concerns do not leak up to the
-                    business logic.
+                    Goaは、ベストプラクティスに従ってマイクロサービスベースのシステムアーキテクチャ構築に適したコードを生成します。コードはレイヤーとして整理されているため、トランスポート固有の懸念事項がビジネスロジックに漏れたりすることはありません。
                     </p>
                 </div>
             </div>
@@ -66,7 +52,7 @@
     <div class="container" style="margin-top:4em">
         <div class="row">
             <div class="hero-unit">
-                <p>The Service Development Life Cycle</p>
+                <p>サービス開発のライフサイクル</p>
             </div>
         </div>
     </div>
@@ -74,45 +60,28 @@
         <div class="row">
             <h3>
                 <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                <a href="/design">Design</a>
+                <a href="/ja/design">デザイン</a>
             </h3>
             <p style="margin-bottom:2em">
-            Creating a service with Goa starts with the design. The Goa DSL lets
-            you describe the service methods as well as their input and output
-            data structures. The DSL also lets you define how to construct and
-            serialize the data structures from and to transport specific data
-            such as HTTP body, HTTP headers or gRPC messages.
+            Goa でのサービス開発はデザインから始まります。 Goa DSLを使用すると、サービスメソッドとその入力および出力データ構造を記述できます。また DSLでは、HTTP ボディ、HTTP ヘッダ、gRPC メッセージなどトランスポート固有のデータからデータ構造を構築したりシリアライズする方法を定義することもできます。
             </p>
         </div>
         <div class="row">
             <h3>
                 <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                <a href="/implement">Implement</a>
+                <a href="/ja/implement">実装する</a>
             </h3>
             <p style="margin-bottom:2em">
-            The goa tool reads the service design and produces all the code
-            required to build the service and a client tool. The generated code
-            includes the transport layers and input validation. Implementing a
-            service is thus as simple as implementing generated Go interfaces no
-            matter what transport the service is listening to. In particular Goa
-            makes it trivial to implement a service that accepts both HTTP and
-            gRPC requests.
+            Goa ツールは、サービス設計を読み取りサービスとクライアントツールの構築に必要なすべてのコードを生成します。生成されたコードには、トランスポート層と入力バリデーションが含まれます。したがって、サービスの実装はサービスがリッスンしているトランスポートに関係なく、生成された Go インターフェースを実装するのと同じくらい簡単です。特に Goa では HTTP リクエストと gRPC リクエストの両方を受け入れるサービスを簡単に実装することができます。
             </p>
         </div>
         <div class="row">
             <h3>
                 <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                <a href="/extend">Extend</a>
+                <a href="/ja/extend">拡張する</a>
             </h3>
             <p style="margin-bottom:2em">
-            The best part about the Goa DSL is that the evaluation engine is
-            completely decoupled. Plugins can implement custom DSLs to extend
-            the concepts described in the design. Plugins can also generate
-            arbitrary output or modify the output generated by the built-in code
-            generators. In particular the go-kit plugin makes it possible to
-            generate <a href="https://gokit.io">Go kit</a> compliant services
-            that can take advantage of the toolkit for operational and
-            infrastructure needs.
+            Goa DSL においてもっとも素晴らしいのはそのエンジンが完全に分離されている点です。プラグインはデザインに記述されるコンセプトを拡張するためにカスタム DSL を実装することができます。プラグインは、任意の出力を生成したり、組み込みのコードジェネレータによって生成された出力を変更したりすることもできます。特に、 go-kit プラグインを使用すると、運用およびインフラストラクチャのニーズに合わせてツールキットを利用できる Go kit 準拠のサービスを生成できます。
             </p>
         </div>
     </div>
@@ -121,7 +90,7 @@
         <div class="container" style="margin-top:2em">
             <div class="row">
                 <div class="hero-unit">
-                    <p>Getting Started</p>
+                    <p>はじめに</p>
                 </div>
             </div>
         </div>
@@ -134,7 +103,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">1</strong>
                     </span>
                     <span style="font-size:120%">
-                       <a href="/learn">Learn</a> the basics with the <a href="/learn/getting-started">Getting Started Guide</a>.
+                       <a href="/ja/learn/getting-started">はじめのガイド</a>で基本について<a href="/ja/learn">学びましょう</a>。
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -143,7 +112,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">2</strong>
                     </span>
                     <span style="font-size:120%">
-                        Learn more about the Goa <a href="/design/overview">DSL</a>.
+                        Goa の <a href="/ja/design/overview">DSL</a> についてさらに学びましょう。
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -152,7 +121,7 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">3</strong>
                     </span>
                     <span style="font-size:120%">
-                        Consult the <a href="https://github.com/goadesign/examples">examples</a>.
+                        <a href="https://github.com/goadesign/examples">examples</a> を参照してみましょう。
                     </span>
                     </p>
                     <p style="white-space: nowrap">
@@ -161,8 +130,8 @@
                         <strong class="fa-stack-1x text-primary" style="color:white">4</strong>
                     </span>
                     <span style="font-size:120%">
-                        Join the <a href="https://gophers.slack.com/messages/goa/">slack channel</a>
-                        (sign up <a href="https://gophersinvite.herokuapp.com/">here</a>).
+                        <a href="https://gophers.slack.com/messages/goa/">slack channel</a> に参加しましょう
+                        (<a href="https://gophersinvite.herokuapp.com/">ここ</a>でサインアップできます)。
                     </span>
                     </p>
                 </div>
