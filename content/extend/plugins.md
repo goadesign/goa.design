@@ -13,7 +13,7 @@ final artifacts which makes it possible to alter the templates exposed by the
 Goa code generators, thereby, producing new kinds of outputs from any DSL.
 
 [Goa plugins repository](https://github.com/goadesign/plugins) houses a set of
-public the goa plugins. Refer to the README in every plugin for instructions on
+public goa plugins. Refer to the README in every plugin for instructions on
 how to use it.
 
 ## Building Your Own Plugin
