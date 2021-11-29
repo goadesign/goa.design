@@ -89,12 +89,12 @@ corresponding design definition. The attribute must be identified via the
 var DivByZero = Type("DivByZero", func() {
     Description("DivByZero is the error returned when using value 0 as divisor.")
     Field(1, "message", String, "division by zero leads to infinity.")
-    Field(2, "error_name", String, "Name of the error", func() {
-        // Tell Goa to use the `error_name` field to match the error definition.
+    Field(2, "name", String, "Name of the error", func() {
+        // Tell Goa to use the `name` field to match the error definition.
         Meta("struct:error:name")
     })
 
-    Required("message")
+    Required("message", "name")
 })
 ```
 
