@@ -1,24 +1,27 @@
 +++
 date = "2020-11-21:01:06-05:00"
-title = "エラーハンドリング"
+title = "Error Handling"
 weight = 4
 
 [menu.main]
-name = "エラーハンドリング"
+name = "Error Handling"
 parent = "implement"
 +++
 
-## 概要
+## Overview
 
-Goa を使用すると、サービスメソッドによって返される潜在的なエラーを正確に記述することができます。
-これにより、生成されたドキュメントとコードに反映される、サーバーとそのクライアント間の明確な契約を定義できます。
+Goa makes it possible to describe precisely the potential errors returned by
+service methods. This allows for defining a clear contract between the server
+and its clients that gets reflected in the generated documentation and code.
 
-Goa は「バッテリー同梱 (battery included)」アプローチを採用しており、名前さえあればエラーを定義できます。
-ただし、 Goa のデフォルトで不十分な場合には DSL を使用してまったく新しいエラータイプを記述することもできます。
+Goa takes a "battery included" approach where errors can be defined with as
+little information as just a name. However the DSL also makes it possible to
+describe completely new error types when Goa's default is not sufficient.
 
-## エラーの定義
+## Defining Errors
 
-エラーは [Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error) 関数で定義されます：
+Errors are defined using the
+[Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error) function:
 
 ```go
 var _ = Service("calc", func() {
@@ -26,7 +29,7 @@ var _ = Service("calc", func() {
 })
 ```
 
-エラーは特定メソッドのスコープで定義することもできます：
+Errors may also be defined within the scope of a specific method:
 
 ```go
 var _ = Service("calc", func() {
@@ -46,9 +49,11 @@ var _ = Service("calc", func() {
 })
 ```
 
-上記の例の `invalid_arguments` と `div_by_zero` のエラーは、どちらもデフォルトのエラータイプ [ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult) を使用しています。
+Both the `invalid_arguments` and `div_by_zero` errors in the examples above
+make use of the default error type
+[ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult).
 
-カスタムタイプは次のようにエラーを定義するときにも使用できます：
+Custom types can also be used when defining errors as follows:
 
 ```go
 var DivByZero = Type("DivByZero", func() {
@@ -74,8 +79,11 @@ var _ = Service("calc", func() {
 })
 ```
 
-タイプを使用して複数のエラーを定義する場合、生成されたコードが対応するデザイン定義を推測できるよう、エラー名を含む属性を定義する必要があります。
-属性は、 [メタデータ](https://pkg.go.dev/goa.design/goa/v3/dsl#Meta) の `struct:error:name` フィールドで識別される必要があります。例えば：
+If a type is used to define multiple errors it must define an attribute that
+contains the error name so that the generated code can infer the
+corresponding design definition. The attribute must be identified via the
+`struct:error:name` field
+[metadata](https://pkg.go.dev/goa.design/goa/v3/dsl#Meta), for example:
 
 ```go
 var DivByZero = Type("DivByZero", func() {
@@ -90,19 +98,21 @@ var DivByZero = Type("DivByZero", func() {
 })
 ```
 
-フィールドは、エラーを返すサーバーコードで初期化する必要があります。
-生成されたコードはそれを使用してエラー定義を照合し、適切なステータスコードを算出します。
+The field must be initialized by the server code that returns the error. The
+generated code uses it to match the error definition and compute the proper
+status code.
 
-### テンポラリーエラー、フォールト、そしてタイムアウト
+### Temporary Errors, Faults and Timeouts
 
-`Error` 関数はオプションの DSL 関数を最後の引数として受け入れます。これによりエラーに追加のプロパティを指定できます。
-`Error` DSL は 3 つの子関数を受け入れます：
+The `Error` function accepts an optional DSL function as last argument which
+makes it possible to specify additional properties on the error. The `Error`
+function DSL accepts three child functions:
 
-* `Timeout()` はエラーをサーバーのタイムアウトが原因であると識別します。
-* `Fault()` はエラーをサーバー側の障害 と識別します (バグやパニックなど)  。
-* `Temporary()` はエラーをリトライ可能と識別します。
+* `Timeout()` identifies the error as being due to a server timeout.
+* `Fault()` identifies the error as a server side fault (e.g. a bug, a panic etc.).
+* `Temporary()` identifies the error as being retryable.
 
-下記の定義がタイムアウトエラーを定義するのに適切です：
+The following definition would be appropriate to define a timeout error:
 
 ```go
 Error("Timeout", ErrorResult, "Request timeout exceeded", func() {
@@ -110,12 +120,15 @@ Error("Timeout", ErrorResult, "Request timeout exceeded", func() {
 })
 ```
 
-`Timeout` 、`Fault` そして `Temporary` 関数は `ErrorResponse` オブジェクトの同名フィールドを初期化するよう Goa コードジェネレーターに指示します。
-カスタムエラーレスポンスタイプを使用する場合は効果がありません (ドキュメント以外には) 。
+The `Timeout`, `Fault` and `Temporary` functions instruct the Goa code
+generator to initialize the fields with the same names in the returned
+`ErrorResponse` object. They have no effect (other than documentation) when
+using a custom error repsonse type.
 
-### エラーをトランスポートステータスコードにマッピングする
+### Mapping Errors to Transport Status Codes
 
-[Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) 関数は、エラーの書き込みに使用される HTTP または gRPC ステータスコードを定義します:
+The [Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) function
+defines the HTTP or gRPC status code used to write the error:
 
 ```go
 var _ = Service("calc", func() {
@@ -148,13 +161,14 @@ var _ = Service("calc", func() {
 })
 ```
 
-## エラーの生成
+## Producing Errors
 
-### デフォルトエラータイプの使用
+### Using the Default Error Type
 
-上記で定義されたデザインで Goa は、サーバーコードがエラーを返すために利用できるヘルパー関数 `MakeDivByZero` を生成します。
-この関数は、サービス固有のパッケージ（この例では `gen/calc` の下）に生成されます。
-これは Go の error を引数として受け入れます。
+With the design defined above Goa generates a helper function `MakeDivByZero`
+that the server code may leverage to return errors. The function is generated
+in the service specific package (under `gen/calc` in this example). It
+accepts a Go error as argument:
 
 ```go
 // Code generated by goa v....
@@ -176,7 +190,7 @@ func MakeDivByZero(err error) *goa.ServiceError {
 // ...
 ```
 
-この関数は `Divide` 機能を実装するとき次のように使用できます:
+This function can be used as follows when implementing the `Divide` function:
 
 ```go
 func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc.DivideResult, err error) {
@@ -187,19 +201,23 @@ func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc
 }
 ```
 
-生成された `MakeXXX` 関数は [ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) 型のインスタンスを生成します。
+The generated `MakeXXX` functions create instances of the
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) type.
 
-### カスタムエラータイプの使用
+### Using Custom Error Types
 
-ユーザー定義型を使用してエラーを定義する場合、Go の error をユーザー型にマップする方法がわからないため Goa はヘルパー関数を生成しません。
-代わりに、メソッドの実装でエラータイプを直接インスタンス化する必要があります。
-`DivByZero` 型を使用したひとつ前の例を考えてみましょう:
+When using a user defined type to define errors Goa does not generate helper
+functions as it cannot tell how to map Go errors to the user type. Instead
+the method implementation should instantiate the error type directly.
+Considering the previous example using the `DivByZero` type:
 
 ```go
 Error("div_by_zero", DivByZero, "Division by zero") // Use DivByZero type to marshal error
 ```
 
-メソッドの実装は、エラーを返すためにサービスパッケージ（この例では `calc`）にある生成された `DivByZero` 構造体のインスタンスを返す必要があります。
+To return the error the method implementation should return an instance of
+the generated `DivByZero` struct also located in the service package (`calc`
+in this example):
 
 ```go
 func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc.DivideResult, err error) {
@@ -210,13 +228,16 @@ func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc
 }
 ```
 
-## エラーの使用
+## Consuming Errors
 
-クライアントに返されるエラー値は、サーバーがエラーを返すために使用するのと同じ構造体によってサポートされます。
+The error values returned to the client are backed by the same structs used by
+the server to return errors. 
 
-### デフォルトエラータイプの使用
+### Using the Default Error Type
 
-エラー定義がデフォルトのエラータイプを使用している場合、クライアント側のエラーは [ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) のインスタンスです:
+If the error definition uses the default error type then the client side
+errors are instances of
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError):
 
 ```go
 // ... initialize endpoint, ctx, payload
@@ -230,9 +251,10 @@ if res != nil {
 // ...
 ```
 
-### カスタムエラータイプの使用
+### Using Custom Error Types
 
-エラー定義がカスタムタイプを使用している場合、クライアント側エラーは対応する生成された Go 構造体のインスタンスです:
+If the error definition uses a custom type then the client side error is an
+instance of the corresponding generated Go struct:
 
 ```go
 // ... initialize endpoint, ctx, payload
@@ -246,12 +268,15 @@ if res != nil {
 // ...
 ```
  
-## バリデーションエラー
+## Validation Errors
 
-バリデーションエラーは、[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) 構造体のインスタンスでもあります。
-その構造体の `name` フィールドにより、クライアントコードは複数の考えられるエラーを区別することができます。
+Validation errors are also instances of the
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) struct.
+The `name` field of the struct makes it possible for client code to
+differentiate between multiple possible errors.
 
-これは、デザインがデフォルトのエラータイプを使用して `div_by_zero` エラーを定義することを前提とした方法の例です：
+Here is an example of how to do that which assumes that the design uses the
+default error type to define the `div_by_zero` error:
 
 ```go
 // ... initialize endpoint, ctx, payload
@@ -272,22 +297,25 @@ if res != nil {
 // ...
 ```
 
-バリデーションエラー名はすべて [error.go](https://github.com/goadesign/goa/blob/v3/pkg/error.go) ファイルで定義されています。次のとおりです：
+The validation error names are all defined in the file 
+[error.go](https://github.com/goadesign/goa/blob/v3/pkg/error.go), they are:
 
-* `missing_payload` ：リクエストに必要なペイロードがない場合に生成されるエラー。
-* `decode_payload` ：リクエストボディーを正常にデコードできない場合に生成されるエラー。
-* `invalid_field_type` ：ペイロードフィールドの型がデザインで定義された型と一致しない場合に生成されるエラー。
-* `missing_field` ：ペイロードに必要なフィールドがない場合に生成されるエラー。
-* `invalid_enum_value` ：ペイロードフィールドの値がデザインの列挙型バリデーションで定義された値と一致しない場合に生成されるエラー。
-* `invalid_format` ：ペイロードフィールドの値がデザインで定義されたフォーマットバリデーションと一致しない場合に生成されるエラー。
-* `invalid_pattern` ：ペイロードフィールドの値がデザインで定義されたパターンバリデーションと一致しない場合に生成されるエラー。
-* `invalid_range` ：ペイロードフィールドの値がデザインで定義された範囲バリデーションと一致しない場合に生成されるエラー。
-* `invalid_length` ：ペイロードフィールドの値がデザインで定義された長さのバリデーションと一致しない場合に生成されるエラー。
+* `missing_payload`: error produced when a request is missing a required payload.
+* `decode_payload`: error produced when a request body cannot be decoded successfully.
+* `invalid_field_type`: error produced when the type of a payload field does not match the type defined in the design.
+* `missing_field`: error produced when a payload is missing a required field.
+* `invalid_enum_value`: error produced when the value of a payload field does not match one the values defined in the design Enum validation.
+* `invalid_format`: error produced the value of a payload field does not match the format validation defined in the design.
+* `invalid_pattern`: error produced when the value of a payload field does not match the pattern validation defined in the design.
+* `invalid_range`: error produced code when the value of a payload field does not match the range validation defined in the design.
+* `invalid_length`: error produced code when the value of a payload field does not match the length validation defined in the design.
 
-## エラーシリアライゼーションのオーバーライド
+## Overridding Error Serialization
 
-バリデーションエラーをレンダリングするために、生成されたコードで使用される形式をオーバーライドする必要がある場合があります。
-生成された HTTP ハンドラーとサーバー作成関数により、カスタムエラーフォーマッター関数を提供できます：
+Sometimes it may be necessary to override the format used by the generated
+code to render validation errors. The generated HTTP handler and server
+creation functions make it possible to provide a custom error formatter
+function:
 
 ```go
 // Code generated by goa v...
@@ -312,7 +340,9 @@ func New(
 // ...
 ```
 
-提供される関数は、エラーのインスタンスを引数として受け入れ、[Statuser](https://pkg.go.dev/goa.design/goa/v3/http#Statuser) インターフェースを実装する構造体を返す必要があります：
+The provided function must accept an instance of an error as argument and
+return a struct that implements the
+[Statuser](https://pkg.go.dev/goa.design/goa/v3/http#Statuser) interface:
 
 ```go
 type Statuser interface {
@@ -322,14 +352,20 @@ type Statuser interface {
 }
 ```
 
-生成されたコードは、 HTTP レスポンスの書き込み時に `StatusCode` メソッドを呼び出し、その戻り値を使用して HTTP ステータスコードを出力します。
-次に、構造体がレスポンスボディーにシリアライズされます。
+The generated code calls the struct `StatusCode` method upon writing the HTTP
+response and uses the return value to write the HTTP status code. The struct
+is then serialized into the response body.
 
-`New` 関数の `formatter` 引数に値 `nil` が指定されている場合に使用されるデフォルトの実装は、 [ErrorResponse](https://pkg.go.dev/goa.design/goa/v3/pkg#ErrorResponse) のインスタンスを返す [NewErrorResponse](https://pkg.go.dev/goa.design/goa/v3/http#NewErrorResponse) です。
+The default implementation used when the value `nil` is given for the
+`formatter` argument of the `New` function is
+[NewErrorResponse](https://pkg.go.dev/goa.design/goa/v3/http#NewErrorResponse)
+which returns an instance of
+[ErrorResponse](https://pkg.go.dev/goa.design/goa/v3/pkg#ErrorResponse).
 
-### バリデーションエラーシリアライゼーションのオーバーライド
+### Overridding Validation Errors Serialization
 
-カスタムフォーマッターは、クライアントコードがバリデーションエラーを異なる方法でフォーマットする方法と同様に、指定されたエラー値を検査できます。次に例を示します：
+A custom formatter can inspect the given error value similarly to how client
+code does it to format validation errors differently, for example:
 
 ```go
 // missingFieldError is the type used to serialize missing required field
@@ -337,9 +373,7 @@ type Statuser interface {
 type missingFieldError string
 
 // StatusCode returns 400 (BadRequest).
-func (_ *missingFieldError) StatusCode() int {
-    return http.StatusBadRequest
-}
+func (missingFieldError) StatusCode() int { return http.StatusBadRequest }
 
 // customErrorResponse converts err into a MissingField error if err corresponds
 // to a missing required field validation error.
@@ -358,7 +392,7 @@ func customErrorResponse(err error) Statuser {
 }
 ```
 
-次に、カスタムフォーマッターを使用して HTTP サーバーまたはハンドラーをインスタンス化できます：
+The custom formatter can then be used to instantiate a HTTP server or handler:
 
 ```go
 var (
@@ -370,7 +404,9 @@ var (
     // ...
 ```
 
-## 例
+## Example
 
-[error](https://github.com/goadesign/examples/tree/master/error) の例は、カスタムエラータイプを使用する方法とバリデーションエラーに使用されるデフォルトのエラーレスポンスをオーバーライドする方法を示しています。
+The [error](https://github.com/goadesign/examples/tree/master/error) example
+illustrates how to use custom error types and how to override the default
+error response used for validation errors.
 
