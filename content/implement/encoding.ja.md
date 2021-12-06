@@ -1,7 +1,7 @@
 +++
 date = "2019-09-08T11:01:06-05:00"
 title = "HTTP エンコーディング"
-weight = 3
+weight = 2
 
 [menu.main]
 name = "HTTP エンコーディング"

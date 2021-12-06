@@ -1,6 +1,6 @@
 +++
 title = "ストリーミング"
-weight = 2
+weight = 3
 
 [menu.main]
 name = "ストリーミング"

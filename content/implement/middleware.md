@@ -1,6 +1,6 @@
 +++
 title = "Middleware"
-weight = 1
+weight = 5
 
 [menu.main]
 name = "Middleware"
