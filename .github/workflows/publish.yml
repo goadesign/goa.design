@@ -40,3 +40,4 @@ jobs:
         with:
           path: public
           destination: goa.design
+          parent: false
