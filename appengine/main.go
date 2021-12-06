@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"time"
 
-	"google.golang.org/appengine"
+	"google.golang.org/appengine/v2"
 )
 
 var goaImportT = template.Must(template.New("goaImport").Parse(goaImport))

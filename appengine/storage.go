@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/appengine/memcache"
-	"google.golang.org/appengine/urlfetch"
+	"google.golang.org/appengine/v2/memcache"
+	"google.golang.org/appengine/v2/urlfetch"
 )
 
 // Google Cloud Storage OAuth2 scopes.

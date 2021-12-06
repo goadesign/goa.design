@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"google.golang.org/appengine"
+	"google.golang.org/appengine/v2"
 )
 
 // allowMethods is a comman-separated list of allowed HTTP methods,
