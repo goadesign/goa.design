@@ -102,20 +102,22 @@ returns the response to the endpoint layer which is then encoded by the
 transport layer and sent back to the client.
 
 ```
-               TRANSPORT             ENDPOINT            SERVICE
 
-             ┌───────────┐       ┌──────────────┐
-    Request  │ Decoding  │       │  Middleware  │
-  ─────────►│     &     ├─────►│      &       ├───────────┐
-             │ Validation│       │ Type casting │          ▼
-             └───────────┘       └──────────────┘     ┌──────────┐
-                                                      │ Business │
-                                                      │  logic   │
-             ┌───────────┐       ┌──────────────┐     └────┬─────┘
-    Response │           │       │  Middleware  │          │
- ◄──────────┤ Encoding  │◄─────┤      &       │◄────────┘
-             │           │       │ Type casting │
-             └───────────┘       └──────────────┘
+
+              TRANSPORT             ENDPOINT            SERVICE
+
+            ┌───────────┐       ┌──────────────┐
+   Request  │ Decoding  │       │  Middleware  │
+ ──────────►│    &      ├──────►│      &       ├──────────┐
+            │ Validation│       │ Type casting │          ▼
+            └───────────┘       └──────────────┘     ┌──────────┐
+                                                     │ Business │
+                                                     │  logic   │
+            ┌───────────┐       ┌──────────────┐     └────┬─────┘
+   Response │           │       │  Middleware  │          │
+ ◄──────────┤ Encoding  │◄──────┤      &       │◄─────────┘
+            │           │       │ Type casting │
+            └───────────┘       └──────────────┘
 ```
 
 > Note: the transport layers may also add middlewares to the request flow that is
@@ -146,7 +148,17 @@ var _ = Service("calc", func() {
 })
 ```
 
-Goa generates the following interface:
+And the following setup:
+
+```bash
+mkdir calc; cd calc
+go mod init calc
+mkdir design
+# create design/design.go with the content above
+goa gen calc/design
+```
+
+Goa generates the following interface in `gen/calc/service.go`:
 
 ```go
 type Service interface {
@@ -165,8 +177,7 @@ func (s *svc) Add(ctx context.Context, p *calcsvc.AddPayload) (int, error) {
 ```
 
 The struct implementing the interface can then be used to instantiate the
-service endpoints using the function `NewEndpoints` function generated in
-`endpoints.go`:
+service endpoints using the function `NewEndpoints` generated in `endpoints.go`:
 
 ```go
 func NewEndpoints(s Service) *Endpoints {
@@ -205,7 +216,10 @@ Creating a HTTP server requires the service endpoints as well as the HTTP
 router, decoder and encoder. `errhandler` is the function called by the
 generated code when encoding or decoding fails. `formatter` makes it possible to
 override how Goa formats errors returned by the service methods prior to
-encoding and can be `nil`.
+encoding. Both can be `nil` in which case the generated code panics in case of
+encoding errors (cannot happen with the default Goa encoders) and other errors
+are formatted using the
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) struct.
 
 The Goa [http package](https://pkg.go.dev/goa.design/goa/v3/http) comes with
 default implementations for the router, decoder and encoder making it convenient
@@ -218,8 +232,8 @@ enc := goahttp.ResponseEncoder
 svr := calcsvr.New(endpoints, mux, dec, enc, nil, nil)
 ```
 
-The final step to create the service consists of calling the generated `Mount`
-function.
+The final step necessary to configure the HTTP server consists of calling the
+generated `Mount` function.
 
 ```go
 func Mount(mux goahttp.Muxer, h *Server) {
@@ -261,13 +275,13 @@ func main() {
 	s := &svc{}                                               # Create Service
 	endpoints := calc.NewEndpoints(s)                         # Create endpoints
 	mux := goahttp.NewMuxer()                                 # Create HTTP muxer
-	dec := goahttp.RequestDecoder                             # Create HTTP request decoder           
-	enc := goahttp.ResponseEncoder                            # Create HTTP response encoder
+	dec := goahttp.RequestDecoder                             # Set HTTP request decoder           
+	enc := goahttp.ResponseEncoder                            # Set HTTP response encoder
 	svr := server.New(endpoints, mux, dec, enc, nil, nil)     # Create Goa HTTP server
 	server.Mount(mux, svr)                                    # Mount Goa server on mux
 	httpsvr := &http.Server{                                  # Create Go HTTP server
         Addr: "localhost:8081",                               # Configure server address
-        Handler: mux,                                         # Set request handler                                                            
+        Handler: mux,                                         # Set request handler
     }
 	if err := httpsvr.ListenAndServe(); err != nil {          # Start HTTP server
 		panic(err)
@@ -294,7 +308,7 @@ func New(e *calc.Endpoints, uh goagrpc.UnaryHandler) *Server {
 }
 ```
 
-The function accepts the endpoints and an optional gRPC handler to make it
+The function accepts the endpoints and an optional gRPC handler that makes it
 possible to configure gRPC. The default implementation uses the default gRPC
 options:
 
