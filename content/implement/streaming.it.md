@@ -7,7 +7,7 @@ name = "Streaming"
 parent = "implement"
 +++
 
-# Streaming Result
+# Panoramica
 
 Goa permette anche la definizione di servizi unidirezionali di streaming dove un
 endpoint può ricevere un payload e ricevere un flusso di risposta.
