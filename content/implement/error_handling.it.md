@@ -1,27 +1,28 @@
 +++
 date = "2020-11-21:01:06-05:00"
-title = "Error Handling"
+title = "Gestione degli Errori"
 weight = 4
 
 [menu.main]
-name = "Error Handling"
+name = "Gestione degli Errori"
 parent = "implement"
 +++
 
-## Overview
+## Panoramica
 
-Goa makes it possible to describe precisely the potential errors returned by
-service methods. This allows for defining a clear contract between the server
-and its clients that gets reflected in the generated documentation and code.
+Goa rende possibile descrivere con precisione i potenziali errori ritornati
+dai vari service methods. Ciò permette di definire un contratto chiaro fra server e clients,
+che viene riflesso nel codice e nella documentazione generata.
 
-Goa takes a "battery included" approach where errors can be defined with as
-little information as just a name. However the DSL also makes it possible to
-describe completely new error types when Goa's default is not sufficient.
+Goa ha un approccio "tutto incluso" dove gli errori possono essere definiti
+con una informazione minimale quale può essere semplicemente un nome.
+Tuttavia il DSL permette anche la definizione di nuovi tipi di errori qualora
+quelli definiti di default da Goa non risultino sufficienti.
 
-## Defining Errors
+## Definire gli errori
 
-Errors are defined using the
-[Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error) function:
+Gli errori sono definiti attraverso la funzione
+[Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error):
 
 ```go
 var _ = Service("calc", func() {
@@ -29,7 +30,8 @@ var _ = Service("calc", func() {
 })
 ```
 
-Errors may also be defined within the scope of a specific method:
+Gli errori possono anche essere definiti con uno scope specifico per un singolo
+metodo:
 
 ```go
 var _ = Service("calc", func() {
@@ -44,21 +46,21 @@ var _ = Service("calc", func() {
             Field(2, "reminder", Int)
             Required("quotient", "reminder")
         })
-        Error("div_by_zero") // Method specific error
+        Error("div_by_zero") // Errore specifico per il metodo
     })
 })
 ```
 
-Both the `invalid_arguments` and `div_by_zero` errors in the examples above
-make use of the default error type
+Sia l'errore `invalid_arguments` che `div_by_zero` nell'esempio fanno uso 
+del tipo di errore di default
 [ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult).
 
-Custom types can also be used when defining errors as follows:
+Possono essere anche usati tipi Custom per definire gli errori, nel seguente modo:
 
 ```go
 var DivByZero = Type("DivByZero", func() {
-        Description("DivByZero is the error returned when using value 0 as divisor.")
-        Field(1, "message", String, "division by zero leads to infinity.")
+        Description("DivByZero è l'errore ritornato quando si usa 0 come divisore.")
+        Field(1, "message", String, "Dividere per 0 fa infinito.")
         Required("message")
 })
 
@@ -74,23 +76,24 @@ var _ = Service("calc", func() {
             Field(2, "reminder", Int)
             Required("quotient", "reminder")
         })
-        Error("div_by_zero", DivByZero, "Division by zero") // Use DivByZero type to marshal error
+        Error("div_by_zero", DivByZero, "Divisione per zero") // Usa il tipo di errore DivByZero
     })
 })
 ```
 
-If a type is used to define multiple errors it must define an attribute that
-contains the error name so that the generated code can infer the
-corresponding design definition. The attribute must be identified via the
-`struct:error:name` field
-[metadata](https://pkg.go.dev/goa.design/goa/v3/dsl#Meta), for example:
+Se un tipo è usato per definire più errori diversi deve definire un attributo che
+contiene il nome dell'errore, di modo che il codice generato possa inferire
+la definizione di design corrispondente. La definizione deve essere identificata tramite lo struct tag
+`struct:error:name` 
+[metadata](https://pkg.go.dev/goa.design/goa/v3/dsl#Meta), per esempio:
 
 ```go
 var DivByZero = Type("DivByZero", func() {
-    Description("DivByZero is the error returned when using value 0 as divisor.")
-    Field(1, "message", String, "division by zero leads to infinity.")
-    Field(2, "name", String, "Name of the error", func() {
-        // Tell Goa to use the `name` field to match the error definition.
+    Description("DivByZero è l'errore ritornato quando si usa 0 come divisore.")
+    Field(1, "message", String, "Dividere per 0 fa infinito.")
+    Field(2, "name", String, "Nome dell'errore", func() {
+        // Dice a Goa di usare il campo `name`per identificare la definizione
+        // dell'errore.
         Meta("struct:error:name")
     })
 
@@ -98,37 +101,37 @@ var DivByZero = Type("DivByZero", func() {
 })
 ```
 
-The field must be initialized by the server code that returns the error. The
-generated code uses it to match the error definition and compute the proper
-status code.
+Il campo deve essere inizializzato dal codice nel server che ritorna quell'errore.
+Il codice generato lo userà per corrispondenza con la definizione dell'errore stesso
+e restituire il corretto status code.
 
-### Temporary Errors, Faults and Timeouts
+### Temporary Errors, Faults e Timeouts
 
-The `Error` function accepts an optional DSL function as last argument which
-makes it possible to specify additional properties on the error. The `Error`
-function DSL accepts three child functions:
+La funzione `Error` accetta un DSL opzionale come ultimo argomento che rende
+possibile specificare proprietà eventuali sull'errore. La funzione DSL `Error`
+accetta 3 funzioni figlie:
 
-* `Timeout()` identifies the error as being due to a server timeout.
-* `Fault()` identifies the error as a server side fault (e.g. a bug, a panic etc.).
-* `Temporary()` identifies the error as being retryable.
+* `Timeout()` Identifica l'errore come frutto di un timeout del server.
+* `Fault()` Identifica l'errore come un problema server side (es. un bug, un panic ecc...).
+* `Temporary()` Identifica l'errore come temporaneo (e di conseguenza la richiesta collegata è riprovabile).
 
-The following definition would be appropriate to define a timeout error:
+La seguente definizione è appropriata per definire un errore di timeout:
 
 ```go
-Error("Timeout", ErrorResult, "Request timeout exceeded", func() {
+Error("Timeout", ErrorResult, "Il timeout della richiesta è stato superato", func() {
     Timeout()
 })
 ```
 
-The `Timeout`, `Fault` and `Temporary` functions instruct the Goa code
-generator to initialize the fields with the same names in the returned
-`ErrorResponse` object. They have no effect (other than documentation) when
-using a custom error repsonse type.
+Le funzioni `Timeout`, `Fault` e `Temporary` istruiscono il generatore Goa ad
+inizializzare correttamente i campi con lo stesso nome all'interno della
+`ErrorResponse`. Non hanno effetti (a parte la documentazione) quando usati
+su un errore custom.
 
-### Mapping Errors to Transport Status Codes
+### Mappare gli errori agli status code del Trasporto
 
-The [Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) function
-defines the HTTP or gRPC status code used to write the error:
+La funzione [Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response)
+definisce gli status code HTTP o gRPC che verranno usati per descrivere l'errore:
 
 ```go
 var _ = Service("calc", func() {
@@ -147,13 +150,13 @@ var _ = Service("calc", func() {
         HTTP(func() {
             POST("/")
             Response("div_by_zero", StatusBadRequest, func() { 
-                // Use HTTP status code 400 (BadRequest) to write "div_by_zero" errors
-                Description("Response used for division by zero errors")
+                // Usa il codice di stato HTTP 400 (BadRequest) per gli errori "div_by_zero"
+                Description("Response usata per gli errori DivByZero")
             })
         })
         GRPC(func() {
             Response("div_by_zero", CodeInvalidArgument, func() {
-                // Use gRPC status code 3 (InvalidArgument) to write "div_by_zero" errors
+                // Usa il codice di stato gRPC 3 (InvalidArgument) per gli errori "div_by_zero"
                 Description("Response used for division by zero errors")
             })
         })
@@ -161,14 +164,14 @@ var _ = Service("calc", func() {
 })
 ```
 
-## Producing Errors
+## Produrre Errori
 
-### Using the Default Error Type
+### Usando l'error type di Default
 
-With the design defined above Goa generates a helper function `MakeDivByZero`
-that the server code may leverage to return errors. The function is generated
-in the service specific package (under `gen/calc` in this example). It
-accepts a Go error as argument:
+Con il design definito sopra Goa genera una helper function `MakeDivByZero`
+che il codice del server può usare per restituire errori. La funzione è generata
+nel package specifico del servizio (sotto `gen/calc` in questo esempio).
+Accetta un Go error come parametro:
 
 ```go
 // Code generated by goa v....
@@ -190,7 +193,7 @@ func MakeDivByZero(err error) *goa.ServiceError {
 // ...
 ```
 
-This function can be used as follows when implementing the `Divide` function:
+Questa funzione può essere usata come segue per implementare la funzione `Divide`:
 
 ```go
 func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc.DivideResult, err error) {
@@ -201,23 +204,24 @@ func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc
 }
 ```
 
-The generated `MakeXXX` functions create instances of the
-[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) type.
+Le funzioni `MakeXXX` generate creano istanze del tipo
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError).
 
-### Using Custom Error Types
+### Usando error type personalizzati
 
-When using a user defined type to define errors Goa does not generate helper
-functions as it cannot tell how to map Go errors to the user type. Instead
-the method implementation should instantiate the error type directly.
-Considering the previous example using the `DivByZero` type:
+Quando si usano tipi personalizzati per definire errori in Goa, non vengono generate le
+helper functions in quando il generatore Goa non ha una maniera per mappare go errors e
+i tipi generati corrispondenti. In questo caso il metodo deve istanziare l'errore 
+direttamente.
+Sfruttando l'esempio precedente e usando il tipo `DivByZero`:
 
 ```go
-Error("div_by_zero", DivByZero, "Division by zero") // Use DivByZero type to marshal error
+Error("div_by_zero", DivByZero, "Division by zero") // Usa DivByZero per la definizione dell'errore
 ```
 
-To return the error the method implementation should return an instance of
-the generated `DivByZero` struct also located in the service package (`calc`
-in this example):
+Per ritornare l'errore l'implementazione del metodo deve ritornare un'istanza
+della struct `DivByZero`, sempre presente nel service package (`calc`
+in questo esempio):
 
 ```go
 func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc.DivideResult, err error) {
@@ -228,94 +232,92 @@ func (s *calcsrvc) Divide(ctx context.Context, p *calc.DividePayload) (res *calc
 }
 ```
 
-## Consuming Errors
+## Consumare gli errori
 
-The error values returned to the client are backed by the same structs used by
-the server to return errors. 
+Gli error values ritornati al client sono costruiti dalle stesse struct usate dal
+server che ritorna gli errori stessi.
 
-### Using the Default Error Type
+### Con il tipo di errore di default
 
-If the error definition uses the default error type then the client side
-errors are instances of
-[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError):
+Se l'errore usa la definizione di default allora tali errori sono istanze
+di [ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError):
 
 ```go
-// ... initialize endpoint, ctx, payload
+// ... inizializza endpoint, ctx, payload
 c := calc.NewClient(endpoint)
 res, err := c.Divide(ctx, payload)
 if res != nil {
     if dbz, ok := err.(*goa.ServiceError); ok {
-        // use dbz to handle error
+        // usa dbz per gestire l'errore
     }
 }
 // ...
 ```
 
-### Using Custom Error Types
+### Con tipi di errore personalizzati
 
-If the error definition uses a custom type then the client side error is an
-instance of the corresponding generated Go struct:
+Se l'errore ha una definizione di tipo personalizzata allora l'errore client
+side è la stessa struct personalizzata:
 
 ```go
-// ... initialize endpoint, ctx, payload
+// ... inizializza endpoint, ctx, payload
 c := calc.NewClient(endpoint)
 res, err := c.Divide(ctx, payload)
 if res != nil {
     if dbz, ok := err.(*calc.DivByZero); ok {
-        // use dbz to handle error
+        // usa dbz per gestire l'errore
     }
 }
 // ...
 ```
  
-## Validation Errors
+## Validazione degli errori
 
-Validation errors are also instances of the
-[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError) struct.
-The `name` field of the struct makes it possible for client code to
-differentiate between multiple possible errors.
+Gli errori di validazione sono essi stessi struct
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3/pkg#ServiceError).
+Il campo `name` della struct rende possibile per il codice del client di
+differenziare i diversi tipi di errore.
 
-Here is an example of how to do that which assumes that the design uses the
-default error type to define the `div_by_zero` error:
+Qui un esempio di come farlo, che assume che il design usi il tipo di errore
+di default per definire l'errore `div_by_zero`:
 
 ```go
-// ... initialize endpoint, ctx, payload
+// ... inizializza endpoint, ctx, payload
 c := calc.NewClient(endpoint)
 res, err := c.Divide(ctx, payload)
 if res != nil {
     if serr, ok := err.(*goa.ServiceError); ok {
         switch serr.Name {
             case "missing_field":
-                // Handle missing operand error
+                // Gestire l'errore missing operand qui
             case "div_by_zero":
-                // Handle division by zero error
+                // Gestire l'errore division by zero qui
             default:
-                // Handle unknown error
+                // Gestire gli altri possibili errori qui
         }
     }
 }
 // ...
 ```
 
-The validation error names are all defined in the file 
-[error.go](https://github.com/goadesign/goa/blob/v3/pkg/error.go), they are:
+Gli errori di validatione sono tutti definiti nel file 
+[error.go](https://github.com/goadesign/goa/blob/v3/pkg/error.go), e sono:
 
-* `missing_payload`: error produced when a request is missing a required payload.
-* `decode_payload`: error produced when a request body cannot be decoded successfully.
-* `invalid_field_type`: error produced when the type of a payload field does not match the type defined in the design.
-* `missing_field`: error produced when a payload is missing a required field.
-* `invalid_enum_value`: error produced when the value of a payload field does not match one the values defined in the design Enum validation.
-* `invalid_format`: error produced the value of a payload field does not match the format validation defined in the design.
-* `invalid_pattern`: error produced when the value of a payload field does not match the pattern validation defined in the design.
-* `invalid_range`: error produced code when the value of a payload field does not match the range validation defined in the design.
-* `invalid_length`: error produced code when the value of a payload field does not match the length validation defined in the design.
+* `missing_payload`: prodotto quando alla richiesta manca un payload richiesto.
+* `decode_payload`: prodotto quando il body della richiesta non può essere decodificato con successo.
+* `invalid_field_type`: prodotto quando un campo non è dello stesso tipo definito nel corrispettivo design.
+* `missing_field`: prodotto quando il payload non possiede un campo richiesto.
+* `invalid_enum_value`: prodotto quando il valore di un campo nel payload non corrisponde all'enum definito nel design (Enum).
+* `invalid_format`: prodotto quando il campo nel payload non passa i check di formato del design (Format).
+* `invalid_pattern`: prodotto quando il valore di un campo nel payload non passa i check del pattern regexp specificato nel design (Pattern).
+* `invalid_range`: prodotto quando il valore del campo nel payload non è nel range specificato nel design (es. Minimum, Maximum).
+* `invalid_length`: prodotto quando il valore del campo non rispetta i requiditi di lunghezza specificati nel design (es. MinLength, MaxLength).
 
-## Overridding Error Serialization
+## Sovrascrivere la serializzazione degli errori
 
-Sometimes it may be necessary to override the format used by the generated
-code to render validation errors. The generated HTTP handler and server
-creation functions make it possible to provide a custom error formatter
-function:
+Qualche volta è necessario sovrascrivere il formato usato dal codice generato
+per validare gli errori. L'handler HTTP e il codice di creazione del server generati
+permettono di passare un error formatter personalizzato come parametro:
 
 ```go
 // Code generated by goa v...
@@ -340,9 +342,9 @@ func New(
 // ...
 ```
 
-The provided function must accept an instance of an error as argument and
-return a struct that implements the
-[Statuser](https://pkg.go.dev/goa.design/goa/v3/http#Statuser) interface:
+La funzione fornita deve accettare una istanza di un error come parametro e 
+restituire una struct che implementa l'interfaccia
+[Statuser](https://pkg.go.dev/goa.design/goa/v3/http#Statuser):
 
 ```go
 type Statuser interface {
@@ -352,47 +354,47 @@ type Statuser interface {
 }
 ```
 
-The generated code calls the struct `StatusCode` method upon writing the HTTP
-response and uses the return value to write the HTTP status code. The struct
-is then serialized into the response body.
+Il codice generato chiama il metodo `StatusCode` della struct quando deve scrivere
+la response HTTP e usa il suo valore di ritorno per scrivere il codice di stato HTTP.
+La struct viene poi serializzata nel response body.
 
-The default implementation used when the value `nil` is given for the
-`formatter` argument of the `New` function is
+L'implementazione di default usata quando il valore `nil` è passato come parametro
+`formatter` nella funzione `New` function è
 [NewErrorResponse](https://pkg.go.dev/goa.design/goa/v3/http#NewErrorResponse)
-which returns an instance of
+che ritorna una istanza di
 [ErrorResponse](https://pkg.go.dev/goa.design/goa/v3/pkg#ErrorResponse).
 
-### Overridding Validation Errors Serialization
+### Sovrascrivere gli errori di validazione della serializzazione
 
-A custom formatter can inspect the given error value similarly to how client
-code does it to format validation errors differently, for example:
+Un formatter custom può ispezionare l'errore in maniera simile a come fa un 
+qualsiasi codice client quando gestisce errori differenti, per esempio:
 
 ```go
-// missingFieldError is the type used to serialize missing required field
-// errors. It overrides the default provided by Goa.
+// missingFieldError è il tipo usato per serializzare gli errori di campo obbligatorio
+// mancante. Sovrascrive il default fornito da Goa.
 type missingFieldError string
 
-// StatusCode returns 400 (BadRequest).
+// StatusCode restituisce 400 (BadRequest).
 func (missingFieldError) StatusCode() int { return http.StatusBadRequest }
 
-// customErrorResponse converts err into a MissingField error if err corresponds
-// to a missing required field validation error.
+// customErrorResponse converte err in un errore MissingField error se err corrisponde
+// a un errore di tipo missing required field.
 func customErrorResponse(err error) Statuser {
     if serr, ok := err.(*goa.ServiceError); ok {
         switch serr.Name {
             case "missing_field":
                 return missingFieldError(serr.Message)
             default:
-                // Use Goa default
+                // Usa il default di Goa
                 return goahttp.NewErrorResponse(err)
         }
     }
-    // Use Goa default for all other error types
+    // Usa il default di Goaper tutti gli altri errori
     return goahttp.NewErrorResponse(err)
 }
 ```
 
-The custom formatter can then be used to instantiate a HTTP server or handler:
+Questo formatter personalizzato può essere usato per istanziare un server HTTP o un handler:
 
 ```go
 var (
@@ -404,9 +406,9 @@ var (
     // ...
 ```
 
-## Example
+## Esempio
 
-The [error](https://github.com/goadesign/examples/tree/master/error) example
-illustrates how to use custom error types and how to override the default
-error response used for validation errors.
+L'esempio sulla [gestione degli errori](https://github.com/goadesign/examples/tree/master/error)
+mostra come usare tipi di errore personalizzati e come sovrascrivere la error response
+predefinita per gli errori di validazione.
 
