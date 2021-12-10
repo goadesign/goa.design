@@ -95,7 +95,7 @@ The service layer is implemented by the `service.go` file under each service.
  
 ## Putting It All Together
 
-Requests that are recevied by the underlying HTTP or gRPC server are decoded by
+Requests that are received by the underlying HTTP or gRPC server are decoded by
 the transport layer and passed to the endpoint layer. The endpoint layer then
 calls the service layer to execute the business logic. The service layer then
 returns the response to the endpoint layer which is then encoded by the
@@ -185,7 +185,7 @@ func NewEndpoints(s Service) *Endpoints {
 }
 ```
 
-This function simply wraps the service interface with endpoint methods than can
+This function simply wraps the service interface with endpoint methods that can
 then be provided to the generated transport layer to expose the endpoints to the
 given transport.
 
