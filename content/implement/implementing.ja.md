@@ -217,7 +217,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 }
 ```
 
-mux オブジェクトは標準的な Go の HTTP ハンドラーで、HTTP リクエストを扱うために利用できます：
+mux オブジェクトは標準的な Go の HTTP ハンドラで、HTTP リクエストを扱うために利用できます：
 
 ```go
 calcsvr.Mount(mux, svr)
@@ -280,7 +280,7 @@ func New(e *calc.Endpoints, uh goagrpc.UnaryHandler) *Server {
 }
 ```
 
-この関数は、エンドポイントとオプションの gRPC ハンドラーを受け取り、gRPC の設定を可能にします。
+この関数は、エンドポイントとオプションの gRPC ハンドラを受け取り、gRPC の設定を可能にします。
 デフォルトに実装では、デフォルトの gRPC のオプションを使用しています：
 
 ```go
