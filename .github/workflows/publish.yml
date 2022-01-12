@@ -29,13 +29,13 @@ jobs:
         run: hugo --minify
 
       - name: Auth
-        uses: google-github-actions/auth@v0.4.0
+        uses: google-github-actions/auth@v0.4.4
         with:
           workload_identity_provider: 'projects/654303510937/locations/global/workloadIdentityPools/goadesign-deploy-pool/providers/goadesign-deploy-provider'
           service_account: 'goa-design-deploy@goa-design.iam.gserviceaccount.com'
 
       - name: Deploy
-        uses: google-github-actions/upload-cloud-storage@v0.4.0
+        uses: google-github-actions/upload-cloud-storage@v0.5.0
         with:
           path: public
           destination: goa.design
