@@ -111,7 +111,7 @@ weight = 3
 [[languages.ja.menu.main]]
 name = "拡張する"
 identifier = "extend"
-url = "/ja/plugins/"
+url = "/ja/extend/"
 weight = 4
 
 [[languages.ja.menu.main]]
