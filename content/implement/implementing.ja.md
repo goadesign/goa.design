@@ -8,7 +8,7 @@ name = "Goa サービスの実装"
 parent = "implement"
 +++
 
-## Overview
+## 概要
 
 サービスの[デザイン](/design/overview)が完成したら、いよいよ `goa` ツールを実行して、コード生成します：
 
