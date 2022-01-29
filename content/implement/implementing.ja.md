@@ -1,14 +1,14 @@
 +++
 date = "2021-12-05T11:01:06-05:00"
-title = "Implementing a Goa Service"
+title = "Goa サービスの実装"
 weight = 1
 
 [menu.main]
-name = "Implementing a Goa Service"
+name = "Goa サービスの実装"
 parent = "implement"
 +++
 
-## Overview
+## 概要
 
 サービスの[デザイン](/design/overview)が完成したら、いよいよ `goa` ツールを実行して、コード生成します：
 
