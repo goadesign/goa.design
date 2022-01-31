@@ -27,6 +27,8 @@ func main() {
 	http.HandleFunc("/structurizr/", servePackage("structurizr"))
 	http.HandleFunc("/model", servePackage("model"))
 	http.HandleFunc("/model/", servePackage("model"))
+	http.HandleFunc("/clue", servePackage("clue"))
+	http.HandleFunc("/clue/", servePackage("clue"))
 	appengine.Main()
 }
 
