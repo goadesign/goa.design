@@ -4,3 +4,6 @@ static/js/pindex.json
 content/reference/
 
 .hugo_build.lock
+
+# intellij IDE config
+.idea

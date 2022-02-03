@@ -132,14 +132,14 @@ package design
 import . "goa.design/goa/v3/dsl"
 
 var _ = Service("calc", func() {
-    Method("Add", func() {
+    Method("Multiply", func() {
         Payload(func() {
             Attribute("a", Int, "First operand")
             Attribute("b", Int, "Second operand")
         })
         Result(Int)
         HTTP(func() {
-            GET("/add/{a}/{b}")
+            GET("/multiply/{a}/{b}")
         })
         GRPC(func() {})
     })
@@ -160,7 +160,7 @@ Goa generates the following interface in `gen/calc/service.go`:
 
 ```go
 type Service interface {
-    Add(context.Context, *AddPayload) (res int, err error)
+    Multiply(context.Context, *MultiplyPayload) (res int, err error)
 }
 ```
 
@@ -169,7 +169,7 @@ A possible implementation could be:
 ```go
 type svc struct {}
 
-func (s *svc) Add(ctx context.Context, p *calcsvc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calcsvc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 ```
@@ -180,7 +180,7 @@ service endpoints using the function `NewEndpoints` generated in `endpoints.go`:
 ```go
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
-		Add: NewAddEndpoint(s),
+		Multiply: NewMultiplyEndpoint(s),
 	}
 }
 ```
@@ -235,7 +235,7 @@ generated `Mount` function.
 
 ```go
 func Mount(mux goahttp.Muxer, h *Server) {
-	MountAddHandler(mux, h.Add)
+	MountMultiplyHandler(mux, h.Multiply)
 }
 ```
 
@@ -265,7 +265,7 @@ import (
 
 type svc struct{}
 
-func (s *svc) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 
@@ -301,7 +301,7 @@ server:
 ```go
 func New(e *calc.Endpoints, uh goagrpc.UnaryHandler) *Server {
 	return &Server{
-		AddH: NewAddHandler(e.Add, uh),
+		MultiplyH: NewMultiplyHandler(e.Multiply, uh),
 	}
 }
 ```
@@ -311,9 +311,9 @@ possible to configure gRPC. The default implementation uses the default gRPC
 options:
 
 ```go
-func NewAddHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
+func NewMultiplyHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
 	if h == nil {
-		h = goagrpc.NewUnaryHandler(endpoint, DecodeAddRequest, EncodeAddResponse)
+		h = goagrpc.NewUnaryHandler(endpoint, DecodeMultiplyRequest, EncodeMultiplyResponse)
 	}
 	return h
 }
@@ -358,7 +358,7 @@ import (
 
 type svc struct{}
 
-func (s *svc) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 
@@ -391,10 +391,10 @@ functions that make it possible to create individual endpoints, for example:
 `gen/calc/endpoints.go`
 
 ```go
-func NewAddEndpoint(s Service) goa.Endpoint {
+func NewMultiplyEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		p := req.(*AddPayload)
-		return s.Add(ctx, p)
+		p := req.(*MultiplyPayload)
+		return s.Multiply(ctx, p)
 	}
 }
 ```
@@ -406,7 +406,7 @@ public:
 
 ```go
 type Endpoints struct {
-	Add goa.Endpoint
+	Multiply goa.Endpoint
 }
 ```
 
@@ -417,7 +417,7 @@ HTTP (`gen/http/calc/server/server.go`):
 
 ```go
 type Server struct {
-	Add http.Handler
+	Multiply http.Handler
     // ...
 }
 ```
@@ -426,7 +426,7 @@ gRPC (`gen/grpc/calc/server/server.go`):
 
 ```go
 type Server struct {
-	AddH goagrpc.UnaryHandler
+	MultiplyH goagrpc.UnaryHandler
 	// ...
 }
 ```
@@ -438,7 +438,7 @@ functions which are public and can be called individually:
 HTTP (`gen/http/calc/server/server.go`):
 
 ```go
-func NewAddHandler(
+func NewMultiplyHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -451,7 +451,7 @@ func NewAddHandler(
 gRPC (`gen/grpc/calc/server/server.go`):
 
 ```go
-func NewAddHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler
+func NewMultiplyHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler
 ```
 
 Also with HTTP one can override the HTTP encoder, decoder or even the muxer by

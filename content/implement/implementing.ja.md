@@ -120,14 +120,14 @@ package design
 import . "goa.design/goa/v3/dsl"
 
 var _ = Service("calc", func() {
-    Method("Add", func() {
+    Method("Multiply", func() {
         Payload(func() {
             Attribute("a", Int, "First operand")
             Attribute("b", Int, "Second operand")
         })
         Result(Int)
         HTTP(func() {
-            GET("/add/{a}/{b}")
+            GET("/multiply/{a}/{b}")
         })
         GRPC(func() {})
     })
@@ -148,7 +148,7 @@ Goa は次のようなインターフェースを `gen/calc/service.go` に生�
 
 ```go
 type Service interface {
-    Add(context.Context, *AddPayload) (res int, err error)
+    Multiply(context.Context, *MultiplyPayload) (res int, err error)
 }
 ```
 
@@ -157,7 +157,7 @@ type Service interface {
 ```go
 type svc struct {}
 
-func (s *svc) Add(ctx context.Context, p *calcsvc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calcsvc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 ```
@@ -167,7 +167,7 @@ func (s *svc) Add(ctx context.Context, p *calcsvc.AddPayload) (int, error) {
 ```go
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
-		Add: NewAddEndpoint(s),
+		Multiply: NewMultiplyEndpoint(s),
 	}
 }
 ```
@@ -213,7 +213,7 @@ HTTP サーバの設定に必要な最後のステップは、生成された `M
 
 ```go
 func Mount(mux goahttp.Muxer, h *Server) {
-	MountAddHandler(mux, h.Add)
+	MountMultiplyHandler(mux, h.Multiply)
 }
 ```
 
@@ -242,7 +242,7 @@ import (
 
 type svc struct{}
 
-func (s *svc) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 
@@ -275,7 +275,7 @@ gRPC サーバの作成は、HTTP サーバと同様のパターンで行いま�
 ```go
 func New(e *calc.Endpoints, uh goagrpc.UnaryHandler) *Server {
 	return &Server{
-		AddH: NewAddHandler(e.Add, uh),
+		MultiplyH: NewMultiplyHandler(e.Multiply, uh),
 	}
 }
 ```
@@ -284,9 +284,9 @@ func New(e *calc.Endpoints, uh goagrpc.UnaryHandler) *Server {
 デフォルトに実装では、デフォルトの gRPC のオプションを使用しています：
 
 ```go
-func NewAddHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
+func NewMultiplyHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler {
 	if h == nil {
-		h = goagrpc.NewUnaryHandler(endpoint, DecodeAddRequest, EncodeAddResponse)
+		h = goagrpc.NewUnaryHandler(endpoint, DecodeMultiplyRequest, EncodeMultiplyResponse)
 	}
 	return h
 }
@@ -330,7 +330,7 @@ import (
 
 type svc struct{}
 
-func (s *svc) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
+func (s *svc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (int, error) {
 	return p.A + p.B, nil
 }
 
@@ -361,10 +361,10 @@ func main() {
 `gen/calc/endpoints.go`
 
 ```go
-func NewAddEndpoint(s Service) goa.Endpoint {
+func NewMultiplyEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		p := req.(*AddPayload)
-		return s.Add(ctx, p)
+		p := req.(*MultiplyPayload)
+		return s.Multiply(ctx, p)
 	}
 }
 ```
@@ -374,7 +374,7 @@ func NewAddEndpoint(s Service) goa.Endpoint {
 
 ```go
 type Endpoints struct {
-	Add goa.Endpoint
+	Multiply goa.Endpoint
 }
 ```
 
@@ -384,7 +384,7 @@ HTTP (`gen/http/calc/server/server.go`):
 
 ```go
 type Server struct {
-	Add http.Handler
+	Multiply http.Handler
     // ...
 }
 ```
@@ -393,7 +393,7 @@ gRPC (`gen/grpc/calc/server/server.go`):
 
 ```go
 type Server struct {
-	AddH goagrpc.UnaryHandler
+	MultiplyH goagrpc.UnaryHandler
 	// ...
 }
 ```
@@ -404,7 +404,7 @@ type Server struct {
 HTTP (`gen/http/calc/server/server.go`):
 
 ```go
-func NewAddHandler(
+func NewMultiplyHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -417,7 +417,7 @@ func NewAddHandler(
 gRPC (`gen/grpc/calc/server/server.go`):
 
 ```go
-func NewAddHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler
+func NewMultiplyHandler(endpoint goa.Endpoint, h goagrpc.UnaryHandler) goagrpc.UnaryHandler
 ```
 
 また HTTP では、Goa の HTTP パッケージが提供するデフォルト実装ではなく、独自の実装によって、HTTP エンコーダー、デコーダー、さらには muxer をオーバーライドすることができます。
