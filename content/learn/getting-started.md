@@ -61,7 +61,7 @@ import (
 
 var _ = API("calc", func() {
 	Title("Calculator Service")
-	Description("Service for adding numbers, a Goa teaser")
+	Description("Service for multiplying numbers, a Goa teaser")
     Server("calc", func() {
         Host("localhost", func() {
             URI("http://localhost:8000")
@@ -73,7 +73,7 @@ var _ = API("calc", func() {
 var _ = Service("calc", func() {
 	Description("The calc service performs operations on numbers.")
 
-	Method("add", func() {
+	Method("multiply", func() {
 		Payload(func() {
 			Field(1, "a", Int, "Left operand")
 			Field(2, "b", Int, "Right operand")
@@ -83,7 +83,7 @@ var _ = Service("calc", func() {
 		Result(Int)
 
 		HTTP(func() {
-			GET("/add/{a}/{b}")
+			GET("/multiply/{a}/{b}")
 		})
 
 		GRPC(func() {
@@ -94,8 +94,8 @@ var _ = Service("calc", func() {
 })
 ```
 
-The design describes a service named `calc` defining a single method `add`.
-`add` takes a payload as input that consists of two integers and returns an
+The design describes a service named `calc` defining a single method `multiply`.
+`multiply` takes a payload as input that consists of two integers and returns an
 integer. The method also describes transport mappings to both HTTP and gRPC. The
 HTTP transport uses URL parameters to carry the input integers while the gRPC
 transport uses a message (not explicitly shown in the design as it is the
@@ -225,14 +225,14 @@ The `goa example` command creates the following files
 │       └── main.go
 ```
 
-`calc.go` contains a dummy implementation of the `add` method described in the
+`calc.go` contains a dummy implementation of the `multiply` method described in the
 design. The only thing left for us to do is to provide the actual
 implementation, build, and run the server and client.
 
-Open the file `calc.go` and implement the `Add` method:
+Open the file `calc.go` and implement the `Multiply` method:
 
 ```go
-func (s *calcsrvc) Add(ctx context.Context, p *calc.AddPayload) (res int, err error) {
+func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res int, err error) {
   return p.A + p.B, nil
 }
 ```
@@ -254,21 +254,21 @@ go build ./cmd/calc && go build ./cmd/calc-cli
 # Run the server
 
 ./calc
-[calcapi] 21:35:36 HTTP "Add" mounted on GET /add/{a}/{b}
+[calcapi] 21:35:36 HTTP "Multiply" mounted on GET /multiply/{a}/{b}
 [calcapi] 21:35:36 HTTP "./gen/http/openapi.json" mounted on GET /openapi.json
-[calcapi] 21:35:36 serving gRPC method calc.Calc/Add
+[calcapi] 21:35:36 serving gRPC method calc.Calc/Multiply
 [calcapi] 21:35:36 HTTP server listening on "localhost:8000"
 [calcapi] 21:35:36 gRPC server listening on "localhost:8080"
 
 # Run the client
 
 # Contact HTTP server
-$ ./calc-cli --url="http://localhost:8000" calc add --a 1 --b 2
-3
+$ ./calc-cli --url="http://localhost:8000" calc multiply --a 1 --b 2
+2
 
 # Contact gRPC server
-$ ./calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
-3
+$ ./calc-cli --url="grpc://localhost:8080" calc multiply --message '{"a": 1, "b": 2}'
+2
 ```
 
 ## Summary and Next Steps

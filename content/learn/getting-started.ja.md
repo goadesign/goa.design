@@ -54,7 +54,7 @@ import (
 
 var _ = API("calc", func() {
 	Title("Calculator Service")
-	Description("Service for adding numbers, a Goa teaser")
+	Description("Service for multiplying numbers, a Goa teaser")
     Server("calc", func() {
         Host("localhost", func() {
             URI("http://localhost:8000")
@@ -66,7 +66,7 @@ var _ = API("calc", func() {
 var _ = Service("calc", func() {
 	Description("The calc service performs operations on numbers.")
 
-	Method("add", func() {
+	Method("multiply", func() {
 		Payload(func() {
 			Field(1, "a", Int, "Left operand")
 			Field(2, "b", Int, "Right operand")
@@ -76,7 +76,7 @@ var _ = Service("calc", func() {
 		Result(Int)
 
 		HTTP(func() {
-			GET("/add/{a}/{b}")
+			GET("/multiply/{a}/{b}")
 		})
 
 		GRPC(func() {
@@ -87,8 +87,8 @@ var _ = Service("calc", func() {
 })
 ```
 
-このデザインは `calc` という名前のサービスを記述していて、ひとつのメソッド `add` が定義されています。
-`add` は2つの整数からなるペイロードを入力として受け取り、ひとつの整数を返します。
+このデザインは `calc` という名前のサービスを記述していて、ひとつのメソッド `multiply` が定義されています。
+`multiply` は2つの整数からなるペイロードを入力として受け取り、ひとつの整数を返します。
 このメソッドは、HTTP と gRPC のどちらのトランスポートの対応についても記述しています。
 HTTP トランスポートは URL パラメータを使用して入力整数を伝送しますが、gRPC トランスポートはメッセージを使用します（これはデフォルトの動作であるため、デザインに明示されていません）。
 HTTP トランスポートと gRPC トランスポートのいずれも、レスポンスにステータスコード `OK` を使用します（これもデフォルトです）。
@@ -204,13 +204,13 @@ goa example calc/design
 │       └── main.go
 ```
 
-`calc.go` はデザインに記述された `add` メソッドのダミー実装を含みます。
+`calc.go` はデザインに記述された `multiply` メソッドのダミー実装を含みます。
 すべきこととして残されているのは、実際の実装を与え、ビルドし、サーバやクライアントを実行することだけです。
 
-`calc.go` ファイルを開き、`Add` メソッドを実装します：
+`calc.go` ファイルを開き、`Multiply` メソッドを実装します：
 
 ```go
-func (s *calcsrvc) Add(ctx context.Context, p *calc.AddPayload) (res int, err error) {
+func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res int, err error) {
   return p.A + p.B, nil
 }
 ```
@@ -229,21 +229,21 @@ go build ./cmd/calc && go build ./cmd/calc-cli
 # サーバーの実行
 
 ./calc
-[calcapi] 21:35:36 HTTP "Add" mounted on GET /add/{a}/{b}
+[calcapi] 21:35:36 HTTP "Multiply" mounted on GET /multiply/{a}/{b}
 [calcapi] 21:35:36 HTTP "./gen/http/openapi.json" mounted on GET /openapi.json
-[calcapi] 21:35:36 serving gRPC method calc.Calc/Add
+[calcapi] 21:35:36 serving gRPC method calc.Calc/Multiply
 [calcapi] 21:35:36 HTTP server listening on "localhost:8000"
 [calcapi] 21:35:36 gRPC server listening on "localhost:8080"
 
 # クライアントの実行
 
 # HTTP サーバーと交信
-$ ./calc-cli --url="http://localhost:8000" calc add --a 1 --b 2
-3
+$ ./calc-cli --url="http://localhost:8000" calc multiply --a 1 --b 2
+2
 
 # gRPC サーバーと交信
-$ ./calc-cli --url="grpc://localhost:8080" calc add --message '{"a": 1, "b": 2}'
-3
+$ ./calc-cli --url="grpc://localhost:8080" calc multiply --message '{"a": 1, "b": 2}'
+2
 ```
 
 ## まとめと次のステップ

@@ -78,8 +78,8 @@ var _ = Service("calc", func() {
 		cors.Credentials()
 	})
 
-	Method("add", func() {
-		Description("Add adds up the two integer parameters and returns the results.")
+	Method("multiply", func() {
+		Description("Multiply multiplies the two integer parameters and returns the results.")
 		Payload(func() {
 			Attribute("a", Int, func() {
 				Description("Left operand")
@@ -91,7 +91,7 @@ var _ = Service("calc", func() {
 		})
 		Result(Int)
 		HTTP(func() {
-			GET("/add/{a}/{b}")
+			GET("/multiply/{a}/{b}")
 			Response(StatusOK)
 		})
 	})

@@ -27,7 +27,7 @@ specifiche OpenAPI.
 ```go
 var _ = API("calc", func() {
     Title("Calculator Service")
-    Description("A service for adding numbers, a goa teaser")
+    Description("A service for multiplying numbers, a goa teaser")
 
     // Server descrive un singolo processo che ascolta le richieste dai client. Il DSL
     // definisce una serie di servizi che il server ospita, così come tutti i dettagli
@@ -78,7 +78,7 @@ var _ = Service("calc", func() {
     Description("The calc service performs operations on numbers")
 
     // Method descrive un service method (endpoint)
-    Method("add", func() {
+    Method("multiply", func() {
         // Payload descrive il payload del metodo.
         // In questo caso, esso consiste di due campi.
         Payload(func() {
@@ -99,7 +99,7 @@ var _ = Service("calc", func() {
             // Le richieste al servizio in questo caso consistono 
             // in richieste HTT GET. I campi del payload sono
             // codificati come path parameters.
-            GET("/add/{a}/{b}")
+            GET("/multiply/{a}/{b}")
             // Le risposte qui usano uno status HTTP "200 OK".
             // Il risultato è codificato nel body (default).
             Response(StatusOK)

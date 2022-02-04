@@ -21,7 +21,7 @@ parent = "design"
 ```go
 var _ = API("calc", func() {
     Title("Calculator Service")
-    Description("A service for adding numbers, a goa teaser")
+    Description("A service for multiplying numbers, a goa teaser")
 
     // Server はクライアントのリクエストを受け付ける単一のプロセスを記述します
     // DSLは、サーバーがホストする一連のサービスとホストの詳細を定義します
@@ -69,7 +69,7 @@ var _ = Service("calc", func() {
     Description("The calc service performs operations on numbers")
 
     // Method はサービスメソッド（エンドポイント）を記述します
-    Method("add", func() {
+    Method("multiply", func() {
         // Payload はメソッドのペイロードを記述します
         // ここでは、ペイロードは2つのフィールドからなるオブジェクトです
         Payload(func() {
@@ -88,7 +88,7 @@ var _ = Service("calc", func() {
         HTTP(func() {
             // サービスへのリクエストは HTTP GET リクエストで構成されています
             // ペイロードはパスパラメータとしてエンコードされます
-            GET("/add/{a}/{b}")
+            GET("/multiply/{a}/{b}")
             // レスポンスは HTTP ステータス "200 OK" を使用します
             // 結果はレスポンスボディにエンコードされます（デフォルト）
             Response(StatusOK)
