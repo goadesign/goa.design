@@ -7,7 +7,7 @@ name = "Getting Started"
 parent = "learn"
 +++
 
-This guide walks you through writing a complete service in goa. The simple
+This guide walks you through writing a complete service in Goa. The simple
 service implements the basic example found in the
 [GitHub repository](https://github.com/goadesign/examples/tree/master/basic). The
 instructions assume the use of Go modules and as such require Go version 1.11 or
@@ -16,9 +16,8 @@ greater.
 ## Prerequisites
 
 The instructions below create a new project under your home directory. You can
-replace `$HOME` with any other location. The only caveat is that if you choose a
-directory that lives under your `GOPATH` then you need to make sure that modules
-are enabled by setting the environment variable `GO111MODULE` to `on`.
+replace `$HOME` with any other location. The guide assumes a Go setup that uses
+Go modules (the default starting with Go 1.13).
 
 ```bash
 cd $HOME
@@ -27,11 +26,10 @@ cd calc
 go mod init calc
 ```
 
-Next make sure the Goa module is installed and up-to-date:
+Next install Goa:
 
 ```bash
-go get -u goa.design/goa/v3
-go get -u goa.design/goa/v3/...
+go install goa.design/goa/v3/cmd/goa@v3
 ```
 
 The service makes use of gRPC and as such requires both `protoc` and
@@ -39,7 +37,12 @@ The service makes use of gRPC and as such requires both `protoc` and
 
 * Download the `protoc` binary from [releases](https://github.com/google/protobuf/releases).
 * Make sure `protoc` is in your path.
-* Install the protoc plugin for Go: `go get -u github.com/golang/protobuf/protoc-gen-go`
+* Install the protoc plugin for Go: 
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
 
 ## Design
 
@@ -233,7 +236,7 @@ Open the file `calc.go` and implement the `Multiply` method:
 
 ```go
 func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res int, err error) {
-  return p.A + p.B, nil
+  return p.A * p.B, nil
 }
 ```
 
