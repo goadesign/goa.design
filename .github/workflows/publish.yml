@@ -3,6 +3,8 @@ name: Publish
 on:
   pull_request:
     types: [ closed ]
+  push:
+    branches: [ master ]
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
