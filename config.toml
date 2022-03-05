@@ -55,36 +55,6 @@ identifier = "blog"
 url = "/blog/"
 weight = 5
 
-[[languages.en.menu.v1]]
-name = "Learn"
-identifier = "learn.v1"
-url = "/v1/learn"
-weight = 1
-
-[[languages.en.menu.v1]]
-name = "Design"
-identifier = "design.v1"
-url = "/v1/design/"
-weight = 2
-
-[[languages.en.menu.v1]]
-name = "Implement"
-identifier = "implement.v1"
-url = "/v1/implement/"
-weight = 3
-
-[[languages.en.menu.v1]]
-name = "Extend"
-identifier = "extend.v1"
-url = "/v1/extend"
-weight = 4
-
-[[languages.en.menu.v1]]
-name = "Blog"
-identifier = "blog.v1"
-url = "/v1/blog/"
-weight = 5
-
 [languages.ja] 
 weight = 2
 title = "goa - はじめにデザインを。"
@@ -120,36 +90,6 @@ identifier = "blog"
 url = "/ja/blog/"
 weight = 5
 
-[[languages.ja.menu.v1]]
-name = "学ぶ"
-identifier = "learn.v1"
-url = "/ja/v1/learn/"
-weight = 1
-
-[[languages.ja.menu.v1]]
-name = "デザイン"
-identifier = "design.v1"
-url = "/ja/v1/design/"
-weight = 2
-
-[[languages.ja.menu.v1]]
-name = "実装する"
-identifier = "implement.v1"
-url = "/ja/v1/implement/"
-weight = 3
-
-[[languages.ja.menu.v1]]
-name = "拡張する"
-identifier = "extend.v1"
-url = "/ja/v1/extend/"
-weight = 4
-
-[[languages.ja.menu.v1]]
-name = "ブログ"
-identifier = "blog.v1"
-url = "/ja/v1/blog/"
-weight = 5
-
 [languages.it] 
 weight = 1
 title = "goa - Design First."
@@ -183,34 +123,4 @@ weight = 4
 name = "Blog"
 identifier = "blog"
 url = "/it/blog/"
-weight = 5
-
-[[languages.it.menu.v1]]
-name = "Impara"
-identifier = "learn.v1"
-url = "/it/v1/learn"
-weight = 1
-
-[[languages.it.menu.v1]]
-name = "Progetta"
-identifier = "design.v1"
-url = "/it/v1/design/"
-weight = 2
-
-[[languages.it.menu.v1]]
-name = "Implementa"
-identifier = "implement.v1"
-url = "/it/v1/implement/"
-weight = 3
-
-[[languages.it.menu.v1]]
-name = "Estendi"
-identifier = "extend.v1"
-url = "/it/v1/extend"
-weight = 4
-
-[[languages.it.menu.v1]]
-name = "Blog"
-identifier = "blog.v1"
-url = "/it/v1/blog/"
 weight = 5

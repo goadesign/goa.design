@@ -70,9 +70,10 @@ Il valore `application/json` è mappato al decoder JSON, `application/xml` al de
 `application/gob` al decoder gob. Il decoder JSON è anche usato quando l'header `Content-Type`
 è assente o non ha match con un decoder conosciuto. Se il decoding fallisce Goa
 scrive una risposta di errore usando il codice di stato 400 Bad Request e scrive un oggetto
-[ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) nel corpo della risposta (vedi
-[Gestione degli errori](/v1/implement/error_handling/) per avere più informazioni su come gli errori
-vendono tradotti in risposte HTTP).
+[ServiceError](https://pkg.go.dev/goa.design/goa/v3@v3.6.0/pkg#ServiceError) nel
+corpo della risposta (vedi
+[Gestione degli errori](/v1/implement/error_handling/) per avere più
+informazioni su come gli errori vendono tradotti in risposte HTTP).
 
 ### Implementare un Decoder personalizzato
 

@@ -68,9 +68,8 @@ The default request decoder looks at the incoming request `Content-Type` and mat
 with a decoder. The value `application/json` is mapped to the JSON decoder, `application/xml` to
 the XML decoder and `application/gob` to the gob decoder. The JSON decoder is also used when the
 `Content-Type` header is missing or does not match one of the known values. If decoding fails Goa
-writes an error response using status code 400 and the
-[ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) error to write the body (see
-[Error Handling](/v1/implement/error_handling/) for more information on how errors translate to HTTP
+calls the error handler registered when creating the HTTP server (see
+[Error Handling](/implement/error_handling/) for more information on how errors translate to HTTP
 responses).
 
 ### Writing a Custom Decoder

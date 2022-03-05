@@ -63,8 +63,8 @@ Goa パッケージは、JSON、XML、および gob をエンコード/デコー
 デフォルトのリクエストデコーダーは、受け取ったリクエストの `Content-Type` をみて、それをデコーダーと照合します。
 値が `application/json` なら JSON デコーダーに、`application/xml` なら XML デコーダーに、`application/gob` なら gob デコーダーに割り当てられます。
 JSON デコーダーは、`Content-Type` ヘッダーが欠落している場合や、既知の値と一致しない場合にも使用されます。
-デコードが失敗した場合、Goa はエラーレスポンスにステータスコード 400 を用い、そのボディを書き込みに [ErrInvalidEncoding](https://goa.design/v1/reference/goa/#variables) エラーを使用します
-（エラーがどのように HTTP レスポンスに変換されるかの詳細については、[エラー処理](/v1/implement/error_handling/) を参照してください）。
+デコードが失敗した場合、Goa はエラーレスポンスにステータスコード 400 を用い、そのボディを書き込みに [ServiceError](https://pkg.go.dev/goa.design/goa/v3@v3.6.0/pkg#ServiceError) エラーを使用します
+（エラーがどのように HTTP レスポンスに変換されるかの詳細については、[エラー処理](/implement/error_handling/) を参照してください）。
 
 
 ### カスタムデコーダーの作成
