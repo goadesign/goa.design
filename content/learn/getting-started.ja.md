@@ -15,7 +15,7 @@ parent = "learn"
 
 以下の説明はあなたのホームディレクトリ配下に新しいプロジェクトを作成します。
 `$HOME` は他の場所に置き換えてもかまいません。
-ただひとつ注意しなければならないのは、`GOPATH` 配下のディレクトリを選択した場合、環境変数 `GO111MODULE` を `on` に設定してモジュールが有効になっていることを確認する必要があるということです。
+このガイドは Go モジュールの使用を想定しています。 (Go 1.13 以降のデフォルト)
 
 ```bash
 cd $HOME
@@ -24,18 +24,23 @@ cd calc
 go mod init calc
 ```
 
-次に、Goa モジュールがインストールされていて最新のものであることを確認します：
+次に Goa をインストールします：
 
 ```bash
-go get -u goa.design/goa/v3
-go get -u goa.design/goa/v3/...
+go install goa.design/goa/v3/cmd/goa@v3
 ```
 
 これから作成するサービスは gRPC を利用するので、 `protoc` と`protoc-gen-go` の両方が必要になります。
 
 * [releases](https://github.com/google/protobuf/releases) から `protoc` バイナリをダウンロードしてください。
 * `protoc` がパスに含まれるか確認してください。
-* Go の protoc プラグインをインストールします： `go get -u github.com/golang/protobuf/protoc-gen-go`
+* Go の protoc プラグインをインストールします：
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
+
 
 ## デザイン
 
@@ -211,7 +216,7 @@ goa example calc/design
 
 ```go
 func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res int, err error) {
-  return p.A + p.B, nil
+  return p.A * p.B, nil
 }
 ```
 
