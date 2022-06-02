@@ -103,7 +103,7 @@ const goaImport = `<!DOCTYPE html>
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/goa{{ .Prefix }} git https://gopkg.in/goadesign/goa.{{ .Version }}">
   <meta name="go-source" content="goa.design/goa{{ .Prefix }} https://github.com/goadesign/goa https://github.com/goadesign/goa/tree/{{ .Version }}/{/dir} https://github.com/goadesign/goa/blob/{{ .Version }}{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/goa/{{ .Path }}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/goa{{ .Path }}">
 </head>
 <body>
 </body>
@@ -117,7 +117,7 @@ const packageImport = `<!DOCTYPE html>
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/{{ .Pkg }} git https://github.com/goadesign/{{ .Pkg }}">
   <meta name="go-source" content="goa.design/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .Pkg }}/blob/master{/dir}/{file}#L{line}">
-  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design/{{ .Pkg }}/{{ .Path }}">
+  <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design{{ .Path }}">
 </head>
 <body>
 </body>
