@@ -7,3 +7,6 @@ content/reference/
 
 # intellij IDE config
 .idea
+
+# VS Code
+.vscode
