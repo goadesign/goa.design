@@ -1,5 +1,5 @@
 +++
-date = "2021-03-18T11:01:06-05:00"
+date = "2022-03-18T11:01:06-05:00"
 title = "OneOf: Union Attributes in Goa"
 description = "Announcing support for union attributes in Goa"
 author = "Raphael Simon"
