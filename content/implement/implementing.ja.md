@@ -190,7 +190,7 @@ func New(
 	decoder func(*http.Request) goahttp.Decoder,
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(err error) goahttp.Statuser,
+	formatter func(context.Context, err error) goahttp.Statuser,
 ) *Server
 ```
 
@@ -410,7 +410,7 @@ func NewMultiplyHandler(
 	decoder func(*http.Request) goahttp.Decoder,
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(err error) goahttp.Statuser,
+	formatter func(context.Context, err error) goahttp.Statuser,
 ) http.Handler
 ```
 

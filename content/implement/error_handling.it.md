@@ -338,7 +338,7 @@ func New(
         decoder func(*http.Request) goahttp.Decoder,                                                                                                                                          
         encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,                                                                                                                   
         errhandler func(context.Context, http.ResponseWriter, error),                                                                                                                         
-        formatter func(err error) goahttp.Statuser,  // Error formatter function
+        formatter func(context.Context, err error) goahttp.Statuser,  // Error formatter function
 // ...
 ```
 
@@ -379,7 +379,7 @@ func (missingFieldError) StatusCode() int { return http.StatusBadRequest }
 
 // customErrorResponse converte err in un errore MissingField error se err corrisponde
 // a un errore di tipo missing required field.
-func customErrorResponse(err error) Statuser {
+func customErrorResponse(ctx context.Context, err error) Statuser {
     if serr, ok := err.(*goa.ServiceError); ok {
         switch serr.Name {
             case "missing_field":
