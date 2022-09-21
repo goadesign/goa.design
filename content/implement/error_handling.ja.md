@@ -308,7 +308,7 @@ func New(
         decoder func(*http.Request) goahttp.Decoder,                                                                                                                                          
         encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,                                                                                                                   
         errhandler func(context.Context, http.ResponseWriter, error),                                                                                                                         
-        formatter func(err error) goahttp.Statuser,  // Error formatter function
+        formatter func(context.Context, ctx context.Context, err error) goahttp.Statuser,  // Error formatter function
 // ...
 ```
 
@@ -343,7 +343,7 @@ func (_ *missingFieldError) StatusCode() int {
 
 // customErrorResponse converts err into a MissingField error if err corresponds
 // to a missing required field validation error.
-func customErrorResponse(err error) Statuser {
+func customErrorResponse(ctx context.Context, err error) Statuser {
     if serr, ok := err.(*goa.ServiceError); ok {
         switch serr.Name {
             case "missing_field":
