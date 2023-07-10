@@ -11,7 +11,7 @@ import (
 	"google.golang.org/appengine/v2"
 )
 
-// allowMethods is a comman-separated list of allowed HTTP methods,
+// allowMethods is a comma-separated list of allowed HTTP methods,
 // suitable for Allow or CORS allow-methods header.
 var allowMethods = "GET, HEAD, OPTIONS"
 

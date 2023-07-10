@@ -29,6 +29,8 @@ func main() {
 	http.HandleFunc("/model/", servePackage("model"))
 	http.HandleFunc("/clue", servePackage("clue"))
 	http.HandleFunc("/clue/", servePackage("clue"))
+	http.HandleFunc("/ponos", servePackage("ponos"))
+	http.HandleFunc("/ponos/", servePackage("ponos"))
 	appengine.Main()
 }
 
