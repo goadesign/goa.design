@@ -37,7 +37,7 @@ The service makes use of gRPC and as such requires both `protoc` and
 
 * Download the `protoc` binary from [releases](https://github.com/google/protobuf/releases).
 * Make sure `protoc` is in your path.
-* Install the protoc plugin for Go: 
+* Install the protoc plugin for Go:
 
 ```bash
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -215,7 +215,6 @@ goa example calc/design
 The `goa example` command creates the following files
 
 ```
-
 ├── calc.go
 ├── cmd
 │   ├── calc
@@ -247,6 +246,32 @@ It builds one directory in `cmd` for each `Server` DSL specified in the
 design. Here we defined a single server `calc` which listens for HTTP
 requests on port 8000.
 
+## Complete file and folder summary
+
+Below is a summary of all the files and folders created when running `goa gen` and `goa example`.
+
+<details>
+    <summary>Files and folders</summary>
+
+| File/Folder  | Description|
+|---|---|
+| `/calc.go`| A placeholder implementation of your service. You can write your actual business logic here. You might think this file belongs in the `/cmd/calc` folder with the API implementation, instead of in the root of the project. But Goa puts the API implementation in the `cmd` folder and all service implementations in the root. |
+| `/cmd`| Contains working placeholder server and CLI code. Think of the `cmd` folder as your `implementation` folder. |
+| `/cmd/calc`| A Go package containing your API that you can compile and run to have a working server.  |
+| `/cmd/calc/main.go`| The server implementation that you can change to your liking. Add your favorite logger and database manager here. |
+| `/cmd/calc-cli`| A Go package containing a CLI tool that you can compile and call from the terminal to make requests to the server above.|
+| `/gen`| Contains all definition and communication code for HTTP, gRPC, and schemas. Think of the `gen` folder as your `definitions` folder.
+| `/gen/calc` | Contains transport-independent service code.  |
+| `/gen/calc/client.go`  | Can be imported by client code to make calls to the server.  |
+| `/gen/calc/endpoints.go` | Exposes the service code to the transport layers.|
+| `/gen/grpc`| Contains the server and client code which connects the protoc-generated gRPC server and client code, along with the logic to encode and decode requests and responses. |
+| `/gen/grpc/calc/pb` | Contains the protocol buffer files that describe the band gRPC service. |
+| `/gen/grpc/calc/pb/goagen_app_calc_grpc.pb.go`| The output of the protoc tool.  |
+| `/gen/grpc/cli`  | Contains the CLI code to build gRPC requests from a terminal. |
+| `/gen/http`   | All HTTP-related transport code, for server and client.          |
+| `/gen/http/openapi3.yaml`  | The OpenAPI version 3 schema (next to .json schemas, and version 1 schemas). |
+</details>
+
 ## Building and Running the Service
 
 The generated server and client code are built and run as follows:
@@ -274,9 +299,43 @@ $ ./calc-cli --url="grpc://localhost:8080" calc multiply --message '{"a": 1, "b"
 2
 ```
 
-## Summary and Next Steps
+## Some useful functions
 
-As you can see Goa accelerates service development by making it possible to write
+You're now able to design, build, and run a simple service. You might want to extend it with some common OpenAPI objects. Below are a few useful Goa functions for this.
+
+### Meta
+If you can't find a function in the Goa documentation that corresponds to an OpenAPI field you are expecting, you can probably add it with the [`Meta`](https://pkg.go.dev/goa.design/goa/dsl#Meta) function. `Meta` will add a field and value to any object.
+
+For example, here's how you can change the default `operationId` value for a method, which is normally `serviceName#methodPath`:
+
+```go
+Method("multiply", func() {
+  Meta("openapi:operationId", "numbers#crunch")
+```
+
+### Tag
+
+The [`Tag`](https://pkg.go.dev/goa.design/goa/dsl#Tag) function in Goa has a different meaning to in OpenAPI, so you need to use the `Meta` function again, in the `HTTP` section of a method.
+
+```go
+var _ = Service("calc", func() {
+	Method("multiply", func() {
+		HTTP(func() {
+			Meta("openapi:tag:Number operations")
+```
+
+### Extensions
+
+OpenAPI supports fields that are not in the specification. These [extensions](https://swagger.io/docs/specification/openapi-extensions/) allow you to add custom data to your schema. They start with `x-`.
+
+```go
+Method("multiply", func() {
+  Meta("openapi:extension:x-synonym", "times")
+```
+
+## Summary
+
+As you can see, Goa accelerates service development by making it possible to write
 the single source of truth from which server and client code as well as
 documentation is automatically generated. The ability to focus on API design
 enables a robust and scalable development process where teams can review and
@@ -285,9 +344,18 @@ the generated code takes care of all the laborious work involved in writing the
 marshaling and unmarshaling of data including input validation (try calling the
 calc service using a non-integer value for example).
 
-This example only touches on the basics of Goa, the
-<a href="../../design/overview">design overview</a> covers many other aspects. You
-may also want to take a look at the other
-[examples](https://github.com/goadesign/examples). Finally, the DSL package
-[GoDoc](https://godoc.org/goa.design/goa/dsl) includes many code snippets and
-provides a great reference when writing designs.
+## Next Steps
+
+This example only touches on the basics of Goa, the <a href="../../design/overview">design overview</a> covers many other aspects.
+
+You may also want to take a look at the other [examples](https://github.com/goadesign/examples). The DSL package [GoDoc](https://godoc.org/goa.design/goa/dsl) includes many code snippets and provides a great reference when writing designs.
+
+If you need help, use the Go Slack group:
+- Register for the group at https://invite.slack.golangbridge.org.
+- Log in at https://gophers.slack.com.
+- Join the Goa channel to ask questions about the framework.
+
+But one of the fastest ways to find out how to do something, especially when using `Meta`, is to search the test cases, after cloning the [source code](https://github.com/goadesign/goa).
+
+
+
