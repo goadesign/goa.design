@@ -17,4 +17,4 @@ linkcheck:
 	@(hugo serve >/dev/null &); sleep 2 && linkcheck -root http://localhost:1313 && echo No broken links!
 
 serve:
-	@hugo serve --watch
+	@hugo server --bind=0.0.0.0 --watch
