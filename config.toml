@@ -14,13 +14,18 @@ pygmentsoptions = ""
 pygmentsstyle = "friendly"
 pygmentsuseclasses = false
 
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
 [author]
 name = "Raphael Simon and the goa contributors"
 homepage = "https://github.com/goadesign/goa/graphs/contributors"
 
 DefaultContentLanguage = "en"
 
-[languages.en] 
+[languages.en]
 weight = 1
 title = "goa - Design First."
 languageName = "English"
@@ -55,7 +60,7 @@ identifier = "blog"
 url = "/blog/"
 weight = 5
 
-[languages.ja] 
+[languages.ja]
 weight = 2
 title = "goa - はじめにデザインを。"
 languageName = "日本語"
@@ -90,7 +95,7 @@ identifier = "blog"
 url = "/ja/blog/"
 weight = 5
 
-[languages.it] 
+[languages.it]
 weight = 1
 title = "goa - Design First."
 languageName = "Italiano"
