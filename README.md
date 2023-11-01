@@ -16,6 +16,34 @@ Is that typo bugging you? us too! If you want to do something about it:
 the page should refresh itself each time you save a content page). Once `make` complete simply open
 a browser to [http://localhost:1313](http://localhost:1313) and browse to the page you are editing.
 
+### Run the documentation using Docker without having to install Go
+
+Run in a terminal:
+
+```bash
+cd goa.design;
+docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -it golang:1.21.2 bash;
+# in the container:
+cd /go/src/app;
+make;
+```
+
+To run the container in the future:
+
+```bash
+docker start goadocs;
+docker exec -it goadocs bash;
+cd /go/src/app;
+```
+
+To remove the container:
+
+```bash
+docker stop goadocs;
+docker rm goadocs;
+docker rmi golang:1.21.2;
+```
+
 ## Translations
 
 Translations are kept under the `content` directory. Each language has its own file extension of
