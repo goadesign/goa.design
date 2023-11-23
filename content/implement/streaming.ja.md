@@ -15,7 +15,7 @@ Goa を使用すると、エンドポイントがペイロードを受信して�
 
 ## デザイン
 
-[StreamingResult DSL](https://godoc.org/goa.design/goa/dsl#StreamingResult) は、結果のシーケンスをストリーミングするエンドポイントを設定するメソッドで定義できます。
+[StreamingResult DSL](https://godoc.org/goa.design/goa/v3/dsl#StreamingResult) は、結果のシーケンスをストリーミングするエンドポイントを設定するメソッドで定義できます。
 `StreamingResult` DSL は `Result` DSL と似た構文を持ちます。
 `StreamingResult` と `Result` は相互に排他的です：指定された `Method` 式で使えるのはそのうちの1つだけです。
 

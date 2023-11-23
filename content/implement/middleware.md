@@ -7,7 +7,7 @@ name = "Middleware"
 parent = "implement"
 +++
 
-A [middleware](https://godoc.org/goa.design/goa/middleware) consists of a function
+A [middleware](https://godoc.org/goa.design/goa/v3/middleware) consists of a function
 that accepts and returns a endpoint or a transport specific handler.
 
 ## Endpoint Middlewares
@@ -107,7 +107,7 @@ server. This method applies the middleware to all the server handlers.
 Alternatively the middleware may be applied to a specific server handler
 similarly to how endpoint middlewares may be applied to a specific endpoint.
 HTTP middlewares may also be mounted directly on the
-[goa Muxer](https://godoc.org/goa.design/goa/http#Muxer) to execute the
+[goa Muxer](https://godoc.org/goa.design/goa/v3/http#Muxer) to execute the
 middleware on all requests independently of any handler.
 
 ```go
@@ -134,13 +134,13 @@ func main() {
 
 Goa has implementations for the following HTTP middlewares:
 
-* [**Logging**](https://godoc.org/goa.design/goa/http/middleware#Log) server
+* [**Logging**](https://godoc.org/goa.design/goa/v3/http/middleware#Log) server
   middleware.
-* [**Request ID**](https://godoc.org/goa.design/goa/http/middleware#RequestID)
+* [**Request ID**](https://godoc.org/goa.design/goa/v3/http/middleware#RequestID)
   server middleware.
-* **Tracing** middleware for [server](https://godoc.org/goa.design/goa/http/middleware#Trace)
-  and [client](https://godoc.org/goa.design/goa/http/middleware#WrapDoer)
-* [**AWS X-Ray**](https://godoc.org/goa.design/goa/http/middleware/xray)
+* **Tracing** middleware for [server](https://godoc.org/goa.design/goa/v3/http/middleware#Trace)
+  and [client](https://godoc.org/goa.design/goa/v3/http/middleware#WrapDoer)
+* [**AWS X-Ray**](https://godoc.org/goa.design/goa/v3/http/middleware/xray)
   middleware for server and client.
 
 ### gRPC Middleware
@@ -157,18 +157,18 @@ for streaming endpoints.
 
 Goa implements the following gRPC middlewares:
 
-* **Logging** server middleware for [unary](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerLog)
-  and [streaming](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerLog)
+* **Logging** server middleware for [unary](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryServerLog)
+  and [streaming](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamServerLog)
   endpoints.
-* **Request ID** server middleware for [unary](https://godoc.org/goa.design/goa/grpc/middleware#UnaryRequestID)
-  and [streaming](https://godoc.org/goa.design/goa/grpc/middleware#StreamRequestID)
+* **Request ID** server middleware for [unary](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryRequestID)
+  and [streaming](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamRequestID)
   endpoints.
-* [**Stream Canceler**](https://godoc.org/goa.design/goa/grpc/middleware#StreamCanceler)
+* [**Stream Canceler**](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamCanceler)
   server middleware.
-* **Tracing** middleware for [unary server](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerTrace)
-  and [client](https://godoc.org/goa.design/goa/grpc/middleware#UnaryClientTrace)
-  and [streaming server](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerTrace) and [client](https://godoc.org/goa.design/goa/grpc/middleware#StreamClientTrace).
-* [**AWS X-Ray**](https://godoc.org/goa.design/goa/grpc/middleware/xray)
+* **Tracing** middleware for [unary server](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryServerTrace)
+  and [client](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryClientTrace)
+  and [streaming server](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamServerTrace) and [client](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamClientTrace).
+* [**AWS X-Ray**](https://godoc.org/goa.design/goa/v3/grpc/middleware/xray)
   middleware for unary and streaming client and server.
 
 Refer to the [tracing example](https://github.com/goadesign/examples/blob/master/tracing)

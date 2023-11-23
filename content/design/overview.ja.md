@@ -8,12 +8,12 @@ parent = "design"
 +++
 
 以下のセクションでは、goa DSL を使用してサービスを記述する方法について説明し、キーコンセプトの概要を説明します。
-完全なリファレンスは [GoDocs](https://godoc.org/goa.design/goa/dsl) を参照してください。
+完全なリファレンスは [GoDocs](https://godoc.org/goa.design/goa/v3/dsl) を参照してください。
 
 ## API の表現
 
-[API](https://godoc.org/goa.design/goa/dsl#API) 関数は、省略可能なトップレベルの DSL で、名前や説明、バージョン番号のような API の大域のプロパティを列挙します。
-`API` は、異なるサービスセットを公開する可能性がある1つ以上の[サーバー](https://godoc.org/goa.design/goa/dsl#Server)を定義できます。
+[API](https://godoc.org/goa.design/goa/v3/dsl#API) 関数は、省略可能なトップレベルの DSL で、名前や説明、バージョン番号のような API の大域のプロパティを列挙します。
+`API` は、異なるサービスセットを公開する可能性がある1つ以上の[サーバー](https://godoc.org/goa.design/goa/v3/dsl#Server)を定義できます。
 単一のサービスは、任意の番号（または番号なし）のサーバーによって公開されるでしょう。
 もし `Server` が省略されていれば、デザインで定義される全てのサービスを公開する単一のサーバーが自動的に定義されます。
 `Server` の表現は、コマンドライン クライアントや OpenAPI の仕様を生成するときに使用されます。
@@ -59,7 +59,7 @@ var _ = API("calc", func() {
 
 ## Service の表現
 
-[Service](https://godoc.org/goa.design/goa/dsl#Service) 関数はメソッドのグループを定義します。
+[Service](https://godoc.org/goa.design/goa/v3/dsl#Service) 関数はメソッドのグループを定義します。
 これは、REST のリソースか、gRPC の [サービス宣言](https://grpc.io/docs/guides/concepts.html#service-definition) に対応します。 
 サービスはすべてのサービスメソッドに共通のエラーレスポンスを定義することができます。
 エラー定義に関する追加情報については、[エラー処理](/design/handling_errors/) を参照してください。
@@ -109,13 +109,13 @@ var _ = Service("calc", func() {
 
 ## Method の表現
 
-サービスメソッドは [Method](https://godoc.org/goa.design/goa/dsl#Method) を用いて記述されます。
+サービスメソッドは [Method](https://godoc.org/goa.design/goa/v3/dsl#Method) を用いて記述されます。
 この関数はメソッドペイロード（入力）と結果（出力）の型を定義します。
 任意の数のエラーレスポンスを列挙することもあります。
 エラーレスポンスは名前と型があります。型はオプションです。
 ペイロードまたは結果の型を省略すると、組み込み型 `Empty` を使用した場合と同じ効果があります。
 `Empty` は HTTP では空のボディ、gRPC では `Empty` メッセージに対応します。
-エラータイプを省略すると、デフォルトのエラータイプ [ErrorResult](https://godoc.org/goa.design/goa/expr#ErrorResult) を使用した場合と同じ効果があります。
+エラータイプを省略すると、デフォルトのエラータイプ [ErrorResult](https://godoc.org/goa.design/goa/v3/expr#ErrorResult) を使用した場合と同じ効果があります。
 
 ```go
 Method("divide", func() {
@@ -151,7 +151,7 @@ Method("divide", func() {
 ### gRPC の表現
 
 
-[gRPC](https://godoc.org/goa.design/goa/dsl#GRPC) 関数は、ペイロードや結果型のアトリビュートから gRPC メッセージとメタデータへのマッピングを定義します。 
+[gRPC](https://godoc.org/goa.design/goa/v3/dsl#GRPC) 関数は、ペイロードや結果型のアトリビュートから gRPC メッセージとメタデータへのマッピングを定義します。 
 
 ```go
     Method("update", func() {
@@ -171,7 +171,7 @@ Method("divide", func() {
 
 ### HTTP の表現
 
-[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) 関数は、
+[HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) 関数は、
 ペイロードや結果型のアトリビュートから HTTP リクエストパスとクエリー文字列の値、
 および HTTP リクエストやレスポンスボディへのマッピングを定義します。
 `HTTP` 関数は、リクエストパスやレスポンス HTTP ステータスコードなど、他の HTTP 固有のプロパティも定義します。
@@ -304,8 +304,8 @@ Goaは、プリミティブ型、配列、マップ、およびオブジェク�
  \* - 非対応
 
 
-**ユーザー定義型**は [Type](https://godoc.org/goa.design/goa/dsl#Type) または
-[ResultType](https://godoc.org/goa.design/goa/dsl#ResultType) を使用して Goa で定義できます。
+**ユーザー定義型**は [Type](https://godoc.org/goa.design/goa/v3/dsl#Type) または
+[ResultType](https://godoc.org/goa.design/goa/v3/dsl#ResultType) を使用して Goa で定義できます。
 ResultType は （Typeとは違って）ビューのセットも定義する型です。
 各ビューは、結果型のインスタンスを Marshal するときにレンダリングされるアトリビュート（フィールド）を列挙します。
 たとえば、HTTP API は、エンティティのコレクションを列挙するエンドポイントと、特定のエンティティを取得するエンドポイントを定義できます。
@@ -314,7 +314,7 @@ ResultType は （Typeとは違って）ビューのセットも定義する型�
 ビューは結果型のレンダリングにのみ適用されるため、メソッドペイロードでは意味がないことに注意してください。
 型はペイロードと結果の両方で使用できますが、ResultType は結果でのみ使用する必要があります。
 
-**マップ** は [MapOf](https://godoc.org/goa.design/goa/dsl#MapOf) で定義できます. 
+**マップ** は [MapOf](https://godoc.org/goa.design/goa/v3/dsl#MapOf) で定義できます. 
 構文は `MapOf(<KeyType>, <ElemType>)` の形式です。ここで、 `<KeyType>` は
 基本型、配列、ユーザー型で、`<ElemType>` は基本型、配列、ユーザー型もしくはマップが利用できます。
 マップ型は HTTP トランスポートでは、Go の `map` として、
@@ -324,8 +324,8 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 
 
 **配列** は2つの方法で定義できます：
-* 任意の型を受け付け、型を返す [ArrayOf](https://godoc.org/goa.design/goa/dsl#ArrayOf)
-* 結果型のみを受け付け、結果型を返す [CollectionOf](https://godoc.org/goa/design/goa/dsl#CollectionOf)
+* 任意の型を受け付け、型を返す [ArrayOf](https://godoc.org/goa.design/goa/v3/dsl#ArrayOf)
+* 結果型のみを受け付け、結果型を返す [CollectionOf](https://godoc.org/goa.design/goa/v3/dsl#CollectionOf)
 
 `CollectionOf` によって返される結果型には、引数として指定された結果型とおなじビューが含まれます。
 各ビューは、各要素が対応する要素のビューによって投影された配列を単純にレンダリングします。
@@ -338,15 +338,15 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 ### ペイロードからリクエストへのマッピング
 
 
-[Payload](https://godoc.org/goa.design/goa/dsl#Payload) 関数は、
+[Payload](https://godoc.org/goa.design/goa/v3/dsl#Payload) 関数は、
 サービスメソッドの引数として指定されたデータの形状を記述します。
 `HTTP` および `GRPC` 関数は、受信リクエストからペイロードを構築する方法（サーバー側）と、ペイロードからリクエストを構築する方法（クライアント側）を定義します。
 
 **HTTP** の場合：
 
-* [Param](https://godoc.org/goa.design/goa/dsl#Param) 関数はパスまたはクエリ文字列パラメータからロードされる値を定義します。
-* [Header](https://godoc.org/goa.design/goa/dsl#Header) 関数は HTTP ヘッダからロードされる値を定義します。
-* [Body](https://godoc.org/goa.design/goa/dsl#Body) 関数はリクエストボディからロードされる値を定義します。
+* [Param](https://godoc.org/goa.design/goa/v3/dsl#Param) 関数はパスまたはクエリ文字列パラメータからロードされる値を定義します。
+* [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) 関数は HTTP ヘッダからロードされる値を定義します。
+* [Body](https://godoc.org/goa.design/goa/v3/dsl#Body) 関数はリクエストボディからロードされる値を定義します。
 
 デフォルトでは、ペイロードアトリビュートは HTTP リクエストボディにマップされます。
 ペイロードの型が基本型、配列型、マップ型のとき、次のような制限が適用されます：
@@ -358,8 +358,8 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 
 **gRPC** の場合：
 
-* [Message](https://godoc.org/goa.design/goa/dsl#Message) 関数は gRPC メッセージからロードされた値を定義します。
-* [Metadata](https://godoc.org/goa.design/goa/dsl#Metadata) 関数は gRPC リクエスト[メタデータ](https://grpc.io/docs/guides/concepts.html#metadata)からロードされた値を定義します。
+* [Message](https://godoc.org/goa.design/goa/v3/dsl#Message) 関数は gRPC メッセージからロードされた値を定義します。
+* [Metadata](https://godoc.org/goa.design/goa/v3/dsl#Metadata) 関数は gRPC リクエスト[メタデータ](https://grpc.io/docs/guides/concepts.html#metadata)からロードされた値を定義します。
 
 デフォルトでは、ペイロードアトリビュートは gRPC メッセージにマッピングされます。 
 ペイロードの型が基本型、配列、マップの場合、次のような制限が適用されます：
@@ -368,15 +368,15 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 
 ### 結果からレスポンスへのマッピング
 
-[Result](https://godoc.org/goa.design/goa/dsl#Result) 関数は
+[Result](https://godoc.org/goa.design/goa/v3/dsl#Result) 関数は
 サービスメソッドの返値となるデータの形状を記述します。
  `HTTP` および `GRPC` 関数は、結果型からのレスポンスの構築方法（サーバー側）と、
  レスポンスからから結果の構築方法（クライアント側）を定義します。
 
 **HTTP** の場合：
 
-* [Header](https://godoc.org/goa.design/goa/dsl#Header) 関数は HTTPヘッダからロードされる値を定義します。
-* [Body](https://godoc.org/goa.design/goa/dsl#Body) 関数はレスポンスボディからロードされる値を定義します。
+* [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) 関数は HTTPヘッダからロードされる値を定義します。
+* [Body](https://godoc.org/goa.design/goa/v3/dsl#Body) 関数はレスポンスボディからロードされる値を定義します。
 
 デフォルトでは、結果のアトリビュートは HTTP レスポンスボディにマッピングされます。
 結果の型が基本型、配列、マップの場合、次のような制限が適用されます：
@@ -386,9 +386,9 @@ gRPC トランスポートでは、プロトコルバッファの [map](https://
 
 **gRPC** の場合：
 
-* [Message](https://godoc.org/goa.design/goa/dsl#Message) 関数は gRPC メッセージからロードされる値を定義します。
-* [Headers](https://godoc.org/goa.design/goa/dsl#Headers) 関数は gRPC ヘッダーメタデータからロードされる値を定義します。
-* [Trailers](https://godoc.org/goa.design/goa/dsl#Trailers) 関数は gRPC トレーラーメタデータからロードされる値を定義します。
+* [Message](https://godoc.org/goa.design/goa/v3/dsl#Message) 関数は gRPC メッセージからロードされる値を定義します。
+* [Headers](https://godoc.org/goa.design/goa/v3/dsl#Headers) 関数は gRPC ヘッダーメタデータからロードされる値を定義します。
+* [Trailers](https://godoc.org/goa.design/goa/v3/dsl#Trailers) 関数は gRPC トレーラーメタデータからロードされる値を定義します。
 
 デフォルトでは、結果のアトリビュートは gRPC メッセージにマッピングされます。 
 結果の型が基本型、配列、マップの場合、次のような制限が適用されます：

@@ -18,7 +18,7 @@ cosa procuce il generatore, sia di transport-indipendent che di transport-specif
 
 ## Progettazione
 
-Il DSL [StreamingResult](https://godoc.org/goa.design/goa/dsl#StreamingResult)
+Il DSL [StreamingResult](https://godoc.org/goa.design/goa/v3/dsl#StreamingResult)
 può essere definito su un metodo per impostare un endpoint che produce sequenze di 
 risultati. Il DSL `StreamingResult` ha una sintassi simile a quella del DSL `Result`.
 `StreamingResult` e `Result` sono mutualmente esclusivi: solo uno dei due può essere 

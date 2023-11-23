@@ -8,7 +8,7 @@ parent = "implement"
 +++
 
 
-[ミドルウェア](https://godoc.org/goa.design/goa/middleware) は、エンドポイントまたはトランスポート固有のハンドラを受け付けて返す関数で構成されます。
+[ミドルウェア](https://godoc.org/goa.design/goa/v3/middleware) は、エンドポイントまたはトランスポート固有のハンドラを受け付けて返す関数で構成されます。
 
 ## ミドルウェアのエンドポイント
 
@@ -102,7 +102,7 @@ HTTP ミドルウェアは、HTTPサーバー上に生成された `Use` メソ�
 このメソッドは、ミドルウェアをすべてのサーバーハンドラに適用します。
 エンドポイント・ミドルウェアを特定のエンドポイントに適用する方法と同様に、
 ミドルウェアを特定のサーバーハンドラに適用することもできます。
-HTTP ミドルウェアを [goa Muxer](https://godoc.org/goa.design/goa/http#Muxer) に直接マウントして、
+HTTP ミドルウェアを [goa Muxer](https://godoc.org/goa.design/goa/v3/http#Muxer) に直接マウントして、
 ハンドラとは無関係にすべてのリクエストでミドルウェアを実行することもできます。
 
 ```go
@@ -128,10 +128,10 @@ func main() {
 ```
 Goaには、次のような HTTP ミドルウェアの実装があります。
 
-* [**ロギング**](https://godoc.org/goa.design/goa/http/middleware#Log) サーバー ミドルウエア。
-* [**リクエスト ID**](https://godoc.org/goa.design/goa/http/middleware#RequestID) サーバー ミドルウェア。
-* [サーバー](https://godoc.org/goa.design/goa/http/middleware#Trace)および[クライアント](https://godoc.org/goa.design/goa/http/middleware#WrapDoer)用の **トラッキング** ミドルウエア。
-* サーバーおよびクライアント用の [**AWS X-Ray**](https://godoc.org/goa.design/goa/http/middleware/xray) ミドルウェア。
+* [**ロギング**](https://godoc.org/goa.design/goa/v3/http/middleware#Log) サーバー ミドルウエア。
+* [**リクエスト ID**](https://godoc.org/goa.design/goa/v3/http/middleware#RequestID) サーバー ミドルウェア。
+* [サーバー](https://godoc.org/goa.design/goa/v3/http/middleware#Trace)および[クライアント](https://godoc.org/goa.design/goa/v3/http/middleware#WrapDoer)用の **トラッキング** ミドルウエア。
+* サーバーおよびクライアント用の [**AWS X-Ray**](https://godoc.org/goa.design/goa/v3/http/middleware/xray) ミドルウェア。
 
 ### gRPC ミドルウェア
 
@@ -144,15 +144,15 @@ gRPC ミドルウェアは gRPC トランスポート固有であり、サーバ
 
 Goa は次の gRPC ミドルウェアを実装しています：
 
-* [単項](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerLog)および[ストリーミング](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerLog)エンドポイント用の **ロギング** サーバー ミドルウエア。
+* [単項](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryServerLog)および[ストリーミング](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamServerLog)エンドポイント用の **ロギング** サーバー ミドルウエア。
 
-* [単項](https://godoc.org/goa.design/goa/grpc/middleware#UnaryRequestID)および[ストリーミング](https://godoc.org/goa.design/goa/grpc/middleware#StreamRequestID)エンドポイント用の **リクエスト ID** サーバー ミドルウェア
+* [単項](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryRequestID)および[ストリーミング](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamRequestID)エンドポイント用の **リクエスト ID** サーバー ミドルウェア
 
-* [**ストリーム キャンセラー**](https://godoc.org/goa.design/goa/grpc/middleware#StreamCanceler)サーバー ミドルウェア。
-* [単項サーバー](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerTrace)および
-  [クライアント](https://godoc.org/goa.design/goa/grpc/middleware#UnaryClientTrace)、および
-  [ストリーミング サーバー](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerTrace)および
-  [クライアント](https://godoc.org/goa.design/goa/grpc/middleware#StreamClientTrace)用の **トレーシング**ミドルウエア。  
-* 単項およびストリーミングのクライアント・サーバー用の [**AWS X-Ray**](https://godoc.org/goa.design/goa/grpc/middleware/xray) ミドルウエア。
+* [**ストリーム キャンセラー**](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamCanceler)サーバー ミドルウェア。
+* [単項サーバー](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryServerTrace)および
+  [クライアント](https://godoc.org/goa.design/goa/v3/grpc/middleware#UnaryClientTrace)、および
+  [ストリーミング サーバー](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamServerTrace)および
+  [クライアント](https://godoc.org/goa.design/goa/v3/grpc/middleware#StreamClientTrace)用の **トレーシング**ミドルウエア。  
+* 単項およびストリーミングのクライアント・サーバー用の [**AWS X-Ray**](https://godoc.org/goa.design/goa/v3/grpc/middleware/xray) ミドルウエア。
 
 gRPC ミドルウェアを gRPC エンドポイントに適用する方法については、[トレースの例](https://github.com/goadesign/examples/blob/master/tracing)を参照してください。

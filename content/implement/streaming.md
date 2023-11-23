@@ -18,7 +18,7 @@ generator produces for the transport-independent and transport-dependent code.
 
 ## Design
 
-The [StreamingResult DSL](https://godoc.org/goa.design/goa/dsl#StreamingResult)
+The [StreamingResult DSL](https://godoc.org/goa.design/goa/v3/dsl#StreamingResult)
 can be defined on a method to setup an endpoint that streams a sequence of
 results. `StreamingResult` DSL has a similar syntax to the `Result` DSL.
 `StreamingResult` and `Result` are mutually exclusive: only one of then may be

@@ -13,8 +13,8 @@ parent = "implement"
 Goa supporta una strategia di encoding e decoding estremamente flessibile, che rende possibile
 l'associazione di encoder e decoder arbitrari con le richieste e risposte HTTP date attraverso
 diversi content types. Un encoder è una struct che implementa l'interfaccia 
-[Encoder](https://godoc.org/goa.design/goa/http#Encoder) mentre un decoder implementa
-[Decoder](https://godoc.org/goa.design/goa/http#Decoder).
+[Encoder](https://godoc.org/goa.design/goa/v3/http#Encoder) mentre un decoder implementa
+[Decoder](https://godoc.org/goa.design/goa/v3/http#Decoder).
 
 I costruttori del server generati accettano dei costruttori di encoder e decoder come argomento,
 rendendo possibile implementazioni libere. Goa ha anche degli encoder e decoder di default, che
@@ -41,8 +41,8 @@ ritorna un encoder.
 ### Costruttori di Default per Encoder e Decoder
 
 Il package fornito da Goa fornisce dei costruttori di default per HTTP
-[encoder](https://godoc.org/goa.design/goa/http#RequestEncoder) e
-[decoder](https://godoc.org/goa.design/goa/http#ResponseEncoder) che possono codificare e 
+[encoder](https://godoc.org/goa.design/goa/v3/http#RequestEncoder) e
+[decoder](https://godoc.org/goa.design/goa/v3/http#ResponseEncoder) che possono codificare e 
 decodificare JSON, XML e gob. 
 Ecco un esempio di come il generatore usa questi costruttori:
 
@@ -109,15 +109,15 @@ func(ctx context.Context, w http.ResponseWriter) (goahttp.Encoder, error)
 ```
 
 Il context dato quando Goa richiama il costruttore contiene sia l'header `Content-Type` che
-`Accept` rispettivamente sotto le chiavi[ContentTypeKey](https://godoc.org/goa.design/goa/http#pkg-constants)
+`Accept` rispettivamente sotto le chiavi[ContentTypeKey](https://godoc.org/goa.design/goa/v3/http#pkg-constants)
 e `AcceptTypeKey`. 
 Questo rende possibile al costruttore dell'encoder di implementare forme differenti di negoziazione che 
 controllano questi 2 valori e restituiscono il miglior encoder possibile.
 
 ## Impostare un Content Type di default
 
-Il DSL [Response](https://godoc.org/goa.design/goa/dsl#Response) permette di specificare un
-content type usando [ContentType](https://godoc.org/goa.design/goa/dsl#ContentType). Quando
+Il DSL [Response](https://godoc.org/goa.design/goa/v3/dsl#Response) permette di specificare un
+content type usando [ContentType](https://godoc.org/goa.design/goa/v3/dsl#ContentType). Quando
 viene impostato, il valore sovrascrive ogni content type specificato nei request headers. 
 Nota che questo NON sovrascrive alcun valore specificato nell'header `Accept`.
 Questo permette di controllare il content type anche quando tale header è assente.

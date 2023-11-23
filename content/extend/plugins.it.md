@@ -26,7 +26,7 @@ I plugin possono essere utilizzati per fare le cose più disparate:
   dai generatori di Goa.
 
 * Ogni plugin può avere una
-  [GenerateFunc](https://godoc.org/goa.design/goa/codegen#GenerateFunc) per modificare
+  [GenerateFunc](https://godoc.org/goa.design/goa/v3/codegen#GenerateFunc) per modificare
   i file generati da Goa o generare nuovi file da aggiungere agli artefatti finali.
 
 ```go
@@ -34,7 +34,7 @@ type GenerateFunc func(genpkg string, roots []eval.Root, files []*File) ([]*File
 ```
 
 * Ogni plugin può avere una
-  [PrepareFunc](https://godoc.org/goa.design/goa/codegen#PrepareFunc), per alterare
+  [PrepareFunc](https://godoc.org/goa.design/goa/v3/codegen#PrepareFunc), per alterare
   il design prima della generazione del codice.
 
 ```go
@@ -42,10 +42,10 @@ type PrepareFunc func(genpkg string, roots []eval.Root) error
 ```
 
 I plugin si auto-registrano usando una fra le funzioni
-[RegisterPlugin](https://godoc.org/goa.design/goa/codegen#RegisterPlugin),
-[RegisterPluginFirst](https://godoc.org/goa.design/goa/codegen#RegisterPluginFirst),
+[RegisterPlugin](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin),
+[RegisterPluginFirst](https://godoc.org/goa.design/goa/v3/codegen#RegisterPluginFirst),
 oppure
-[RegisterPluginLast](https://godoc.org/goa.design/goa/codegen#RegisterPlugin).
+[RegisterPluginLast](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin).
 
 ## CORS Plugin
 

@@ -24,7 +24,7 @@ Goa プラグインのパブリックセットが含まれています。
 * プラグインは、既存の Goa DSL とともに使用される独自の DSL を追加できます。
   プラグイン DSL は、まったく異なるコードを生成したり、Goa コードジェネレーターによって生成された既存のコードを変更したりできます。
 
-* プラグインは、[GenerateFunc](https://godoc.org/goa.design/goa/codegen#GenerateFunc) を提供して、
+* プラグインは、[GenerateFunc](https://godoc.org/goa.design/goa/v3/codegen#GenerateFunc) を提供して、
   Goa が生成したファイルを変更したり、新しいファイルを生成して最終的な生成物として返したりできます。
 
 ```go
@@ -32,17 +32,17 @@ type GenerateFunc func(genpkg string, roots []eval.Root, files []*File) ([]*File
 ```
 
 * プラグインは、コードが生成される前にデザインを変更するために、
-  [PrepareFunc](https://godoc.org/goa.design/goa/codegen#PrepareFunc) を提供する場合があります。
+  [PrepareFunc](https://godoc.org/goa.design/goa/v3/codegen#PrepareFunc) を提供する場合があります。
 
 ```go
 type PrepareFunc func(genpkg string, roots []eval.Root) error
 ```
 
 プラグインは、
-[RegisterPlugin](https://godoc.org/goa.design/goa/codegen#RegisterPlugin) 関数、
-[RegisterPluginFirst](https://godoc.org/goa.design/goa/codegen#RegisterPluginFirst) 関数、
+[RegisterPlugin](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin) 関数、
+[RegisterPluginFirst](https://godoc.org/goa.design/goa/v3/codegen#RegisterPluginFirst) 関数、
 もしくは
-[RegisterPluginLast](https://godoc.org/goa.design/goa/codegen#RegisterPlugin) 関数
+[RegisterPluginLast](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin) 関数
 を使用してプラグイン自身を登録します。
 
 ## CORS プラグイン

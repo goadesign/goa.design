@@ -49,29 +49,29 @@ Goa v3 では、下層のトランスポートとは無関係にサービス API
 トランスポート固有の DSL は、入力タイプが HTTP リクエストまたは入力される gRPC メッセージからどのように組み立てられているか、
 また、出力タイプが HTTP レスポンスまたは出力される gRPC メッセージへどのように書き込まれるべきかを記述します。
 
-> 注： v3 DSL は [godoc](https://godoc.org/goa.design/goa/dsl) に大々的に文書化されています。
+> 注： v3 DSL は [godoc](https://godoc.org/goa.design/goa/v3/dsl) に大々的に文書化されています。
 
 ### 型
 
 型の記述に利用される DSL は、いくつかの違いはありますが、大部分は同じままです：
 
-* `MediaType` は [ResultType](https://godoc.org/goa.design/goa/dsl#ResultType) になり、この DSL を利用して記述された型がメソッドの結果として利用されることが明確になりました。
-   [Type](https://godoc.org/goa.design/goa/dsl#Type) DSL によって定義された標準の型も結果の型として使用できることに注意してください。 
+* `MediaType` は [ResultType](https://godoc.org/goa.design/goa/v3/dsl#ResultType) になり、この DSL を利用して記述された型がメソッドの結果として利用されることが明確になりました。
+   [Type](https://godoc.org/goa.design/goa/v3/dsl#Type) DSL によって定義された標準の型も結果の型として使用できることに注意してください。 
 * 結果の型はビューの定義を省略することがあります。結果の型がビューを定義していない場合は、すべての結果の型の属性をリストしたデフォルトビューが定義されます。
-* 新しい [Field](https://godoc.org/goa.design/goa/dsl#Field) DSL は [Attribute](https://godoc.org/goa.design/goa/dsl#Attribute) と同等ですが、
+* 新しい [Field](https://godoc.org/goa.design/goa/v3/dsl#Field) DSL は [Attribute](https://godoc.org/goa.design/goa/v3/dsl#Attribute) と同等ですが、
   gRPC のフィールドナンバーに対応するインデックスを指定することが可能です。
-* `HashOf` は [MapOf](https://godoc.org/goa.design/goa/dsl#MapOf) になりました。Go 開発者にはより直感的になりました。
+* `HashOf` は [MapOf](https://godoc.org/goa.design/goa/v3/dsl#MapOf) になりました。Go 開発者にはより直感的になりました。
 * データのバイナリレイアウトをより正確に記述するために、新しい基本型が導入されました：
-  [Int](https://godoc.org/goa.design/goa/dsl#Int),
-  [Int32](https://godoc.org/goa.design/goa/dsl#Int32),
-  [Int64](https://godoc.org/goa.design/goa/dsl#Int64),
-  [UInt](https://godoc.org/goa.design/goa/dsl#UInt),
-  [UInt32](https://godoc.org/goa.design/goa/dsl#UInt32),
-  [UInt64](https://godoc.org/goa.design/goa/dsl#UInt64),
-  [Float32](https://godoc.org/goa.design/goa/dsl#Float32),
-  [Float64](https://godoc.org/goa.design/goa/dsl#Float64),
-  [Bytes](https://godoc.org/goa.design/goa/dsl#Bytes)
-* [String](https://godoc.org/goa.design/goa/dsl#String) と対応する [Format](https://godoc.org/goa.design/goa/dsl#Format) バリデーションがあるので、
+  [Int](https://godoc.org/goa.design/goa/v3/dsl#Int),
+  [Int32](https://godoc.org/goa.design/goa/v3/dsl#Int32),
+  [Int64](https://godoc.org/goa.design/goa/v3/dsl#Int64),
+  [UInt](https://godoc.org/goa.design/goa/v3/dsl#UInt),
+  [UInt32](https://godoc.org/goa.design/goa/v3/dsl#UInt32),
+  [UInt64](https://godoc.org/goa.design/goa/v3/dsl#UInt64),
+  [Float32](https://godoc.org/goa.design/goa/v3/dsl#Float32),
+  [Float64](https://godoc.org/goa.design/goa/v3/dsl#Float64),
+  [Bytes](https://godoc.org/goa.design/goa/v3/dsl#Bytes)
+* [String](https://godoc.org/goa.design/goa/v3/dsl#String) と対応する [Format](https://godoc.org/goa.design/goa/v3/dsl#Format) バリデーションがあるので、
   `DateTime` と `UUID` は廃止されました。
 
 #### 例
@@ -121,10 +121,10 @@ var Person = ResultType("application/vnd.goa.person", func() {
 
 ### API
 
-[API](https://godoc.org/goa.design/goa/dsl#API) DSL に次のような変更が加えられました：
+[API](https://godoc.org/goa.design/goa/v3/dsl#API) DSL に次のような変更が加えられました：
 
-* `Host`, `Scheme` ならびに `BasePath` DSL は [Server](https://godoc.org/goa.design/goa/dsl#Server) に置き換えられます。
-* [Server](https://godoc.org/goa.design/goa/dsl#Server) DSL を使用するとさまざまな環境のサーバプロパティを定義できます。
+* `Host`, `Scheme` ならびに `BasePath` DSL は [Server](https://godoc.org/goa.design/goa/v3/dsl#Server) に置き換えられます。
+* [Server](https://godoc.org/goa.design/goa/v3/dsl#Server) DSL を使用するとさまざまな環境のサーバプロパティを定義できます。
   各サーバは、サーバがホストするサービスをリストして、1つのデザインで複数のサーバーの定義を可能にします。
 * `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/v3/cors)の一部として実装されました。 
 * `ResponseTemplate` と `Trait` は廃止になりました。
@@ -184,14 +184,14 @@ var _ = API("cellar", func() {
 
 ### サービス
 
-`Resource` 関数は [Service](https://godoc.org/goa.design/goa/dsl#Service) になりました。 
+`Resource` 関数は [Service](https://godoc.org/goa.design/goa/v3/dsl#Service) になりました。 
 この DSL は現在、トランスポートに関わらないセクションとトランスポート固有の DSL とで構成されています。
 トランスポートに関わらないセクションはすべてのサービスメソッドによって返される可能性のあるエラーを列挙しています。
 トランスポート固有のセクションは、これらのエラーを HTTP ステータスコードまたは gRPC レスポンスコードにマッピングします。
 
-* `BasePath` は [Path](https://godoc.org/goa.design/goa/dsl#Path) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL に現れます。
-* `CanonicalActionName` は [CanonicalMethod](https://godoc.org/goa.design/goa/dsl#CanonicalMethod) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL に現れます。
-* `Response` は [Error](https://godoc.org/goa.design/goa/dsl#Error) に置き換えられました。
+* `BasePath` は [Path](https://godoc.org/goa.design/goa/v3/dsl#Path) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL に現れます。
+* `CanonicalActionName` は [CanonicalMethod](https://godoc.org/goa.design/goa/v3/dsl#CanonicalMethod) と呼ばれるようになりました。[HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL に現れます。
+* `Response` は [Error](https://godoc.org/goa.design/goa/v3/dsl#Error) に置き換えられました。
 * `Origin` は [CORS プラグイン](https://github.com/goadesign/plugins/tree/v3/cors)の一部として実装されました。 
 * `DefaultMedia` は廃止されました。
 
@@ -231,15 +231,15 @@ v1 のデザイン：
 
 ### メソッド
 
-`Action` 関数は [Method](https://godoc.org/goa.design/goa/dsl#Method) で置き換えられました。 
+`Action` 関数は [Method](https://godoc.org/goa.design/goa/v3/dsl#Method) で置き換えられました。 
 サービスと同様に、DSL はトランスポートに関わらないセクションとトランスポート固有の DSL で構成されます。
 トランスポートに関わらないセクションでは、ペイロードと結果の型、およびサービスレベルでまだ定義されていない、考えられるメソッド固有のすべてのエラーを定義します。
 トランスポート固有の DSL は、ペイロードと結果の型の属性を HTTPヘッダー、ボディなどのトランスポート固有の構造にマッピングします。
 
-* v1 に存在する DSL のほとんどは HTTP 特有のものなので、[HTTP](https://godoc.org/goa.design/goa/dsl#HTTP) DSL に移動しました。
-* [Param](https://godoc.org/goa.design/goa/dsl#Param) と [Header](https://godoc.org/goa.design/goa/dsl#Header) 関数は、
+* v1 に存在する DSL のほとんどは HTTP 特有のものなので、[HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL に移動しました。
+* [Param](https://godoc.org/goa.design/goa/v3/dsl#Param) と [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) 関数は、
   メソッドペイロードや結果の型に対応するの属性の名前を列挙するだけですみます。
-* エラーレスポンスは [Error](https://godoc.org/goa.design/goa/dsl#Error) DSL を利用するようになりました。
+* エラーレスポンスは [Error](https://godoc.org/goa.design/goa/v3/dsl#Error) DSL を利用するようになりました。
 * HTTP パスパラメータはコロンの代わりに中括弧を使って定義されるようになりました： `/foo/:id` の代わりに `/foo/{id}` と記述します。
 
 入力と出力の対応は、

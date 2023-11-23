@@ -106,7 +106,7 @@ Infine, il design espone un file server HTTP che fornisce le specifiche
 
 >Questo esempio copre solo una frazione di cosa Goa può fare. Puoi trovare più esempi
 >nella [repository apposita](https://github.com/goadesign/examples). La
->[documentazione del DSL Goa](https://godoc.org/goa.design/goa/dsl) elenca tutti i DSL
+>[documentazione del DSL Goa](https://godoc.org/goa.design/goa/v3/dsl) elenca tutti i DSL
 >insieme a una loro descrizione e uno o più esempi di utilizzo.
 
 ## Generazione di codice
@@ -235,7 +235,7 @@ func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res i
 }
 ```
 
-Il comando `goa example` usa la [DSL Server](https://godoc.org/goa.design/goa/dsl#Server)
+Il comando `goa example` usa la [DSL Server](https://godoc.org/goa.design/goa/v3/dsl#Server)
 opzionalmente definita nel design per generare codice compilabile per server e client.
 Lo costruisce nella cartella `cmd` per ogni `Server` specificato nel 
 design. Qui abbiamo definito un unico server `calc` che ascolta richieste HTTP sulla porta
@@ -282,5 +282,5 @@ Questo esempio copre solo le basi di Goa, la
 <a href="../../design/overview">Panoramica</a> copre molti altri aspetti. Magari vuoi anche
 dare un'occhiata agli altri [esempi](https://github.com/goadesign/examples). 
 Infine, la
-[GoDoc](https://godoc.org/goa.design/goa/dsl) del package DSL include molti snippet di codice
+[GoDoc](https://godoc.org/goa.design/goa/v3/dsl) del package DSL include molti snippet di codice
 e fornisce un grande riferimento nella progettazione.
