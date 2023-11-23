@@ -12,8 +12,8 @@ parent = "implement"
 
 Goa supports a flexible encoding and decoding strategy that makes it possible to associate arbitrary
 encoders and decoders with given HTTP response and request content types. An encoder is a struct
-that implements the [Encoder](https://godoc.org/goa.design/goa/v3/http#Encoder) interface while a
-decoder implements the [Decoder](https://godoc.org/goa.design/goa/v3/http#Decoder) interface.
+that implements the [Encoder](https://pkg.go.dev/goa.design/goa/v3/http#Encoder) interface while a
+decoder implements the [Decoder](https://pkg.go.dev/goa.design/goa/v3/http#Decoder) interface.
 
 The generated server constructors accept an encoder and a decoder constructor functions as argument
 making it possible to provide arbitrary implementations. Goa comes with default encoders and
@@ -41,8 +41,8 @@ returns an encoder.
 ### Default Encoder and Decoder Constructors
 
 The Goa package provides constructors for a default HTTP
-[encoder](https://godoc.org/goa.design/goa/v3/http#RequestEncoder) and
-[decoder](https://godoc.org/goa.design/goa/v3/http#ResponseEncoder) that can encode and decode JSON,
+[encoder](https://pkg.go.dev/goa.design/goa/v3/http#RequestEncoder) and
+[decoder](https://pkg.go.dev/goa.design/goa/v3/http#ResponseEncoder) that can encode and decode JSON,
 XML and gob. Here is how the default example generator leverages these constructors in the calc
 example:
 
@@ -107,15 +107,15 @@ func(ctx context.Context, w http.ResponseWriter) (goahttp.Encoder, error)
 
 The context given when Goa invokes the constructor function contains both the request `Content-Type`
 and `Accept` header values under the
-[ContentTypeKey](https://godoc.org/goa.design/goa/v3/http#pkg-constants) and `AcceptTypeKey`
+[ContentTypeKey](https://pkg.go.dev/goa.design/goa/v3/http#pkg-constants) and `AcceptTypeKey`
 respectively. This makes it possible for the encoder constructor to implement a form of content type
 negotiation that looks at the values of these headers and return an encoder that is best suited for
 the client.
 
 ## Setting a Default Content Type
 
-The [Response](https://godoc.org/goa.design/goa/v3/dsl#Response) design DSL makes it possible to
-specify a content type using [ContentType](https://godoc.org/goa.design/goa/v3/dsl#ContentType). When
+The [Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) design DSL makes it possible to
+specify a content type using [ContentType](https://pkg.go.dev/goa.design/goa/v3/dsl#ContentType). When
 set the value overrides any content type specified in the request headers. Note that this does NOT
 override any value specified in the `Accept` header. This provides a way to control the content type
 used by the response encoder constructor when the `Accept` header is missing.

@@ -9,14 +9,14 @@ parent = "design"
 
 La seguente sezione descrive come usare il DSL goa per descrivere servizi.
 Essi forniscono una panoramica dei concetti chiave. Revisiona le 
-[GoDocs](https://godoc.org/goa.design/goa/v3/dsl) per una reference completa.
+[GoDocs](https://pkg.go.dev/goa.design/goa/v3/dsl) per una reference completa.
 
 ## L'espressione API
 
-L'espressione [API](https://godoc.org/goa.design/goa/v3/dsl#API) è un DSL di 
+L'espressione [API](https://pkg.go.dev/goa.design/goa/v3/dsl#API) è un DSL di 
 primo livello opzionale che lista le proprietà globali di una API come nome,
 descrizione e numero di versione. `API` può definire uno o più
-[Servers](https://godoc.org/goa.design/goa/v3/dsl#Server), esponendo set differenti
+[Servers](https://pkg.go.dev/goa.design/goa/v3/dsl#Server), esponendo set differenti
 di servizi.
 Un singolo servizio può essere esposto da un qualunque numero (o nessun) server.
 Se `Server` è omesso allora un singolo server di default viene automaticamente
@@ -67,7 +67,7 @@ var _ = API("calc", func() {
 
 ## L'espressione Service
 
-La funzione [Service](https://godoc.org/goa.design/goa/v3/dsl#Service) definisce un
+La funzione [Service](https://pkg.go.dev/goa.design/goa/v3/dsl#Service) definisce un
 gruppo di methods. Questo, a sua volta, si mappa con le risorse REST o con una
 [service declaration](https://grpc.io/docs/guides/concepts.html#service-definition)
 in gRPC. Un servizio può definire risposte di errore comuni a tutti i service methods.
@@ -121,14 +121,14 @@ var _ = Service("calc", func() {
 
 ## L'espressione Method
 
-I service methods sono descritti usando la funzione [Method](https://godoc.org/goa.design/goa/v3/dsl#Method).
+I service methods sono descritti usando la funzione [Method](https://pkg.go.dev/goa.design/goa/v3/dsl#Method).
 Tale funzione definisce il payload (input) e il risultato (output). Può anche
 elencare un numero arbitrario di error values. Un error ha un nome e opzionalmente
 un tipo.
 Omettere il payload o il result ha lo stesso effetto che mapparli usando il 
 tipo built-in `Empty`, il quale mappa su un body vuoto in HTTP e al messaggio
 `Empty` in gRPC.
-Omettere un error type ha lo stesso effetto che usare quello di default [ErrorResult](https://godoc.org/goa.design/goa/v3/expr#ErrorResult).
+Omettere un error type ha lo stesso effetto che usare quello di default [ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#ErrorResult).
 
 ```go
 Method("divide", func() {
@@ -170,7 +170,7 @@ parameters, eccetera.
 
 ### L'espressione gRPC
 
-La funzione [gRPC](https://godoc.org/goa.design/goa/v3/dsl#GRPC) definisce il
+La funzione [gRPC](https://pkg.go.dev/goa.design/goa/v3/dsl#GRPC) definisce il
 mapping fra payload e risultato a messaggio e metadata gRPC.
 
 ```go
@@ -191,7 +191,7 @@ mapping fra payload e risultato a messaggio e metadata gRPC.
 
 ### L'espressione HTTP
 
-La funzione [HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) definisce il 
+La funzione [HTTP](https://pkg.go.dev/goa.design/goa/v3/dsl#HTTP) definisce il 
 mapping fra payload e risultato per tutti i tipi collegati a campi di richieste
 HTTP, ad esempio request path, query string e, ovviamente, il corpo di richiesta
 e risposta. La funzione `HTTP` definisce anche proprietà specifiche per il 
@@ -345,8 +345,8 @@ rappresentazione nei protocolli HTTP e gRPC.
 
 
 **I tipi personalizzati** possono essere definiti in goa usando 
-[Type](https://godoc.org/goa.design/goa/v3/dsl#Type) oppure
-[ResultType](https://godoc.org/goa.design/goa/v3/dsl#ResultType). Un result type è
+[Type](https://pkg.go.dev/goa.design/goa/v3/dsl#Type) oppure
+[ResultType](https://pkg.go.dev/goa.design/goa/v3/dsl#ResultType). Un result type è
 un tipo che definisce anche un set di "viste". Ogni vista elenca gli attributi
 (campi) che devono essere inclusi quando si decodifica un result type usando 
 quella vista.
@@ -359,7 +359,7 @@ Nota che dato che le viste si applicano al solo rendering dei campi usarlo in un
 payload non avrebbe senso: I tipi da mostrare in un payload possono essere usati 
 anche nel result, ma non è vero il viceversa.
 
-Le **Map** possono essere definite con [MapOf](https://godoc.org/goa.design/goa/v3/dsl#MapOf). 
+Le **Map** possono essere definite con [MapOf](https://pkg.go.dev/goa.design/goa/v3/dsl#MapOf). 
 La sintassi è `MapOf(<KeyType>, <ElemType>)` dove `<KeyType>` può essere un tipo primitivo,
 array o tipo personalizzato, mentre `<ElemType>` può anche essere una map. Le Map
 sono reppresentate come Go `map` nel protocollo HTTP e come protocol buffer
@@ -369,9 +369,9 @@ o bytes) come chiavi di una map.
 
 Gli **Array** possono essere definiti in due modi:
 
-* [ArrayOf](https://godoc.org/goa.design/goa/v3/dsl#ArrayOf) che accetta un qualunque tipo
+* [ArrayOf](https://pkg.go.dev/goa.design/goa/v3/dsl#ArrayOf) che accetta un qualunque tipo
   e ritorna un tipo.
-* [CollectionOf](https://godoc.org/goa.design/goa/v3/dsl#CollectionOf) che accetta solamente
+* [CollectionOf](https://pkg.go.dev/goa.design/goa/v3/dsl#CollectionOf) che accetta solamente
   result types e returna un result type.
 
 Il result type ritornato da `CollectionOf` contiene le stesse viste del result 
@@ -385,18 +385,18 @@ a payload e result type che sono transport-indipendent.
 
 ### Payload-to-Request Mapping
 
-La funzione [Payload](https://godoc.org/goa.design/goa/v3/dsl#Payload) descrive
+La funzione [Payload](https://pkg.go.dev/goa.design/goa/v3/dsl#Payload) descrive
 la forma dei dati presi come argomento dai service methods. Le funzioni `HTTP`
 e `GRPC` definiscono come il payload viene costruito a partire da richieste
 in arrivo (server-side) e come costruisce la richiesta nel payload (client-side).
 
 Per quanto riguarda **HTTP**,
 
-* La funzione [Param](https://godoc.org/goa.design/goa/v3/dsl#Param) definisce
+* La funzione [Param](https://pkg.go.dev/goa.design/goa/v3/dsl#Param) definisce
   i valori caricati da paramtetri all'interno di path o query string.
-* La funzione [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) definisce
+* La funzione [Header](https://pkg.go.dev/goa.design/goa/v3/dsl#Header) definisce
   valori caricati dagli header HTTP.
-* La funzione [Body](https://godoc.org/goa.design/goa/v3/dsl#Body) definisce i valori
+* La funzione [Body](https://pkg.go.dev/goa.design/goa/v3/dsl#Body) definisce i valori
   caricati dal corpo della richiesta.
 
 Di default, gli attributi del payload sono mappati al corpo della richiesta HTTP.
@@ -411,9 +411,9 @@ vengono applicate:
 
 Pe rquanto riguarda **gRPC**,
 
-* La funzione [Message](https://godoc.org/goa.design/goa/v3/dsl#Message) definisce
+* La funzione [Message](https://pkg.go.dev/goa.design/goa/v3/dsl#Message) definisce
   i valori caricati dal messaggio gRPC.
-* La funzione [Metadata](https://godoc.org/goa.design/goa/v3/dsl#Metadata) definisce
+* La funzione [Metadata](https://pkg.go.dev/goa.design/goa/v3/dsl#Metadata) definisce
   i valori caricati dai [metadata](https://grpc.io/docs/guides/concepts.html#metadata)
   del messaggio gRPC.
 
@@ -425,16 +425,16 @@ viene applicata:
 
 ### Result-To-Response Mapping
 
-La funzione [Result](https://godoc.org/goa.design/goa/v3/dsl#Result) descrive la forma
+La funzione [Result](https://pkg.go.dev/goa.design/goa/v3/dsl#Result) descrive la forma
 del dato di ritorno di un service method. le funzioni `HTTP` e `GRPC` definiscono
 come la risposta viene costruita (server-side) e come il risultato viene creato
 dalla risposta ricevuta (client-side).
 
 Per quanto riguarda **HTTP**,
 
-* La funzione [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) definisce i valori caricati
+* La funzione [Header](https://pkg.go.dev/goa.design/goa/v3/dsl#Header) definisce i valori caricati
   dagli header HTTP.
-* La funzione [Body](https://godoc.org/goa.design/goa/v3/dsl#Body) definisce i valori caricati
+* La funzione [Body](https://pkg.go.dev/goa.design/goa/v3/dsl#Body) definisce i valori caricati
   dal corpo della risposta.
 
 Di default, gli attributi del result sono mappati al corpo della risposta HTTP.
@@ -446,11 +446,11 @@ vengono applicate:
 
 Per quanto riguarda **gRPC**,
 
-* La funzione [Message](https://godoc.org/goa.design/goa/v3/dsl#Message) definisce i valori caricati
+* La funzione [Message](https://pkg.go.dev/goa.design/goa/v3/dsl#Message) definisce i valori caricati
   nel messaggio gRPC.
-* La funzione [Headers](https://godoc.org/goa.design/goa/v3/dsl#Headers) definisce i valori caricati
+* La funzione [Headers](https://pkg.go.dev/goa.design/goa/v3/dsl#Headers) definisce i valori caricati
   negli header metadata del messaggio gRPC.
-* La funzione [Trailers](https://godoc.org/goa.design/goa/v3/dsl#Trailers) definisce i valori caricati
+* La funzione [Trailers](https://pkg.go.dev/goa.design/goa/v3/dsl#Trailers) definisce i valori caricati
   negli trailer metadata del messaggio gRPC.
 
 Di default, gli attributi del result sono mappati nel messaggio gRPC. Qualora

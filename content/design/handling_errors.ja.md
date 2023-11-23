@@ -15,7 +15,7 @@ Goa はこの記述からコードとドキュメントの両方を生成する�
 
 ## デザイン
 
-Goa DSL では、[Error](https://godoc.org/goa.design/goa/v3/dsl#Error) 式を使用して、メソッドおよびサービス全体でエラー結果を定義できます：
+Goa DSL では、[Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error) 式を使用して、メソッドおよびサービス全体でエラー結果を定義できます：
 
 ```go
 var _ = Service("divider", func() {
@@ -40,7 +40,7 @@ var _ = Service("divider", func() {
 })
 ```
 この例では、`DivByZero` エラーと `HasRemainder` エラーの両方で、
-デフォルトのエラー型 [ErrorResult](https://godoc.org/goa.design/goa/v3/expr#pkg-variables) が使用されます。 
+デフォルトのエラー型 [ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#pkg-variables) が使用されます。 
 この型は、次のフィールドを定義します：
 
 * `Name` はエラーの名前です。 生成されたコードは、レスポンスエンコード中にデザインで定義された名前つきフィールドを初期化します。
@@ -75,7 +75,7 @@ Error("internal_error", func() {
 
 ## レスポンスのデザイン
 
-[Response](https://godoc.org/goa.design/goa/v3/dsl#Response) 関数を使用すると、
+[Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) 関数を使用すると、
 特定のエラーに関連付けられた HTTP/gRPC レスポンスを定義できます。
 
 ```go

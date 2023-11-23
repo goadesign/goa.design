@@ -20,7 +20,7 @@ il codice generato per ritornare errori dai service moethods.
 ## Design
 
 Il DSL di Goa rende possibile definire errori all'interno dei metodi o globalmente
-ai servizi attraverso l'espressione [Error](https://godoc.org/goa.design/goa/v3/dsl#Error):
+ai servizi attraverso l'espressione [Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error):
 
 ```go
 var _ = Service("divider", func() {
@@ -46,7 +46,7 @@ var _ = Service("divider", func() {
 ```
 
 In questo esempio sia `DivByZero` che `HasRemainder` usano il tipo di default per gli errori,
-chiamato [ErrorResult](https://godoc.org/goa.design/goa/v3/expr#pkg-variables).
+chiamato [ErrorResult](https://pkg.go.dev/goa.design/goa/v3/expr#pkg-variables).
 Questo tipo ha i seguenti campi:
 
 * `Name` è il nome dell'errore. Il codice generato si prende carico di inizializzare il campo con 
@@ -87,7 +87,7 @@ error response.
 
 ## Progettare le error response
 
-La funzione [Response](https://godoc.org/goa.design/goa/v3/dsl#Response) rende possibile
+La funzione [Response](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) rende possibile
 la definizione di logiche delle risposte HTTP/gRPC associate a un determinato errore.
 
 ```go

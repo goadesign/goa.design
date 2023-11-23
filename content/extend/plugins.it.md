@@ -7,7 +7,7 @@ name = "Plugins"
 parent = "extend"
 +++
 
-I [plugin di Goa](https://godoc.org/github.com/goadesign/plugins) permettono di
+I [plugin di Goa](https://pkg.go.dev/github.com/goadesign/plugins) permettono di
 creare nuovi DSL e i relativi generatori di codice. Vengono eseguiti prima del
 rendering degli artefatti finali e rendono possibile l'alterazione dei template
 esposti dai generatori di default di Goa e , di conseguenza, di produrre nuovi
@@ -26,7 +26,7 @@ I plugin possono essere utilizzati per fare le cose più disparate:
   dai generatori di Goa.
 
 * Ogni plugin può avere una
-  [GenerateFunc](https://godoc.org/goa.design/goa/v3/codegen#GenerateFunc) per modificare
+  [GenerateFunc](https://pkg.go.dev/goa.design/goa/v3/codegen#GenerateFunc) per modificare
   i file generati da Goa o generare nuovi file da aggiungere agli artefatti finali.
 
 ```go
@@ -34,7 +34,7 @@ type GenerateFunc func(genpkg string, roots []eval.Root, files []*File) ([]*File
 ```
 
 * Ogni plugin può avere una
-  [PrepareFunc](https://godoc.org/goa.design/goa/v3/codegen#PrepareFunc), per alterare
+  [PrepareFunc](https://pkg.go.dev/goa.design/goa/v3/codegen#PrepareFunc), per alterare
   il design prima della generazione del codice.
 
 ```go
@@ -42,10 +42,10 @@ type PrepareFunc func(genpkg string, roots []eval.Root) error
 ```
 
 I plugin si auto-registrano usando una fra le funzioni
-[RegisterPlugin](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin),
-[RegisterPluginFirst](https://godoc.org/goa.design/goa/v3/codegen#RegisterPluginFirst),
+[RegisterPlugin](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPlugin),
+[RegisterPluginFirst](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPluginFirst),
 oppure
-[RegisterPluginLast](https://godoc.org/goa.design/goa/v3/codegen#RegisterPlugin).
+[RegisterPluginLast](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPlugin).
 
 ## CORS Plugin
 
@@ -54,7 +54,7 @@ che aggiunge la possibilità di definire CORS properties sugli endpoint HTTP e u
 le corrispondenti espressioni per implementare i controlli CORS sulla API.
 
 Il plugin CORS aggiunge il suo 
-[DSL](https://godoc.org/github.com/goadesign/plugins/cors/dsl)
+[DSL](https://pkg.go.dev/github.com/goadesign/plugins/cors/dsl)
 personale, il quale può essere integrato come segue:
 
 ```go
@@ -101,7 +101,7 @@ servizio `calc`.
 
 Il plugin CORS si auto-registra chiamando `RegisterPlugin` nel package `codegen` di Goa
 e aggiunge il proprio
-[generatore di codice](https://godoc.org/github.com/goadesign/plugins/cors#Generate) che
+[generatore di codice](https://pkg.go.dev/github.com/goadesign/plugins/cors#Generate) che
 implementa la funzione `GenerateFunc`.
 
 ```go

@@ -18,7 +18,7 @@ cosa procuce il generatore, sia di transport-indipendent che di transport-specif
 
 ## Progettazione
 
-Il DSL [StreamingResult](https://godoc.org/goa.design/goa/v3/dsl#StreamingResult)
+Il DSL [StreamingResult](https://pkg.go.dev/goa.design/goa/v3/dsl#StreamingResult)
 può essere definito su un metodo per impostare un endpoint che produce sequenze di 
 risultati. Il DSL `StreamingResult` ha una sintassi simile a quella del DSL `Result`.
 `StreamingResult` e `Result` sono mutualmente esclusivi: solo uno dei due può essere 
@@ -87,7 +87,7 @@ func (s *cellarSvc) List(ctx context.Context, stream cellarsvc.ListServerStream)
 ### Streaming via HTTP
 
 Streaming in HTTP sfrutta i websockets. goa usa i
-[gorilla websocket](https://godoc.org/github.com/gorilla/websocket) per
+[gorilla websocket](https://pkg.go.dev/github.com/gorilla/websocket) per
 implementare le interfacce di streaming sia di server che di client.
 
 Il package `goa http` fornisce due interfacce Upgrader e Dialer e un configuratore

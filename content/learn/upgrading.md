@@ -53,36 +53,36 @@ on `Services` and `Methods`. Each method describes its input and output types. T
 DSL then describes how the input types are built from HTTP request or inbound gRPC messages and how
 output types should be written to HTTP responses or outbound gRPC messages.
 
-> NOTE: The v3 DSL is documented extensively in [godoc](https://godoc.org/goa.design/goa/v3/dsl)
+> NOTE: The v3 DSL is documented extensively in [godoc](https://pkg.go.dev/goa.design/goa/v3/dsl)
 
 ### Types
 
 For the most part the DSL used to describes types remains the same with a few differences:
 
-* `MediaType` is now [ResultType](https://godoc.org/goa.design/goa/v3/dsl#ResultType) to make it clear
+* `MediaType` is now [ResultType](https://pkg.go.dev/goa.design/goa/v3/dsl#ResultType) to make it clear
   that types described using this DSL are intended to be used as method results. Note that standard
-  types defined using the [Type](https://godoc.org/goa.design/goa/v3/dsl#Type) DSL can also be used as
+  types defined using the [Type](https://pkg.go.dev/goa.design/goa/v3/dsl#Type) DSL can also be used as
   result types.
 * Result types may omit defining views. If a result type does not define a view then a default
   view is automatically defined that lists all the result type attributes.
-* The new [Field](https://godoc.org/goa.design/goa/v3/dsl#Field) DSL is identical to
-  [Attribute](https://godoc.org/goa.design/goa/v3/dsl#Attribute) but makes it possible to specify an
+* The new [Field](https://pkg.go.dev/goa.design/goa/v3/dsl#Field) DSL is identical to
+  [Attribute](https://pkg.go.dev/goa.design/goa/v3/dsl#Attribute) but makes it possible to specify an
   index for the field corresponding to the gRPC field number.
-* `HashOf` is now [MapOf](https://godoc.org/goa.design/goa/v3/dsl#MapOf) which is more intuitive to Go
+* `HashOf` is now [MapOf](https://pkg.go.dev/goa.design/goa/v3/dsl#MapOf) which is more intuitive to Go
   developers.
 * There are new primitive types to describe more precisely the binary layout of the data:
-  [Int](https://godoc.org/goa.design/goa/v3/dsl#Int),
-  [Int32](https://godoc.org/goa.design/goa/v3/dsl#Int32),
-  [Int64](https://godoc.org/goa.design/goa/v3/dsl#Int64),
-  [UInt](https://godoc.org/goa.design/goa/v3/dsl#UInt),
-  [UInt32](https://godoc.org/goa.design/goa/v3/dsl#UInt32),
-  [UInt64](https://godoc.org/goa.design/goa/v3/dsl#UInt64),
-  [Float32](https://godoc.org/goa.design/goa/v3/dsl#Float32),
-  [Float64](https://godoc.org/goa.design/goa/v3/dsl#Float64)
-  and [Bytes](https://godoc.org/goa.design/goa/v3/dsl#Bytes).
+  [Int](https://pkg.go.dev/goa.design/goa/v3/dsl#Int),
+  [Int32](https://pkg.go.dev/goa.design/goa/v3/dsl#Int32),
+  [Int64](https://pkg.go.dev/goa.design/goa/v3/dsl#Int64),
+  [UInt](https://pkg.go.dev/goa.design/goa/v3/dsl#UInt),
+  [UInt32](https://pkg.go.dev/goa.design/goa/v3/dsl#UInt32),
+  [UInt64](https://pkg.go.dev/goa.design/goa/v3/dsl#UInt64),
+  [Float32](https://pkg.go.dev/goa.design/goa/v3/dsl#Float32),
+  [Float64](https://pkg.go.dev/goa.design/goa/v3/dsl#Float64)
+  and [Bytes](https://pkg.go.dev/goa.design/goa/v3/dsl#Bytes).
 * The types `DateTime` and `UUID` are deprecated in favor of
-  [String](https://godoc.org/goa.design/goa/v3/dsl#String) and corresponding
-  [Format](https://godoc.org/goa.design/goa/v3/dsl#Format)
+  [String](https://pkg.go.dev/goa.design/goa/v3/dsl#String) and corresponding
+  [Format](https://pkg.go.dev/goa.design/goa/v3/dsl#Format)
   validations.
 
 #### Example
@@ -132,10 +132,10 @@ var Person = ResultType("application/vnd.goa.person", func() {
 
 ### API
 
-The following changes have been made to the [API](https://godoc.org/goa.design/goa/v3/dsl#API) DSL:
+The following changes have been made to the [API](https://pkg.go.dev/goa.design/goa/v3/dsl#API) DSL:
 
-* The `Host`, `Scheme` and `BasePath` DSLs are replaced with [Server](https://godoc.org/goa.design/goa/v3/dsl#Server).
-* The [Server](https://godoc.org/goa.design/goa/v3/dsl#Server) DSL makes it possible to define server properties for different environments. Each server may list the services it hosts making it possible to define multiple servers in one design.
+* The `Host`, `Scheme` and `BasePath` DSLs are replaced with [Server](https://pkg.go.dev/goa.design/goa/v3/dsl#Server).
+* The [Server](https://pkg.go.dev/goa.design/goa/v3/dsl#Server) DSL makes it possible to define server properties for different environments. Each server may list the services it hosts making it possible to define multiple servers in one design.
 * `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/v3/cors).
 * `ResponseTemplate` and `Trait` have been deprecated.
 
@@ -194,16 +194,16 @@ var _ = API("cellar", func() {
 
 ### Services
 
-The `Resource` function is now called [Service](https://godoc.org/goa.design/goa/v3/dsl#Service). The
+The `Resource` function is now called [Service](https://pkg.go.dev/goa.design/goa/v3/dsl#Service). The
 DSL is now organized into a transport agnostic section and transport specific DSLs. The transport
 agnostic section lists the potential errors returned by all the service methods. The transport
 specific sections then map these errors to HTTP status code or gRPC response codes.
 
-* `BasePath` is now called [Path](https://godoc.org/goa.design/goa/v3/dsl#Path) and appears in the
-  [HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL.
-* `CanonicalActionName` is now called [CanonicalMethod](https://godoc.org/goa.design/goa/v3/dsl#CanonicalMethod)
-  and appears in the [HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL.
-* `Response` is replaced with [Error](https://godoc.org/goa.design/goa/v3/dsl#Error).
+* `BasePath` is now called [Path](https://pkg.go.dev/goa.design/goa/v3/dsl#Path) and appears in the
+  [HTTP](https://pkg.go.dev/goa.design/goa/v3/dsl#HTTP) DSL.
+* `CanonicalActionName` is now called [CanonicalMethod](https://pkg.go.dev/goa.design/goa/v3/dsl#CanonicalMethod)
+  and appears in the [HTTP](https://pkg.go.dev/goa.design/goa/v3/dsl#HTTP) DSL.
+* `Response` is replaced with [Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error).
 * `Origin` is now implemented as part of the [CORS plugin](https://github.com/goadesign/plugins/tree/v3/cors).
 * `DefaultMedia` is deprecated.
 
@@ -243,16 +243,16 @@ Equivalent v3 design:
 
 ### Methods
 
-The `Action` function is replaced by [Method](https://godoc.org/goa.design/goa/v3/dsl#Method). As with
+The `Action` function is replaced by [Method](https://pkg.go.dev/goa.design/goa/v3/dsl#Method). As with
 services the DSL is organized into a transport agnostic section and transport specific DSLs. The
 transport agnostic section defines the payload and result types as well as all the possible method
 specific errors not already defined at the service level. The transport specific DSLs then map the
 payload and result type attributes to transport specific constructs such as HTTP headers, body etc.
 
-* Most of the DSL present in v1 is HTTP specific and thus moved to the [HTTP](https://godoc.org/goa.design/goa/v3/dsl#HTTP) DSL.
-* The [Param](https://godoc.org/goa.design/goa/v3/dsl#Param) and [Header](https://godoc.org/goa.design/goa/v3/dsl#Header) functions
+* Most of the DSL present in v1 is HTTP specific and thus moved to the [HTTP](https://pkg.go.dev/goa.design/goa/v3/dsl#HTTP) DSL.
+* The [Param](https://pkg.go.dev/goa.design/goa/v3/dsl#Param) and [Header](https://pkg.go.dev/goa.design/goa/v3/dsl#Header) functions
   now need only list the names of attributes of the corresponding method payload or result types.
-* Error responses now use the [Error](https://godoc.org/goa.design/goa/v3/dsl#Error) DSL.
+* Error responses now use the [Error](https://pkg.go.dev/goa.design/goa/v3/dsl#Error) DSL.
 * HTTP path parameters are now defined using curly braces instead of colons: `/foo/{id}` instead of `/foo/:id`.
 
 #### The mapping of input and output types
