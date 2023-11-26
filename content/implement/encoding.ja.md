@@ -11,8 +11,8 @@ parent = "implement"
 ## 概要
 
 Goa は、柔軟なエンコード/デコードをサポートしていて、任意のエンコーダーおよびデコーダーを特定の HTTP レスポンスおよびリクエスト・コンテンツタイプに関連付けることができます。
-エンコーダーは [Encoder](https://godoc.org/goa.design/goa/http#Encoder) インターフェイスを実装する構造体であり、
-デコーダーは [Decoder](https://godoc.org/goa.design/goa/http#Decoder) インターフェイスを実装する構造体です。
+エンコーダーは [Encoder](https://pkg.go.dev/goa.design/goa/v3/http#Encoder) インターフェイスを実装する構造体であり、
+デコーダーは [Decoder](https://pkg.go.dev/goa.design/goa/v3/http#Decoder) インターフェイスを実装する構造体です。
 
 生成されたサーバーコンストラクターは、引数としてエンコーダーおよびデコーダーのコンストラクター関数を受理し、任意の実装を提供できるようにします。
 Goa には、JSON、XML、および [gob](https://golang.org/pkg/encoding/gob/) をサポートするデフォルトのエンコーダーとデコーダーが付属しています。
@@ -37,8 +37,8 @@ Goa はリクエストごとにこの関数を呼び出し、異なる HTTP リ�
 ### デフォルトのエンコーダー/デコーダーのコンストラクター
 
 Goa パッケージは、JSON、XML、および gob をエンコード/デコードできるデフォルトの HTTP 
-[エンコーダー](https://godoc.org/goa.design/goa/http#RequestEncoder) / 
-[デコーダー](https://godoc.org/goa.design/goa/http#ResponseEncoder)
+[エンコーダー](https://pkg.go.dev/goa.design/goa/v3/http#RequestEncoder) / 
+[デコーダー](https://pkg.go.dev/goa.design/goa/v3/http#ResponseEncoder)
 のコンストラクターを提供します。 
 ここに、デフォルトの example ジェネレーターが `calc` の例でこれらのコンストラクタをどのように活用しているかを示します：
 
@@ -100,15 +100,15 @@ func(ctx context.Context, w http.ResponseWriter) (goahttp.Encoder, error)
 ```
 
 Goa がコンストラクター関数を呼び出すときに指定されるコンテキストには、
-`Content-Type` リクエストと `Accept` ヘッダーの値が [ContentTypeKey](https://godoc.org/goa.design/goa/http#pkg-constants) と `AcceptTypeKey` が
+`Content-Type` リクエストと `Accept` ヘッダーの値が [ContentTypeKey](https://pkg.go.dev/goa.design/goa/v3/http#pkg-constants) と `AcceptTypeKey` が
 のそれぞれに含まれています。
 これにより、エンコーダー・コンストラクターは、これらのヘッダーの値を調べて、
 クライアントにとって最適なエンコーダーを返すコンテンツタイプ・ネゴシエーションを実装できます。
 
 ## デフォルト・コンテンツタイプの設定
 
-[レスポンス](https://godoc.org/goa.design/goa/dsl#Response) デザイン DSL では、
-[ContentType](https://godoc.org/goa.design/goa/dsl#ContentType) を使用してコンテンツタイプを指定できます。
+[レスポンス](https://pkg.go.dev/goa.design/goa/v3/dsl#Response) デザイン DSL では、
+[ContentType](https://pkg.go.dev/goa.design/goa/v3/dsl#ContentType) を使用してコンテンツタイプを指定できます。
 設定すると、値はリクエストヘッダーで指定されたコンテンツタイプをオーバーライドします。
 これは `Accept` ヘッダーで指定された値をオーバーライドしないことに注意してください。
 これにより、`Accept` ヘッダーがない場合に、レスポンス・エンコーダー コンストラクターが使用するコンテンツタイプを制御できます。

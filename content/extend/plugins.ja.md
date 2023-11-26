@@ -7,7 +7,7 @@ name = "プラグイン"
 parent = "extend"
 +++
 
-[Goa プラグイン](https://godoc.org/github.com/goadesign/plugins) を使用すると、
+[Goa プラグイン](https://pkg.go.dev/github.com/goadesign/plugins) を使用すると、
 新しい DSL と付随するジェネレーターを作成できます。
 これらは最終的な生成物をレンダリングする前に実行されるため、
 Goa コードジェネレーターによって公開されるテンプレートを変更でき、
@@ -24,7 +24,7 @@ Goa プラグインのパブリックセットが含まれています。
 * プラグインは、既存の Goa DSL とともに使用される独自の DSL を追加できます。
   プラグイン DSL は、まったく異なるコードを生成したり、Goa コードジェネレーターによって生成された既存のコードを変更したりできます。
 
-* プラグインは、[GenerateFunc](https://godoc.org/goa.design/goa/codegen#GenerateFunc) を提供して、
+* プラグインは、[GenerateFunc](https://pkg.go.dev/goa.design/goa/v3/codegen#GenerateFunc) を提供して、
   Goa が生成したファイルを変更したり、新しいファイルを生成して最終的な生成物として返したりできます。
 
 ```go
@@ -32,17 +32,17 @@ type GenerateFunc func(genpkg string, roots []eval.Root, files []*File) ([]*File
 ```
 
 * プラグインは、コードが生成される前にデザインを変更するために、
-  [PrepareFunc](https://godoc.org/goa.design/goa/codegen#PrepareFunc) を提供する場合があります。
+  [PrepareFunc](https://pkg.go.dev/goa.design/goa/v3/codegen#PrepareFunc) を提供する場合があります。
 
 ```go
 type PrepareFunc func(genpkg string, roots []eval.Root) error
 ```
 
 プラグインは、
-[RegisterPlugin](https://godoc.org/goa.design/goa/codegen#RegisterPlugin) 関数、
-[RegisterPluginFirst](https://godoc.org/goa.design/goa/codegen#RegisterPluginFirst) 関数、
+[RegisterPlugin](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPlugin) 関数、
+[RegisterPluginFirst](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPluginFirst) 関数、
 もしくは
-[RegisterPluginLast](https://godoc.org/goa.design/goa/codegen#RegisterPlugin) 関数
+[RegisterPluginLast](https://pkg.go.dev/goa.design/goa/v3/codegen#RegisterPlugin) 関数
 を使用してプラグイン自身を登録します。
 
 ## CORS プラグイン
@@ -52,7 +52,7 @@ type PrepareFunc func(genpkg string, roots []eval.Root) error
 対応する式を使用して API に対して CORS を実装するコードを生成します。
 
 CORS プラグインは、以下に示すようにデザインで
-使用できる独自の [DSL](https://godoc.org/github.com/goadesign/plugins/cors/dsl) を追加します：
+使用できる独自の [DSL](https://pkg.go.dev/github.com/goadesign/plugins/cors/dsl) を追加します：
 
 ```go
 package design
@@ -96,7 +96,7 @@ var _ = Service("calc", func() {
 上記のデザインでは、`calc` サービスで定義されたすべてのエンドポイントに CORS ポリシーを設定します。
 
 CORS プラグインは、Goa `codegen` パッケージの `RegisterPlugin` 関数を呼び出すことで自身を登録し、
-`GenerateFunc` 型を実装する独自のコード[ジェネレーター](https://godoc.org/github.com/goadesign/plugins/cors#Generate)を追加します。
+`GenerateFunc` 型を実装する独自のコード[ジェネレーター](https://pkg.go.dev/github.com/goadesign/plugins/cors#Generate)を追加します。
 
 ```go
 package cors

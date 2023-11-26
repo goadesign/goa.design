@@ -240,8 +240,8 @@ the `Metadata` DSL as shown above.
 JWT tokens are usually created by the service and returned to clients so they may use them to
 perform authentication.  Here we are going to use a service account JSON key file so we can create
 JWT tokens client side. The [golang.org/x/oauth2](https://github.com/golang/oauth2) package contains
-the [jws](https://godoc.org/golang.org/x/oauth2/jws) sub-package which provides helper functions for
-encoding valid JWT tokens. It also contains a [google](https://godoc.org/golang.org/x/oauth2/google)
+the [jws](https://pkg.go.dev/golang.org/x/oauth2/jws) sub-package which provides helper functions for
+encoding valid JWT tokens. It also contains a [google](https://pkg.go.dev/golang.org/x/oauth2/google)
 sub-package which contains functions for creating tokens from Google Developers service
 account JSON key file.
 

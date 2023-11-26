@@ -102,7 +102,7 @@ HTTP トランスポートと gRPC トランスポートのいずれも、レス
 
 >上記の例は、Goa ができることのほんの一部です。
 >もっと多くの例を [examples リポジトリ](https://github.com/goadesign/examples)で見つけることが出来るでしょう。
->[Goa DSL パッケージの GoDoc](https://godoc.org/goa.design/goa/dsl) では、すべての DSL キーワードをそれぞれの説明と使用例付きで一覧できます。
+>[Goa DSL パッケージの GoDoc](https://pkg.go.dev/goa.design/goa/v3/dsl) では、すべての DSL キーワードをそれぞれの説明と使用例付きで一覧できます。
 
 ## コード生成
 
@@ -166,7 +166,7 @@ gen
 ```
 
 `gen` ディレクトリはトランスポートに依存しないサービスコードを格納する `calc` サブディレクトリを含みます。
-`endpoints.go` ファイルはトランスポートに依存しないサービスコードをトランスポート層に公開する [Goa エンドポイント](https://godoc.org/goa.design/goa#Endpoint) を作成します。
+`endpoints.go` ファイルはトランスポートに依存しないサービスコードをトランスポート層に公開する [Goa エンドポイント](https://pkg.go.dev/goa.design/goa#Endpoint) を作成します。
 
 `grpc` ディレクトリには、 `protoc` [ツール](https://developers.google.com/protocol-buffers/docs/proto3#generating)の出力(pb/calc.pb.go) はもちろん、 `calc` gRPC サービスを記述するプロトコルバッファファイル (pb/calc.proto) も含まれています。
 このディレクトリには、リクエストとレスポンスをエンコード・デコードするためのロジックとともに、protoc で生成された gRPC サーバーとクライアントのコードを接続するサーバーとクライアントのコードも含まれています。
@@ -220,7 +220,7 @@ func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res i
 }
 ```
 
-`goa example` コマンドは、デザインに記述されている任意の [Server DSL](https://godoc.org/goa.design/goa/dsl#Server) を使用して、ビルド可能なサーバーファイルとクライアントファイルを生成します。
+`goa example` コマンドは、デザインに記述されている任意の [Server DSL](https://pkg.go.dev/goa.design/goa/v3/dsl#Server) を使用して、ビルド可能なサーバーファイルとクライアントファイルを生成します。
 デザインで指定されたそれぞれの `Server` DSL に対して `cmd` に一つのディレクトリを構築します。
 ここではポート 8000 で HTTP リクエストを待ち受けるサーバー `calc` をひとつ定義しました。
 
@@ -259,4 +259,4 @@ API デザインに焦点を当てることができるため、実装を開始�
 
 この例は Goa の基本にのみ触れています。デザインの<a href="../design/overview">デザイン概要</a> では他の多くの側面もカバーしています。
 ぜひ他の[例](https://github.com/goadesign/examples)も見てみてください。
-最後に、DSL パッケージ [GoDoc](https://godoc.org/goa.design/goa/dsl) には多くのコードスニペットが含まれており、デザインを作成する際の参考資料として役立ちます。
+最後に、DSL パッケージ [GoDoc](https://pkg.go.dev/goa.design/goa/v3/dsl) には多くのコードスニペットが含まれており、デザインを作成する際の参考資料として役立ちます。

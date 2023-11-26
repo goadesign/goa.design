@@ -18,7 +18,7 @@ generator produces for the transport-independent and transport-dependent code.
 
 ## Design
 
-The [StreamingResult DSL](https://godoc.org/goa.design/goa/dsl#StreamingResult)
+The [StreamingResult DSL](https://pkg.go.dev/goa.design/goa/v3/dsl#StreamingResult)
 can be defined on a method to setup an endpoint that streams a sequence of
 results. `StreamingResult` DSL has a similar syntax to the `Result` DSL.
 `StreamingResult` and `Result` are mutually exclusive: only one of then may be
@@ -86,7 +86,7 @@ func (s *cellarSvc) List(ctx context.Context, stream cellarsvc.ListServerStream)
 ### Streaming via HTTP
 
 Streaming in HTTP leverages websockets. goa uses
-[gorilla websocket](https://godoc.org/github.com/gorilla/websocket) to
+[gorilla websocket](https://pkg.go.dev/github.com/gorilla/websocket) to
 implement the server and client streaming interfaces.
 
 The `goa http` package provides a websocket Upgrader and Dialer interface

@@ -110,7 +110,7 @@ generated [OpenAPI](https://www.openapis.org/) specification.
 
 >The example above covers a fraction of what Goa can do. More examples can be
 >found in the [examples repo](https://github.com/goadesign/examples). The
->[Goa DSL package GoDoc](https://godoc.org/goa.design/goa/dsl) lists all the DSL
+>[Goa DSL package GoDoc](https://pkg.go.dev/goa.design/goa/v3/dsl) lists all the DSL
 >keywords together with a description and example usage for each.
 
 ## Code Generation
@@ -176,7 +176,7 @@ gen
 
 The `gen` directory contains the `calc` sub-directory which houses the
 transport-independent service code. The `endpoints.go` file creates a
-[Goa endpoint](https://godoc.org/goa.design/goa#Endpoint) which exposes
+[Goa endpoint](https://pkg.go.dev/goa.design/goa#Endpoint) which exposes
 the transport-agnostic service code to the transport layers.
 
 The `grpc` directory contains the protocol buffer file (`pb/calc.proto`) that
@@ -240,7 +240,7 @@ func (s *calcsrvc) Multiply(ctx context.Context, p *calc.MultiplyPayload) (res i
 ```
 
 The `goa example` command uses the optional
-[Server DSL](https://godoc.org/goa.design/goa/dsl#Server)
+[Server DSL](https://pkg.go.dev/goa.design/goa/v3/dsl#Server)
 described in the design to generate buildable server and client files.
 It builds one directory in `cmd` for each `Server` DSL specified in the
 design. Here we defined a single server `calc` which listens for HTTP
@@ -348,7 +348,7 @@ calc service using a non-integer value for example).
 
 This example only touches on the basics of Goa, the <a href="../../design/overview">design overview</a> covers many other aspects.
 
-You may also want to take a look at the other [examples](https://github.com/goadesign/examples). The DSL package [GoDoc](https://godoc.org/goa.design/goa/dsl) includes many code snippets and provides a great reference when writing designs.
+You may also want to take a look at the other [examples](https://github.com/goadesign/examples). The DSL package [GoDoc](https://pkg.go.dev/goa.design/goa/v3/dsl) includes many code snippets and provides a great reference when writing designs.
 
 If you need help, use the Go Slack group:
 - Register for the group at https://invite.slack.golangbridge.org.

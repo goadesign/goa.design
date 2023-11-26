@@ -7,7 +7,7 @@ name = "Middleware"
 parent = "implement"
 +++
 
-Un [middleware](https://godoc.org/goa.design/goa/middleware) è una funzione che accetta
+Un [middleware](https://pkg.go.dev/goa.design/goa/v3/middleware) è una funzione che accetta
 e ritorna un endpoint o un handler per un transport specifico.
 
 ## Endpoint Middleware
@@ -106,7 +106,7 @@ Questo metodo applica il middleware a tutti i server handler.
 In alternativa il middleware si può applicare a specifici server handler
 allo stesso modo dei middleware endpoint.
 I middleware HTTP possono anche essere montati direttamente sul
-[goa Muxer](https://godoc.org/goa.design/goa/http#Muxer) per eseguirlo su
+[goa Muxer](https://pkg.go.dev/goa.design/goa/v3/http#Muxer) per eseguirlo su
 tutte le richieste a prescindere da qualunque handler.
 
 ```go
@@ -133,40 +133,40 @@ func main() {
 
 Goa ha delle implementazioni di alcuni middleware HTTP:
 
-* [**Logging**](https://godoc.org/goa.design/goa/http/middleware#Log) server
+* [**Logging**](https://pkg.go.dev/goa.design/goa/v3/http/middleware#Log) server
   middleware.
-* [**Request ID**](https://godoc.org/goa.design/goa/http/middleware#RequestID)
+* [**Request ID**](https://pkg.go.dev/goa.design/goa/v3/http/middleware#RequestID)
   server middleware.
-* **Tracing** middleware per [server](https://godoc.org/goa.design/goa/http/middleware#Trace)
-  e [client](https://godoc.org/goa.design/goa/http/middleware#WrapDoer)
-* [**AWS X-Ray**](https://godoc.org/goa.design/goa/http/middleware/xray)
+* **Tracing** middleware per [server](https://pkg.go.dev/goa.design/goa/v3/http/middleware#Trace)
+  e [client](https://pkg.go.dev/goa.design/goa/v3/http/middleware#WrapDoer)
+* [**AWS X-Ray**](https://pkg.go.dev/goa.design/goa/v3/http/middleware/xray)
   middleware per server e client.
 
 ### gRPC Middleware
 
 I middleware gRPC sono specifici per gRPC e consistono di interceptors per server e client.
 
-* [UnaryServerInterceptor](https://godoc.org/google.golang.org/grpc#UnaryServerInterceptor)
-e [UnaryClientInterceptor](https://godoc.org/google.golang.org/grpc#UnaryClientInterceptor)
+* [UnaryServerInterceptor](https://pkg.go.dev/google.golang.org/grpc#UnaryServerInterceptor)
+e [UnaryClientInterceptor](https://pkg.go.dev/google.golang.org/grpc#UnaryClientInterceptor)
 per gli unary endpoint.
-* [StreamServerInterceptor](https://godoc.org/google.golang.org/grpc#StreamServerInterceptor)
-e [StreamClientInterceptor](https://godoc.org/google.golang.org/grpc#StreamClientInterceptor)
+* [StreamServerInterceptor](https://pkg.go.dev/google.golang.org/grpc#StreamServerInterceptor)
+e [StreamClientInterceptor](https://pkg.go.dev/google.golang.org/grpc#StreamClientInterceptor)
 per gli streaming endpoint.
 
 Goa implementa i seguenti middleware gRPC:
 
-* **Logging** server middleware per gli [unary](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerLog)
-  e per gli [streaming](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerLog)
+* **Logging** server middleware per gli [unary](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#UnaryServerLog)
+  e per gli [streaming](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#StreamServerLog)
   endpoint.
-* **Request ID** server middleware for [unary](https://godoc.org/goa.design/goa/grpc/middleware#UnaryRequestID)
-  and [streaming](https://godoc.org/goa.design/goa/grpc/middleware#StreamRequestID)
+* **Request ID** server middleware for [unary](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#UnaryRequestID)
+  and [streaming](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#StreamRequestID)
   endpoints.
-* [**Stream Canceler**](https://godoc.org/goa.design/goa/grpc/middleware#StreamCanceler)
+* [**Stream Canceler**](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#StreamCanceler)
   server middleware.
-* **Tracing** middleware per gli [unary server](https://godoc.org/goa.design/goa/grpc/middleware#UnaryServerTrace)
-  e [client](https://godoc.org/goa.design/goa/grpc/middleware#UnaryClientTrace), ma anche
-  [streaming server](https://godoc.org/goa.design/goa/grpc/middleware#StreamServerTrace) e [client](https://godoc.org/goa.design/goa/grpc/middleware#StreamClientTrace).
-* [**AWS X-Ray**](https://godoc.org/goa.design/goa/grpc/middleware/xray)
+* **Tracing** middleware per gli [unary server](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#UnaryServerTrace)
+  e [client](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#UnaryClientTrace), ma anche
+  [streaming server](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#StreamServerTrace) e [client](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware#StreamClientTrace).
+* [**AWS X-Ray**](https://pkg.go.dev/goa.design/goa/v3/grpc/middleware/xray)
   middleware per gli unary e streaming sia client che server.
 
 Usa come riferimento l'[esempio tracing](https://github.com/goadesign/examples/blob/master/tracing)
