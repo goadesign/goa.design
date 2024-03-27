@@ -1,10 +1,10 @@
-name = "goa"
+name = "Goa"
 baseurl = "https://goa.design/"
-description = "goa - Design First."
+description = "Goa - Design First."
 homepage = "https://goa.design"
 license = "MIT"
 licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
-disableKinds = ["taxonomy", "taxonomyTerm"]
+disableKinds = ["taxonomy"]
 
 
 uglyURLs = false
@@ -19,9 +19,9 @@ pygmentsuseclasses = false
     [markup.goldmark.renderer]
       unsafe = true
 
-[author]
-name = "Raphael Simon and the goa contributors"
-homepage = "https://github.com/goadesign/goa/graphs/contributors"
+[params.author]
+  name = "Raphael Simon and the Goa contributors"
+  homepage = "https://github.com/goadesign/goa/graphs/contributors"
 
 DefaultContentLanguage = "en"
 
