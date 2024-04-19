@@ -10,7 +10,7 @@ require (
 require (
 	cloud.google.com/go v0.65.0 // indirect
 	github.com/golang/protobuf v1.5.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
