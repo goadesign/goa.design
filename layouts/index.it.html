@@ -137,57 +137,85 @@
         <div class="container" style="margin-top:4em">
             <div class="row">
                 <div class="hero-unit">
-                    <p>Il Life Cycle dello sviluppo dei Servizi</p>
+                    <p>Mago del Design di Goa</p>
                 </div>
-            </div>
-        </div>
-        <div class="container" style="margin-bottom:2em">
-            <div class="row">
-                <h3>
-                    <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                    <a href="/design">Progetta</a>
-                </h3>
-                <p style="margin-bottom:2em">
-                    La creazione di un servizio con Goa parte dal design. Il DSL di Goa
-                    ti permette di descrivere i cosiddetti "service methods", cos&iacute; come
-                    le sue strutture dati di input e output.
-                    Il DSL ti permette anche di definire come costruire e serializzare le tue strutture dati
-                    a partire da e attraverso protocolli specifici, come HTTP Body, HTTP Headers o messaggi gRPC.
-                </p>
-            </div>
-            <div class="row">
-                <h3>
-                    <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                    <a href="/implement">Implementa</a>
-                </h3>
-                <p style="margin-bottom:2em">
-                    Il tool Goa legge i tuoi design e produce tutto il codice necessario a
-                    costruire i vari servizi e un client tool. Il codice generato include
-                    i vari transport layers e la validazione dei vari input.
-                    L'implementazione di un servizio &egrave; quindi semplice come implementare
-                    delle interfacce Go, non importa quale protocollo di trasporto il servizio decide
-                    di adottare e seguire. In particolare Goa rende banale implementare un servizio
-                    che accetta sia richieste HTTP che gRPC.
-                </p>
-            </div>
-            <div class="row">
-                <h3>
-                    <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
-                    <a href="/extend">Estendi</a>
-                </h3>
-                <p style="margin-bottom:2em">
-                    La parte migliore del DSL di Goa &egrave; che il suo motore di valutazione
-                    &egrave; completamente disaccoppiato. I Plugin possono anche implementare dei
-                    DSL personalizzati per estendere i concetti descritti nel design.
-                    I Plugins possono anche generare output arbitrari o modificare quello generato
-                    dai generatori pre-costruiti nel tool. In particolar modo, il plugin go-kit rende
-                    possibile generare dei servizi compatibili con <a href="https://gokit.io">Go kit</a>,
-                    i quali possono trarre vantaggio dal toolkit per necessita operative e infrastrutturali.
-                </p>
+                <div class="span4" span style="text-align: center;">
+                    <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard">
+                        <img src="/img/Wizard.png" alt="Goa Wizard">
+                    </a>
+                </div>
+                <div class="span8">
+                    <p span style="font-size: 120%; font-weight: bold;">
+                        <br/>
+                        Usa il <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard">Mago del Design di Goa</a> per creare un design di Goa interattivamente.
+                    </p>
+                    <ul>
+                        <li>Crea design di Goa in pochi secondi</li>
+                        <li>Ricevi feedback istantanei sul tuo design</li>
+                        <li>Esplora il linguaggio del design di Goa</li>
+                    </ul>
+                    <p span style="font-size:80%">
+                        (richiede un abbonamento a <a href="https://openai.com/blog/chatgpt-plus">ChatGPT Plus</a>)
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
+    <div class="container" style="margin-top:4em">
+        <div class="row">
+            <div class="hero-unit">
+                <p>Il Life Cycle dello sviluppo dei Servizi</p>
+            </div>
+        </div>
+    </div>
+    <div class="container" style="margin-bottom:2em">
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/design">Progetta</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                La creazione di un servizio con Goa parte dal design. Il DSL di Goa
+                ti permette di descrivere i cosiddetti "service methods", cos&iacute; come
+                le sue strutture dati di input e output.
+                Il DSL ti permette anche di definire come costruire e serializzare le tue strutture dati
+                a partire da e attraverso protocolli specifici, come HTTP Body, HTTP Headers o messaggi gRPC.
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/implement">Implementa</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                Il tool Goa legge i tuoi design e produce tutto il codice necessario a
+                costruire i vari servizi e un client tool. Il codice generato include
+                i vari transport layers e la validazione dei vari input.
+                L'implementazione di un servizio &egrave; quindi semplice come implementare
+                delle interfacce Go, non importa quale protocollo di trasporto il servizio decide
+                di adottare e seguire. In particolare Goa rende banale implementare un servizio
+                che accetta sia richieste HTTP che gRPC.
+            </p>
+        </div>
+        <div class="row">
+            <h3>
+                <i class="fa fa-chevron-circle-right" style="color:#80AD00"></i>
+                <a href="/extend">Estendi</a>
+            </h3>
+            <p style="margin-bottom:2em">
+                La parte migliore del DSL di Goa &egrave; che il suo motore di valutazione
+                &egrave; completamente disaccoppiato. I Plugin possono anche implementare dei
+                DSL personalizzati per estendere i concetti descritti nel design.
+                I Plugins possono anche generare output arbitrari o modificare quello generato
+                dai generatori pre-costruiti nel tool. In particolar modo, il plugin go-kit rende
+                possibile generare dei servizi compatibili con <a href="https://gokit.io">Go kit</a>,
+                i quali possono trarre vantaggio dal toolkit per necessita operative e infrastrutturali.
+            </p>
+        </div>
+    </div>
+
+    <div class="alternate">
     <div class="container" style="margin-top:2em">
         <div class="row">
             <div class="hero-unit">
@@ -238,6 +266,7 @@
                 </p>
             </div>
         </div>
+    </div>
     </div>
 
     </section>
