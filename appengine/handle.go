@@ -77,7 +77,7 @@ func (s *Storage) HandleChangeHook(w http.ResponseWriter, r *http.Request) {
 
 // ValidMethod reports whether m is a supported HTTP method.
 func ValidMethod(m string) bool {
-	return strings.Index(allowMethods, m) >= 0
+	return strings.Contains(allowMethods, m)
 }
 
 func corsMatch(cors *CORS, o string) string {
