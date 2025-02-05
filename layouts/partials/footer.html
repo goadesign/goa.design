@@ -1,7 +1,42 @@
-{{ if eq "ja" .Lang }}
-{{ template "partials/ja/footer.html" . }}
-{{ else if eq "it" .Lang }}
-{{ template "partials/it/footer.html" . }}
-{{ else }}
-{{ template "partials/en/footer.html" . }}
-{{ end }}
+<footer id="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <a class="brand" href="/">
+                    <img alt="Goa" src="/img/goa-logo-white.svg">
+                </a>
+                <p>
+                    Design first.
+                </p>
+            </div>
+            <div class="col-md-4">
+                <h3>{{ T "footer_languages" }}</h3>
+                <ul>
+                    {{ range .Site.Languages }}
+                    <li><a href="{{ $.Site.BaseURL }}{{ .Lang }}{{ $.Page.RelPermalink | strings.TrimPrefix (print "/" $.Site.Language.Lang) }}">{{ .LanguageName }}</a></li>
+                    {{ end }}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h3>{{ T "footer_find_us" }}</h3>
+                <div class="social-icons">
+                    <a href="https://github.com/goadesign/goa"><i class="fa-brands fa-github fa-2x"></i></a>&nbsp;
+                    <a href="https://gophers.slack.com/messages/goa/"><i class="fa-brands fa-slack fa-2x"></i></a>&nbsp;
+                    <a href="https://bsky.app/profile/goadesign.bsky.social"><i class="fa-brands fa-bluesky fa-2x"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<footer id="copyright">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-9">
+                {{ printf (T "footer_copyright") (now.Format "2006") }}
+            </div>
+            <p class="copyright">
+                {{ T "footer_logo_by" }}
+            </p>
+        </div>
+    </div>
+</footer>

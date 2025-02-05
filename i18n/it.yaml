@@ -1,0 +1,56 @@
+# Site title and meta
+site_title: "Goa :: Design first."
+site_description: "Goa è un framework di generazione di codice costruito in Go che fornisce allo sviluppatore un percorso chiaro e conciso per generare API idiomatiche e architetture di microservizi utilizzando una metodologia design-first."
+
+# Navigation
+nav_search_placeholder: "Cerca"
+nav_godoc: "GoDoc"
+nav_github: "GitHub"
+nav_edit: "Modifica"
+
+# Footer
+footer_slogan: "Design first."
+footer_languages: "Lingue"
+footer_find_us: "Trovaci anche su"
+footer_copyright: "© 2015-%s - Raphael Simon e i Goa contributors"
+footer_logo_by: "Logo di Jason Melgoza"
+footer_translation_by: "Traduzione di Alessandro Sanino"
+
+# Hero Section
+hero_title: "Design first."
+hero_description: '<a href="https://github.com/goadesign/goa">Goa</a> fornisce un approccio olistico per lo sviluppo di remote API e microservizi in <a href="https://golang.org">Go</a>.'
+
+# Features Section
+feature_codegen_title: "Generazione del Codice"
+feature_codegen_desc: "Goa trasforma il design della tua API in codice - niente reflection, niente boilerplate. Scrivi il design una volta, ottieni automaticamente server, client e documentazione."
+
+feature_design_title: "Basato sul Design"
+feature_design_desc: "Progetta la tua API a modo tuo con il DSL Go flessibile di Goa. Un solo design diventa la tua fonte unica di verità - guidando sia l'implementazione che la documentazione."
+
+feature_best_practice_title: "Best Practice"
+feature_best_practice_desc: "Goa implementa le migliori pratiche attraverso il codice generato - dalla validazione degli input al Go idiomatico, ottieni API robuste e type-safe ogni volta."
+
+# Sponsors section
+sponsors_title: "Sponsor"
+
+# Zuplo
+sponsor_zuplo_title: "Zuplo: Scala, Proteggi e Monetizza la tua API Goa"
+sponsor_zuplo_desc: "Il nostro API Gateway ti permette di proteggere la tua API, scalarla globalmente, generare documentazione dal tuo OpenAPI e aggiungere monetizzazione."
+sponsor_zuplo_link: "Inizia Gratuitamente"
+
+# incident.io
+sponsor_incidentio_title: "incident.io: Torna più forte dopo ogni incidente"
+sponsor_incidentio_desc: "Usa la nostra piattaforma per dare al tuo team il potere di gestire gli incidenti dall'inizio alla fine.<br/>Risolvi rapidamente e impara dagli incidenti per costruire prodotti più resilienti."
+sponsor_incidentio_link: "Scopri di più"
+
+# Speakeasy
+sponsor_speakeasy_title: "Speakeasy: Esperienza di sviluppo aziendale per la tua API"
+sponsor_speakeasy_desc: "La nostra piattaforma semplifica la creazione di SDK ricchi di funzionalità e pronti per la produzione.<br/>Accelera le integrazioni e riduci gli errori dando alla tua API l'esperienza di sviluppo che merita."
+sponsor_speakeasy_link: "Integra con Goa"
+
+# Wizard features
+wizard_features: |
+  <ul>
+    <li>Sfrutta GPT per creare design Goa attraverso una conversazione naturale</li>
+    <li>Ricevi suggerimenti di design e best practice mentre costruisci</li>
+  </ul>

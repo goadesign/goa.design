@@ -1,0 +1,13 @@
+.td-box--gradient {
+    background: linear-gradient(180deg, var(--td-primary) 0%, var(--td-primary-light) 100%);
+}
+
+.td-box--dark {
+    background-color: var(--td-dark);
+    color: #fff;
+}
+
+.td-box--white {
+    background-color: #fff;
+}
+

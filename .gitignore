@@ -2,6 +2,7 @@ website/public
 public/
 static/js/pindex.json
 content/reference/
+resources/
 
 .hugo_build.lock
 

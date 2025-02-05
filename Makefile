@@ -10,7 +10,7 @@
 all: depend serve
 
 depend:
-	go install github.com/gohugoio/hugo@latest
+	CGO_ENABLED=1 go install -tags extended github.com/gohugoio/hugo@latest || exit 1
 
 linkcheck:
 	@cd tools/linkcheck && go install
@@ -18,3 +18,6 @@ linkcheck:
 
 serve:
 	@hugo server --bind=0.0.0.0 --watch
+
+clean:
+	rm -rf public resources

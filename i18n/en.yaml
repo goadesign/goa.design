@@ -1,0 +1,55 @@
+# Site title and meta
+site_title: "Goa :: Design first."
+site_description: "Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology."
+
+# Navigation
+nav_search_placeholder: "Search"
+nav_godoc: "GoDoc"
+nav_github: "GitHub"
+nav_edit: "Edit"
+
+# Footer
+footer_slogan: "Design first."
+footer_languages: "Languages"
+footer_find_us: "Find us elsewhere"
+footer_copyright: "© 2015-%s by Raphael Simon and the Goa contributors"
+footer_logo_by: "Logo by Jason Melgoza"
+
+# Hero Section
+hero_title: "Design first."
+hero_description: '<a href="https://github.com/goadesign/goa">Goa</a> provides a holistic approach for developing remote APIs and microservices in <a href="https://golang.org">Go</a>.'
+
+# Features Section
+feature_codegen_title: "Code Generation"
+feature_codegen_desc: "Goa turns your API design into code - no reflection, no boilerplate. Write your design once, get servers, clients, and docs generated automatically."
+
+feature_design_title: "Design Based"
+feature_design_desc: "Design your API your way with Goa's flexible Go DSL. One design becomes your single source of truth - driving both implementation and documentation."
+
+feature_best_practice_title: "Best Practices"
+feature_best_practice_desc: "Goa enforces best practices through generated code - from input validation to idiomatic Go, you get rock-solid, type-safe APIs every time."
+
+# Wizard
+wizard_title: "Goa Design Wizard"
+wizard_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"
+wizard_features: |
+  <ul>
+    <li>Harness GPT to craft Goa designs through natural conversation</li>
+    <li>Get instant design suggestions and best practices as you build</li>
+  </ul>
+wizard_note: "(requires a <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> subscription)" 
+
+# Sponsors section
+sponsors_title: "Sponsors"
+
+sponsor_zuplo_title: "Zuplo: Scale, Protect, and Productize your Goa API"
+sponsor_zuplo_desc: "Our API Gateway allows you to secure your API, scale it globally, generate documentation from your OpenAPI, and add monetization."
+sponsor_zuplo_link: "Start for Free"
+
+sponsor_incidentio_title: "incident.io: Bounce back stronger after every incident"
+sponsor_incidentio_desc: "Use our platform to empower your team to run incidents end-to-end.<br/>Rapidly fix and learn from incidents, so you can build more resilient products."
+sponsor_incidentio_link: "Learn More"
+
+sponsor_speakeasy_title: "Speakeasy: Enterprise DevEx for your API"
+sponsor_speakeasy_desc: "Our platform makes it easy to create feature-rich production ready SDKs.<br/>Speed up integrations and reduce errors by giving your API the DevEx it deserves."
+sponsor_speakeasy_link: "Integrate with Goa"
