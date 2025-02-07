@@ -72,3 +72,7 @@ codice generato di default.
   rendendo semplice l'interoperabilità con codice esterno.
 * Il plugin [goa-kit](https://github.com/goadesign/plugins/tree/v3/goakit) permette di
   generare package go-kit a partire dai design Goa.
+
+## Quale è la differenza fra Goa v3 e Goa v2?
+
+* Goa v3 richiede e supporta i moduli Go.
