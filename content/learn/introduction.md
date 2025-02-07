@@ -26,7 +26,7 @@ source.
 
 ## Separation of Concerns
 
-The DSL in goa v2 makes it possible to describe the services in a transport
+Since v2 the DSL in goa makes it possible to describe the services in a transport
 agnostic way. The service methods DSLs each describe the method input and output
 types. Transport specific DSL then describe how the method input is built from
 incoming data and how the output is serialized. For example, a method may specify
