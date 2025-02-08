@@ -1,8 +1,9 @@
 ---
 title: Static Content
+linkTitle: Static Content
 weight: 5
+description: "Learn to serve static files, integrate HTML templates, and host Single Page Applications (SPAs) in your Goa services using built-in file serving capabilities."
 ---
-# Static Content
 
 Serving static content is a fundamental aspect of building web applications. Goa
 provides the `Files` function in its DSL to simplify the process of serving

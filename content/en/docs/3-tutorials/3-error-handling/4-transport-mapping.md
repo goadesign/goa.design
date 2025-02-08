@@ -1,9 +1,9 @@
 ---
-title: Transport Mapping
+title: Mapping Errors to Transport Status Codes
+linkTitle: Transport Mapping
 weight: 4
+description: "Learn how to map Goa errors to appropriate HTTP and gRPC status codes, ensuring consistent error responses across different transport protocols."
 ---
-
-# Mapping Errors to Transport Status Codes
 
 Once you've defined your errors in the Goa DSL, the next step is to map these
 errors to appropriate transport-specific status codes. This ensures that clients

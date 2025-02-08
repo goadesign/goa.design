@@ -1,9 +1,9 @@
 ---
 title: "Error Types"
+linkTitle: Error Types
 weight: 3
+description: "Explore Goa's error type system, including the default ErrorResult type and how to create custom error types for more complex error scenarios."
 ---
-
-# Error Types
 
 Goa allows you to define errors using either the default `ErrorResult` type or
 custom user-defined types. Choosing the appropriate error type depends on the

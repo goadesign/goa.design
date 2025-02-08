@@ -1,9 +1,9 @@
 ---
-title: Designing
+title: Designing a REST API
+linkTitle: Designing
 weight: 1
+description: "Learn to design a complete REST API for managing concerts using Goa, including CRUD operations, pagination, proper HTTP mappings, and error handling."
 ---
-
-# Designing a Comprehensive REST API with Goa
 
 This tutorial walks you through designing a REST API for managing music concerts using Goa. You'll learn how to create a complete API design that includes common operations, proper HTTP mappings, and error handling.
 
@@ -194,7 +194,7 @@ examples.
 ### 1. Basic Structure
 The design consists of three main parts:
 - Service definition (`Service("concerts")`)
-- Methods (list, create, show, etc.)
+- Methods (`list`, `create`, `show`, etc.)
 - Data types (`Concert` and `ConcertPayload`)
 
 ### 2. Key Features

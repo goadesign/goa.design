@@ -1,9 +1,8 @@
 ---
-title: "Client-Side Streaming"
+title: "Implementing Client-Side Streaming"
+linkTitle: Client-Side
 weight: 4
 ---
-
-# Implementing Client-Side Streaming
 
 Once you've designed your client streaming endpoints using Goa's
 `StreamingPayload` DSL, the next step is to implement both the client-side logic

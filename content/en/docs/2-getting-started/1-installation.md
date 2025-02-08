@@ -1,16 +1,15 @@
 ---
 title: Installation
 weight: 1
+description: "Step-by-step guide to installing Goa and setting up your development environment, including prerequisites and verification steps."
 ---
-
-# Installation
 
 ## Prerequisites
 
-Goa requires the use of **Go modules**, so ensure they’re enabled in your Go environment.
+Goa requires the use of **Go modules**, so ensure they're enabled in your Go environment.
 
 - Use **Go 1.18+** (recommended).
-- Enable **Go Modules**: Confirm they’re enabled in your environment (e.g., `GO111MODULE=on` or using Go 1.16+ defaults).
+- Enable **Go Modules**: Confirm they're enabled in your environment (e.g., `GO111MODULE=on` or using Go 1.16+ defaults).
 
 ## Install Goa
 

@@ -1,9 +1,8 @@
 ---
 title: "Handling Multiple Views in Streaming Results"
+linkTitle: Views
 weight: 6
 ---
-
-# Handling Multiple Views in Streaming Results
 
 Goa's flexibility allows you to define multiple views for your result types,
 enabling different representations of data based on the client's requirements.

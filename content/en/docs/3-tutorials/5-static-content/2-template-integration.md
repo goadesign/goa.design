@@ -1,9 +1,9 @@
 ---
 title: "Template Integration"
+linkTitle: Template Integration
 weight: 2
+description: "Integrate Go's template engine with Goa to render dynamic HTML content, including template composition, data passing, and proper error handling."
 ---
-
-# Template Integration
 
 Goa services can render dynamic HTML content using Go's standard `html/template`
 package. This guide shows you how to integrate template rendering into your Goa

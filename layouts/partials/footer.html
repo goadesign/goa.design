@@ -1,7 +1,7 @@
 <footer id="footer">
     <div class="container">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-4 text-center">
                 <a class="brand" href="/">
                     <img alt="Goa" src="/img/goa-logo-white.svg">
                 </a>
@@ -9,20 +9,20 @@
                     Design first.
                 </p>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 text-center">
                 <h3>{{ T "footer_languages" }}</h3>
-                <ul>
-                    {{ range .Site.Languages }}
-                    <li><a href="{{ $.Site.BaseURL }}{{ .Lang }}{{ $.Page.RelPermalink | strings.TrimPrefix (print "/" $.Site.Language.Lang) }}">{{ .LanguageName }}</a></li>
-                    {{ end }}
-                </ul>
+                {{ range .Site.Languages }}
+                <a href="{{ $.Site.BaseURL }}{{ .Lang }}{{ $.Page.RelPermalink | strings.TrimPrefix (print " /"
+                    $.Site.Language.Lang) }}">{{ .LanguageName }}</a><br />
+                {{ end }}
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 text-center">
                 <h3>{{ T "footer_find_us" }}</h3>
                 <div class="social-icons">
                     <a href="https://github.com/goadesign/goa"><i class="fa-brands fa-github fa-2x"></i></a>&nbsp;
                     <a href="https://gophers.slack.com/messages/goa/"><i class="fa-brands fa-slack fa-2x"></i></a>&nbsp;
-                    <a href="https://bsky.app/profile/goadesign.bsky.social"><i class="fa-brands fa-bluesky fa-2x"></i></a>
+                    <a href="https://bsky.app/profile/goadesign.bsky.social"><i
+                            class="fa-brands fa-bluesky fa-2x"></i></a>
                 </div>
             </div>
         </div>
@@ -30,11 +30,11 @@
 </footer>
 <footer id="copyright">
     <div class="container">
-        <div class="row">
-            <div class="col-md-9">
+        <div class="row text-end">
+            <div class="col-md-12 text-end">
                 {{ printf (T "footer_copyright") (now.Format "2006") }}
             </div>
-            <p class="copyright">
+            <p class="copyright text-end">
                 {{ T "footer_logo_by" }}
             </p>
         </div>

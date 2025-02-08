@@ -1,15 +1,13 @@
 ---
 title: Implementing
 weight: 2
+description: "Step-by-step guide to implementing a REST API service in Goa, covering code generation, service implementation, HTTP server setup, and endpoint testing."
 ---
 
-# Implementing the Concerts Service
+After designing your REST API with Goa's DSL, it's time to implement the service. This tutorial walks you through the implementation process step by step.
 
-After designing your REST API with Goa's DSL, it's time to **implement** the
-service. In this tutorial, you will:
-
-1. Generate code using the Goa CLI (`goa gen`).
-2. Create `main.go` to implement the service and the HTTP server.
+1. Generate code using the Goa CLI (`goa gen`)
+2. Create `main.go` to implement the service and the HTTP server
 
 ## 1. Generate the Goa Artifacts
 
@@ -19,64 +17,83 @@ From your project root (e.g., `concerts/`), run the Goa code generator:
 goa gen concerts/design
 ```
 
-This command analyzes your design file (`design/concerts.go`) and produces a
-`gen/` folder containing:
-  - **Transport-agnostic endpoints** (in `gen/concerts/`).
-  - **HTTP** validation and marshalling code (in `gen/http/concerts/`) for both server and client.
-  - **OpenAPI** artifacts (in `gen/http/`).
+{{< alert title="Generated Content" color="primary" >}}
+This command analyzes your design file (`design/concerts.go`) and produces a `gen/` folder containing:
+- **Transport-agnostic endpoints** (in `gen/concerts/`)
+- **HTTP** validation and marshalling code (in `gen/http/concerts/`) for both server and client
+- **OpenAPI** artifacts (in `gen/http/`)
 
-If you **change your design** (e.g., add methods or fields), **rerun** `goa gen`
-to keep the generated code in sync.
+**Note:** If you change your design (e.g., add methods or fields), rerun `goa gen` to keep the generated code in sync.
+{{< /alert >}}
 
 ## 2. Explore the Generated Code
 
 ### `gen/concerts`
-
-Defines **transport-agnostic endpoints** using Goa's `Endpoint` interface. Each
-endpoint corresponds to one method in your service (`list`, `create`, `show`,
-`update`, `delete`). This package includes:
-
-- The **service interface** you'll implement to provide business logic (in `service.go`).
-- **Payload** and **Result** types mirroring your design (also in `service.go`).
-- A functions that let you inject your service implementation (`NewEndpoints` in `endpoints.go`).
-- A function that wraps Goa endpoints into a service client (`NewClient` in `client.go`).
+{{< alert title="Transport-Agnostic Endpoints" color="primary" >}}
+Defines core service components independent of transport protocol:
+- **Service interface** for business logic implementation (`service.go`)
+- **Payload** and **Result** types mirroring your design
+- **NewEndpoints** function for service implementation injection
+- **NewClient** function for service client creation
+{{< /alert >}}
 
 ### `gen/http/concerts/server`
-
-Contains **HTTP-specific** server-side logic mapping your design to HTTP routes,
-request bodies, and response status codes. This includes code that:
-
-- **Wraps** service endpoints in HTTP handlers (`New` function in `gen/http/concerts/server/server.go`).
-- **Encodes** and **decodes** request bodies and responses (`gen/http/concerts/server/encode_decode.go`).
-- **Routes requests** to the proper service method (`Server.Mount` in `gen/http/concerts/server/server.go`).
-- **Defines transport-specific types** and their validation logic (`gen/http/concerts/server/types.go`).
-- **Creates HTTP paths** from your design (`gen/http/concerts/server/paths.go`).
+{{< alert title="HTTP Server Components" color="primary" >}}
+Contains server-side HTTP-specific logic:
+- **HTTP handlers** wrapping service endpoints
+- **Encoding/decoding** logic for requests and responses
+- **Request routing** to service methods
+- **Transport-specific types** and validation
+- **Path generation** from design specifications
+{{< /alert >}}
 
 ### `gen/http/concerts/client`
-
-Contains **HTTP-specific** client-side logic which mirrors the server-side
-logic. This includes code that:
-
-- **Creates** service endpoints from a HTTP client (`NewClient` function in `gen/http/concerts/client/client.go`).
-- **Encodes** and **decodes** request bodies and responses (`gen/http/concerts/client/encode_decode.go`).
-- **Creates HTTP paths** from your design (`gen/http/concerts/client/paths.go`).
-- **Defines transport-specific types** and their validation logic (`gen/http/concerts/client/types.go`).
-- **Defines helper functions** to create a client command line tool (`gen/http/concerts/client/cli.go`).
+{{< alert title="HTTP Client Components" color="primary" >}}
+Provides client-side HTTP functionality:
+- **Client creation** from HTTP endpoints
+- **Encoding/decoding** for requests and responses
+- **Path generation** functions
+- **Transport-specific types** and validation
+- **CLI helper functions** for client tools
+{{< /alert >}}
 
 ### `gen/http/openapi[2|3].[yaml|json]`
+{{< alert title="API Documentation" color="primary" >}}
+Auto-generated OpenAPI specifications:
+- Available in both YAML and JSON formats
+- Supports OpenAPI 2.0 (Swagger) and 3.0
+- Compatible with Swagger UI and other API tools
+- Useful for API exploration and client generation
+{{< /alert >}}
 
-Contains the OpenAPI specification files that document your API. These are
-automatically generated from your design in both YAML and JSON formats, and in
-both OpenAPI 2.0 (Swagger) and OpenAPI 3.0 versions. These files can be used
-with tools like Swagger UI to explore and test your API, or with code generators
-to create client libraries in various programming languages.
+## 3. Implement Your Service
 
-## 3. Create Your `main.go` File
+The generated service interface in `gen/concerts/service.go` defines the methods you need to implement:
 
-Let's now create a `main.go` file to implement the service and the HTTP server.
-For the sake of simplicity, we'll create a service in the `main` package.
-Typically the service implementation is in a separate package. Create a file
-`cmd/concerts/main.go` in your project:
+```go
+type Service interface {
+    // List upcoming concerts with optional pagination.
+    List(context.Context, *ListPayload) (res []*Concert, err error)
+    // Create a new concert entry.
+    Create(context.Context, *ConcertPayload) (res *Concert, err error)
+    // Get a single concert by ID.
+    Show(context.Context, *ShowPayload) (res *Concert, err error)
+    // Update an existing concert by ID.
+    Update(context.Context, *UpdatePayload) (res *Concert, err error)
+    // Remove a concert from the system by ID.
+    Delete(context.Context, *DeletePayload) (err error)
+}
+```
+
+### Implementation Flow
+
+Your implementation needs to:
+
+1. Create a service struct that implements the interface
+2. Implement all required methods
+3. Wire everything together with the HTTP server
+
+Create a file at `cmd/concerts/main.go` with the following implementation:
 
 ```go
 package main
@@ -127,11 +144,9 @@ func main() {
     }
 }
 
-// ConcertsService implements genconcerts.Service interface from
-// gen/concerts/service.go
+// ConcertsService implements genconcerts.Service interface
 type ConcertsService struct {
-    // In-memory storage for concerts
-    concerts []*genconcerts.Concert
+    concerts []*genconcerts.Concert // In-memory storage
 }
 
 // List upcoming concerts with optional pagination.
@@ -164,7 +179,6 @@ func (m *ConcertsService) Show(ctx context.Context, p *genconcerts.ShowPayload) 
             return concert, nil
         }
     }
-    // Use the generated MakeNotFound function to create a not found error
     return nil, genconcerts.MakeNotFound(fmt.Errorf("concert not found: %s", p.ConcertID))
 }
 
@@ -203,78 +217,16 @@ func (m *ConcertsService) Delete(ctx context.Context, p *genconcerts.DeletePaylo
 }
 ```
 
-## 4. Add Your Custom Logic
+## 4. Run and Test
 
-### Service Interface
-
-Within `gen/concerts/service.go`, you'll see:
-
-```go
-// The concerts service manages music concert data.
- type Service interface {
-     // List upcoming concerts with optional pagination.
-     List(context.Context, *ListPayload) (res []*Concert, err error)
-     // Create a new concert entry.
-     Create(context.Context, *ConcertPayload) (res *Concert, err error)
-     // Get a single concert by ID.
-     Show(context.Context, *ShowPayload) (res *Concert, err error)
-     // Update an existing concert by ID.
-     Update(context.Context, *UpdatePayload) (res *Concert, err error)
-     // Remove a concert from the system by ID.
-     Delete(context.Context, *DeletePayload) (err error)
- }
-```
-
-Implementing these methods is up to you. Place your logic in a separate package,
-add a database or persistent layer, and handle errors properly.
-
-### Service Implementation Flow
-
-Here's how the pieces fit together:
-
-1. First, you implement the service interface with your business logic:
-```go
-type ConcertsService struct {
-    // Your fields here
-}
-
-// Implement all required methods
-func (s *ConcertsService) List(ctx context.Context, p *ListPayload) ([]*Concert, err error) {
-    // Your implementation
-}
-```
-
-2. Then, you wire everything together:
-```go
-// Create your service implementation
-svc := &ConcertsService{}
-
-// Convert your service into Goa endpoints
-endpoints := genconcerts.NewEndpoints(svc)
-
-// For HTTP: Create an HTTP handler from the endpoints
-handler := genhttp.New(endpoints, mux, decoder, encoder, nil, nil)
-
-// For gRPC (if your design includes it):
-// grpcHandler := gengrpc.New(endpoints, nil)
-```
-
-The `NewEndpoints` function wraps each of your service methods in a standardized
-Goa endpoint that handles transport-agnostic concerns. These endpoints can then
-be used with different transport layers (HTTP, gRPC) through their respective
-handlers.
-
-## 5. Validate the Implementation
-
-- **Run** the service, from the project root:
+1. **Run** the service from your project root:
 ```bash
 go run concerts/cmd/concerts
 ```
 
-- **Test** endpoints with `curl` or similar:
-
+2. **Test** endpoints with curl:
 ```bash
 curl http://localhost:8080/concerts
 ```
 
-If everything works, you're ready to proceed to the [Running tutorial](./3-running.md) (if applicable) or start **enhancing** your service with advanced Goa features.
+Upon successful validation, proceed to [Running](./3-running.md) to test the service with a HTTP client.

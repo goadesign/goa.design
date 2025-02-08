@@ -1,39 +1,38 @@
 ---
-title: Running
+title: Running the Concerts Service
+linkTitle: Running
 weight: 3
+description: "Learn how to run your Goa-based Concerts service, test the REST endpoints using HTTP requests, and explore the auto-generated OpenAPI documentation."
 ---
 
-# Running the Concerts Service
+You've designed your API and implemented the service methods. Now it's time to run the Concerts service and test its endpoints.
 
-You've **designed** your API and **implemented** the service methods. Now it's
-time to **run** the Concerts service. This tutorial shows how to start the server,
-test its endpoints, and take advantage of the auto-generated **OpenAPI** docs.
+{{< alert title="In This Tutorial" color="primary" >}}
+1. Start the server
+2. Test the endpoints with HTTP requests
+3. Explore the auto-generated OpenAPI documentation
+{{< /alert >}}
 
 ## 1. Start the Server
 
-From your project root, simply build and run your app. For example, if your
-`main.go` is in `cmd/concerts/main.go`, you can do:
+From your project root, build and run your app:
 
 ```bash
 go run concerts/cmd/concerts
 ```
 
-When it starts, the service **listens on port 8080** by default (unless you
-modified the code in `main.go` to use another port).
+The service listens on port 8080 by default (unless modified in `main.go`).
 
 ## 2. Test the Endpoints
 
-You can now **send requests** to the service using tools like `curl`, HTTPie, or
-Postman:
+You can send requests to the service using tools like `curl`, HTTPie, or Postman.
 
-- **List concerts** (GET):
-
+### List Concerts
 ```bash
 curl http://localhost:8080/concerts
 ```
 
-- **Create a concert** (POST):
-
+### Create a Concert
 ```bash
 curl -X POST http://localhost:8080/concerts \
   -H "Content-Type: application/json" \
@@ -45,14 +44,13 @@ curl -X POST http://localhost:8080/concerts \
   }'
 ```
 
-- **Show a concert** (GET), assuming you have a `concertID` returned from create:
-
+### Show a Concert
+Replace `<concertID>` with an ID returned from create:
 ```bash
 curl http://localhost:8080/concerts/<concertID>
 ```
 
-- **Update** (PUT):
-
+### Update a Concert
 ```bash
 curl -X PUT http://localhost:8080/concerts/<concertID> \
   -H "Content-Type: application/json" \
@@ -62,80 +60,38 @@ curl -X PUT http://localhost:8080/concerts/<concertID> \
   }'
 ```
 
-- **Delete** (DELETE):
-
+### Delete a Concert
 ```bash
 curl -X DELETE http://localhost:8080/concerts/<concertID>
 ```
 
-## 3. Viewing Your Goa API Documentation
+## 3. Access API Documentation
 
-Goa automatically generates OpenAPI documentation files for your API in both
-version 2.x and 3.0.0 formats. These files are located in the `gen/http/`
-directory and contain comprehensive descriptions of your:
+Goa automatically generates OpenAPI documentation for your API in both version 2.x and 3.0.0 formats. These files are located in the `gen/http/` directory.
 
-- API routes
-- Request payloads
-- Response formats
+### Using Swagger UI
 
-### Using Swagger UI to View and Test Your API
+{{< alert title="Quick Setup" color="primary" >}}
+1. **Prerequisites**
+   - Docker installed on your system
 
-Swagger UI provides an interactive interface to explore and test your API. Here's how to set it up locally:
+2. **Start Swagger UI**
+   ```bash
+   docker run -p 8081:8080 swaggerapi/swagger-ui
+   ```
 
-#### Prerequisites
+3. **View Documentation**
+   - Open `http://localhost:8081` in your browser
+   - Enter `http://localhost:8080/openapi3.yaml` in the Swagger UI
+{{< /alert >}}
 
-- **Docker**: For running the Swagger UI container.
+### Alternative Documentation Tools
 
-#### Steps to Set Up Swagger UI
+- **Redoc**: Another popular OpenAPI documentation viewer
+- **OpenAPI Generator**: Generate client libraries in various languages
+- **Speakeasy**: Generate SDKs with enhanced developer experience
 
-1. **Run the Swagger UI container** and map the container’s port to your host:
+## Next Steps
 
-```bash
-docker run -p 8081:8080 swaggerapi/swagger-ui
-```
+Now that you've explored the basic API operations, learn more about how Goa handles [HTTP encoding and decoding](../4-encoding) to understand how requests and responses are processed.
 
-2. **Access Swagger UI** by opening `http://localhost:8081` in your browser.
-
-3. Load your API documentation by entering the URL where your OpenAPI file is
-   hosted (i.e. `http://localhost:8080/openapi3.yaml`).
-
-Once loaded, you’ll see an **interactive** documentation page for your Concerts
-API. You can inspect available endpoints, view payload and response schemas,
-and even send test requests from the browser.
-
-#### Other Options
-
-- **Redoc**: Another open-source UI for OpenAPI specs.
-- **OpenAPI Generator**: Generate client libraries in languages like Python,
-  TypeScript, or Java.
-- **Speakeasy**: Generate client libraries in languages like Python,
-  TypeScript, or Java, see [Speakeasy](https://arc.net/l/quote/bwsorqsa).
-- **Serve OpenAPI from Your Service**: Add a route in your `main.go` to serve
-  `openapi3.yaml` at `/docs/openapi3.yaml` (for example).
-
-## 4. Next Steps
-
-The [Transport Mapping](../4-concepts/1-design-language/3-transport-mapping) section provides a
-detailed guide on mapping your service's payloads and results to HTTP transport
-elements. You'll learn how to:
-
-- Map fields to URL path parameters
-- Include data in query strings
-- Set and read HTTP headers
-- Structure request and response bodies
-- Handle different content types
-- Configure custom encoders and decoders
-
-In a production setting, you might also:
-
-- **Secure endpoints** with authentication and authorization, see
-  [Security](../5-real-world/1-security).
-- **Add logs or tracing** to see how your service behaves in real time, see
-  [Observability](../5-real-world/2-observability).
-- **Rate limit** access to the service with [Interceptors](../4-concepts/3-interceptors).
-
-With your service running and responding to requests, you have a
-**fully operational** Goa-based Concerts API.
-
-Congratulations—you’ve built and tested a **complete** RESTful service using
-Goa’s design-first approach!

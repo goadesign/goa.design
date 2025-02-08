@@ -1,9 +1,9 @@
 ---
-title: Defining Errors in Goa
+title: Defining Errors
+linkTitle: Defining Errors
 weight: 2
+description: "Master the art of defining service-level and method-level errors in Goa using its DSL, including custom error types and reusable error definitions."
 ---
-
-# Defining Errors in Goa
 
 Goa provides a flexible and powerful way to define errors within your service
 designs. By leveraging Goa's Domain-Specific Language (DSL), you can specify

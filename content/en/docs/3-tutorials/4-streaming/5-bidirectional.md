@@ -1,9 +1,8 @@
 ---
-title: "Bidirectional Streaming"
+title: "Implementing Bidirectional Streaming"
+linkTitle: Bidirectional
 weight: 5
 ---
-
-# Implementing Bidirectional Streaming
 
 Once you've designed your bidirectional streaming endpoints using Goa's
 `StreamingPayload` and `StreamingResult` DSL, the next step is to implement both

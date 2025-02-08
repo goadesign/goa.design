@@ -1,10 +1,12 @@
 ---
 title: Introduction
+linkTitle: Introduction
 weight: 1
+description: "Learn about Goa's error handling capabilities, including its design-first approach, error definition DSL, and how it ensures consistent error handling across different transports."
 ---
 
-# Introduction
-
+Effective error handling is a cornerstone of building reliable and maintainable
+APIs. In the context of Goa, a design-first framework for building microservices
 Effective error handling is a cornerstone of building reliable and maintainable
 APIs. In the context of Goa, a design-first framework for building microservices
 in Go, error handling is seamlessly integrated into the development workflow.
@@ -63,7 +65,7 @@ ensure that they are properly handled and communicated to clients.
 
 ### Defining Errors in the DSL
 
-Here’s a brief look at how errors are defined within a Goa service:
+Here's a brief look at how errors are defined within a Goa service:
 
 ```go
 var _ = Service("divider", func() {

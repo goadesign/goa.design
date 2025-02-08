@@ -1,13 +1,13 @@
 ---
 title: "Designing gRPC Services"
+linkTitle: "Designing"
 weight: 1
+description: "Learn to design gRPC services with Goa, including service definition, method annotations, protobuf generation, and proper gRPC status code mappings."
 ---
 
-# Designing a Basic gRPC Service
-
-In this tutorial, you’ll **design** a simple gRPC service with Goa. While Goa is
+In this tutorial, you'll **design** a simple gRPC service with Goa. While Goa is
 often used for REST endpoints, it also has first-class support for **gRPC**
-transports. You’ll see how to:
+transports. You'll see how to:
 
 - Define a service and methods in the Goa DSL.
 - Annotate them for gRPC, ensuring the generated code produces `.proto` files.
@@ -16,7 +16,7 @@ transports. You’ll see how to:
 ## What We'll Build
 
 We'll create a **`greeter`** service that has a single method called `SayHello`.
-The method receives a name in the payload and returns a greeting message. We’ll
+The method receives a name in the payload and returns a greeting message. We'll
 also show how to **qualify** gRPC responses with standard gRPC codes.
 
 | Method   | gRPC RPC      | Description                                 |
@@ -108,7 +108,7 @@ With your **gRPC service design** in place, proceed to the next tutorial:
   Explore how to use the official gRPC CLI or other tools to call your endpoints
   and ensure everything works correctly.
 
-You’ve now **designed** a minimal gRPC service using Goa. The DSL approach gives
+You've now **designed** a minimal gRPC service using Goa. The DSL approach gives
 you a **single source of truth** for request/response types, validations, and
 gRPC status mappings—making your service **easy to evolve** and **maintain** over
 time!

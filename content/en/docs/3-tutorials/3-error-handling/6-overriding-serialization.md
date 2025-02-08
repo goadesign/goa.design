@@ -1,4 +1,9 @@
-# Overriding Error Serialization
+---
+title: Overriding Error Serialization
+linkTitle: Overriding Serialization
+weight: 6
+description: "Customize how Goa serializes errors by implementing custom error formatters and handling specific error types with tailored responses."
+---
 
 In Goa, errors are automatically handled by the framework, providing a
 consistent way to communicate issues such as validation errors, internal server

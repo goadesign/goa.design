@@ -4,8 +4,8 @@
 </a>
 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
 	{{ range .Site.Languages }}
-		{{ if not (eq . $langPage.Language) }}
-			<a class="dropdown-item" href="{{ cond (eq . $.Site.Home.Language) "/" (print "/" .Lang) }}">{{ .LanguageName }}</a>
-		{{ end }}
+	{{ if not (eq . $langPage.Language) }}
+	<a class="dropdown-item" href="{{ cond (eq . $.Site.Home.Language) " /" (print "/" .Lang) }}">{{ .LanguageName }}</a>
+	{{ end }}
 	{{ end }}
 </div>

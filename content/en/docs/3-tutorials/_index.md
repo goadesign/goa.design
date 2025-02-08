@@ -2,6 +2,7 @@
 title: "Hands-on Goa Tutorials"
 linkTitle: "Tutorials"
 weight: 3
+description: "In-depth tutorials for building real-world services with Goa, including REST APIs, gRPC services, and comprehensive error handling strategies."
 ---
 
 # Goa Core Tutorials

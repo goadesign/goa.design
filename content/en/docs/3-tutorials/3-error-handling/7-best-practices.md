@@ -1,9 +1,9 @@
 ---
 title: Best Practices
+linkTitle: Best Practices
 weight: 7
+description: "Essential guidelines and recommended practices for implementing robust error handling in your Goa services, including naming conventions and testing strategies."
 ---
-
-# Best Practices
 
 Implementing robust error handling is essential for building reliable and
 maintainable APIs. Here are some best practices to follow when defining and

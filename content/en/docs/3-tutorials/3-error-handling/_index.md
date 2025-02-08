@@ -2,9 +2,8 @@
 linkTitle: Error Handling
 title: Error Handling
 weight: 3
+description: "Comprehensive guide to error handling in Goa, covering error definition, transport mapping, custom error types, and best practices for building reliable APIs."
 ---
-
-# Error Handling
 
 Effective error handling is crucial for building reliable and maintainable APIs.
 Goa provides a robust DSL to define and manage errors within your services,

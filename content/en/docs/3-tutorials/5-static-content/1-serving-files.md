@@ -1,9 +1,9 @@
 ---
 title: Serving Files
+linkTitle: Serving Files
 weight: 1
+description: "Master Goa's file serving capabilities to efficiently deliver static assets like HTML, CSS, JavaScript, and images through HTTP endpoints with proper path resolution."
 ---
-
-# Serving Files
 
 Goa provides a straightforward way to serve static assets such as HTML, CSS,
 JavaScript, and images through the `Files` function in the service DSL. This

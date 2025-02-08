@@ -1,9 +1,9 @@
 ---
-title: Encoding
+title: Customizing Request/Response Encoding
+linkTitle: Encoding
 weight: 4
+description: "Master Goa's encoding system by learning how to customize request/response encoding, support multiple content types like JSON and MessagePack, and implement custom serialization logic."
 ---
-
-# Customizing Response Encoding
 
 After implementing your Concerts service, you might need to customize how data
 is encoded and decoded. This tutorial shows you how to work with Goa's flexible
@@ -154,25 +154,17 @@ curl -X POST http://localhost:8080/concerts \
 
 ## Best Practices
 
-1. **Content Negotiation**
-   - Always check Accept headers for responses
-   - Provide sensible defaults (usually JSON)
-   - Return 406 Not Acceptable for unsupported types
+### Content Negotiation
+When handling requests and responses, proper content negotiation is essential. Your service should always check the Accept header to determine the response format the client expects. While JSON is typically a good default format, be prepared to return a `406 Not Acceptable` status code if the client requests an unsupported content type. This ensures clear communication about supported formats.
 
-2. **Performance**
-   - Use appropriate encoder for the use case
-   - Consider binary formats for large payloads
-   - Implement caching when possible
+### Performance Considerations 
+Choose encoders that match your use case requirements. For high-throughput APIs or large payloads, consider using binary formats like MessagePack or Protocol Buffers instead of text-based formats like JSON. Additionally, implementing response caching can significantly improve performance for frequently accessed resources.
 
-3. **Error Handling**
-   - Validate Content-Type headers
-   - Return clear error messages
-   - Maintain consistent error formats
+### Error Handling Strategy
+Robust error handling starts with validating Content-Type headers on incoming requests. When errors occur, return clear, descriptive error messages that help clients understand and fix the issue. Maintain a consistent error response format across your API to make error handling predictable for clients.
 
-4. **Testing**
-   - Test with different Content-Types
-   - Verify error responses
-   - Check header handling
+### Testing Approach
+Thoroughly test your API with different content types to ensure proper encoding and decoding. Include tests that verify error responses when invalid content types are provided. Pay special attention to header handling - test both the Accept header for responses and Content-Type header for requests to ensure your content negotiation works as expected.
 
 ## Summary
 

@@ -1,9 +1,8 @@
 ---
 title: "Designing Streaming Endpoints"
+linkTitle: Designing
 weight: 2
 ---
-
-# Designing Streaming Endpoints
 
 Designing streaming endpoints in Goa involves defining methods that can handle
 the transmission of a sequence of results. Whether you're implementing

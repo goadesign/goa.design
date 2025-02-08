@@ -1,11 +1,11 @@
 ---
 title: "Implementing the Service"
+linkTitle: "Implementing"
 weight: 2
+description: "Guide to implementing gRPC services in Goa, covering code generation, service implementation, server setup, and understanding the generated gRPC artifacts."
 ---
 
-# Implementing a gRPC Service in Goa
-
-After **designing** your gRPC service with Goa’s DSL, the next step is to
+After **designing** your gRPC service with Goa's DSL, the next step is to
 **implement** and run that service. In this tutorial, you will:
 
 1. **Generate** the gRPC scaffolding.  
@@ -22,7 +22,7 @@ go mod tidy
 ```
 
 This command analyzes your gRPC design (`greeter.go`) and creates a `gen` folder
-with **transport-specific** code for gRPC. You’ll see files in these directories:
+with **transport-specific** code for gRPC. You'll see files in these directories:
 
 - `gen/grpc/greeter/`  
   - `pb/` containing the `.proto` file and generated Go code.  
@@ -56,7 +56,7 @@ Contains the **client** side code for calling the `greeter` service:
 
 ## 3. Implement the Service Interface
 
-Inside `gen/greeter/service.go`, you’ll find the **service interface** Goa
+Inside `gen/greeter/service.go`, you'll find the **service interface** Goa
 expects. For our `SayHello` example, it looks like:
 
 ```go
@@ -96,13 +96,13 @@ func (s *GreeterService) SayHello(ctx context.Context, payload *gengreeter.SayHe
 }
 ```
 
-This satisfies Goa’s service interface for `SayHello`. We simply append `payload.Name`
-to a string. In real scenarios, you’d add domain logic, persistence, or
+This satisfies Goa's service interface for `SayHello`. We simply append `payload.Name`
+to a string. In real scenarios, you'd add domain logic, persistence, or
 validation here.
 
 ## 4. Create Your `main.go` to Start the gRPC Server
 
-If you don’t use `goa example`, you need your own `main.go` to **mount** the
+If you don't use `goa example`, you need your own `main.go` to **mount** the
 service. For instance, create `cmd/greeter/main.go`:
 
 ```go

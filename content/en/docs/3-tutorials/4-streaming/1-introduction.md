@@ -1,9 +1,8 @@
 ---
 title: "Introduction"
+linkTitle: Introduction
 weight: 1
 ---
-
-# Introduction
 
 Streaming is a powerful feature that allows APIs to handle large volumes of data
 and real-time updates efficiently. In Goa, streaming support enables you to

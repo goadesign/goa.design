@@ -1,12 +1,12 @@
 ---
 title: "Running the Service"
+linkTitle: "Running"
 weight: 3
+description: "Learn to run and test your Goa gRPC service using various tools like gRPC CLI, gRPCurl, and custom Go clients, with practical examples and common usage patterns."
 ---
 
-# Running and Testing the gRPC Service
-
-After designing and implementing your gRPC-based Goa service, you’ll want to
-**run** it locally and confirm it works as expected. In this tutorial, we’ll:
+After designing and implementing your gRPC-based Goa service, you'll want to
+**run** it locally and confirm it works as expected. In this tutorial, we'll:
 
 1. **Launch** the gRPC server.
 2. **Test** the service using gRPC tools.
@@ -14,7 +14,7 @@ After designing and implementing your gRPC-based Goa service, you’ll want to
 
 ## 1. Launch the Server
 
-From your project’s root (e.g., `grpcgreeter/`), run the `main.go` you created in
+From your project's root (e.g., `grpcgreeter/`), run the `main.go` you created in
 the `cmd/greeter/` folder:
 
 ```bash
@@ -101,21 +101,10 @@ func main() {
 Compile and run this client, and it should print the greeting returned by your
 service.
 
-## 3. Common Next Steps
-
-- **Secure endpoints** with authentication and authorization, see
-  [Security](../5-real-world/1-security).
-- **Add logs** to your service methods to track incoming requests or use
-  a distributed tracing system (like OpenTelemetry) for deeper insights, see
-  [Observability](../5-real-world/2-observability).
-- **Return gRPC status codes** when errors occur. Goa allows you to specify
-  error mappings in the DSL (e.g., `Response(CodeNotFound)`), aligning with
-  typical gRPC patterns.
-
 ---
 
-That’s it! You now have a **running gRPC service** built with Goa, tested either
+That's it! You now have a **running gRPC service** built with Goa, tested either
 via the official gRPC CLI or a custom Go client. Continue exploring the DSL to
 add more features—like **streaming**, **authentication interceptors**, or
-**automatic code generation** for multiple environments. You’re well on your
+**automatic code generation** for multiple environments. You're well on your
 way to a **robust** Go-based microservices architecture with minimal boilerplate!

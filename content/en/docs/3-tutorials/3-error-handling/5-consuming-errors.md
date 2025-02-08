@@ -1,9 +1,9 @@
 ---
 title: Producing and Consuming Errors
+linkTitle: Producing Errors
 weight: 5
+description: "Guide to generating and handling errors in Goa services, including using generated helper functions and handling errors on the client side."
 ---
-
-# Producing and Consuming Errors
 
 Producing and consuming errors are essential aspects of error handling in
 Goa-based services. This section details how to generate errors within your

@@ -1,9 +1,8 @@
 ---
-title: "Server-Side Streaming"
+title: "Implementing Server-Side Streaming"
+linkTitle: Server-Side
 weight: 3
 ---
-
-# Implementing Server-Side Streaming
 
 Once you've designed your server streaming endpoints using Goa's
 `StreamingResult` DSL, the next step is to implement both the server-side logic
