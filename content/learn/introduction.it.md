@@ -24,7 +24,8 @@ vengano generati dalla stessa sorgente.
 
 ## Separazione dei livelli
 
-Il DSL in Goa v2 permette di descrivere i servizi in modo transport-agnostic.
+Dalla v2 il DSL a Goa permette di descrivere i servizi in un trasporto
+modo agnostico.
 I DSL dei service methods descrivono gli input e gli output, mentre i DSL
 di trasporto descrivono come il metodo stesso viene costruito dai dati in arrivo
 e come l'output viene serializzato.
@@ -71,3 +72,7 @@ codice generato di default.
   rendendo semplice l'interoperabilità con codice esterno.
 * Il plugin [goa-kit](https://github.com/goadesign/plugins/tree/v3/goakit) permette di
   generare package go-kit a partire dai design Goa.
+
+## Quale è la differenza fra Goa v3 e Goa v2?
+
+* Goa v3 richiede e supporta i moduli Go.

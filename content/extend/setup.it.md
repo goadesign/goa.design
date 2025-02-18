@@ -8,6 +8,10 @@ parent = "extend"
 +++
 
 # Development Setup
+Goa usa GitHub. Il progetto può essere trovato su 
+[github.com/goadesign/goa](https://github.com/goadesign/goa). 
+Da non confondere con il progetto di questo sito  
+[github.com/goadesign/goa.design](https://github.com/goadesign/goa.design).
 
 Questa sezione descrive i passi necessari per creare un ambiente di sviluppo per contribuire allo 
 sviluppo di Goa.

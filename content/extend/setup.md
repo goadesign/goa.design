@@ -8,6 +8,10 @@ parent = "extend"
 +++
 
 # Development Setup
+Goa uses GitHub. The project can be found at 
+[github.com/goadesign/goa](https://github.com/goadesign/goa). 
+Not to be confused with the project for this site 
+[github.com/goadesign/goa.design](https://github.com/goadesign/goa.design).
 
 This document describes the steps required to setup a development environment for contributing to Goa.
 
@@ -67,4 +71,4 @@ If you haven't yet you should join the Slack
 Once you are ready to submit your changes simply open a GitHub
 [PR](https://help.github.com/en/articles/about-pull-requests), someone will review
 your proposed changes and provide feedback. More details on how to contribute is
-available in the [repo](https://github.com/goadesign/goa/blob/v3/CONTRIBUTING.md).
+available in the [repository](https://github.com/goadesign/goa/blob/v3/CONTRIBUTING.md).

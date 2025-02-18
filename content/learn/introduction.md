@@ -26,7 +26,7 @@ source.
 
 ## Separation of Concerns
 
-The DSL in goa v2 makes it possible to describe the services in a transport
+Since v2 the DSL in Goa makes it possible to describe the services in a transport
 agnostic way. The service methods DSLs each describe the method input and output
 types. Transport specific DSL then describe how the method input is built from
 incoming data and how the output is serialized. For example, a method may specify
@@ -73,3 +73,7 @@ generators.
   making it easier to interface with external code.
 * The [goa-kit](https://github.com/goadesign/plugins/tree/v3/goakit) plugin makes it
   possible to generate go-kit microservices from Goa designs.
+
+## How is Goa v3 different from v2?
+
+* Goa v3 requires and supports Go modules.
