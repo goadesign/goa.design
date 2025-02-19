@@ -8,10 +8,8 @@ parent = "extend"
 +++
 
 # 開発環境の構築
-Goa は GitHub を使用しています。プロジェクトは次の場所にあります。
-[github.com/goadesign/goa](https://github.com/goadesign/goa)。 
-このサイトのプロジェクトと混同しないでください
-[github.com/goadesign/goa.design](https://github.com/goadesign/goa.design)。
+Goa は GitHub を使用しています。プロジェクトは [github.com/goadesign/goa](https://github.com/goadesign/goa) にあります。
+このサイトのプロジェクト [github.com/goadesign/goa.design](https://github.com/goadesign/goa.design) と混同しないでください。
 
 このドキュメントでは、Goa にコントリビュートするための開発環境のセットアップに必要な手順について説明します。
 
