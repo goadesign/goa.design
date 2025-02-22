@@ -1,8 +1,12 @@
 ---
-title: "Getting Started with Goa"
+title: "Getting Started"
 linkTitle: "Getting Started"
 weight: 2
-description: "Quick start guide to building services with Goa, including installation, basic concepts, and your first microservice implementation."
+description: >
+  Get up and running with Goa quickly - installation, setup, and your first API.
+menu:
+  main:
+    weight: 2
 ---
 
 This section guides you through getting started with Goa development. You'll learn how to:

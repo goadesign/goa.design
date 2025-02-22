@@ -18,7 +18,7 @@ footer_translation_by: "Traduzione di Alessandro Sanino"
 
 # Hero Section
 hero_title: "Design first."
-hero_description: '<a href="https://github.com/goadesign/goa">Goa</a> fornisce un approccio olistico per lo sviluppo di remote API e microservizi in <a href="https://golang.org">Go</a>.'
+hero_description: "Progetta la tua API, poi lascia fare a Goa."
 
 # Features Section
 feature_codegen_title: "Generazione del Codice"
@@ -54,3 +54,11 @@ wizard_features: |
     <li>Sfrutta GPT per creare design Goa attraverso una conversazione naturale</li>
     <li>Ricevi suggerimenti di design e best practice mentre costruisci</li>
   </ul>
+
+# Design First Section
+design_first_title: "Costruire Software con l'Approccio Design-First"
+design_first_description: "Goa offre un approccio dichiarativo e design-first per costruire microservizi robusti, scalabili e type-safe in Go. Definisci la tua API una volta sola e lascia che Goa generi tutto ciò di cui hai bisogno—dal trasporto alla documentazione—così puoi concentrarti sulla logica di business, non sul codice ripetitivo."
+
+# Common actions
+learn_more: "Scopri di più"
+get_started: "Inizia Ora"

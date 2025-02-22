@@ -1,6 +1,6 @@
 # Site title and meta
 site_title: "Goa :: Design first."
-site_description: "Goa is a code generation framework built in Go that provides the developer with a clear and concise path to generate idiomatic API and Microservice architectures by using a design-first methodology."
+site_description: "Goa is a powerful codegen framework for Go, enabling a design-first approach to building idiomatic APIs and microservices—clear, scalable, and boilerplate-free."
 
 # Navigation
 nav_search_placeholder: "Search"
@@ -17,7 +17,7 @@ footer_logo_by: "Logo by Jason Melgoza"
 
 # Hero Section
 hero_title: "Design first."
-hero_description: '<a href="https://github.com/goadesign/goa">Goa</a> provides a holistic approach for developing remote APIs and microservices in <a href="https://golang.org">Go</a>.'
+hero_description: "Design your API, let Goa handle the rest."
 
 # Features Section
 feature_codegen_title: "Code Generation"
@@ -53,3 +53,10 @@ sponsor_incidentio_link: "Learn More"
 sponsor_speakeasy_title: "Speakeasy: Enterprise DevEx for your API"
 sponsor_speakeasy_desc: "Our platform makes it easy to create feature-rich production ready SDKs.<br/>Speed up integrations and reduce errors by giving your API the DevEx it deserves."
 sponsor_speakeasy_link: "Integrate with Goa"
+
+design_first_title: "Building Software the Design-First Way"
+design_first_description: "Goa brings a declarative, design-first approach to building robust, scalable, and type-safe microservices in Go. Define your API once, and let Goa generate everything you need—from transport to documentation—so you can focus on business logic, not boilerplate."
+
+# Common actions
+learn_more: "Learn More"
+get_started: "Get Started"

@@ -17,7 +17,7 @@ footer_logo_by: "ロゴ作成: Jason Melgoza"
 
 # Hero Section
 hero_title: "はじめにデザインを。"
-hero_description: '<a href="https://github.com/goadesign/goa">Goa</a> は <a href="https://golang.org">Go</a> でリモート API やマイクロサービスを構築する総体的なアプローチを提供します。'
+hero_description: "APIをデザイン、残りはGoaにお任せ。"
 
 # Features Section
 feature_codegen_title: "コード生成"
@@ -51,3 +51,10 @@ wizard_features: |
     <li>設計中にデザインの提案とベストプラクティスをリアルタイムで取得</li>
   </ul>
 wizard_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> サブスクリプションが必要です)"
+
+design_first_title: "デザインファーストでソフトウェアを構築"
+design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。APIを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
+
+# Common actions
+learn_more: "詳細を見る"
+get_started: "始めましょう"

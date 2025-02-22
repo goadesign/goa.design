@@ -1,13 +1,220 @@
-.td-box--gradient {
-    background: linear-gradient(180deg, var(--td-primary) 0%, var(--td-primary-light) 100%);
+// Variables
+:root {
+  --td-box-primary-text: #1a73e8;
+  --td-box-secondary-text: #4a5568;
 }
 
-.td-box--dark {
-    background-color: var(--td-dark);
-    color: #fff;
+// Typography & Links
+body {
+  color: rgba(41, 41, 41, 0.85);
+  background-color: #f5f7fa;  // Light gray-blue background
 }
 
-.td-box--white {
-    background-color: #fff;
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: $font-family-helvetica;
 }
 
+a {
+  color: $primary;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+    color: darken($primary, 10%);
+  }
+}
+
+// Layout - Main Container
+.td-main:not(.td-home .td-main) {
+  display: flex;
+  justify-content: center;
+  gap: 2em;
+  padding: 0 2em;
+
+  // Left Sidebar
+  .td-sidebar {
+    width: 16rem;
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+  }
+
+  // Main Content Area
+  main,
+  .td-main main,
+  .container-fluid {
+    padding-top: 4rem;
+    max-width: 850px;
+    width: 100%;
+    padding-left: 1rem !important;
+
+    // Content Card styling
+    .td-content {
+      padding: 2rem;
+      background: white;
+      border-radius: 12px;  // Slightly larger radius
+      box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.05);  // Stronger shadow with border
+      margin: 0 1rem;  // Add some margin on sides
+      
+      > * {
+        max-width: none !important;
+        width: 100%;
+      }
+
+      // Add some spacing between sections
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        
+        &:first-child {
+          margin-top: 0;
+        }
+      }
+    }
+  }
+
+  // Right Sidebar
+  .td-sidebar-toc {
+    width: 16rem;
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+
+    .td-page-meta {
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    nav {
+      margin-top: 1em;
+    }
+  }
+}
+
+// Homepage Styles
+.td-home {
+  // Reduce space between nav and hero
+  .td-navbar {
+    margin-bottom: 0;
+    padding: 0.5rem 0;  // Reduced padding
+  }
+
+  // Hero section
+  .td-box--primary {
+    padding: 1rem 0 1rem;
+    margin-top: 0;
+    background: linear-gradient(135deg, 
+      #0E4B8C 0%,      // Our primary blue (navbar color)
+      #1a202c 100%     // Very dark blue-gray (using $dark from variables)
+    );
+    position: relative;
+    overflow: hidden;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at top right, 
+        rgba(255,255,255,0.1) 0%,
+        rgba(255,255,255,0) 60%
+      );
+      pointer-events: none;
+    }
+
+    .display-1 {
+      font-family: $font-family-playfair;
+      font-size: 2.75rem;  // Reduced from 3.5rem
+      font-style: italic;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+      color: rgba(255, 255, 255, 0.95);  // Slightly transparent white
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.2),    // Dark shadow for depth
+        0 0 40px rgba(255, 255, 255, 0.1); // Subtle glow
+      position: relative;
+      z-index: 1;  // Ensure text is above gradient overlay
+    }
+
+    .lead {
+      font-size: 1.25rem;  // Reduced from 1.5rem
+      margin-bottom: 1rem;  // Reduced margin
+    }
+
+    .btn-lg {
+      font-size: 1rem;
+      padding: 0.4rem 0.8rem;
+      margin-bottom: 1em;  // Added margin below button
+    }
+  }
+
+  // Cards
+  .card {
+    height: 100%;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .card-title a {
+      color: $dark;
+      
+      &:hover {
+        color: $primary;
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+// Navbar Home link
+.navbar-brand {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  margin-right: 2rem;
+  
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+// Navigation Elements
+.td-breadcrumbs {
+  padding: 1rem 0;
+  font-size: $font-size-sm;
+  
+  .breadcrumb {
+    margin: 0;
+    padding: 0;
+    
+    .breadcrumb-item {
+      + .breadcrumb-item::before {
+        content: "/";
+        color: rgba(41, 41, 41, 0.5);
+      }
+    }
+  }
+}
+
+// Footer
+.td-footer {
+  min-height: 0 !important;
+  padding: 0.5rem 0 !important;
+  
+  .text-muted {
+    margin: 0 !important;
+    font-size: $font-size-sm;
+  }
+  
+  .list-inline {
+    margin: 0;
+  }
+}

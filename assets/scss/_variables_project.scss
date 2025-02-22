@@ -1,0 +1,38 @@
+// CrossnoKaye color palette
+$google_font_name: "Charter";
+$google_font_family: "Charter:200,300,400,400i,700,700i";
+
+$primary:         #0E4B8C;    // CrossnoKaye blue
+$secondary:       #4A5568;    // Neutral gray
+$success:         #38A169;    // Green
+$info:            #4299E1;    // Light blue
+$warning:         #ED8936;    // Orange
+$danger:          #E53E3E;    // Red
+$light:           #F7FAFC;    // Very light gray
+$dark:            #1A202C;    // Very dark gray
+
+// Typography
+$font-family-base: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+$font-family-playfair: "Playfair Display", serif;
+$font-family-helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-family-charter: Charter, Georgia, serif;
+$headings-font-family: $font-family-playfair;
+
+// Font sizes
+$enable-responsive-font-sizes: false;
+$font-size-root: 20px;  // This sets the base font size
+$font-size-base: 1rem;  // This will now be relative to the 20px root
+$h1-font-size: 2rem;    // 40px
+$h2-font-size: 1.5rem;  // 30px
+$h3-font-size: 1.25rem; // 25px
+$h4-font-size: 1.1rem;  // 22px
+$h5-font-size: 1rem;    // 20px
+$font-size-sm: 0.875rem; // Add this for TOC and other small text
+
+// Line heights
+$line-height-base: 1.6;  // A more standard line height, similar to Medium
+
+// Card customization
+$card-border-radius: 0.75rem;
+$card-border-width: 0;
+$card-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

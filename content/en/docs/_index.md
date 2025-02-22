@@ -1,10 +1,9 @@
 ---
-title: "Welcome to Goa!"
+title: "Documentation"
 linkTitle: "Documentation"
-menu:
-  main:
-    weight: 1
-type: docs
+weight: 20
+description: >
+  Documentation for Goa, a design-first framework for building microservices and APIs in Go.
 ---
 
 ## What is Goa?

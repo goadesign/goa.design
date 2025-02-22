@@ -1,7 +1,12 @@
 ---
-title: "Core Concepts and Architecture"
+title: "Core Concepts"
 linkTitle: "Concepts"
 weight: 4
+description: >
+  Deep dive into Goa's core concepts, design principles, and architecture.
+menu:
+  main:
+    weight: 4
 ---
 
 Learn about Goa's core concepts and architectural principles. This section explains the key components and patterns that make Goa powerful and flexible.

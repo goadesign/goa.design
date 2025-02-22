@@ -2,6 +2,11 @@
 title: "Introduction to Goa"
 linkTitle: "Introduction"
 weight: 1
+description: >
+  Learn about Goa's design-first approach and how it can streamline your microservice development.
+menu:
+  main:
+    weight: 1
 ---
 
 Welcome to **Goa**, a design-first framework for building robust microservices and APIs in Go. This introduction will help you understand what makes Goa unique and how it can streamline your microservice development.
@@ -34,5 +39,5 @@ Get acquainted with Goa's fundamental building blocks:
 Ready to begin? Start with [What is Goa?](./1-what-is-goa/) to understand the design-first approach and code generation that make Goa a powerful choice for your next project.
 
 {{< alert title="Why Start Here?" color="info" >}}
-This introduction provides the foundation you'll need before moving on to installation and hands-on tutorials. Understanding these core concepts will help you get the most out of the [Getting Started](/docs/2-getting-started/) and [Core Tutorials](/docs/3-tutorials/) sections.
+This introduction provides the foundation you'll need before moving on to installation and hands-on tutorials. Understanding these core concepts will help you get the most out of the [Getting Started](/2-getting-started/) and [Core Tutorials](/3-tutorials/) sections.
 {{< /alert >}}

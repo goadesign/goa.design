@@ -90,7 +90,7 @@ Now comes the fun part - implementing your business logic. Simply:
 - Implement the service interfaces
 - Connect everything in your main application
 
-![Goa's layered architecture](/img/docs/layers.png)
+![Goa's layered architecture](/img/layers.png)
 
 {{< alert title="Clean Architecture" color="primary" >}}
 Goa maintains a clear separation between generated transport code and your business logic. This means you can evolve your service without getting tangled in low-level networking details.

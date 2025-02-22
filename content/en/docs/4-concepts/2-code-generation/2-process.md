@@ -40,10 +40,10 @@ a structured model that can be used for code generation.
 
 Once the expressions have been validated, they are passed to Goa's code
 generators. The generators use these expressions as input data to render various
-code templates. They generate transport-specific code for protocols like HTTP
-and gRPC, create all necessary supporting files, and write the complete output
-to the `gen/` directory. This generation step produces all the code needed to
-run your service while maintaining consistency across the codebase.
+code templates. They generate transport-specific code for HTTP and gRPC, create
+all necessary supporting files, and write the complete output to the `gen/`
+directory. This generation step produces all the code needed to run your service
+while maintaining consistency across the codebase.
 
 ## Generated Structure
 
@@ -51,46 +51,23 @@ A typical generated project structure:
 
 ```
 myservice/
-├── design/           # Your design files
+├── cmd/             # Generated example commands
+│   └── calc/
+│       ├── grpc.go
+│       └── http.go
+├── design/          # Your design files
 │   └── design.go
-├── gen/             # Generated code
-│   ├── calc/        # Service-specific code
+├── gen/            # Generated code
+│   ├── calc/       # Service-specific code
 │   │   ├── client/
-│   │   ├── service/
-│   │   └── endpoints/
-│   └── http/        # Transport layer
+│   │   ├── endpoints/
+│   │   └── service/
+│   └── http/       # Transport layer
 │       ├── client/
 │       └── server/
-└── cmd/             # Generated example commands
-    └── calc/
-        ├── http.go
-        └── grpc.go
+└── myservice.go    # Generated service implementation stub
 ```
 
-## Generated Components
-
-First, Goa generates the service interfaces, which form the core contract of
-your API. This includes the main service definitions that specify the operations
-your API provides, comprehensive type definitions for all data structures used
-in your API, and method signatures that define how clients interact with your
-service.
-
-Next, Goa creates the transport layer implementation. This consists of complete
-HTTP and gRPC server implementations that handle all the networking details,
-sophisticated request and response encoding logic to marshal data between wire
-formats and Go types, built-in middleware support for common concerns like
-logging and monitoring, and client libraries that make it easy to consume your
-API.
-
-Finally, Goa generates various supporting code components that round out the
-implementation. This includes custom error types for proper error handling,
-comprehensive validation logic to ensure data integrity, detailed documentation
-in multiple formats, and example implementations that demonstrate how to use the
-generated code effectively.
-
-{{< alert title="Generation Tips" color="primary" >}}
-- Review generated code to understand the implementation
-- Don't modify generated files directly
-- Use version control to track generated changes
-- Keep generated code separate from custom implementation
-{{< /alert >}}
+Consult the
+[Generated Code](/4-concepts/2-code-generation/3-generated-code) section
+for more details on the generated code.

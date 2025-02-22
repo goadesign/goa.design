@@ -6,10 +6,6 @@
   [[module.imports]]
     path = "github.com/google/docsy/dependencies"
     disable = false
-  [[module.mounts]]
-    source = "content/en"
-    target = "content"
-    lang = "en"
 
 baseURL = "https://goa.design/"
 title = "Goa"
@@ -20,34 +16,54 @@ enableRobotsTXT = true
 # Language configuration
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = true
-disableLanguages = []
 
+# Configure languages
 [languages]
   [languages.en]
     languageName = "English"
+    contentDir = "content/en"
     weight = 1
-  [languages.ja]
-    languageName = "日本語 (Japanese)"
-    weight = 2
   [languages.it]
-    languageName = "Italiano (Italian)"
+    languageName = "Italiano"
+    contentDir = "content/it"
+    weight = 2
+  [languages.ja]
+    languageName = "日本語"
+    contentDir = "content/ja"
     weight = 3
 
-# Navigation menu configuration
-[menu]
-  [[menu.main]]
-    name = "Documentation"
-    url = "/docs/"
-    weight = 1
-  [[menu.main]]
-    name = "Community"
-    url = "/community/"
-    weight = 2
-
 [params]
-  docsy_sections = ["docs"]
+  copyright = "© Raphael Simon and the Goa contributors"
+  privacy_policy = "https://policies.google.com/privacy"
+  
+  # Repository configuration
+  github_repo = "https://github.com/goadesign/goa.design"
+  github_branch = "master"
+  
+  # Docsy theme params
+  time_format_blog = "Monday, January 02, 2006"
+  time_format_default = "January 2, 2006"
+  
+  # User interface configuration
+  [params.ui]
+    sidebar_menu_compact = false
+    sidebar_menu_foldable = true
+    sidebar_cache_limit = 10000
+    breadcrumb_disable = false
+    toc_mobile_disable = false
+    search_enable = true
+    footer_about_enable = false
+    navbar_logo = true  # Enable logo in nav bar
+    navbar_translucent_over_cover_disable = true  # Disable translucent navbar
 
-  # Home page features section configuration
+  [params.links]
+    [[params.links.developer]]
+      name = "GitHub"
+      url = "https://github.com/goadesign/goa"
+      icon = "fab fa-github"
+      desc = "Development takes place here!"
+
+  # Features section
   [[params.features]]
     id = "codegen"
     color = "#ED3E3E"
@@ -60,8 +76,8 @@ disableLanguages = []
     id = "best_practice"
     color = "#5DB9F2"
     icon = "fa-star"
-  
-  # Home page sponsors section configuration
+
+  # Sponsors section
   [[params.sponsors]]
     id = "incidentio"
     name = "incident.io"
@@ -73,12 +89,19 @@ disableLanguages = []
     image = "/img/sponsors/speakeasy.png"
     url = "https://www.speakeasyapi.dev/docs/api-frameworks/goa?utm_source=goa+repo&utm_medium=github+sponsorship"
 
-[server]
-  [[server.headers]]
-    for = "/**"
-    [server.headers.values]
-      # Redirect /docs/* to /en/docs/* when language not specified
-      [[server.headers.values.Link]]
-        rel = "alternate"
-        hreflang = "x-default"
-        href = "/en{path}"
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = "gruvbox"
+    guessSyntax = false
+    lineNumbersInTable = true
+    noClasses = false
+    tabWidth = 4
+
+# Image processing configuration
+[imaging]
+  resampleFilter = "CatmullRom"
+  quality = 75
+  anchor = "smart"

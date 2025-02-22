@@ -5,13 +5,18 @@ weight: 2
 description: "Learn how Goa generates code from your design, including command-line usage, generation process, and customization options."
 ---
 
-Goa's code generation system transforms your design into production-ready code. Rather than just scaffolding, Goa generates complete, runnable service implementations that follow best practices and maintain consistency across your entire API.
+Goa's code generation system transforms your design into production-ready code.
+Rather than just scaffolding, Goa generates complete, runnable service
+implementations that follow best practices and maintain consistency across your
+entire API.
 
 ## Key Concepts
 
 ### 1. [Command Line Tools](./1-commands)
 
-Learn about Goa's CLI tools for code generation. Understand the different commands available, their purposes, and how to use them effectively in your development workflow.
+Learn about Goa's CLI tools for code generation. Understand the different
+commands available, their purposes, and how to use them effectively in your
+development workflow.
 
 ### 2. [Generation Process](./2-process)
 
