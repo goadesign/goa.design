@@ -2,7 +2,7 @@
 title: "Customization"
 linkTitle: "Customization"
 weight: 7
-description: "Learn how to customize and extend Goa's code generation using metadata and plugins."
+description: "Learn how to customize and extend Goa's code generation using metadata."
 ---
 
 ## Overview
@@ -559,3 +559,121 @@ This generates the following OpenAPI specification:
 - Tags help organize and group related operations in API documentation
 {{< /alert >}}
 
+### Testing Custom Types
+
+When working with custom types and field overrides, it's important to test that
+your types behave correctly. Here's how to effectively test custom type
+implementations using Clue's mock package:
+
+```go
+// Import Clue's mock package
+import (
+    "github.com/goadesign/clue/mock"
+)
+
+// Example custom type with overridden field type
+type Message struct {
+    ID bison.ObjectId `msgpack:"id,omitempty"`
+}
+
+// Mock implementation using Clue's mock package
+type mockMessageStore struct {
+    *mock.Mock // Embed Clue's Mock type
+}
+
+// Store implements the mock using Clue's Next pattern
+func (m *mockMessageStore) Store(ctx context.Context, msg *Message) error {
+    if f := m.Next("Store"); f != nil {
+        return f.(func(context.Context, *Message) error)(ctx, msg)
+    }
+    return errors.New("unexpected call to Store")
+}
+
+func TestMessageStore(t *testing.T) {
+    // Create mock store using Clue's mock package
+    store := &mockMessageStore{mock.New()}
+    
+    tests := []struct {
+        name    string
+        msg     *Message
+        setup   func(*mockMessageStore)
+        wantErr bool
+    }{
+        {
+            name: "successful store",
+            msg: &Message{
+                ID: bison.NewObjectId(),
+            },
+            setup: func(m *mockMessageStore) {
+                m.Set("Store", func(ctx context.Context, msg *Message) error {
+                    return nil
+                })
+            },
+            wantErr: false,
+        },
+        {
+            name: "store error",
+            msg: &Message{
+                ID: bison.NewObjectId(),
+            },
+            setup: func(m *mockMessageStore) {
+                m.Set("Store", func(ctx context.Context, msg *Message) error {
+                    return fmt.Errorf("storage error")
+                })
+            },
+            wantErr: true,
+        },
+        {
+            name: "invalid message",
+            msg:  &Message{}, // Empty ID
+            setup: func(m *mockMessageStore) {
+                m.Set("Store", func(ctx context.Context, msg *Message) error {
+                    if msg.ID.IsZero() {
+                        return fmt.Errorf("invalid message ID")
+                    }
+                    return nil
+                })
+            },
+            wantErr: true,
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Create fresh mock for each test
+            mock := &mockMessageStore{mock.New()}
+            if tt.setup != nil {
+                tt.setup(mock)
+            }
+            
+            // Execute test
+            err := mock.Store(context.Background(), tt.msg)
+            
+            // Verify error behavior
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Store() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            
+            // Verify all expected calls were made
+            if mock.HasMore() {
+                t.Error("not all expected operations were performed")
+            }
+        })
+    }
+}
+```
+
+This example demonstrates several key features of Clue's mock package:
+
+1. **Type-Safe Mocking**: The mock implementation (`mockMessageStore`) provides a type-safe interface by embedding Clue's `Mock` type
+2. **Custom Type Handling**: Test custom type validation and behavior with proper field types
+3. **Sequence Control**: Use `Add` for ordered operations when needed
+4. **Default Behaviors**: Use `Set` for consistent responses across test cases
+5. **Comprehensive Verification**: The `HasMore` method ensures all expected operations were performed
+
+The test cases demonstrate comprehensive coverage of key scenarios. They verify
+that successful storage operations complete as expected and that error
+conditions are properly handled when storage failures occur. The tests also
+validate that custom type fields meet required constraints, ensuring data
+integrity. Finally, they confirm proper cleanup by verifying that all mock
+expectations are met during test execution.

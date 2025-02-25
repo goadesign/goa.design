@@ -3,6 +3,10 @@ title: "Content Negotiation"
 linkTitle: "Content Negotiation"
 weight: 1
 description: "Learn how to handle multiple content types, process Accept headers, and implement custom encoders/decoders in Goa HTTP services."
+menu:
+  main:
+    parent: "HTTP Advanced Topics"
+    weight: 1
 ---
 
 Content negotiation allows your HTTP services to support multiple content types
@@ -309,8 +313,220 @@ var _ = Service("versioned", func() {
 5. **Documentation**: Document supported content types clearly
 {{< /alert >}}
 
-## Related Topics
+## Testing Content Negotiation
 
-- For error response formats, see [Error Handling](../../3-tutorials/3-error-handling)
-- For streaming content types, see [Streaming](../../3-tutorials/4-streaming)
-- For file uploads/downloads, see [Static Content](../../3-tutorials/5-static-content)
+Testing custom encoders and decoders requires careful validation of content type
+handling and negotiation. Here's how to effectively test content negotiation
+using Clue's [mock package](https://github.com/goadesign/clue/tree/main/mock):
+
+```go
+// Import Clue's mock package
+import (
+    "github.com/goadesign/clue/mock"
+)
+
+// Mock encoder implementation using Clue's mock package
+// This shows how to properly structure a mock encoder using Clue
+type mockEncoder struct {
+    *mock.Mock // Embed Clue's Mock type
+}
+
+// Encode implements the mock using Clue's Next pattern
+func (m *mockEncoder) Encode(v interface{}) error {
+    if f := m.Next("Encode"); f != nil {
+        return f.(func(interface{}) error)(v)
+    }
+    return errors.New("unexpected call to Encode")
+}
+
+// Mock decoder implementation using Clue's mock package
+// This shows how to properly structure a mock decoder using Clue
+type mockDecoder struct {
+    *mock.Mock // Embed Clue's Mock type
+}
+
+// Decode implements the mock using Clue's Next pattern
+func (m *mockDecoder) Decode(v interface{}) error {
+    if f := m.Next("Decode"); f != nil {
+        return f.(func(interface{}) error)(v)
+    }
+    return errors.New("unexpected call to Decode")
+}
+
+func TestContentNegotiation(t *testing.T) {
+    // Create mock encoder and decoder using Clue's mock package
+    encoder := &mockEncoder{mock.New()}
+    decoder := &mockDecoder{mock.New()}
+    
+    tests := []struct {
+        name         string
+        contentType  string
+        accept       string
+        setupEncoder func(*mockEncoder)
+        setupDecoder func(*mockDecoder)
+        input        interface{}
+        wantErr      bool
+    }{
+        {
+            name:        "JSON content type",
+            contentType: "application/json",
+            accept:      "application/json",
+            setupEncoder: func(e *mockEncoder) {
+                // Use Clue's Set method for permanent behavior
+                e.Set("Encode", func(v interface{}) error {
+                    // Verify JSON encoding
+                    _, ok := v.(json.Marshaler)
+                    if !ok {
+                        return fmt.Errorf("value does not implement json.Marshaler")
+                    }
+                    return nil
+                })
+            },
+            setupDecoder: func(d *mockDecoder) {
+                // Use Clue's Set method for permanent behavior
+                d.Set("Decode", func(v interface{}) error {
+                    // Verify JSON decoding
+                    _, ok := v.(json.Unmarshaler)
+                    if !ok {
+                        return fmt.Errorf("value does not implement json.Unmarshaler")
+                    }
+                    return nil
+                })
+            },
+            input:   &TestStruct{ID: "test"},
+            wantErr: false,
+        },
+        {
+            name:        "MessagePack content type",
+            contentType: "application/msgpack",
+            accept:      "application/msgpack",
+            setupEncoder: func(e *mockEncoder) {
+                // Use Clue's Add method for sequence-specific behavior
+                e.Add("Encode", func(v interface{}) error {
+                    // Verify MessagePack encoding
+                    _, ok := v.(msgpack.Marshaler)
+                    if !ok {
+                        return fmt.Errorf("value does not implement msgpack.Marshaler")
+                    }
+                    return nil
+                })
+            },
+            setupDecoder: func(d *mockDecoder) {
+                // Use Clue's Add method for sequence-specific behavior
+                d.Add("Decode", func(v interface{}) error {
+                    // Verify MessagePack decoding
+                    _, ok := v.(msgpack.Unmarshaler)
+                    if !ok {
+                        return fmt.Errorf("value does not implement msgpack.Unmarshaler")
+                    }
+                    return nil
+                })
+            },
+            input:   &TestStruct{ID: "test"},
+            wantErr: false,
+        },
+        {
+            name:        "unsupported content type",
+            contentType: "application/unknown",
+            accept:      "application/unknown",
+            setupEncoder: func(e *mockEncoder) {
+                // Demonstrate error handling with Clue mocks
+                e.Set("Encode", func(v interface{}) error {
+                    return fmt.Errorf("unsupported content type")
+                })
+            },
+            setupDecoder: func(d *mockDecoder) {
+                // Demonstrate error handling with Clue mocks
+                d.Set("Decode", func(v interface{}) error {
+                    return fmt.Errorf("unsupported content type")
+                })
+            },
+            input:   &TestStruct{ID: "test"},
+            wantErr: true,
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Create fresh Clue mocks for each test case
+            encoder := &mockEncoder{mock.New()}
+            decoder := &mockDecoder{mock.New()}
+            
+            if tt.setupEncoder != nil {
+                tt.setupEncoder(encoder)
+            }
+            if tt.setupDecoder != nil {
+                tt.setupDecoder(decoder)
+            }
+            
+            // Create request with content type
+            req := httptest.NewRequest("POST", "/", nil)
+            req.Header.Set("Content-Type", tt.contentType)
+            req.Header.Set("Accept", tt.accept)
+            
+            // Create response recorder
+            rec := httptest.NewRecorder()
+            
+            // Create encoder function
+            encoderFn := func(ctx context.Context, w http.ResponseWriter) goahttp.Encoder {
+                return encoder
+            }
+            
+            // Create decoder function
+            decoderFn := func(r *http.Request) goahttp.Decoder {
+                return decoder
+            }
+            
+            // Create handler with custom encoder/decoder
+            handler := goahttp.RequestDecoder(decoderFn)
+            
+            // Test request decoding
+            err := handler(req, tt.input)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("RequestDecoder() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            
+            // Use Clue's HasMore method to verify all expected calls were made
+            if encoder.HasMore() {
+                t.Error("not all expected encoder operations were performed")
+            }
+            if decoder.HasMore() {
+                t.Error("not all expected decoder operations were performed")
+            }
+        })
+    }
+}
+```
+
+This example demonstrates several key features of Clue's
+[mock package](https://github.com/goadesign/clue/tree/main/mock):
+
+1. **Type-Safe Mocking**: The mock implementations (`mockEncoder` and `mockDecoder`) provide type-safe interfaces by embedding Clue's `Mock` type.
+2. **Flexible Behavior Definition**: 
+   - Use `Set` for permanent behaviors (see JSON content type test)
+   - Use `Add` for sequence-specific behaviors (see MessagePack content type test)
+3. **Comprehensive Verification**: The `HasMore` method ensures all expected operations were performed
+4. **Error Handling**: Demonstrate proper error cases and validation (see unsupported content type test)
+
+The test cases provide thorough coverage of essential content negotiation
+scenarios. They validate JSON content negotiation using permanent mock
+behaviors, ensuring consistent handling of this common format. The tests also
+verify MessagePack content negotiation through sequence-specific behaviors,
+demonstrating support for binary formats. Error conditions are tested by
+validating proper handling of unsupported content types. Finally, the test suite
+ensures proper cleanup by verifying that all mock expectations are met during
+test execution.
+
+The tests verify:
+1. Content type handling through request/response headers
+2. Encoder/decoder selection based on content types
+3. Error handling for unsupported formats
+4. Proper implementation of marshaling interfaces
+5. Complete verification of expected operations
+
+## Next Steps
+
+- Review [Error Handling](../../3-tutorials/3-error-handling) for error response formats
+- Explore [Streaming](../../3-tutorials/4-streaming) for streaming content types
+- Check out [Static Content](../../3-tutorials/5-static-content) for file uploads/downloads
+- Learn about [Interceptors](../../4-concepts/5-interceptors) for business logic handling

@@ -5,11 +5,11 @@ weight: 1
 description: "Learn about Goa, a design-first framework for building microservices and APIs in Go, featuring a powerful DSL and code generation capabilities."
 ---
 
-**Goa** is a design-first framework that revolutionizes how you build microservices and APIs in Go. At its core is an elegant domain-specific language (DSL) that lets you define your entire service architecture in a clear, maintainable way.
+Now that you understand why Goa can transform your API development, let's explore how it works in practice. At its core, Goa is a design-first framework that revolutionizes how you build microservices and APIs in Go through an elegant domain-specific language (DSL) that lets you define your entire service architecture in a clear, maintainable way.
 
 ## The Power of Design-First Development
 
-Goa's design-first approach transforms how you build APIs by starting with a clear, precise service definition. Using Goa's expressive DSL, you describe your entire API architecture in a way that both humans and machines can understand.
+The design-first approach you've just learned about comes to life through Goa's expressive DSL. This powerful language lets you describe your entire API architecture in a way that both humans and machines can understand, turning high-level service definitions into production-ready code.
 
 {{< alert title="Key Design Elements" color="primary" >}}
 **Services & Methods**  
@@ -90,12 +90,34 @@ Now comes the fun part - implementing your business logic. Simply:
 - Implement the service interfaces
 - Connect everything in your main application
 
-![Goa's layered architecture](/img/layers.png)
+{{< figure src="/img/docs/layers.png" alt="Goa's layered architecture" class="full-width-image" >}}
 
 {{< alert title="Clean Architecture" color="primary" >}}
 Goa maintains a clear separation between generated transport code and your business logic. This means you can evolve your service without getting tangled in low-level networking details.
 {{< /alert >}}
 
-## Ready to Learn More?
+## Best Practices and Beyond
 
-Continue to [Why Goa?](./2-why-goa/) to discover how Goa compares to other frameworks and why it might be the perfect choice for your next project.
+Through years of real-world usage, the Goa community has developed proven patterns for success:
+
+### Design Best Practices
+- **Start Simple**: Begin with core endpoints and evolve gradually
+- **Think in Services**: Group related functionality into cohesive services
+- **Design for Change**: Use versioning and extensible types from day one
+- **Consistent Naming**: Follow established conventions for endpoints and types
+
+### Development Workflow
+- **Design Reviews**: Validate API designs with stakeholders before implementation
+- **Iterative Development**: Use Goa's generation to quickly prototype and refine
+- **Documentation First**: Keep API documentation as a first-class citizen
+
+### Team Collaboration
+- **Shared Understanding**: Use the DSL as a common language between teams
+- **Clear Boundaries**: Define service interfaces that respect domain boundaries
+- **Code Organization**: Structure projects for clarity and maintainability
+- **Knowledge Sharing**: Build on community patterns and contribute back
+
+## Ready to Dive Deeper?
+
+Continue to [Why Goa?](./2-why-goa/) to see how Goa compares to other frameworks
+and discover why it might be the perfect choice for your next project. 

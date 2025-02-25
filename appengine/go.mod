@@ -1,6 +1,6 @@
 module goa.design
 
-go 1.17
+go 1.21
 
 require (
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401

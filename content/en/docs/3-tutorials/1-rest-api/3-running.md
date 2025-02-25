@@ -5,13 +5,8 @@ weight: 3
 description: "Learn how to run your Goa-based Concerts service, test the REST endpoints using HTTP requests, and explore the auto-generated OpenAPI documentation."
 ---
 
-You've designed your API and implemented the service methods. Now it's time to run the Concerts service and test its endpoints.
-
-{{< alert title="In This Tutorial" color="primary" >}}
-1. Start the server
-2. Test the endpoints with HTTP requests
-3. Explore the auto-generated OpenAPI documentation
-{{< /alert >}}
+You've designed your API and implemented the service methods. Now it's time to
+run the Concerts service and test its endpoints.
 
 ## 1. Start the Server
 
@@ -25,14 +20,31 @@ The service listens on port 8080 by default (unless modified in `main.go`).
 
 ## 2. Test the Endpoints
 
-You can send requests to the service using tools like `curl`, HTTPie, or Postman.
+Let's explore your shiny new API! You can interact with your service using popular HTTP tools:
 
-### List Concerts
-```bash
-curl http://localhost:8080/concerts
-```
+- `curl` for quick command-line testing
+- [HTTPie](https://httpie.org) for a more user-friendly CLI experience
+- [Postman](https://www.postman.com/) for a powerful GUI interface with request history and collections
+
+Pick your favorite tool and let's start making some requests! 🚀
+We'll use `curl` for these examples since it's universally available on most
+systems. However, feel free to adapt the examples to your preferred HTTP client,
+the concepts remain the same regardless of the tool you use.
+
+Here's what we'll test:
+- Creating a new concert (`POST`)
+- Listing all concerts with pagination (`GET`)
+- Retrieving a specific concert (`GET`)
+- Updating concert details (`PUT`)
+- Deleting a concert (`DELETE`)
 
 ### Create a Concert
+
+Let's create a new concert! This request sends a POST with the concert details
+in JSON format. The server will generate a unique ID and return the complete
+concert object:
+
+
 ```bash
 curl -X POST http://localhost:8080/concerts \
   -H "Content-Type: application/json" \
@@ -44,13 +56,53 @@ curl -X POST http://localhost:8080/concerts \
   }'
 ```
 
+Let's create another one to illustrate pagination:
+
+```bash
+curl -X POST http://localhost:8080/concerts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist": "Pink Floyd",
+    "date": "2025-07-15", 
+    "venue": "Madison Square Garden",
+    "price": 200
+  }'
+```
+
+### List Concerts
+
+Get all concerts with optional pagination parameters:
+
+- `page`: Page number (default: 1)
+- `limit`: Results per page (default: 10, max: 100)
+
+The list endpoint supports pagination to help you manage large sets of concert data efficiently. You can control how many results you see per page and which page to view.
+
+Retrieve all concerts (uses default pagination):
+
+```bash
+curl http://localhost:8080/concerts
+```
+
+Get one result per page:
+
+```bash
+curl "http://localhost:8080/concerts?page=1&limit=1"
+```
+
 ### Show a Concert
+
+When you need detailed information about a specific concert, use the show endpoint. This is useful for displaying individual concert details or verifying information after creation/updates.
+
 Replace `<concertID>` with an ID returned from create:
 ```bash
 curl http://localhost:8080/concerts/<concertID>
 ```
 
 ### Update a Concert
+
+Need to change concert details? The update endpoint lets you modify existing concert information. You only need to include the fields you want to update - other fields will retain their current values.
+
 ```bash
 curl -X PUT http://localhost:8080/concerts/<concertID> \
   -H "Content-Type: application/json" \
@@ -61,6 +113,9 @@ curl -X PUT http://localhost:8080/concerts/<concertID> \
 ```
 
 ### Delete a Concert
+
+If a concert needs to be removed from the system (perhaps it was cancelled or entered by mistake), use the delete endpoint. This operation is permanent, so use it with care!
+
 ```bash
 curl -X DELETE http://localhost:8080/concerts/<concertID>
 ```

@@ -2,7 +2,7 @@
 title: "Servizio gRPC Base"
 linkTitle: "Servizio gRPC Base"
 weight: 2
-description: "Costruisci un servizio gRPC completo utilizzando l'approccio design-first di Goa, coprendo la progettazione del servizio, l'implementazione, la gestione protobuf e il deployment di un sistema di gestione concerti."
+description: "Costruisci un servizio gRPC completo usando l'approccio design-first di Goa, coprendo design del servizio, implementazione, gestione protobuf e deployment di un sistema di gestione concerti."
 ---
 
 Impara come costruire un servizio gRPC pronto per la produzione con Goa attraverso questa serie completa di tutorial. Creeremo un sistema di gestione concerti che dimostra i concetti chiave di gRPC seguendo l'approccio design-first di Goa.
@@ -10,7 +10,7 @@ Impara come costruire un servizio gRPC pronto per la produzione con Goa attraver
 ## Sezioni del Tutorial
 
 ### 1. [Progettazione del Servizio](./1-designing)
-Crea la definizione del tuo servizio utilizzando il DSL di Goa:
+Crea la definizione del tuo servizio usando il DSL di Goa:
 - Definisci metodi e RPC del servizio
 - Crea messaggi protocol buffer
 - Configura la validazione degli input
@@ -24,7 +24,7 @@ Trasforma il tuo design in codice funzionante:
 - Configura il server gRPC
 
 ### 3. [Esecuzione del Servizio](./3-running)
-Distribuisci e testa il tuo servizio:
+Deploya e testa il tuo servizio:
 - Avvia il server gRPC
 - Effettua chiamate RPC
 - Verifica il comportamento dei metodi
@@ -37,7 +37,7 @@ Gestisci i messaggi protocol buffer:
 - Opzioni dei campi personalizzate
 - Streaming dei dati
 
-## Concetti Fondamentali Trattati
+## Concetti Core Trattati
 
 {{< alert title="Cosa Imparerai" color="primary" >}}
 **Design del Servizio gRPC**

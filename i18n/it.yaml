@@ -30,6 +30,9 @@ feature_design_desc: "Progetta la tua API a modo tuo con il DSL Go flessibile di
 feature_best_practice_title: "Best Practice"
 feature_best_practice_desc: "Goa implementa le migliori pratiche attraverso il codice generato - dalla validazione degli input al Go idiomatico, ottieni API robuste e type-safe ogni volta."
 
+# Section Navigation
+subsections_title: "In Questa Sezione"
+
 # Sponsors section
 sponsors_title: "Sponsor"
 
@@ -62,3 +65,6 @@ design_first_description: "Goa offre un approccio dichiarativo e design-first pe
 # Common actions
 learn_more: "Scopri di più"
 get_started: "Inizia Ora"
+
+# Wizard
+wizard_title: "Goa Design Wizard"

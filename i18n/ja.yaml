@@ -29,6 +29,9 @@ feature_design_desc: "GoaのフレキシブルなGo DSLで、自由自在にAPI�
 feature_best_practice_title: "ベストプラクティス"
 feature_best_practice_desc: "Goaは生成されるコードを通じてベストプラクティスを徹底します - 入力検証からGo言語らしい実装まで、常に堅牢で型安全なAPIを実現します。"
 
+# Section Navigation
+subsections_title: "このセクションの内容"
+
 # Sponsors
 sponsor_zuplo_title: "Zuplo: あなたのGoa APIをスケールし、保護し、商品化する"
 sponsor_zuplo_desc: "私たちのAPIゲートウェイは、APIの保護、グローバルスケール、OpenAPIからのドキュメント生成、そしてマネタイズを可能にします。"
@@ -43,8 +46,8 @@ sponsor_speakeasy_desc: "私たちのプラットフォームを使えば、機�
 sponsor_speakeasy_link: "Goaと統合する"
 
 # Wizard
-wizard_title: "Goa デザインウィザード"
-wizard_description: "<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa デザインウィザード</a>を使用して、インタラクティブに Goa デザインを作成できます。"
+wizard_title: "Goa Design Wizard"
+wizard_description: "<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>を使用して、インタラクティブに Goa デザインを作成できます。"
 wizard_features: |
   <ul>
     <li>自然な会話を通じて GPT を活用し Goa デザインを作成</li>

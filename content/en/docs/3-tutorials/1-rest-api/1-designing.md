@@ -201,10 +201,10 @@ The design consists of three main parts:
 
 #### HTTP Mappings
 Our API follows RESTful conventions with intuitive HTTP mappings:
-- GET requests for retrieving data (listing and showing concerts)
-- POST for creating new concerts
-- PUT for updating existing concerts
-- DELETE for removing concerts
+- `GET` requests for retrieving data (listing and showing concerts)
+- `POST` for creating new concerts
+- `PUT` for updating existing concerts
+- `DELETE` for removing concerts
 - Query parameters (`page` and `limit`) handle pagination
 - Path parameters capture resource IDs (e.g., `/concerts/{concertID}`)
 

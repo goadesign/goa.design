@@ -182,3 +182,123 @@ scenarios allows for flexible and robust error handling. Proper client-side
 error handling further enhances the reliability and usability of your APIs,
 providing meaningful feedback to users and enabling appropriate corrective
 actions.
+
+### Testing Error Handling
+
+Testing error handling requires careful validation of error conditions and types.
+Here's how to effectively test error handling using Clue's
+[mock package](https://github.com/goadesign/clue/tree/main/mock):
+
+```go
+// Import Clue's mock package
+import (
+    "github.com/goadesign/clue/mock"
+)
+
+// Mock implementation using Clue's mock package
+// This shows how to properly structure a mock using Clue
+type mockDividerService struct {
+    *mock.Mock // Embed Clue's Mock type
+}
+
+// IntegralDivide implements the mock using Clue's Next pattern
+func (m *mockDividerService) IntegralDivide(ctx context.Context, p *divider.IntOperands) (int, error) {
+    if f := m.Next("IntegralDivide"); f != nil {
+        return f.(func(context.Context, *divider.IntOperands) (int, error))(ctx, p)
+    }
+    return 0, errors.New("unexpected call to IntegralDivide")
+}
+
+func TestIntegralDivide(t *testing.T) {
+    // Create mock service using Clue's mock package
+    // This demonstrates Clue's powerful mocking capabilities for testing
+    svc := &mockDividerService{mock.New()}
+    
+    tests := []struct {
+        name     string
+        setup    func(*mockDividerService)
+        dividend int
+        divisor  int
+        wantErr  string
+    }{
+        {
+            name: "division by zero",
+            setup: func(m *mockDividerService) {
+                m.Set("IntegralDivide", func(ctx context.Context, p *divider.IntOperands) (int, error) {
+                    if p.Divisor == 0 {
+                        return 0, gendivider.MakeDivByZero(fmt.Errorf("divisor cannot be zero"))
+                    }
+                    return p.Dividend / p.Divisor, nil
+                })
+            },
+            dividend: 10,
+            divisor:  0,
+            wantErr:  "divisor cannot be zero",
+        },
+        {
+            name: "has remainder",
+            setup: func(m *mockDividerService) {
+                m.Set("IntegralDivide", func(ctx context.Context, p *divider.IntOperands) (int, error) {
+                    if p.Dividend%p.Divisor != 0 {
+                        return 0, gendivider.MakeHasRemainder(fmt.Errorf("remainder is %d", p.Dividend%p.Divisor))
+                    }
+                    return p.Dividend / p.Divisor, nil
+                })
+            },
+            dividend: 10,
+            divisor:  3,
+            wantErr:  "remainder is 1",
+        },
+        {
+            name: "successful division",
+            setup: func(m *mockDividerService) {
+                m.Set("IntegralDivide", func(ctx context.Context, p *divider.IntOperands) (int, error) {
+                    return p.Dividend / p.Divisor, nil
+                })
+            },
+            dividend: 10,
+            divisor:  2,
+            wantErr:  "",
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Create fresh mock for each test
+            mock := &mockDividerService{mock.New()}
+            if tt.setup != nil {
+                tt.setup(mock)
+            }
+            
+            // Create payload
+            p := &divider.IntOperands{
+                Dividend: tt.dividend,
+                Divisor:  tt.divisor,
+            }
+            
+            // Call service
+            result, err := mock.IntegralDivide(context.Background(), p)
+            
+            // Verify error behavior
+            if tt.wantErr != "" {
+                if err == nil {
+                    t.Errorf("expected error containing %q, got nil", tt.wantErr)
+                } else if !strings.Contains(err.Error(), tt.wantErr) {
+                    t.Errorf("expected error containing %q, got %q", tt.wantErr, err.Error())
+                }
+            } else if err != nil {
+                t.Errorf("unexpected error: %v", err)
+            }
+            
+            // For successful cases, verify the result
+            if tt.wantErr == "" && result != tt.dividend/tt.divisor {
+                t.Errorf("got result %d, want %d", result, tt.dividend/tt.divisor)
+            }
+            
+            // Verify all expected calls were made
+            if mock.HasMore() {
+                t.Error("not all expected operations were performed")
+            }
+        })
+    }
+}

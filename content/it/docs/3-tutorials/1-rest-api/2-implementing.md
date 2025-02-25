@@ -1,7 +1,7 @@
 ---
 title: Implementazione
 weight: 2
-description: "Guida passo-passo per implementare un servizio API REST in Goa, coprendo la generazione del codice, l'implementazione del servizio, la configurazione del server HTTP e il testing degli endpoint."
+description: "Guida passo-passo all'implementazione di un servizio API REST in Goa, che copre la generazione del codice, l'implementazione del servizio, la configurazione del server HTTP e il testing degli endpoint."
 ---
 
 Dopo aver progettato la tua API REST con il DSL di Goa, è il momento di implementare il servizio. Questo tutorial ti guida attraverso il processo di implementazione passo dopo passo.
@@ -17,54 +17,52 @@ Dalla radice del tuo progetto (es. `concerts/`), esegui il generatore di codice 
 goa gen concerts/design
 ```
 
-{{< alert title="Contenuto Generato" color="primary" >}}
 Questo comando analizza il tuo file di design (`design/concerts.go`) e produce una cartella `gen/` contenente:
 - **Endpoint indipendenti dal trasporto** (in `gen/concerts/`)
-- Codice di **validazione e marshalling HTTP** (in `gen/http/concerts/`) sia per server che per client
+- Codice di validazione e marshalling **HTTP** (in `gen/http/concerts/`) sia per server che client
 - Artefatti **OpenAPI** (in `gen/http/`)
 
 **Nota:** Se modifichi il tuo design (es. aggiungi metodi o campi), riesegui `goa gen` per mantenere il codice generato sincronizzato.
-{{< /alert >}}
 
 ## 2. Esplorare il Codice Generato
 
-### `gen/concerts`
-{{< alert title="Endpoint Indipendenti dal Trasporto" color="primary" >}}
-Definisce i componenti principali del servizio indipendenti dal protocollo di trasporto:
+Esploriamo i componenti chiave del codice generato. Comprendere questi
+file è cruciale per implementare correttamente il tuo servizio e sfruttare
+appieno le funzionalità di Goa.
+
+### gen/concerts
+
+Definisce i componenti core del servizio indipendenti dal protocollo di trasporto:
 - **Interfaccia del servizio** per l'implementazione della logica di business (`service.go`)
 - Tipi **Payload** e **Result** che rispecchiano il tuo design
 - Funzione **NewEndpoints** per l'iniezione dell'implementazione del servizio
 - Funzione **NewClient** per la creazione del client del servizio
-{{< /alert >}}
 
-### `gen/http/concerts/server`
-{{< alert title="Componenti del Server HTTP" color="primary" >}}
-Contiene la logica specifica HTTP lato server:
+### gen/http/concerts/server
+
+Contiene la logica lato server specifica per HTTP:
 - **Handler HTTP** che avvolgono gli endpoint del servizio
 - Logica di **codifica/decodifica** per richieste e risposte
 - **Routing delle richieste** ai metodi del servizio
 - **Tipi specifici del trasporto** e validazione
 - **Generazione dei percorsi** dalle specifiche del design
-{{< /alert >}}
 
-### `gen/http/concerts/client`
-{{< alert title="Componenti del Client HTTP" color="primary" >}}
+### gen/http/concerts/client
+
 Fornisce funzionalità HTTP lato client:
 - **Creazione del client** dagli endpoint HTTP
 - **Codifica/decodifica** per richieste e risposte
 - Funzioni di **generazione dei percorsi**
 - **Tipi specifici del trasporto** e validazione
 - **Funzioni helper CLI** per strumenti client
-{{< /alert >}}
 
-### `gen/http/openapi[2|3].[yaml|json]`
-{{< alert title="Documentazione API" color="primary" >}}
-Specifiche OpenAPI generate automaticamente:
-- Disponibili sia in formato YAML che JSON
-- Supporta OpenAPI 2.0 (Swagger) e 3.0
-- Compatibile con Swagger UI e altri strumenti API
-- Utile per l'esplorazione delle API e la generazione dei client
-{{< /alert >}}
+### Specifiche OpenAPI
+
+La directory `gen/http` contiene specifiche OpenAPI generate automaticamente:
+- `openapi2.yaml` e `openapi2.json` (Swagger)
+- `openapi3.yaml` e `openapi3.json` (OpenAPI 3.0)
+
+Queste specifiche sono compatibili con Swagger UI e altri strumenti API, rendendole utili per l'esplorazione delle API e la generazione dei client.
 
 ## 3. Implementare il Tuo Servizio
 
@@ -72,15 +70,15 @@ L'interfaccia del servizio generata in `gen/concerts/service.go` definisce i met
 
 ```go
 type Service interface {
-    // List upcoming concerts with optional pagination.
+    // Elenca i prossimi concerti con paginazione opzionale.
     List(context.Context, *ListPayload) (res []*Concert, err error)
-    // Create a new concert entry.
+    // Crea una nuova voce concerto.
     Create(context.Context, *ConcertPayload) (res *Concert, err error)
-    // Get a single concert by ID.
+    // Ottieni un singolo concerto per ID.
     Show(context.Context, *ShowPayload) (res *Concert, err error)
-    // Update an existing concert by ID.
+    // Aggiorna un concerto esistente per ID.
     Update(context.Context, *UpdatePayload) (res *Concert, err error)
-    // Remove a concert from the system by ID.
+    // Rimuovi un concerto dal sistema per ID.
     Delete(context.Context, *DeletePayload) (err error)
 }
 ```
@@ -134,11 +132,11 @@ func main() {
 
     // Registra le route supportate
     for _, mount := range handler.Mounts {
-        log.Printf("%q mounted on %s %s", mount.Method, mount.Verb, mount.Pattern)
+        log.Printf("%q montato su %s %s", mount.Method, mount.Verb, mount.Pattern)
     }
 
     // Avvia il server (questo bloccherà l'esecuzione)
-    log.Printf("Starting concerts service on :%s", port)
+    log.Printf("Avvio del servizio concerti su :%s", port)
     if err := server.ListenAndServe(); err != nil {
         log.Fatal(err)
     }
@@ -149,7 +147,7 @@ type ConcertsService struct {
     concerts []*genconcerts.Concert // Storage in memoria
 }
 
-// List elenca i concerti futuri con paginazione opzionale.
+// Elenca i prossimi concerti con paginazione opzionale.
 func (m *ConcertsService) List(ctx context.Context, p *genconcerts.ListPayload) ([]*genconcerts.Concert, error) {
     start := (p.Page - 1) * p.Limit
     end := start + p.Limit
@@ -159,7 +157,7 @@ func (m *ConcertsService) List(ctx context.Context, p *genconcerts.ListPayload) 
     return m.concerts[start:end], nil
 }
 
-// Create crea una nuova voce di concerto.
+// Crea una nuova voce concerto.
 func (m *ConcertsService) Create(ctx context.Context, p *genconcerts.ConcertPayloadCreatePayload) (*genconcerts.Concert, error) {
     newConcert := &genconcerts.Concert{
         ID:     uuid.New().String(),
@@ -172,17 +170,18 @@ func (m *ConcertsService) Create(ctx context.Context, p *genconcerts.ConcertPayl
     return newConcert, nil
 }
 
-// Show ottiene un singolo concerto per ID.
+// Ottieni un singolo concerto per ID.
 func (m *ConcertsService) Show(ctx context.Context, p *genconcerts.ShowPayload) (*genconcerts.Concert, error) {
     for _, concert := range m.concerts {
         if concert.ID == p.ConcertID {
             return concert, nil
         }
     }
+    // Usa l'errore progettato
     return nil, genconcerts.MakeNotFound(fmt.Errorf("concerto non trovato: %s", p.ConcertID))
 }
 
-// Update aggiorna un concerto esistente per ID.
+// Aggiorna un concerto esistente per ID.
 func (m *ConcertsService) Update(ctx context.Context, p *genconcerts.UpdatePayload) (*genconcerts.Concert, error) {
     for i, concert := range m.concerts {
         if concert.ID == p.ConcertID {
@@ -205,7 +204,7 @@ func (m *ConcertsService) Update(ctx context.Context, p *genconcerts.UpdatePaylo
     return nil, genconcerts.MakeNotFound(fmt.Errorf("concerto non trovato: %s", p.ConcertID))
 }
 
-// Delete rimuove un concerto dal sistema per ID.
+// Rimuovi un concerto dal sistema per ID.
 func (m *ConcertsService) Delete(ctx context.Context, p *genconcerts.DeletePayload) error {
     for i, concert := range m.concerts {
         if concert.ID == p.ConcertID {
@@ -229,4 +228,7 @@ go run concerts/cmd/concerts
 curl http://localhost:8080/concerts
 ```
 
-Dopo la validazione con successo, procedi a [Esecuzione](./3-running.md) per testare il servizio con un client HTTP. 
+Congratulazioni! 🎉 Hai implementato con successo il tuo primo servizio Goa. Ora
+è il momento della parte eccitante - vedere la tua API in azione! Passa a
+[Esecuzione](./3-running.md) dove esploreremo diversi modi per interagire con
+il tuo servizio e osservarlo gestire richieste HTTP reali. 

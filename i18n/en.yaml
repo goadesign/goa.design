@@ -29,6 +29,9 @@ feature_design_desc: "Design your API your way with Goa's flexible Go DSL. One d
 feature_best_practice_title: "Best Practices"
 feature_best_practice_desc: "Goa enforces best practices through generated code - from input validation to idiomatic Go, you get rock-solid, type-safe APIs every time."
 
+# Section Navigation
+subsections_title: "In This Section"
+
 # Wizard
 wizard_title: "Goa Design Wizard"
 wizard_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"

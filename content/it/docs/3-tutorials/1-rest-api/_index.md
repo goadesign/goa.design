@@ -5,7 +5,15 @@ weight: 1
 description: "Crea un'API REST pronta per la produzione con Goa utilizzando l'esempio di un sistema di gestione concerti, coprendo la progettazione dell'API, l'implementazione, il testing e le funzionalità avanzate di codifica."
 ---
 
-Impara come costruire un'API REST pronta per la produzione con Goa attraverso questa serie completa di tutorial. Utilizzando un sistema di gestione concerti come esempio, creerai un'API completa mentre padroneggi i concetti essenziali di Goa.
+## Costruiamo Qualcosa di Fantastico!
+
+Attraverso esempi pratici, creerai endpoint per elencare, creare, aggiornare ed
+eliminare risorse mantenendo una chiara separazione delle responsabilità. Il tutorial
+dimostra l'approccio di Goa alla gestione coerente degli errori e mostra come
+strutturare la tua API per manutenibilità e scalabilità.
+
+Alla fine, avrai esperienza pratica nella costruzione di API REST pronte per la produzione
+con il potente approccio design-first di Goa.
 
 ## Sezioni del Tutorial
 

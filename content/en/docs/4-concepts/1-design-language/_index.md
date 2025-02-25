@@ -2,40 +2,44 @@
 title: "Design Language"
 linkTitle: "Design Language"
 weight: 1
+menu:
+  main:
+    parent: "Concepts"
+    weight: 1
 ---
 
-Learn about Goa's Design Language (DSL), a powerful domain-specific language for defining APIs. The DSL allows you to express your service design in a clear, declarative way while enforcing best practices and maintaining consistency.
+Learn about Goa's Design Language (DSL), a powerful domain-specific language
+that revolutionizes API design. The DSL is the cornerstone of Goa's approach to
+service development, offering a unique blend of simplicity and sophistication
+that sets it apart from traditional API development methods.
 
-## Key Concepts
+## Why Goa's DSL?
 
-### 1. [Data Modeling](./1-data-modeling)
+Goa's DSL empowers you to express your service design in a clear, declarative
+way while enforcing best practices and maintaining consistency. It acts as a
+single source of truth for your entire API, automatically generating everything
+from documentation to server code to client SDKs.
 
-Define your service's data structures using Goa's comprehensive type system. Create type definitions with attributes that match your domain model, and add validation rules and constraints to ensure data integrity. Extend the type system with custom types to handle specialized data formats. Use type composition and inheritance to build complex data structures from simpler components while maintaining clean separation and reusability.
+Key benefits include:
 
-### 2. [API Definition](./2-api)
+* **Type Safety**: Define your types once, use them everywhere with complete confidence
+* **Contract-First Design**: Focus on your API's design before diving into implementation details
+* **Automatic Validation**: Get built-in request and response validation without writing boilerplate
+* **Code Generation**: Transform your designs into production-ready code with a single command
+* **Living Documentation**: Keep your API documentation always in sync with your implementation
 
-Define the core properties of your API including metadata, servers, and global settings. Configure API-wide settings like versioning, documentation, security schemes, and terms of service. The API definition serves as the entry point for your service design and establishes the foundation for all other components.
+## Getting Started
 
-### 3. [Services and Methods](./3-services-methods)
+The DSL is organized into logical sections that guide you through the API design process:
 
-Design your service interface by defining the core components of your API. Create service definitions that encapsulate related functionality and establish clear boundaries. Specify methods that represent discrete operations, complete with their input parameters and expected outputs. Define request and response payloads to model the data flowing through your service. Implement comprehensive error handling patterns to gracefully manage failure scenarios and provide meaningful feedback to clients.
+* Start with [Data Modeling](./1-data-modeling) to define your service's types and structures
+* Learn about [Service Design](./2-services) to specify endpoints and their behaviors
+* Explore [Security](./3-security) to implement authentication and authorization
+* Master [Error Handling](./4-error-handling) for robust API responses
 
-### 4. [Transport Mapping](./4-transport-mapping)
+Whether you're building a simple REST API or a complex microservices
+architecture, Goa's DSL provides the tools and abstractions you need to create
+professional, production-ready services.
 
-Configure how your service communicates over different transport protocols. Define HTTP endpoints with flexible routing, request methods, and response codes. Map your service methods to gRPC procedures with protocol buffer message definitions. Handle various content types through built-in and custom encoders/decoders. Set up intuitive path patterns and query parameter bindings that match your API's requirements.
-
-### 5. [Security](./5-security)
-
-Implement robust security measures for your API using Goa's security DSL. Define authentication schemes including Basic Auth, API Keys, JWT, and OAuth2. Configure authorization requirements at the API, service, and method levels. Specify security scopes and requirements for fine-grained access control. Handle secure communication through transport layer security (TLS) configuration.
-
-By mastering Goa's Design Language, you'll be able to:
-- Create clear and maintainable API definitions
-- Ensure consistent service implementations
-- Generate production-ready code
-- Support multiple transport protocols
-- Implement robust security measures
-
----
-
-Start with [Data Modeling](./1-data-modeling) to learn how to define your service's types and structures.
+Ready to dive in? Let's start with data modeling, the foundation of any well-designed API.
 

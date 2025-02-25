@@ -33,9 +33,16 @@ After completing the getting started guides, you can:
 
 ## Best Practices
 
-- Keep your design files in a separate `design` package
-- Run `goa gen` after any design changes
-- Version control your generated code
-- Use the generated OpenAPI documentation to validate your API design
+- **Keep your design files in a separate `design` package**: This separation helps maintain a clear distinction between your API design and implementation. It makes it easier to manage changes to your API contract independently from your business logic.
 
-Choose [Installation](./1-installation/) to begin your Goa journey.
+- **Run `goa gen` after any design changes**: Keeping generated code in sync with your design is crucial. Running `goa gen` ensures that your implementation interfaces, transport layer code, and documentation always reflect your current API design.
+
+- **Version control your generated code**: While generated code can be recreated, versioning it helps track API evolution, makes deployments more reliable, and enables easier code review of API changes. It also ensures team members work with consistent code regardless of their local Goa version.
+
+- **Use the generated OpenAPI/Swagger documentation**: The auto-generated API documentation serves as a valuable resource for both development and API validation. It provides an interactive way to explore your API and can be shared with stakeholders for feedback.
+
+- **Follow consistent naming conventions**: Use descriptive and consistent names for your services, methods, and types in your design. This makes your API more intuitive and easier to maintain.
+
+- **Leverage Goa's type system**: Take advantage of Goa's rich type system to define precise data structures and validation rules in your design. This reduces boilerplate validation code and ensures consistent data handling.
+
+Ready to begin? Start with [Installation](./1-installation/) to set up your Goa development environment.

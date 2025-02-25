@@ -29,8 +29,6 @@ func main() {
 	http.HandleFunc("/model/", servePackage("model"))
 	http.HandleFunc("/clue", servePackage("clue"))
 	http.HandleFunc("/clue/", servePackage("clue"))
-	http.HandleFunc("/ponos", servePackage("pulse"))
-	http.HandleFunc("/ponos/", servePackage("pulse"))
 	http.HandleFunc("/pulse", servePackage("pulse"))
 	http.HandleFunc("/pulse/", servePackage("pulse"))
 	appengine.Main()

@@ -3,28 +3,16 @@ title: "Code Generation"
 linkTitle: "Code Generation"
 weight: 2
 description: "Learn how Goa generates code from your design, including command-line usage, generation process, and customization options."
+menu:
+  main:
+    parent: "Concepts"
+    weight: 2
 ---
 
 Goa's code generation system transforms your design into production-ready code.
 Rather than just scaffolding, Goa generates complete, runnable service
 implementations that follow best practices and maintain consistency across your
 entire API.
-
-## Key Concepts
-
-### 1. [Command Line Tools](./1-commands)
-
-Learn about Goa's CLI tools for code generation. Understand the different
-commands available, their purposes, and how to use them effectively in your
-development workflow.
-
-### 2. [Generation Process](./2-process)
-
-Dive into how Goa transforms your design into code. Understand the generation pipeline from design loading to final code output, including validation and expression handling.
-
-### 3. [Customization](./3-customization)
-
-Discover ways to customize and extend code generation. Use metadata to control output, create plugins for new features, and adapt generation to your specific needs.
 
 ## Benefits of Code Generation
 
@@ -34,8 +22,6 @@ Discover ways to customize and extend code generation. Use metadata to control o
 - **Documentation**: Generated OpenAPI specs and documentation
 - **Transport Support**: Multiple transport protocols from a single design
 - **Maintainability**: Changes to design automatically reflect in implementation
-
-Start with [Command Line Tools](./1-commands) to learn how to generate code from your designs.
 
 ## Code Generation Overview
 
@@ -275,16 +261,6 @@ var _ = Service("calc", func() {
    code based on the design. The flexibility of this function enables plugins to
    have complete control over the final generated codebase.
    
-3. **Prepare Design**  
-   Plugins can process or modify the design before code generation begins:
-
-```go
-func Prepare(genpkg string, roots []eval.Root) error {
-    // Validate or transform design before generation
-    return nil
-}
-```
-
 #### Common Use Cases
 
 Plugins are typically used to:

@@ -33,8 +33,7 @@ defaultContentLanguageInSubdir = true
     weight = 3
 
 [params]
-  copyright = "© Raphael Simon and the Goa contributors"
-  privacy_policy = "https://policies.google.com/privacy"
+  copyright = "Raphael Simon and the Goa contributors"
   
   # Repository configuration
   github_repo = "https://github.com/goadesign/goa.design"
@@ -57,11 +56,22 @@ defaultContentLanguageInSubdir = true
     navbar_translucent_over_cover_disable = true  # Disable translucent navbar
 
   [params.links]
-    [[params.links.developer]]
+    [[params.links.user]]
+      name = "Bluesky"
+      url = "https://bsky.app/profile/goa.design"
+      icon = "fab fa-bluesky"
+    [[params.links.user]]
+      name = "Slack"
+      url = "https://slack.goa.design"
+      icon = "fab fa-slack"
+    [[params.links.user]]
       name = "GitHub"
       url = "https://github.com/goadesign/goa"
       icon = "fab fa-github"
-      desc = "Development takes place here!"
+    [[params.links.developer]]
+      name = "Development takes place here!"
+      url = "https://github.com/goadesign/goa"
+      icon = "fab fa-github"
 
   # Features section
   [[params.features]]
@@ -90,14 +100,8 @@ defaultContentLanguageInSubdir = true
     url = "https://www.speakeasyapi.dev/docs/api-frameworks/goa?utm_source=goa+repo&utm_medium=github+sponsorship"
 
 [markup]
-  [markup.goldmark]
-    [markup.goldmark.renderer]
-      unsafe = true
   [markup.highlight]
     style = "gruvbox"
-    guessSyntax = false
-    lineNumbersInTable = true
-    noClasses = false
     tabWidth = 4
 
 # Image processing configuration

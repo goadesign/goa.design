@@ -92,10 +92,10 @@ var _ = Service("greeter", func() {
 - Adding **`GRPC(func() {...})`** ensures the generated code includes `.proto`
   definitions and stubs for this method.
 - We use `Field(1, "name", String, ...)` to define the fields in the request and
-  response messages. The numbers are the field numbers in the generated `.proto`
-  file. Note that this replaces the use of `Attribute` for defining fields in
-  HTTP methods. Methods that support both HTTP and gRPC transports can use
-  `Field` for defining fields (the number is ignored for HTTP).
+  response messages. The numbers are the tags in the generated `.proto` file.
+  Note that this replaces the use of `Attribute` for defining fields in HTTP
+  methods. Methods that support both HTTP and gRPC transports can use `Field`
+  for defining fields (the tag is ignored for HTTP).
 
 ## 3. Next Steps
 

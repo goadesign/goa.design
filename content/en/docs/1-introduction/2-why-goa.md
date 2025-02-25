@@ -180,8 +180,5 @@ Generated code handles the complex parts of distributed systems
 
 ## Ready to Start?
 
-Now that you understand why Goa might be the right choice, dive into the [Core Concepts](../3-core-concepts/) to learn how everything fits together, or jump straight to the [Getting Started](../2-getting-started/) guide to build your first Goa service.
-
----
-
-The next section will introduce you to Goa's core concepts and how they work together to create robust, maintainable services.
+Now that you understand why Goa might be the right choice, jump straight to the
+[Getting Started](../2-getting-started/) guide to build your first Goa service.

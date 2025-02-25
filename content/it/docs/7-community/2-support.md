@@ -5,36 +5,36 @@ weight: 2
 description: "Trova aiuto e supporto per i tuoi progetti Goa"
 ---
 
-## Canali di Supporto della Community
+## Canali di Supporto della Comunità
 
 ### Canale Slack
 
-Unisciti al nostro [canale Slack](https://gophers.slack.com/messages/goa/) (parte dello Slack Gophers) per:
+Unisciti al nostro [canale Slack](https://gophers.slack.com/messages/goa/) (parte di Gophers Slack) per:
 - Chattare con altri utenti Goa
-- Ottenere aiuto rapido per le tue domande
+- Ottenere aiuto rapido con le domande
 - Condividere idee ed esperienze
-- Connetterti con la community
+- Connetterti con la comunità
 
 Per unirti:
-1. Ottieni un invito allo Slack Gophers su [invite.slack.golangbridge.org](https://invite.slack.golangbridge.org)
+1. Ottieni un invito a Gophers Slack su [invite.slack.golangbridge.org](https://invite.slack.golangbridge.org)
 2. Unisciti al canale `#goa`
 
 ### Discussioni GitHub
 
-Per discussioni e domande più approfondite, usa le [Discussioni GitHub](https://github.com/goadesign/goa/discussions). Questo è ottimo per:
+Per discussioni e domande più approfondite, usa [GitHub Discussions](https://github.com/goadesign/goa/discussions). È ottimo per:
 - Domande sull'implementazione
 - Discussioni sul design
 - Condividere i tuoi progetti Goa
-- Base di conoscenza della community
+- Base di conoscenza della comunità
 
 ### Issue Tracker
 
 Usa le nostre [Issues GitHub](https://github.com/goadesign/goa/issues) per:
 - Segnalazioni di bug
 - Richieste di funzionalità
-- Problemi con la documentazione
+- Problemi di documentazione
 
-Per favore, cerca tra le issue esistenti prima di crearne di nuove.
+Per favore cerca tra le issues esistenti prima di crearne di nuove.
 
 ## Ottenere Aiuto
 
@@ -47,7 +47,7 @@ Per favore, cerca tra le issue esistenti prima di crearne di nuove.
 
 2. **Cerca nelle Risorse Esistenti**
    - Guarda tra le [Discussioni GitHub](https://github.com/goadesign/goa/discussions)
-   - Controlla le [issue chiuse](https://github.com/goadesign/goa/issues?q=is%3Aissue+is%3Aclosed)
+   - Controlla le [issues chiuse](https://github.com/goadesign/goa/issues?q=is%3Aissue+is%3Aclosed)
    - Cerca nella cronologia del canale Slack
 
 ### Fare Buone Domande
@@ -63,23 +63,24 @@ Quando chiedi aiuto, per favore includi:
 2. **Descrizione del Problema**
    - Cosa ti aspettavi che succedesse
    - Cosa è successo effettivamente
-   - Passi per riprodurre il problema
+   - Passi per riprodurre
 
 3. **Esempi di Codice**
    - Esempio minimo e completo
    - DSL del design se pertinente
    - Messaggi di errore
 
-## Contribuire in Cambio
+## Restituire alla Comunità
 
 Se hai risolto un problema che potrebbe aiutare altri:
 
 1. Condividi la tua soluzione nella discussione originale o nel thread Slack
 2. Considera di contribuire alla documentazione
-3. Aiuta altri nella community
+3. Aiuta altri nella comunità
 
 ## Rimani Aggiornato
 
-- Osserva il [repository di Goa](https://github.com/goadesign/goa) per gli aggiornamenti
-- Segui le discussioni e le issue che ti interessano
+- Osserva il [repository Goa](https://github.com/goadesign/goa) per gli aggiornamenti
+- Segui le discussioni e le issues che ti interessano
+- Unisciti al canale Slack per aggiornamenti in tempo reale
  

@@ -17,54 +17,52 @@ From your project root (e.g., `concerts/`), run the Goa code generator:
 goa gen concerts/design
 ```
 
-{{< alert title="Generated Content" color="primary" >}}
 This command analyzes your design file (`design/concerts.go`) and produces a `gen/` folder containing:
 - **Transport-agnostic endpoints** (in `gen/concerts/`)
 - **HTTP** validation and marshalling code (in `gen/http/concerts/`) for both server and client
 - **OpenAPI** artifacts (in `gen/http/`)
 
 **Note:** If you change your design (e.g., add methods or fields), rerun `goa gen` to keep the generated code in sync.
-{{< /alert >}}
 
 ## 2. Explore the Generated Code
 
-### `gen/concerts`
-{{< alert title="Transport-Agnostic Endpoints" color="primary" >}}
+Let's explore the key components of the generated code. Understanding these
+files is crucial for implementing your service correctly and taking full
+advantage of Goa's features.
+
+### gen/concerts
+
 Defines core service components independent of transport protocol:
 - **Service interface** for business logic implementation (`service.go`)
 - **Payload** and **Result** types mirroring your design
 - **NewEndpoints** function for service implementation injection
 - **NewClient** function for service client creation
-{{< /alert >}}
 
-### `gen/http/concerts/server`
-{{< alert title="HTTP Server Components" color="primary" >}}
+### gen/http/concerts/server
+
 Contains server-side HTTP-specific logic:
 - **HTTP handlers** wrapping service endpoints
 - **Encoding/decoding** logic for requests and responses
 - **Request routing** to service methods
 - **Transport-specific types** and validation
 - **Path generation** from design specifications
-{{< /alert >}}
 
-### `gen/http/concerts/client`
-{{< alert title="HTTP Client Components" color="primary" >}}
+### gen/http/concerts/client
+
 Provides client-side HTTP functionality:
 - **Client creation** from HTTP endpoints
 - **Encoding/decoding** for requests and responses
 - **Path generation** functions
 - **Transport-specific types** and validation
 - **CLI helper functions** for client tools
-{{< /alert >}}
 
-### `gen/http/openapi[2|3].[yaml|json]`
-{{< alert title="API Documentation" color="primary" >}}
-Auto-generated OpenAPI specifications:
-- Available in both YAML and JSON formats
-- Supports OpenAPI 2.0 (Swagger) and 3.0
-- Compatible with Swagger UI and other API tools
-- Useful for API exploration and client generation
-{{< /alert >}}
+### OpenAPI Specifications
+
+The `gen/http` directory contains auto-generated OpenAPI specifications:
+- `openapi2.yaml` and `openapi2.json` (Swagger)
+- `openapi3.yaml` and `openapi3.json` (OpenAPI 3.0)
+
+These specifications are compatible with Swagger UI and other API tools, making them useful for API exploration and client generation.
 
 ## 3. Implement Your Service
 
@@ -107,44 +105,12 @@ import (
     "github.com/google/uuid"
     goahttp "goa.design/goa/v3/http"
 
+    // Use gen prefix for generated packages
     genconcerts "concerts/gen/concerts"
     genhttp "concerts/gen/http/concerts/server"
 )
 
-// main instantiates the service and starts the HTTP server.
-func main() {
-    // Instantiate the service
-    svc := &ConcertsService{}
-
-    // Wrap it in the generated endpoints
-    endpoints := genconcerts.NewEndpoints(svc)
-
-    // Build an HTTP handler
-    mux := goahttp.NewMuxer()
-    requestDecoder := goahttp.RequestDecoder
-    responseEncoder := goahttp.ResponseEncoder
-    handler := genhttp.New(endpoints, mux, requestDecoder, responseEncoder, nil, nil)
-
-    // Mount the handler on the mux
-    genhttp.Mount(mux, handler)
-
-    // Create a new HTTP server
-    port := "8080"
-    server := &http.Server{Addr: ":" + port, Handler: mux}
-
-    // Log the supported routes
-    for _, mount := range handler.Mounts {
-        log.Printf("%q mounted on %s %s", mount.Method, mount.Verb, mount.Pattern)
-    }
-
-    // Start the server (this will block the execution)
-    log.Printf("Starting concerts service on :%s", port)
-    if err := server.ListenAndServe(); err != nil {
-        log.Fatal(err)
-    }
-}
-
-// ConcertsService implements genconcerts.Service interface
+// ConcertsService implements the genconcerts.Service interface
 type ConcertsService struct {
     concerts []*genconcerts.Concert // In-memory storage
 }
@@ -179,6 +145,7 @@ func (m *ConcertsService) Show(ctx context.Context, p *genconcerts.ShowPayload) 
             return concert, nil
         }
     }
+    // Use designed error
     return nil, genconcerts.MakeNotFound(fmt.Errorf("concert not found: %s", p.ConcertID))
 }
 
@@ -215,6 +182,39 @@ func (m *ConcertsService) Delete(ctx context.Context, p *genconcerts.DeletePaylo
     }
     return genconcerts.MakeNotFound(fmt.Errorf("concert not found: %s", p.ConcertID))
 }
+
+// main instantiates the service and starts the HTTP server.
+func main() {
+    // Instantiate the service
+    svc := &ConcertsService{}
+
+    // Wrap it in the generated endpoints
+    endpoints := genconcerts.NewEndpoints(svc)
+
+    // Build an HTTP handler
+    mux := goahttp.NewMuxer()
+    requestDecoder := goahttp.RequestDecoder
+    responseEncoder := goahttp.ResponseEncoder
+    handler := genhttp.New(endpoints, mux, requestDecoder, responseEncoder, nil, nil)
+
+    // Mount the handler on the mux
+    genhttp.Mount(mux, handler)
+
+    // Create a new HTTP server
+    port := "8080"
+    server := &http.Server{Addr: ":" + port, Handler: mux}
+
+    // Log the supported routes
+    for _, mount := range handler.Mounts {
+        log.Printf("%q mounted on %s %s", mount.Method, mount.Verb, mount.Pattern)
+    }
+
+    // Start the server (this will block the execution)
+    log.Printf("Starting concerts service on :%s", port)
+    if err := server.ListenAndServe(); err != nil {
+        log.Fatal(err)
+    }
+}
 ```
 
 ## 4. Run and Test
@@ -229,4 +229,7 @@ go run concerts/cmd/concerts
 curl http://localhost:8080/concerts
 ```
 
-Upon successful validation, proceed to [Running](./3-running.md) to test the service with a HTTP client.
+Congratulations! 🎉 You've successfully implemented your first Goa service. Now
+it's time for the exciting part - seeing your API in action! Head over to
+[Running](./3-running.md) where we'll explore different ways to interact with
+your service and watch it handle real HTTP requests.

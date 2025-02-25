@@ -2,10 +2,10 @@
 title: Progettare un'API REST
 linkTitle: Progettazione
 weight: 1
-description: "Impara a progettare un'API REST completa per la gestione dei concerti utilizzando Goa, incluse le operazioni CRUD, la paginazione, le mappature HTTP appropriate e la gestione degli errori."
+description: "Impara a progettare un'API REST completa per la gestione di concerti usando Goa, incluse operazioni CRUD, paginazione, mappature HTTP appropriate e gestione degli errori."
 ---
 
-Questo tutorial ti guida attraverso la progettazione di un'API REST per la gestione dei concerti musicali utilizzando Goa. Imparerai come creare un design completo dell'API che include operazioni comuni, mappature HTTP appropriate e gestione degli errori.
+Questo tutorial ti guida attraverso la progettazione di un'API REST per la gestione di concerti musicali usando Goa. Imparerai come creare un design API completo che include operazioni comuni, mappature HTTP appropriate e gestione degli errori.
 
 ## Cosa Costruiremo
 
@@ -13,11 +13,11 @@ Creeremo un servizio `concerts` che fornisce queste operazioni REST standard:
 
 | Operazione | Metodo HTTP | Percorso | Descrizione |
 |-----------|------------|------|-------------|
-| Lista | GET | /concerts | Ottieni tutti i concerti con paginazione |
-| Crea | POST | /concerts | Aggiungi un nuovo concerto |
-| Mostra | GET | /concerts/{id} | Ottieni un singolo concerto |
-| Aggiorna | PUT | /concerts/{id} | Modifica un concerto |
-| Elimina | DELETE | /concerts/{id} | Rimuovi un concerto |
+| List | GET | /concerts | Ottieni tutti i concerti con paginazione |
+| Create | POST | /concerts | Aggiungi un nuovo concerto |
+| Show | GET | /concerts/{id} | Ottieni un singolo concerto |
+| Update | PUT | /concerts/{id} | Modifica un concerto |
+| Delete | DELETE | /concerts/{id} | Rimuovi un concerto |
 
 ## Il File di Design
 
@@ -38,19 +38,19 @@ import (
   . "goa.design/goa/v3/dsl"
 )
 
-// Service definition
+// Definizione del servizio
 var _ = Service("concerts", func() {
-  Description("The concerts service manages music concert data.")
+  Description("Il servizio concerts gestisce i dati dei concerti musicali.")
 
   Method("list", func() {
-    Description("List upcoming concerts with optional pagination.")
+    Description("Elenca i prossimi concerti con paginazione opzionale.")
     
     Payload(func() {
-      Attribute("page", Int, "Page number", func() {
+      Attribute("page", Int, "Numero di pagina", func() {
         Minimum(1)
         Default(1)
       })
-      Attribute("limit", Int, "Items per page", func() {
+      Attribute("limit", Int, "Elementi per pagina", func() {
         Minimum(1)
         Maximum(100)
         Default(10)
@@ -62,21 +62,21 @@ var _ = Service("concerts", func() {
     HTTP(func() {
       GET("/concerts")
 
-      // Query parameters for pagination
-      Param("page", Int, "Page number", func() {
+      // Parametri di query per la paginazione
+      Param("page", Int, "Numero di pagina", func() {
         Minimum(1)
       })
-      Param("limit", Int, "Number of items per page", func() {
+      Param("limit", Int, "Numero di elementi per pagina", func() {
         Minimum(1)
         Maximum(100)
       })
 
-      Response(StatusOK) // No need to specify the Body, it's inferred from the Result
+      Response(StatusOK) // Non serve specificare il Body, viene dedotto dal Result
     })
   })
 
   Method("create", func() {
-    Description("Create a new concert entry.")
+    Description("Crea una nuova voce concerto.")
     
     Payload(ConcertPayload)
     Result(Concert)
@@ -88,10 +88,10 @@ var _ = Service("concerts", func() {
   })
 
   Method("show", func() {
-    Description("Get a single concert by ID.")
+    Description("Ottieni un singolo concerto per ID.")
     
     Payload(func() {
-      Attribute("concertID", String, "Concert UUID", func() {
+      Attribute("concertID", String, "UUID del concerto", func() {
         Format(FormatUUID)
       })
       Required("concertID")
@@ -108,19 +108,19 @@ var _ = Service("concerts", func() {
   })
 
   Method("update", func() {
-    Description("Update an existing concert by ID.")
+    Description("Aggiorna un concerto esistente per ID.")
 
     Payload(func() {
       Extend(ConcertPayload)
-      Attribute("concertID", String, "ID of the concert to update.", func() {
+      Attribute("concertID", String, "ID del concerto da aggiornare.", func() {
         Format(FormatUUID)
       })
       Required("concertID")
     })
 
-    Result(Concert, "The updated concert.")
+    Result(Concert, "Il concerto aggiornato.")
 
-    Error("not_found", ErrorResult, "Concert not found")
+    Error("not_found", ErrorResult, "Concerto non trovato")
 
     HTTP(func() {
       PUT("/concerts/{concertID}")
@@ -131,16 +131,16 @@ var _ = Service("concerts", func() {
   })
 
   Method("delete", func() {
-    Description("Remove a concert from the system by ID.")
+    Description("Rimuovi un concerto dal sistema per ID.")
 
     Payload(func() {
-      Attribute("concertID", String, "ID of the concert to remove.", func() {
+      Attribute("concertID", String, "ID del concerto da rimuovere.", func() {
         Format(FormatUUID)
       })
       Required("concertID")
     })
 
-    Error("not_found", ErrorResult, "Concert not found")
+    Error("not_found", ErrorResult, "Concerto non trovato")
 
     HTTP(func() {
       DELETE("/concerts/{concertID}")
@@ -151,43 +151,42 @@ var _ = Service("concerts", func() {
   })
 })
 
-// Data Types
+// Tipi di Dati
 var ConcertPayload = Type("ConcertPayload", func() {
-  Description("Data needed to create/update a concert.")
+  Description("Dati necessari per creare/aggiornare un concerto.")
 
-  Attribute("artist", String, "Performing artist/band", func() {
+  Attribute("artist", String, "Artista/band che si esibisce", func() {
     MinLength(1)
     Example("The Beatles")
   })
-  Attribute("date", String, "Concert date (YYYY-MM-DD)", func() {
+  Attribute("date", String, "Data del concerto (YYYY-MM-DD)", func() {
     Pattern(`^\d{4}-\d{2}-\d{2}$`)
     Example("2024-01-01")
   })
-  Attribute("venue", String, "Concert venue", func() {
+  Attribute("venue", String, "Luogo del concerto", func() {
     MinLength(1)
     Example("The O2 Arena")
   })
-  Attribute("price", Int, "Ticket price (USD)", func() {
+  Attribute("price", Int, "Prezzo del biglietto (USD)", func() {
     Minimum(1)
     Example(100)
   })
 })
 
 var Concert = Type("Concert", func() {
-  Description("A concert with all its details.")
+  Description("Un concerto con tutti i suoi dettagli.")
   Extend(ConcertPayload)
   
-  Attribute("id", String, "Unique concert ID", func() {
+  Attribute("id", String, "ID univoco del concerto", func() {
     Format(FormatUUID)
   })
   Required("id", "artist", "date", "venue", "price")
 })
-```
 
 ## Comprendere il Design
 
-Per un riferimento completo di tutte le funzioni DSL utilizzate in questo tutorial, consulta la
-[documentazione DSL di Goa](https://pkg.go.dev/goa.design/goa/v3/dsl). Ogni
+Per un riferimento completo di tutte le funzioni DSL utilizzate in questo tutorial, consulta
+la [documentazione del DSL di Goa](https://pkg.go.dev/goa.design/goa/v3/dsl). Ogni
 funzione è documentata in modo approfondito con spiegazioni dettagliate ed esempi
 pratici.
 
@@ -201,10 +200,10 @@ Il design consiste in tre parti principali:
 
 #### Mappature HTTP
 La nostra API segue le convenzioni RESTful con mappature HTTP intuitive:
-- Richieste GET per recuperare dati (elenco e visualizzazione concerti)
-- POST per creare nuovi concerti
-- PUT per aggiornare concerti esistenti
-- DELETE per rimuovere concerti
+- Richieste `GET` per recuperare dati (elencare e mostrare concerti)
+- `POST` per creare nuovi concerti
+- `PUT` per aggiornare concerti esistenti
+- `DELETE` per rimuovere concerti
 - Parametri di query (`page` e `limit`) gestiscono la paginazione
 - Parametri di percorso catturano gli ID delle risorse (es. `/concerts/{concertID}`)
 
@@ -218,18 +217,17 @@ Goa fornisce una validazione integrata per garantire l'integrità dei dati:
 
 #### Gestione degli Errori
 L'API gestisce gli errori in modo elegante con:
-- Tipi di errore denominati che indicano chiaramente cosa è andato storto (es. "not_found")
+- Tipi di errore con nomi che indicano chiaramente cosa è andato storto (es. "not_found")
 - Codici di stato HTTP appropriati (404 per non trovato, 201 per creazione, ecc.)
-- Formato di risposta degli errori coerente su tutti gli endpoint
+- Formato di risposta degli errori consistente su tutti gli endpoint
 
 #### Riutilizzo dei Tipi
 Abbiamo strutturato i nostri tipi per evitare la duplicazione:
 - `ConcertPayload` definisce i campi comuni necessari per creazione/aggiornamenti
 - `Concert` estende `ConcertPayload` e aggiunge il campo ID
-- Questo approccio garantisce coerenza tra i dati di input e quelli memorizzati
+- Questo approccio garantisce consistenza tra i dati di input e quelli memorizzati
 
 ## Prossimi Passi
 
-Ora che hai un design completo dell'API, procedi al [Tutorial di
-Implementazione](./2-implementing) per imparare come dare vita a questo design con la
-generazione del codice di Goa. 
+Ora che hai un design API completo, procedi al [Tutorial di Implementazione](./2-implementing)
+per imparare come dare vita a questo design con la generazione di codice di Goa. 

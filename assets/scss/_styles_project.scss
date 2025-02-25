@@ -73,6 +73,53 @@ a {
           margin-top: 0;
         }
       }
+
+      // Code styling
+      pre, code {
+        font-size: $font-size-code;  // Apply smaller font size to all code blocks
+      }
+      
+      // Code block margins
+      .highlight {
+        margin: 1rem 0;  // Reduced margin above and below code blocks
+      }
+      
+      // Inline code should be slightly larger than block code
+      p > code {
+        font-size: calc(#{$font-size-code} * 1.1);
+      }
+
+      // Copy button styling
+      .td-click-to-copy {
+        color: #b8c9e6 !important;  // Soft blue-gray that's visible but elegant
+        
+        &:hover {
+          color: #d9e3f3 !important;  // Lighter on hover for feedback
+        }
+      }
+
+      // Content area list styling
+      ul {
+        margin-top: 0;           // Remove space before the list
+        margin-bottom: 2rem;     // Add space after the entire list
+        
+        li {
+          margin-bottom: 0;      // Remove space between list items
+        }
+      }
+
+      figure.full-width-image {
+        margin: 1rem calc(-2rem + 1rem);
+        width: calc(100% + 2rem);
+        max-width: none;
+        display: flex;
+        justify-content: center;
+        
+        img {
+          width: 100%;
+          max-width: none;
+        }
+      }
     }
   }
 
@@ -129,7 +176,7 @@ a {
 
     .display-1 {
       font-family: $font-family-playfair;
-      font-size: 2.75rem;  // Reduced from 3.5rem
+      font-size: 4rem;  // Increased from 2.75rem
       font-style: italic;
       font-weight: 600;
       letter-spacing: -0.01em;
@@ -143,7 +190,7 @@ a {
     }
 
     .lead {
-      font-size: 1.25rem;  // Reduced from 1.5rem
+      font-size: 2rem;  // Reduced from 1.5rem
       margin-bottom: 1rem;  // Reduced margin
     }
 
@@ -204,6 +251,16 @@ a {
   }
 }
 
+.td-navbar {
+  .nav-link {
+    font-weight: normal;  // Ensure nav links aren't bold
+  }
+  
+  .active {
+    font-weight: normal;  // Ensure active nav items aren't bold
+  }
+}
+
 // Footer
 .td-footer {
   min-height: 0 !important;
@@ -216,5 +273,51 @@ a {
   
   .list-inline {
     margin: 0;
+  }
+}
+
+// Section index styling
+.section-index {
+  h2 {
+    margin-bottom: 1rem;
+  }
+
+  .entry {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
+    padding: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
+    transform: translateY(0);
+    
+    &:hover {
+      background: white;
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+    
+    h5 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 500;
+      
+      a {
+        color: $primary;
+        
+        &:hover {
+          color: darken($primary, 10%);
+          text-decoration: underline;
+        }
+      }
+    }
+    
+    p {
+      margin: 0.25rem 0 0 0;
+      color: rgba(41, 41, 41, 0.7);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
   }
 }

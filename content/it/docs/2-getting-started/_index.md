@@ -33,9 +33,16 @@ Dopo aver completato le guide introduttive, puoi:
 
 ## Best Practice
 
-- Mantieni i tuoi file di design in un package `design` separato
-- Esegui `goa gen` dopo ogni modifica al design
-- Versiona il tuo codice generato
-- Usa la documentazione OpenAPI generata per validare il design della tua API
+- **Mantieni i tuoi file di design in un package `design` separato**: Questa separazione aiuta a mantenere una chiara distinzione tra il design della tua API e l'implementazione. Rende più facile gestire le modifiche al contratto API indipendentemente dalla tua logica di business.
 
-Scegli [Installazione](./1-installation/) per iniziare il tuo viaggio con Goa. 
+- **Esegui `goa gen` dopo ogni modifica al design**: Mantenere il codice generato sincronizzato con il tuo design è cruciale. Eseguire `goa gen` assicura che le tue interfacce di implementazione, il codice del layer di trasporto e la documentazione riflettano sempre il design attuale della tua API.
+
+- **Versiona il tuo codice generato**: Anche se il codice generato può essere ricreato, versionarlo aiuta a tracciare l'evoluzione dell'API, rende i deployment più affidabili e facilita la review del codice per le modifiche all'API. Assicura anche che i membri del team lavorino con codice consistente indipendentemente dalla loro versione locale di Goa.
+
+- **Usa la documentazione OpenAPI/Swagger generata**: La documentazione API auto-generata serve come risorsa preziosa sia per lo sviluppo che per la validazione dell'API. Fornisce un modo interattivo per esplorare la tua API e può essere condivisa con gli stakeholder per feedback.
+
+- **Segui convenzioni di naming coerenti**: Usa nomi descrittivi e coerenti per i tuoi servizi, metodi e tipi nel tuo design. Questo rende la tua API più intuitiva e più facile da mantenere.
+
+- **Sfrutta il sistema di tipi di Goa**: Approfitta del ricco sistema di tipi di Goa per definire strutture dati precise e regole di validazione nel tuo design. Questo riduce il codice di validazione ripetitivo e assicura una gestione consistente dei dati.
+
+Pronto per iniziare? Parti con [Installazione](./1-installation/) per configurare il tuo ambiente di sviluppo Goa. 

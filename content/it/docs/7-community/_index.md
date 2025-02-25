@@ -1,23 +1,23 @@
 ---
-title: "Community"
-linkTitle: "Community"
+title: "Comunità"
+linkTitle: "Comunità"
 weight: 7
 description: >
-  Unisciti alla community di Goa - contribuisci, ottieni aiuto e connettiti con altri sviluppatori.
+  Unisciti alla comunità Goa - contribuisci, ottieni aiuto e connettiti con altri sviluppatori.
 menu:
   main:
     weight: 7
 ---
 
-# Unisciti alla Community di Goa
+# Unisciti alla Comunità Goa
 
-Goa prospera grazie alla sua vivace community di sviluppatori e contributori. Che tu stia cercando aiuto, voglia contribuire o semplicemente connetterti con altri appassionati di Goa, ecco come puoi partecipare:
+Goa prospera attraverso la sua vivace comunità di sviluppatori e contributori. Che tu stia cercando aiuto, voglia contribuire o semplicemente connetterti con altri appassionati di Goa, ecco come puoi partecipare:
 
 ## Ottieni Aiuto
 
 * Unisciti al canale `#goa` su [Gopher Slack](https://gophers.slack.com/)
 * Fai domande nelle nostre [Discussioni GitHub](https://github.com/goadesign/goa/discussions)
-* Cerca soluzioni e problemi noti nelle [Issues GitHub](https://github.com/goadesign/goa/issues)
+* Cerca nelle [Issues GitHub](https://github.com/goadesign/goa/issues) per soluzioni e problemi noti
 
 ## Contribuisci a Goa
 
@@ -29,8 +29,8 @@ Vedi [Contribuire a Goa](/docs/it/7-community/1-contributing) per maggiori detta
 
 ## Rimani Connesso
 
-* Segui [@goadesign](https://twitter.com/goadesign) su Twitter
-* Metti una stella e osserva il [repository di Goa](https://github.com/goadesign/goa)
-* Esplora [esempi e plugin](https://github.com/goadesign/plugins) creati dalla community
+* Segui [@goadesign](https://goadesign.bsky.social) su Bluesky
+* Metti una stella e osserva il [repository Goa](https://github.com/goadesign/goa)
+* Esplora gli [esempi](https://github.com/goadesign/examples) e i [plugin](https://github.com/goadesign/plugins) creati dalla comunità
 
-Vedi [Ottenere Supporto](/docs/it/7-community/2-support) per maggiori dettagli. 
+Vedi [Ottenere Supporto](2-support) per maggiori dettagli. 

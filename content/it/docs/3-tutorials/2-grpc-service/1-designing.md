@@ -1,13 +1,13 @@
 ---
-title: "Progettare Servizi gRPC"
+title: "Progettazione di Servizi gRPC"
 linkTitle: "Progettazione"
 weight: 1
-description: "Impara a progettare servizi gRPC con Goa, inclusa la definizione del servizio, le annotazioni dei metodi, la generazione protobuf e le corrette mappature dei codici di stato gRPC."
+description: "Impara a progettare servizi gRPC con Goa, inclusi definizione del servizio, annotazioni dei metodi, generazione protobuf e mappature appropriate dei codici di stato gRPC."
 ---
 
-In questo tutorial, **progetterai** un semplice servizio gRPC con Goa. Mentre Goa viene
-spesso utilizzato per endpoint REST, ha anche un supporto di **prima classe** per i
-trasporti gRPC. Vedrai come:
+In questo tutorial, **progetterai** un semplice servizio gRPC con Goa. Mentre Goa è
+spesso usato per endpoint REST, ha anche supporto di prima classe per i trasporti
+**gRPC**. Vedrai come:
 
 - Definire un servizio e i metodi nel DSL di Goa.
 - Annotarli per gRPC, assicurando che il codice generato produca file `.proto`.
@@ -19,11 +19,11 @@ Creeremo un servizio **`greeter`** che ha un singolo metodo chiamato `SayHello`.
 Il metodo riceve un nome nel payload e restituisce un messaggio di saluto. Mostreremo
 anche come **qualificare** le risposte gRPC con codici gRPC standard.
 
-| Metodo   | gRPC RPC      | Descrizione                                 |
+| Metodo   | RPC gRPC      | Descrizione                                 |
 |----------|---------------|---------------------------------------------|
 | SayHello | rpc SayHello  | Restituisce un saluto dato un nome fornito dall'utente |
 
-## 1. Creare un Nuovo Modulo e Cartella
+## 1. Crea un Nuovo Modulo e Cartella
 
 Crea un nuovo modulo Go per questo progetto `grpcgreeter`:
 
@@ -39,7 +39,7 @@ All'interno di questa cartella, configura una directory `design/` per contenere 
 mkdir design
 ```
 
-## 2. Scrivere il Design del Servizio
+## 2. Scrivi il Design del Servizio
 
 Crea un file chiamato `design/greeter.go` con il seguente contenuto:
 
@@ -50,14 +50,14 @@ import (
     . "goa.design/goa/v3/dsl"
 )
 
-// Definisce un servizio greeter basato su gRPC.
+// Definisci un servizio greeter basato su gRPC.
 var _ = Service("greeter", func() {
     Description("Un semplice servizio gRPC che dice ciao.")
 
     Method("SayHello", func() {
         Description("Invia un saluto a un utente.")
 
-        // Definisce il payload della richiesta (ciò che il client invia).
+        // Definisci il payload della richiesta (ciò che il client invia).
         Payload(func() {
             Field(1, "name", String, "Nome dell'utente da salutare", func() {
                 Example("Alice")
@@ -66,7 +66,7 @@ var _ = Service("greeter", func() {
             Required("name")
         })
 
-        // Definisce il risultato (ciò che il server restituisce).
+        // Definisci il risultato (ciò che il server restituisce).
         Result(func() {
             Field(1, "greeting", String, "Un messaggio di saluto amichevole")
             Required("greeting")
@@ -92,10 +92,10 @@ var _ = Service("greeter", func() {
 - Aggiungere **`GRPC(func() {...})`** assicura che il codice generato includa definizioni
   `.proto` e stub per questo metodo.
 - Usiamo `Field(1, "name", String, ...)` per definire i campi nei messaggi di richiesta e
-  risposta. I numeri sono i numeri dei campi nel file `.proto` generato. Nota che questo
-  sostituisce l'uso di `Attribute` per definire i campi nei metodi HTTP. I metodi che
-  supportano sia i trasporti HTTP che gRPC possono usare `Field` per definire i campi
-  (il numero viene ignorato per HTTP).
+  risposta. I numeri sono i tag nel file `.proto` generato.
+  Nota che questo sostituisce l'uso di `Attribute` per definire i campi nei metodi
+  HTTP. I metodi che supportano sia trasporti HTTP che gRPC possono usare `Field`
+  per definire i campi (il tag viene ignorato per HTTP).
 
 ## 3. Prossimi Passi
 
@@ -105,10 +105,10 @@ Con il tuo **design del servizio gRPC** pronto, procedi al prossimo tutorial:
   Genera il codice, collega la tua logica personalizzata e impara come eseguire un server gRPC in
   Goa.
 - [Esecuzione del Servizio](./3-running.md):
-  Esplora come utilizzare la CLI ufficiale gRPC o altri strumenti per chiamare i tuoi endpoint
+  Esplora come usare la CLI ufficiale di gRPC o altri strumenti per chiamare i tuoi endpoint
   e assicurarti che tutto funzioni correttamente.
 
-Hai ora **progettato** un servizio gRPC minimale utilizzando Goa. L'approccio DSL ti fornisce
+Hai ora **progettato** un servizio gRPC minimale usando Goa. L'approccio DSL ti fornisce
 una **singola fonte di verità** per i tipi di richiesta/risposta, le validazioni e
-le mappature di stato gRPC, rendendo il tuo servizio **facile da evolvere** e **mantenere** nel
-tempo! 
+le mappature dei codici di stato gRPC—rendendo il tuo servizio **facile da evolvere** e
+**mantenere** nel tempo! 
