@@ -1,0 +1,72 @@
+// Google Fonts
+$google_font_name: "Charter, Playfair Display, Inter";
+$google_font_family: "Charter:200,300,400,400i,700,700i|Playfair+Display:400,400i,600,700|Inter:400,500,600,700";
+
+// Core Colors - Base palette
+$color-accent: #5bc0eb;     // Vibrant blue
+$color-neutral: #fb4bcf;    // Pink
+$color-success: #2ecc71;    // Fresh green
+$color-warning: #faff00;    // Electric neon yellow
+$color-danger: #e74c3c;     // Warm red
+
+// Gradient Colors
+$color-gradient-start: #5bc0eb;  // Pure blue - Used for navbar and hover states
+
+// Card 1: Development Speed (Blue dominant)
+$card1-gradient-start: $color-gradient-start;  // Pure blue
+$card1-gradient-end: #9d89e8;    // Blue-purple blend
+
+// Card 2: Purple to pink transition
+$card2-gradient-start: #9d89e8;  // Blue-purple blend
+$card2-gradient-end: #fb4bcf;    // Pure pink
+
+// Card 3: Pink to yellow-orange
+$card3-gradient-start: #fb4bcf;  // Pure pink
+$card3-gradient-end: #ffb347;    // Yellow-orange
+
+// Interactive Elements
+$color-action: $color-accent;                     // Buttons, links, interactive elements
+$color-action-hover: darken($color-action, 10%);  // Hover state for interactive elements
+$color-border: $color-accent;                     // Borders, dividers - pure blue now
+$color-highlight: rgba($color-accent, 0.1);       // Highlights, accents - light blue
+
+// Typography
+$color-text: #595959;          // Main text content - lighter dark gray
+$color-text-muted: #757575;    // Secondary text - adjusted to match
+$color-text-inverse: #ffffff;   // Text on dark backgrounds
+$color-text-link: darken($color-action, 5%);  // Link text
+
+// Surfaces
+$color-surface: white;                            // Primary surface
+$color-surface-alt: #f8f9fa;    // Alternative surface
+$color-elevation: rgba($color-accent, 0.1);         // Shadows, depth - using blue accent
+
+// Accents & Effects
+// $color-elevation: rgba($color-danger, 0.1);         // Shadows, depth
+
+// Title Gradient
+$color-gradient-start: $color-accent;              // Title gradient start
+$color-gradient-end: $color-neutral;               // Title gradient end - back to pink
+$color-gradient-overlay: rgba(white, 0.1);  // Gradient overlay effect
+
+// Typography
+$font-family-base: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+$font-family-playfair: "Playfair Display", serif;
+$font-family-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+// Font sizes
+$font-size-root: 20px;
+$font-size-base: 1rem;
+$h1-font-size: 2rem;
+$h2-font-size: 1.5rem;
+$h3-font-size: 1.25rem;
+$h4-font-size: 1.1rem;
+$h5-font-size: 1rem;
+$font-size-sm: 0.875rem;
+$font-size-code: 0.7rem;
+$line-height-base: 1.6;
+
+// Title specific variables
+$title-letter-spacing: -0.02em;
+$title-font-weight: 600;
+$title-font-size: 2.8rem;

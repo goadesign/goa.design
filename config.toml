@@ -1,131 +1,107 @@
-name = "Goa"
-baseurl = "https://goa.design/"
-description = "Goa - Design First."
-homepage = "https://goa.design"
-license = "MIT"
-licenselink = "https://github.com/goadesign/goa.design/blob/master/LICENSE"
-disableKinds = ["taxonomy"]
+[module]
+  proxy = "direct"
+  [[module.imports]]
+    path = "github.com/google/docsy"
+    disable = false
+  [[module.imports]]
+    path = "github.com/google/docsy/dependencies"
+    disable = false
 
+baseURL = "https://goa.design/"
+title = "Goa"
+theme = "docsy"
+enableGitInfo = true
+enableRobotsTXT = true
 
-uglyURLs = false
-pluralizelisttitles = false
-pygmentscodefences = true
-pygmentsoptions = ""
-pygmentsstyle = "friendly"
-pygmentsuseclasses = false
+# Language configuration
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = true
+
+# Configure languages
+[languages]
+  [languages.en]
+    languageName = "English"
+    contentDir = "content/en"
+    weight = 1
+  [languages.it]
+    languageName = "Italiano"
+    contentDir = "content/it"
+    weight = 2
+  [languages.ja]
+    languageName = "日本語"
+    contentDir = "content/ja"
+    weight = 3
+
+[params]
+  copyright = "Raphael Simon and the Goa contributors"
+  
+  # Repository configuration
+  github_repo = "https://github.com/goadesign/goa.design"
+  github_branch = "master"
+  
+  # Docsy theme params
+  time_format_blog = "Monday, January 02, 2006"
+  time_format_default = "January 2, 2006"
+  
+  # User interface configuration
+  [params.ui]
+    sidebar_menu_compact = false
+    sidebar_menu_foldable = true
+    sidebar_cache_limit = 10000
+    breadcrumb_disable = false
+    toc_mobile_disable = false
+    search_enable = true
+    footer_about_enable = false
+    navbar_logo = true  # Enable logo in nav bar
+    navbar_translucent_over_cover_disable = true  # Disable translucent navbar
+
+  [params.links]
+    [[params.links.user]]
+      name = "Bluesky"
+      url = "https://bsky.app/profile/goa.design"
+      icon = "fab fa-bluesky"
+    [[params.links.user]]
+      name = "Slack"
+      url = "https://slack.goa.design"
+      icon = "fab fa-slack"
+    [[params.links.developer]]
+      name = "Development takes place here!"
+      url = "https://github.com/goadesign/goa"
+      icon = "fab fa-github"
+
+  # Features section
+  [[params.features]]
+    id = "codegen"
+    color = "#ED3E3E"
+    icon = "fa-wand-magic-sparkles"
+  [[params.features]]
+    id = "design"
+    color = "#80AD00"
+    icon = "fa-pencil"
+  [[params.features]]
+    id = "best_practice"
+    color = "#5DB9F2"
+    icon = "fa-star"
+
+  # Sponsors section
+  [[params.sponsors]]
+    id = "incidentio"
+    name = "incident.io"
+    image = "/img/sponsors/incidentio.png"
+    url = "https://incident.io"
+  [[params.sponsors]]
+    id = "speakeasy"
+    name = "Speakeasy"
+    image = "/img/sponsors/speakeasy.png"
+    url = "https://www.speakeasyapi.dev/docs/api-frameworks/goa?utm_source=goa+repo&utm_medium=github+sponsorship"
 
 [markup]
-  [markup.goldmark]
-    [markup.goldmark.renderer]
-      unsafe = true
+  [markup.highlight]
+    style = "gruvbox"
+    tabWidth = 4
 
-[params.author]
-  name = "Raphael Simon and the Goa contributors"
-  homepage = "https://github.com/goadesign/goa/graphs/contributors"
-
-DefaultContentLanguage = "en"
-
-[languages.en]
-weight = 1
-title = "goa - Design First."
-languageName = "English"
-
-[[languages.en.menu.main]]
-name = "Learn"
-identifier = "learn"
-url = "/learn"
-weight = 1
-
-[[languages.en.menu.main]]
-name = "Design"
-identifier = "design"
-url = "/design/"
-weight = 2
-
-[[languages.en.menu.main]]
-name = "Implement"
-identifier = "implement"
-url = "/implement/"
-weight = 3
-
-[[languages.en.menu.main]]
-name = "Extend"
-identifier = "extend"
-url = "/extend"
-weight = 4
-
-[[languages.en.menu.main]]
-name = "Blog"
-identifier = "blog"
-url = "/blog/"
-weight = 5
-
-[languages.ja]
-weight = 2
-title = "goa - はじめにデザインを。"
-languageName = "日本語"
-
-[[languages.ja.menu.main]]
-name = "学ぶ"
-identifier = "learn"
-url = "/ja/learn/"
-weight = 1
-
-[[languages.ja.menu.main]]
-name = "デザイン"
-identifier = "design"
-url = "/ja/design/"
-weight = 2
-
-[[languages.ja.menu.main]]
-name = "実装する"
-identifier = "implement"
-url = "/ja/implement/"
-weight = 3
-
-[[languages.ja.menu.main]]
-name = "拡張する"
-identifier = "extend"
-url = "/ja/extend/"
-weight = 4
-
-[[languages.ja.menu.main]]
-name = "ブログ"
-identifier = "blog"
-url = "/ja/blog/"
-weight = 5
-
-[languages.it]
-weight = 1
-title = "goa - Design First."
-languageName = "Italiano"
-
-[[languages.it.menu.main]]
-name = "Impara"
-identifier = "learn"
-url = "/it/learn"
-weight = 1
-
-[[languages.it.menu.main]]
-name = "Progetta"
-identifier = "design"
-url = "/it/design/"
-weight = 2
-
-[[languages.it.menu.main]]
-name = "Implementa"
-identifier = "implement"
-url = "/it/implement/"
-weight = 3
-
-[[languages.it.menu.main]]
-name = "Estendi"
-identifier = "extend"
-url = "/it/extend"
-weight = 4
-
-[[languages.it.menu.main]]
-name = "Blog"
-identifier = "blog"
-url = "/it/blog/"
-weight = 5
+# Image processing configuration
+[imaging]
+  resampleFilter = "CatmullRom"
+  quality = 75
+  anchor = "smart"

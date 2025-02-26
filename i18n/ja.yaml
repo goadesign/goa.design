@@ -1,0 +1,63 @@
+# Site title and meta
+site_title: "Goa :: はじめにデザインを。"
+site_description: "Goa は Go で作られたコード生成フレームワークです。デザインファーストの方法論を使用して慣用的な API およびマイクロサービスアーキテクチャを生成するための明確で簡潔なパスを開発者に提供します。"
+
+# Navigation
+nav_search_placeholder: "検索"
+nav_godoc: "GoDoc"
+nav_github: "GitHub"
+nav_edit: "編集"
+
+# Footer
+footer_slogan: "はじめにデザインを。"
+footer_languages: "言語"
+footer_find_us: "他のサイト"
+footer_copyright: " 2015-%s Raphael Simon と Goa コントリビューター"
+footer_logo_by: "ロゴ作成: Jason Melgoza"
+
+# Hero Section
+hero_title: "はじめにデザインを。"
+hero_description: "デザインを、残りはGoaにお任せ。"
+
+# Features Section
+feature_codegen_title: "コード生成"
+feature_codegen_desc: "Goaは、APIデザインをコードに変換します - リフレクションもボイラープレートも不要です。一度デザインを書くだけで、サーバー、クライアント、ドキュメントが自動生成されます。"
+
+feature_design_title: "デザインベース"
+feature_design_desc: "APIを思い通りにデザインしましょう。一つのデザインが実装とドキュメントの両方を導く、唯一の信頼できる情報源となります。"
+
+feature_best_practice_title: "ベストプラクティス"
+feature_best_practice_desc: "Goaは生成されるコードを通じてベストプラクティスを徹底します - 入力検証からGo言語らしい実装まで、常に堅牢で型安全なAPIを実現します。"
+
+# Section Navigation
+subsections_title: "このセクションの内容"
+
+# Sponsors
+sponsor_zuplo_title: "Zuplo: あなたのGoa APIをスケールし、保護し、商品化する"
+sponsor_zuplo_desc: "私たちのAPIゲートウェイは、APIの保護、グローバルスケール、OpenAPIからのドキュメント生成、そしてマネタイズを可能にします。"
+sponsor_zuplo_link: "無料で始める"
+
+sponsor_incidentio_title: "incident.io: インシデントから強く立ち直る"
+sponsor_incidentio_desc: "私たちのプラットフォームを使って、チームにインシデントを最初から最後まで管理する力を与えましょう。<br/>インシデントを迅速に修正し、そこから学ぶことで、より回復力の高い製品を作ることができます。"
+sponsor_incidentio_link: "詳細はこちら"
+
+sponsor_speakeasy_title: "Speakeasy: あなたのAPIのためのエンタープライズ開発者体験"
+sponsor_speakeasy_desc: "私たちのプラットフォームを使えば、機能豊富で本番環境に対応したSDKを簡単に作成できます。<br/>あなたのAPIに相応しい開発者体験を提供することで、統合を加速しエラーを減らすことができます。"
+sponsor_speakeasy_link: "Goaと統合する"
+
+# Wizard
+wizard_title: "Goa Design Wizard"
+wizard_description: "<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>を使用して、インタラクティブに Goa デザインを作成できます。"
+wizard_features: |
+  <ul>
+    <li>自然な会話を通じて GPT を活用し Goa デザインを作成</li>
+    <li>設計中にデザインの提案とベストプラクティスをリアルタイムで取得</li>
+  </ul>
+wizard_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> サブスクリプションが必要です)"
+
+design_first_title: "デザインファーストでソフトウェアを構築"
+design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。ソリューションを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
+
+# Common actions
+learn_more: "詳細を見る"
+get_started: "構築を始めましょう"

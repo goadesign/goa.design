@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "postcss-cli": "^11.0.0"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.6.0"
+  }
+}

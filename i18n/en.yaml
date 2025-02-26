@@ -1,0 +1,74 @@
+# Site title and meta
+site_title: "Goa :: Design first."
+site_description: "Goa is a powerful codegen framework for Go, enabling a design-first approach to building idiomatic APIs and microservices—clear, scalable, and boilerplate-free."
+
+# Navigation
+nav_search_placeholder: "Search"
+nav_godoc: "GoDoc"
+nav_github: "GitHub"
+nav_edit: "Edit"
+
+# Footer
+footer_slogan: "Design first."
+footer_languages: "Languages"
+footer_find_us: "Find us elsewhere"
+footer_copyright: " 2015-%s by Raphael Simon and the Goa contributors"
+footer_logo_by: "Logo by Jason Melgoza"
+
+# Hero Section
+hero_title: "Design First!"
+hero_description: "Stop writing boilerplate. Start designing solutions that matter.</br>Let Goa handle the rest."
+
+# Features Section
+feature_codegen_title: "Accelerated Development"
+feature_codegen_desc: "Goa generates 30-50% of your codebase automatically. Focus on your business logic while Goa handles transport, validation, documentation, and client generation."
+
+feature_design_title: "Design Based"
+feature_design_desc: "Your design is your contract. Goa ensures your implementation, documentation, and client SDKs stay perfectly in sync. No more drift between specs and code."
+
+feature_best_practice_title: "Best Practices"
+feature_best_practice_desc: "Built-in validation, error handling, and middleware integration. Get enterprise-grade security and reliability features without the enterprise-grade complexity."
+
+# Section Navigation
+subsections_title: "In This Section"
+
+# Wizard
+wizard_title: "Goa Design Wizard"
+wizard_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"
+wizard_features: |
+  <ul>
+    <li>Harness GPT to craft Goa designs through natural conversation</li>
+    <li>Get instant design suggestions and best practices as you build</li>
+  </ul>
+wizard_note: "(requires a <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> subscription)" 
+
+# Sponsors section
+sponsors_title: "Sponsors"
+
+sponsor_incidentio_title: "incident.io: Bounce back stronger after every incident"
+sponsor_incidentio_desc: "Use our platform to empower your team to run incidents end-to-end.<br/>Rapidly fix and learn from incidents, so you can build more resilient products."
+sponsor_incidentio_link: "Learn More"
+
+sponsor_speakeasy_title: "Speakeasy: Enterprise DevEx for your API"
+sponsor_speakeasy_desc: "Our platform makes it easy to create feature-rich production ready SDKs.<br/>Speed up integrations and reduce errors by giving your API the DevEx it deserves."
+sponsor_speakeasy_link: "Integrate with Goa"
+
+design_first_title: "Development Done Right"
+design_first_description: "Goa transforms how you build microservices in Go.<br/>Design your solution once, and watch as Goa generates production-ready servers, type-safe clients, and comprehensive documentation.<br/>Focus on what matters: building great services that scale."
+
+# Why Goa Section
+why_goa_title: "Why Teams Choose Goa"
+why_goa_type_safe_title: "Development at Speed"
+why_goa_type_safe_desc: "Slash development time with automatic code generation. 30-50% less code to write, test, and maintain means faster time to market."
+why_goa_boilerplate_title: "Zero Boilerplate"
+why_goa_boilerplate_desc: "No more copy-pasting handlers and middleware. Focus on your business logic while Goa handles the rest."
+why_goa_production_title: "Production Ready"
+why_goa_production_desc: "Used by companies worldwide to build and scale their APIs. Battle-tested, performant, and reliable."
+
+# Trust Section
+trust_section_title: "Trusted by Engineering Teams Worldwide"
+trust_section_subtitle: "Join the growing community of companies using Goa to build robust and maintainable APIs"
+
+# Common actions
+learn_more: "Learn More"
+get_started: "Start Building Better Services"

@@ -1,7 +1,152 @@
-{{ if eq "ja" .Lang }}
-{{ template "index.ja.html" . }}
-{{ else if eq "it" .Lang}}
-{{ template "index.it.html" . }}
-{{ else }}
-{{ template "index.en.html" . }}
+{{ define "main" }}
+<section class="td-box td-box--primary td-box--gradient hero-section">
+    <div class="container text-center">
+        <h1 class="display-1">{{ T "hero_title" }}</h1>
+        <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
+        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-introduction/" }}">
+            {{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ms-2"></i>
+        </a>
+    </div>
+</section>
+
+<section class="section-1">
+    <div class="container">
+        <div class="text-center">
+            <h2>{{ T "design_first_title" }}</h2>
+            <p class="lead">{{ T "design_first_description" | safeHTML }}</p>
+        </div>
+    </div>
+</section>
+
+<section class="section-2">
+    <div class="container">
+        <div class="card-grid">
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/4-concepts/2-code-generation" }}" class="text-dark text-decoration-none">
+                        <div class="card-body text-center">
+                            <i class="fas fa-code fa-3x mb-2"></i>
+                            <h3 class="card-title">{{ T "feature_codegen_title" }}</h3>
+                            <p class="card-text">{{ T "feature_codegen_desc" }}</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/4-concepts/1-design-language" }}" class="text-dark text-decoration-none">
+                        <div class="card-body text-center">
+                            <i class="fas fa-pencil-ruler fa-3x mb-2"></i>
+                            <h3 class="card-title">{{ T "feature_design_title" }}</h3>
+                            <p class="card-text">{{ T "feature_design_desc" }}</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/1-introduction/2-why-goa" }}" class="text-dark text-decoration-none">
+                        <div class="card-body text-center">
+                            <i class="fas fa-check-circle fa-3x mb-2"></i>
+                            <h3 class="card-title">{{ T "feature_best_practice_title" }}</h3>
+                            <p class="card-text">{{ T "feature_best_practice_desc" }}</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-why">
+    <div class="container">
+        <div class="text-center">
+            <h2>{{ T "why_goa_title" }}</h2>
+        </div>
+        <div class="features-container">
+            <div class="row features-grid">
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-fast-forward"></i>
+                        <h4>{{ T "why_goa_type_safe_title" }}</h4>
+                        <p>{{ T "why_goa_type_safe_desc" }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-bolt"></i>
+                        <h4>{{ T "why_goa_boilerplate_title" }}</h4>
+                        <p>{{ T "why_goa_boilerplate_desc" }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-rocket"></i>
+                        <h4>{{ T "why_goa_production_title" }}</h4>
+                        <p>{{ T "why_goa_production_desc" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-sponsors">
+    <div class="container-fluid">
+        <div class="text-center">
+            <h2>{{ T "sponsors_title" }}</h2>
+        </div>
+        <div class="sponsor-grid">
+            {{ range .Site.Params.sponsors }}
+            <div class="sponsor-item">
+                <div class="sponsor-card">
+                    <div class="sponsor-card-grid">
+                        <div class="sponsor-logo-col">
+                            <a href="{{ .url }}" class="sponsor-logo">
+                                <img src="{{ .image }}" alt="{{ .name }}">
+                            </a>
+                        </div>
+                        <div class="sponsor-content-col">
+                            <div class="sponsor-info">
+                                <p class="text-muted">{{ T (printf "sponsor_%s_desc" .id) | safeHTML }}</p>
+                                <a href="{{ .url }}" class="btn btn-link ps-0">
+                                    {{ T (printf "sponsor_%s_link" .id) }} <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</section>
+
+<section class="section-trust">
+    <div class="container">
+        <div class="text-center">
+            <h2>{{ T "trust_section_title" }}</h2>
+            <p class="trust-subtitle">{{ T "trust_section_subtitle" }}</p>
+        </div>
+        <div class="logos-grid">
+            <div class="row g-0 align-items-center justify-content-center">
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/flexera.svg" | relURL }}" alt="Flexera" class="img-fluid">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/incidentio.png" | relURL }}" alt="Incident.io" class="img-fluid">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/crossnokaye.png" | relURL }}" alt="CrossnoKaye" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {{ end }}
