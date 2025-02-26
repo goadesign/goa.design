@@ -18,7 +18,7 @@ footer_translation_by: "Traduzione di Alessandro Sanino"
 
 # Hero Section
 hero_title: "Design first."
-hero_description: "Progetta la tua API, poi lascia fare a Goa."
+hero_description: "Progetta la tua soluzione, poi lascia fare a Goa."
 
 # Features Section
 feature_codegen_title: "Generazione del Codice"
@@ -60,11 +60,11 @@ wizard_features: |
 
 # Design First Section
 design_first_title: "Costruire Software con l'Approccio Design-First"
-design_first_description: "Goa offre un approccio dichiarativo e design-first per costruire microservizi robusti, scalabili e type-safe in Go. Definisci la tua API una volta sola e lascia che Goa generi tutto ciò di cui hai bisogno—dal trasporto alla documentazione—così puoi concentrarti sulla logica di business, non sul codice ripetitivo."
+design_first_description: "Goa offre un approccio dichiarativo e design-first per costruire microservizi robusti, scalabili e type-safe in Go. Definisci la tua soluzione una volta sola e lascia che Goa generi tutto ciò di cui hai bisogno—dal trasporto alla documentazione—così puoi concentrarti sulla logica di business, non sul codice ripetitivo."
 
 # Common actions
 learn_more: "Scopri di più"
-get_started: "Inizia Ora"
+get_started: "Inizia a Costruire"
 
 # Wizard
 wizard_title: "Goa Design Wizard"

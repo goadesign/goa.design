@@ -12,19 +12,19 @@ nav_edit: "編集"
 footer_slogan: "はじめにデザインを。"
 footer_languages: "言語"
 footer_find_us: "他のサイト"
-footer_copyright: "© 2015-%s Raphael Simon と Goa コントリビューター"
+footer_copyright: " 2015-%s Raphael Simon と Goa コントリビューター"
 footer_logo_by: "ロゴ作成: Jason Melgoza"
 
 # Hero Section
 hero_title: "はじめにデザインを。"
-hero_description: "APIをデザイン、残りはGoaにお任せ。"
+hero_description: "デザインを、残りはGoaにお任せ。"
 
 # Features Section
 feature_codegen_title: "コード生成"
 feature_codegen_desc: "Goaは、APIデザインをコードに変換します - リフレクションもボイラープレートも不要です。一度デザインを書くだけで、サーバー、クライアント、ドキュメントが自動生成されます。"
 
 feature_design_title: "デザインベース"
-feature_design_desc: "GoaのフレキシブルなGo DSLで、自由自在にAPIを設計できます。一つの設計から実装とドキュメントの両方が生まれる、唯一の信頼できる情報源です。"
+feature_design_desc: "APIを思い通りにデザインしましょう。一つのデザインが実装とドキュメントの両方を導く、唯一の信頼できる情報源となります。"
 
 feature_best_practice_title: "ベストプラクティス"
 feature_best_practice_desc: "Goaは生成されるコードを通じてベストプラクティスを徹底します - 入力検証からGo言語らしい実装まで、常に堅牢で型安全なAPIを実現します。"
@@ -56,8 +56,8 @@ wizard_features: |
 wizard_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> サブスクリプションが必要です)"
 
 design_first_title: "デザインファーストでソフトウェアを構築"
-design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。APIを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
+design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。ソリューションを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
 
 # Common actions
 learn_more: "詳細を見る"
-get_started: "始めましょう"
+get_started: "構築を始めましょう"

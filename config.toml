@@ -64,10 +64,6 @@ defaultContentLanguageInSubdir = true
       name = "Slack"
       url = "https://slack.goa.design"
       icon = "fab fa-slack"
-    [[params.links.user]]
-      name = "GitHub"
-      url = "https://github.com/goadesign/goa"
-      icon = "fab fa-github"
     [[params.links.developer]]
       name = "Development takes place here!"
       url = "https://github.com/goadesign/goa"

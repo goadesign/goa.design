@@ -2,6 +2,8 @@
 title: "Design Language"
 linkTitle: "Design Language"
 weight: 1
+description: >
+  Explore Goa's powerful domain-specific language (DSL) for API design, offering a declarative approach to service development with built-in code generation and validation.
 menu:
   main:
     parent: "Concepts"

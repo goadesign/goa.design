@@ -1,131 +1,154 @@
 {{ define "main" }}
-<section class="row td-box td-box--primary position-relative td-box--gradient td-box--height-auto">
-	<div class="container td-arrow-down">
-		<div class="text-center">
-        	<h1 class="display-1">{{ T "hero_title" }}</h1>
-			<div class="row">
-				<div class="col-lg-10 offset-lg-1">
-					<p class="lead mb-4">
-                        {{ T "hero_description" | safeHTML }}
-                    </p>
-					<a class="btn btn-lg btn-secondary" href="/docs/1-introduction/">
-						{{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ml-2"></i>
-					</a>
-				</div>
-			</div>
-		</div>
-	</div>
+<section class="td-box td-box--primary td-box--gradient hero-section">
+    <div class="container text-center">
+        <h1 class="display-1">{{ T "hero_title" }}</h1>
+        <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
+        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-introduction/" }}">
+            {{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ms-2"></i>
+        </a>
+    </div>
 </section>
 
-<div class="container-fluid td-default pt-4 pb-4">
-	<div class="row">
-		<div class="col-lg-8 offset-lg-2">
-			<h2 class="text-center pb-4" style="padding-top: 1em;">{{ T "design_first_title" }}</h2>
-			<p class="lead text-center mb-5">{{ T "design_first_description" | safeHTML }}</p>
-		</div>
-	</div>
-
-    <div class="container">
-        <div class="card">
-            <!-- Gurubase Widget -->
-            <script async src="https://widget.gurubase.io/widget.latest.min.js" 
-                data-widget-id="_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc"
-                data-text="Ask AI"
-                data-margins='{"bottom": "1rem", "right": "1rem"}'
-                data-light-mode="true"
-                data-bg-color="#0d6efd"
-                id="guru-widget-id">
-            </script>
-        </div>
+<section class="section-1">
+    <div class="container text-center">
+        <h2 class="text-center">{{ T "design_first_title" }}</h2>
+        <p class="lead text-center mb-0">{{ T "design_first_description" | safeHTML }}</p>
     </div>
+</section>
 
-    <div class="alternate">
-        <div class="container">
-            <div class="row" style="margin-top: 2em; margin-bottom: 2em">
-                <div class="col-md-4">
-                    <div class="card h-100">
+<section class="section-2">
+    <div class="container">
+        <div class="card-grid">
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/4-concepts/2-code-generation" }}" class="text-dark text-decoration-none">
                         <div class="card-body text-center">
-                            <div class="mb-4">
-                                <i class="fas fa-code fa-3x"></i>
-                            </div>
+                            <i class="fas fa-code fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_codegen_title" }}</h3>
                             <p class="card-text">{{ T "feature_codegen_desc" }}</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
-                <div class="col-md-4">
-                    <div class="card h-100">
+            </div>
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/4-concepts/1-design-language" }}" class="text-dark text-decoration-none">
                         <div class="card-body text-center">
-                            <div class="mb-4">
-                                <i class="fas fa-pencil-ruler fa-3x"></i>
-                            </div>
+                            <i class="fas fa-pencil-ruler fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_design_title" }}</h3>
                             <p class="card-text">{{ T "feature_design_desc" }}</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
-                <div class="col-md-4">
-                    <div class="card h-100">
+            </div>
+            <div class="card-wrapper">
+                <div class="card">
+                    <a href="{{ relref . "/docs/1-introduction/2-why-goa" }}" class="text-dark text-decoration-none">
                         <div class="card-body text-center">
-                            <div class="mb-4">
-                                <i class="fas fa-check-circle fa-3x"></i>
-                            </div>
+                            <i class="fas fa-check-circle fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_best_practice_title" }}</h3>
                             <p class="card-text">{{ T "feature_best_practice_desc" }}</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    {{ $currentLang := .Site.Language.Lang }}
-    {{ $sections := where .Site.Pages "Section" (printf "docs/%s" $currentLang) }}
-    {{ $sections = where $sections "Type" "section" }}
-    {{ $sections = where $sections ".Params.no_list" "ne" true }}
-    {{ $sections = sort $sections ".File.Path" }}
-
-	<div class="row justify-content-center">
-		{{ range $sections }}
-			<div class="col-lg-4 mb-5 mb-lg-4">
-				<div class="card h-100 border-0 shadow-sm">
-					<div class="card-body p-4">
-						<h3 class="h4 card-title mt-0">
-							<a href="{{ .RelPermalink }}" class="text-dark">{{ .LinkTitle }}</a>
-						</h3>
-						<p class="card-text">{{ .Description }}</p>
-						<a href="{{ .RelPermalink }}" class="btn btn-link px-0">
-							{{ T "learn_more" }} <i class="fas fa-arrow-right ml-2"></i>
-						</a>
-					</div>
-				</div>
-			</div>
-		{{ end }}
-	</div>
+<div class="section-divider">
+    <div class="divider-line"></div>
 </div>
 
-<div class="container-fluid td-default pt-4 pb-4">
-    <div class="alternate">
-        <div class="container">
-            <h2 class="text-center pb-4">{{ T "sponsors_title" }}</h2>
-            <div class="row justify-content-center" style="margin-top: 2em; margin-bottom: 2em">
-                {{ range .Site.Params.sponsors }}
-                <div class="col-lg-10 mb-4">
-                    <div class="d-flex align-items-center">
-                        <a href="{{ .url }}" class="me-5" style="flex: 0 0 200px;">
-                            <img src="{{ .image }}" alt="{{ .name }}" style="height: 120px; width: auto;">
-                        </a>
-                        <div style="flex: 1;">
-                            <p class="text-muted mb-2">{{ T (printf "sponsor_%s_desc" .id) | safeHTML }}</p>
-                            <a href="{{ .url }}" class="btn btn-link px-0">
-                                {{ T (printf "sponsor_%s_link" .id) }} <i class="fas fa-arrow-right ms-1"></i>
+<section class="section-why">
+    <div class="container">
+        <div class="section-title text-center">
+            <h2>{{ T "why_goa_title" }}</h2>
+        </div>
+        <div class="row features-grid">
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <i class="fas fa-shield-alt"></i>
+                    <h4>{{ T "why_goa_type_safe_title" }}</h4>
+                    <p>{{ T "why_goa_type_safe_desc" }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <i class="fas fa-bolt"></i>
+                    <h4>{{ T "why_goa_boilerplate_title" }}</h4>
+                    <p>{{ T "why_goa_boilerplate_desc" }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item text-center">
+                    <i class="fas fa-rocket"></i>
+                    <h4>{{ T "why_goa_production_title" }}</h4>
+                    <p>{{ T "why_goa_production_desc" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section--sponsors">
+    <div class="container-fluid">
+        <h2>{{ T "sponsors_title" }}</h2>
+        <div class="sponsor-grid">
+            {{ range .Site.Params.sponsors }}
+            <div class="sponsor-item">
+                <div class="sponsor-card">
+                    <div class="sponsor-card-grid">
+                        <div class="sponsor-logo-col">
+                            <a href="{{ .url }}" class="sponsor-logo">
+                                <img src="{{ .image }}" alt="{{ .name }}">
                             </a>
+                        </div>
+                        <div class="sponsor-content-col">
+                            <div class="sponsor-info">
+                                <p class="text-muted">{{ T (printf "sponsor_%s_desc" .id) | safeHTML }}</p>
+                                <a href="{{ .url }}" class="btn btn-link ps-0">
+                                    {{ T (printf "sponsor_%s_link" .id) }} <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</section>
+
+<section class="section-trust">
+    <div class="container text-center">
+        <h3>{{ T "trust_section_title" }}</h3>
+        <p class="trust-subtitle">{{ T "trust_section_subtitle" }}</p>
+        <div class="logos-grid">
+            <div class="row g-0 align-items-center justify-content-center">
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/flexera.svg" | relURL }}" alt="Flexera" class="img-fluid">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/incidentio.png" | relURL }}" alt="Incident.io" class="img-fluid">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo">
+                        <img src="{{ "logos/crossnokaye.png" | relURL }}" alt="CrossnoKaye" class="img-fluid">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="company-logo company-logo-blur">
+                        <div class="blur-circle"></div>
+                        <span class="more-text">+100<br>More</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 {{ end }}

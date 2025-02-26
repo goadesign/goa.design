@@ -2,9 +2,48 @@
 title: "Linguaggio di Design"
 linkTitle: "Linguaggio di Design"
 weight: 1
+description: >
+  Esplora il potente linguaggio specifico del dominio (DSL) di Goa per la progettazione delle API, offrendo un approccio dichiarativo allo sviluppo dei servizi con generazione del codice e validazione integrata.
+menu:
+  main:
+    parent: "Concetti"
+    weight: 1
 ---
 
-Scopri il Linguaggio di Design (DSL) di Goa, un potente linguaggio specifico di dominio per definire le API. Il DSL ti permette di esprimere il design del tuo servizio in modo chiaro e dichiarativo, applicando le migliori pratiche e mantenendo la coerenza.
+Scopri il Linguaggio di Design di Goa (DSL), un potente linguaggio specifico del dominio
+che rivoluziona la progettazione delle API. Il DSL è la pietra angolare dell'approccio di Goa
+allo sviluppo dei servizi, offrendo una combinazione unica di semplicità e sofisticazione
+che lo distingue dai metodi tradizionali di sviluppo delle API.
+
+## Perché il DSL di Goa?
+
+Il DSL di Goa ti permette di esprimere il design del tuo servizio in modo chiaro e dichiarativo,
+applicando le migliori pratiche e mantenendo la coerenza. Funge da fonte unica di verità per
+tutta la tua API, generando automaticamente tutto, dalla documentazione al codice del server
+fino agli SDK client.
+
+Vantaggi principali:
+
+* **Sicurezza dei Tipi**: Definisci i tuoi tipi una volta, usali ovunque con completa fiducia
+* **Design Contract-First**: Concentrati sul design della tua API prima di immergerti nei dettagli implementativi
+* **Validazione Automatica**: Ottieni la validazione integrata di richieste e risposte senza scrivere codice ripetitivo
+* **Generazione del Codice**: Trasforma i tuoi design in codice pronto per la produzione con un singolo comando
+* **Documentazione Viva**: Mantieni la documentazione della tua API sempre sincronizzata con l'implementazione
+
+## Per Iniziare
+
+Il DSL è organizzato in sezioni logiche che ti guidano attraverso il processo di design dell'API:
+
+* Inizia con il [Modellamento dei Dati](./1-data-modeling) per definire i tipi e le strutture del tuo servizio
+* Impara il [Design dei Servizi](./2-services) per specificare gli endpoint e i loro comportamenti
+* Esplora la [Sicurezza](./3-security) per implementare autenticazione e autorizzazione
+* Padroneggia la [Gestione degli Errori](./4-error-handling) per risposte API robuste
+
+Che tu stia costruendo una semplice API REST o una complessa architettura di microservizi,
+il DSL di Goa fornisce gli strumenti e le astrazioni necessarie per creare servizi
+professionali e pronti per la produzione.
+
+Pronto per iniziare? Cominciamo con il modellamento dei dati, la base di qualsiasi API ben progettata.
 
 ## Concetti Chiave
 

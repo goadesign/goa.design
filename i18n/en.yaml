@@ -12,22 +12,22 @@ nav_edit: "Edit"
 footer_slogan: "Design first."
 footer_languages: "Languages"
 footer_find_us: "Find us elsewhere"
-footer_copyright: "© 2015-%s by Raphael Simon and the Goa contributors"
+footer_copyright: " 2015-%s by Raphael Simon and the Goa contributors"
 footer_logo_by: "Logo by Jason Melgoza"
 
 # Hero Section
-hero_title: "Design first."
-hero_description: "Design your API, let Goa handle the rest."
+hero_title: "Design First!"
+hero_description: "Stop writing boilerplate. Start designing solutions that matter.</br>Let Goa handle the rest."
 
 # Features Section
 feature_codegen_title: "Code Generation"
-feature_codegen_desc: "Goa turns your API design into code - no reflection, no boilerplate. Write your design once, get servers, clients, and docs generated automatically."
+feature_codegen_desc: "Write your design once, get everything: servers, clients, OpenAPI docs, and more. No reflection tricks, no runtime overhead—just clean, efficient Go code you can trust."
 
 feature_design_title: "Design Based"
-feature_design_desc: "Design your API your way with Goa's flexible Go DSL. One design becomes your single source of truth - driving both implementation and documentation."
+feature_design_desc: "Your design is your contract. Goa ensures your implementation, documentation, and client SDKs stay perfectly in sync. No more drift between specs and code."
 
 feature_best_practice_title: "Best Practices"
-feature_best_practice_desc: "Goa enforces best practices through generated code - from input validation to idiomatic Go, you get rock-solid, type-safe APIs every time."
+feature_best_practice_desc: "Built-in validation, error handling, and middleware integration. Get enterprise-grade security and reliability features without the enterprise-grade complexity."
 
 # Section Navigation
 subsections_title: "In This Section"
@@ -45,10 +45,6 @@ wizard_note: "(requires a <a href=\"https://openai.com/blog/chatgpt-plus\">ChatG
 # Sponsors section
 sponsors_title: "Sponsors"
 
-sponsor_zuplo_title: "Zuplo: Scale, Protect, and Productize your Goa API"
-sponsor_zuplo_desc: "Our API Gateway allows you to secure your API, scale it globally, generate documentation from your OpenAPI, and add monetization."
-sponsor_zuplo_link: "Start for Free"
-
 sponsor_incidentio_title: "incident.io: Bounce back stronger after every incident"
 sponsor_incidentio_desc: "Use our platform to empower your team to run incidents end-to-end.<br/>Rapidly fix and learn from incidents, so you can build more resilient products."
 sponsor_incidentio_link: "Learn More"
@@ -57,9 +53,22 @@ sponsor_speakeasy_title: "Speakeasy: Enterprise DevEx for your API"
 sponsor_speakeasy_desc: "Our platform makes it easy to create feature-rich production ready SDKs.<br/>Speed up integrations and reduce errors by giving your API the DevEx it deserves."
 sponsor_speakeasy_link: "Integrate with Goa"
 
-design_first_title: "Building Software the Design-First Way"
-design_first_description: "Goa brings a declarative, design-first approach to building robust, scalable, and type-safe microservices in Go. Define your API once, and let Goa generate everything you need—from transport to documentation—so you can focus on business logic, not boilerplate."
+design_first_title: "Development Done Right"
+design_first_description: "Goa transforms how you build microservices in Go.<br/>Design your solution once, and watch as Goa generates production-ready servers, type-safe clients, and comprehensive documentation.<br/>Focus on what matters: building great services that scale."
+
+# Why Goa Section
+why_goa_title: "Why Teams Choose Goa"
+why_goa_type_safe_title: "Type-Safe by Design"
+why_goa_type_safe_desc: "Catch errors at compile time, not runtime. Goa's type system ensures your API contracts are always enforced."
+why_goa_boilerplate_title: "Zero Boilerplate"
+why_goa_boilerplate_desc: "No more copy-pasting handlers and middleware. Focus on your business logic while Goa handles the rest."
+why_goa_production_title: "Production Ready"
+why_goa_production_desc: "Used by companies worldwide to build and scale their APIs. Battle-tested, performant, and reliable."
+
+# Trust Section
+trust_section_title: "Trusted by Engineering Teams Worldwide"
+trust_section_subtitle: "Join hundreds of companies using Goa to build robust and maintainable APIs"
 
 # Common actions
 learn_more: "Learn More"
-get_started: "Get Started"
+get_started: "Start Building Better Services"
