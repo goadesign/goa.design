@@ -4,6 +4,9 @@ linkTitle: "チュートリアル"
 weight: 3
 description: >
   Goaで様々な種類のサービスを構築するためのステップバイステップガイド。
+menu:
+  main:
+    weight: 3
 ---
 
 ## Goaコアチュートリアル

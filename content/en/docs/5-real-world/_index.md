@@ -3,6 +3,9 @@ title: "Real World Goa"
 linkTitle: "Real World"
 description: "Essential aspects of building reliable, maintainable, and secure APIs with Goa in production environments"
 weight: 5
+menu:
+  main:
+    weight: 5
 ---
 
 Building production-ready APIs requires more than just defining endpoints and 

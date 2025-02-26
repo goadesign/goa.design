@@ -17,7 +17,7 @@ footer_logo_by: "ロゴ作成: Jason Melgoza"
 
 # Hero Section
 hero_title: "はじめにデザインを。"
-hero_description: "デザインを、残りはGoaにお任せ。"
+hero_description: "ボイラープレートの作成はもう終わり。重要なソリューションの設計に専念しましょう。</br>残りはGoaにお任せください。"
 
 # Features Section
 feature_codegen_title: "コード生成"
@@ -55,9 +55,35 @@ wizard_features: |
   </ul>
 wizard_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> サブスクリプションが必要です)"
 
+# Wizard Section
+wizard_section_title: "AIパワードデザインアシスタント"
+wizard_section_description: "Goa DSLに特化したAIアシスタント、<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>をご紹介します"
+wizard_section_features: |
+  <ul>
+    <li>自然な会話を通じてGoaのデザインを生成</li>
+    <li>リアルタイムでインテリジェントな提案とベストプラクティスを取得</li>
+    <li>実践的な例と詳細な説明でGoa DSLを学習</li>
+    <li>AIの支援によりAPI開発を加速</li>
+  </ul>
+wizard_section_cta: "Design Wizardを試す"
+wizard_section_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>サブスクリプションが必要です)"
+
 design_first_title: "デザインファーストでソフトウェアを構築"
 design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。ソリューションを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
 
 # Common actions
 learn_more: "詳細を見る"
 get_started: "構築を始めましょう"
+
+# Why Goa Section
+why_goa_title: "なぜGoaを選ぶのか"
+why_goa_type_safe_title: "高速な開発"
+why_goa_type_safe_desc: "自動コード生成により開発時間を大幅に短縮。30-50%のコード削減で、より早く市場に投入できます。"
+why_goa_boilerplate_title: "ボイラープレート不要"
+why_goa_boilerplate_desc: "ハンドラーやミドルウェアのコピー＆ペーストは不要。ビジネスロジックに集中し、残りはGoaにお任せください。"
+why_goa_production_title: "本番環境対応"
+why_goa_production_desc: "世界中の企業がAPIの構築とスケーリングにGoaを使用。実戦で証明された、高性能で信頼性の高いフレームワークです。"
+
+# Trust Section
+trust_section_title: "世界中のエンジニアリングチームに信頼されています"
+trust_section_subtitle: "堅牢で保守性の高いAPIを構築するために、Goaを使用する企業コミュニティに参加しましょう"
