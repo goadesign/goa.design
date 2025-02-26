@@ -61,19 +61,32 @@
 <section class="section-wizard">
     <div class="container">
         <div class="text-center">
+            <div class="wizard-logo-wrapper">
+                <div class="wizard-logo">
+                    <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard">
+                        <img src="{{ "img/goa-wizard.webp" | relURL }}" alt="Goa Design Wizard">
+                    </a>
+                    <div class="wizard-glow"></div>
+                </div>
+            </div>
             <h2>{{ T "wizard_section_title" }}</h2>
             <p class="lead">{{ T "wizard_section_description" | safeHTML }}</p>
         </div>
         <div class="wizard-features">
-            {{ T "wizard_section_features" | safeHTML }}
+            <div class="features-content">
+                {{ T "wizard_section_features" | safeHTML }}
+            </div>
             <div class="wizard-cta">
                 <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard" class="btn btn-lg btn-primary">
                     {{ T "wizard_section_cta" }} <i class="fas fa-wand-magic-sparkles ms-2"></i>
                 </a>
-                <p class="wizard-note">{{ T "wizard_section_note" | safeHTML }}</p>
+                <div class="wizard-note mt-3">
+                    {{ T "wizard_section_note" | safeHTML }}
+                </div>
             </div>
         </div>
     </div>
+    <div class="wizard-background"></div>
 </section>
 
 <section class="section-why">
@@ -148,23 +161,25 @@
         </div>
         <div class="logos-grid">
             <div class="row g-0 align-items-center justify-content-center">
+                {{ range .Site.Params.companies }}
                 <div class="col-lg-2 col-md-3 col-6">
                     <div class="company-logo">
-                        <img src="{{ "img/companies/flexera.svg" | relURL }}" alt="Flexera" class="img-fluid">
+                        <img src="{{ .logo | relURL }}" alt="{{ .name }}" class="img-fluid">
                     </div>
                 </div>
-                <div class="col-lg-2 col-md-3 col-6">
-                    <div class="company-logo">
-                        <img src="{{ "img/companies/incidentio.png" | relURL }}" alt="Incident.io" class="img-fluid">
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-3 col-6">
-                    <div class="company-logo">
-                        <img src="{{ "img/companies/crossnokaye.png" | relURL }}" alt="CrossnoKaye" class="img-fluid">
-                    </div>
-                </div>
+                {{ end }}
             </div>
         </div>
     </div>
 </section>
+
+<!-- Gurubase Widget -->
+<script async src="https://widget.gurubase.io/widget.latest.min.js" 
+    data-widget-id="_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc"
+    data-text="Ask AI"
+    data-margins='{"bottom": "1rem", "right": "1rem"}'
+    data-light-mode="true"
+    id="guru-widget-id">
+</script>
+
 {{ end }}

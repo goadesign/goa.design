@@ -1018,6 +1018,253 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   }
 }
 
+// Wizard section
+.section-wizard {
+  padding: 6em 0 !important;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, 
+    rgba($color-gradient-start, 0.08) 0%,
+    rgba($color-gradient-start, 0.02) 100%
+  );
+
+  .wizard-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba($color-warning, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba($color-gradient-start, 0.08) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .wizard-header {
+    margin-bottom: 3rem;
+  }
+
+  .wizard-logo-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+    margin-right: 1rem;
+  }
+
+  .wizard-logo {
+    position: relative;
+    display: inline-block;
+    padding: 1rem;
+    
+    img {
+      width: 180px;
+      height: 153px;
+      border-radius: 28px;
+      box-shadow: 
+        0 12px 36px rgba($color-gradient-start, 0.25),
+        0 4px 12px rgba($color-gradient-start, 0.15);
+      transition: all 0.4s ease;
+      transform: translateY(0);
+      padding: 1rem;
+      background: rgba(white, 0.8);
+      backdrop-filter: blur(10px);
+      
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 
+          0 20px 40px rgba($color-gradient-start, 0.3),
+          0 8px 16px rgba($color-gradient-start, 0.2);
+        
+        & + .wizard-glow {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    .wizard-glow {
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      right: -20px;
+      bottom: -20px;
+      background: radial-gradient(
+        circle at center,
+        rgba($color-gradient-start, 0.15) 0%,
+        rgba($color-gradient-start, 0.1) 30%,
+        rgba($color-gradient-start, 0) 70%
+      );
+      border-radius: 40px;
+      opacity: 0.8;
+      transition: all 0.4s ease;
+      z-index: -1;
+      pointer-events: none;
+    }
+  }
+
+  .lead {
+    font-size: 1.4rem;
+    color: $color-text;
+    margin-bottom: 3rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+
+    a {
+      color: $color-gradient-start;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      padding-bottom: 1px;
+      border-bottom: 2px solid rgba($color-gradient-start, 0.3);
+
+      &:hover {
+        color: darken($color-gradient-start, 10%);
+        border-bottom-color: $color-gradient-start;
+      }
+    }
+  }
+
+  .wizard-features {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem;
+    background: rgba(white, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba($color-gradient-start, 0.15);
+    box-shadow: 
+      0 20px 40px rgba($color-neutral, 0.08),
+      0 8px 16px rgba($color-neutral, 0.06);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        rgba($color-gradient-start, 0) 0%,
+        rgba($color-gradient-start, 0.2) 50%,
+        rgba($color-gradient-start, 0) 100%
+      );
+    }
+
+    .features-content {
+      margin-bottom: 2.5rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        position: relative;
+        padding-left: 2.5rem;
+        margin-bottom: 1.5rem;
+        color: $color-text;
+        font-size: 1.2rem;
+        line-height: 1.5;
+
+        &:before {
+          content: '✨';
+          position: absolute;
+          left: 0;
+          top: 0.1rem;
+          color: $color-gradient-start;
+          font-size: 1.4rem;
+        }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .wizard-cta {
+      text-align: center;
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba($color-gradient-start, 0.15);
+
+      .btn-primary {
+        background: linear-gradient(135deg,
+          $color-gradient-start,
+          adjust-hue($color-gradient-start, 15deg)
+        );
+        border: none;
+        padding: 1rem 2.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 
+          0 12px 24px rgba($color-gradient-start, 0.4),
+          0 6px 12px rgba($color-gradient-start, 0.2);
+        border-radius: 12px;
+        
+        &:hover {
+          transform: translateY(-2px);
+          background: linear-gradient(135deg,
+            darken($color-gradient-start, 5%),
+            adjust-hue($color-gradient-start, 15deg)
+          );
+          box-shadow: 
+            0 16px 32px rgba($color-gradient-start, 0.45),
+            0 8px 16px rgba($color-gradient-start, 0.25);
+          
+          i {
+            transform: translateX(3px) rotate(10deg);
+          }
+        }
+        
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 4px 12px rgba($color-gradient-start, 0.3);
+        }
+        
+        i {
+          transition: all 0.3s ease;
+          font-size: 1.1em;
+        }
+      }
+
+      .wizard-note {
+        margin-top: 1.5rem;
+        font-size: 1rem;
+        color: $color-text-muted;
+        
+        a {
+          color: $color-gradient-start;
+          text-decoration: none;
+          font-weight: 500;
+          border-bottom: 1px solid rgba($color-gradient-start, 0.3);
+          transition: all 0.2s ease;
+          
+          &:hover {
+            color: darken($color-gradient-start, 10%);
+            border-bottom-color: $color-gradient-start;
+          }
+        }
+      }
+    }
+  }
+}
+
 // Sponsors section
 .section-sponsors {
   padding: 4em 0 0.8rem !important;
@@ -1131,8 +1378,9 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   }
 }
 
-.section-why h2,
 .section-1 h2,
+.section-wizard h2,
+.section-why h2,
 .section-sponsors h2 {
   background: linear-gradient(135deg, $color-gradient-start, $color-gradient-end);
   background-clip: text;

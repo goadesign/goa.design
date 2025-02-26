@@ -45,16 +45,6 @@ sponsor_speakeasy_title: "Speakeasy: あなたのAPIのためのエンタープ�
 sponsor_speakeasy_desc: "私たちのプラットフォームを使えば、機能豊富で本番環境に対応したSDKを簡単に作成できます。<br/>あなたのAPIに相応しい開発者体験を提供することで、統合を加速しエラーを減らすことができます。"
 sponsor_speakeasy_link: "Goaと統合する"
 
-# Wizard
-wizard_title: "Goa Design Wizard"
-wizard_description: "<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>を使用して、インタラクティブに Goa デザインを作成できます。"
-wizard_features: |
-  <ul>
-    <li>自然な会話を通じて GPT を活用し Goa デザインを作成</li>
-    <li>設計中にデザインの提案とベストプラクティスをリアルタイムで取得</li>
-  </ul>
-wizard_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> サブスクリプションが必要です)"
-
 # Wizard Section
 wizard_section_title: "AIパワードデザインアシスタント"
 wizard_section_description: "Goa DSLに特化したAIアシスタント、<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>をご紹介します"
@@ -63,7 +53,6 @@ wizard_section_features: |
     <li>自然な会話を通じてGoaのデザインを生成</li>
     <li>リアルタイムでインテリジェントな提案とベストプラクティスを取得</li>
     <li>実践的な例と詳細な説明でGoa DSLを学習</li>
-    <li>AIの支援によりAPI開発を加速</li>
   </ul>
 wizard_section_cta: "Design Wizardを試す"
 wizard_section_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>サブスクリプションが必要です)"

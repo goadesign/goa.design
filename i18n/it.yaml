@@ -58,6 +58,18 @@ wizard_features: |
     <li>Ricevi suggerimenti di design e best practice mentre costruisci</li>
   </ul>
 
+# Wizard Section
+wizard_section_title: "Design Assistito dall'IA"
+wizard_section_description: "Scopri il <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>, un assistente IA specializzato nel DSL di Goa"
+wizard_section_features: |
+  <ul>
+    <li>Genera design Goa attraverso semplici conversazioni in linguaggio naturale</li>
+    <li>Ottieni suggerimenti intelligenti e best practice in tempo reale</li>
+    <li>Impara il DSL di Goa con esempi pratici e spiegazioni dettagliate</li>
+  </ul>
+wizard_section_cta: "Prova il Design Wizard"
+wizard_section_note: "(richiede un abbonamento <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>)"
+
 # Design First Section
 design_first_title: "Costruire Software con l'Approccio Design-First"
 design_first_description: "Goa offre un approccio dichiarativo e design-first per costruire microservizi robusti, scalabili e type-safe in Go. Definisci la tua soluzione una volta sola e lascia che Goa generi tutto ciò di cui hai bisogno—dal trasporto alla documentazione—così puoi concentrarti sulla logica di business, non sul codice ripetitivo."
@@ -82,16 +94,3 @@ why_goa_production_desc: "Utilizzato da aziende in tutto il mondo per costruire 
 # Trust Section
 trust_section_title: "Scelto da Team di Ingegneri in Tutto il Mondo"
 trust_section_subtitle: "Unisciti alla crescente comunità di aziende che utilizzano Goa per costruire API robuste e manutenibili"
-
-# Wizard Section
-wizard_section_title: "Design Assistito dall'IA"
-wizard_section_description: "Scopri il <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>, un assistente IA specializzato nel DSL di Goa"
-wizard_section_features: |
-  <ul>
-    <li>Genera design Goa attraverso semplici conversazioni in linguaggio naturale</li>
-    <li>Ottieni suggerimenti intelligenti e best practice in tempo reale</li>
-    <li>Impara il DSL di Goa con esempi pratici e spiegazioni dettagliate</li>
-    <li>Accelera lo sviluppo delle tue API con l'aiuto dell'intelligenza artificiale</li>
-  </ul>
-wizard_section_cta: "Prova il Design Wizard"
-wizard_section_note: "(richiede un abbonamento <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>)"

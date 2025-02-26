@@ -12,3 +12,7 @@ node_modules/
 
 # VS Code
 .vscode
+
+# Mac cruft
+static/.DS_Store
+static/img/.DS_Store
