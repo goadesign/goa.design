@@ -33,14 +33,16 @@ feature_best_practice_desc: "Built-in validation, error handling, and middleware
 subsections_title: "In This Section"
 
 # Wizard
-wizard_title: "Goa Design Wizard"
-wizard_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"
-wizard_features: |
+wizard_section_title: "Goa Design Wizard"
+wizard_section_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"
+wizard_section_features: |
   <ul>
-    <li>Harness GPT to craft Goa designs through natural conversation</li>
-    <li>Get instant design suggestions and best practices as you build</li>
+    <li>Generate Goa designs through simple natural language conversations</li>
+    <li>Get intelligent suggestions and best practices in real-time</li>
+    <li>Learn the Goa DSL with practical examples and detailed explanations</li>
   </ul>
-wizard_note: "(requires a <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> subscription)" 
+wizard_section_cta: "Get Started"
+wizard_section_note: "(requires a <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a> subscription)" 
 
 # Sponsors section
 sponsors_title: "Sponsors"

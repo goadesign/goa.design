@@ -95,6 +95,26 @@ defaultContentLanguageInSubdir = true
     image = "/img/sponsors/speakeasy.png"
     url = "https://www.speakeasyapi.dev/docs/api-frameworks/goa?utm_source=goa+repo&utm_medium=github+sponsorship"
 
+  [[params.companies]]
+    name = "Flexera"
+    logo = "img/companies/flexera.svg"
+    url = "https://www.flexera.com"
+  
+  [[params.companies]]
+    name = "incident.io"
+    logo = "img/companies/incidentio.png"
+    url = "https://incident.io"
+  
+  [[params.companies]]
+    name = "CrossnoKaye"
+    logo = "img/companies/crossnokaye.png"
+    url = "https://www.crossnokaye.com"
+
+  [[params.companies]]
+    name = "Cluster, Inc."
+    logo = "img/companies/clusterdev.jpeg"
+    url = "https://corp.cluster.mu/en"
+    
 [markup]
   [markup.highlight]
     style = "gruvbox"
