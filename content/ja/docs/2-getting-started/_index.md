@@ -4,6 +4,9 @@ linkTitle: "はじめに"
 weight: 2
 description: >
   Goaをすぐに使い始める - インストール、セットアップ、そして最初のAPI。
+menu:
+  main:
+    weight: 2
 ---
 
 このセクションでは、Goa開発を始めるためのガイドを提供します。以下の方法を学びます：

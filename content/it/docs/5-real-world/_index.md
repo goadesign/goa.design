@@ -3,6 +3,9 @@ title: "Goa nel Mondo Reale"
 linkTitle: "Mondo Reale"
 description: "Aspetti essenziali per costruire API affidabili, manutenibili e sicure con Goa in ambienti di produzione"
 weight: 5
+menu:
+  main:
+    weight: 5
 ---
 
 Costruire API pronte per la produzione richiede più che semplicemente definire endpoint e gestire richieste. Questa sezione copre gli aspetti essenziali per costruire API affidabili, manutenibili e sicure con Goa.

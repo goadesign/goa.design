@@ -1,5 +1,5 @@
 # Site title and meta
-site_title: "Goa :: Design first."
+site_title: "Goa :: Prima il Design"
 site_description: "Goa è un framework di generazione di codice costruito in Go che fornisce allo sviluppatore un percorso chiaro e conciso per generare API idiomatiche e architetture di microservizi utilizzando una metodologia design-first."
 
 # Navigation
@@ -9,7 +9,7 @@ nav_github: "GitHub"
 nav_edit: "Modifica"
 
 # Footer
-footer_slogan: "Design first."
+footer_slogan: "Prima il Design"
 footer_languages: "Lingue"
 footer_find_us: "Trovaci anche su"
 footer_copyright: "© 2015-%s - Raphael Simon e i Goa contributors"
@@ -17,8 +17,8 @@ footer_logo_by: "Logo di Jason Melgoza"
 footer_translation_by: "Traduzione di Alessandro Sanino"
 
 # Hero Section
-hero_title: "Design first."
-hero_description: "Progetta la tua soluzione, poi lascia fare a Goa."
+hero_title: "Prima il Design"
+hero_description: "Basta scrivere codice ripetitivo. Inizia a progettare soluzioni che contano.</br>Lascia che Goa si occupi del resto."
 
 # Features Section
 feature_codegen_title: "Generazione del Codice"
@@ -68,3 +68,30 @@ get_started: "Inizia a Costruire"
 
 # Wizard
 wizard_title: "Goa Design Wizard"
+wizard_description: "Lascia che il <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> potenziato dall'IA guidi la creazione della tua API"
+
+# Why Goa Section
+why_goa_title: "Perché Scegliere Goa"
+why_goa_type_safe_title: "Sviluppo Veloce"
+why_goa_type_safe_desc: "Riduci i tempi di sviluppo con la generazione automatica del codice. 30-50% di codice in meno da scrivere, testare e mantenere significa arrivare più velocemente sul mercato."
+why_goa_boilerplate_title: "Zero Boilerplate"
+why_goa_boilerplate_desc: "Basta copiare e incollare handler e middleware. Concentrati sulla logica di business mentre Goa si occupa del resto."
+why_goa_production_title: "Pronto per la Produzione"
+why_goa_production_desc: "Utilizzato da aziende in tutto il mondo per costruire e scalare le loro API. Testato sul campo, performante e affidabile."
+
+# Trust Section
+trust_section_title: "Scelto da Team di Ingegneri in Tutto il Mondo"
+trust_section_subtitle: "Unisciti alla crescente comunità di aziende che utilizzano Goa per costruire API robuste e manutenibili"
+
+# Wizard Section
+wizard_section_title: "Design Assistito dall'IA"
+wizard_section_description: "Scopri il <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>, un assistente IA specializzato nel DSL di Goa"
+wizard_section_features: |
+  <ul>
+    <li>Genera design Goa attraverso semplici conversazioni in linguaggio naturale</li>
+    <li>Ottieni suggerimenti intelligenti e best practice in tempo reale</li>
+    <li>Impara il DSL di Goa con esempi pratici e spiegazioni dettagliate</li>
+    <li>Accelera lo sviluppo delle tue API con l'aiuto dell'intelligenza artificiale</li>
+  </ul>
+wizard_section_cta: "Prova il Design Wizard"
+wizard_section_note: "(richiede un abbonamento <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>)"
