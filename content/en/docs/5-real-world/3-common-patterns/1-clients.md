@@ -1,9 +1,7 @@
 ---
-title: Database Integration
+title: Writing Service Clients
 weight: 2
 ---
-
-# Writing Service Clients
 
 When building microservices, a common challenge is how to structure the
 communication between services. This section covers best practices for writing

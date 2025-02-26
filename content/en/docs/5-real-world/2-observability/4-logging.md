@@ -1,10 +1,8 @@
 ---
-title: "Logging"
+title: "Logging Strategy"
 description: "Configuring logging with Clue"
 weight: 4
 ---
-
-# Logging Strategy
 
 While OpenTelemetry is the primary source of observability in Clue, logs still
 play an important role in certain scenarios. Clue provides a smart logging

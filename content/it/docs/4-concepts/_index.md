@@ -9,7 +9,7 @@ menu:
     weight: 4
 ---
 
-# Libera Tutto il Potenziale di Goa 🚀
+## Libera Tutto il Potenziale di Goa 🚀
 
 Benvenuto nel cuore di Goa - dove la magia prende vita. Ti sei mai chiesto come i migliori team di ingegneri costruiscono API scalabili e manutenibili che resistono alla prova del tempo? Sei nel posto giusto.
 

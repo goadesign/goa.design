@@ -5,8 +5,6 @@ weight: 4
 description: Learn how to secure your HTTP Goa APIs using various authentication methods
 ---
 
-# Security in Goa
-
 Goa provides robust security features that allow you to protect your APIs at multiple 
 levels. Whether you need basic authentication, API keys, JWT tokens, or OAuth2, Goa's 
 security DSL makes it straightforward to implement secure endpoints.

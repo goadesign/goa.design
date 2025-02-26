@@ -4,8 +4,6 @@ description: "Understanding how to implement Goa interceptors and common pattern
 weight: 3
 ---
 
-# Interceptor Implementation
-
 This guide explains how to implement interceptors in Goa, focusing on the flexibility provided by the interceptor pattern and the `next` function.
 
 ## Implementation Structure

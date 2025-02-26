@@ -5,8 +5,6 @@ description: "Aspetti essenziali per costruire API affidabili, manutenibili e si
 weight: 5
 ---
 
-# Goa nel Mondo Reale
-
 Costruire API pronte per la produzione richiede più che semplicemente definire endpoint e gestire richieste. Questa sezione copre gli aspetti essenziali per costruire API affidabili, manutenibili e sicure con Goa.
 
 ## Panoramica

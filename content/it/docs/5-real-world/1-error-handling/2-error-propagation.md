@@ -1,9 +1,8 @@
 ---
 title: Propagazione degli Errori
+description: Guida alla gestione e propagazione degli errori nei servizi Goa attraverso i diversi layer, dalla logica di business fino al client.
 weight: 2
 ---
-
-# Propagazione degli Errori
 
 Questa guida spiega come gli errori si propagano attraverso i diversi layer di un servizio Goa, dalla logica
 di business fino al client.

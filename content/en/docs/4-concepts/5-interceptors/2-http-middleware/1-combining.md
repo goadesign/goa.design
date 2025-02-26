@@ -5,8 +5,6 @@ description: >
   Learn powerful patterns for combining HTTP middleware with Goa interceptors to create robust and maintainable services.
 ---
 
-# Combining Middleware and Interceptors
-
 HTTP middleware and Goa interceptors can work together to create powerful, layered solutions. This guide explores patterns and strategies for combining them effectively.
 
 ## Core Concepts

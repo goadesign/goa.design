@@ -1,11 +1,9 @@
 ---
-title: "Plugins"
+title: "Understanding Plugins"
 linkTitle: "Plugins"
 description: "A comprehensive guide to understanding, using, and creating Goa plugins for extending and customizing code generation"
 weight: 1
 ---
-
-# Understanding Goa Plugins
 
 Goa plugins extend and customize the functionality of your APIs. Whether you need to add
 rate limiting, integrate monitoring tools, or generate code in different languages, 

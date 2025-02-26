@@ -1,10 +1,9 @@
 ---
-title: JWT認証
+linkTitle: JWT認証
+title: GoaにおけるJWT認証
 description: GoaのAPIでJWT認証を実装する方法を学びます
 weight: 3
 ---
-
-# GoaにおけるJWT認証
 
 [JSON Web Tokens (JWT)](https://jwt.io/introduction)は、当事者間でクレームを安全に
 送信する方法を提供します。これらは特に、サービス間で認証と認可情報を渡す必要がある

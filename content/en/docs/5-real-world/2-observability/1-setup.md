@@ -4,8 +4,6 @@ description: "Setting up Clue and OpenTelemetry"
 weight: 1
 ---
 
-# Basic Setup
-
 Setting up observability in a Goa service involves configuring Clue and
 OpenTelemetry. This guide walks through the essential setup steps.
 

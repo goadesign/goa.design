@@ -4,8 +4,6 @@ description: "Comprendere e implementare l'osservabilità nei servizi Goa"
 weight: 2
 ---
 
-# Osservabilità in Goa
-
 I sistemi distribuiti moderni sono complessi. Quando qualcosa va storto, il tradizionale
 logging da solo non è sufficiente per capire cosa è successo. Hai bisogno di vedere come
 le richieste fluiscono attraverso il tuo sistema, misurare le prestazioni e monitorare la salute

@@ -1,10 +1,9 @@
 ---
-title: Dominio vs Trasporto
+title: Errori di Dominio vs Errori di Trasporto
+linkTitle: Dominio vs Trasporto
 weight: 1
 description: "Scopri la distinzione tra errori di dominio ed errori di trasporto in Goa, e come mapparli efficacemente tra loro."
 ---
-
-# Errori di Dominio vs Errori di Trasporto
 
 Quando si progetta la gestione degli errori in Goa, è importante comprendere la
 distinzione tra errori di dominio e la loro rappresentazione a livello di trasporto. Questa

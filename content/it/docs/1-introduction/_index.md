@@ -1,5 +1,5 @@
 ---
-title: "Introduzione a Goa"
+title: "Benvenuto nel Futuro dello Sviluppo API"
 linkTitle: "Introduzione"
 weight: 1
 description: >
@@ -8,8 +8,6 @@ menu:
   main:
     weight: 1
 ---
-
-# Benvenuto nel Futuro dello Sviluppo API
 
 **Goa** è più di un semplice framework Go: è un approccio rivoluzionario alla costruzione di microservizi e API che mette il design in primo piano nel tuo processo di sviluppo. Che tu stia costruendo un piccolo servizio o un sistema distribuito complesso, la filosofia design-first di Goa trasformerà il modo in cui pensi e crei le API.
 

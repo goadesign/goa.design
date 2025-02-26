@@ -5,8 +5,6 @@ description: "Essential aspects of building reliable, maintainable, and secure A
 weight: 5
 ---
 
-# Real World Goa
-
 Building production-ready APIs requires more than just defining endpoints and 
 handling requests. This section covers essential aspects of building reliable, 
 maintainable, and secure APIs with Goa.

@@ -5,8 +5,6 @@ description: "Learn about Goa's type-safe interceptor system for cross-cutting c
 weight: 1
 ---
 
-# Overview
-
 Goa interceptors provide a powerful, type-safe mechanism for injecting
 cross-cutting concerns into your service methods. They allow you to intercept
 and modify both requests and responses at both the client and server side, with

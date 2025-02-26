@@ -1,11 +1,9 @@
 ---
-title: Custom Middleware
+title: Custom HTTP Middleware
 weight: 2
 description: >
   Learn how to create HTTP middleware that works effectively with Goa services, with practical examples and integration patterns.
 ---
-
-# Custom HTTP Middleware
 
 Goa services use standard Go HTTP handlers, which means you can use any HTTP
 middleware that follows Go's standard middleware pattern. This guide shows you

@@ -4,8 +4,6 @@ description: "Learn how to create and use Goa interceptors"
 weight: 1
 ---
 
-# Getting Started with Interceptors
-
 This guide will walk you through creating and using your first Goa interceptor.
 We'll create a simple logging interceptor that records the timing of method
 calls.

@@ -4,8 +4,6 @@ weight: 1
 description: "Learn about the distinction between domain errors and transport errors in Goa, and how to effectively map between them."
 ---
 
-# Domain vs Transport Errors
-
 When designing error handling in Goa, it's important to understand the
 distinction between domain errors and their transport representation. This
 separation allows you to maintain clean domain logic while ensuring proper error

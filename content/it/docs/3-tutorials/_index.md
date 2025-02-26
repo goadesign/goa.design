@@ -1,5 +1,5 @@
 ---
-title: "Tutorial"
+title: "Tutorial Base di Goa"
 linkTitle: "Tutorial"
 weight: 3
 description: >
@@ -8,8 +8,6 @@ menu:
    main:
       weight: 3
 ---
-
-# Tutorial Base di Goa
 
 Esplora le **funzionalità principali** di Goa attraverso questi tutorial passo-passo, ognuno incentrato su uno scenario comune di sviluppo API. Seguendo questi tutorial, acquisirai esperienza pratica con l'**approccio design-first di Goa**, il **codice generato**, i **layer di trasporto**, la **gestione degli errori**, lo **streaming** e altro ancora.
 

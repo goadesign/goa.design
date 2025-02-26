@@ -4,8 +4,6 @@ weight: 2
 description: "Impara come implementare funzionalità efficienti di upload e download di file in Goa usando lo streaming"
 ---
 
-# Upload e Download di File
-
 Quando si costruiscono servizi web, la gestione di upload e download di file è un
 requisito comune. Che tu stia costruendo un servizio di condivisione file, un'API
 per il caricamento di immagini o un sistema di gestione documenti, avrai bisogno

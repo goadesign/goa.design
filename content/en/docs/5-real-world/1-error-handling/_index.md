@@ -1,11 +1,9 @@
 ---
 linkTitle: Error Handling
-title: Error Handling
+title: Error Handling in Goa
 weight: 1
 description: "Learn how to effectively handle errors in Goa services, including error definition, transport mapping, and best practices."
 ---
-
-# Error Handling in Goa
 
 Goa provides a robust error handling system that enables you to define, manage, and communicate errors effectively across your services. This guide covers everything you need to know about error handling in Goa.
 

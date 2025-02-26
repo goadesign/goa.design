@@ -1,11 +1,10 @@
 ---
-title: Multiple Services
+Title: Working with Multiple Services in Goa
+linkTitle: Multiple Services
 weight: 1
 description: >
   Design and implement scalable microservice architectures with Goa
 ---
-
-# Working with Multiple Services in Goa
 
 In real-world applications, it's common to have multiple services that work together
 to form a complete system. Goa makes it easy to design and implement multiple

@@ -1,10 +1,9 @@
 ---
-title: "ロギング"
+linkTitle: "ロギング"
+title: ロギング戦略
 description: "Clueを使用したロギングの設定"
 weight: 4
 ---
-
-# ロギング戦略
 
 OpenTelemetryはClueにおける可観測性の主要なソースですが、ログは特定のシナリオで
 重要な役割を果たします。Clueは、ログメッセージを効率的にバッファリングし

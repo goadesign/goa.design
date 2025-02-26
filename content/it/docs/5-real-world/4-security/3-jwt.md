@@ -4,8 +4,6 @@ description: Impara come implementare l'Autenticazione JWT nella tua API Goa
 weight: 3
 ---
 
-# Autenticazione JWT in Goa
-
 I [JSON Web Token (JWT)](https://jwt.io/introduction) forniscono un modo sicuro per
 trasmettere claims tra le parti. Sono particolarmente utili nelle architetture a
 microservizi dove è necessario passare informazioni di autenticazione e autorizzazione

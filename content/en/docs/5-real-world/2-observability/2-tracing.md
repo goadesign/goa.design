@@ -1,10 +1,8 @@
 ---
-title: "Tracing"
+title: "Distributed Tracing"
 description: "Implementing distributed tracing with OpenTelemetry"
 weight: 2
 ---
-
-# Distributed Tracing
 
 Modern applications are complex distributed systems where a single user request
 might touch dozens of services, databases, and external APIs. When something goes

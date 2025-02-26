@@ -4,8 +4,6 @@ description: Learn essential security best practices for your Goa API
 weight: 5
 ---
 
-# Security Best Practices for Goa APIs
-
 Building a secure API involves more than just adding authentication. You need to 
 think about security at every level of your application, from how you handle user 
 input to how you protect your server from attacks. This guide will walk you through 

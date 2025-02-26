@@ -5,7 +5,7 @@ description: >
   Learn how to implement unary gRPC interceptors for Goa services, with practical examples of common patterns.
 ---
 
-# Unary gRPC Interceptors
+## Unary gRPC Interceptors
 
 Unary interceptors handle single request/response RPCs in gRPC services. They're
 ideal for protocol-level concerns like metadata handling, logging, and monitoring.

@@ -5,7 +5,7 @@ description: >
   Learn how to implement streaming gRPC interceptors for Goa services, with practical examples of common patterns.
 ---
 
-# Stream gRPC Interceptors
+## Stream gRPC Interceptors
 
 Stream interceptors handle streaming RPCs in gRPC services. They're used when
 either the client, server, or both send multiple messages over a single

@@ -4,8 +4,6 @@ description: Scopri le best practice di sicurezza essenziali per la tua API Goa
 weight: 5
 ---
 
-# Best Practice di Sicurezza per le API Goa
-
 La creazione di un'API sicura coinvolge più che la semplice aggiunta dell'autenticazione. È necessario 
 pensare alla sicurezza a ogni livello dell'applicazione, da come gestisci l'input dell'utente 
 a come proteggi il tuo server dagli attacchi. Questa guida ti accompagnerà attraverso 

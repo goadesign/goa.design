@@ -4,8 +4,6 @@ description: "ClueとOpenTelemetryのセットアップ"
 weight: 1
 ---
 
-# 基本セットアップ
-
 Goaサービスで可観測性を設定するには、ClueとOpenTelemetryの設定が必要です。
 このガイドでは、基本的なセットアップ手順を説明します。
 

@@ -1,10 +1,9 @@
 ---
-title: Basic認証
+linkTitle: Basic認証
+title: GoaにおけるBasic認証
 description: GoaのAPIでBasic認証を実装する方法を学びます
 weight: 1
 ---
-
-# GoaにおけるBasic認証
 
 Basic認証は、HTTPプロトコルに組み込まれたシンプルな認証スキームです。最も単純な認証形式の
 1つですが、特に内部APIや開発環境で広く使用されています。

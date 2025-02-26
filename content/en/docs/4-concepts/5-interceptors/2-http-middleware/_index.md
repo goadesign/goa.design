@@ -6,8 +6,6 @@ description: >
   Learn how to use HTTP middleware with Goa services to handle protocol-level concerns like logging, metrics, tracing, and request context.
 ---
 
-# HTTP Middleware
-
 HTTP middleware in Goa services handles protocol-level concerns like logging, metrics, tracing, and request context management. This guide shows you how to effectively use middleware in your Goa services.
 
 ## Core Concepts

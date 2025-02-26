@@ -6,8 +6,6 @@ description: >
   Impara come creare e mantenere diagrammi architetturali usando Model, un progetto open source per la modellazione C4, e la sua integrazione con Goa attraverso il plugin model.
 ---
 
-# Diagrammi Architetturali come Codice
-
 Le architetture software moderne, specialmente quelle costruite attorno ai microservizi, richiedono
 documentazione chiara e manutenibile. Mentre i contratti dei servizi e la documentazione delle API
 sono essenziali, comprendere come i servizi interagiscono e si inseriscono nel sistema più ampio

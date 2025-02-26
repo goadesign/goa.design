@@ -2,43 +2,43 @@
 title: "Why Choose Goa?"
 linkTitle: "Why Goa?"
 weight: 2
-description: "Discover why Goa's design-first approach, code generation, and microservice capabilities make it an excellent choice for building APIs and services in Go."
+description: "Discover how Goa accelerates development with 30-50% less code while maintaining type safety and clean architecture."
 ---
 
-When building microservices and APIs in Go, Goa's design-first approach and powerful code generation capabilities set it apart from traditional frameworks. Let's explore why Goa might be the perfect choice for your next project.
+When building microservices and APIs in Go, Goa's code generation capabilities and design-first approach dramatically accelerate development. Let's explore why Goa might be the perfect choice for your next project.
 
-## The Design-First Advantage
+## Development at Speed
 
-Unlike traditional frameworks that start with implementation, Goa encourages you to design first and implement second. This fundamental difference transforms how teams collaborate and build APIs.
+Unlike traditional frameworks that require manual implementation of boilerplate code, Goa generates 30-50% of your codebase automatically. This fundamental difference transforms how quickly teams can build and maintain APIs.
 
 {{< alert title="Key Benefits" color="primary" >}}
-**Single Source of Truth**  
-Your entire API contract lives in the DSL - endpoints, types, validation rules, and documentation all in one place.
+**Accelerated Development**  
+30-50% of your codebase is generated automatically - less code to write, test, and maintain.
 
-**Early Validation**  
-Catch design issues and gather feedback before writing implementation code.
+**Zero Boilerplate**  
+Focus on business logic while Goa handles transport, validation, documentation, and client generation.
 
-**Perfect Documentation**  
-Generated OpenAPI specs and client libraries that are always in sync with your code.
+**Rapid Iteration**  
+Change your API design and immediately regenerate all supporting code.
 
-**Clean Architecture**  
-Clear separation between generated transport code and your business logic.
+**Reduced Maintenance**  
+Generated code means fewer bugs and less technical debt to manage.
 {{< /alert >}}
 
 ## How Goa Compares
 
-Let's see how Goa stacks up against other popular approaches:
+Let's see how Goa's development speed compares to other approaches:
 
 ### vs. Traditional Go Web Frameworks (Gin, Echo)
 
-Traditional frameworks excel at routing and middleware but leave much of the API structure up to you:
+Traditional frameworks require manual implementation of many components that Goa generates automatically:
 
-{{< alert title="Goa's Advantages" color="primary" >}}
-- **No Manual Boilerplate** - Goa generates all the routing, validation, and serialization code
-- **Type Safety** - Full Go type system integration with compile-time checks (no need to "bind" payloads to handlers)
-- **Consistent Patterns** - Enforced structure across all services
-- **Built-in Client Generation** - No need for separate API client libraries
-- **Automatic Documentation** - OpenAPI specs generated from your design
+{{< alert title="Time Savings" color="primary" >}}
+- **Transport Layer** - No need to write request/response handling
+- **Input Validation** - Automatic payload validation from your design
+- **Client Libraries** - Generated SDKs for all your services
+- **Documentation** - OpenAPI specs generated automatically
+- **Type Safety** - No manual type assertions or validation code
 {{< /alert >}}
 
 ### vs. Pure gRPC
@@ -56,18 +56,9 @@ While gRPC provides excellent RPC capabilities, Goa offers a more complete solut
 
 Here's how Goa's approach translates to practical advantages:
 
-### 1. Accelerated Development
+### 1. Rapid Development
 
-Goa's DSL is clean, simple, and powerful. With just a few lines of code, you can define complex API behaviors that would take hundreds of lines to implement manually:
-
-{{< alert title="Expressive Design" color="primary" >}}
-- **Intuitive Syntax** - Natural, Go-like DSL that's easy to read and write
-- **Powerful Abstractions** - Complex patterns expressed in minimal code
-- **Type Safety** - Full Go type system integration with compile-time checks
-- **Extensible** - Add custom DSL functions for your specific needs
-{{< /alert >}}
-
-Here's a simple example of a complete API definition:
+With Goa, you can define a complete API in minutes and let the generator handle the heavy lifting:
 
 ```go
 var _ = Service("calc", func() {
@@ -91,7 +82,15 @@ var _ = Service("calc", func() {
 })
 ```
 
-And here the code needed to implement the service:
+From this simple definition, Goa generates:
+- Complete HTTP and gRPC transport layers
+- Request/response validation
+- OpenAPI documentation
+- Type-safe client libraries
+- Middleware hooks
+- Error handling
+
+Your only task is to implement the business logic:
 
 ```go
 func (s *service) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
@@ -99,7 +98,16 @@ func (s *service) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
 }
 ```
 
-And that's it! You've defined a complete API with input validation, multiple transports, and a type-safe implementation.
+### 2. Reduced Maintenance Burden
+
+Generated code doesn't just save development time - it dramatically reduces ongoing maintenance:
+
+{{< alert title="Maintenance Benefits" color="primary" >}}
+- **Less Code to Maintain** - 30-50% of your codebase is generated
+- **Fewer Bugs** - Generated code is tested and reliable
+- **Easy Updates** - Change the design, regenerate the code
+- **Consistent Patterns** - All services follow the same structure
+{{< /alert >}}
 
 ### 2. Team Collaboration
 Goa's design-first approach creates a natural collaboration point for teams. The DSL serves as a clear, unambiguous contract that all stakeholders can understand and discuss. Frontend developers can start building UI components while backend teams implement the service logic, all working from the same source of truth.
@@ -180,5 +188,5 @@ Generated code handles the complex parts of distributed systems
 
 ## Ready to Start?
 
-Now that you understand why Goa might be the right choice, jump straight to the
+Now that you understand how Goa can accelerate your development, jump straight to the
 [Getting Started](../2-getting-started/) guide to build your first Goa service.

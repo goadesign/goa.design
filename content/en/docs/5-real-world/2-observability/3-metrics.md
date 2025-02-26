@@ -1,10 +1,8 @@
 ---
-title: "Metrics"
+title: "Service Metrics"
 description: "Implementing service metrics with OpenTelemetry"
 weight: 3
 ---
-
-# Service Metrics
 
 Modern applications need quantitative data to understand their behavior and performance.
 How many requests are we handling? How long do they take? Are we running out of

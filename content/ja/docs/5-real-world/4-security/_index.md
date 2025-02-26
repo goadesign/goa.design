@@ -1,11 +1,9 @@
 ---
 linkTitle: セキュリティ
-title: セキュリティ
+title:  Goaにおけるセキュリティ
 weight: 4
 description: 様々な認証方式を使用してHTTP Goa APIを保護する方法を学びます
 ---
-
-# Goaにおけるセキュリティ
 
 Goaは、複数のレベルでAPIを保護できる堅牢なセキュリティ機能を提供します。
 Basic認証、APIキー、JWTトークン、OAuth2のいずれが必要な場合でも、Goaの

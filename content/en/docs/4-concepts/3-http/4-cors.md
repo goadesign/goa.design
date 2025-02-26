@@ -4,7 +4,7 @@ description: "Configure CORS policies in your Goa services using the CORS plugin
 weight: 4
 ---
 
-# Cross-Origin Resource Sharing (CORS)
+## Cross-Origin Resource Sharing (CORS)
 
 Cross-Origin Resource Sharing (CORS) is a security feature implemented by web
 browsers that controls how web pages in one domain can request and interact with

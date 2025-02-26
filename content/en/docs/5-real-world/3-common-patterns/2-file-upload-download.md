@@ -4,8 +4,6 @@ weight: 2
 description: "Learn how to implement efficient file upload and download functionality in Goa using streaming"
 ---
 
-# File Uploads and Downloads
-
 When building web services, handling file uploads and downloads is a common
 requirement. Whether you're building a file sharing service, an image upload
 API, or a document management system, you'll need to handle binary file

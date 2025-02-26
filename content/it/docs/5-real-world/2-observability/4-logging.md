@@ -1,10 +1,9 @@
 ---
-title: "Logging"
+title: "Strategia di Logging"
 description: "Configurare il logging con Clue"
 weight: 4
 ---
 
-# Strategia di Logging
 
 Mentre OpenTelemetry è la fonte primaria di osservabilità in Clue, i log
 mantengono ancora un ruolo importante in determinati scenari. Clue fornisce un sistema

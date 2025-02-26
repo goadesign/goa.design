@@ -1,9 +1,9 @@
 ---
-title: "Client dei Servizi"
+title: Scrivere Client dei Servizi
+linkTitle: "Client dei Servizi"
+description: "Guida completa alla creazione di client per servizi Goa, con focus su best practice, pattern di design e implementazioni testabili per microservizi."
 weight: 1
 ---
-
-# Scrivere Client dei Servizi
 
 Quando si costruiscono microservizi, una sfida comune è come strutturare la
 comunicazione tra i servizi. Questa sezione copre le best practice per scrivere

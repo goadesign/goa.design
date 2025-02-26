@@ -4,8 +4,6 @@ description: "Understanding and implementing observability in Goa services"
 weight: 2
 ---
 
-# Observability in Goa
-
 Modern distributed systems are complex. When something goes wrong, traditional
 logging alone isn't enough to understand what happened. You need to see how
 requests flow through your system, measure performance, and monitor system

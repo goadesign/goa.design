@@ -20,8 +20,8 @@ hero_title: "Design First!"
 hero_description: "Stop writing boilerplate. Start designing solutions that matter.</br>Let Goa handle the rest."
 
 # Features Section
-feature_codegen_title: "Code Generation"
-feature_codegen_desc: "Write your design once, get everything: servers, clients, OpenAPI docs, and more. No reflection tricks, no runtime overhead—just clean, efficient Go code you can trust."
+feature_codegen_title: "Accelerated Development"
+feature_codegen_desc: "Goa generates 30-50% of your codebase automatically. Focus on your business logic while Goa handles transport, validation, documentation, and client generation."
 
 feature_design_title: "Design Based"
 feature_design_desc: "Your design is your contract. Goa ensures your implementation, documentation, and client SDKs stay perfectly in sync. No more drift between specs and code."
@@ -58,8 +58,8 @@ design_first_description: "Goa transforms how you build microservices in Go.<br/
 
 # Why Goa Section
 why_goa_title: "Why Teams Choose Goa"
-why_goa_type_safe_title: "Type-Safe by Design"
-why_goa_type_safe_desc: "Catch errors at compile time, not runtime. Goa's type system ensures your API contracts are always enforced."
+why_goa_type_safe_title: "Development at Speed"
+why_goa_type_safe_desc: "Slash development time with automatic code generation. 30-50% less code to write, test, and maintain means faster time to market."
 why_goa_boilerplate_title: "Zero Boilerplate"
 why_goa_boilerplate_desc: "No more copy-pasting handlers and middleware. Focus on your business logic while Goa handles the rest."
 why_goa_production_title: "Production Ready"
@@ -67,7 +67,7 @@ why_goa_production_desc: "Used by companies worldwide to build and scale their A
 
 # Trust Section
 trust_section_title: "Trusted by Engineering Teams Worldwide"
-trust_section_subtitle: "Join hundreds of companies using Goa to build robust and maintainable APIs"
+trust_section_subtitle: "Join the growing community of companies using Goa to build robust and maintainable APIs"
 
 # Common actions
 learn_more: "Learn More"

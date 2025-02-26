@@ -4,8 +4,6 @@ description: Learn how to implement OAuth2 Authentication in your Goa API
 weight: 4
 ---
 
-# OAuth2 Authentication in Goa
-
 OAuth2 is a widely-used protocol that enables applications to securely access data on 
 behalf of users without needing their passwords. Think of it like a hotel key card 
 system - guests get temporary access to specific areas without having the master key.

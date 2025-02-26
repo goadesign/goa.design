@@ -4,8 +4,6 @@ description: Learn how to implement API Key Authentication in your Goa API
 weight: 2
 ---
 
-# API Key Authentication in Goa
-
 API Key authentication is a simple and popular way to secure APIs. It involves 
 distributing unique keys to clients who then include these keys in their requests. 
 This method is particularly useful for public APIs where you want to track usage, 

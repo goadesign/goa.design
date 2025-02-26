@@ -4,8 +4,6 @@ description: "Implementing health checks with Clue"
 weight: 5
 ---
 
-# Health Checks
-
 Health checks are crucial for service monitoring and orchestration. They help
 ensure your service is functioning correctly and all its dependencies are
 available. Clue provides a standard health check system that monitors service

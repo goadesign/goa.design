@@ -4,8 +4,6 @@ title: Interceptors & Middleware
 weight: 5
 ---
 
-# Interceptors & Middleware
-
 Building modern APIs requires processing requests at different layers of your 
 application. Goa provides a comprehensive solution that combines type-safe 
 interceptors with traditional middleware patterns, giving you the best of both worlds.

@@ -10,9 +10,11 @@
 </section>
 
 <section class="section-1">
-    <div class="container text-center">
-        <h2 class="text-center">{{ T "design_first_title" }}</h2>
-        <p class="lead text-center mb-0">{{ T "design_first_description" | safeHTML }}</p>
+    <div class="container">
+        <div class="text-center">
+            <h2>{{ T "design_first_title" }}</h2>
+            <p class="lead">{{ T "design_first_description" | safeHTML }}</p>
+        </div>
     </div>
 </section>
 
@@ -56,44 +58,44 @@
     </div>
 </section>
 
-<div class="section-divider">
-    <div class="divider-line"></div>
-</div>
-
 <section class="section-why">
     <div class="container">
-        <div class="section-title text-center">
+        <div class="text-center">
             <h2>{{ T "why_goa_title" }}</h2>
         </div>
-        <div class="row features-grid">
-            <div class="col-md-4">
-                <div class="feature-item text-center">
-                    <i class="fas fa-shield-alt"></i>
-                    <h4>{{ T "why_goa_type_safe_title" }}</h4>
-                    <p>{{ T "why_goa_type_safe_desc" }}</p>
+        <div class="features-container">
+            <div class="row features-grid">
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-fast-forward"></i>
+                        <h4>{{ T "why_goa_type_safe_title" }}</h4>
+                        <p>{{ T "why_goa_type_safe_desc" }}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-item text-center">
-                    <i class="fas fa-bolt"></i>
-                    <h4>{{ T "why_goa_boilerplate_title" }}</h4>
-                    <p>{{ T "why_goa_boilerplate_desc" }}</p>
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-bolt"></i>
+                        <h4>{{ T "why_goa_boilerplate_title" }}</h4>
+                        <p>{{ T "why_goa_boilerplate_desc" }}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-item text-center">
-                    <i class="fas fa-rocket"></i>
-                    <h4>{{ T "why_goa_production_title" }}</h4>
-                    <p>{{ T "why_goa_production_desc" }}</p>
+                <div class="col-md-4">
+                    <div class="feature-item text-center">
+                        <i class="fas fa-rocket"></i>
+                        <h4>{{ T "why_goa_production_title" }}</h4>
+                        <p>{{ T "why_goa_production_desc" }}</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<section class="section section--sponsors">
+<section class="section section-sponsors">
     <div class="container-fluid">
-        <h2>{{ T "sponsors_title" }}</h2>
+        <div class="text-center">
+            <h2>{{ T "sponsors_title" }}</h2>
+        </div>
         <div class="sponsor-grid">
             {{ range .Site.Params.sponsors }}
             <div class="sponsor-item">
@@ -121,9 +123,11 @@
 </section>
 
 <section class="section-trust">
-    <div class="container text-center">
-        <h3>{{ T "trust_section_title" }}</h3>
-        <p class="trust-subtitle">{{ T "trust_section_subtitle" }}</p>
+    <div class="container">
+        <div class="text-center">
+            <h2>{{ T "trust_section_title" }}</h2>
+            <p class="trust-subtitle">{{ T "trust_section_subtitle" }}</p>
+        </div>
         <div class="logos-grid">
             <div class="row g-0 align-items-center justify-content-center">
                 <div class="col-lg-2 col-md-3 col-6">
@@ -139,12 +143,6 @@
                 <div class="col-lg-2 col-md-3 col-6">
                     <div class="company-logo">
                         <img src="{{ "logos/crossnokaye.png" | relURL }}" alt="CrossnoKaye" class="img-fluid">
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-3 col-6">
-                    <div class="company-logo company-logo-blur">
-                        <div class="blur-circle"></div>
-                        <span class="more-text">+100<br>More</span>
                     </div>
                 </div>
             </div>

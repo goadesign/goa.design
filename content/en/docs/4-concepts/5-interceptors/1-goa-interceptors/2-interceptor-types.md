@@ -4,8 +4,6 @@ description: "Understanding different types of Goa interceptors and their use ca
 weight: 2
 ---
 
-# Types of Interceptors
-
 Goa supports several types of interceptors to handle different scenarios. This guide explains the different types and when to use them.
 
 ## Core Concepts

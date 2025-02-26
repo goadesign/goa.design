@@ -1,11 +1,10 @@
 ---
-title: Servizi Multipli
+linkTitle: Servizi Multipli
+title: Lavorare con Servizi Multipli in Goa
 weight: 2
 description: >
   Progetta e implementa architetture di microservizi scalabili con Goa
 ---
-
-# Lavorare con Servizi Multipli in Goa
 
 Nelle applicazioni del mondo reale, è comune avere più servizi che lavorano insieme
 per formare un sistema completo. Goa rende facile progettare e implementare più

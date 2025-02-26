@@ -1,10 +1,8 @@
 ---
-title: "Metriche"
+title: "Metriche del Servizio"
 description: "Implementare le metriche del servizio con OpenTelemetry"
 weight: 3
 ---
-
-# Metriche del Servizio
 
 Le applicazioni moderne necessitano di dati quantitativi per comprendere il loro comportamento e le prestazioni.
 Quante richieste stiamo gestendo? Quanto tempo impiegano? Stiamo esaurendo le

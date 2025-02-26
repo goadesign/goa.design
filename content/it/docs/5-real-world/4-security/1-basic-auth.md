@@ -4,8 +4,6 @@ description: Impara come implementare l'Autenticazione Base nella tua API Goa
 weight: 1
 ---
 
-# Autenticazione Base in Goa
-
 L'Autenticazione Base è uno schema di autenticazione semplice integrato nel protocollo
 HTTP. Sebbene sia una delle forme più semplici di autenticazione, è ancora ampiamente
 utilizzata, specialmente per API interne o ambienti di sviluppo.

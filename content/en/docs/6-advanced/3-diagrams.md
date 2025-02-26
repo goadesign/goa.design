@@ -6,8 +6,6 @@ description: >
   Learn how to create and maintain architecture diagrams using Model, an open source project for C4 modeling, and its integration with Goa through the model plugin.
 ---
 
-# Architecture Diagrams as Code
-
 Modern software architectures, especially those built around microservices, require 
 clear and maintainable documentation. While service contracts and API documentation 
 are essential, understanding how services interact and fit into the larger system 

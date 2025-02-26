@@ -4,8 +4,6 @@ description: Learn how to implement Basic Authentication in your Goa API
 weight: 1
 ---
 
-# Basic Authentication in Goa
-
 Basic Authentication is a simple authentication scheme built into the HTTP protocol. 
 While it's one of the simplest forms of authentication, it's still widely used, 
 especially for internal APIs or development environments.

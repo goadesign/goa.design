@@ -4,8 +4,6 @@ description: "Debugging e profiling runtime con Clue"
 weight: 6
 ---
 
-# Debugging e Profiling
-
 Il debugging e il profiling runtime sono essenziali per comprendere il comportamento
 del servizio e diagnosticare problemi in ambienti di produzione. Clue fornisce un
 set completo di strumenti che ti aiutano a investigare problemi, analizzare le

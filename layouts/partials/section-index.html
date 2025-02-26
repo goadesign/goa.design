@@ -7,10 +7,10 @@
     {{ end }}
     {{ range . }}
     <div class="entry">
-        <h5>
-            <a href="{{ .RelPermalink }}">{{ .Title }}</a>
-        </h5>
-        <p>{{ .Description | markdownify }}</p>
+        <a href="{{ .RelPermalink }}">
+            <h5>{{ .Title }}</h5>
+            <p>{{ .Description | markdownify }}</p>
+        </a>
     </div>
     {{ end }}
 </div>

@@ -9,7 +9,7 @@ menu:
     weight: 1
 ---
 
-# Welcome to the Future of API Development
+## Welcome to the Future of API Development
 
 **Goa** is more than just another Go framework—it's a revolutionary approach to building microservices and APIs that puts design at the forefront of your development process. Whether you're building a small service or a complex distributed system, Goa's design-first philosophy will transform how you think about and create APIs.
 

@@ -1,5 +1,5 @@
 ---
-title: "Community"
+title: "Join the Goa Community"
 linkTitle: "Community"
 weight: 7
 description: >
@@ -8,8 +8,6 @@ menu:
   main:
     weight: 7
 ---
-
-# Join the Goa Community
 
 Goa thrives through its vibrant community of developers and contributors. Whether you're looking for help, want to contribute, or simply connect with fellow Goa enthusiasts, here's how you can get involved:
 

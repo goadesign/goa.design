@@ -1,10 +1,8 @@
 ---
-title: "Best Practices"
+title: "Interceptor Best Practices"
 description: "Guidelines and best practices for implementing Goa interceptors"
 weight: 4
 ---
-
-# Best Practices for Interceptors
 
 This guide covers best practices and guidelines for implementing interceptors in your Goa services.
 

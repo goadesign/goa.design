@@ -1,10 +1,8 @@
 ---
-title: Error Serialization
+title: Overriding Error Serialization
 weight: 3
 description: "Learn how to customize error serialization in Goa services, including handling validation errors and matching organization standards."
 ---
-
-# Overriding Error Serialization
 
 This guide explains how to customize the way errors are serialized in Goa services. Error
 serialization is the process of converting error objects into a format that can be transmitted over

@@ -4,8 +4,6 @@ description: "Implementare i controlli di salute con Clue"
 weight: 5
 ---
 
-# Controlli di Salute
-
 I controlli di salute sono cruciali per il monitoraggio e l'orchestrazione dei servizi.
 Aiutano ad assicurare che il tuo servizio funzioni correttamente e che tutte le sue
 dipendenze siano disponibili. Clue fornisce un sistema standard di controllo della

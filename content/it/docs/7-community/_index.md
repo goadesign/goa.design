@@ -1,5 +1,5 @@
 ---
-title: "Comunità"
+title: "Unisciti alla Comunità Goa"
 linkTitle: "Comunità"
 weight: 7
 description: >
@@ -8,8 +8,6 @@ menu:
   main:
     weight: 7
 ---
-
-# Unisciti alla Comunità Goa
 
 Goa prospera attraverso la sua vivace comunità di sviluppatori e contributori. Che tu stia cercando aiuto, voglia contribuire o semplicemente connetterti con altri appassionati di Goa, ecco come puoi partecipare:
 

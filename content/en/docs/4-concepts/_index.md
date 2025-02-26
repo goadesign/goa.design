@@ -9,7 +9,7 @@ menu:
     weight: 4
 ---
 
-# Unleash the Full Power of Goa 🚀
+## Unleash the Full Power of Goa 🚀
 
 Welcome to the heart of Goa - where the magic truly happens. If you've ever wondered how top engineering teams build scalable, maintainable APIs that stand the test of time, you're in the right place.
 

@@ -4,8 +4,6 @@ description: Impara come implementare l'Autenticazione con Chiave API nella tua 
 weight: 2
 ---
 
-# Autenticazione con Chiave API in Goa
-
 L'autenticazione con chiave API è un modo semplice e popolare per proteggere le API.
 Prevede la distribuzione di chiavi uniche ai client che poi includono queste chiavi
 nelle loro richieste. Questo metodo è particolarmente utile per API pubbliche dove

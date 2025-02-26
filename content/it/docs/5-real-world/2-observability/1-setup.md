@@ -4,8 +4,6 @@ description: "Configurare Clue e OpenTelemetry"
 weight: 1
 ---
 
-# Setup Base
-
 La configurazione dell'osservabilità in un servizio Goa coinvolge la configurazione di Clue e
 OpenTelemetry. Questa guida illustra i passaggi essenziali per il setup.
 

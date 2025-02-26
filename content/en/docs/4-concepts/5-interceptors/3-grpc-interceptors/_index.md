@@ -5,8 +5,6 @@ description: >
   Learn how to create gRPC interceptors that work effectively with Goa services, with practical examples and integration patterns.
 ---
 
-# gRPC Interceptors
-
 Goa services use standard gRPC interceptors, which means you can use any gRPC
 interceptor that follows the standard pattern. This guide shows you how to create
 effective gRPC interceptors that work well with Goa services, with examples drawn

@@ -1,9 +1,8 @@
 ---
 title: Error Propagation
+descriptiopn: "Learn how errors propagate through the layers of a Goa service"
 weight: 2
 ---
-
-# Error Propagation
 
 This guide explains how errors propagate through different layers of a Goa service, from the business
 logic to the client.

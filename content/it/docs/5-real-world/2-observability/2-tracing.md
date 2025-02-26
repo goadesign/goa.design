@@ -1,10 +1,8 @@
 ---
-title: "Tracciamento"
+title: "Tracciamento Distribuito"
 description: "Implementare il tracciamento distribuito con OpenTelemetry"
 weight: 2
 ---
-
-# Tracciamento Distribuito
 
 Le applicazioni moderne sono sistemi distribuiti complessi dove una singola richiesta utente
 potrebbe toccare dozzine di servizi, database e API esterne. Quando qualcosa va
