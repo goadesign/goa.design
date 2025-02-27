@@ -34,6 +34,7 @@ defaultContentLanguageInSubdir = true
 
 [params]
   copyright = "Raphael Simon and the Goa contributors"
+  offlineSearch = true
   
   # Repository configuration
   github_repo = "https://github.com/goadesign/goa.design"
