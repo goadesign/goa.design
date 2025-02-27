@@ -16,3 +16,4 @@ node_modules/
 # Mac cruft
 static/.DS_Store
 static/img/.DS_Store
+static/img/social/.DS_Store

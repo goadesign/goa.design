@@ -210,7 +210,7 @@ body {
   }
 
   .td-box--primary {
-    padding-top: 80px !important;
+    padding-top: 30px !important;  // Reduced from 50px
     margin: 0 !important;
     width: 100vw !important;  // Full viewport width
     max-width: none !important;
@@ -229,6 +229,30 @@ body {
       width: 100% !important;
       max-width: none !important;
       padding: 0 2rem !important;
+    }
+
+    .hero-logo {
+      margin: 0;  // Reduced from 1.5rem
+      
+      .goa-logo {
+        width: 380px;
+        height: auto;
+        filter: brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+        animation: logoFloat 6s ease-in-out infinite;
+        
+        @media (max-width: 768px) {
+          width: 220px;
+        }
+      }
+    }
+
+    @keyframes logoFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
     }
 
     .display-1 {
