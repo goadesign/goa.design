@@ -33,6 +33,9 @@ defaultContentLanguageInSubdir = true
     weight = 3
 
 [params]
+  title = "Goa – Design. Generate. Scale."
+  description = "Transform the way you build APIs in Go. Goa bridges the gap between design and implementation, generating clean, scalable, and production-ready microservices."
+  images = ["img/social/goa-card.png"]
   copyright = "Raphael Simon and the Goa contributors"
   offlineSearch = true
   
@@ -43,7 +46,7 @@ defaultContentLanguageInSubdir = true
   # Docsy theme params
   time_format_blog = "Monday, January 02, 2006"
   time_format_default = "January 2, 2006"
-  
+
   # User interface configuration
   [params.ui]
     sidebar_menu_compact = false
