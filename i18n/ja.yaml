@@ -11,68 +11,66 @@ nav_edit: "編集"
 # Footer
 footer_slogan: "はじめにデザインを。"
 footer_languages: "言語"
-footer_find_us: "他のサイト"
-footer_copyright: " 2015-%s Raphael Simon と Goa コントリビューター"
-footer_logo_by: "ロゴ作成: Jason Melgoza"
+footer_find_us: "こちらでも情報発信中"
+footer_copyright: " 2015-%s by Raphael Simon and the Goa contributors"
+footer_logo_by: "Logo by Jason Melgoza"
 
 # Hero Section
-hero_title: "はじめにデザインを。"
+hero_title: "はじめにデザインを！"
 hero_description: "ボイラープレートの作成はもう終わり。重要なソリューションの設計に専念しましょう。</br>残りはGoaにお任せください。"
 
 # Features Section
-feature_codegen_title: "コード生成"
-feature_codegen_desc: "Goaは、APIデザインをコードに変換します - リフレクションもボイラープレートも不要です。一度デザインを書くだけで、サーバー、クライアント、ドキュメントが自動生成されます。"
+feature_codegen_title: "開発を加速"
+feature_codegen_desc: "Goaはコードベースの30〜50%を自動的に生成します。Goaがトランスポート、バリデーション、ドキュメント、クライアント生成を担うので、ビジネスロジックの実装に集中することが出来ます。"
 
 feature_design_title: "デザインベース"
-feature_design_desc: "APIを思い通りにデザインしましょう。一つのデザインが実装とドキュメントの両方を導く、唯一の信頼できる情報源となります。"
+feature_design_desc: "デザインそのものが契約です。Goaは実装、ドキュメント、クライアントSDKのすべてが完全に同期された状態を保つことを保証します。仕様とコードの間にずれが生じることはもうありません。"
 
 feature_best_practice_title: "ベストプラクティス"
-feature_best_practice_desc: "Goaは生成されるコードを通じてベストプラクティスを徹底します - 入力検証からGo言語らしい実装まで、常に堅牢で型安全なAPIを実現します。"
+feature_best_practice_desc: "組み込みのバリデーション、エラーハンドリング、ミドルウェア統合。エンタープライズグレードのセキュリティと信頼性を、複雑さなしで実現しましょう。"
 
 # Section Navigation
 subsections_title: "このセクションの内容"
 
-# Sponsors
-sponsor_zuplo_title: "Zuplo: あなたのGoa APIをスケールし、保護し、商品化する"
-sponsor_zuplo_desc: "私たちのAPIゲートウェイは、APIの保護、グローバルスケール、OpenAPIからのドキュメント生成、そしてマネタイズを可能にします。"
-sponsor_zuplo_link: "無料で始める"
-
-sponsor_incidentio_title: "incident.io: インシデントから強く立ち直る"
-sponsor_incidentio_desc: "私たちのプラットフォームを使って、チームにインシデントを最初から最後まで管理する力を与えましょう。<br/>インシデントを迅速に修正し、そこから学ぶことで、より回復力の高い製品を作ることができます。"
-sponsor_incidentio_link: "詳細はこちら"
-
-sponsor_speakeasy_title: "Speakeasy: あなたのAPIのためのエンタープライズ開発者体験"
-sponsor_speakeasy_desc: "私たちのプラットフォームを使えば、機能豊富で本番環境に対応したSDKを簡単に作成できます。<br/>あなたのAPIに相応しい開発者体験を提供することで、統合を加速しエラーを減らすことができます。"
-sponsor_speakeasy_link: "Goaと統合する"
-
-# Wizard Section
-wizard_section_title: "AIパワードデザインアシスタント"
-wizard_section_description: "Goa DSLに特化したAIアシスタント、<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a>をご紹介します"
+# Wizard
+wizard_section_title: "Goa Design Wizard"
+wizard_section_description: "Goa DSLに特化したAIアシスタント <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> でAPI作成をガイドします"
 wizard_section_features: |
   <ul>
     <li>自然な会話を通じてGoaのデザインを生成</li>
     <li>リアルタイムでインテリジェントな提案とベストプラクティスを取得</li>
-    <li>実践的な例と詳細な説明でGoa DSLを学習</li>
+    <li>実践的な例と詳細な説明でGoa DSLを学びましょう</li>
   </ul>
-wizard_section_cta: "Design Wizardを試す"
+wizard_section_cta: "Goa Design Wizardを試す"
 wizard_section_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>サブスクリプションが必要です)"
 
-design_first_title: "デザインファーストでソフトウェアを構築"
-design_first_description: "Goaは、Go言語で堅牢でスケーラブル、型安全なマイクロサービスを構築するための宣言的なデザインファーストアプローチを提供します。ソリューションを一度定義すれば、トランスポートからドキュメントまで必要なものすべてをGoaが生成するため、ボイラープレートではなくビジネスロジックに集中できます。"
+# Sponsors section
+sponsors_title: "スポンサー"
 
-# Common actions
-learn_more: "詳細を見る"
-get_started: "構築を始めましょう"
+sponsor_incidentio_title: "incident.io: インシデント後に強く復活する"
+sponsor_incidentio_desc: "私たちのプラットフォームを使用して、チームがインシデントを端から端まで管理できるようにサポートします。<br/>インシデントを迅速に修正し、学びながら、より強固な製品を作り上げましょう。"
+sponsor_incidentio_link: "詳細はこちら"
+
+sponsor_speakeasy_title: "Speakeasy: あなたのAPIのための企業向けDevEx"
+sponsor_speakeasy_desc: "私たちのプラットフォームは、機能豊富で本番環境に適したSDKの作成を簡単にします。<br/>APIにふさわしいDevExを提供することで、統合を加速し、エラーを減らします。"
+sponsor_speakeasy_link: "Goaとの統合"
+
+design_first_title: "開発のあるべき姿"
+design_first_description: "Goaは、Goでマイクロサービスを構築する方法を変革します。<br/>解決策を一度設計すれば、Goaが本番環境に適したサーバー、型安全なクライアント、そして包括的なドキュメントを生成します。<br/>重要なことに集中してください: スケーラブルな素晴らしいサービスを構築すること。"
 
 # Why Goa Section
 why_goa_title: "なぜGoaを選ぶのか"
 why_goa_type_safe_title: "高速な開発"
 why_goa_type_safe_desc: "自動コード生成により開発時間を大幅に短縮。30-50%のコード削減で、より早く市場に投入できます。"
 why_goa_boilerplate_title: "ボイラープレート不要"
-why_goa_boilerplate_desc: "ハンドラーやミドルウェアのコピー＆ペーストは不要。ビジネスロジックに集中し、残りはGoaにお任せください。"
+why_goa_boilerplate_desc: "ハンドラーやミドルウェアのコピー＆ペーストはもう必要ありません。ビジネスロジックに集中し、残りはGoaにお任せください。"
 why_goa_production_title: "本番環境対応"
 why_goa_production_desc: "世界中の企業がAPIの構築とスケーリングにGoaを使用。実戦で証明された、高性能で信頼性の高いフレームワークです。"
 
 # Trust Section
 trust_section_title: "世界中のエンジニアリングチームに信頼されています"
-trust_section_subtitle: "堅牢で保守性の高いAPIを構築するために、Goaを使用する企業コミュニティに参加しましょう"
+trust_section_subtitle: "Goa を使って堅牢で保守可能な API を構築している企業のコミュニティに参加しましょう"
+
+# Common actions
+learn_more: "詳細を見る"
+get_started: "構築を始めましょう"
