@@ -27,7 +27,7 @@ feature_design_title: "デザインベース"
 feature_design_desc: "デザインそのものが契約です。Goaは実装、ドキュメント、クライアントSDKのすべてが完全に同期された状態を保つことを保証します。仕様とコードの間にずれが生じることはもうありません。"
 
 feature_best_practice_title: "ベストプラクティス"
-feature_best_practice_desc: "組み込みのバリデーション、エラー処理、ミドルウエア統合。企業向けのセキュリティと信頼性の機能を、企業向けの複雑さなしで実現。"
+feature_best_practice_desc: "組み込みのバリデーション、エラーハンドリング、ミドルウェア統合。エンタープライズグレードのセキュリティと信頼性を、複雑さなしで実現しましょう。"
 
 # Section Navigation
 subsections_title: "このセクションの内容"
