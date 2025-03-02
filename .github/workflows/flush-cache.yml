@@ -1,0 +1,21 @@
+name: Flush GAE Memcache
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  flush-memcache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: goa-design
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Flush memcache
+        run: gcloud app instances flush-memcache
