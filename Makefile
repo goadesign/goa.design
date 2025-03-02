@@ -11,6 +11,10 @@ RESET := \033[0m
 NPM := $(shell command -v npm 2> /dev/null)
 CONVERT := $(shell command -v convert 2> /dev/null)
 
+# Define Chrome path and common Chrome options
+CHROME := /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
+CHROME_OPTS := --headless --force-device-scale-factor=1 --default-background-color=00000000
+
 # Target to check for npm
 check-npm:
 ifndef NPM
@@ -78,10 +82,20 @@ prereqs: check-npm  ## Install prerequisites (npm, hugo)
 	go install -tags extended github.com/gohugoio/hugo@latest
 	@echo "Prerequisites installed successfully"
 
-## Create logo
+## Create logo and square variant for Bluesky
 logo:
-	@echo "Creating logo..."
-	/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --headless --screenshot="static/img/social/goa-card.png" --window-size=1200,800 --default-background-color=00000000 --force-viewport-size=1200,800 file://$(PWD)/static/logo.html
+	@echo "Creating logos..."
+	mkdir -p static/img/social
+	# Generate card image
+	$(CHROME) $(CHROME_OPTS) --screenshot="static/img/social/goa-card-temp.png" \
+		--window-size=1200,800 file://$(PWD)/static/logo.html
+	convert static/img/social/goa-card-temp.png -gravity north -crop 1200x630+0+0 static/img/social/goa-card.png
+	rm static/img/social/goa-card-temp.png
+	# Generate square image
+	$(CHROME) $(CHROME_OPTS) --screenshot="static/img/social/goa-square-temp.png" \
+		--window-size=400,500 file://$(PWD)/static/logo-square.html
+	convert static/img/social/goa-square-temp.png -gravity north -crop 400x400+0+0 static/img/social/goa-square.png
+	rm static/img/social/goa-square-temp.png
 
 favicons: logo check-imagemagick
 	@echo "Generating favicons..."
