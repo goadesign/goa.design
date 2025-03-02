@@ -9,11 +9,18 @@ RESET := \033[0m
 
 # Check for required commands
 NPM := $(shell command -v npm 2> /dev/null)
+CONVERT := $(shell command -v convert 2> /dev/null)
 
 # Target to check for npm
 check-npm:
 ifndef NPM
 	$(error "npm is required but not installed. Please visit https://nodejs.org/ to install")
+endif
+
+# Target to check for ImageMagick
+check-imagemagick:
+ifndef CONVERT
+	$(error "ImageMagick is required but not installed. Please run: brew install imagemagick")
 endif
 
 ## Display this help message
@@ -75,5 +82,16 @@ prereqs: check-npm  ## Install prerequisites (npm, hugo)
 logo:
 	@echo "Creating logo..."
 	/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --headless --screenshot="static/img/social/goa-card.png" --window-size=1200,800 --default-background-color=00000000 --force-viewport-size=1200,800 file://$(PWD)/static/logo.html
+
+favicons: logo check-imagemagick
+	@echo "Generating favicons..."
+	mkdir -p static/favicons
+	convert static/img/social/goa-card.png -resize 16x16 static/favicons/favicon-16x16.png
+	convert static/img/social/goa-card.png -resize 32x32 static/favicons/favicon-32x32.png
+	convert static/img/social/goa-card.png -resize 192x192 static/favicons/android-chrome-192x192.png
+	convert static/img/social/goa-card.png -resize 512x512 static/favicons/android-chrome-512x512.png
+	convert static/img/social/goa-card.png -resize 180x180 static/favicons/apple-touch-icon.png
+	convert static/img/social/goa-card.png -resize 150x150 static/favicons/mstile-150x150.png
+	convert static/favicons/favicon-16x16.png static/favicons/favicon-32x32.png static/favicons/favicon.ico
 
 .DEFAULT_GOAL := help
