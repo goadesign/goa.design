@@ -71,4 +71,9 @@ prereqs: check-npm  ## Install prerequisites (npm, hugo)
 	go install -tags extended github.com/gohugoio/hugo@latest
 	@echo "Prerequisites installed successfully"
 
+## Create logo
+logo:
+	@echo "Creating logo..."
+	/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --headless --screenshot="static/img/social/goa-card.png" --window-size=1200,800 --default-background-color=00000000 --force-viewport-size=1200,800 file://$(PWD)/static/logo.html
+
 .DEFAULT_GOAL := help
