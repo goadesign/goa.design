@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    types: [closed]
+    branches:
+      - master
 
 jobs:
   flush-memcache:
+    # Skip if it's a closed PR that wasn't merged
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -18,4 +24,4 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           
       - name: Flush memcache
-        run: gcloud app instances flush-memcache
+        run: gcloud app memcache flush
