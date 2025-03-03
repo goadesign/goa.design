@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html style="width: 1000px; height: 250px;">
+<head>
+    <title>Goa Logo Banner</title>
+    <meta name="viewport" content="width=1000, height=250, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 1000px;
+            height: 250px;
+            overflow: hidden;
+            background: transparent;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gradient-box {
+            width: 600px;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: linear-gradient(90deg,
+                #5bc0eb 0%,
+                #5bc0eb 45%,
+                #fb4fcf 55%,
+                #fb4fcf 100%
+            );
+            border-radius: 40px;
+            overflow: hidden;
+        }
+        .logo-container {
+            width: 250px;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(60deg,
+                #5bc0eb 0%,
+                #5bc0eb 25%,
+                #9d89e8 50%,
+                #fb4fcf 75%,
+                #faff00 100%
+            );
+            border-radius: 50%;
+        }
+        .goa-logo {
+            width: 100%;
+            height: auto;
+            filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            transform: scale(1.2);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-box">
+        <div class="logo-container">
+            <img src="img/goa-logo.png" alt="Goa Design Logo" class="goa-logo">
+        </div>
+    </div>
+</body>
+</html>

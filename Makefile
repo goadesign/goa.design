@@ -82,7 +82,7 @@ prereqs: check-npm  ## Install prerequisites (npm, hugo)
 	go install -tags extended github.com/gohugoio/hugo@latest
 	@echo "Prerequisites installed successfully"
 
-## Create logo and square variant for Bluesky
+## Create logo and variants
 logo:
 	@echo "Creating logos..."
 	mkdir -p static/img/social
@@ -96,6 +96,11 @@ logo:
 		--window-size=400,500 file://$(PWD)/static/logo-square.html
 	convert static/img/social/goa-square-temp.png -gravity north -crop 400x400+0+0 static/img/social/goa-square.png
 	rm static/img/social/goa-square-temp.png
+	# Generate banner image
+	$(CHROME) $(CHROME_OPTS) --screenshot="static/img/social/goa-banner-temp.png" \
+		--window-size=1000,300 file://$(PWD)/static/logo-banner.html
+	convert static/img/social/goa-banner-temp.png -gravity north -crop 1000x250+0+0 static/img/social/goa-banner.png
+	rm static/img/social/goa-banner-temp.png
 
 favicons: logo check-imagemagick
 	@echo "Generating favicons..."
