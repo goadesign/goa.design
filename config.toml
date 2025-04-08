@@ -62,7 +62,7 @@ defaultContentLanguageInSubdir = true
   [params.links]
     [[params.links.user]]
       name = "Bluesky"
-      url = "https://bsky.app/profile/goa.design"
+      url = "https://bsky.app/profile/goadesign.bsky.social"
       icon = "fab fa-bluesky"
     [[params.links.user]]
       name = "Slack"
