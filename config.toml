@@ -66,7 +66,7 @@ defaultContentLanguageInSubdir = true
       icon = "fab fa-bluesky"
     [[params.links.user]]
       name = "Slack"
-      url = "https://slack.goa.design"
+      url = "https://gophers.slack.com/messages/goa"
       icon = "fab fa-slack"
     [[params.links.developer]]
       name = "Development takes place here!"
