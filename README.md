@@ -22,7 +22,7 @@ Run in a terminal:
 
 ```bash
 cd goa.design;
-docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -it golang:1.21.2 bash;
+docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -e BIND=0.0.0.0 -it golang:1.21.2 bash;
 # in the container:
 cd /go/src/app;
 make;

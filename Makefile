@@ -3,6 +3,9 @@
 # Default Hugo port
 PORT ?= 1313
 
+# Default HUGO bind interface
+BIND ?= localhost
+
 # Colors for help text
 BLUE := \033[34m
 RESET := \033[0m
@@ -53,8 +56,8 @@ start: setup serve
 
 ## Start the Hugo server with live reload
 serve:
-	@echo "Starting Hugo server on http://localhost:$(PORT)..."
-	hugo server -D -p $(PORT) --disableFastRender
+	@echo "Starting Hugo server on http://$(BIND):$(PORT)..."
+	hugo server -D --bind $(BIND) -p $(PORT) --disableFastRender
 
 ## Clean generated files (public/ and resources/)
 clean:
