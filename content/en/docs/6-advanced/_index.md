@@ -24,5 +24,10 @@ This section provides practical guidance for working with multiple services in r
 3. **Architecture Diagrams** - Explore how to create and maintain architecture diagrams using Model, an open
 source project for C4 modeling, and its integration with Goa through the model plugin.
 
+4. **Elegant Monolith** - Strategies to apply when using the elegant monolith architecture pattern.
+
+5. **Sticky Cookies** - This is required deployment technique when you do horizontal scaling of your services
+in case they are using streaming services / websockets.
+
 These advanced topics will help you leverage Goa's full potential in building complex, production-ready
 services.
