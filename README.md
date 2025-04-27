@@ -22,8 +22,10 @@ Run in a terminal:
 
 ```bash
 cd goa.design;
-docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -it golang:1.21.2 bash;
+docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -it golang:1.24.2 bash;
 # in the container:
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -;
+apt install -y nodejs;
 cd /go/src/app;
 make;
 ```
@@ -41,7 +43,7 @@ To remove the container:
 ```bash
 docker stop goadocs;
 docker rm goadocs;
-docker rmi golang:1.21.2;
+docker rmi golang:1.24.2;
 ```
 
 ## Translations
