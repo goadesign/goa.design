@@ -39,8 +39,14 @@ need to:
 - Implement custom streaming protocols
 - Process multimedia streams
 
+Using `ServerSentEvents` when you need to:
+
+- Implement server-to-client streaming over HTTP
+- Support browser-based clients with native EventSource API
+- Handle real-time notifications and updates
+
 Goa supports unidirectional and bidirectional streaming over different transport
-protocols, including HTTP (using WebSockets) and gRPC. By leveraging Goa's
+protocols, including HTTP (using WebSockets and SSE) and gRPC. By leveraging Goa's
 Domain-Specific Language (DSL), you can define streaming endpoints that are
 transport-agnostic, allowing seamless integration and flexibility in your
 service architecture.
@@ -52,6 +58,7 @@ service architecture.
 - **Transport Independence:** Defines streaming logic that works across multiple transport protocols without modification.
 - **Generated Stream Interfaces:** Automatically generates server and client stream interfaces based on your streaming definitions.
 - **Custom Views:** Supports multiple views for streamed results, providing flexibility in how data is presented to clients.
+- **Multiple Protocols:** Supports WebSocket, Server-Sent Events (SSE), and gRPC for streaming.
 
 ## Example Overview
 
@@ -162,3 +169,4 @@ sections will guide you through:
 - [Bidirectional Streaming](./5-bidirectional)
 - [Handling Multiple Views](./6-views)
 - [Stream raw binary data over HTTP](./7-raw-binary)
+- [Server-Sent Events](./8-sse)
