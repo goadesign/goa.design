@@ -339,6 +339,6 @@ resources:
 
 ## Next Steps
 
-- [JWT Authentication](../3-jwt.md) - Often used with OAuth2
-- [API Key Authentication](../2-api-key.md) - A simpler alternative
-- [Security Best Practices](../5-best-practices.md) - General security guidelines
+- [JWT Authentication](3-jwt.md) - Often used with OAuth2
+- [API Key Authentication](2-api-key.md) - A simpler alternative
+- [Security Best Practices](5-best-practices.md) - General security guidelines
