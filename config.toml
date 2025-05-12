@@ -97,7 +97,7 @@ defaultContentLanguageInSubdir = true
     id = "speakeasy"
     name = "Speakeasy"
     image = "/img/sponsors/speakeasy.png"
-    url = "https://www.speakeasyapi.dev/docs/api-frameworks/goa?utm_source=goa+repo&utm_medium=github+sponsorship"
+    url = "https://www.speakeasy.com/editor?utm_source=goa+repo&utm_medium=github+sponsorship"
 
   [[params.companies]]
     name = "Flexera"
