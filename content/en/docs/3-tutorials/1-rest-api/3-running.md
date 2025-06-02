@@ -13,10 +13,19 @@ run the Concerts service and test its endpoints.
 From your project root, build and run your app:
 
 ```bash
-go run concerts/cmd/concerts
+go run cmd/concerts/main.go
 ```
 
-The service listens on port 8080 by default (unless modified in `main.go`).
+The service listens on port 8080 by default (unless modified in `main.go`). You should see output like:
+
+```
+"List" mounted on GET /concerts
+"Create" mounted on POST /concerts
+"Show" mounted on GET /concerts/{concertID}
+"Update" mounted on PUT /concerts/{concertID}
+"Delete" mounted on DELETE /concerts/{concertID}
+Starting concerts service on :8080
+```
 
 ## 2. Test the Endpoints
 
@@ -42,17 +51,18 @@ Here's what we'll test:
 
 Let's create a new concert! This request sends a POST with the concert details
 in JSON format. The server will generate a unique ID and return the complete
-concert object:
+concert object.
 
+Note that prices are stored in cents (e.g., 8500 = $85.00):
 
 ```bash
 curl -X POST http://localhost:8080/concerts \
   -H "Content-Type: application/json" \
   -d '{
-    "artist": "The Rolling Stones",
-    "date": "2025-05-01",
-    "venue": "Wembley Stadium",
-    "price": 150
+    "artist": "The White Stripes",
+    "date": "2024-12-25",
+    "venue": "Madison Square Garden, New York, NY",
+    "price": 8500
   }'
 ```
 
@@ -64,8 +74,8 @@ curl -X POST http://localhost:8080/concerts \
   -d '{
     "artist": "Pink Floyd",
     "date": "2025-07-15", 
-    "venue": "Madison Square Garden",
-    "price": 200
+    "venue": "The O2 Arena, London, UK",
+    "price": 12000
   }'
 ```
 
@@ -73,8 +83,8 @@ curl -X POST http://localhost:8080/concerts \
 
 Get all concerts with optional pagination parameters:
 
-- `page`: Page number (default: 1)
-- `limit`: Results per page (default: 10, max: 100)
+- `page`: Page number (default: 1, minimum: 1)
+- `limit`: Results per page (default: 10, range: 1-100)
 
 The list endpoint supports pagination to help you manage large sets of concert data efficiently. You can control how many results you see per page and which page to view.
 
@@ -90,25 +100,57 @@ Get one result per page:
 curl "http://localhost:8080/concerts?page=1&limit=1"
 ```
 
+Get page 2 with 5 results:
+
+```bash
+curl "http://localhost:8080/concerts?page=2&limit=5"
+```
+
 ### Show a Concert
 
 When you need detailed information about a specific concert, use the show endpoint. This is useful for displaying individual concert details or verifying information after creation/updates.
 
-Replace `<concertID>` with an ID returned from create:
+Replace `<concertID>` with an ID returned from create (e.g., `550e8400-e29b-41d4-a716-446655440000`):
+
 ```bash
 curl http://localhost:8080/concerts/<concertID>
+```
+
+Example response:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "artist": "The White Stripes",
+  "date": "2024-12-25",
+  "venue": "Madison Square Garden, New York, NY",
+  "price": 8500
+}
 ```
 
 ### Update a Concert
 
 Need to change concert details? The update endpoint lets you modify existing concert information. You only need to include the fields you want to update - other fields will retain their current values.
 
+Update multiple fields:
+
 ```bash
 curl -X PUT http://localhost:8080/concerts/<concertID> \
   -H "Content-Type: application/json" \
   -d '{
-    "artist": "The Beatles",
-    "venue": "Madison Square Garden"
+    "artist": "The White Stripes",
+    "date": "2024-12-26",
+    "venue": "Madison Square Garden, New York, NY",
+    "price": 9000
+  }'
+```
+
+Update just the price:
+
+```bash
+curl -X PUT http://localhost:8080/concerts/<concertID> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "price": 9500
   }'
 ```
 
@@ -120,9 +162,53 @@ If a concert needs to be removed from the system (perhaps it was cancelled or en
 curl -X DELETE http://localhost:8080/concerts/<concertID>
 ```
 
-## 3. Access API Documentation
+## 3. Error Handling
 
-Goa automatically generates OpenAPI documentation for your API in both version 2.x and 3.0.0 formats. These files are located in the `gen/http/` directory.
+The API returns consistent error responses with appropriate HTTP status codes:
+
+### Not Found (404)
+When requesting a concert that doesn't exist:
+
+```bash
+curl http://localhost:8080/concerts/invalid-id
+```
+
+Response:
+```json
+{
+  "message": "Concert with ID invalid-id not found",
+  "code": "not_found"
+}
+```
+
+### Bad Request (400)
+When creating a concert with invalid data:
+
+```bash
+curl -X POST http://localhost:8080/concerts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "artist": "",
+    "date": "invalid-date",
+    "venue": "",
+    "price": -100
+  }'
+```
+
+The API will return validation errors for:
+- Empty artist names (must be 1-200 characters)
+- Invalid date formats (must be YYYY-MM-DD)
+- Empty venue names (must be 1-300 characters)
+- Negative prices (must be ≥ 0 and ≤ 100000 cents)
+
+## 4. Access API Documentation
+
+Goa automatically generates OpenAPI documentation for your API. Once your service is running, you can access the specifications directly:
+
+### OpenAPI Specifications
+
+- **OpenAPI 3.0 JSON**: `http://localhost:8080/openapi3.json`
+- **OpenAPI 3.0 YAML**: `http://localhost:8080/openapi3.yaml`
 
 ### Using Swagger UI
 

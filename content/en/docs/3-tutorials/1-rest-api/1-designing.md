@@ -29,158 +29,219 @@ cd concerts
 go mod init concerts
 ```
 
-Create a new file at `design/concerts.go` with the following content:
+Create a new file at `design/design.go` with the following content:
 
 ```go
 package design
 
 import (
-  . "goa.design/goa/v3/dsl"
+	. "goa.design/goa/v3/dsl"
 )
+
+// API definition
+var _ = API("concerts", func() {
+	Title("Concert Management API")
+	Description("A simple API for managing music concert information")
+	Version("1.0")
+
+	Server("concerts", func() {
+		Description("Concert management server")
+		Host("localhost", func() {
+			URI("http://localhost:8080")
+		})
+	})
+})
 
 // Service definition
 var _ = Service("concerts", func() {
-  Description("The concerts service manages music concert data.")
+	Description("The concerts service manages music concert data. It provides CRUD operations for concert information including artist details, venues, dates, and pricing.")
 
-  Method("list", func() {
-    Description("List upcoming concerts with optional pagination.")
-    
-    Payload(func() {
-      Attribute("page", Int, "Page number", func() {
-        Minimum(1)
-        Default(1)
-      })
-      Attribute("limit", Int, "Items per page", func() {
-        Minimum(1)
-        Maximum(100)
-        Default(10)
-      })
-    })
+	Method("list", func() {
+		Description("List concerts with optional pagination. Returns an array of concerts sorted by date.")
+		Meta("openapi:summary", "List all concerts")
 
-    Result(ArrayOf(Concert))
+		Payload(func() {
+			Attribute("page", Int, "Page number for pagination", func() {
+				Minimum(1)
+				Default(1)
+				Example(1)
+				Description("Must be 1 or greater")
+			})
+			Attribute("limit", Int, "Number of items per page", func() {
+				Minimum(1)
+				Maximum(100)
+				Default(10)
+				Example(10)
+				Description("Must be between 1 and 100")
+			})
+		})
 
-    HTTP(func() {
-      GET("/concerts")
+		Result(ArrayOf(Concert), func() {
+			Description("Array of concerts")
+		})
 
-      // Query parameters for pagination
-      Param("page", Int, "Page number", func() {
-        Minimum(1)
-      })
-      Param("limit", Int, "Number of items per page", func() {
-        Minimum(1)
-        Maximum(100)
-      })
+		HTTP(func() {
+			GET("/concerts")
 
-      Response(StatusOK) // No need to specify the Body, it's inferred from the Result
-    })
-  })
+			Param("page", Int, "Page number", func() {
+				Minimum(1)
+				Example(1)
+			})
+			Param("limit", Int, "Number of items per page", func() {
+				Minimum(1)
+				Maximum(100)
+				Example(10)
+			})
 
-  Method("create", func() {
-    Description("Create a new concert entry.")
-    
-    Payload(ConcertPayload)
-    Result(Concert)
+			Response(StatusOK)
+		})
+	})
 
-    HTTP(func() {
-      POST("/concerts")
-      Response(StatusCreated)
-    })
-  })
+	Method("create", func() {
+		Description("Create a new concert entry. All fields are required to ensure complete concert information.")
+		Meta("openapi:summary", "Create a new concert")
 
-  Method("show", func() {
-    Description("Get a single concert by ID.")
-    
-    Payload(func() {
-      Attribute("concertID", String, "Concert UUID", func() {
-        Format(FormatUUID)
-      })
-      Required("concertID")
-    })
+		Payload(ConcertPayload, "Concert information to create")
 
-    Result(Concert)
-    Error("not_found")
+		Result(Concert, "The newly created concert")
 
-    HTTP(func() {
-      GET("/concerts/{concertID}")
-      Response(StatusOK)
-      Response("not_found", StatusNotFound)
-    })
-  })
+		Error("bad_request", ErrorResult, "Invalid input data provided")
 
-  Method("update", func() {
-    Description("Update an existing concert by ID.")
+		HTTP(func() {
+			POST("/concerts")
 
-    Payload(func() {
-      Extend(ConcertPayload)
-      Attribute("concertID", String, "ID of the concert to update.", func() {
-        Format(FormatUUID)
-      })
-      Required("concertID")
-    })
+			Response(StatusCreated)
+			Response("bad_request", StatusBadRequest)
+		})
+	})
 
-    Result(Concert, "The updated concert.")
+	Method("show", func() {
+		Description("Get a single concert by its unique ID.")
+		Meta("openapi:summary", "Get concert by ID")
 
-    Error("not_found", ErrorResult, "Concert not found")
+		Payload(func() {
+			Attribute("concertID", String, "Unique concert identifier", func() {
+				Format(FormatUUID)
+				Example("550e8400-e29b-41d4-a716-446655440000")
+			})
+			Required("concertID")
+		})
 
-    HTTP(func() {
-      PUT("/concerts/{concertID}")
+		Result(Concert, "The requested concert")
 
-      Response(StatusOK)
-      Response("not_found", StatusNotFound)
-    })
-  })
+		Error("not_found", ErrorResult, "Concert with the specified ID was not found")
 
-  Method("delete", func() {
-    Description("Remove a concert from the system by ID.")
+		HTTP(func() {
+			GET("/concerts/{concertID}")
 
-    Payload(func() {
-      Attribute("concertID", String, "ID of the concert to remove.", func() {
-        Format(FormatUUID)
-      })
-      Required("concertID")
-    })
+			Response(StatusOK)
+			Response("not_found", StatusNotFound)
+		})
+	})
 
-    Error("not_found", ErrorResult, "Concert not found")
+	Method("update", func() {
+		Description("Update an existing concert by ID. Only provided fields will be updated.")
+		Meta("openapi:summary", "Update concert")
 
-    HTTP(func() {
-      DELETE("/concerts/{concertID}")
+		Payload(func() {
+			Extend(ConcertData)
+			Attribute("concertID", String, "ID of the concert to update", func() {
+				Format(FormatUUID)
+				Example("550e8400-e29b-41d4-a716-446655440000")
+			})
+			Required("concertID")
+		})
 
-      Response(StatusNoContent)
-      Response("not_found", StatusNotFound)
-    })
-  })
+		Result(Concert, "The updated concert with all current information")
+
+		Error("not_found", ErrorResult, "Concert with the specified ID was not found")
+		Error("bad_request", ErrorResult, "Invalid update data provided")
+
+		HTTP(func() {
+			PUT("/concerts/{concertID}")
+
+			Response(StatusOK)
+			Response("not_found", StatusNotFound)
+			Response("bad_request", StatusBadRequest)
+		})
+	})
+
+	Method("delete", func() {
+		Description("Remove a concert from the system by ID. This operation cannot be undone.")
+		Meta("openapi:summary", "Delete concert")
+
+		Payload(func() {
+			Attribute("concertID", String, "ID of the concert to remove", func() {
+				Format(FormatUUID)
+				Example("550e8400-e29b-41d4-a716-446655440000")
+			})
+			Required("concertID")
+		})
+
+		Error("not_found", ErrorResult, "Concert with the specified ID was not found")
+
+		HTTP(func() {
+			DELETE("/concerts/{concertID}")
+
+			Response(StatusNoContent)
+			Response("not_found", StatusNotFound)
+		})
+	})
 })
 
 // Data Types
-var ConcertPayload = Type("ConcertPayload", func() {
-  Description("Data needed to create/update a concert.")
+var ConcertData = Type("ConcertData", func() {
+	Description("Concert information fields.")
 
-  Attribute("artist", String, "Performing artist/band", func() {
-    MinLength(1)
-    Example("The Beatles")
-  })
-  Attribute("date", String, "Concert date (YYYY-MM-DD)", func() {
-    Pattern(`^\d{4}-\d{2}-\d{2}$`)
-    Example("2024-01-01")
-  })
-  Attribute("venue", String, "Concert venue", func() {
-    MinLength(1)
-    Example("The O2 Arena")
-  })
-  Attribute("price", Int, "Ticket price (USD)", func() {
-    Minimum(1)
-    Example(100)
-  })
+	Attribute("artist", String, "Name of the performing artist or band", func() {
+		MinLength(1)
+		MaxLength(200)
+		Example("The White Stripes")
+		Description("The main performer for this concert")
+	})
+
+	Attribute("date", String, "Concert date in ISO 8601 format (YYYY-MM-DD)", func() {
+		Format(FormatDate)
+		Example("2024-12-25")
+		Description("The date when the concert will take place")
+	})
+
+	Attribute("venue", String, "Name and location of the concert venue", func() {
+		MinLength(1)
+		MaxLength(300)
+		Example("Madison Square Garden, New York, NY")
+		Description("The venue where the concert will be held")
+	})
+
+	Attribute("price", Int, "Ticket price in US dollars (cents)", func() {
+		Minimum(0)
+		Maximum(100000) // $1000 max
+		Example(7500)   // $75.00
+		Description("Base ticket price in cents (e.g., 7500 = $75.00)")
+	})
+})
+
+var ConcertPayload = Type("ConcertPayload", func() {
+	Description("Concert information required for creating a new concert entry.")
+
+	Extend(ConcertData)
+
+	// All fields required for creation
+	Required("artist", "date", "venue", "price")
 })
 
 var Concert = Type("Concert", func() {
-  Description("A concert with all its details.")
-  Extend(ConcertPayload)
-  
-  Attribute("id", String, "Unique concert ID", func() {
-    Format(FormatUUID)
-  })
-  Required("id", "artist", "date", "venue", "price")
+	Description("Complete concert information including system-generated ID.")
+
+	Attribute("id", String, "Unique concert identifier", func() {
+		Format(FormatUUID)
+		Example("550e8400-e29b-41d4-a716-446655440000")
+		Description("System-generated unique identifier")
+	})
+
+	Extend(ConcertData)
+
+	Required("id", "artist", "date", "venue", "price")
 })
 ```
 
@@ -191,13 +252,21 @@ the [Goa DSL documentation](https://pkg.go.dev/goa.design/goa/v3/dsl). Each
 function is thoroughly documented with detailed explanations and practical
 examples.
 
-### 1. Basic Structure
-The design consists of three main parts:
-- Service definition (`Service("concerts")`)
-- Methods (`list`, `create`, `show`, etc.)
-- Data types (`Concert` and `ConcertPayload`)
+### 1. API Definition
+The design starts with an API definition that sets up the overall service:
+- **Title and Description**: Clear identification of what the API does
+- **Version**: API version for client compatibility
+- **Server Configuration**: Default host and port settings
 
-### 2. Key Features
+### 2. Service Structure
+The service consists of five main methods that follow RESTful conventions:
+- **list**: GET `/concerts` with pagination support
+- **create**: POST `/concerts` to add new concerts
+- **show**: GET `/concerts/{id}` to retrieve specific concerts
+- **update**: PUT `/concerts/{id}` to modify concerts
+- **delete**: DELETE `/concerts/{id}` to remove concerts
+
+### 3. Key Features
 
 #### HTTP Mappings
 Our API follows RESTful conventions with intuitive HTTP mappings:
@@ -209,24 +278,35 @@ Our API follows RESTful conventions with intuitive HTTP mappings:
 - Path parameters capture resource IDs (e.g., `/concerts/{concertID}`)
 
 #### Data Validation
-Goa provides built-in validation to ensure data integrity:
-- Concert IDs must be valid UUIDs
-- Artist and venue names can't be empty
-- Concert dates must follow the YYYY-MM-DD format
-- Ticket prices must be positive numbers
-- Pagination parameters have sensible limits (e.g., max 100 items per page)
+Goa provides comprehensive built-in validation:
+- **Concert IDs**: Must be valid UUIDs with examples provided
+- **Artist names**: 1-200 characters with meaningful examples
+- **Concert dates**: ISO 8601 format (YYYY-MM-DD) validation
+- **Venues**: 1-300 characters for full venue descriptions
+- **Ticket prices**: Non-negative integers, maximum $1000 (stored in cents)
+- **Pagination**: Page ≥ 1, Limit 1-100 with sensible defaults
 
 #### Error Handling
 The API handles errors gracefully with:
-- Named error types that clearly indicate what went wrong (e.g., "not_found")
-- Appropriate HTTP status codes (404 for not found, 201 for creation, etc.)
-- Consistent error response format across all endpoints
+- **Named error types**: `not_found` and `bad_request` with clear descriptions
+- **Appropriate HTTP status codes**: 404 for not found, 400 for bad requests, etc.
+- **Consistent error response format** using `ErrorResult`
+- **Detailed error messages** for better debugging
 
-#### Type Reuse
-We've structured our types to avoid duplication:
-- `ConcertPayload` defines the common fields needed for creation/updates
-- `Concert` extends `ConcertPayload` and adds the ID field
-- This approach ensures consistency between input and stored data
+#### Type Architecture
+The design uses a layered type approach for maximum flexibility:
+- **ConcertData**: Base type with all concert fields, no required constraints
+- **ConcertPayload**: For creation - extends base type and requires all fields
+- **Concert**: For responses - complete concert with ID and all details
+
+This structure allows creation payloads to require complete data while update payloads can be partial, providing a clean and intuitive API experience.
+
+#### OpenAPI Integration
+The design includes OpenAPI-specific metadata:
+- **Summary annotations** for better documentation
+- **Detailed descriptions** for each endpoint and field
+- **Examples** that appear in generated documentation
+- **Clear parameter descriptions** for API consumers
 
 ## Next Steps
 
