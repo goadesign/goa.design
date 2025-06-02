@@ -21,7 +21,7 @@ The tutorial demonstrates Goa's approach to:
 - **Strong typing** that catches issues at compile time
 
 > **📚 Working Example**: This tutorial uses the same code as the
-> [concerts example](https://github.com/goadesign/examples/tree/main/concerts)
+> [concerts example](https://github.com/goadesign/examples/tree/master/concerts)
 > in the official Goa examples repository. You can reference the complete
 > working code at any time.
 
