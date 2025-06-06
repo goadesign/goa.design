@@ -57,7 +57,7 @@ Domain errors should:
 ### Custom Error Types (Optional)
 
 For cases where additional structured error data is needed, you can define custom error types. See the
-[main error handling documentation](../_index.md#custom-error-types) for detailed information about
+[main error handling documentation](_index.md#custom-error-types) for detailed information about
 custom error types, including important requirements for the `name` field and the `struct:error:name`
 metadata.
 
