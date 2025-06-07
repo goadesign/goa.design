@@ -23,7 +23,7 @@ Goaは、開発者とコントリビューターの活気あるコミュニテ�
 * [プルリクエスト](https://github.com/goadesign/goa)を通じて改善を提案する
 * [Issues](https://github.com/goadesign/goa/issues)でバグを報告し、機能を提案してGoaの改善に協力する
 
-詳細については[Goaへの貢献](/docs/ja/7-community/1-contributing)をご覧ください。
+詳細については[Goaへの貢献](1-contributing)をご覧ください。
 
 ## つながりを保つ
 

@@ -23,7 +23,7 @@ Goa prospera attraverso la sua vivace comunità di sviluppatori e contributori. 
 * Invia miglioramenti attraverso [Pull Request](https://github.com/goadesign/goa)
 * Aiuta a migliorare Goa segnalando bug e suggerendo funzionalità nelle [Issues](https://github.com/goadesign/goa/issues)
 
-Vedi [Contribuire a Goa](/docs/it/7-community/1-contributing) per maggiori dettagli.
+Vedi [Contribuire a Goa](1-contributing) per maggiori dettagli.
 
 ## Rimani Connesso
 
