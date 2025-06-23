@@ -51,7 +51,7 @@ handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 })
 
 // Add tracing middleware
-handler = otelhttp.NewHandler(handler, "my-service")
+mux.Use(otelhttp.NewMiddleware("my-service"))
 
 // The middleware will:
 // - Create a span for each request

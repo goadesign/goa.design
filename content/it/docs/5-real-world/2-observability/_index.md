@@ -171,9 +171,9 @@ func main() {
     debug.MountPprofHandlers(debug.Adapt(mux))    // Endpoint profiling Go
     
     // Aggiungi middleware nell'ordine corretto:
-    handler := otelhttp.NewHandler(mux, serviceName)  // 3. OpenTelemetry
-    handler = debug.HTTP()(handler)                   // 2. Endpoint debug
-    handler = log.HTTP(ctx)(handler)                  // 1. Logging richieste
+    mux.Use(otelhttp.NewMiddleware(serviceName)) // 3. OpenTelemetry
+    mux.Use(debug.HTTP())                        // 2. Endpoint debug
+    mux.Use(log.HTTP(ctx))                       // 1. Logging richieste
 
     // 6. Monta controlli di salute su porta separata
     check := health.Handler(health.NewChecker(

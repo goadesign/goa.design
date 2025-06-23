@@ -34,15 +34,11 @@ func ExampleMiddleware(next http.Handler) http.Handler {
 典型的なGoaサービスは以下のミドルウェアスタックを使用します：
 
 ```go
-// ベースとなるHTTPハンドラーを作成
-handler := mux
-
-// 標準的なミドルウェアチェーンを追加
-handler = debug.HTTP()(handler)                    // デバッグログ制御
-handler = otelhttp.NewHandler(handler, "service")  // OpenTelemetry計装
-handler = log.HTTP(ctx)(handler)                   // リクエストログ
-handler = goahttpmiddleware.RequestID()(handler)   // リクエストID生成
-handler = goahttpmiddleware.PopulateRequestContext()(handler)  // Goaコンテキスト設定
+mux.Use(debug.HTTP())                               // デバッグログ制御
+mux.Use(otelhttp.NewMiddleware("service"))          // OpenTelemetry計装
+mux.Use(log.HTTP(ctx))                              // リクエストログ
+mux.Use(goahttpmiddleware.RequestID())              // リクエストID生成
+mux.Use(goahttpmiddleware.PopulateRequestContext()) // Goaコンテキスト設定
 ```
 
 ## 重要なミドルウェアの種類
@@ -53,12 +49,12 @@ handler = goahttpmiddleware.PopulateRequestContext()(handler)  // Goaコンテ�
 
 ```go
 // パスフィルタリング付きのロギングミドルウェア
-handler = log.HTTP(ctx, 
-    log.WithPathFilter(regexp.MustCompile(`^/(healthz|metrics)$`)))(handler)
+mux.Use(log.HTTP(ctx, 
+    log.WithPathFilter(regexp.MustCompile(`^/(healthz|metrics)$`))))
 
 // OpenTelemetryトレーシングミドルウェア
-handler = otelhttp.NewHandler(handler, "service-name",
-    otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents))
+mux.Use(otelhttp.NewMiddleware("service-name",
+    otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents)))
 ```
 
 ### 2. コンテキスト管理
@@ -179,16 +175,15 @@ func main() {
     genhttp.Mount(mux, server)
     
     // 3. ミドルウェアスタックを追加
-    handler := mux
-    handler = debug.HTTP()(handler)                // デバッグログ
-    handler = otelhttp.NewHandler(handler, "svc")  // トレーシング
-    handler = log.HTTP(ctx)(handler)               // リクエストログ
-    handler = goahttpmiddleware.RequestID()(handler) // リクエストID
+    mux.Use(debug.HTTP())                  // デバッグログ
+    mux.Use(otelhttp.NewMiddleware("svc")) // トレーシング
+    mux.Use(log.HTTP(ctx))                 // リクエストログ
+    mux.Use(goahttpmiddleware.RequestID()) // リクエストID
     
     // 4. タイムアウト付きのHTTPサーバーを作成
     httpServer := &http.Server{
         Addr:              ":8080",
-        Handler:           handler,
+        Handler:           mux,
         ReadHeaderTimeout: 10 * time.Second,
         WriteTimeout:      30 * time.Second,
         IdleTimeout:       120 * time.Second,

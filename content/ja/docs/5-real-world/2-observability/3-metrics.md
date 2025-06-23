@@ -150,7 +150,7 @@ Clueは、サービスのいくつかの重要なメトリクスを自動的に�
 ### HTTPサーバーメトリクス
 HTTPハンドラーをOpenTelemetryミドルウェアでラップすると：
 ```go
-handler = otelhttp.NewHandler(handler, "service")
+mux.Use(otelhttp.NewMiddleware(handler, "service"))
 ```
 
 以下が自動的に取得されます：

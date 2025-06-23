@@ -155,7 +155,7 @@ visibilità immediata senza scrivere codice:
 ### Metriche Server HTTP
 Quando avvolgi i tuoi handler HTTP con il middleware OpenTelemetry:
 ```go
-handler = otelhttp.NewHandler(handler, "service")
+mux.Use(otelhttp.NewMiddleware("service"))
 ```
 
 Ottieni automaticamente:

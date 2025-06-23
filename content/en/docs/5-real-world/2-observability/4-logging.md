@@ -266,7 +266,7 @@ Add logging to HTTP handlers to track requests and responses:
 ```go
 // Basic logging middleware
 // Automatically logs request start/end and duration
-handler = log.HTTP(ctx)(handler)
+mux.Use(log.HTTP(ctx))
 
 // Custom middleware with detailed logging
 func loggingMiddleware(next http.Handler) http.Handler {

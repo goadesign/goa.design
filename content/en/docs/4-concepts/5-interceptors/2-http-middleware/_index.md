@@ -31,15 +31,11 @@ func ExampleMiddleware(next http.Handler) http.Handler {
 A typical Goa service uses the following middleware stack:
 
 ```go
-// Create base HTTP handler
-handler := mux
-
-// Add standard middleware chain
-handler = debug.HTTP()(handler)                    // Debug logging control
-handler = otelhttp.NewHandler(handler, "service")  // OpenTelemetry instrumentation
-handler = log.HTTP(ctx)(handler)                   // Request logging
-handler = goahttpmiddleware.RequestID()(handler)   // Request ID generation
-handler = goahttpmiddleware.PopulateRequestContext()(handler)  // Goa context population
+mux.Use(debug.HTTP())                               // Debug logging control
+mux.Use(otelhttp.NewMiddleware("service"))          // OpenTelemetry instrumentation
+mux.Use(log.HTTP(ctx))                              // Request logging
+mux.Use(goahttpmiddleware.RequestID())              // Request ID generation
+mux.Use(goahttpmiddleware.PopulateRequestContext()) // Goa context population
 ```
 
 ## Essential Middleware Types
@@ -50,12 +46,12 @@ Handles logging, metrics, and tracing:
 
 ```go
 // Logging middleware with path filtering
-handler = log.HTTP(ctx, 
-    log.WithPathFilter(regexp.MustCompile(`^/(healthz|metrics)$`)))(handler)
+mux.Use(log.HTTP(ctx, 
+    log.WithPathFilter(regexp.MustCompile(`^/(healthz|metrics)$`))))
 
 // OpenTelemetry tracing middleware
-handler = otelhttp.NewHandler(handler, "service-name",
-    otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents))
+mux.Use(otelhttp.NewMiddleware("service-name",
+    otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents)))
 ```
 
 ### 2. Context Management
@@ -176,16 +172,15 @@ func main() {
     genhttp.Mount(mux, server)
     
     // 3. Add middleware stack
-    handler := mux
-    handler = debug.HTTP()(handler)                // Debug logging
-    handler = otelhttp.NewHandler(handler, "svc")  // Tracing
-    handler = log.HTTP(ctx)(handler)               // Request logging
-    handler = goahttpmiddleware.RequestID()(handler) // Request ID
+    mux.Use(debug.HTTP())                  // Debug logging
+    mux.Use(otelhttp.NewMiddleware("svc")) // Tracing
+    mux.Use(log.HTTP(ctx))                 // Request logging
+    mux.Use(goahttpmiddleware.RequestID()) // Request ID
     
     // 4. Create HTTP server with timeouts
     httpServer := &http.Server{
         Addr:              ":8080",
-        Handler:           handler,
+        Handler:           mux,
         ReadHeaderTimeout: 10 * time.Second,
         WriteTimeout:      30 * time.Second,
         IdleTimeout:       120 * time.Second,

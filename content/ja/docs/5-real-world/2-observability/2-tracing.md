@@ -50,7 +50,7 @@ handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 })
 
 // トレーシングミドルウェアを追加
-handler = otelhttp.NewHandler(handler, "my-service")
+mux.Use(otelhttp.NewMiddleware("my-service"))
 
 // ミドルウェアは以下を行います：
 // - 各リクエストのスパンを作成
