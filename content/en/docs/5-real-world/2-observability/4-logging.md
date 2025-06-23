@@ -59,7 +59,7 @@ ctx := log.Context(context.Background(),
     log.WithDisableBuffering(log.IsTracing))
 
 // Add common fields that will be included in all logs
-ctx = log.With(ctx, 
+ctx = log.With(ctx,
     log.KV{"service", "myservice"},  // Service name for filtering
     log.KV{"env", "production"})     // Environment for context
 ```
@@ -73,7 +73,7 @@ log aggregation and analysis tools.
 For local development convenience, logs are directed to standard output where
 they can be easily viewed in the terminal. The smart buffering system
 automatically adjusts based on whether a request is being traced, optimizing for
-both performance and observability. 
+both performance and observability.
 
 Finally, the setup includes common fields that will be added to every log entry,
 providing consistent context for filtering and analysis. These fields, like
@@ -272,18 +272,18 @@ handler = log.HTTP(ctx)(handler)
 func loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         ctx := r.Context()
-        
+
         // Log request details at start
         log.Info(ctx, "request started",
             log.KV{"method", r.Method},
             log.KV{"path", r.URL.Path},
             log.KV{"user_agent", r.UserAgent()})
-            
+
         start := time.Now()
         sw := &statusWriter{ResponseWriter: w}
-        
+
         next.ServeHTTP(sw, r)
-        
+
         // Log response details and duration
         log.Info(ctx, "request completed",
             log.KV{"status", sw.status},
@@ -400,7 +400,76 @@ capabilities. It tracks important metrics like request duration and helps you
 identify performance bottlenecks in your services. This comprehensive approach
 to logging and monitoring helps teams maintain reliable and performant services.
 
-## Best Practices
+## Grafana / Loki / Promtail Hints and Pitfalls
+
+If you do backend development using golang / goa, you very likely use Kubernetes,
+Prometheus, Loki, Promtail and Grafana.
+
+Let's assume you are using the official helm charts: <https://github.com/grafana/helm-charts/>
+
+Loki: Storage (this has the indexed labels)
+Promtail: Tool that scans your log files and sends the labels to Loki
+Grafana: Tool to access (via a UI) Datasources (such as Prometheus) or Loki for your logs.
+
+In you microservice you want to use Clue's logger with fields and want to log some keys that
+you later need for debugging your microservices e.g. customer_id, job_id, etc.
+
+This is an example:
+
+```json
+{"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe","msg":"this is a dummy log message to test the logger for promtail (labels)"}
+```
+
+So how do we index them via the promtail configuration?
+
+You are facing the problem that your kubernetes might not create a 100% json log:
+
+```bash
+tail -n1 /var/log/pods/my-app_my-service-chart-aaa-ccc-foo/chart/0.log
+2025-06-14T20:10:56.382822108Z stdout F {"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe","msg":"this is a dummy log message to test the logger for promtail (labels)"}
+```
+
+Unfortunately this can't be directly handled via the promtail json parser. So how do we solve this?
+
+Assumption, you install promtail via:
+
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm show values grafana/promtail
+helm upgrade --install --values values.yaml promtail grafana/promtail -n monitoring
+```
+
+You can add to your values.yml the following section
+
+```yml
+config:
+  clients:
+    # 'monitoring' in this case is the Namespace where you installed loki
+    # (change this to your needs)
+    - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push
+
+  snippets:
+    pipelineStages:
+      # this will cut the header and just use the json for the processing
+      - regex:
+          expression: '^[^ ]+ [^ ]+ [^ ]+ (?P<json_log>{.*})'
+      - json:
+          source: json_log
+          expressions:
+            account_id: account_id
+            project_id: project_id
+            job_id: job_id
+      - labels:
+          account_id:
+          job_id:
+          project_id:
+```
+
+You can now use `account_id` etc. within a Grafana query.
+
+**Hint**: Keep in mind, labels like this come with disk size (do some math about the retention time).
+
+## Best Practice
 
 1. **Log Levels**:
    - Use INFO for normal operations that need to be audited
