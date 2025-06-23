@@ -134,9 +134,9 @@ debug.MountDebugLogEnabler(debug.Adapt(mux))  // Dynamic log level control
 debug.MountPprofHandlers(debug.Adapt(mux))    // Go profiling endpoints
 
 // Add middleware in correct order (inside to out):
-mux.Use(otelhttp.NewMiddleware(serviceName) // 3. OpenTelemetry
-mux.Use(debug.HTTP())                       // 2. Debug endpoints
-mux.Use(log.HTTP(ctx))                      // 1. Request logging
+mux.Use(otelhttp.NewMiddleware(serviceName)) // 3. OpenTelemetry
+mux.Use(debug.HTTP())                        // 2. Debug endpoints
+mux.Use(log.HTTP(ctx))                       // 1. Request logging
 
 // Create server with the instrumented handler
 server := &http.Server{
