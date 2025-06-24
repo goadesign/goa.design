@@ -31,7 +31,7 @@ debug.MountDebugLogEnabler(mux)
 
 // HTTPハンドラーにデバッグミドルウェアを追加
 // HTTPリクエストの動的デバッグログを有効化
-handler = debug.HTTP()(handler)
+mux.Use(debug.HTTP())
 
 // gRPCサーバーにデバッグインターセプターを追加
 // gRPC呼び出しの動的デバッグログを有効化

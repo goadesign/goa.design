@@ -133,14 +133,14 @@ debug.MountDebugLogEnabler(debug.Adapt(mux))  // 動的ログレベル制御
 debug.MountPprofHandlers(debug.Adapt(mux))    // Goプロファイリングエンドポイント
 
 // 正しい順序でミドルウェアを追加（内側から外側）：
-handler := otelhttp.NewHandler(mux, serviceName)  // 3. OpenTelemetry
-handler = debug.HTTP()(handler)                   // 2. デバッグエンドポイント
-handler = log.HTTP(ctx)(handler)                  // 1. リクエストロギング
+mux.Use(otelhttp.NewMiddleware(serviceName)) // 3. OpenTelemetry
+mux.Use(debug.HTTP())                        // 2. デバッグエンドポイント
+mux.Use(log.HTTP(ctx))                       // 1. リクエストロギング
 
 // 計装されたハンドラーでサーバーを作成
 server := &http.Server{
 	Addr:         *httpAddr,
-	Handler:      handler,
+	Handler:      mux,
 	ReadTimeout:  15 * time.Second,
 	WriteTimeout: 15 * time.Second,
 }

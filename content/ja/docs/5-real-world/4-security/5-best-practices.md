@@ -76,26 +76,25 @@ func main() {
     // サービスとエンドポイントを作成
     svc := NewService()
     endpoints := gen.NewEndpoints(svc)
-    
+
     mux := goahttp.NewMuxer()
-    
+
     // サーバーを作成
     server := gen.NewServer(endpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
-    
+
     // 生成されたハンドラーをマウント
     gen.Mount(mux, server)
-    
+
     // サーバーハンドラーチェーンにミドルウェアを追加
-    var handler http.Handler = mux
-    handler = RateLimiter(rate.Every(time.Second/100), 10)(handler) // 100リクエスト/秒
-    handler = log.HTTP(ctx)(handler)                                // ログを追加
-    
+    mux.Use(RateLimiter(rate.Every(time.Second/100), 10)) // 100リクエスト/秒
+    mux.Use(log.HTTP(ctx))                                // ログを追加
+
     // HTTPサーバーを作成して起動
     srv := &http.Server{
         Addr:    ":8080",
-        Handler: handler,
+        Handler: mux,
     }
-    
+
     // ... グレースフルシャットダウンのコード ...
 }
 ```
@@ -403,10 +402,10 @@ func main() {
     // ... その他のセットアップ ...
     
     // セキュリティヘッダーを追加
-    handler = SecurityHeaders(handler)
+    mux.Use(SecurityHeaders(handler))
     
     srv := &http.Server{
-        Handler: handler,
+        Handler: mux,
         // ... その他の設定 ...
     }
 }

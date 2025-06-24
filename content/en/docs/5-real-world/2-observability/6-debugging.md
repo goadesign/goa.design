@@ -33,7 +33,7 @@ debug.MountDebugLogEnabler(mux)
 
 // Add debug middleware to HTTP handlers
 // This enables dynamic debug logging for HTTP requests
-handler = debug.HTTP()(handler)
+mux.Use(debug.HTTP())
 
 // Add debug interceptor to gRPC server
 // This enables dynamic debug logging for gRPC calls

@@ -270,7 +270,7 @@ Aggiungi logging agli handler HTTP per tracciare richieste e risposte:
 ```go
 // Middleware di logging base
 // Logga automaticamente inizio/fine richiesta e durata
-handler = log.HTTP(ctx)(handler)
+mux.Use(log.HTTP(ctx))
 
 // Middleware personalizzato con logging dettagliato
 func loggingMiddleware(next http.Handler) http.Handler {

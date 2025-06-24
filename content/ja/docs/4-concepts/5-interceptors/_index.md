@@ -67,14 +67,13 @@ func main() {
     mux := goahttp.NewMuxer()
     
     // 内側から外側へミドルウェアチェーンを構築
-    handler := mux
     
     // OpenTelemetryで可観測性を追加
-    handler = otelhttp.NewHandler(handler, "payment-svc")
+    mux.Use(otelhttp.NewMiddleware("payment-svc"))
     
     // デバッグツールとロギングを有効化
-    handler = debug.HTTP()(handler)
-    handler = log.HTTP(ctx)(handler)
+    mux.Use(debug.HTTP())
+    mux.Use(log.HTTP(ctx))
     
     // ランタイム制御用のデバッグエンドポイントをマウント
     debug.MountDebugLogEnabler(debug.Adapt(mux))

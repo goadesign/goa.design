@@ -149,7 +149,7 @@ you immediate visibility without writing any code:
 ### HTTP Server Metrics
 When you wrap your HTTP handlers with OpenTelemetry middleware:
 ```go
-handler = otelhttp.NewHandler(handler, "service")
+mux.Use(otelhttp.NewMiddleware("service"))
 ```
 
 You automatically get:

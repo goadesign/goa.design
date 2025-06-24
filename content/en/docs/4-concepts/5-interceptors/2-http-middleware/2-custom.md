@@ -267,17 +267,16 @@ func main() {
     genhttp.Mount(mux, server)
     
     // Build middleware chain from outermost to innermost
-    handler := mux
-    handler = AuthorizationCookieMiddleware(handler)
-    handler = OrganizationMiddleware(orgService)(handler)
-    handler = TimeoutMiddleware(30 * time.Second)(handler)
-    handler = PathFilterMiddleware(handler)
-    handler = MetricsMiddleware(handler)
+    mux.Use(AuthorizationCookieMiddleware)
+    mux.Use(OrganizationMiddleware(orgService))
+    mux.Use(TimeoutMiddleware(30 * time.Second))
+    mux.Use(PathFilterMiddleware)
+    mux.Use(MetricsMiddleware)
     
     // Create server with timeouts
     httpServer := &http.Server{
         Addr:              ":8080",
-        Handler:           handler,
+        Handler:           mux,
         ReadHeaderTimeout: 10 * time.Second,
         WriteTimeout:      30 * time.Second,
         IdleTimeout:       120 * time.Second,

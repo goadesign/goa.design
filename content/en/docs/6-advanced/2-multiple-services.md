@@ -345,10 +345,10 @@ func main() {
     }
 
     // Create HTTP server
-    handler := log.HTTP(ctx)(mux) // Add logger to request context
+    mux.Use(log.HTTP(ctx)) // Add logger to request context
     httpServer := &http.Server{
         Addr:    *httpAddr,
-        Handler: handler,
+        Handler: mux,
     }
 
     // Handle shutdown gracefully

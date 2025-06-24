@@ -87,14 +87,13 @@ func main() {
     gen.Mount(mux, server)
     
     // Aggiungi middleware alla catena degli handler del server
-    var handler http.Handler = mux
-    handler = RateLimiter(rate.Every(time.Second/100), 10)(handler) // 100 req/sec
-    handler = log.HTTP(ctx)(handler)                                // Aggiungi logging
+    mux.Use(RateLimiter(rate.Every(time.Second/100), 10)) // 100 req/sec
+    mux.Use(log.HTTP(ctx))                                // Aggiungi logging
     
     // Crea e avvia il server HTTP
     srv := &http.Server{
         Addr:    ":8080",
-        Handler: handler,
+        Handler: mux,
     }
     
     // ... codice per lo spegnimento controllato ...
