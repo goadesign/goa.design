@@ -400,24 +400,62 @@ capabilities. It tracks important metrics like request duration and helps you
 identify performance bottlenecks in your services. This comprehensive approach
 to logging and monitoring helps teams maintain reliable and performant services.
 
-## Grafana / Loki / Promtail Hints and Pitfalls
+## Centralized Logging with Promtail, Loki, and Grafana
 
-If you do backend development using golang / goa, you very likely use Kubernetes,
-Prometheus, Loki, Promtail and Grafana.
+If you're running Goa microservices in Kubernetes, you've probably realized that kubectl logs doesn't cut it when you need to debug issues across multiple services. This guide shows how to set up centralized logging using the Promtail/Loki/Grafana stack.
+
+### What you'll get
+
+- All your service logs in one place
+- Fast searching across millions of log lines
+- Ability to filter by custom fields like customer_id or job_id
+- Correlation between logs and metrics in Grafana
+
+### The stack
 
 Let's assume you are using the official helm charts: <https://github.com/grafana/helm-charts/>
 
-Loki: Storage (this has the indexed labels)
-Promtail: Tool that scans your log files and sends the labels to Loki
-Grafana: Tool to access (via a UI) Datasources (such as Prometheus) or Loki for your logs.
+- **Promtail**: Scans your pod logs and ships them to Loki
+- **Loki**: Stores and indexes your logs (think Prometheus, but for logs)
+- **Grafana**: Lets you search and visualize everything
 
-In you microservice you want to use Clue's logger with fields and want to log some keys that
-you later need for debugging your microservices e.g. customer_id, job_id, etc.
+### Setting up structured logging in your Goa service
 
-This is an example:
+First, configure your Goa service to output clean JSON logs that work well with Loki:
+
+```go
+// In your service initialization
+logger := log.With().
+    Str("service", "my-goa-service").
+    Str("version", "1.0.0").
+    Logger()
+
+// In your endpoint implementations
+func (s *Service) MyEndpoint(ctx context.Context, p *myapi.MyPayload) error {
+    // Add request-specific fields that you'll want to search by later
+    logger := log.FromContext(ctx).With().
+        Str("account_id", p.AccountID).
+        Str("project_id", p.ProjectID).
+        Str("job_id", generateJobID()).
+        Logger()
+
+    logger.Info().Msg("processing request")
+
+    // Your business logic here...
+
+    logger.Info().Msg("request completed")
+    return nil
+}
+```
+
+This example will work out of the box with Promtail, Loki and Grafana. In some scenarios if makes sense to also have labels for `account_id`, `project_id` and `job_id`.
+
+### How to add custom labels
+
+Example log:
 
 ```json
-{"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe","msg":"this is a dummy log message to test the logger for promtail (labels)"}
+{"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe" "msg":"processing request"}
 ```
 
 So how do we index them via the promtail configuration?
@@ -426,7 +464,7 @@ You are facing the problem that your kubernetes might not create a 100% json log
 
 ```bash
 tail -n1 /var/log/pods/my-app_my-service-chart-aaa-ccc-foo/chart/0.log
-2025-06-14T20:10:56.382822108Z stdout F {"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe","msg":"this is a dummy log message to test the logger for promtail (labels)"}
+2025-06-14T20:10:56.382822108Z stdout F {"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe" "msg":"processing request"}
 ```
 
 Unfortunately this can't be directly handled via the promtail json parser. So how do we solve this?
@@ -450,24 +488,70 @@ config:
 
   snippets:
     pipelineStages:
-      # this will cut the header and just use the json for the processing
+      # Step 1: Extract the JSON from Kubernetes log format
+      # K8s adds timestamp and stream info before the actual log:
+      # 2025-06-14T20:10:56.382822108Z stdout F {"actual":"json","here":true}
       - regex:
-          expression: '^[^ ]+ [^ ]+ [^ ]+ (?P<json_log>{.*})'
+          expression: '^[^ ]+ [^ ]+ [^ ]+ (?P<json_log>{.*})$'
+
+      # Step 2: Parse the JSON and extract our custom fields
       - json:
           source: json_log
           expressions:
             account_id: account_id
             project_id: project_id
             job_id: job_id
+
+      # Step 3: Add these as Loki labels (indexed fields)
       - labels:
           account_id:
           job_id:
           project_id:
 ```
 
-You can now use `account_id` etc. within a Grafana query.
+For more options / already existing configurations check this file:
+<https://github.com/grafana/helm-charts/blob/main/charts/promtail/values.yaml#L438>.
 
-**Hint**: Keep in mind, labels like this come with disk size (do some math about the retention time).
+There are a lot of tutorials for promtail, the helm chart integration of these settings
+requires some knowledge about the helm chart structure.
+
+### Using your logs in Grafana
+
+Once everything's running, you can write LogQL queries like:
+
+Find all errors for a specific customer
+
+```txt
+{job="my-app/my-service"} |= "error" | account_id="ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01"
+```
+
+Track a job across all services
+
+```txt
+{job_id="3569f33a-05af-4f93-b1b6-e01d6989fefe"}
+```
+
+Find slow requests
+
+```txt
+{service="api-gateway"} |= "request completed" | json | duration > 1000
+```
+
+### Important: Label cardinality (disk storage of the index)
+
+Your hint about disk size is crucial. Each unique label combination creates a new stream in Loki. So if you have:
+
+- 1000 customers (account_id)
+- 100 projects per customer (project_id)
+- 1000 jobs per day (job_id)
+
+That's potentially 100 million streams! Consider:
+
+- Only index fields you'll actually search by
+- Use `| json` in queries for fields you need occasionally
+- Set reasonable retention policies
+- Make use of Debug/Info/Print/Error/Warn level and only log what you need on your production stage
+- Proper logging is the only tool that helps you debugging. Do you may need that disk space.
 
 ## Best Practice
 
