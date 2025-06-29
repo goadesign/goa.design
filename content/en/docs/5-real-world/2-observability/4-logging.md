@@ -59,7 +59,7 @@ ctx := log.Context(context.Background(),
     log.WithDisableBuffering(log.IsTracing))
 
 // Add common fields that will be included in all logs
-ctx = log.With(ctx, 
+ctx = log.With(ctx,
     log.KV{"service", "myservice"},  // Service name for filtering
     log.KV{"env", "production"})     // Environment for context
 ```
@@ -73,7 +73,7 @@ log aggregation and analysis tools.
 For local development convenience, logs are directed to standard output where
 they can be easily viewed in the terminal. The smart buffering system
 automatically adjusts based on whether a request is being traced, optimizing for
-both performance and observability. 
+both performance and observability.
 
 Finally, the setup includes common fields that will be added to every log entry,
 providing consistent context for filtering and analysis. These fields, like
@@ -272,18 +272,18 @@ mux.Use(log.HTTP(ctx))
 func loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         ctx := r.Context()
-        
+
         // Log request details at start
         log.Info(ctx, "request started",
             log.KV{"method", r.Method},
             log.KV{"path", r.URL.Path},
             log.KV{"user_agent", r.UserAgent()})
-            
+
         start := time.Now()
         sw := &statusWriter{ResponseWriter: w}
-        
+
         next.ServeHTTP(sw, r)
-        
+
         // Log response details and duration
         log.Info(ctx, "request completed",
             log.KV{"status", sw.status},
@@ -400,7 +400,160 @@ capabilities. It tracks important metrics like request duration and helps you
 identify performance bottlenecks in your services. This comprehensive approach
 to logging and monitoring helps teams maintain reliable and performant services.
 
-## Best Practices
+## Centralized Logging with Promtail, Loki, and Grafana
+
+If you're running Goa microservices in Kubernetes, you've probably realized that kubectl logs doesn't cut it when you need to debug issues across multiple services. This guide shows how to set up centralized logging using the Promtail/Loki/Grafana stack.
+
+### What you'll get
+
+- All your service logs in one place
+- Fast searching across millions of log lines
+- Ability to filter by custom fields like customer_id or job_id
+- Correlation between logs and metrics in Grafana
+
+### The stack
+
+Let's assume you are using the official helm charts: <https://github.com/grafana/helm-charts/>
+
+- **Promtail**: Scans your pod logs and ships them to Loki
+- **Loki**: Stores and indexes your logs (think Prometheus, but for logs)
+- **Grafana**: Lets you search and visualize everything
+
+### Setting up structured logging in your Goa service
+
+First, configure your Goa service to output clean JSON logs that work well with Loki:
+
+```go
+// In your service initialization
+logger := log.With().
+    Str("service", "my-goa-service").
+    Str("version", "1.0.0").
+    Logger()
+
+// In your endpoint implementations
+func (s *Service) MyEndpoint(ctx context.Context, p *myapi.MyPayload) error {
+    // Add request-specific fields that you'll want to search by later
+    logger := log.FromContext(ctx).With().
+        Str("account_id", p.AccountID).
+        Str("project_id", p.ProjectID).
+        Str("job_id", generateJobID()).
+        Logger()
+
+    logger.Info().Msg("processing request")
+
+    // Your business logic here...
+
+    logger.Info().Msg("request completed")
+    return nil
+}
+```
+
+This example will work out of the box with Promtail, Loki and Grafana. In some scenarios if makes sense to also have labels for `account_id`, `project_id` and `job_id`.
+
+### How to add custom labels
+
+Example log:
+
+```json
+{"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe" "msg":"processing request"}
+```
+
+So how do we index them via the promtail configuration?
+
+You are facing the problem that your kubernetes might not create a 100% json log:
+
+```bash
+tail -n1 /var/log/pods/my-app_my-service-chart-aaa-ccc-foo/chart/0.log
+2025-06-14T20:10:56.382822108Z stdout F {"time":"2025-06-14T20:10:56Z","level":"info","account_id":"ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01","project_id":"bb7fe987-d4e7-4ed5-90a6-2107a2f8a940","job_id":"3569f33a-05af-4f93-b1b6-e01d6989fefe" "msg":"processing request"}
+```
+
+Unfortunately this can't be directly handled via the promtail json parser. So how do we solve this?
+
+Assumption, you install promtail via:
+
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm show values grafana/promtail
+helm upgrade --install --values values.yaml promtail grafana/promtail -n monitoring
+```
+
+You can add to your values.yml the following section
+
+```yml
+config:
+  clients:
+    # 'monitoring' in this case is the Namespace where you installed loki
+    # (change this to your needs)
+    - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push
+
+  snippets:
+    pipelineStages:
+      # Step 1: Extract the JSON from Kubernetes log format
+      # K8s adds timestamp and stream info before the actual log:
+      # 2025-06-14T20:10:56.382822108Z stdout F {"actual":"json","here":true}
+      - regex:
+          expression: '^[^ ]+ [^ ]+ [^ ]+ (?P<json_log>{.*})$'
+
+      # Step 2: Parse the JSON and extract our custom fields
+      - json:
+          source: json_log
+          expressions:
+            account_id: account_id
+            project_id: project_id
+            job_id: job_id
+
+      # Step 3: Add these as Loki labels (indexed fields)
+      - labels:
+          account_id:
+          job_id:
+          project_id:
+```
+
+For more options / already existing configurations check this file:
+<https://github.com/grafana/helm-charts/blob/main/charts/promtail/values.yaml#L438>.
+
+There are a lot of tutorials for promtail, the helm chart integration of these settings
+requires some knowledge about the helm chart structure.
+
+### Using your logs in Grafana
+
+Once everything's running, you can write LogQL queries like:
+
+Find all errors for a specific customer
+
+```txt
+{job="my-app/my-service"} |= "error" | account_id="ae02fa88-b44b-4dfc-a228-c9b5dd7f0a01"
+```
+
+Track a job across all services
+
+```txt
+{job_id="3569f33a-05af-4f93-b1b6-e01d6989fefe"}
+```
+
+Find slow requests
+
+```txt
+{service="api-gateway"} |= "request completed" | json | duration > 1000
+```
+
+### Important: Label cardinality (disk storage of the index)
+
+Your hint about disk size is crucial. Each unique label combination creates a new stream in Loki. So if you have:
+
+- 1000 customers (account_id)
+- 100 projects per customer (project_id)
+- 1000 jobs per day (job_id)
+
+That's potentially 100 million streams! Consider:
+
+- Only index fields you'll actually search by
+- Use `| json` in queries for fields you need occasionally
+- Set reasonable retention policies
+- Make use of Debug/Info/Print/Error/Warn level and only log what you need on your production stage
+- Proper logging is the only tool that helps you debugging. Do you may need that disk space.
+
+## Best Practice
 
 1. **Log Levels**:
    - Use INFO for normal operations that need to be audited
