@@ -465,15 +465,12 @@ body {
 
 // Layout - Main Container
 .td-main:not(.td-home .td-main) {
-  display: flex;
-  justify-content: center;
-  gap: 2em;
-  padding: 0 2em;
+  padding: 0;
   margin-top: 2rem;
 
   // Left Sidebar
   .td-sidebar {
-    width: 16rem;
+    width: 15rem;
     flex-shrink: 0;
     font-size: $font-size-sm;
     padding-top: 0 !important;
@@ -505,7 +502,7 @@ body {
   .td-main main,
   .container-fluid {
     padding-top: 0;
-    max-width: 850px;
+    max-width: 720px;
     width: 100%;
     padding-left: 1rem !important;
 
@@ -637,7 +634,7 @@ body {
 
   // Right Sidebar
   .td-sidebar-toc {
-    width: 16rem;
+    width: 13rem;
     font-size: $font-size-sm;
     border-left: 0;
     padding-top: 0 !important;
@@ -693,15 +690,6 @@ body {
       }
     }
   }
-}
-
-.container, .container-fluid {
-  padding-left: 0;
-  padding-right: 0;
-  margin-left: 0;
-  margin-right: 0;
-  width: 100%;
-  max-width: none;
 }
 
 // Section styling
