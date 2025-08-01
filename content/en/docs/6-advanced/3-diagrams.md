@@ -173,6 +173,8 @@ This launches a web interface at http://localhost:8080 where you can:
 - Preview changes in real-time
 - Export diagrams as SVG files
 
+{{< figure src="/img/docs/model-editor.png" alt="Model editor interface showing interactive diagram editing" class="full-width-image" >}}
+
 ### Interactive Editing
 
 The editor provides several ways to manipulate your diagrams:

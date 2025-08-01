@@ -172,6 +172,8 @@ Questo lancia un'interfaccia web su http://localhost:8080 dove puoi:
 - Visualizzare le modifiche in tempo reale
 - Esportare i diagrammi come file SVG
 
+{{< figure src="/img/docs/model-editor.png" alt="Interfaccia dell'editor Model che mostra la modifica interattiva dei diagrammi" class="full-width-image" >}}
+
 ### Modifica Interattiva
 
 L'editor fornisce diversi modi per manipolare i tuoi diagrammi:

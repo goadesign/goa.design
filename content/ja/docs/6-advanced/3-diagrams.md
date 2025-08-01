@@ -173,6 +173,8 @@ mdl serve goa.design/examples/model/design -dir diagrams
 - リアルタイムで変更をプレビュー
 - 図をSVGファイルとしてエクスポート
 
+{{< figure src="/img/docs/model-editor.png" alt="インタラクティブな図の編集を表示するModelエディタインターフェース" class="full-width-image" >}}
+
 ### インタラクティブな編集
 
 エディタは図を操作するためのいくつかの方法を提供します：
