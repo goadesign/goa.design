@@ -10,6 +10,11 @@ services that can handle continuous data transmission in real-time. This guide
 covers the different streaming patterns available in gRPC and how to implement
 them using Goa.
 
+{{< alert title="See also" color="info" >}}
+For cross-transport rules and which streaming modes are valid per transport, see
+[Transports](../../6-transports).
+{{< /alert >}}
+
 ## Streaming Patterns
 
 gRPC supports three streaming patterns:

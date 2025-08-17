@@ -8,6 +8,11 @@ description: >
 
 Goa fornisce un supporto completo per gRPC, permettendoti di esporre i tuoi servizi attraverso questo protocollo efficiente e moderno. Questa sezione copre tutti gli aspetti dell'utilizzo di gRPC in Goa.
 
+{{< alert title="Vedi anche" color="info" >}}
+Per le regole trasversali ai trasporti e le modalità di streaming valide per ciascun trasporto, vedi
+[Trasporti](../6-trasporti).
+{{< /alert >}}
+
 ## Concetti Chiave
 
 ### 1. Definizioni Protobuf
