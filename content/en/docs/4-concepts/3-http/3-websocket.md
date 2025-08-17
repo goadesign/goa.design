@@ -13,6 +13,11 @@ WebSocket integration in Goa enables your services to handle real-time, bidirect
 communications. This guide explains how to implement WebSocket connections in your
 services, progressing from basic concepts to advanced implementations.
 
+{{< alert title="See also" color="info" >}}
+For a full overview of transport options and valid streaming combinations (HTTP, JSON‑RPC, gRPC), visit
+[Transports](../../6-transports).
+{{< /alert >}}
+
 ## Core Concepts
 
 WebSocket is a protocol that provides full-duplex communication over a single TCP

@@ -9,6 +9,11 @@ Questa sezione esplora come implementare le capacità di streaming nei tuoi
 servizi Goa. Imparerai diversi pattern di streaming, i loro casi d'uso e
 come implementarli efficacemente.
 
+{{< alert title="Vedi anche" color="info" >}}
+Per una panoramica completa delle combinazioni di trasporto e streaming consentite (HTTP, JSON‑RPC, gRPC), consulta
+[Trasporti](../../4-concepts/6-trasporti).
+{{< /alert >}}
+
 ## In Questa Sezione
 
 1. [Introduzione](./1-introduction) - Panoramica dei concetti di streaming e delle capacità di streaming di Goa
