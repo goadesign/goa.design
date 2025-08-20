@@ -6,6 +6,8 @@ weight: 4
 JSON‑RPC over WebSocket uses a single connection per service shared by all
 methods. Non‑streaming methods are not supported over JSON‑RPC WebSocket.
 
+Batching is not supported over WebSocket. Send one JSON‑RPC message per frame.
+
 ## Patterns
 
 - **StreamingPayload only:**  
@@ -108,3 +110,5 @@ func (s *service) Echo(ctx context.Context, p *svc.EchoPayload, stream svc.EchoS
     return stream.SendResponse(ctx, &svc.EchoResult{ /* echo fields */ })
 }
 ```
+
+
