@@ -120,7 +120,7 @@ const packageImport = `<!DOCTYPE html>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <!-- Go Imports -->
   <meta name="go-import" content="goa.design/{{ .Pkg }} git https://github.com/goadesign/{{ .Pkg }}">
-  <meta name="go-source" content="goa.design/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }}/tree/master/{/dir} https://github.com/goadesign/{{ .Pkg }}/blob/master{/dir}/{file}#L{line}">
+  <meta name="go-source" content="goa.design/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }} https://github.com/goadesign/{{ .Pkg }}/tree/main/{/dir} https://github.com/goadesign/{{ .Pkg }}/blob/main{/dir}/{file}#L{line}">
   <meta http-equiv="refresh" content="0; url=https://pkg.go.dev/goa.design{{ .Path }}">
 </head>
 <body>
