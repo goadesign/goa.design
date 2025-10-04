@@ -31,6 +31,8 @@ func main() {
 	http.HandleFunc("/clue/", servePackage("clue"))
 	http.HandleFunc("/pulse", servePackage("pulse"))
 	http.HandleFunc("/pulse/", servePackage("pulse"))
+	http.HandleFunc("/goa-ai", servePackage("goa-ai"))
+	http.HandleFunc("/goa-ai/", servePackage("goa-ai"))
 	appengine.Main()
 }
 
