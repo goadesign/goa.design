@@ -1099,6 +1099,126 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   }
 }
 
+// Goa-AI section
+.section-goa-ai {
+  padding: 6em 0 !important;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+  color: white;
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .goa-ai-icon {
+    margin-bottom: 1.5rem;
+    
+    i {
+      font-size: 4rem;
+      background: linear-gradient(135deg, #00cec9, #6c5ce7);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 20px rgba(108, 92, 231, 0.3));
+    }
+  }
+
+  h2 {
+    color: white !important;
+    background: none !important;
+    -webkit-text-fill-color: white !important;
+    margin-bottom: 1.5rem;
+  }
+
+  .lead {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.4rem;
+    max-width: 800px;
+    margin: 0 auto 3rem;
+  }
+
+  .goa-ai-content {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    
+    .features-list {
+      margin-bottom: 2.5rem;
+      
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+
+        li {
+          position: relative;
+          padding-left: 2.5rem;
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 1.1rem;
+          
+          &:before {
+            content: '\f135'; // Rocket icon
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 0.2rem;
+            color: #00cec9;
+          }
+          
+          strong {
+            color: white;
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 1.2rem;
+          }
+        }
+      }
+    }
+
+    .goa-ai-cta {
+      text-align: center;
+      margin-top: 2rem;
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #00cec9, #6c5ce7);
+        border: none;
+        padding: 1rem 3rem;
+        font-size: 1.2rem;
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(108, 92, 231, 0.4);
+        }
+      }
+    }
+  }
+
+  .goa-ai-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 10% 20%, rgba(108, 92, 231, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0, 206, 201, 0.1) 0%, transparent 40%);
+    z-index: 0;
+    pointer-events: none;
+  }
+}
+
 // Wizard section
 .section-wizard {
   padding: 6em 0 !important;

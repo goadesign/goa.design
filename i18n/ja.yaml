@@ -32,6 +32,18 @@ feature_best_practice_desc: "組み込みのバリデーション、エラーハ
 # Section Navigation
 subsections_title: "このセクションの内容"
 
+# Goa-AI Section
+goa_ai_section_title: "Goa-AI: システムとしてのエージェント"
+goa_ai_section_description: "Goa-AIはデザインファーストの哲学をエージェントシステムにもたらします。クリーンに構成され、楽にスケールする、堅牢で型安全なエージェントを構築しましょう。"
+goa_ai_section_features: |
+  <ul>
+    <li><strong>デザインファーストの契約:</strong> 強力なスキーマと自動修復ヒントによる堅牢なツール使用</li>
+    <li><strong>システムとしてのエージェント:</strong> フラットなチェーンではなく、実行ツリーによる構成</li>
+    <li><strong>構造化ストリーミング:</strong> リッチでトポロジーを意識したUIのための型付きイベント</li>
+    <li><strong>本番環境対応:</strong> Temporalによる耐久性、ポリシー、MCP統合</li>
+  </ul>
+goa_ai_section_cta: "Goa-AI を見る"
+
 # Wizard
 wizard_section_title: "Goa Design Wizard"
 wizard_section_description: "Goa DSLに特化したAIアシスタント <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> でAPI作成をガイドします"

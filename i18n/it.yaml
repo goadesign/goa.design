@@ -33,6 +33,18 @@ feature_best_practice_desc: "Goa implementa le migliori pratiche attraverso il c
 # Section Navigation
 subsections_title: "In Questa Sezione"
 
+# Goa-AI Section
+goa_ai_section_title: "Goa-AI: Agenti come Sistemi"
+goa_ai_section_description: "Goa-AI porta la filosofia design-first nei sistemi agentici. Costruisci agenti robusti e type-safe che si compongono in modo pulito e scalano senza sforzo."
+goa_ai_section_features: |
+  <ul>
+    <li><strong>Contratti Design-First:</strong> Schemi forti e suggerimenti di auto-riparazione per un uso robusto degli strumenti</li>
+    <li><strong>Agenti come Sistemi:</strong> Composizione tramite Alberi di Esecuzione, non catene piatte</li>
+    <li><strong>Streaming Strutturato:</strong> Eventi tipizzati per UI ricche e consapevoli della topologia</li>
+    <li><strong>Pronto per la Produzione:</strong> Durabilità temporale, policy e integrazione MCP</li>
+  </ul>
+goa_ai_section_cta: "Scopri Goa-AI"
+
 # Sponsors section
 sponsors_title: "Sponsor"
 

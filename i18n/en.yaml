@@ -32,6 +32,18 @@ feature_best_practice_desc: "Built-in validation, error handling, and middleware
 # Section Navigation
 subsections_title: "In This Section"
 
+# Goa-AI Section
+goa_ai_section_title: "Goa-AI: Agents as Systems"
+goa_ai_section_description: "Goa-AI brings the design-first philosophy to agentic systems. Build robust, type-safe agents that compose cleanly and scale effortlessly."
+goa_ai_section_features: |
+  <ul>
+    <li><strong>Design-First Contracts:</strong> Strong schemas & auto-repair hints for robust tool usage</li>
+    <li><strong>Agents as Systems:</strong> Composition via Run Trees, not flat chains</li>
+    <li><strong>Structured Streaming:</strong> Typed events for rich, topology-aware UIs</li>
+    <li><strong>Production-Ready:</strong> Temporal durability, policies, and MCP integration</li>
+  </ul>
+goa_ai_section_cta: "Discover Goa-AI"
+
 # Wizard
 wizard_section_title: "Goa Design Wizard"
 wizard_section_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"
