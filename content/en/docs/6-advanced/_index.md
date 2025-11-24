@@ -29,5 +29,8 @@ source project for C4 modeling, and its integration with Goa through the model p
 5. **Sticky Cookies** - This is required deployment technique when you do horizontal scaling of your services
 in case they are using streaming services / websockets.
 
+6. **AI Agent Backends** - Learn how to build AI agent backends using Goa-AI, a design-first toolkit that
+bridges Goa with the Model Context Protocol (MCP) for streamlined AI-powered application development.
+
 These advanced topics will help you leverage Goa's full potential in building complex, production-ready
 services.
