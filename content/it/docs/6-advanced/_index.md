@@ -24,5 +24,8 @@ Questa sezione fornisce una guida pratica per lavorare con servizi multipli in a
 3. **Diagrammi Architetturali** - Esplora come creare e mantenere diagrammi architetturali utilizzando Model, un
 progetto open source per la modellazione C4, e la sua integrazione con Goa attraverso il plugin model.
 
+4. **Backend per Agenti AI** - Impara come costruire backend per agenti AI usando Goa-AI, un toolkit design-first
+che collega Goa con il Model Context Protocol (MCP) per uno sviluppo semplificato di applicazioni alimentate da AI.
+
 Questi argomenti avanzati ti aiuteranno a sfruttare il pieno potenziale di Goa nella costruzione di servizi
 complessi e pronti per la produzione. 
