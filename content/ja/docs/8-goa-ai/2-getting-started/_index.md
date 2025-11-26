@@ -4,9 +4,6 @@ linkTitle: "はじめに"
 weight: 2
 description: >
   Goa-AIを素早く使い始めましょう - インストール、セットアップ、最初のエージェント。
-menu:
-  main:
-    weight: 2
 ---
 
 このセクションでは、Goa-AI開発を始める方法をガイドします。以下を学びます：
