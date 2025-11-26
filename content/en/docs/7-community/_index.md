@@ -27,6 +27,7 @@ See [Contributing to Goa](1-contributing) for more details.
 
 ## Stay Connected
 
+* Subscribe to our [Newsletter](https://substack.com/@goadesign) for updates and announcements
 * Follow [@goadesign](https://goadesign.bsky.social) on Bluesky
 * Star and watch the [Goa repository](https://github.com/goadesign/goa)
 * Explore community-created [examples](https://github.com/goadesign/examples) and [plugins](https://github.com/goadesign/plugins)

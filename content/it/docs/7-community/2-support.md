@@ -80,6 +80,7 @@ Se hai risolto un problema che potrebbe aiutare altri:
 
 ## Rimani Aggiornato
 
+- Iscriviti alla nostra [Newsletter](https://substack.com/@goadesign) per aggiornamenti e annunci
 - Osserva il [repository Goa](https://github.com/goadesign/goa) per gli aggiornamenti
 - Segui le discussioni e le issues che ti interessano
 - Unisciti al canale Slack per aggiornamenti in tempo reale

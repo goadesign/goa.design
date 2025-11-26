@@ -1,0 +1,10 @@
+{{/* Theme initialization - runs early to prevent flash of wrong theme */}}
+<script>
+(function() {
+  var stored = null;
+  try { stored = localStorage.getItem('goa-theme'); } catch(e) {}
+  var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+

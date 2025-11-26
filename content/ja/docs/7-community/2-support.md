@@ -80,6 +80,7 @@ description: "Goaプロジェクトのヘルプとサポートを見つける"
 
 ## 最新情報を得る
 
+- [ニュースレター](https://substack.com/@goadesign)を購読して最新情報をお知らせを受け取る
 - 更新のために[Goaリポジトリ](https://github.com/goadesign/goa)をウォッチ
 - 興味のあるディスカッションやイシューをフォロー
 - リアルタイムの更新のためにSlackチャンネルに参加 

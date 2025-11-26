@@ -68,6 +68,11 @@ defaultContentLanguageInSubdir = true
       name = "Slack"
       url = "https://gophers.slack.com/messages/goa"
       icon = "fab fa-slack"
+    [[params.links.user]]
+      name = "Newsletter"
+      url = "https://substack.com/@goadesign"
+      icon = "fas fa-envelope-open-text"
+      desc = "Subscribe for updates"
     [[params.links.developer]]
       name = "Development takes place here!"
       url = "https://github.com/goadesign/goa"

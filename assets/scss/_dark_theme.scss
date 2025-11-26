@@ -1,0 +1,1087 @@
+// =============================================================================
+// DARK THEME - CSS Custom Properties & Dark Mode Styles
+// =============================================================================
+// A refined, developer-friendly dark theme inspired by modern code editors
+// while preserving the vibrant Goa accent colors.
+
+// -----------------------------------------------------------------------------
+// CSS Custom Properties (Light Theme Defaults)
+// -----------------------------------------------------------------------------
+:root {
+  // Surfaces
+  --color-bg: #ffffff;
+  --color-bg-alt: #f8f9fa;
+  --color-bg-elevated: #ffffff;
+  --color-bg-code: #282c34;
+  
+  // Text
+  --color-text: #595959;
+  --color-text-muted: #757575;
+  --color-text-inverse: #ffffff;
+  --color-text-heading: #2d3748;
+  
+  // Borders & Dividers
+  --color-border: rgba(91, 192, 235, 0.2);
+  --color-border-subtle: rgba(0, 0, 0, 0.08);
+  
+  // Shadows
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(91, 192, 235, 0.12);
+  --shadow-lg: 0 8px 32px rgba(91, 192, 235, 0.15);
+  --shadow-card: 0 15px 30px rgba(91, 192, 235, 0.15), 0 10px 15px rgba(91, 192, 235, 0.1);
+  
+  // Interactive States
+  --color-focus-ring: rgba(91, 192, 235, 0.4);
+  
+  // Components
+  --navbar-bg: #5bc0eb;
+  --footer-bg: #f8f9fa;
+  --sidebar-bg: transparent;
+  --content-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-border: rgba(91, 192, 235, 0.1);
+  
+  // Feature Cards (homepage)
+  --feature-item-bg: rgba(255, 255, 255, 0.7);
+  --feature-item-border: rgba(91, 192, 235, 0.1);
+  
+  // Sponsor Cards
+  --sponsor-card-bg: #ffffff;
+  --sponsor-card-border: rgba(251, 75, 207, 0.15);
+  
+  // Wizard Section
+  --wizard-bg: rgba(255, 255, 255, 0.9);
+  --wizard-border: rgba(91, 192, 235, 0.15);
+  
+  // Trust Section  
+  --trust-logo-filter: grayscale(100%);
+  --trust-logo-opacity: 0.7;
+  
+  // Search
+  --search-bg: rgba(255, 255, 255, 0.15);
+  --search-border: rgba(255, 255, 255, 0.25);
+  --search-text: rgba(255, 255, 255, 0.95);
+  
+  // Breadcrumbs
+  --breadcrumb-text: rgba(89, 89, 89, 0.85);
+  --breadcrumb-separator: rgba(89, 89, 89, 0.4);
+  
+  // Documentation
+  --doc-link-color: #5bc0eb;
+  --doc-inline-code-bg: rgba(91, 192, 235, 0.08);
+  --doc-inline-code-text: #d63384;
+  
+  // Alert boxes
+  --alert-bg: rgba(91, 192, 235, 0.05);
+  
+  // Section index cards
+  --section-index-bg: #ffffff;
+  --section-index-border: rgba(91, 192, 235, 0.1);
+  
+  // TOC
+  --toc-link-color: #595959;
+  --toc-link-hover: #5bc0eb;
+}
+
+// -----------------------------------------------------------------------------
+// Dark Theme Custom Properties
+// -----------------------------------------------------------------------------
+[data-theme="dark"] {
+  // Surfaces - Deep, rich backgrounds with subtle blue undertones
+  --color-bg: #0d1117;
+  --color-bg-alt: #161b22;
+  --color-bg-elevated: #1c2128;
+  --color-bg-code: #0d1117;
+  
+  // Text - High contrast but not harsh white
+  --color-text: #c9d1d9;
+  --color-text-muted: #8b949e;
+  --color-text-inverse: #0d1117;
+  --color-text-heading: #f0f6fc;
+  
+  // Borders & Dividers
+  --color-border: rgba(91, 192, 235, 0.25);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  
+  // Shadows - More pronounced in dark mode
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 1px rgba(91, 192, 235, 0.2);
+  
+  // Interactive States
+  --color-focus-ring: rgba(91, 192, 235, 0.5);
+  
+  // Components
+  --navbar-bg: #161b22;
+  --footer-bg: #0d1117;
+  --sidebar-bg: transparent;
+  --content-bg: #161b22;
+  --card-bg: #1c2128;
+  --card-border: rgba(91, 192, 235, 0.15);
+  
+  // Feature Cards
+  --feature-item-bg: rgba(28, 33, 40, 0.9);
+  --feature-item-border: rgba(91, 192, 235, 0.15);
+  
+  // Sponsor Cards
+  --sponsor-card-bg: #1c2128;
+  --sponsor-card-border: rgba(251, 75, 207, 0.2);
+  
+  // Wizard Section
+  --wizard-bg: rgba(28, 33, 40, 0.95);
+  --wizard-border: rgba(91, 192, 235, 0.2);
+  
+  // Trust Section - Invert for dark backgrounds
+  --trust-logo-filter: grayscale(100%) brightness(1.5) invert(1);
+  --trust-logo-opacity: 0.6;
+  
+  // Search
+  --search-bg: rgba(255, 255, 255, 0.08);
+  --search-border: rgba(255, 255, 255, 0.15);
+  --search-text: rgba(255, 255, 255, 0.9);
+  
+  // Breadcrumbs  
+  --breadcrumb-text: rgba(201, 209, 217, 0.85);
+  --breadcrumb-separator: rgba(201, 209, 217, 0.4);
+  
+  // Documentation
+  --doc-link-color: #58a6ff;
+  --doc-inline-code-bg: rgba(91, 192, 235, 0.12);
+  --doc-inline-code-text: #ff79c6;
+  
+  // Alert boxes
+  --alert-bg: rgba(91, 192, 235, 0.08);
+  
+  // Section index cards
+  --section-index-bg: #1c2128;
+  --section-index-border: rgba(91, 192, 235, 0.15);
+  
+  // TOC
+  --toc-link-color: #c9d1d9;
+  --toc-link-hover: #58a6ff;
+}
+
+// -----------------------------------------------------------------------------
+// Theme Transition
+// -----------------------------------------------------------------------------
+html {
+  transition: background-color 0.3s ease;
+}
+
+body,
+.td-navbar,
+.td-main,
+.td-content,
+.td-sidebar,
+.td-sidebar-toc,
+.td-footer,
+.card,
+.feature-item,
+.sponsor-card,
+.wizard-features,
+.section-index .entry > a {
+  transition: 
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
+}
+
+// -----------------------------------------------------------------------------
+// Navbar Button Sizing (Search & Theme Toggle)
+// -----------------------------------------------------------------------------
+.td-navbar {
+  // Parent container for search + toggle should be flex row
+  .d-lg-block:has(.td-search) {
+    display: none !important;
+    
+    @media (min-width: 992px) {
+      display: flex !important;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+  
+  // Search button styling
+  .td-search {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    width: 36px;
+    height: 36px;
+    
+    // Hide the default ::before magnifier
+    &::before {
+      display: none !important;
+    }
+    
+    .td-search__input {
+      position: absolute !important;
+      right: 0 !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      padding: 0;
+      border-radius: 50%;
+      background-color: #2a2a3a !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      // Centered magnifier SVG as background
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.9)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: center center !important;
+      background-size: 16px 16px !important;
+      
+      &::placeholder {
+        opacity: 0;
+      }
+      
+      &:hover {
+        background-color: #353545 !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        transform: translateY(-50%) scale(1.05) !important;
+      }
+      
+      &:focus {
+        width: 450px !important;
+        height: 36px;
+        padding: 0.4rem 1rem 0.4rem 2.5rem;
+        border-radius: 18px;
+        background-color: #1a1a2e !important;
+        border-color: rgba(91, 192, 235, 0.4) !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(91,192,235,0.8)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") !important;
+        background-position: 0.85rem center !important;
+        background-size: 16px 16px !important;
+        color: #e8e8e8 !important;
+        transform: translateY(-50%) !important;
+        z-index: 1000;
+        box-shadow: 
+          0 4px 24px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(91, 192, 235, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+        
+        &::placeholder {
+          opacity: 1;
+          color: rgba(255, 255, 255, 0.5);
+        }
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Theme Toggle Button
+// -----------------------------------------------------------------------------
+.theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  .theme-toggle-icon {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    
+    .sun-icon,
+    .moon-icon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 18px;
+      height: 18px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      fill: rgba(255, 255, 255, 0.9);
+    }
+    
+    .sun-icon {
+      opacity: 0;
+      transform: rotate(-90deg) scale(0.5);
+    }
+    
+    .moon-icon {
+      opacity: 1;
+      transform: rotate(0deg) scale(1);
+    }
+  }
+}
+
+// Dark mode toggle state
+[data-theme="dark"] .theme-toggle {
+  background: rgba(91, 192, 235, 0.15);
+  border-color: rgba(91, 192, 235, 0.3);
+  
+  &:hover {
+    background: rgba(91, 192, 235, 0.25);
+    border-color: rgba(91, 192, 235, 0.4);
+  }
+  
+  .theme-toggle-icon {
+    .sun-icon {
+      opacity: 1;
+      transform: rotate(0deg) scale(1);
+      fill: #fbbf24;
+    }
+    
+    .moon-icon {
+      opacity: 0;
+      transform: rotate(90deg) scale(0.5);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Dark Theme Overrides
+// -----------------------------------------------------------------------------
+[data-theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"] {
+  // Body
+  body,
+  & {
+    background-color: var(--color-bg) !important;
+    color: var(--color-text);
+  }
+  
+  // Navbar - Darker with subtle glow
+  .td-navbar {
+    background: var(--navbar-bg) !important;
+    border-bottom: 1px solid rgba(91, 192, 235, 0.2);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.3),
+      0 0 40px rgba(91, 192, 235, 0.05);
+    
+    &::after {
+      // Keep the vibrant gradient bar but add glow
+      box-shadow: 0 2px 15px rgba(91, 192, 235, 0.3);
+    }
+    
+    .navbar-brand::before {
+      background: rgba(91, 192, 235, 0.25);
+    }
+    
+    // Dark mode search - collapsed state (circular button)
+    .td-search .td-search__input {
+      background-color: #2a2a3a !important;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.9)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: center center !important;
+      background-size: 16px 16px !important;
+    }
+    
+    // Dark mode search - expanded state (focused)
+    .td-search .td-search__input:focus,
+    .td-search input.td-search__input:focus {
+      background-color: #1a1a2e !important;
+      background: #1a1a2e !important;
+      border-color: rgba(91, 192, 235, 0.4) !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(91,192,235,0.8)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: 0.85rem center !important;
+      background-size: 16px 16px !important;
+      color: #e8e8e8 !important;
+      box-shadow: 
+        0 4px 24px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(91, 192, 235, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    .td-search .td-search__input:focus::placeholder {
+      color: rgba(255, 255, 255, 0.5) !important;
+    }
+  }
+  
+  // Main Content Area  
+  .td-main,
+  .td-default main,
+  .container-fluid,
+  .td-outer {
+    background-color: var(--color-bg) !important;
+  }
+  
+  .td-main {
+    background-color: var(--color-bg) !important;
+    
+    .td-content {
+      background: var(--content-bg) !important;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--color-border-subtle) !important;
+      
+      // Headings
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--color-text-heading);
+      }
+      
+      // Text
+      p, li {
+        color: var(--color-text) !important;
+      }
+      
+      // Ensure all list item text is visible
+      ul, ol {
+        color: var(--color-text);
+        
+        li {
+          color: var(--color-text) !important;
+          
+          // Text after strong/bold elements
+          strong, b {
+            color: var(--color-text-heading);
+          }
+        }
+      }
+      
+      // Links
+      a:not(.btn) {
+        color: var(--doc-link-color);
+        
+        &:hover {
+          color: lighten(#58a6ff, 10%);
+        }
+      }
+      
+      // Inline code
+      code:not([class*="language-"]) {
+        background: var(--doc-inline-code-bg);
+        color: var(--doc-inline-code-text);
+        padding: 0.15em 0.4em;
+        border-radius: 4px;
+      }
+      
+      // Lists
+      ul {
+        color: var(--color-text);
+        
+        li {
+          color: inherit;
+        }
+      }
+      
+      // Alert boxes
+      .alert {
+        background: var(--alert-bg);
+        border: 1px solid var(--color-border);
+        
+        h4.alert-heading {
+          color: var(--color-text-heading);
+        }
+        
+        p {
+          color: var(--color-text);
+        }
+      }
+      
+      // Cards inside content
+      .card {
+        background: var(--card-bg);
+        border-color: var(--card-border);
+      }
+      
+      // Copy button
+      .td-click-to-copy {
+        color: var(--doc-link-color) !important;
+        
+        &:hover {
+          color: lighten(#58a6ff, 15%) !important;
+        }
+      }
+    }
+    
+    // Breadcrumbs
+    .td-breadcrumbs .breadcrumb .breadcrumb-item {
+      color: var(--breadcrumb-text);
+      
+      a {
+        color: var(--doc-link-color);
+        
+        &:hover {
+          color: lighten(#58a6ff, 10%);
+        }
+      }
+      
+      &.active {
+        color: var(--color-text);
+      }
+      
+      + .breadcrumb-item::before {
+        color: var(--breadcrumb-separator);
+      }
+    }
+  }
+  
+  // Sidebars
+  .td-sidebar {
+    background-color: var(--sidebar-bg);
+    
+    .td-sidebar-nav {
+      .tree-root {
+        color: var(--doc-link-color);
+        border-color: var(--doc-link-color);
+      }
+      
+      a {
+        color: var(--color-text);
+        
+        &:hover {
+          color: var(--doc-link-color);
+        }
+        
+        &.active {
+          color: var(--doc-link-color);
+        }
+      }
+      
+      // Sidebar chevron icons for expandable sections
+      .ul-1 .with-child > label::before {
+        color: var(--color-text-muted) !important;
+      }
+      
+      .ul-1 .with-child > input:checked ~ label::before {
+        color: var(--doc-link-color) !important;
+      }
+    }
+  }
+  
+  .td-sidebar-toc {
+    background-color: var(--sidebar-bg);
+    
+    .td-page-meta {
+      border-color: var(--color-border);
+      
+      a {
+        color: var(--doc-link-color) !important;
+        
+        &:hover {
+          color: lighten(#58a6ff, 10%) !important;
+        }
+      }
+    }
+  }
+
+  // Newsletter Banner Dark Theme
+  .sidebar-newsletter-banner {
+    background: var(--sidebar-bg);
+    border-top-color: var(--color-border-subtle);
+
+    .newsletter-link {
+      background: linear-gradient(
+        135deg,
+        rgba(91, 192, 235, 0.12) 0%,
+        rgba(108, 92, 231, 0.1) 100%
+      );
+      border-color: rgba(91, 192, 235, 0.2);
+
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(91, 192, 235, 0.2) 0%,
+          rgba(108, 92, 231, 0.15) 100%
+        );
+        border-color: rgba(91, 192, 235, 0.35);
+        box-shadow: 0 4px 16px rgba(91, 192, 235, 0.25);
+      }
+    }
+
+    .newsletter-icon {
+      background: linear-gradient(135deg, #5bc0eb, #6c5ce7);
+    }
+
+    .newsletter-title {
+      color: var(--color-text);
+    }
+
+    .newsletter-desc {
+      color: var(--color-text-muted);
+    }
+
+    .newsletter-arrow {
+      color: #5bc0eb;
+    }
+  }
+  
+  .td-toc #TableOfContents a {
+    color: var(--toc-link-color);
+    
+    &:hover {
+      color: var(--toc-link-hover);
+    }
+  }
+  
+  // Section Index Cards
+  .section-index .entry > a {
+    background: var(--section-index-bg);
+    border-color: var(--section-index-border);
+    
+    &:hover {
+      border-color: var(--doc-link-color);
+      
+      h5 {
+        color: var(--doc-link-color);
+      }
+    }
+    
+    h5 {
+      color: var(--color-text-heading);
+    }
+    
+    p {
+      color: var(--color-text-muted);
+    }
+  }
+  
+  // Footer
+  .td-footer {
+    background-color: var(--footer-bg);
+    border-top: 1px solid var(--color-border-subtle);
+    color: var(--color-text-muted);
+  }
+  
+  // Search Results
+  .td-offline-search-results {
+    background: var(--color-bg-elevated) !important;
+    border: 1px solid var(--color-border) !important;
+    
+    .popover-body {
+      > div > div:first-child {
+        border-color: var(--color-border-subtle);
+        
+        span:first-child {
+          color: var(--color-text);
+        }
+      }
+      
+      > div > div:nth-child(2) .mt-4 {
+        &:hover {
+          background: var(--doc-inline-code-bg);
+        }
+        
+        small {
+          color: var(--color-text-muted);
+        }
+        
+        a {
+          color: var(--doc-link-color);
+        }
+        
+        p {
+          color: var(--color-text);
+        }
+      }
+    }
+  }
+  
+  // ==========================================================================
+  // Homepage Dark Theme Styles
+  // ==========================================================================
+  
+  // Hero Section - Keep the vibrant gradient, just enhance
+  &.td-home .td-box--primary {
+    // Gradient stays the same but with darker edges
+    box-shadow: 
+      inset 0 -10px 15px -5px rgba(91, 192, 235, 0.3),
+      0 10px 15px -5px rgba(0, 0, 0, 0.5);
+    
+    .hero-logo .goa-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 4px 24px rgba(91, 192, 235, 0.4));
+    }
+    
+    .display-1 {
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        0 0 60px rgba(251, 79, 207, 0.4),
+        0 0 100px rgba(251, 79, 207, 0.3);
+    }
+  }
+  
+  // Goa-AI Hero Section - Already dark themed, enhance slightly
+  .section-goa-ai-hero {
+    .goa-ai-hero-bg {
+      // More vivid gradients in dark mode
+      background: 
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0, 206, 201, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 50% at 80% 60%, rgba(108, 92, 231, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(251, 79, 207, 0.15) 0%, transparent 50%);
+    }
+  }
+  
+  // Feature Sections
+  .section-1 {
+    background: linear-gradient(180deg, 
+      var(--color-bg) 0%, 
+      var(--color-bg-alt) 100%
+    ) !important;
+    
+    h2 {
+      // Gradient text stays vibrant
+    }
+    
+    .lead {
+      color: var(--color-text);
+    }
+  }
+  
+  // Section 2 - Feature cards (keep gradients)
+  .section-2 {
+    background: var(--color-bg) !important;
+  }
+  
+  // Feature Cards (Section 2) - Keep gradient cards, they look great dark
+  .section-2 {
+    background-color: var(--color-bg);
+    
+    .card {
+      box-shadow: var(--shadow-md);
+      
+      &:hover {
+        box-shadow: var(--shadow-lg);
+      }
+    }
+  }
+  
+  // Wizard Section
+  .section-wizard {
+    background: linear-gradient(180deg, 
+      rgba(91, 192, 235, 0.05) 0%,
+      var(--color-bg) 100%
+    );
+    
+    .wizard-background {
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(250, 255, 0, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(91, 192, 235, 0.04) 0%, transparent 50%);
+    }
+    
+    .lead {
+      color: var(--color-text);
+      
+      a {
+        color: var(--doc-link-color);
+        border-bottom-color: rgba(88, 166, 255, 0.3);
+        
+        &:hover {
+          color: lighten(#58a6ff, 10%);
+          border-bottom-color: var(--doc-link-color);
+        }
+      }
+    }
+    
+    .wizard-features {
+      background: var(--wizard-bg);
+      border-color: var(--wizard-border);
+      box-shadow: var(--shadow-lg);
+      
+      &::before {
+        background: linear-gradient(90deg,
+          rgba(91, 192, 235, 0) 0%,
+          rgba(91, 192, 235, 0.3) 50%,
+          rgba(91, 192, 235, 0) 100%
+        );
+      }
+      
+      ul li {
+        color: var(--color-text);
+      }
+      
+      .wizard-cta {
+        border-top-color: var(--wizard-border);
+        
+        .wizard-note {
+          color: var(--color-text-muted);
+          
+          a {
+            color: var(--doc-link-color);
+            border-bottom-color: rgba(88, 166, 255, 0.3);
+          }
+        }
+      }
+    }
+    
+    .wizard-logo img {
+      background: var(--card-bg);
+      box-shadow: 
+        0 12px 36px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(91, 192, 235, 0.1);
+    }
+  }
+  
+  // Why Section
+  .section-why {
+    background: linear-gradient(180deg, 
+      rgba(91, 192, 235, 0.03) 0%, 
+      var(--color-bg) 100%
+    );
+    
+    h2 {
+      // Gradient text
+    }
+    
+    .feature-item {
+      background: var(--feature-item-bg);
+      border-color: var(--feature-item-border);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-sm);
+      
+      &:hover {
+        border-color: rgba(91, 192, 235, 0.3);
+        box-shadow: var(--shadow-md);
+      }
+      
+      h4 {
+        color: var(--color-text-heading);
+      }
+      
+      p {
+        color: var(--color-text-muted);
+      }
+    }
+  }
+  
+  // Sponsor Section
+  .section-sponsors {
+    background: 
+      linear-gradient(180deg, rgba(91, 192, 235, 0.02) 0%, var(--color-bg) 100%),
+      radial-gradient(circle at 20% 150%, rgba(250, 255, 0, 0.02) 0%, transparent 60%),
+      radial-gradient(circle at 80% -50%, rgba(91, 192, 235, 0.02) 0%, transparent 60%);
+    
+    &::before {
+      background: linear-gradient(90deg,
+        rgba(91, 192, 235, 0) 0%,
+        rgba(91, 192, 235, 0.15) 50%,
+        rgba(91, 192, 235, 0) 100%
+      );
+    }
+    
+    .sponsor-card {
+      background: var(--sponsor-card-bg);
+      border-color: var(--sponsor-card-border);
+      box-shadow: var(--shadow-md);
+      
+      &:hover {
+        box-shadow: var(--shadow-lg);
+      }
+      
+      .sponsor-logo-col {
+        background: var(--card-bg);
+      }
+      
+      .sponsor-info {
+        p {
+          color: var(--color-text-muted);
+        }
+        
+        .btn-link {
+          color: var(--doc-link-color);
+          
+          &:hover {
+            color: lighten(#58a6ff, 10%);
+          }
+        }
+      }
+    }
+  }
+  
+  // Trust Section
+  .section-trust {
+    background: linear-gradient(180deg, 
+      rgba(91, 192, 235, 0.02) 0%, 
+      var(--color-bg) 100%
+    );
+    
+    .trust-subtitle {
+      color: var(--color-text-muted);
+    }
+    
+    .logos-grid .company-logo img {
+      filter: var(--trust-logo-filter);
+      opacity: var(--trust-logo-opacity);
+      
+      &:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Code Block Enhancements for Dark Mode
+// -----------------------------------------------------------------------------
+[data-theme="dark"] {
+  // Prism/Highlight.js code blocks
+  .highlight,
+  pre[class*="language-"],
+  code[class*="language-"] {
+    background: #1e2127 !important;
+    border: 1px solid rgba(91, 192, 235, 0.15);
+    border-radius: 8px;
+  }
+  
+  // Line numbers if present
+  .line-numbers-rows {
+    border-right-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive Adjustments for Theme Toggle & Search
+// -----------------------------------------------------------------------------
+@media (max-width: 991px) {
+  .td-navbar {
+    .td-search {
+      width: 32px;
+      height: 32px;
+      
+      .td-search__input {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        background-size: 14px 14px !important;
+        
+        &:focus {
+          width: calc(100vw - 120px) !important;
+          max-width: 350px;
+          height: 32px;
+        }
+      }
+    }
+  }
+  
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+    
+    .theme-toggle-icon {
+      width: 14px;
+      height: 14px;
+      
+      .sun-icon,
+      .moon-icon {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Additional Dark Theme Polish
+// -----------------------------------------------------------------------------
+[data-theme="dark"] {
+  // Scrollbar styling for dark mode
+  * {
+    scrollbar-color: rgba(91, 192, 235, 0.3) transparent;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg-alt);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(91, 192, 235, 0.3);
+    border-radius: 5px;
+    
+    &:hover {
+      background: rgba(91, 192, 235, 0.5);
+    }
+  }
+  
+  // Selection color
+  ::selection {
+    background: rgba(91, 192, 235, 0.3);
+    color: var(--color-text-heading);
+  }
+  
+  // Tables
+  table {
+    background: var(--color-bg-elevated);
+    
+    th {
+      background: var(--color-bg-alt);
+      color: var(--color-text-heading);
+      border-color: var(--color-border);
+    }
+    
+    td {
+      color: var(--color-text);
+      border-color: var(--color-border-subtle);
+    }
+    
+    tr:hover td {
+      background: rgba(91, 192, 235, 0.05);
+    }
+  }
+  
+  // Blockquotes
+  blockquote {
+    border-left-color: var(--doc-link-color);
+    background: var(--color-bg-alt);
+    color: var(--color-text);
+  }
+  
+  // Horizontal rules
+  hr {
+    border-color: var(--color-border-subtle);
+  }
+  
+  // Form inputs (if any)
+  input, textarea, select {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-border);
+    color: var(--color-text);
+    
+    &:focus {
+      border-color: var(--doc-link-color);
+      box-shadow: 0 0 0 3px var(--color-focus-ring);
+    }
+    
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
+  
+  // Images - subtle border for contrast
+  img:not(.goa-logo):not(.sponsor-logo img):not(.company-logo img) {
+    border-radius: 8px;
+  }
+  
+  // Kbd elements (keyboard shortcuts)
+  kbd {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    box-shadow: 0 2px 0 var(--color-bg-alt);
+  }
+}
+
