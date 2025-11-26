@@ -79,7 +79,7 @@ package helpers
 import (
     "context"
     
-    "example.com/tutorial/gen/orchestrator/agents/chat/specs/helpers"
+    helpersspecs "example.com/tutorial/gen/orchestrator/agents/chat/specs/helpers"
     "goa.design/goa-ai/runtime/agent/planner"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
@@ -98,7 +98,7 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
         answer := "The answer to '" + args.Question + "' is: This is a placeholder answer."
         
         return planner.ToolResult{
-            Payload: map[string]any{
+            Result: map[string]any{
                 "text": answer,
             },
         }, nil
@@ -124,9 +124,9 @@ import (
     
     chat "example.com/tutorial/gen/orchestrator/agents/chat"
     helpers "example.com/tutorial/internal/agents/chat/toolsets/helpers"
+    "goa.design/goa-ai/runtime/agent/model"
     "goa.design/goa-ai/runtime/agent/planner"
     "goa.design/goa-ai/runtime/agent/runtime"
-    "goa.design/goa-ai/features/model"
 )
 
 type SimplePlanner struct{}
@@ -136,7 +136,7 @@ func (p *SimplePlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*
     return &planner.PlanResult{
         ToolCalls: []planner.ToolRequest{
             {
-                Name: "orchestrator.helpers.answer",
+                Name:    "orchestrator.helpers.answer",
                 Payload: []byte(`{"question": "What is the capital of Japan?"}`),
             },
         },
@@ -150,31 +150,35 @@ func (p *SimplePlanner) PlanResume(ctx context.Context, in *planner.PlanResumeIn
         if result.Error != nil {
             return &planner.PlanResult{
                 FinalResponse: &planner.FinalResponse{
-                    Message: model.Message{
-                        Role:    model.ConversationRoleAssistant,
-                        Content: "Sorry, I encountered an error: " + result.Error.Message,
+                    Message: &model.Message{
+                        Role:  model.ConversationRoleAssistant,
+                        Parts: []model.Part{model.TextPart{
+                            Text: "Sorry, I encountered an error: " + result.Error.Message,
+                        }},
                     },
                 },
             }, nil
         }
         
-        // Extract answer from payload
-        text, _ := result.Payload["text"].(string)
-        return &planner.PlanResult{
-            FinalResponse: &planner.FinalResponse{
-                Message: model.Message{
-                    Role:    model.ConversationRoleAssistant,
-                    Content: text,
+        // Extract answer from result (result.Result is the decoded tool output)
+        if m, ok := result.Result.(map[string]any); ok {
+            text, _ := m["text"].(string)
+            return &planner.PlanResult{
+                FinalResponse: &planner.FinalResponse{
+                    Message: &model.Message{
+                        Role:  model.ConversationRoleAssistant,
+                        Parts: []model.Part{model.TextPart{Text: text}},
+                    },
                 },
-            },
-        }, nil
+            }, nil
+        }
     }
     
     return &planner.PlanResult{
         FinalResponse: &planner.FinalResponse{
-            Message: model.Message{
-                Role:    model.ConversationRoleAssistant,
-                Content: "No results available",
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: "No results available"}},
             },
         },
     }, nil
@@ -198,16 +202,22 @@ func main() {
     
     // Run the agent
     client := chat.NewClient(rt)
-    out, err := client.Run(context.Background(), []model.Message{
-        {Role: model.ConversationRoleUser, Content: "What is the capital of Japan?"},
-    }, runtime.WithSessionID("session-1"))
+    out, err := client.Run(context.Background(), []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "What is the capital of Japan?"}},
+    }}, runtime.WithSessionID("session-1"))
     
     if err != nil {
         panic(err)
     }
     
     fmt.Println("RunID:", out.RunID)
-    fmt.Println("Assistant:", out.Content)
+    // out.Final contains the assistant message
+    if out.Final != nil && len(out.Final.Parts) > 0 {
+        if tp, ok := out.Final.Parts[0].(model.TextPart); ok {
+            fmt.Println("Assistant:", tp.Text)
+        }
+    }
 }
 ```
 

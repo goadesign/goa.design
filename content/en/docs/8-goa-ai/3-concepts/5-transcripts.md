@@ -59,7 +59,7 @@ provider‑specific blocks **without reordering**.
 
 ## The Transcript Contract
 
-The high‑level contract (see `docs/transcript_contract.md` in the goa-ai repo) is:
+The high‑level transcript contract in Goa-AI is:
 
 - The application (or runtime) **persists every event** for a run in order:
   - assistant thinking, text, tool_use (ID + args),
@@ -178,7 +178,7 @@ To get the most out of the transcript model:
   - same transcript backing model calls, chat UI, debug UI, and offline analysis.
 
 For detailed provider‑level rules (especially Bedrock’s thinking/tool_use
-requirements), consult the Goa-AI runtime docs in the `goa-ai` repo
-(`docs/transcript_contract.md`, `docs/ui_thinking_rendering.md`).
+requirements), consult the Goa-AI runtime docs in the `goa-ai` repo (for
+example, `docs/runtime.md` and `docs/ui_thinking_rendering.md`).
 
 

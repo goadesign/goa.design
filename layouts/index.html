@@ -12,6 +12,65 @@
     </div>
 </section>
 
+<section class="section-goa-ai-hero">
+    <div class="goa-ai-hero-bg"></div>
+    <div class="container">
+        <div class="goa-ai-hero-content">
+            <div class="goa-ai-badge">
+                <span class="badge-new">{{ T "goa_ai_hero_badge" }}</span>
+                <span class="badge-text">{{ T "goa_ai_hero_badge_text" }}</span>
+            </div>
+            <h2 class="goa-ai-hero-title">
+                <span class="title-gradient">{{ T "goa_ai_hero_title_1" }}</span>
+                <span class="title-light">{{ T "goa_ai_hero_title_2" }}</span>
+            </h2>
+            <p class="goa-ai-hero-lead">{{ T "goa_ai_hero_description" }}</p>
+            <div class="goa-ai-hero-features">
+                <div class="hero-feature">
+                    <i class="fas fa-cube"></i>
+                    <span>{{ T "goa_ai_hero_feature_1" }}</span>
+                </div>
+                <div class="hero-feature">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>{{ T "goa_ai_hero_feature_2" }}</span>
+                </div>
+                <div class="hero-feature">
+                    <i class="fas fa-stream"></i>
+                    <span>{{ T "goa_ai_hero_feature_3" }}</span>
+                </div>
+                <div class="hero-feature">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>{{ T "goa_ai_hero_feature_4" }}</span>
+                </div>
+            </div>
+            <div class="goa-ai-hero-cta">
+                <a href="{{ relref . "/docs/8-goa-ai/" }}" class="btn btn-goa-ai-primary">
+                    <span>{{ T "goa_ai_hero_cta_primary" }}</span>
+                    <i class="fas fa-rocket ms-2"></i>
+                </a>
+                <a href="{{ relref . "/docs/8-goa-ai/2-getting-started/" }}" class="btn btn-goa-ai-secondary">
+                    <span>{{ T "goa_ai_hero_cta_secondary" }}</span>
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+        <div class="goa-ai-hero-visual">
+            <div class="visual-orbit">
+                <div class="orbit-ring ring-1"></div>
+                <div class="orbit-ring ring-2"></div>
+                <div class="orbit-ring ring-3"></div>
+                <div class="orbit-center">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="orbit-node node-1"><i class="fas fa-cog"></i></div>
+                <div class="orbit-node node-2"><i class="fas fa-code"></i></div>
+                <div class="orbit-node node-3"><i class="fas fa-database"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="goa-ai-hero-particles"></div>
+</section>
+
 <section class="section-1">
     <div class="container">
         <div class="text-center">
@@ -59,29 +118,6 @@
             </div>
         </div>
     </div>
-</section>
-
-<section class="section-goa-ai">
-    <div class="container">
-        <div class="text-center">
-            <div class="goa-ai-icon">
-                <i class="fas fa-robot"></i>
-            </div>
-            <h2>{{ T "goa_ai_section_title" }}</h2>
-            <p class="lead">{{ T "goa_ai_section_description" | safeHTML }}</p>
-        </div>
-        <div class="goa-ai-content">
-            <div class="features-list">
-                {{ T "goa_ai_section_features" | safeHTML }}
-            </div>
-            <div class="goa-ai-cta">
-                <a href="{{ relref . "/docs/8-goa-ai/1-introduction/2-why-goa-ai" }}" class="btn btn-lg btn-primary">
-                    {{ T "goa_ai_section_cta" }} <i class="fas fa-arrow-right ms-2"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="goa-ai-background"></div>
 </section>
 
 <section class="section-wizard">
@@ -199,13 +235,14 @@
     </div>
 </section>
 
-<!-- Gurubase Widget -->
-<script async src="https://widget.gurubase.io/widget.latest.min.js" 
-    data-widget-id="_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc"
-    data-text="Ask AI"
-    data-margins='{"bottom": "1rem", "right": "1rem"}'
-    data-light-mode="true"
-    id="guru-widget-id">
+<!-- Gurubase Widget - theme controlled by theme-toggle.js -->
+<script>
+  // Set initial Gurubase widget theme based on current theme
+  (function() {
+    var theme = document.documentElement.getAttribute('data-theme') || 'light';
+    var lightMode = theme === 'light' ? 'true' : 'false';
+    document.write('<script async src="https://widget.gurubase.io/widget.latest.min.js" data-widget-id="_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc" data-text="Ask AI" data-margins=\'{"bottom": "1rem", "right": "1rem"}\' data-light-mode="' + lightMode + '" id="guru-widget-id"><\/script>');
+  })();
 </script>
 
 {{ end }}

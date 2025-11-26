@@ -1,78 +1,67 @@
 ---
-title: "gRPC"
-linkTitle: "gRPC"
+title: "gRPC Advanced Topics"
+linkTitle: "gRPC Advanced Topics"
 weight: 4
-description: >
-  Impara come Goa supporta gRPC, inclusa la generazione di definizioni protobuf, l'implementazione del server e del client, e la gestione degli errori.
+description: "Design and implement gRPC services using Goa's DSL and code generation"
 ---
 
-Goa fornisce un supporto completo per gRPC, permettendoti di esporre i tuoi servizi attraverso questo protocollo efficiente e moderno. Questa sezione copre tutti gli aspetti dell'utilizzo di gRPC in Goa.
+Goa provides comprehensive support for building gRPC services through its DSL
+and code generation capabilities. It handles the complete lifecycle of gRPC
+service development, from service definition to Protocol Buffer generation and
+server/client implementation.
 
-{{< alert title="Vedi anche" color="info" >}}
-Per le regole trasversali ai trasporti e le modalità di streaming valide per ciascun trasporto, vedi
-[Trasporti](../6-trasporti).
-{{< /alert >}}
+## Key Features
 
-## Concetti Chiave
+Goa's gRPC support includes:
 
-### 1. Definizioni Protobuf
-Goa genera automaticamente le definizioni protobuf per i tuoi servizi, gestendo:
-- Mappatura dei tipi Goa sui tipi protobuf
-- Numerazione dei campi
-- Opzioni protobuf
-- Compatibilità con i tipi well-known
+- **Automatic Protocol Buffer Generation**: Goa automatically generates `.proto` files from your service definitions
+- **Type Safety**: End-to-end type safety from service definition to implementation
+- **Code Generation**: Generates both server and client code
+- **Built-in Validation**: Request validation based on your service definition
+- **Streaming Support**: Full support for all gRPC streaming patterns
+- **Error Handling**: Comprehensive error handling with status code mapping
 
-### 2. Implementazione del Server
-Il codice del server generato include:
-- Gestori gRPC per ogni metodo del servizio
-- Gestione degli errori e dei codici di stato
-- Supporto per lo streaming unario e bidirezionale
-- Integrazione dei middleware
+## Getting Started
 
-### 3. Implementazione del Client
-Il codice del client generato fornisce:
-- Client gRPC fortemente tipizzati
-- Gestione delle connessioni
-- Supporto per le opzioni di chiamata
-- Integrazione con il livello degli endpoint
+Define a basic gRPC service:
 
-### 4. Gestione degli Errori
-Goa fornisce un sistema robusto per:
-- Mappare gli errori del servizio sui codici di stato gRPC
-- Gestire i dettagli degli errori
-- Propagare i metadati degli errori
-- Mantenere la coerenza tra i trasporti
+```go
+var _ = Service("calculator", func() {
+    // Enable gRPC transport
+    GRPC(func() {
+        // Configure protoc options
+        Meta("protoc:path", "protoc")
+        Meta("protoc:version", "v3")
+    })
 
-## Migliori Pratiche
+    Method("add", func() {
+        Payload(func() {
+            Field(1, "a", Int)
+            Field(2, "b", Int)
+            Required("a", "b")
+        })
+        Result(func() {
+            Field(1, "sum", Int)
+        })
+    })
+})
+```
 
-{{< alert title="Linee Guida gRPC" color="primary" >}}
-**Design del Servizio**
-- Definisci interfacce chiare e concise
-- Usa nomi descrittivi per servizi e metodi
-- Pianifica per la compatibilità futura
-- Documenta il comportamento del servizio
+Generate the service code:
 
-**Implementazione**
-- Gestisci correttamente gli errori
-- Implementa il controllo del flusso
-- Ottimizza le prestazioni
-- Testa tutti gli scenari
+```bash
+goa gen calc/design
+```
 
-**Considerazioni Generali**
-- Segui le convenzioni gRPC
-- Mantieni la compatibilità all'indietro
-- Gestisci correttamente le risorse
-- Monitora le prestazioni del servizio
-{{< /alert >}}
+This generates:
+- Protocol Buffer definitions
+- gRPC server and client code
+- Type-safe request/response structs
+- Service interfaces
 
-## Integrazione con Altri Trasporti
+## Additional Resources
 
-Goa supporta l'esposizione simultanea dei servizi tramite gRPC e HTTP:
-- Definisci mappature per entrambi i trasporti
-- Mantieni la coerenza tra i protocolli
-- Riutilizza la logica di business
-- Gestisci gli errori in modo uniforme
-
----
-
-Inizia con la [Mappatura dei Trasporti](../1-design-language/5-grpc-mapping) per imparare come definire le tue interfacce gRPC. 
+- [Protocol Buffers Documentation](https://protobuf.dev/) - Official documentation for Protocol Buffers
+- [gRPC Documentation](https://grpc.io/docs/) - Guide to gRPC concepts and reference
+- [gRPC-Go Documentation](https://pkg.go.dev/google.golang.org/grpc) - Go package documentation
+- [Protocol Buffer Style Guide](https://protobuf.dev/programming-guides/style/) - Best practices and guidelines

@@ -58,7 +58,7 @@ import (
     "context"
 
     chat "example.com/assistant/gen/orchestrator/agents/chat"
-    "goa.design/goa-ai/features/model"
+    "goa.design/goa-ai/runtime/agent/model"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
@@ -72,13 +72,14 @@ func main() {
     }
 
     client := chat.NewClient(rt)
-    out, err := client.Run(ctx, []model.Message{
-        {Role: model.ConversationRoleUser, Content: "Summarize the latest status."},
-    }, runtime.WithSessionID("session-1"))
+    out, err := client.Run(ctx, []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Summarize the latest status."}},
+    }}, runtime.WithSessionID("session-1"))
     if err != nil {
         panic(err)
     }
-    // Use out.RunID, out.Content, etc.
+    // Use out.RunID, out.Final (the assistant message), etc.
 }
 ```
 
@@ -156,6 +157,32 @@ Tools can be allowlisted/filtered by policy engines.
   flattened, linked).
 - **Telemetry**: OTEL-aware logging, metrics, and tracing instrument workflows and
   activities end to end.
+
+### Observing Events for a Single Run
+
+In addition to global sinks, you can observe the event stream for a single run ID
+using the `Runtime.SubscribeRun` helper:
+
+```go
+type mySink struct{}
+
+func (s *mySink) Send(ctx context.Context, e stream.Event) error {
+    // deliver event to SSE/WebSocket, logs, etc.
+    return nil
+}
+
+func (s *mySink) Close(ctx context.Context) error { return nil }
+
+stop, err := rt.SubscribeRun(ctx, "run-123", &mySink{})
+if err != nil {
+    panic(err)
+}
+defer stop()
+```
+
+`SubscribeRun` installs a filtered subscriber that forwards only events for the
+given `RunID` to your sink and returns a function that closes both the
+subscription and the sink.
 
 ## Engine Abstraction
 

@@ -286,7 +286,9 @@ error/hint contract** for all tools, whether they are:
   Goa-AI assumes validation happens at the tool boundary; internal service
   logic should trust validated inputs and focus on domain behavior.
 
-For a deep dive into future enhancements (schema-aware hint builders, richer
-field issues), see `docs/tool_validation_retry_hints.md` in the goa-ai repo.
+For a deeper dive into validation-driven retry patterns and future enhancements
+(schema-aware hint builders, richer field issues), consult the Goa-AI runtime
+and planner packages in the `goa-ai` repo (for example,
+`runtime/agent/toolerrors` and `runtime/agent/planner`).
 
 

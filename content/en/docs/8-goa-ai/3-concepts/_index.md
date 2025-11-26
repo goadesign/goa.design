@@ -17,5 +17,6 @@ This section covers the core concepts you need to understand to effectively use 
 7. [Tool Catalogs & Schemas](./7-tool-catalogs-schemas.md) - Discover tools and JSON Schemas exported by agents
 8. [Run Trees & Streaming](./8-run-trees-streaming-topology.md) - Understand per-run streams, AgentRunStarted links, and stream profiles
 9. [Policies & Labels](./9-policies-labels.md) - Configure caps, time budgets, and labels via RunPolicy and runtime overrides
+10. [LLM Integration](./10-llm-integration.md) - Integrate LLM providers like AWS Bedrock and OpenAI through the provider-agnostic model client interface
 
 

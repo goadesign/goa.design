@@ -86,6 +86,60 @@ Use:
 Both are derived from the **same design**; choose whichever is more convenient
 for your consumer.
 
+## Typed Sidecars and Artifacts
+
+Some tools need to return **rich artifacts** (for example, full time series,
+topology graphs, or large result sets) that are useful for UIs and audits but
+too heavy or detailed for model providers. Goa-AI models these as **typed
+sidecars**:
+
+- The tool’s **model-facing payload/result** stay bounded and minimal.
+- An optional **sidecar type** carries additional data alongside the tool
+  result; it is **never sent to the model**, only stored/streamed for UIs and
+  observers.
+
+In the specs packages, each `tools.ToolSpec` entry includes:
+
+- `Payload tools.TypeSpec`
+- `Result tools.TypeSpec`
+- `Sidecar *tools.TypeSpec` (optional)
+
+`tool_schemas.json` mirrors this structure:
+
+```json
+{
+  "tools": [
+    {
+      "id": "toolset.tool",
+      "service": "svc",
+      "toolset": "toolset",
+      "title": "Title",
+      "description": "Description",
+      "tags": ["tag"],
+      "payload": { "name": "PayloadType", "schema": { /* ... */ } },
+      "result":  { "name": "ResultType",  "schema": { /* ... */ } },
+      "sidecar": { "name": "SidecarType", "schema": { /* ... */ } }
+    }
+  ]
+}
+```
+
+Sidecar schemas describe the shape of `planner.ToolResult.Sidecar` for tools
+that declare a sidecar type. Goa-AI also generates:
+
+- a generic `SidecarCodec(name string) (*tools.JSONCodec[any], bool)` per
+  toolset specs package, and
+- per-tool helpers like:
+
+  ```go
+  func Get<GetTimeSeries>Sidecar(res *planner.ToolResult) (*GetTimeSeriesSidecar, error)
+  func Set<GetTimeSeries>Sidecar(res *planner.ToolResult, sc *GetTimeSeriesSidecar) error
+  ```
+
+These helpers let executors attach typed sidecar artifacts to `ToolResult`
+instances, while UIs and analytics code can decode them using the generated
+schemas without guessing JSON shapes.
+
 ## Agenttools and Typed Tool IDs
 
 For exported toolsets (agent-as-tool), Goa-AI also generates an **agenttools**

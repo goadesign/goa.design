@@ -42,8 +42,10 @@ var _ = Service("orchestrator", func() {
 
 - A top-level `Toolset` variable
 - An `MCPToolset` reference
-- An inline toolset definition
+- An inline toolset definition (string name + DSL)
 - An `AgentToolset` reference for agent-as-tool composition
+
+When referencing a provider toolset, the optional DSL function can subset tools by name or add configuration. When using a string name, an agent-local inline toolset is created.
 
 **Location**: `dsl/agent.go`  
 **Context**: Inside `Agent`  
@@ -56,10 +58,15 @@ Agent("chat", "Conversational runner", func() {
     // Reference a top-level toolset
     Use(DocsToolset)
     
+    // Reference with subsetting
+    Use(CommonTools, func() {
+        Tool("notify") // consume only this tool from CommonTools
+    })
+    
     // Reference an MCP toolset
     Use(MCPToolset("assistant", "assistant-mcp"))
     
-    // Inline toolset definition
+    // Inline agent-local toolset definition
     Use("helpers", func() {
         Tool("answer", "Answer a question", func() {
             // tool definition
@@ -74,6 +81,10 @@ Agent("chat", "Conversational runner", func() {
 ## Export
 
 `Export(value, dsl)` declares toolsets exposed to other agents or services. Exported toolsets can be consumed by other agents via `Use(AgentToolset(...))`.
+
+Export can appear in:
+- An `Agent` expression (exports as agent-owned)
+- A `Service` expression (exports as service-owned)
 
 **Location**: `dsl/agent.go`  
 **Context**: Inside `Agent` or `Service`  
@@ -102,6 +113,13 @@ Agent("planner", "Planning agent", func() {
 
 `AgentToolset(service, agent, toolset)` references a toolset exported by another agent. This enables agent-as-tool composition where one agent can use another agent's exported tools.
 
+Use `AgentToolset` when:
+- You don't have an expression handle to the exported toolset
+- Multiple agents export toolsets with the same name (ambiguity)
+- You want to be explicit in the design for clarity
+
+When you have a direct expression handle (e.g., a top-level Toolset variable), prefer `Use(ToolsetExpr)` and let Goa-AI infer the provider automatically.
+
 **Location**: `dsl/toolset.go`  
 **Context**: Argument to `Use`  
 **Purpose**: References an exported toolset from another agent.
@@ -122,8 +140,70 @@ Agent("orchestrator", func() {
 })
 ```
 
+## Passthrough
+
+`Passthrough(toolName, target, methodName)` defines deterministic forwarding for an exported tool to a Goa service method. This bypasses the planner entirely—when the tool is invoked, it directly calls the specified service method.
+
+**Location**: `dsl/agent.go`  
+**Context**: Inside `Tool` nested under `Export`  
+**Purpose**: Routes tool calls directly to service methods without planner involvement.
+
+Passthrough accepts:
+- `Passthrough(toolName, methodExpr)` - Using a Goa method expression
+- `Passthrough(toolName, serviceName, methodName)` - Using service and method names
+
+### Example
+
+```go
+Export("logging-tools", func() {
+    Tool("log_message", "Log a message", func() {
+        Args(func() {
+            Attribute("message", String, "Message to log")
+            Required("message")
+        })
+        Return(func() {
+            Attribute("logged", Boolean, "Whether the message was logged")
+        })
+        Passthrough("log_message", "LoggingService", "LogMessage")
+    })
+})
+```
+
+## UseAgentToolset
+
+`UseAgentToolset(service, agent, toolset)` is a convenience function that combines `AgentToolset` and `Use`. It references a toolset exported by another agent and immediately adds it to the current agent's used toolsets.
+
+**Location**: `dsl/toolset.go`  
+**Context**: Inside `Agent`  
+**Purpose**: Shorthand for `Use(AgentToolset(...))`.
+
+### Example
+
+```go
+Agent("orchestrator", func() {
+    // These two are equivalent:
+    Use(AgentToolset("service", "planner", "planning.tools"))
+    UseAgentToolset("service", "planner", "planning.tools")
+})
+```
+
+## DisableAgentDocs
+
+`DisableAgentDocs()` disables generation of `AGENTS_QUICKSTART.md` at the module root. By default, Goa-AI generates a contextual quickstart guide after code generation.
+
+**Location**: `dsl/agent.go`  
+**Context**: Inside `API`  
+**Purpose**: Disables generation of `AGENTS_QUICKSTART.md` at the module root.
+
+### Example
+
+```go
+var _ = API("orchestrator", func() {
+    DisableAgentDocs()
+})
+```
+
 ## Next Steps
 
 - Learn about [Toolset Functions](./3-toolset-functions.md) for defining toolsets and tools
 - Read about [Policy Functions](./4-policy-functions.md) for configuring runtime behavior
-

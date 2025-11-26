@@ -30,8 +30,6 @@ import (
     . "goa.design/goa-ai/dsl"
 )
 
-var _ = API("orchestrator", func() {})
-
 // Input and output types with inline descriptions
 var AskPayload = Type("AskPayload", func() {
     Attribute("question", String, "User question to answer")
@@ -92,9 +90,9 @@ import (
     "fmt"
 
     chat "example.com/quickstart/gen/orchestrator/agents/chat"
+    "goa.design/goa-ai/runtime/agent/model"
     "goa.design/goa-ai/runtime/agent/planner"
     "goa.design/goa-ai/runtime/agent/runtime"
-    "goa.design/goa-ai/features/model"
 )
 
 // A simple planner: always replies, no tools (great for first run)
@@ -103,9 +101,9 @@ type StubPlanner struct{}
 func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
     return &planner.PlanResult{
         FinalResponse: &planner.FinalResponse{
-            Message: model.Message{
-                Role:    model.ConversationRoleAssistant,
-                Content: "Hello from Goa-AI!",
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: "Hello from Goa-AI!"}},
             },
         },
     }, nil
@@ -114,9 +112,9 @@ func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*pl
 func (p *StubPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
     return &planner.PlanResult{
         FinalResponse: &planner.FinalResponse{
-            Message: model.Message{
-                Role:    model.ConversationRoleAssistant,
-                Content: "Done.",
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: "Done."}},
             },
         },
     }, nil
@@ -136,16 +134,22 @@ func main() {
     // 3) Run it using the generated typed client
     client := chat.NewClient(rt)
     out, err := client.Run(context.Background(),
-        []model.Message{
-            {Role: model.ConversationRoleUser, Content: "Say hi"},
-        },
+        []*model.Message{{
+            Role:  model.ConversationRoleUser,
+            Parts: []model.Part{model.TextPart{Text: "Say hi"}},
+        }},
         runtime.WithSessionID("session-1"),
     )
     if err != nil {
         panic(err)
     }
     fmt.Println("RunID:", out.RunID)
-    fmt.Println("Assistant:", out.Content)
+    // out.Final contains the assistant message
+    if out.Final != nil && len(out.Final.Parts) > 0 {
+        if tp, ok := out.Final.Parts[0].(model.TextPart); ok {
+            fmt.Println("Assistant:", tp.Text)
+        }
+    }
 }
 ```
 

@@ -44,6 +44,19 @@ goa_ai_section_features: |
   </ul>
 goa_ai_section_cta: "Discover Goa-AI"
 
+# Goa-AI Hero Section
+goa_ai_hero_badge: "NEW"
+goa_ai_hero_badge_text: "Introducing Goa-AI"
+goa_ai_hero_title_1: "Build AI Agents"
+goa_ai_hero_title_2: "The Goa Way"
+goa_ai_hero_description: "Bring the design-first philosophy to agentic systems. Define agents, tools, and policies with a powerful DSL. Get type-safe code, structured streaming, and production-ready durability."
+goa_ai_hero_feature_1: "Design-First Agents"
+goa_ai_hero_feature_2: "Run Trees & Composition"
+goa_ai_hero_feature_3: "Structured Streaming"
+goa_ai_hero_feature_4: "Temporal Durability"
+goa_ai_hero_cta_primary: "Explore Goa-AI"
+goa_ai_hero_cta_secondary: "Quick Start"
+
 # Wizard
 wizard_section_title: "Goa Design Wizard"
 wizard_section_description: "Let the AI-Powered <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> Guide Your API Creation"

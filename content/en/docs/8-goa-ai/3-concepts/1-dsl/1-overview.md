@@ -143,4 +143,5 @@ call plus `agent_run_started` link events that point at the child agent run stre
 - Learn about [Agent Functions](./2-agent-functions.md) for declaring agents
 - Explore [Toolset Functions](./3-toolset-functions.md) for defining toolsets
 - Read about [Policy Functions](./4-policy-functions.md) for configuring runtime behavior
+- See [MCP DSL Functions](./5-mcp-functions.md) for MCP server integration
 

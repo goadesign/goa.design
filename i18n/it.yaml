@@ -45,6 +45,19 @@ goa_ai_section_features: |
   </ul>
 goa_ai_section_cta: "Scopri Goa-AI"
 
+# Goa-AI Hero Section
+goa_ai_hero_badge: "NOVITÀ"
+goa_ai_hero_badge_text: "Introduzione a Goa-AI"
+goa_ai_hero_title_1: "Costruisci Agenti IA"
+goa_ai_hero_title_2: "Alla Maniera di Goa"
+goa_ai_hero_description: "Porta la filosofia design-first nei sistemi agentici. Definisci agenti, strumenti e policy con un potente DSL. Ottieni codice type-safe, streaming strutturato e durabilità pronta per la produzione."
+goa_ai_hero_feature_1: "Agenti Design-First"
+goa_ai_hero_feature_2: "Alberi di Esecuzione"
+goa_ai_hero_feature_3: "Streaming Strutturato"
+goa_ai_hero_feature_4: "Durabilità Temporal"
+goa_ai_hero_cta_primary: "Esplora Goa-AI"
+goa_ai_hero_cta_secondary: "Guida Rapida"
+
 # Sponsors section
 sponsors_title: "Sponsor"
 

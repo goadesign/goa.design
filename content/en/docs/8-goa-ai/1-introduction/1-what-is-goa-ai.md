@@ -102,9 +102,10 @@ if err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{
 }
 
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, []model.Message{
-    {Role: "user", Content: "Search for Go documentation"},
-}, runtime.WithSessionID("session-1"))
+out, err := client.Run(ctx, []*model.Message{{
+    Role:  model.ConversationRoleUser,
+    Parts: []model.Part{model.TextPart{Text: "Search for Go documentation"}},
+}}, runtime.WithSessionID("session-1"))
 ```
 
 ## Key Concepts

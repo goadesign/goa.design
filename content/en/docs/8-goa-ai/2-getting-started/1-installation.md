@@ -10,7 +10,7 @@ description: "Install Goa-AI and set up your development environment."
 Before installing Goa-AI, ensure you have:
 
 - **Go 1.24+** installed and configured
-- **Goa v3.22.2+** CLI installed
+- **Goa v3.23.0+** CLI installed
 - **Temporal** (optional, for durable workflows) - can use in-memory engine for development
 
 ## Install Goa CLI

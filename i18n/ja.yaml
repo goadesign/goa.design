@@ -44,6 +44,19 @@ goa_ai_section_features: |
   </ul>
 goa_ai_section_cta: "Goa-AI を見る"
 
+# Goa-AI Hero Section
+goa_ai_hero_badge: "NEW"
+goa_ai_hero_badge_text: "Goa-AI 登場"
+goa_ai_hero_title_1: "AIエージェントを構築"
+goa_ai_hero_title_2: "Goaのやり方で"
+goa_ai_hero_description: "デザインファーストの哲学をエージェントシステムに適用。強力なDSLでエージェント、ツール、ポリシーを定義。型安全なコード、構造化ストリーミング、本番環境対応の耐久性を実現。"
+goa_ai_hero_feature_1: "デザインファーストエージェント"
+goa_ai_hero_feature_2: "実行ツリーと構成"
+goa_ai_hero_feature_3: "構造化ストリーミング"
+goa_ai_hero_feature_4: "Temporal耐久性"
+goa_ai_hero_cta_primary: "Goa-AIを探索"
+goa_ai_hero_cta_secondary: "クイックスタート"
+
 # Wizard
 wizard_section_title: "Goa Design Wizard"
 wizard_section_description: "Goa DSLに特化したAIアシスタント <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> でAPI作成をガイドします"

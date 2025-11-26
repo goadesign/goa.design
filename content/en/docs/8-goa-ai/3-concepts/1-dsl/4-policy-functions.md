@@ -7,7 +7,7 @@ description: "Functions for configuring runtime policies and execution limits."
 
 ## RunPolicy
 
-`RunPolicy(dsl)` configures execution limits enforced at runtime. It's declared inside an `Agent` and contains policy settings like caps, time budgets, and interruption handling.
+`RunPolicy(dsl)` configures execution limits enforced at runtime. It's declared inside an `Agent` and contains policy settings like caps, time budgets, timing, and interruption handling.
 
 **Location**: `dsl/policy.go`  
 **Context**: Inside `Agent`  
@@ -26,6 +26,7 @@ Agent("chat", "Conversational runner", func() {
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
+        OnMissingFields("await_clarification")
     })
 })
 ```
@@ -51,7 +52,7 @@ RunPolicy(func() {
 
 ## MaxToolCalls
 
-`MaxToolCalls(n)` sets the maximum number of tool calls allowed per planner turn. If exceeded, the runtime aborts the turn and returns an error.
+`MaxToolCalls(n)` sets the maximum number of tool invocations allowed during agent execution. If exceeded, the runtime aborts and returns an error.
 
 **Location**: `dsl/policy.go`  
 **Context**: Argument to `DefaultCaps`  
@@ -79,7 +80,7 @@ DefaultCaps(MaxConsecutiveFailedToolCalls(3))
 
 ## TimeBudget
 
-`TimeBudget(duration)` enforces a wall-clock limit on agent execution. The runtime monitors elapsed time and aborts when exceeded. Duration can be specified as a string (e.g., `"2m"`, `"30s"`) or a `time.Duration`.
+`TimeBudget(duration)` enforces a wall-clock limit on agent execution. The runtime monitors elapsed time and aborts when exceeded. Duration is specified as a string (e.g., `"2m"`, `"30s"`).
 
 **Location**: `dsl/policy.go`  
 **Context**: Inside `RunPolicy`  
@@ -109,19 +110,94 @@ RunPolicy(func() {
 })
 ```
 
-## DisableAgentDocs
+## OnMissingFields
 
-`DisableAgentDocs()` disables generation of `AGENTS_QUICKSTART.md` at the module root. By default, Goa-AI generates a contextual quickstart guide after code generation.
+`OnMissingFields(action)` configures how the agent responds when tool invocation validation detects missing required fields. This allows control over whether the agent should stop, wait for user input, or continue execution.
 
-**Location**: `dsl/docs.go`  
-**Context**: Inside `API`  
-**Purpose**: Disables generation of `AGENTS_QUICKSTART.md` at the module root.
+**Location**: `dsl/policy.go`  
+**Context**: Inside `RunPolicy`  
+**Purpose**: Configures response to validation failures.
+
+Valid values:
+
+- `"finalize"`: Stop execution when required fields are missing
+- `"await_clarification"`: Pause and wait for user to provide missing information
+- `"resume"`: Continue execution despite missing fields
+- `""` (empty): Let the planner decide based on context
 
 ### Example
 
 ```go
-var _ = API("orchestrator", func() {
-    DisableAgentDocs()
+RunPolicy(func() {
+    OnMissingFields("await_clarification")
+})
+```
+
+## Timing
+
+`Timing(dsl)` defines detailed run timing configuration for an agent. Use this to configure fine-grained timeouts for different phases of execution.
+
+**Location**: `dsl/timing.go`  
+**Context**: Inside `RunPolicy`  
+**Purpose**: Configures granular timeout settings.
+
+### Example
+
+```go
+RunPolicy(func() {
+    Timing(func() {
+        Budget("10m")   // overall wall-clock
+        Plan("45s")     // timeout for Plan/Resume activities
+        Tools("2m")     // default timeout for tool activities
+    })
+})
+```
+
+## Budget
+
+`Budget(duration)` sets the total wall-clock budget for a run. This is an alternative to `TimeBudget` when using the `Timing` block.
+
+**Location**: `dsl/timing.go`  
+**Context**: Inside `Timing`  
+**Purpose**: Sets overall execution time budget.
+
+### Example
+
+```go
+Timing(func() {
+    Budget("10m")
+})
+```
+
+## Plan
+
+`Plan(duration)` sets the timeout for both Plan and Resume activities. These are the LLM inference calls that produce tool requests.
+
+**Location**: `dsl/timing.go`  
+**Context**: Inside `Timing`  
+**Purpose**: Sets timeout for planner activities.
+
+### Example
+
+```go
+Timing(func() {
+    Plan("45s") // 45 seconds for each planning step
+})
+```
+
+## Tools
+
+`Tools(duration)` sets the default timeout for ExecuteTool activities. Individual tool executions that exceed this duration are aborted.
+
+**Location**: `dsl/timing.go`  
+**Context**: Inside `Timing`  
+**Purpose**: Sets default timeout for tool execution.
+
+### Example
+
+```go
+Timing(func() {
+    Tools("2m") // 2 minutes per tool execution
 })
 ```
 
@@ -130,17 +206,24 @@ var _ = API("orchestrator", func() {
 ```go
 Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
-        // Cap the number of tool calls per turn
+        // Cap the number of tool calls
         DefaultCaps(
             MaxToolCalls(8),
             MaxConsecutiveFailedToolCalls(3),
         )
         
-        // Set a time budget for the entire run
-        TimeBudget("2m")
+        // Configure detailed timing
+        Timing(func() {
+            Budget("5m")    // total run budget
+            Plan("30s")     // planner timeout
+            Tools("1m")     // tool execution timeout
+        })
         
         // Allow human-in-the-loop interruptions
         InterruptsAllowed(true)
+        
+        // Handle validation failures
+        OnMissingFields("await_clarification")
     })
 })
 ```
@@ -149,4 +232,4 @@ Agent("chat", "Conversational runner", func() {
 
 - Learn about the [Runtime Concepts](../2-runtime/) to understand how policies are enforced
 - Explore [Toolset Functions](./3-toolset-functions.md) for defining tools
-
+- Read about [MCP DSL Functions](./5-mcp-functions.md) for MCP server integration
