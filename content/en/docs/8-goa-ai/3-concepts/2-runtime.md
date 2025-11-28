@@ -247,6 +247,14 @@ type Planner interface {
 
 `PlanResult` contains tool calls, final response, annotations, and optional `RetryHint`. The runtime enforces caps, schedules tool activities, and feeds tool results back into `PlanResume` until a final response is produced.
 
+Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
+- `ModelClient(id string)` - get a provider-agnostic model client
+- `AddReminder(r reminder.Reminder)` - register run-scoped system reminders
+- `RemoveReminder(id string)` - clear reminders when preconditions no longer hold
+- `Memory()` - access conversation history
+
+See [System Reminders](../11-system-reminders.md) for details on using reminders to deliver backstage guidance to models.
+
 ## Feature Modules
 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
