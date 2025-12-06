@@ -19,7 +19,7 @@ I toolset possono contenere più tool, ciascuno con schemi payload/result, promp
 
 ```go
 var DocsToolset = Toolset("docs.search", func() {
-    ToolsetDescription("Tool per la ricerca nella documentazione")
+    Description("Tool per la ricerca nella documentazione")
     Tool("search", "Cerca nella documentazione indicizzata", func() {
         Args(func() {
             Attribute("query", String, "Frase di ricerca")
@@ -33,19 +33,11 @@ var DocsToolset = Toolset("docs.search", func() {
 })
 ```
 
-## ToolsetDescription
-
-`ToolsetDescription(description)` imposta una descrizione leggibile per il toolset corrente. Questa descrizione documenta lo scopo e le capacità del toolset.
-
-**Posizione**: `dsl/toolset.go`  
-**Contesto**: Dentro `Toolset`  
-**Scopo**: Documenta lo scopo del toolset.
-
-### Esempio
+I toolset possono includere una descrizione usando la funzione DSL standard `Description()`:
 
 ```go
 Toolset("data-tools", func() {
-    ToolsetDescription("Tool per l'elaborazione e l'analisi dei dati")
+    Description("Tool per l'elaborazione e l'analisi dei dati")
     Tool("analyze", "Analizza dataset", func() {
         // definizione del tool
     })
@@ -114,7 +106,7 @@ La generazione del codice emette:
 
 ```go
 Tool("search", "Cerca nella documentazione indicizzata", func() {
-    ToolTitle("Ricerca Documenti")
+    Title("Ricerca Documenti")
     Args(func() {
         Attribute("query", String, "Frase di ricerca")
         Attribute("limit", Int, "Risultati massimi", func() { Default(5) })
@@ -218,19 +210,11 @@ Tool("get_time_series", "Ottieni dati serie temporali", func() {
 })
 ```
 
-## ToolTitle
-
-`ToolTitle(title)` imposta un titolo di visualizzazione user-friendly per il tool. Se non specificato, il codice generato deriva un titolo dal nome del tool convertendo snake_case o kebab-case in Title Case.
-
-**Posizione**: `dsl/toolset.go`  
-**Contesto**: Dentro `Tool`  
-**Scopo**: Imposta un titolo di visualizzazione per la presentazione UI.
-
-### Esempio
+I tool possono includere un titolo di visualizzazione usando la funzione DSL standard `Title()`:
 
 ```go
 Tool("web_search", "Cerca nel web", func() {
-    ToolTitle("Ricerca Web")
+    Title("Ricerca Web")
     Args(func() { /* ... */ })
 })
 ```

@@ -14,10 +14,10 @@ Goa-AIプランナーは**プロバイダー非依存インターフェース**�
 ```go
 type Client interface {
     // Completeは非ストリーミングモデル呼び出しを実行します。
-    Complete(ctx context.Context, req Request) (Response, error)
+    Complete(ctx context.Context, req *Request) (*Response, error)
 
     // Streamはサポートされている場合、ストリーミングモデル呼び出しを実行します。
-    Stream(ctx context.Context, req Request) (Streamer, error)
+    Stream(ctx context.Context, req *Request) (Streamer, error)
 }
 ```
 
@@ -32,7 +32,7 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     // ランタイムからモデルクライアントを取得
     mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
     
-    req := model.Request{
+    req := &model.Request{
         RunID:    input.Run.RunID,
         Messages: input.Messages,
         Tools:    input.Tools,

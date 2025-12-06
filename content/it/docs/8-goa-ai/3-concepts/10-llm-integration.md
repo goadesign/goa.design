@@ -14,10 +14,10 @@ Tutte le interazioni LLM passano attraverso l'interfaccia `model.Client` definit
 ```go
 type Client interface {
     // Complete esegue un'invocazione modello non-streaming.
-    Complete(ctx context.Context, req Request) (Response, error)
+    Complete(ctx context.Context, req *Request) (*Response, error)
 
     // Stream esegue un'invocazione modello streaming quando supportato.
-    Stream(ctx context.Context, req Request) (Streamer, error)
+    Stream(ctx context.Context, req *Request) (Streamer, error)
 }
 ```
 
@@ -32,7 +32,7 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     // Ottieni un model client dal runtime
     mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
     
-    req := model.Request{
+    req := &model.Request{
         RunID:    input.Run.RunID,
         Messages: input.Messages,
         Tools:    input.Tools,

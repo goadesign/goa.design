@@ -1,0 +1,44 @@
+<footer class="td-footer">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      {{/* Left: Stay Updated box */}}
+      <div class="col-auto td-footer__newsletter">
+        <a href="https://substack.com/@goadesign" class="newsletter-box" target="_blank" rel="noopener">
+          <i class="fas fa-envelope-open-text"></i>
+          <span>Stay Updated</span>
+        </a>
+      </div>
+      
+      {{/* Center: Copyright */}}
+      <div class="col td-footer__center">
+        <span>&copy; {{ now.Year }} {{ .Site.Params.copyright | default .Site.Title }}</span>
+      </div>
+      
+      {{/* Right: Social icons */}}
+      <div class="col-auto td-footer__social">
+        <ul class="td-footer__links-list">
+          {{ with .Site.Params.links.user }}
+            {{ range . }}
+              {{ if ne .name "Newsletter" }}
+              <li class="td-footer__links-item">
+                <a href="{{ .url }}" target="_blank" rel="noopener" title="{{ .name }}">
+                  <i class="{{ .icon }}"></i>
+                </a>
+              </li>
+              {{ end }}
+            {{ end }}
+          {{ end }}
+          {{ with .Site.Params.links.developer }}
+            {{ range . }}
+            <li class="td-footer__links-item">
+              <a href="{{ .url }}" target="_blank" rel="noopener" title="{{ .name }}">
+                <i class="{{ .icon }}"></i>
+              </a>
+            </li>
+            {{ end }}
+          {{ end }}
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>

@@ -19,7 +19,7 @@ description: "ツールセットとツールを定義するための関数。"
 
 ```go
 var DocsToolset = Toolset("docs.search", func() {
-    ToolsetDescription("ドキュメント検索用ツール")
+    Description("ドキュメント検索用ツール")
     Tool("search", "インデックスされたドキュメントを検索", func() {
         Args(func() {
             Attribute("query", String, "検索フレーズ")
@@ -33,19 +33,11 @@ var DocsToolset = Toolset("docs.search", func() {
 })
 ```
 
-## ToolsetDescription
-
-`ToolsetDescription(description)`は現在のツールセットの人間可読な説明を設定します。この説明はツールセットの目的と機能を文書化します。
-
-**場所**: `dsl/toolset.go`  
-**コンテキスト**: `Toolset`内  
-**目的**: ツールセットの目的を文書化します。
-
-### 例
+ツールセットには標準の`Description()` DSL関数を使用して説明を含めることができます：
 
 ```go
 Toolset("data-tools", func() {
-    ToolsetDescription("データ処理と分析用ツール")
+    Description("データ処理と分析用ツール")
     Tool("analyze", "データセットを分析", func() {
         // ツール定義
     })
@@ -114,7 +106,7 @@ Agent("helper", "", func() {
 
 ```go
 Tool("search", "インデックスされたドキュメントを検索", func() {
-    ToolTitle("ドキュメント検索")
+    Title("ドキュメント検索")
     Args(func() {
         Attribute("query", String, "検索フレーズ")
         Attribute("limit", Int, "最大結果数", func() { Default(5) })
@@ -218,19 +210,11 @@ Tool("get_time_series", "時系列データを取得", func() {
 })
 ```
 
-## ToolTitle
-
-`ToolTitle(title)`はツールの人間フレンドリーな表示タイトルを設定します。指定されない場合、生成されたコードはsnake_caseやkebab-caseをTitle Caseに変換してツール名からタイトルを導出します。
-
-**場所**: `dsl/toolset.go`  
-**コンテキスト**: `Tool`内  
-**目的**: UI表示用の表示タイトルを設定します。
-
-### 例
+ツールには標準の`Title()` DSL関数を使用して表示タイトルを含めることができます：
 
 ```go
 Tool("web_search", "ウェブを検索", func() {
-    ToolTitle("ウェブ検索")
+    Title("ウェブ検索")
     Args(func() { /* ... */ })
 })
 ```

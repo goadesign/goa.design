@@ -1,6 +1,10 @@
 // Import Dark Theme
 @import "dark_theme";
 
+// Import Custom Syntax Highlighting (overrides vendor Chroma styles)
+@import "syntax_light";
+@import "syntax_dark";
+
 // Variables
 $gradient-primary: linear-gradient(60deg,
   $color-gradient-start 0%,
@@ -263,7 +267,7 @@ body {
     }
 
     .display-1 {
-      font-family: $font-family-inter;
+      font-family: $font-family-docs;
       font-size: 4rem;
       font-weight: 600;
       letter-spacing: -0.02em;
@@ -331,7 +335,7 @@ body {
       text-align: center;
       margin-bottom: 3rem;
       font-size: $title-font-size;
-      font-family: $font-family-inter;
+      font-family: $font-family-docs;
       font-weight: $title-font-weight;
       letter-spacing: $title-letter-spacing;
       background: linear-gradient(135deg, $color-gradient-start, $color-gradient-end);
@@ -411,33 +415,128 @@ body {
 // Footer
 .td-footer {
   min-height: 0;
-  padding: 0;
+  padding: 0.75rem 0;
   position: relative;
-  z-index: 150; // Above the sidebar newsletter banner
+  z-index: 150;
+  background: var(--footer-bg, $color-surface);
+  border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+  margin-left: 15rem; // Account for fixed left sidebar
+  
+  .container-fluid {
+    padding: 0 2rem;
+  }
   
   @media (max-width: 768px) {
-    flex-direction: column;
-    text-align: center;
+    margin-left: 0;
+    padding: 1rem 0;
   }
 }
 
-.td-footer__left {
-  padding: 1rem 0 0 2rem;
-  
-  @media (max-width: 768px) {
-    padding: 1rem;
-  }
-}
-
-.td-footer__center {
-  padding: 1rem 0 !important;
-}
-
+// Footer links - all sections
+.td-footer__left,
 .td-footer__right {
-  padding: 1rem 2rem 0 0;
+  padding: 0.5rem 0;
   
-  @media (max-width: 768px) {
-    padding: 0 1rem 1rem;
+  .td-footer__links-list {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  
+  .td-footer__links-item a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--color-bg-alt, $color-surface-alt);
+    color: var(--color-text, $color-text);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba($color-accent, 0.15);
+      color: $color-accent;
+      transform: translateY(-2px);
+    }
+    
+    i {
+      font-size: 1rem;
+    }
+  }
+}
+
+// Center - Copyright
+.td-footer__center {
+  padding: 0.5rem 0 !important;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, $color-text-muted);
+  text-align: center;
+}
+
+// Newsletter box
+.td-footer__newsletter {
+  .newsletter-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, rgba($color-accent, 0.1) 0%, rgba($color-accent, 0.05) 100%);
+    border: 1px solid rgba($color-accent, 0.2);
+    border-radius: 6px;
+    color: $color-accent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    
+    i {
+      font-size: 0.875rem;
+    }
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba($color-accent, 0.15) 0%, rgba($color-accent, 0.1) 100%);
+      border-color: rgba($color-accent, 0.3);
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+  }
+}
+
+// Social icons in footer
+.td-footer__social {
+  .td-footer__links-list {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  
+  .td-footer__links-item a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--color-bg-alt, $color-surface-alt);
+    color: var(--color-text, $color-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba($color-accent, 0.15);
+      color: $color-accent;
+      transform: translateY(-2px);
+    }
   }
 }
 
@@ -488,15 +587,23 @@ body {
 // Layout - Main Container
 .td-main:not(.td-home .td-main) {
   padding: 0;
-  margin-top: 2rem;
+  margin-top: 0;
 
-  // Left Sidebar
+  // Left Sidebar - fixed positioning for truly frozen sidebar
   .td-sidebar {
+    position: fixed;
+    top: 4rem;
+    left: 0;
+    height: calc(100vh - 4rem);
+    overflow-y: auto;
     width: 15rem;
-    flex-shrink: 0;
     font-size: $font-size-sm;
-    padding-top: 0 !important;
+    padding-top: 1.5rem !important;
+    padding-left: 1rem;
+    margin-top: 0;
     border-right: 0;
+    background: var(--sidebar-bg, #fff);
+    z-index: 100;
 
     .td-sidebar__search {
       display: none !important;
@@ -504,7 +611,7 @@ body {
 
     .td-sidebar-nav {
       padding-top: 0 !important;
-      padding-bottom: 5rem; // Space for fixed newsletter banner
+      padding-bottom: 2rem;
       
       .tree-root {
         font-size: 1em !important;
@@ -518,106 +625,16 @@ body {
         align-items: center;
       }
     }
-
-    // Newsletter Banner in Sidebar - fixed at bottom, doesn't scroll with nav
-    .sidebar-newsletter-banner {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 15rem; // Match sidebar width
-      padding: 0.75rem;
-      padding-bottom: 1rem;
-      z-index: 100;
-      pointer-events: auto;
-      background: var(--sidebar-bg, #f0f5ff);
-      border-top: 1px solid rgba($color-accent, 0.1);
-
-      .newsletter-link {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: linear-gradient(
-          135deg,
-          rgba($color-accent, 0.08) 0%,
-          rgba($color-gradient-start, 0.05) 100%
-        );
-        border-radius: 10px;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        border: 1px solid rgba($color-accent, 0.1);
-        cursor: pointer;
-
-        &:hover {
-          background: linear-gradient(
-            135deg,
-            rgba($color-accent, 0.15) 0%,
-            rgba($color-gradient-start, 0.1) 100%
-          );
-          border-color: rgba($color-accent, 0.25);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba($color-accent, 0.15);
-
-          .newsletter-arrow {
-            transform: translateX(3px);
-            opacity: 1;
-          }
-        }
-      }
-
-      .newsletter-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        background: linear-gradient(135deg, $color-accent, $color-gradient-start);
-        border-radius: 8px;
-        flex-shrink: 0;
-
-        i {
-          color: white;
-          font-size: 0.85rem;
-        }
-      }
-
-      .newsletter-content {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-        min-width: 0;
-      }
-
-      .newsletter-title {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--color-text, $color-text);
-        line-height: 1.2;
-      }
-
-      .newsletter-desc {
-        font-size: 0.7rem;
-        color: var(--color-text-muted, rgba($color-text, 0.65));
-        line-height: 1.3;
-      }
-
-      .newsletter-arrow {
-        color: $color-accent;
-        font-size: 0.75rem;
-        opacity: 0.6;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-    }
   }
 
   // Main Content Area with Breadcrumbs
   main,
   .td-main main,
   .container-fluid {
-    padding-top: 0;
+    padding-top: 2rem;
     max-width: 900px;
     width: 100%;
+    margin-left: 15rem; // Account for fixed left sidebar
     padding-left: 1rem !important;
 
     // Content Card styling
@@ -659,7 +676,7 @@ body {
       h1, h2, h3, h4, h5, h6 {
         margin-top: 2rem;
         margin-bottom: 1rem;
-        font-family: $font-family-inter;
+        font-family: $font-family-docs;
         letter-spacing: -0.01em;
         
         &:first-child {
@@ -669,7 +686,7 @@ body {
 
       // Code styling
       pre, code {
-        font-size: $font-size-code;
+        font-size: $font-size-code-block;
       }
       
       // Code block margins
@@ -679,7 +696,7 @@ body {
       
       // Inline code should be slightly larger than block code
       p > code {
-        font-size: calc(#{$font-size-code} * 1.1);
+        font-size: calc(#{$font-size-code-block} * 1.1);
       }
 
       // Copy button styling
@@ -744,12 +761,21 @@ body {
     }
   }
 
-  // Right Sidebar
+  // Right Sidebar - fixed positioning for truly frozen sidebar
+  // Position: left sidebar (15rem) + content area (900px + padding)
   .td-sidebar-toc {
+    position: fixed;
+    top: 4rem;
+    left: calc(15rem + 900px); // left sidebar + content max-width
+    height: calc(100vh - 4rem);
+    overflow-y: auto;
     width: 13rem;
     font-size: $font-size-sm;
     border-left: 0;
-    padding-top: 0 !important;
+    padding-top: 1.5rem !important;
+    padding-left: 0.5rem;
+    background: var(--sidebar-bg, #fff);
+    z-index: 100;
 
     .td-page-meta {
 
@@ -766,7 +792,6 @@ body {
   }
       padding: 1.25rem 0 !important;
       margin: 0 !important;
-      border-bottom: 1px solid $color-border;
       padding-bottom: 0.5em !important;
     }
 
@@ -1317,7 +1342,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   }
   
   .goa-ai-hero-title {
-    font-family: $font-family-inter;
+    font-family: $font-family-docs;
     font-size: 4rem;
     font-weight: 800;
     line-height: 1.1;
@@ -1886,7 +1911,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     text-align: center;
     margin-bottom: 3rem;
     font-size: $title-font-size;
-    font-family: $font-family-inter;
+    font-family: $font-family-docs;
     font-weight: $title-font-weight;
     letter-spacing: $title-letter-spacing;
     background: linear-gradient(135deg, $color-gradient-start, $color-gradient-end);
@@ -1983,7 +2008,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   display: inline-block;
   font-size: 2.5rem;
   font-weight: 600;
-  font-family: $font-family-inter;
+  font-family: $font-family-docs;
   margin-bottom: 1em;
 }
 
@@ -2002,7 +2027,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     font-size: 1.75rem;
     margin-bottom: 1.5rem;
     color: $color-text;
-    font-family: $font-family-inter;
+    font-family: $font-family-docs;
     font-weight: 600;
   }
 
@@ -2042,7 +2067,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 
     h5 {
       margin: 0 0 0.5rem;
-      font-family: $font-family-inter;
+      font-family: $font-family-docs;
       font-weight: 600;
       color: $color-text;
       transition: all 0.3s ease;
@@ -2273,11 +2298,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     }
   }
   
-  // Adjust newsletter banner width
-  .sidebar-newsletter-banner {
-    width: 13rem;
-  }
-  
   .card-grid {
     padding: 0 2rem;
   }
@@ -2305,11 +2325,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
       flex: 1;
       padding-right: 1rem !important;
     }
-  }
-  
-  // Adjust newsletter banner width
-  .sidebar-newsletter-banner {
-    width: 12rem;
   }
   
   .td-home {
@@ -2359,11 +2374,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 @media (max-width: 768px) {
   body:not(.td-home) {
     padding-top: 0 !important;
-  }
-  
-  // Hide fixed newsletter banner on mobile (sidebar is collapsed)
-  .sidebar-newsletter-banner {
-    display: none;
   }
   
   .td-navbar {
@@ -2792,3 +2802,178 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     margin: 0 1rem;
   }
 }
+
+
+// =============================================================================
+// Copy Page - Toast Notification and Dropdown Styles
+// =============================================================================
+
+.copy-page-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  
+  &.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  
+  &.success {
+    background: linear-gradient(135deg, $color-gradient-start, darken($color-gradient-start, 10%));
+    color: white;
+    box-shadow: 0 4px 12px rgba($color-gradient-start, 0.3);
+  }
+  
+  &.error {
+    background: linear-gradient(135deg, #e74c3c, darken(#e74c3c, 10%));
+    color: white;
+    box-shadow: 0 4px 12px rgba(#e74c3c, 0.3);
+  }
+}
+
+.copy-page-dropdown {
+  position: relative;
+  display: inline-block;
+  
+  .copy-page-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid rgba($color-gradient-start, 0.3);
+    border-radius: 6px;
+    color: $color-gradient-start;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba($color-gradient-start, 0.05);
+      border-color: $color-gradient-start;
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($color-gradient-start, 0.2);
+    }
+    
+    i {
+      font-size: 0.9rem;
+    }
+    
+    .dropdown-arrow {
+      font-size: 0.7rem;
+      transition: transform 0.2s ease;
+    }
+  }
+  
+  &.open .copy-page-btn .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+  
+  .copy-page-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 180px;
+    background: white;
+    border: 1px solid rgba($color-border, 0.5);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.2s ease;
+    z-index: 1000;
+    
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+  }
+  
+  .copy-page-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    color: $color-text;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    
+    &:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+    
+    &:last-child {
+      border-radius: 0 0 8px 8px;
+    }
+    
+    &:hover {
+      background: rgba($color-gradient-start, 0.05);
+      color: $color-gradient-start;
+    }
+    
+    i {
+      width: 1rem;
+      text-align: center;
+      color: inherit;
+    }
+  }
+}
+
+// Dark theme support for copy page components
+[data-theme="dark"] {
+  .copy-page-toast {
+    &.success {
+      background: linear-gradient(135deg, lighten($color-gradient-start, 5%), $color-gradient-start);
+    }
+  }
+  
+  .copy-page-dropdown {
+    .copy-page-btn {
+      border-color: rgba($color-gradient-start, 0.4);
+      color: lighten($color-gradient-start, 10%);
+      
+      &:hover {
+        background: rgba($color-gradient-start, 0.1);
+      }
+    }
+    
+    .copy-page-menu {
+      background: #1a1a2e;
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      
+      .copy-page-menu-item {
+        color: rgba(255, 255, 255, 0.9);
+        
+        &:hover {
+          background: rgba($color-gradient-start, 0.15);
+          color: lighten($color-gradient-start, 15%);
+        }
+      }
+    }
+  }
+}
+
+
+// Import LLM-Optimized Typography (loaded last to override other styles)
+@import "custom";

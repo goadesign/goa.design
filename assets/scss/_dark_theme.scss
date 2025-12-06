@@ -12,7 +12,7 @@
   --color-bg: #ffffff;
   --color-bg-alt: #f8f9fa;
   --color-bg-elevated: #ffffff;
-  --color-bg-code: #282c34;
+  --color-bg-code: #f8f9fa;  // Light theme code blocks match site background
   
   // Text
   --color-text: #595959;
@@ -160,6 +160,15 @@
   // TOC
   --toc-link-color: #c9d1d9;
   --toc-link-hover: #58a6ff;
+
+  // Bootstrap Table Variables (for .table-striped compatibility)
+  --bs-table-bg: transparent;
+  --bs-table-color: #c9d1d9;
+  --bs-table-border-color: rgba(255, 255, 255, 0.08);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+  --bs-table-striped-color: #c9d1d9;
+  --bs-table-hover-bg: rgba(91, 192, 235, 0.08);
+  --bs-table-hover-color: #c9d1d9;
 }
 
 // -----------------------------------------------------------------------------
@@ -584,47 +593,6 @@ body[data-theme="dark"] {
     }
   }
 
-  // Newsletter Banner Dark Theme
-  .sidebar-newsletter-banner {
-    background: var(--sidebar-bg);
-    border-top-color: var(--color-border-subtle);
-
-    .newsletter-link {
-      background: linear-gradient(
-        135deg,
-        rgba(91, 192, 235, 0.12) 0%,
-        rgba(108, 92, 231, 0.1) 100%
-      );
-      border-color: rgba(91, 192, 235, 0.2);
-
-      &:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(91, 192, 235, 0.2) 0%,
-          rgba(108, 92, 231, 0.15) 100%
-        );
-        border-color: rgba(91, 192, 235, 0.35);
-        box-shadow: 0 4px 16px rgba(91, 192, 235, 0.25);
-      }
-    }
-
-    .newsletter-icon {
-      background: linear-gradient(135deg, #5bc0eb, #6c5ce7);
-    }
-
-    .newsletter-title {
-      color: var(--color-text);
-    }
-
-    .newsletter-desc {
-      color: var(--color-text-muted);
-    }
-
-    .newsletter-arrow {
-      color: #5bc0eb;
-    }
-  }
-  
   .td-toc #TableOfContents a {
     color: var(--toc-link-color);
     
@@ -660,6 +628,27 @@ body[data-theme="dark"] {
     background-color: var(--footer-bg);
     border-top: 1px solid var(--color-border-subtle);
     color: var(--color-text-muted);
+    
+    .td-footer__newsletter .newsletter-box {
+      background: linear-gradient(135deg, rgba(91, 192, 235, 0.15) 0%, rgba(91, 192, 235, 0.08) 100%);
+      border-color: rgba(91, 192, 235, 0.25);
+      color: var(--doc-link-color);
+      
+      &:hover {
+        background: linear-gradient(135deg, rgba(91, 192, 235, 0.2) 0%, rgba(91, 192, 235, 0.12) 100%);
+        border-color: rgba(91, 192, 235, 0.35);
+      }
+    }
+    
+    .td-footer__social .td-footer__links-item a {
+      background: var(--color-bg-elevated);
+      color: var(--color-text);
+      
+      &:hover {
+        background: rgba(91, 192, 235, 0.2);
+        color: var(--doc-link-color);
+      }
+    }
   }
   
   // Search Results
@@ -934,13 +923,18 @@ body[data-theme="dark"] {
 // Code Block Enhancements for Dark Mode
 // -----------------------------------------------------------------------------
 [data-theme="dark"] {
-  // Prism/Highlight.js code blocks
+  // Code blocks - match the dark syntax theme background
   .highlight,
+  pre,
   pre[class*="language-"],
   code[class*="language-"] {
-    background: #1e2127 !important;
+    background: #0d1117 !important;
     border: 1px solid rgba(91, 192, 235, 0.15);
     border-radius: 8px;
+  }
+  
+  .highlight pre {
+    background: #0d1117 !important;
   }
   
   // Line numbers if present
@@ -1023,23 +1017,39 @@ body[data-theme="dark"] {
     color: var(--color-text-heading);
   }
   
-  // Tables
-  table {
-    background: var(--color-bg-elevated);
+  // Tables - override Bootstrap .table-striped styles
+  table,
+  .table,
+  .td-content table {
+    background: var(--color-bg-elevated) !important;
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+    --bs-table-hover-bg: rgba(91, 192, 235, 0.08);
     
     th {
-      background: var(--color-bg-alt);
-      color: var(--color-text-heading);
-      border-color: var(--color-border);
+      background: var(--color-bg-alt) !important;
+      color: var(--color-text-heading) !important;
+      border-color: var(--color-border) !important;
     }
     
     td {
-      color: var(--color-text);
-      border-color: var(--color-border-subtle);
+      color: var(--color-text) !important;
+      border-color: var(--color-border-subtle) !important;
     }
     
-    tr:hover td {
-      background: rgba(91, 192, 235, 0.05);
+    tbody tr:nth-of-type(odd) > * {
+      background: rgba(255, 255, 255, 0.02) !important;
+      color: var(--color-text) !important;
+    }
+    
+    tbody tr:nth-of-type(even) > * {
+      background: transparent !important;
+      color: var(--color-text) !important;
+    }
+    
+    tr:hover td,
+    tbody tr:hover > * {
+      background: rgba(91, 192, 235, 0.08) !important;
     }
   }
   

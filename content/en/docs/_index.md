@@ -1,117 +1,101 @@
 ---
-title: "Discover Goa"
-linkTitle: "Discover Goa"
+title: "Documentation"
+linkTitle: "Documentation"
 weight: 20
 description: >
-  Documentation for Goa, a design-first framework for building microservices and APIs in Go.
+  LLM-optimized documentation for Goa and Goa-AI frameworks. Consolidated pages designed for easy copying into LLM contexts.
+llm_optimized: true
+content_scope: "Complete Documentation"
+aliases:
+  - /en/docs/4-concepts/
+  - /en/docs/4-concepts/6-transports/
+  - /en/docs/3-tutorials/
+  - /en/docs/7-community/
+  - /en/docs/7-community/1-contributing/
+  - /en/docs/7-community/2-support/
+  - /docs/4-concepts/
+  - /docs/3-tutorials/
+  - /docs/7-community/
 ---
 
-## Transform Your API Development
+{{< section-llm-info >}}
+**📋 LLM-Optimized Documentation** — This documentation is designed for easy copying into LLM contexts. Use the "Copy page" button on any page to copy content as Markdown or Plain Text.
+{{< /section-llm-info >}}
 
-In the world of microservices and APIs, the gap between design and
-implementation has always been a challenge. Goa bridges this gap with an
-innovative approach that transforms how you build services in Go. By putting
-design at the forefront, Goa eliminates the tedious back-and-forth between
-specification, implementation, and documentation that plagues traditional
-development.
+## Documentation Sections
 
-Imagine describing your API once and automatically generating everything you
-need: server code, client libraries, documentation, and more. This isn't just a
-dream—it's what Goa delivers. By leveraging Go's type system and modern design
-principles, Goa helps you build robust, production-ready services in a fraction
-of the time.
+This documentation is organized into consolidated, self-contained pages optimized for LLM consumption. Each page can be copied in full to provide comprehensive context.
 
-## What Makes Goa Different?
+### Goa Framework
 
-Goa stands out by treating your API design as a living contract. This
-design-first approach means:
+Design-first API development with automatic code generation for Go microservices.
 
-* Your API documentation is always in sync with your code—because they come from the same source
-* Your implementation is guaranteed to match your design through type-safe interfaces
-* You can switch between HTTP and gRPC without changing your business logic
-* You focus on what matters: building features that deliver value
+| Guide | Description | ~Tokens |
+|-------|-------------|---------|
+| [Quickstart](1-goa/quickstart/) | Install Goa and build your first service | ~1,100 |
+| [DSL Reference](1-goa/dsl-reference/) | Complete reference for Goa's design language | ~2,900 |
+| [Code Generation](1-goa/code-generation/) | Understanding Goa's code generation process | ~2,100 |
+| [HTTP Guide](1-goa/http-guide/) | HTTP transport features, routing, and patterns | ~1,700 |
+| [gRPC Guide](1-goa/grpc-guide/) | gRPC transport features and streaming | ~1,800 |
+| [Error Handling](1-goa/error-handling/) | Defining and handling errors | ~1,800 |
+| [Interceptors](1-goa/interceptors/) | Interceptors and middleware patterns | ~1,400 |
+| [Production](1-goa/production/) | Observability, security, and deployment | ~1,300 |
 
-## How Goa Works
+**Total Goa Section:** ~14,500 tokens
 
-![Goa's layered architecture](/img/docs/layers.png)
+### Goa-AI Framework
 
-Here's where the magic happens. From a single design file, Goa unleashes a
-cascade of generated code that would typically take weeks to write and maintain
-by hand. You focus on describing what you want, and Goa handles the heavy
-lifting:
+Design-first framework for building agentic, tool-driven systems in Go.
 
-1. Implementation Code - The Foundation
-    * Production-ready service and client interfaces
-    * Transport-agnostic endpoints that keep your code clean
-    * HTTP and gRPC handlers that just work
-    * All the request/response encoding you'd rather not write
+| Guide | Description | ~Tokens |
+|-------|-------------|---------|
+| [Quickstart](2-goa-ai/quickstart/) | Installation and first agent | ~2,700 |
+| [DSL Reference](2-goa-ai/dsl-reference/) | Complete DSL: agents, toolsets, policies, MCP | ~3,600 |
+| [Runtime](2-goa-ai/runtime/) | Runtime architecture, plan/execute loop, engines | ~2,400 |
+| [Toolsets](2-goa-ai/toolsets/) | Toolset types, execution models, transforms | ~2,300 |
+| [Agent Composition](2-goa-ai/agent-composition/) | Agent-as-tool, run trees, streaming topology | ~1,400 |
+| [MCP Integration](2-goa-ai/mcp-integration/) | MCP servers, transports, generated wrappers | ~1,200 |
+| [Memory & Sessions](2-goa-ai/memory-sessions/) | Transcripts, memory stores, sessions, runs | ~1,600 |
+| [Production](2-goa-ai/production/) | Temporal setup, streaming UI, model integration | ~2,200 |
 
-2. Documentation That Markets Itself
-    * Beautiful OpenAPI specifications
-    * Protocol buffer definitions ready for cross-platform use
-    * Documentation that evolves with your code, not as an afterthought
+**Total Goa-AI Section:** ~17,600 tokens
 
-3. The Extra Mile
-    * Rock-solid input validation
-    * Production-grade error handling
-    * Client libraries your users will thank you for
+## Using This Documentation with LLMs
 
-The best part? While Goa generates thousands of lines of boilerplate, testing,
-and documentation, you only write the code that matters - your business logic.
-Three lines of your code can turn into a complete production-ready service with
-HTTP and gRPC support, command-line tools, and comprehensive API documentation.
+### Copy Page Feature
 
-## A Simple Example
-Here's what designing an API with Goa looks like:
+Every documentation page includes a "Copy page" button with two options:
 
-```go
-var _ = Service("calculator", func() {
-    Method("add", func() {
-        Payload(func() {
-            Field(1, "a", Int, "First number")
-            Field(2, "b", Int, "Second number")
-            Required("a", "b")
-        })
-        Result(Int)
+- **Copy as Markdown** — Preserves formatting, code block language annotations, and heading hierarchy
+- **Copy as Plain Text** — Clean text without markdown syntax, suitable for any context
 
-        HTTP(func() {
-            GET("/add/{a}/{b}")
-            Response(StatusOK)
-        })
-    })
-})
-```
+### Recommended Workflow
 
-And here's all the code you need to write to implement it:
+1. **Start with the Quickstart** — Copy the quickstart guide to give your LLM basic context
+2. **Add specific guides** — Copy relevant guides based on your task (e.g., HTTP Guide for REST APIs)
+3. **Include DSL Reference** — For design questions, include the complete DSL reference
 
-```go
-func (s *service) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
-    return p.A + p.B, nil
-}
-```
+### Token Budget Tips
+
+- Each guide is designed to fit within typical LLM context windows
+- The complete Goa documentation (~14.5k tokens) fits easily in most modern LLMs
+- The complete Goa-AI documentation (~17.6k tokens) is similarly compact
+- Both frameworks together (~32k tokens) work well with larger context models
 
 ## Key Concepts
 
-### Design-First: Your Single Source of Truth
+### Design-First Development
 
-Stop juggling multiple API specs, documentation, and implementation files. With
-Goa, your design is your contract - a clear, executable specification that keeps
-everyone on the same page. Teams love this approach because it eliminates the
-"but that's not what the spec said" conversations forever.
+Both Goa and Goa-AI follow a design-first philosophy:
 
-### Clean Architecture That Scales
+1. **Define your API/Agent** using a powerful DSL
+2. **Generate code** automatically from your design
+3. **Implement business logic** in clean, type-safe interfaces
+4. **Documentation stays in sync** because it comes from the same source
 
-Goa generates code that even senior architects dream about. Each component lives in its perfect place:
-* Service Layer: Your domain logic, pure and clean
-* Endpoint Layer: Transport-agnostic business flows
-* Transport Layer: HTTP/gRPC handlers that adapt to your needs
+### Type Safety
 
-This isn't just architecture theory - it's working code that makes your services
-easier to test, modify, and scale as your needs evolve.
-
-### Type Safety That Has Your Back
-
-Forget about runtime surprises. Goa leverages Go's type system to catch issues at compile time:
+Generated code provides end-to-end type safety:
 
 ```go
 // Generated interface - your contract
@@ -125,28 +109,8 @@ func (s *service) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
 }
 ```
 
-If your implementation doesn't match the design, you'll know before your code hits production.
+## Community
 
-### Project Structure That Makes Sense
-
-No more guessing where files should go. Goa projects follow a crystal-clear organization:
-
-```
-├── design/         # Your API design - the source of truth
-├── gen/            # Generated code - never edit this
-│   ├── calculator/ # Service interfaces
-│   ├── http/       # HTTP transport layer
-│   └── grpc/       # gRPC transport layer
-└── calculator.go   # Your implementation - where the magic happens
-```
-
-Each file has its place, and every developer on your team will know exactly where to look.
-
-## Next Steps
-
-* Follow the [Getting Started guide](2-getting-started)
-* Explore the [Core Tutorials](3-tutorials)
-* Join the community:
-    * [Gophers Slack](https://gophers.slack.com/messages/goa)
-    * [GitHub Discussions](https://github.com/goadesign/goa/discussions)
-    * [Bluesky](https://goadesign.bsky.social)
+- [Gophers Slack](https://gophers.slack.com/messages/goa) — #goa channel
+- [GitHub Discussions](https://github.com/goadesign/goa/discussions) — Questions and ideas
+- [Bluesky](https://goadesign.bsky.social) — Updates and announcements

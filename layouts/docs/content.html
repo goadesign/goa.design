@@ -1,0 +1,29 @@
+{{/*
+  Override Docsy docs content template to include Copy Page functionality
+  and auto-generated TOC for long pages.
+  This template adds the copy-page dropdown and TOC to documentation pages.
+*/}}
+
+<div class="td-content">
+  {{/* Copy Page Dropdown - positioned at top right of content */}}
+  <div class="copy-page-container" style="float: right; margin: 0 0 1rem 1rem;">
+    {{ partial "copy-page.html" . }}
+  </div>
+  
+  {{/* Page Title */}}
+  <h1>{{ .Title }}</h1>
+  
+  {{/* Page Description if available */}}
+  {{ with .Params.description }}
+  <div class="lead">{{ . | markdownify }}</div>
+  {{ end }}
+  
+  {{/* Auto-generated TOC for long pages (> 2000 words) */}}
+  {{ partial "toc-auto.html" . }}
+  
+  {{/* Main Content */}}
+  {{ .Content }}
+  
+  {{/* Clear float */}}
+  <div style="clear: both;"></div>
+</div>

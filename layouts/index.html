@@ -1,17 +1,4 @@
 {{ define "main" }}
-<section class="td-box td-box--primary td-box--gradient hero-section">
-    <div class="container text-center">
-        <div class="hero-logo">
-            <img src="{{ "img/goa-logo.png" | relURL }}" alt="Goa Design Logo" class="goa-logo">
-        </div>
-        <h1 class="display-1">{{ T "hero_title" }}</h1>
-        <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
-        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-introduction/" }}">
-            {{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ms-2"></i>
-        </a>
-    </div>
-</section>
-
 <section class="section-goa-ai-hero">
     <div class="goa-ai-hero-bg"></div>
     <div class="container">
@@ -44,11 +31,19 @@
                 </div>
             </div>
             <div class="goa-ai-hero-cta">
+                {{ if eq .Lang "en" }}
+                <a href="{{ relref . "/docs/2-goa-ai/" }}" class="btn btn-goa-ai-primary">
+                {{ else }}
                 <a href="{{ relref . "/docs/8-goa-ai/" }}" class="btn btn-goa-ai-primary">
+                {{ end }}
                     <span>{{ T "goa_ai_hero_cta_primary" }}</span>
                     <i class="fas fa-rocket ms-2"></i>
                 </a>
+                {{ if eq .Lang "en" }}
+                <a href="{{ relref . "/docs/2-goa-ai/quickstart/" }}" class="btn btn-goa-ai-secondary">
+                {{ else }}
                 <a href="{{ relref . "/docs/8-goa-ai/2-getting-started/" }}" class="btn btn-goa-ai-secondary">
+                {{ end }}
                     <span>{{ T "goa_ai_hero_cta_secondary" }}</span>
                     <i class="fas fa-arrow-right ms-2"></i>
                 </a>
@@ -71,6 +66,23 @@
     <div class="goa-ai-hero-particles"></div>
 </section>
 
+<section class="td-box td-box--primary td-box--gradient hero-section">
+    <div class="container text-center">
+        <div class="hero-logo">
+            <img src="{{ "img/goa-logo.png" | relURL }}" alt="Goa Design Logo" class="goa-logo">
+        </div>
+        <h1 class="display-1">{{ T "hero_title" }}</h1>
+        <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
+        {{ if eq .Lang "en" }}
+        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-goa/quickstart/" }}">
+        {{ else }}
+        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-introduction/" }}">
+        {{ end }}
+            {{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ms-2"></i>
+        </a>
+    </div>
+</section>
+
 <section class="section-1">
     <div class="container">
         <div class="text-center">
@@ -85,7 +97,11 @@
         <div class="card-grid">
             <div class="card-wrapper">
                 <div class="card">
+                    {{ if eq .Lang "en" }}
+                    <a href="{{ relref . "/docs/1-goa/code-generation/" }}" class="text-dark text-decoration-none">
+                    {{ else }}
                     <a href="{{ relref . "/docs/4-concepts/2-code-generation" }}" class="text-dark text-decoration-none">
+                    {{ end }}
                         <div class="card-body text-center">
                             <i class="fas fa-code fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_codegen_title" }}</h3>
@@ -96,7 +112,11 @@
             </div>
             <div class="card-wrapper">
                 <div class="card">
+                    {{ if eq .Lang "en" }}
+                    <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}" class="text-dark text-decoration-none">
+                    {{ else }}
                     <a href="{{ relref . "/docs/4-concepts/1-design-language" }}" class="text-dark text-decoration-none">
+                    {{ end }}
                         <div class="card-body text-center">
                             <i class="fas fa-pencil-ruler fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_design_title" }}</h3>
@@ -107,7 +127,11 @@
             </div>
             <div class="card-wrapper">
                 <div class="card">
+                    {{ if eq .Lang "en" }}
+                    <a href="{{ relref . "/docs/1-goa/" }}" class="text-dark text-decoration-none">
+                    {{ else }}
                     <a href="{{ relref . "/docs/1-introduction/2-why-goa" }}" class="text-dark text-decoration-none">
+                    {{ end }}
                         <div class="card-body text-center">
                             <i class="fas fa-check-circle fa-3x mb-2"></i>
                             <h3 class="card-title">{{ T "feature_best_practice_title" }}</h3>

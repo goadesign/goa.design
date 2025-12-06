@@ -23,14 +23,38 @@ defaultContentLanguageInSubdir = true
     languageName = "English"
     contentDir = "content/en"
     weight = 1
+    [[languages.en.menu.main]]
+      name = "Goa"
+      weight = 1
+      url = "/docs/1-goa/"
+    [[languages.en.menu.main]]
+      name = "Goa AI"
+      weight = 2
+      url = "/docs/2-goa-ai/"
   [languages.it]
     languageName = "Italiano"
     contentDir = "content/it"
     weight = 2
+    [[languages.it.menu.main]]
+      name = "Goa"
+      weight = 1
+      url = "/docs/1-introduction/"
+    [[languages.it.menu.main]]
+      name = "Goa AI"
+      weight = 2
+      url = "/docs/8-goa-ai/"
   [languages.ja]
     languageName = "日本語"
     contentDir = "content/ja"
     weight = 3
+    [[languages.ja.menu.main]]
+      name = "Goa"
+      weight = 1
+      url = "/docs/1-introduction/"
+    [[languages.ja.menu.main]]
+      name = "Goa AI"
+      weight = 2
+      url = "/docs/8-goa-ai/"
 
 [params]
   title = "Goa – Design. Generate. Scale."
@@ -58,6 +82,13 @@ defaultContentLanguageInSubdir = true
     footer_about_enable = false
     navbar_logo = true  # Enable logo in nav bar
     navbar_translucent_over_cover_disable = true  # Disable translucent navbar
+  
+  # Disable "Edit this page" link
+  [params.ui.readingtime]
+    enable = false
+  
+  # GitHub edit link - disable by not setting github_subdir
+  github_subdir = ""
 
   [params.links]
     [[params.links.user]]
@@ -126,7 +157,7 @@ defaultContentLanguageInSubdir = true
     
 [markup]
   [markup.highlight]
-    style = "gruvbox"
+    noClasses = false
     tabWidth = 4
 
 # Image processing configuration

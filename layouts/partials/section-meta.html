@@ -1,0 +1,38 @@
+{{/*
+  Section Meta Component - LLM-Optimized Indicators
+  
+  Displays content scope indicators for documentation sections.
+  Token counts are shown only in the Documentation Guides table in _index.md.
+  
+  Usage: {{ partial "section-meta.html" . }}
+  
+  Parameters (via page context):
+    - .Params.llm_optimized: Boolean to show LLM-optimized badge
+    - .Params.content_scope: String describing content scope (e.g., "Complete DSL Reference")
+  
+  Requirements: 3.1, 3.2, 3.3
+*/}}
+
+{{- $isLLMOptimized := .Params.llm_optimized | default false -}}
+{{- $contentScope := .Params.content_scope | default "" -}}
+
+{{/* Only render if there's something to show */}}
+{{- if or $isLLMOptimized $contentScope -}}
+<div class="section-meta">
+  {{/* LLM-optimized indicator */}}
+  {{- if $isLLMOptimized -}}
+  <span class="llm-optimized-indicator" title="This page is optimized for LLM consumption">
+    <i class="fas fa-robot" aria-hidden="true"></i>
+    <span>LLM Ready</span>
+  </span>
+  {{- end -}}
+  
+  {{/* Content scope indicator */}}
+  {{- if $contentScope -}}
+  <span class="content-scope-indicator" title="Content scope">
+    <i class="fas fa-layer-group" aria-hidden="true"></i>
+    <span>{{ $contentScope }}</span>
+  </span>
+  {{- end -}}
+</div>
+{{- end -}}

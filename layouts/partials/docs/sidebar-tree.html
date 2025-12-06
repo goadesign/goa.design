@@ -1,0 +1,60 @@
+{{/*
+  Custom Sidebar - Flat Top-Level Navigation
+  
+  Renders Goa and Goa-AI sections as top-level items (not nested under Documentation).
+  All sections always expanded, no collapsing.
+  
+  Requirements: 4.1, 4.2, 4.3
+*/}}
+
+{{/* Get the docs section - use language-aware path */}}
+{{ $docsSection := .Site.GetPage "docs" }}
+
+<nav id="td-section-nav" class="td-sidebar-nav" aria-label="Documentation navigation">
+  <ul class="td-sidebar-nav-list">
+    {{/* Iterate through top-level sections (Goa, Goa-AI) - these become top-level nav items */}}
+    {{ range $docsSection.Sections }}
+      {{ $isActive := or (eq $.RelPermalink .RelPermalink) ($.IsDescendant .) }}
+      {{ $hasChildren := gt (len .Pages) 0 }}
+      
+      <li class="td-sidebar-nav-item{{ if $isActive }} active-path{{ end }}">
+        {{/* Section link - bold title */}}
+        <a href="{{ .RelPermalink }}" 
+           class="td-sidebar-nav-link td-sidebar-nav-link--section{{ if eq $.RelPermalink .RelPermalink }} active{{ end }}"
+           id="m-{{ .RelPermalink | anchorize }}">
+          <span class="nav-link-text">{{ .LinkTitle }}</span>
+        </a>
+        
+        {{/* Always show child pages - no collapsing */}}
+        {{ if $hasChildren }}
+        <ul class="td-sidebar-nav-sublist">
+          {{ range .Pages }}
+            {{ $childActive := eq $.RelPermalink .RelPermalink }}
+            <li class="td-sidebar-nav-subitem">
+              <a href="{{ .RelPermalink }}" 
+                 class="td-sidebar-nav-sublink{{ if $childActive }} active{{ end }}"
+                 id="m-{{ .RelPermalink | anchorize }}">
+                <span class="nav-link-text">{{ .LinkTitle }}</span>
+              </a>
+            </li>
+          {{ end }}
+        </ul>
+        {{ end }}
+      </li>
+    {{ end }}
+  </ul>
+</nav>
+
+{{/* Newsletter Banner */}}
+<div class="sidebar-newsletter-banner">
+  <a href="https://substack.com/@goadesign" target="_blank" rel="noopener" class="newsletter-link">
+    <div class="newsletter-icon">
+      <i class="fas fa-envelope-open-text"></i>
+    </div>
+    <div class="newsletter-content">
+      <span class="newsletter-title">Stay Updated</span>
+      <span class="newsletter-desc">Get the latest Goa news</span>
+    </div>
+    <i class="fas fa-arrow-right newsletter-arrow"></i>
+  </a>
+</div>

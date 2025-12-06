@@ -1,0 +1,170 @@
+# Implementation Plan
+
+- [x] 1. Set up Copy Page infrastructure
+  - [x] 1.1 Create copy-page.js with content extraction and clipboard functionality
+    - Implement `extractPageContent()` to parse DOM for title, headings, code blocks, prose
+    - Implement `toMarkdown()` and `toPlainText()` conversion functions
+    - Implement clipboard API with execCommand fallback
+    - Implement toast notification for copy feedback
+    - _Requirements: 1.1, 1.2, 1.3, 7.1, 7.2, 7.3_
+  - [x] 1.2 Write property tests for copy functionality
+    - **Property 1: Copy content completeness**
+    - **Property 2: Markdown format preservation**
+    - **Property 3: Plain text conversion**
+    - **Property 7: Code block separation**
+    - **Property 8: Shortcode stripping**
+    - **Validates: Requirements 1.3, 1.4, 1.5, 7.2, 7.3**
+  - [x] 1.3 Create copy-page.html partial with dropdown UI
+    - Dropdown button with "Copy as Markdown" and "Copy as Plain Text" options
+    - Integrate with Docsy page template
+    - Style to match Claude's copy button aesthetic
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.4 Write unit tests for copy UI component
+    - Test dropdown renders correctly
+    - Test click handlers trigger copy functions
+    - Test toast feedback appears and dismisses
+    - _Requirements: 1.1, 1.2_
+
+- [x] 2. Implement typography and visual refresh
+  - [x] 2.1 Create _custom.scss with typography overrides
+    - Set Inter/system sans-serif for body text
+    - Set JetBrains Mono for code blocks
+    - Configure heading hierarchy (weights, sizes, spacing)
+    - Set optimal line-height (1.6 prose, 1.4 code) and max-width (48rem)
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 2.2 Override Docsy navigation styling
+    - Reduce visual weight of sidebar
+    - Implement subtle hover states
+    - Style for flattened navigation structure
+    - _Requirements: 4.1, 4.2, 9.1, 9.2_
+  - [x] 2.3 Add responsive breakpoints
+    - Configure layout for mobile, tablet, desktop
+    - Adjust content density per viewport
+    - _Requirements: 9.4_
+
+- [x] 3. Implement token count and LLM indicators
+  - [x] 3.1 Create section-meta.html partial for token count display
+    - Calculate approximate token count (words × 1.3)
+    - Display badge with token count on section index
+    - Show content scope indicator
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 3.2 Write property test for token count display
+    - **Property 5: Token count display**
+    - **Validates: Requirements 3.2**
+  - [x] 3.3 Update documentation index with LLM-optimized indicators
+    - Add visual indicators for LLM-optimized pages
+    - Display token counts per major section
+    - _Requirements: 3.1, 3.2_
+
+- [x] 4. Checkpoint - Ensure infrastructure is working
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. Consolidate Goa documentation content
+  - [x] 5.1 Create goa/quickstart.md
+    - Merge installation.md + first-service.md
+    - Add transitional context between sections
+    - Ensure self-contained with all necessary imports/setup
+    - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2_
+  - [x] 5.2 Create goa/dsl-reference.md
+    - Merge data-modeling.md + api.md + services-methods.md + http-mapping.md + grpc-mapping.md + security.md
+    - Add table of contents for navigation
+    - Ensure comprehensive DSL coverage in single file
+    - _Requirements: 2.1, 2.2, 2.4, 5.1_
+  - [x] 5.3 Create goa/code-generation.md
+    - Merge all code-generation/*.md files
+    - Add transitional context
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 5.4 Create goa/http-guide.md
+    - Merge HTTP concepts + tutorials (REST API, streaming SSE, static content)
+    - Ensure complete HTTP transport coverage
+    - _Requirements: 2.1, 2.2, 5.1, 5.2_
+  - [x] 5.5 Create goa/grpc-guide.md
+    - Merge gRPC concepts + tutorials
+    - Ensure complete gRPC transport coverage
+    - _Requirements: 2.1, 2.2, 5.1, 5.2_
+  - [x] 5.6 Create goa/error-handling.md
+    - Merge error handling tutorial + real-world error handling
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 5.7 Create goa/interceptors.md
+    - Merge Goa interceptors + HTTP middleware + gRPC interceptors
+    - _Requirements: 2.1, 2.2_
+  - [x] 5.8 Create goa/production.md
+    - Merge observability + security patterns + common patterns
+    - _Requirements: 2.1, 2.2, 5.1_
+
+- [x] 6. Consolidate Goa-AI documentation content
+  - [x] 6.1 Create goa-ai/quickstart.md
+    - Merge what-is-goa-ai.md + why-goa-ai.md + installation.md + first-agent.md
+    - Ensure complete getting started experience
+    - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2_
+  - [x] 6.2 Create goa-ai/dsl-reference.md
+    - Merge all DSL concept files (overview, agent-functions, toolset-functions, policy-functions, mcp-functions)
+    - Add comprehensive table of contents
+    - _Requirements: 2.1, 2.2, 2.4, 5.1_
+  - [x] 6.3 Create goa-ai/runtime.md
+    - Consolidate runtime.md with relevant policy and LLM integration content
+    - _Requirements: 2.1, 2.2, 5.1_
+  - [x] 6.4 Create goa-ai/toolsets.md
+    - Consolidate toolsets.md + tool-validation-retry-hints.md + tool-catalogs-schemas.md
+    - _Requirements: 2.1, 2.2, 5.1_
+  - [x] 6.5 Create goa-ai/agent-composition.md
+    - Consolidate agent composition tutorial + run-trees-streaming-topology.md
+    - _Requirements: 2.1, 2.2, 5.1_
+  - [x] 6.6 Create goa-ai/mcp-integration.md
+    - Consolidate MCP integration concept + MCP toolsets tutorial
+    - _Requirements: 2.1, 2.2, 5.1_
+  - [x] 6.7 Create goa-ai/memory-sessions.md
+    - Consolidate transcripts.md + sessions-runs-memory.md + memory-persistence.md
+    - _Requirements: 2.1, 2.2, 5.1_
+  - [x] 6.8 Create goa-ai/production.md
+    - Consolidate temporal-setup.md + streaming-ui.md + system-reminders.md
+    - _Requirements: 2.1, 2.2, 5.1_
+
+- [x] 7. Update navigation and index pages
+  - [x] 7.1 Update sidebar.html for flattened navigation
+    - Remove expandable trees for consolidated sections
+    - Add LLM-optimized indicators
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 7.2 Update docs/_index.md with section overview
+    - Add token counts per section
+    - Add content scope descriptions
+    - Style as LLM-optimized landing page
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 7.3 Create goa/_index.md and goa-ai/_index.md section pages
+    - Overview content with quick links
+    - Token count summaries
+    - _Requirements: 3.1, 3.2_
+
+- [x] 8. Implement external link marking
+  - [x] 8.1 Add CSS and JS for external link indicators
+    - Detect external links (non-goa.design URLs)
+    - Add external link icon
+    - Set target="_blank" and rel="noopener"
+    - _Requirements: 5.3_
+  - [x] 8.2 Write property test for external link marking
+    - **Property 6: External link marking**
+    - **Validates: Requirements 5.3**
+
+- [x] 9. Implement auto-generated TOC for long pages
+  - [x] 9.1 Create toc-auto.html partial
+    - Detect page word count
+    - Generate TOC for pages > 2000 words
+    - Style TOC for easy navigation
+    - _Requirements: 2.4_
+  - [x] 9.2 Write property test for TOC generation
+    - **Property 4: TOC presence for long pages**
+    - **Validates: Requirements 2.4**
+
+- [x] 10. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 11. Clean up old content structure
+  - [x] 11.1 Remove or redirect old fragmented pages
+    - Set up redirects from old URLs to new consolidated pages
+    - Remove deprecated content files
+    - _Requirements: 6.3_
+  - [x] 11.2 Update any internal cross-references
+    - Fix links pointing to old page structure
+    - Ensure all internal links resolve correctly
+    - _Requirements: 5.3_
+
