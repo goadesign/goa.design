@@ -4,6 +4,7 @@ static/js/pindex.json
 content/reference/
 resources/
 node_modules/
+_vendor/
 
 .hugo_build.lock
 

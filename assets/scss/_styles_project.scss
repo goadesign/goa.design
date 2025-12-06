@@ -412,7 +412,7 @@ body {
   }
 }
 
-// Footer
+// Footer - centered to match content area
 .td-footer {
   min-height: 0;
   padding: 0.75rem 0;
@@ -420,7 +420,8 @@ body {
   z-index: 150;
   background: var(--footer-bg, $color-surface);
   border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
-  margin-left: 15rem; // Account for fixed left sidebar
+  margin-left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width}); // Centered offset + left sidebar
+  margin-right: calc(#{$docs-center-offset} + #{$docs-sidebar-right-width}); // Centered offset + right sidebar
   
   .container-fluid {
     padding: 0 2rem;
@@ -428,6 +429,7 @@ body {
   
   @media (max-width: 768px) {
     margin-left: 0;
+    margin-right: 0;
     padding: 1rem 0;
   }
 }
@@ -585,18 +587,27 @@ body {
 }
 
 // Layout - Main Container
+// Total layout width: 15rem (left) + 900px (content) + 13rem (right) ≈ 1348px
+// We center this by calculating the left offset from viewport center
+$docs-sidebar-left-width: 15rem;
+$docs-content-max-width: 900px;
+$docs-sidebar-right-width: 13rem;
+$docs-total-width: calc(#{$docs-sidebar-left-width} + #{$docs-content-max-width} + #{$docs-sidebar-right-width});
+// Left offset to center: (100vw - total-width) / 2, but min 0
+$docs-center-offset: max(0px, calc((100vw - #{$docs-total-width}) / 2));
+
 .td-main:not(.td-home .td-main) {
   padding: 0;
   margin-top: 0;
 
-  // Left Sidebar - fixed positioning for truly frozen sidebar
+  // Left Sidebar - fixed positioning, centered with content
   .td-sidebar {
     position: fixed;
     top: 4rem;
-    left: 0;
+    left: $docs-center-offset;
     height: calc(100vh - 4rem);
     overflow-y: auto;
-    width: 15rem;
+    width: $docs-sidebar-left-width;
     font-size: $font-size-sm;
     padding-top: 1.5rem !important;
     padding-left: 1rem;
@@ -632,9 +643,9 @@ body {
   .td-main main,
   .container-fluid {
     padding-top: 2rem;
-    max-width: 900px;
+    max-width: $docs-content-max-width;
     width: 100%;
-    margin-left: 15rem; // Account for fixed left sidebar
+    margin-left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width}); // Centered offset + left sidebar
     padding-left: 1rem !important;
 
     // Content Card styling
@@ -761,15 +772,15 @@ body {
     }
   }
 
-  // Right Sidebar - fixed positioning for truly frozen sidebar
-  // Position: left sidebar (15rem) + content area (900px + padding)
+  // Right Sidebar - fixed positioning, centered with content
+  // Position: center offset + left sidebar + content area
   .td-sidebar-toc {
     position: fixed;
     top: 4rem;
-    left: calc(15rem + 900px); // left sidebar + content max-width
+    left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width} + #{$docs-content-max-width});
     height: calc(100vh - 4rem);
     overflow-y: auto;
-    width: 13rem;
+    width: $docs-sidebar-right-width;
     font-size: $font-size-sm;
     border-left: 0;
     padding-top: 1.5rem !important;
@@ -2280,22 +2291,31 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 // RESPONSIVE STYLES
 // =============================================================================
 
-// Large tablets and small desktops
-@media (max-width: 1200px) {
+// Large tablets and small desktops - revert to left-aligned when viewport is narrow
+@media (max-width: 1400px) {
   .td-main:not(.td-home .td-main) {
+    // At narrower viewports, fall back to left-aligned layout
     .td-sidebar {
+      left: 0;
       width: 13rem;
     }
     
     .td-sidebar-toc {
+      left: calc(13rem + 700px);
       width: 11rem;
     }
     
     main,
     .td-main main,
     .container-fluid {
+      margin-left: 13rem;
       max-width: 700px;
     }
+  }
+  
+  .td-footer {
+    margin-left: 13rem;
+    margin-right: 11rem;
   }
   
   .card-grid {
@@ -2311,6 +2331,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 @media (max-width: 992px) {
   .td-main:not(.td-home .td-main) {
     .td-sidebar {
+      left: 0;
       width: 12rem;
     }
     
@@ -2321,10 +2342,16 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     main,
     .td-main main,
     .container-fluid {
+      margin-left: 12rem;
       max-width: none;
       flex: 1;
       padding-right: 1rem !important;
     }
+  }
+  
+  .td-footer {
+    margin-left: 12rem;
+    margin-right: 0;
   }
   
   .td-home {
@@ -2390,6 +2417,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     flex-direction: column;
     
     .td-sidebar {
+      left: 0;
       width: 100%;
       max-height: none;
       position: relative;
@@ -2412,6 +2440,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     main,
     .td-main main,
     .container-fluid {
+      margin-left: 0;
       padding: 0 !important;
       
       .td-content {
@@ -2420,6 +2449,11 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
         border-radius: 8px;
       }
     }
+  }
+  
+  .td-footer {
+    margin-left: 0;
+    margin-right: 0;
   }
   
   .td-home {
