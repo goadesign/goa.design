@@ -24,6 +24,12 @@ $gradient-card: linear-gradient(60deg,
 $transition-hover: all 0.2s ease-in-out;
 $card-shadow: 0 8px 16px rgba($color-elevation, 0.15);
 
+// Documentation Layout Variables (must be at top level for use in media queries)
+// Total layout width: 15rem (left) + 900px (content) + 13rem (right) ≈ 1348px
+$docs-sidebar-left-width: 15rem;
+$docs-content-max-width: 900px;
+$docs-sidebar-right-width: 13rem;
+
 // Mixins
 @mixin hover-lift {
   transition: $transition-hover;
@@ -420,8 +426,10 @@ body {
   z-index: 150;
   background: var(--footer-bg, $color-surface);
   border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
-  margin-left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width}); // Centered offset + left sidebar
-  margin-right: calc(#{$docs-center-offset} + #{$docs-sidebar-right-width}); // Centered offset + right sidebar
+  // Centered offset + left sidebar
+  margin-left: calc(max(0px, (100vw - #{$docs-sidebar-left-width} - #{$docs-content-max-width} - #{$docs-sidebar-right-width}) / 2) + #{$docs-sidebar-left-width});
+  // Centered offset + right sidebar
+  margin-right: calc(max(0px, (100vw - #{$docs-sidebar-left-width} - #{$docs-content-max-width} - #{$docs-sidebar-right-width}) / 2) + #{$docs-sidebar-right-width});
   
   .container-fluid {
     padding: 0 2rem;
@@ -587,14 +595,8 @@ body {
 }
 
 // Layout - Main Container
-// Total layout width: 15rem (left) + 900px (content) + 13rem (right) ≈ 1348px
-// We center this by calculating the left offset from viewport center
-$docs-sidebar-left-width: 15rem;
-$docs-content-max-width: 900px;
-$docs-sidebar-right-width: 13rem;
-$docs-total-width: calc(#{$docs-sidebar-left-width} + #{$docs-content-max-width} + #{$docs-sidebar-right-width});
-// Left offset to center: (100vw - total-width) / 2, but min 0
-$docs-center-offset: max(0px, calc((100vw - #{$docs-total-width}) / 2));
+// We center by calculating the left offset: max(0, (100vw - total-width) / 2)
+// Total width ≈ 15rem + 900px + 13rem ≈ 1348px
 
 .td-main:not(.td-home .td-main) {
   padding: 0;
@@ -604,7 +606,7 @@ $docs-center-offset: max(0px, calc((100vw - #{$docs-total-width}) / 2));
   .td-sidebar {
     position: fixed;
     top: 4rem;
-    left: $docs-center-offset;
+    left: max(0px, calc((100vw - #{$docs-sidebar-left-width} - #{$docs-content-max-width} - #{$docs-sidebar-right-width}) / 2));
     height: calc(100vh - 4rem);
     overflow-y: auto;
     width: $docs-sidebar-left-width;
@@ -645,7 +647,8 @@ $docs-center-offset: max(0px, calc((100vw - #{$docs-total-width}) / 2));
     padding-top: 2rem;
     max-width: $docs-content-max-width;
     width: 100%;
-    margin-left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width}); // Centered offset + left sidebar
+    // Centered offset + left sidebar width
+    margin-left: calc(max(0px, (100vw - #{$docs-sidebar-left-width} - #{$docs-content-max-width} - #{$docs-sidebar-right-width}) / 2) + #{$docs-sidebar-left-width});
     padding-left: 1rem !important;
 
     // Content Card styling
@@ -777,7 +780,7 @@ $docs-center-offset: max(0px, calc((100vw - #{$docs-total-width}) / 2));
   .td-sidebar-toc {
     position: fixed;
     top: 4rem;
-    left: calc(#{$docs-center-offset} + #{$docs-sidebar-left-width} + #{$docs-content-max-width});
+    left: calc(max(0px, (100vw - #{$docs-sidebar-left-width} - #{$docs-content-max-width} - #{$docs-sidebar-right-width}) / 2) + #{$docs-sidebar-left-width} + #{$docs-content-max-width});
     height: calc(100vh - 4rem);
     overflow-y: auto;
     width: $docs-sidebar-right-width;
