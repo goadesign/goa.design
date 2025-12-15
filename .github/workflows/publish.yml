@@ -3,6 +3,7 @@ name: Publish
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -57,12 +58,14 @@ jobs:
         run: hugo --minify
 
       - name: Auth
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/654303510937/locations/global/workloadIdentityPools/goadesign-deploy-pool/providers/goadesign-deploy-provider'
           service_account: 'goa-design-deploy@goa-design.iam.gserviceaccount.com'
 
       - name: Deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: public
