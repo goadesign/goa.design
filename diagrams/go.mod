@@ -2,7 +2,7 @@ module goa.design/docs/diagrams
 
 go 1.24.0
 
-require goa.design/model v1.14.0
+require goa.design/model v1.14.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
