@@ -80,8 +80,8 @@ diagrams:
 diagrams-check:
 	@echo "Checking diagram freshness..."
 	@mkdir -p /tmp/diagrams-check
-	@cd diagrams && mdl svg goa.design/docs/diagrams -dir /tmp/diagrams-check -all
-	@diff -r static/images/diagrams /tmp/diagrams-check || \
+	@cd diagrams && mdl svg goa.design/docs/diagrams -dir /tmp/diagrams-check -all -compact -direction RIGHT
+	@diff -r -x .gitkeep static/images/diagrams /tmp/diagrams-check || \
 		(echo "Diagrams are out of date. Run 'make diagrams'" && exit 1)
 	@rm -rf /tmp/diagrams-check
 	@echo "Diagrams are up-to-date"
