@@ -1,0 +1,17 @@
+{{/*
+  Custom TOC partial.
+
+  Docsy expects the `.td-toc` element to always exist (ScrollSpy depends on it),
+  so we keep the container but remove the default heading and extra chrome.
+*/ -}}
+
+<div class="td-toc" data-proofer-ignore>
+  {{ if and (not .Params.hide_toc) (not .Params.notoc) -}}
+    {{ $toc := .TableOfContents -}}
+    {{ if and $toc (ne $toc `<nav id="TableOfContents"></nav>`) -}}
+      {{ $toc | safeHTML }}
+    {{ end -}}
+  {{ end -}}
+</div>
+
+

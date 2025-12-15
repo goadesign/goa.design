@@ -457,13 +457,20 @@
       display: block;
       text-decoration: none;
       border-left: 2px solid transparent;
-      transition: color 0.15s ease;
+      background: transparent;
+      transition: color 0.15s ease, background-color 0.15s ease;
 
-      &:hover { color: var(--toc-link-hover, $color-accent); }
+      &:hover {
+        color: var(--toc-link-hover, $color-accent);
+        background: var(--color-highlight, $color-highlight);
+      }
       &.active {
         color: var(--doc-link-color, $color-accent);
         border-left-color: var(--doc-link-color, $color-accent);
-        font-weight: $font-weight-medium;
+        // Keep indent stable: we already reserve border space via `border-left: 2px solid transparent`
+        // in the base rule, so we must not shift padding on active (otherwise it jumps left).
+        font-weight: $font-weight-normal;
+        background: transparent;
       }
     }
 

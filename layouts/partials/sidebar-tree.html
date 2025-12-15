@@ -8,8 +8,8 @@
   If you change this partial, update the CSS comments and selectors accordingly.
 */}}
 
-{{/* Get the docs section - use language-aware path */}}
-{{ $docsSection := .Site.GetPage "docs" }}
+{{/* Get the docs section (language-aware for the current site). */}}
+{{ $docsSection := .Site.GetPage "/docs" }}
 
 <nav id="td-section-nav" class="td-sidebar-nav" aria-label="Documentation navigation">
   <ul class="td-sidebar-nav-list">
