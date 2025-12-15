@@ -1,72 +1,137 @@
-// Google Fonts
-$google_font_name: "Charter, Playfair Display, Inter";
-$google_font_family: "Charter:200,300,400,400i,700,700i|Playfair+Display:400,400i,600,700|Inter:400,500,600,700";
+// =============================================================================
+// GOA.DESIGN - Project Variables
+// =============================================================================
+// Single source of truth for all design tokens
 
-// Core Colors - Base palette
-$color-accent: #5bc0eb;     // Vibrant blue
-$color-neutral: #fb4bcf;    // Pink
-$color-success: #2ecc71;    // Fresh green
-$color-warning: #faff00;    // Electric neon yellow
-$color-danger: #e74c3c;     // Warm red
+// -----------------------------------------------------------------------------
+// Typography - Font Families
+// -----------------------------------------------------------------------------
+// Documentation uses Inter (Claude-style), homepage uses Charter/Playfair
+$font-family-docs: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-family-code: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+$font-family-homepage: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+$font-family-display: "Playfair Display", serif;
 
-// Gradient Colors
-$color-gradient-start: #5bc0eb;  // Pure blue - Used for navbar and hover states
+// Bootstrap/Docsy overrides
+$font-family-base: $font-family-docs;
+$font-family-sans-serif: $font-family-docs;
+$font-family-monospace: $font-family-code;
 
-// Card 1: Development Speed (Blue dominant)
-$card1-gradient-start: $color-gradient-start;  // Pure blue
-$card1-gradient-end: #9d89e8;    // Blue-purple blend
+// Google Fonts import string
+$google_font_name: "Inter, JetBrains Mono, Charter, Playfair Display";
+$google_font_family: "Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Charter:wght@400;700&family=Playfair+Display:wght@400;600;700";
 
-// Card 2: Purple to pink transition
-$card2-gradient-start: #9d89e8;  // Blue-purple blend
-$card2-gradient-end: #fb4bcf;    // Pure pink
+// -----------------------------------------------------------------------------
+// Typography - Font Sizes (Claude-style scale)
+// -----------------------------------------------------------------------------
+$font-size-root: 16px;
+$font-size-base: 1rem;           // 16px
+$font-size-body: 0.9375rem;      // 15px - Claude docs body text
+$font-size-sm: 0.875rem;         // 14px
+$font-size-xs: 0.8125rem;        // 13px
+$font-size-xxs: 0.75rem;         // 12px
 
-// Card 3: Pink to yellow-orange
-$card3-gradient-start: #fb4bcf;  // Pure pink
-$card3-gradient-end: #ffb347;    // Yellow-orange
+// Code sizes
+$font-size-code-inline: 0.875em; // Relative to parent
+$font-size-code-block: 0.8125rem; // 13px
 
-// Interactive Elements
-$color-action: $color-accent;                     // Buttons, links, interactive elements
-$color-action-hover: darken($color-action, 10%);  // Hover state for interactive elements
-$color-border: $color-accent;                     // Borders, dividers - pure blue now
-$color-highlight: rgba($color-accent, 0.1);       // Highlights, accents - light blue
+// Heading sizes (Claude-style)
+$h1-font-size: 2rem;             // 32px
+$h2-font-size: 1.5rem;           // 24px
+$h3-font-size: 1.25rem;          // 20px
+$h4-font-size: 1.125rem;         // 18px
+$h5-font-size: 1rem;             // 16px
+$h6-font-size: 0.875rem;         // 14px
 
-// Typography
-$color-text: #595959;          // Main text content - lighter dark gray
-$color-text-muted: #757575;    // Secondary text - adjusted to match
-$color-text-inverse: #ffffff;   // Text on dark backgrounds
-$color-text-link: darken($color-action, 5%);  // Link text
+// -----------------------------------------------------------------------------
+// Typography - Line Heights
+// -----------------------------------------------------------------------------
+$line-height-base: 1.625;        // Prose - optimal for reading
+$line-height-code: 1.5;          // Code blocks
+$line-height-heading: 1.3;       // Headings
+$line-height-tight: 1.2;         // Compact UI elements
 
-// Surfaces
-$color-surface: white;                            // Primary surface
-$color-surface-alt: #f8f9fa;    // Alternative surface
-$color-elevation: rgba($color-accent, 0.1);         // Shadows, depth - using blue accent
+// -----------------------------------------------------------------------------
+// Typography - Font Weights
+// -----------------------------------------------------------------------------
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$heading-font-weight: 600;       // All headings use semibold
 
-// Accents & Effects
-// $color-elevation: rgba($color-danger, 0.1);         // Shadows, depth
+// -----------------------------------------------------------------------------
+// Typography - Letter Spacing
+// -----------------------------------------------------------------------------
+$letter-spacing-tight: -0.02em;  // Headings
+$letter-spacing-body: -0.011em;  // Body text
+$letter-spacing-wide: 0.05em;    // Uppercase labels
 
-// Title Gradient
-$color-gradient-start: $color-accent;              // Title gradient start
-$color-gradient-end: $color-neutral;               // Title gradient end - back to pink
-$color-gradient-overlay: rgba(white, 0.1);  // Gradient overlay effect
+// -----------------------------------------------------------------------------
+// Layout - Content Width
+// -----------------------------------------------------------------------------
+$content-max-width: 48rem;       // 768px - optimal reading width
+$content-max-width-lg: 52rem;    // 832px - large screens
 
-// Typography
-$font-family-base: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
-$font-family-playfair: "Playfair Display", serif;
-$font-family-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+// -----------------------------------------------------------------------------
+// Layout - Breakpoints
+// -----------------------------------------------------------------------------
+$breakpoint-mobile: 576px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 992px;
+$breakpoint-large: 1200px;
 
-// Font sizes
-$font-size-root: 20px;
-$font-size-base: 1rem;
-$h1-font-size: 2rem;
-$h2-font-size: 1.5rem;
-$h3-font-size: 1.25rem;
-$h4-font-size: 1.1rem;
-$h5-font-size: 1rem;
-$font-size-sm: 0.875rem;
-$font-size-code: 0.7rem;
-$line-height-base: 1.6;
+// -----------------------------------------------------------------------------
+// Colors - Core Palette
+// -----------------------------------------------------------------------------
+$color-accent: #5bc0eb;          // Vibrant blue - primary brand
+$color-neutral: #fb4bcf;         // Pink - secondary accent
+$color-success: #2ecc71;         // Fresh green
+$color-warning: #faff00;         // Electric neon yellow
+$color-danger: #e74c3c;          // Warm red
 
-// Title specific variables
+// -----------------------------------------------------------------------------
+// Colors - Gradients
+// -----------------------------------------------------------------------------
+$color-gradient-start: $color-accent;
+$color-gradient-end: $color-neutral;
+$color-gradient-overlay: rgba(white, 0.1);
+
+// Card gradients
+$card1-gradient-start: $color-accent;
+$card1-gradient-end: #9d89e8;
+$card2-gradient-start: #9d89e8;
+$card2-gradient-end: $color-neutral;
+$card3-gradient-start: $color-neutral;
+$card3-gradient-end: #ffb347;
+
+// -----------------------------------------------------------------------------
+// Colors - Interactive
+// -----------------------------------------------------------------------------
+$color-action: $color-accent;
+$color-action-hover: darken($color-action, 10%);
+$color-border: $color-accent;
+$color-highlight: rgba($color-accent, 0.1);
+
+// -----------------------------------------------------------------------------
+// Colors - Text
+// -----------------------------------------------------------------------------
+$color-text: #595959;
+$color-text-muted: #757575;
+$color-text-inverse: #ffffff;
+$color-text-link: darken($color-action, 5%);
+$color-text-heading: #1a1a1a;
+
+// -----------------------------------------------------------------------------
+// Colors - Surfaces
+// -----------------------------------------------------------------------------
+$color-surface: white;
+$color-surface-alt: #f8f9fa;
+$color-elevation: rgba($color-accent, 0.1);
+
+// -----------------------------------------------------------------------------
+// Homepage - Title Specific
+// -----------------------------------------------------------------------------
 $title-letter-spacing: -0.02em;
 $title-font-weight: 600;
 $title-font-size: 2.8rem;

@@ -1,0 +1,87 @@
+{{ $version := .Site.Params.mermaid.version | default "10" -}}
+{{ $cdnurl := printf "https://cdn.jsdelivr.net/npm/mermaid@%s/dist/mermaid.esm.min.mjs" $version -}}
+
+<script type="module" async>
+  import mermaid from "{{ $cdnurl }}";
+
+  (function () {
+    if (document.querySelectorAll('.mermaid').length === 0) {
+      mermaid.initialize({ startOnLoad: false });
+      return;
+    }
+
+    // Custom dark theme for Goa
+    var goaDarkTheme = {
+      theme: 'base',
+      themeVariables: {
+        // Dark background
+        background: '#1a1a2e',
+        primaryColor: '#6C5CE7',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#6C5CE7',
+        
+        // Accent colors  
+        secondaryColor: '#00CEC9',
+        secondaryTextColor: '#ffffff',
+        secondaryBorderColor: '#00CEC9',
+        tertiaryColor: '#FB4FCF',
+        tertiaryTextColor: '#ffffff',
+        tertiaryBorderColor: '#FB4FCF',
+        
+        // Lines and text
+        lineColor: '#8080a0',
+        textColor: '#e0e0e0',
+        
+        // Nodes
+        mainBkg: '#2d2d44',
+        nodeBorder: '#6C5CE7',
+        clusterBkg: '#252538',
+        clusterBorder: '#505070',
+        titleColor: '#ffffff',
+        
+        // Labels
+        labelBackground: '#1a1a2e',
+        labelTextColor: '#e0e0e0',
+        edgeLabelBackground: '#2d2d44',
+        
+        // Notes
+        noteBkgColor: '#2d2d44',
+        noteTextColor: '#e0e0e0',
+        noteBorderColor: '#6C5CE7',
+        
+        // Actors
+        actorBkg: '#6C5CE7',
+        actorBorder: '#6C5CE7',
+        actorTextColor: '#ffffff',
+        actorLineColor: '#8080a0',
+        
+        // Font
+        fontFamily: 'Inter, -apple-system, system-ui, sans-serif',
+        fontSize: '14px'
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 15,
+        nodeSpacing: 50,
+        rankSpacing: 50
+      }
+    };
+
+    var settings = {
+      startOnLoad: true,
+      securityLevel: 'loose',
+      ...goaDarkTheme
+    };
+
+    mermaid.initialize(settings);
+
+  })();
+</script>
+
+
+
+
+
+
+

@@ -51,10 +51,12 @@ goa_ai_hero_badge_text: "Introduzione a Goa-AI"
 goa_ai_hero_title_1: "Costruisci Agenti IA"
 goa_ai_hero_title_2: "Alla Maniera di Goa"
 goa_ai_hero_description: "Porta la filosofia design-first nei sistemi agentici. Definisci agenti, strumenti e policy con un potente DSL. Ottieni codice type-safe, streaming strutturato e durabilità pronta per la produzione."
-goa_ai_hero_feature_1: "Agenti Design-First"
-goa_ai_hero_feature_2: "Alberi di Esecuzione"
-goa_ai_hero_feature_3: "Streaming Strutturato"
-goa_ai_hero_feature_4: "Durabilità Temporal"
+goa_ai_hero_feature_design: "Definisci agenti con contratti tipizzati"
+goa_ai_hero_feature_mcp: "Connetti qualsiasi server MCP"
+goa_ai_hero_feature_registries: "Scopri strumenti tra cluster"
+goa_ai_hero_feature_runtrees: "Componi agenti in gerarchie"
+goa_ai_hero_feature_streaming: "Streaming di eventi tipizzati"
+goa_ai_hero_feature_durability: "Sopravvivi ai crash con Temporal"
 goa_ai_hero_cta_primary: "Esplora Goa-AI"
 goa_ai_hero_cta_secondary: "Guida Rapida"
 
@@ -99,9 +101,18 @@ wizard_section_note: "(richiede un abbonamento <a href=\"https://openai.com/blog
 design_first_title: "Costruire Software con l'Approccio Design-First"
 design_first_description: "Goa offre un approccio dichiarativo e design-first per costruire microservizi robusti, scalabili e type-safe in Go. Definisci la tua soluzione una volta sola e lascia che Goa generi tutto ciò di cui hai bisogno—dal trasporto alla documentazione—così puoi concentrarti sulla logica di business, non sul codice ripetitivo."
 
+# Goa Hero Section Features
+goa_hero_feature_design: "Progetta API con un potente DSL"
+goa_hero_feature_codegen: "Genera server, client e documentazione"
+goa_hero_feature_transports: "Supporto HTTP, gRPC e WebSocket"
+goa_hero_feature_validation: "Validazione richieste integrata"
+goa_hero_feature_docs: "Specifiche OpenAPI auto-generate"
+goa_hero_feature_extensible: "Architettura plugin estensibile"
+goa_hero_cta_primary: "Esplora Goa"
+
 # Common actions
 learn_more: "Scopri di più"
-get_started: "Inizia a Costruire"
+get_started: "Guida Rapida"
 
 # Wizard
 wizard_title: "Goa Design Wizard"

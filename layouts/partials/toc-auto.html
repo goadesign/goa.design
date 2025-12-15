@@ -1,0 +1,23 @@
+{{/*
+  Auto-Generated Table of Contents for Long Pages
+  
+  Generates a table of contents for documentation pages exceeding 2000 words.
+  The TOC is generated client-side via JavaScript for dynamic content support,
+  but this partial provides the necessary script inclusion and styling hooks.
+  
+  Usage: {{ partial "toc-auto.html" . }}
+  
+  Parameters (via page context):
+    - .WordCount: Hugo's built-in word count
+    - .Content: Page content for heading extraction
+  
+  Requirements: 2.4
+*/}}
+
+{{- $wordCount := .WordCount -}}
+{{- $threshold := 2000 -}}
+
+{{/* Only include TOC infrastructure for pages that might need it */}}
+{{- if gt $wordCount $threshold -}}
+<script src="/js/toc-auto.js" defer></script>
+{{- end -}}

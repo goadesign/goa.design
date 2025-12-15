@@ -4,6 +4,7 @@ static/js/pindex.json
 content/reference/
 resources/
 node_modules/
+_vendor/
 
 .hugo_build.lock
 
@@ -18,3 +19,9 @@ static/.DS_Store
 static/img/.DS_Store
 static/img/social/.DS_Store
 .DS_Store
+
+# Translation cache
+.translation-cache.json
+.venv/
+.env
+.kiro/

@@ -1,0 +1,992 @@
+// =============================================================================
+// GOA.DESIGN - Custom Styles
+// =============================================================================
+// Overrides for Docsy theme. Uses variables from _variables_project.scss.
+// Structure: Base → Typography → Navigation → Components → Responsive → Dark
+
+// -----------------------------------------------------------------------------
+// Font Imports
+// -----------------------------------------------------------------------------
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+
+// =============================================================================
+// DOCUMENTATION CONTENT
+// =============================================================================
+
+.td-content {
+  font-family: $font-family-homepage;  // Charter serif for body text (matches live site)
+  font-size: $font-size-body;
+  line-height: $line-height-base;
+  max-width: $content-max-width;
+
+  // Prose
+  p {
+    margin-bottom: 1.25rem;
+    letter-spacing: $letter-spacing-body;
+    color: var(--color-text, $color-text);
+  }
+
+  ul, ol {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+    li {
+      margin-bottom: 0.5rem;
+      color: var(--color-text, $color-text);
+      &:last-child { margin-bottom: 0; }
+    }
+    ul, ol { margin: 0.5rem 0; }
+  }
+
+  blockquote {
+    font-style: italic;
+    padding-left: 1.5rem;
+    border-left: 3px solid var(--color-border, rgba($color-accent, 0.3));
+    margin: 1.5rem 0;
+    color: var(--color-text-muted, $color-text-muted);
+  }
+
+  // Headings
+  h1, h2, h3, h4, h5, h6 {
+    font-family: $font-family-docs;
+    font-weight: $heading-font-weight;
+    line-height: $line-height-heading;
+    letter-spacing: $letter-spacing-tight;
+    color: var(--color-text-heading, $color-text-heading);
+    a {
+      color: inherit;
+      text-decoration: none;
+      &:hover { color: var(--doc-link-color, $color-accent); }
+    }
+  }
+
+  h1 {
+    font-size: $h1-font-size;
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+  }
+  h2 { font-size: $h2-font-size; margin: 1.75rem 0 1rem; }
+  h3 { font-size: $h3-font-size; margin: 1.5rem 0 0.75rem; }
+  h4 { font-size: $h4-font-size; margin: 1.25rem 0 0.5rem; }
+  h5 { font-size: $h5-font-size; margin: 1rem 0 0.5rem; }
+  h6 {
+    font-size: $h6-font-size;
+    margin: 0.875rem 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+    color: var(--color-text-muted, $color-text-muted);
+  }
+
+  // Code
+  code:not([class*="language-"]):not(.hljs) {
+    font-family: $font-family-code;
+    font-size: $font-size-code-inline;
+    line-height: $line-height-code;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    background: var(--doc-inline-code-bg, rgba($color-accent, 0.08));
+    color: var(--doc-inline-code-text, #d63384);
+    font-weight: $font-weight-medium;
+  }
+
+  pre {
+    font-family: $font-family-code;
+    font-size: $font-size-code-block;
+    line-height: $line-height-code;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    border-radius: 8px;
+    background: var(--color-bg-code, #f8f9fa);
+    border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+    overflow-x: auto;
+    code {
+      font-family: inherit;
+      font-size: inherit;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-weight: $font-weight-normal;
+      display: block;
+    }
+  }
+
+  .highlight {
+    margin: 1.5rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    pre {
+      margin: 0;
+      border-radius: 8px;
+      border: none;
+    }
+  }
+
+  // Architecture diagrams (Model DSL SVGs)
+  // Inlined SVGs inherit CSS custom properties for theming
+  figure {
+    margin: 1.5rem 0;
+    
+    img[src*="/diagrams/"] {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    figcaption {
+      font-size: $font-size-sm;
+      color: var(--color-text-muted, $color-text-muted);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+  }
+  
+  // Diagram shortcode - inlined SVGs for CSS theming
+  figure.diagram {
+    margin: 2rem 0;
+    
+    svg {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    figcaption {
+      font-size: $font-size-sm;
+      color: var(--color-text-muted, $color-text-muted);
+      text-align: center;
+      margin-top: 0.75rem;
+      font-style: italic;
+    }
+    
+    .diagram-error {
+      color: var(--color-danger, #e74c3c);
+      font-style: italic;
+    }
+  }
+
+  // Mermaid diagrams
+  .mermaid {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--mermaid-bg, #1a1a2e);
+    border-radius: 12px;
+    border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+    overflow-x: auto;
+    
+    // Center the diagram
+    display: flex;
+    justify-content: center;
+    
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+  }
+  
+  // Mermaid inside code blocks (pre.mermaid from Hugo)
+  pre.mermaid {
+    background: var(--mermaid-bg, #1a1a2e);
+    border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  // Tables
+  table {
+    width: auto;
+    min-width: 50%;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    border-collapse: collapse;
+    font-size: $font-size-body;
+    background: transparent;
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+    }
+    th {
+      font-weight: $heading-font-weight;
+      background: var(--color-bg-alt, $color-surface-alt);
+      color: var(--color-text-heading, $color-text-heading);
+    }
+    tr:hover td { background: var(--color-highlight, $color-highlight); }
+  }
+
+  // Links
+  a:not(.btn):not(.nav-link) {
+    color: var(--doc-link-color, $color-accent);
+    text-decoration: none;
+    transition: color 0.15s ease;
+    &:hover {
+      color: var(--doc-link-hover, $color-action-hover);
+      text-decoration: underline;
+    }
+  }
+
+  // Spacing helpers
+  > *:first-child { margin-top: 0; }
+  > *:last-child { margin-bottom: 0; }
+  > h2 + p, > h3 + p, > h4 + p { margin-top: 0; }
+
+  .alert {
+    margin: 1.5rem 0;
+    p { margin-bottom: 0.75rem; &:last-child { margin-bottom: 0; } }
+  }
+}
+
+
+// =============================================================================
+// LEFT SIDEBAR (Navigation)
+// =============================================================================
+// Customizes the sidebar navigation to show Goa and Goa-AI as flat top-level
+// sections instead of nested under a "Documentation" root.
+//
+// STRUCTURE: Our custom partial (layouts/partials/docs/sidebar-tree.html) generates:
+//   nav.td-sidebar-nav
+//     └── ul.td-sidebar-nav-list
+//         ├── li.td-sidebar-nav-item (Goa section)
+//         │   ├── a.td-sidebar-nav-link--section
+//         │   └── ul.td-sidebar-nav-sublist
+//         │       └── li.td-sidebar-nav-subitem × N
+//         │           └── a.td-sidebar-nav-sublink
+//         └── li.td-sidebar-nav-item (Goa-AI section)
+//             ├── a.td-sidebar-nav-link--section
+//             └── ul.td-sidebar-nav-sublist
+//                 └── li.td-sidebar-nav-subitem × N
+//                     └── a.td-sidebar-nav-sublink
+//
+// GOALS:
+// 1. Flat structure with no indent for subsections
+// 2. Section titles (Goa, Goa-AI) should NOT be bold
+// 3. Page links should use smaller font like right-nav TOC entries
+// 4. Clear visual separation between sections
+//
+// If you change the sidebar partial, update this block first – it is the
+// single source of truth for the left docs nav look & feel.
+// ---------------------------------------------------------------------------
+
+.td-sidebar-nav {
+  padding-left: 1rem;
+
+  // -------------------------------------------------------------------------
+  // LIST STYLING: Remove default list styling and indentation
+  // -------------------------------------------------------------------------
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    list-style: none;
+  }
+
+  // -------------------------------------------------------------------------
+  // SECTION LINKS (Goa, Goa-AI): Normal weight, not bold
+  // -------------------------------------------------------------------------
+  .td-sidebar-nav-link--section {
+    font-family: $font-family-docs;
+    font-size: 1rem;
+    font-weight: $font-weight-normal !important;
+    color: var(--color-text-heading, $color-text-heading);
+    padding: 0.5rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+
+    &:hover {
+      color: var(--doc-link-color, $color-accent);
+      background: var(--color-highlight, $color-highlight);
+    }
+
+    // Active state - color change only, no bold
+    &.active {
+      font-weight: $font-weight-normal !important;
+      color: var(--doc-link-color, $color-accent);
+      border-left: 2px solid var(--doc-link-color, $color-accent);
+      padding-left: calc(0.5rem - 2px);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // PAGE LINKS (Quickstart, DSL Reference, etc.): Smaller font like right nav
+  // -------------------------------------------------------------------------
+  .td-sidebar-nav-sublink {
+    font-family: $font-family-docs;
+    font-size: $font-size-xs; // Matches right nav subsection size
+    font-weight: $font-weight-normal !important;
+    color: var(--color-text, $color-text);
+    padding: 0.25rem 0.5rem;
+    border-left: 2px solid transparent;
+    border-radius: 0;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+
+    &:hover {
+      color: var(--doc-link-color, $color-accent);
+      background: var(--color-highlight, $color-highlight);
+    }
+
+    // Active state - with left border like right nav
+    &.active {
+      font-weight: $font-weight-normal !important;
+      color: var(--doc-link-color, $color-accent);
+      border-left-color: var(--doc-link-color, $color-accent);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // SPACING: Visual separation between main sections (Goa / Goa-AI)
+  // -------------------------------------------------------------------------
+  .td-sidebar-nav-item + .td-sidebar-nav-item {
+    margin-top: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+  }
+
+  // -------------------------------------------------------------------------
+  // SUBLIST: Small top margin for visual grouping under section title
+  // -------------------------------------------------------------------------
+  .td-sidebar-nav-sublist {
+    margin-top: 0.25rem;
+  }
+
+  .td-sidebar-nav-subitem {
+    margin-bottom: 0; // Spacing handled by link padding
+  }
+
+  // -------------------------------------------------------------------------
+  // DOCSY FALLBACK: In case default Docsy markup is used
+  // -------------------------------------------------------------------------
+  // Hide the "Documentation" root label if Docsy's default tree is rendered.
+  .td-sidebar-link.tree-root {
+    display: none !important;
+  }
+
+  // Override Docsy's bold styling for section links.
+  .td-sidebar-link__section {
+    font-weight: $font-weight-normal !important;
+
+    &.active {
+      font-weight: $font-weight-normal !important;
+    }
+  }
+
+  // Override Docsy's bold for active links.
+  a.active {
+    font-weight: $font-weight-normal !important;
+  }
+
+  // Override Docsy's foldable behavior - always show nested lists.
+  .foldable {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  // Hide checkboxes/chevrons if Docsy default markup is used.
+  input[type="checkbox"] {
+    display: none !important;
+  }
+
+  label::before,
+  label::after {
+    display: none !important;
+  }
+
+  label {
+    display: contents;
+  }
+}
+
+// Mobile behavior for left docs nav
+// ---------------------------------------------------------------------------
+// On phones we want the docs nav to always be visible at the top of the
+// content column (no Bootstrap "collapsed" drawer). Docsy wraps the nav in a
+// .collapse container with a hamburger toggle; we disable that below so the
+// nav is simply rendered as a static block.
+//
+// If the collapse/ID wiring in the sidebar changes, revisit this block.
+@media (max-width: 768px) {
+  // Force the docs section nav to be always shown instead of collapsed.
+  .td-sidebar-nav.collapse {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+
+  // Hide the hamburger; the nav is always open above the content.
+  .td-sidebar__toggle {
+    display: none !important;
+  }
+}
+
+
+// =============================================================================
+// RIGHT SIDEBAR (Table of Contents)
+// =============================================================================
+
+.td-sidebar-toc {
+  background: var(--sidebar-bg, transparent);
+  border: none;
+  border-left: none;
+  padding-left: 0;
+}
+
+.td-toc {
+  border: none;
+  padding: 0;
+
+  #TableOfContents {
+    font-family: $font-family-docs;
+
+    a {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-normal;
+      color: var(--toc-link-color, $color-text);
+      padding: 0.25rem 0 0.25rem 0.5rem;
+      display: block;
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color 0.15s ease;
+
+      &:hover { color: var(--toc-link-hover, $color-accent); }
+      &.active {
+        color: var(--doc-link-color, $color-accent);
+        border-left-color: var(--doc-link-color, $color-accent);
+        font-weight: $font-weight-medium;
+      }
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      ul a {
+        font-size: $font-size-xxs;
+        color: var(--color-text-muted, $color-text-muted);
+      }
+    }
+  }
+}
+
+// Hide edit/view page links and the container
+.td-page-meta { display: none; }
+a.td-edit-page { display: none; }
+
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+
+// LLM-Optimized Indicators
+.llm-optimized-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  color: var(--doc-link-color, $color-accent);
+  background: var(--color-highlight, rgba($color-accent, 0.1));
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  i { font-size: 0.625rem; }
+}
+
+.token-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+  color: var(--color-text-muted, $color-text-muted);
+  background: var(--color-bg-alt, $color-surface-alt);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  margin-left: auto;
+  i { font-size: 0.625rem; opacity: 0.7; }
+  .token-value::before { content: '~'; }
+  .token-value::after { content: ' tokens'; }
+}
+
+.section-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+  .token-count-badge { margin-left: 0; }
+}
+
+.content-scope-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+  color: var(--color-text-muted, $color-text-muted);
+  background: var(--color-bg-alt, $color-surface-alt);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  i { font-size: 0.625rem; opacity: 0.7; }
+}
+
+.llm-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg, rgba($color-accent, 0.08) 0%, rgba($color-accent, 0.04) 100%);
+  border: 1px solid rgba($color-accent, 0.2);
+  border-radius: 8px;
+  border-left: 4px solid var(--doc-link-color, $color-accent);
+
+  .llm-info-content {
+    flex: 1;
+    font-family: $font-family-docs;
+    font-size: $font-size-sm;
+    line-height: 1.5;
+    color: var(--color-text, $color-text);
+    p { margin: 0; }
+    strong { color: var(--doc-link-color, $color-accent); font-weight: $heading-font-weight; }
+    code {
+      font-family: $font-family-code;
+      font-size: $font-size-xs;
+      padding: 0.125em 0.3em;
+      background: rgba($color-accent, 0.1);
+      border-radius: 3px;
+    }
+  }
+}
+
+
+// Auto-generated TOC (in-page)
+.toc-auto-container { margin: 1.5rem 0 2rem; }
+
+.toc-auto {
+  background: var(--color-bg-alt, $color-surface-alt);
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.toc-auto-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: $font-family-docs;
+  font-size: $font-size-xs;
+  font-weight: $heading-font-weight;
+  color: var(--color-text-muted, $color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+  i { font-size: $font-size-xxs; opacity: 0.7; }
+}
+
+.toc-auto-list { list-style: none; padding: 0; margin: 0; }
+
+.toc-auto-item {
+  margin: 0;
+  &.toc-indent-1 { padding-left: 1rem; }
+  &.toc-indent-2 { padding-left: 2rem; }
+}
+
+.toc-auto-link {
+  display: block;
+  font-family: $font-family-docs;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  color: var(--color-text, $color-text);
+  padding: 0.375rem 0.5rem;
+  margin-left: -0.5rem;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+  text-decoration: none;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--doc-link-color, $color-accent);
+    background: var(--color-highlight, $color-highlight);
+  }
+  &.active {
+    color: var(--doc-link-color, $color-accent);
+    font-weight: $font-weight-medium;
+    border-left-color: var(--doc-link-color, $color-accent);
+    background: var(--color-highlight, rgba($color-accent, 0.08));
+  }
+}
+
+.toc-indent-1 .toc-auto-link,
+.toc-indent-2 .toc-auto-link {
+  font-size: $font-size-xs;
+  color: var(--color-text-muted, $color-text-muted);
+}
+
+
+// External link icons
+.td-content a.external-link {
+  .external-link-icon {
+    display: inline-block;
+    margin-left: 0.2em;
+    font-size: 0.75em;
+    vertical-align: super;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+  }
+  &:hover .external-link-icon { opacity: 1; }
+}
+
+
+// Page Title Row - title with copy dropdown inline
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+
+  h1 {
+    margin: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .copy-page-container {
+    flex-shrink: 0;
+    align-self: center;
+  }
+}
+
+// Copy Page Dropdown
+.copy-page-dropdown {
+  position: relative;
+  display: inline-block;
+  z-index: 100;
+}
+
+.copy-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-family: $font-family-docs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  color: var(--color-text-muted, $color-text-muted);
+  background: var(--color-bg-alt, $color-surface-alt);
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.1));
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--doc-link-color, $color-accent);
+    background: var(--color-highlight, $color-highlight);
+    border-color: var(--doc-link-color, $color-accent);
+  }
+
+  i {
+    font-size: 0.75rem;
+  }
+
+  .dropdown-arrow {
+    font-size: 0.625rem;
+    margin-left: 0.125rem;
+    transition: transform 0.15s ease;
+  }
+}
+
+.copy-page-dropdown.open .copy-page-btn {
+  color: var(--doc-link-color, $color-accent);
+  border-color: var(--doc-link-color, $color-accent);
+
+  .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+}
+
+.copy-page-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  padding: 0.25rem 0;
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.1));
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+.copy-page-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  font-family: $font-family-docs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-normal;
+  color: var(--color-text, $color-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--doc-link-color, $color-accent);
+    background: var(--color-highlight, $color-highlight);
+  }
+
+  i {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    width: 1rem;
+    text-align: center;
+  }
+}
+
+// Copy Page Toast Notification
+.copy-page-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(1rem);
+  padding: 0.625rem 1rem;
+  font-family: $font-family-docs;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: #fff;
+  background: #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 9999;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  &.success {
+    background: #28a745;
+  }
+
+  &.error {
+    background: #dc3545;
+  }
+}
+
+// Dark theme for copy page dropdown
+[data-theme="dark"] {
+  .copy-page-btn {
+    background: var(--color-bg-elevated, #1c2128);
+    border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+    color: var(--color-text-muted, #8b949e);
+
+    &:hover {
+      background: rgba($color-accent, 0.1);
+    }
+  }
+
+  .copy-page-menu {
+    background: var(--color-bg-elevated, #1c2128);
+    border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .copy-page-menu-item {
+    color: var(--color-text, #c9d1d9);
+
+    &:hover {
+      background: rgba($color-accent, 0.1);
+    }
+  }
+
+  .copy-page-toast {
+    background: #444;
+  }
+}
+
+
+// =============================================================================
+// RESPONSIVE
+// =============================================================================
+
+@media (min-width: $breakpoint-desktop) {
+  .td-content { max-width: $content-max-width; padding: 1.5rem 2rem; }
+  .td-sidebar { width: 15rem; }
+  .td-sidebar-toc { width: 13rem; }
+}
+
+@media (min-width: $breakpoint-large) {
+  .td-content { max-width: $content-max-width-lg; padding: 2rem 2.5rem; }
+}
+
+@media (min-width: $breakpoint-tablet) and (max-width: #{$breakpoint-desktop - 1px}) {
+  .td-content {
+    max-width: none;
+    padding: 1.25rem 1.5rem;
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.375rem; }
+    h3 { font-size: 1.125rem; }
+    pre { font-size: $font-size-xxs; padding: 0.875rem 1rem; }
+  }
+  .td-sidebar { width: 12rem; }
+  .td-sidebar .td-sidebar-nav a.td-sidebar-link { font-size: $font-size-xs; }
+  .td-sidebar-toc { display: none; }
+}
+
+@media (max-width: #{$breakpoint-tablet - 1px}) {
+  .td-content {
+    max-width: none;
+    padding: 1rem;
+    margin: 0.5rem;
+    border-radius: 8px;
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.125rem; }
+    pre { font-size: $font-size-xxs; padding: 0.75rem; }
+    // Wrap tables in scrollable container on mobile
+    table {
+      display: table;
+      width: 100%;
+      overflow-x: visible;
+    }
+  }
+  .td-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
+  }
+  .td-sidebar-toc { display: none; }
+  .toc-auto-container { margin: 1rem 0 1.5rem; }
+  .toc-auto { padding: 0.875rem 1rem; }
+}
+
+
+@media (max-width: #{$breakpoint-mobile - 1px}) {
+  .td-content {
+    padding: 0.75rem;
+    margin: 0.25rem;
+    h1 { font-size: 1.375rem; }
+    h2 { font-size: 1.125rem; }
+    h3 { font-size: 1rem; }
+    p, li { font-size: $font-size-sm; }
+  }
+}
+
+@media print {
+  .td-content {
+    max-width: none;
+    padding: 0;
+    p { font-size: 11pt; }
+    h1 { font-size: 18pt; }
+    h2 { font-size: 14pt; }
+    h3 { font-size: 12pt; }
+    pre { font-size: 9pt; border: 1px solid #ccc; background: #f5f5f5; }
+  }
+  .td-sidebar, .td-sidebar-toc { display: none; }
+  .toc-auto { background: #f5f5f5; border: 1px solid #ccc; }
+}
+
+
+// =============================================================================
+// DARK THEME
+// =============================================================================
+
+[data-theme="dark"] {
+  .td-content {
+    p, li { color: var(--color-text, #c9d1d9); }
+    h1, h2, h3, h4, h5, h6 { color: var(--color-text-heading, #f0f6fc); }
+    pre {
+      background: var(--color-bg-code, #1e2127);
+      border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+    }
+    code:not([class*="language-"]):not(.hljs) {
+      background: var(--doc-inline-code-bg, rgba($color-accent, 0.12));
+      color: var(--doc-inline-code-text, #ff79c6);
+    }
+    // Table styles moved to _dark_theme.scss for Bootstrap .table-striped compatibility
+  }
+
+  .td-sidebar .td-sidebar-nav a.td-sidebar-link {
+    color: var(--color-text, #c9d1d9);
+    &:hover { background: rgba($color-accent, 0.1); }
+    &.active { background: rgba($color-accent, 0.15); }
+  }
+
+  .td-toc #TableOfContents a {
+    color: var(--toc-link-color, #c9d1d9);
+    &.active {
+      color: var(--doc-link-color, #58a6ff);
+      border-left-color: var(--doc-link-color, #58a6ff);
+    }
+  }
+
+
+  .llm-optimized-indicator { background: rgba($color-accent, 0.15); }
+  .token-count-badge,
+  .content-scope-indicator {
+    background: var(--color-bg-elevated, #1c2128);
+    color: var(--color-text-muted, #8b949e);
+  }
+
+  .llm-info-banner {
+    background: linear-gradient(135deg, rgba($color-accent, 0.12) 0%, rgba($color-accent, 0.06) 100%);
+    border-color: rgba($color-accent, 0.25);
+    .llm-info-content {
+      color: var(--color-text, #c9d1d9);
+      code { background: rgba($color-accent, 0.15); }
+    }
+  }
+
+  .toc-auto {
+    background: var(--color-bg-elevated, #1c2128);
+    border-color: var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  }
+  .toc-auto-header {
+    color: var(--color-text-muted, #8b949e);
+    border-bottom-color: var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+  }
+  .toc-auto-link {
+    color: var(--color-text, #c9d1d9);
+    &:hover { background: rgba($color-accent, 0.1); }
+    &.active { background: rgba($color-accent, 0.15); }
+  }
+}

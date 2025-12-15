@@ -1,0 +1,124 @@
+// =============================================================================
+// SYNTAX HIGHLIGHTING - Light Theme
+// =============================================================================
+// Custom Chroma styles matching the Goa documentation site color palette
+// Based on the site's accent color (#5bc0eb) and text colors
+
+// Light theme code block background
+.chroma {
+  color: #2d3748;
+  background-color: #f8f9fa;
+}
+
+.bg {
+  background-color: #f8f9fa;
+}
+
+// Line handling
+.chroma .err { color: #e74c3c; }
+.chroma .lnlinks { outline: none; text-decoration: none; color: inherit; }
+.chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+.chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; }
+.chroma .hl { background-color: rgba(91, 192, 235, 0.15); }
+.chroma .lnt { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #8b949e; }
+.chroma .ln { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #8b949e; }
+.chroma .line { display: flex; }
+
+// Remove extra empty lines at start/end of code blocks
+.chroma code {
+  &::before, &::after { display: none; }
+}
+.highlight pre code .line:first-child:empty,
+.highlight pre code .line:last-child:empty { display: none; }
+
+// Keywords - Use site accent blue (#5bc0eb) family
+.chroma .k { color: #0284c7; font-weight: 600; }   // keyword
+.chroma .kc { color: #0284c7; font-weight: 600; }  // keyword constant
+.chroma .kd { color: #0284c7; font-weight: 600; }  // keyword declaration
+.chroma .kn { color: #0284c7; font-weight: 600; }  // keyword namespace
+.chroma .kp { color: #0284c7; font-weight: 600; }  // keyword pseudo
+.chroma .kr { color: #0284c7; font-weight: 600; }  // keyword reserved
+.chroma .kt { color: #0891b2; font-weight: 500; }  // keyword type (cyan variant)
+
+// Names - Darker text for readability
+.chroma .n { color: #2d3748; }                     // name
+.chroma .na { color: #0891b2; }                    // name attribute (cyan)
+.chroma .nc { color: #b45309; font-weight: 600; }  // name class (amber)
+.chroma .no { color: #0284c7; }                    // name constant
+.chroma .nd { color: #7c3aed; font-weight: 600; }  // name decorator (purple)
+.chroma .ni { color: #b45309; }                    // name entity
+.chroma .ne { color: #dc2626; font-weight: 600; }  // name exception (red)
+.chroma .nl { color: #0891b2; }                    // name label
+.chroma .nn { color: #2d3748; }                    // name namespace
+.chroma .nx { color: #2d3748; }                    // name other
+.chroma .py { color: #0891b2; }                    // name property
+.chroma .nt { color: #0284c7; font-weight: 600; }  // name tag
+.chroma .nb { color: #0891b2; }                    // name builtin
+.chroma .bp { color: #0891b2; }                    // name builtin pseudo
+.chroma .nv { color: #b45309; }                    // name variable
+.chroma .vc { color: #b45309; }                    // name variable class
+.chroma .vg { color: #b45309; }                    // name variable global
+.chroma .vi { color: #b45309; }                    // name variable instance
+.chroma .vm { color: #b45309; }                    // name variable magic
+.chroma .nf { color: #7c3aed; font-weight: 500; }  // name function (purple)
+.chroma .fm { color: #7c3aed; font-weight: 500; }  // name function magic
+
+// Literals
+.chroma .l { color: #2d3748; }
+.chroma .ld { color: #2d3748; }
+
+// Strings - Green (complementary to blue accent)
+.chroma .s { color: #059669; }                     // string
+.chroma .sa { color: #059669; }                    // string affix
+.chroma .sb { color: #059669; }                    // string backtick
+.chroma .sc { color: #059669; }                    // string char
+.chroma .dl { color: #059669; }                    // string delimiter
+.chroma .sd { color: #6b7280; font-style: italic; } // string doc
+.chroma .s2 { color: #059669; }                    // string double
+.chroma .se { color: #0891b2; font-weight: 500; }  // string escape (cyan)
+.chroma .sh { color: #059669; }                    // string heredoc
+.chroma .si { color: #0891b2; }                    // string interpol
+.chroma .sx { color: #059669; }                    // string other
+.chroma .sr { color: #dc2626; }                    // string regex (red)
+.chroma .s1 { color: #059669; }                    // string single
+.chroma .ss { color: #059669; }                    // string symbol
+
+// Numbers - Orange/amber
+.chroma .m { color: #d97706; }                     // number
+.chroma .mb { color: #d97706; }                    // number bin
+.chroma .mf { color: #d97706; }                    // number float
+.chroma .mh { color: #d97706; }                    // number hex
+.chroma .mi { color: #d97706; }                    // number integer
+.chroma .il { color: #d97706; }                    // number integer long
+.chroma .mo { color: #d97706; }                    // number oct
+
+// Operators - Cyan (site accent family)
+.chroma .o { color: #0891b2; }                     // operator
+.chroma .ow { color: #0284c7; font-weight: 600; }  // operator word
+
+// Punctuation
+.chroma .p { color: #4b5563; }                     // punctuation
+
+// Comments - Muted gray
+.chroma .c { color: #6b7280; font-style: italic; }
+.chroma .ch { color: #6b7280; font-style: italic; }
+.chroma .cm { color: #6b7280; font-style: italic; }
+.chroma .c1 { color: #6b7280; font-style: italic; }
+.chroma .cs { color: #6b7280; font-style: italic; }
+.chroma .cp { color: #6b7280; font-style: italic; }
+.chroma .cpf { color: #6b7280; font-style: italic; }
+
+// Generic
+.chroma .g { color: #2d3748; }
+.chroma .gd { color: #dc2626; background-color: rgba(220, 38, 38, 0.1); }  // deleted
+.chroma .ge { font-style: italic; }                                         // emphasis
+.chroma .gr { color: #dc2626; }                                             // error
+.chroma .gh { color: #0284c7; font-weight: 600; }                          // heading
+.chroma .gi { color: #059669; background-color: rgba(5, 150, 105, 0.1); }  // inserted
+.chroma .go { color: #6b7280; }                                             // output
+.chroma .gp { color: #6b7280; font-weight: 600; }                          // prompt
+.chroma .gs { font-weight: 700; }                                           // strong
+.chroma .gu { color: #7c3aed; font-weight: 600; }                          // subheading
+.chroma .gt { color: #dc2626; }                                             // traceback
+.chroma .gl { text-decoration: underline; }                                 // underline
+.chroma .w { color: #f8f9fa; }                                              // whitespace

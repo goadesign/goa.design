@@ -1,0 +1,8 @@
+{{/* Custom TOC partial - removes "Table of Contents" heading and top border */}}
+{{ if and (not .Params.hide_toc) (.TableOfContents) }}
+<div class="td-toc">
+  <nav id="TableOfContents">
+    {{ .TableOfContents }}
+  </nav>
+</div>
+{{ end }}

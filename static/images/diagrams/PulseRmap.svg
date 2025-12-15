@@ -1,0 +1,96 @@
+<svg id="graph" width="1330" height="360" viewBox="0 0 1330 360" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
+  "name": "PulseRmap",
+  "description": "Replicated map synchronization",
+  "version": "1.0.0",
+  "elements": [
+    {
+      "id": "1hpneug",
+      "tags": "Element,Container,goa",
+      "technology": "Node"
+    },
+    {
+      "id": "1ijm7xd",
+      "tags": "Element,Container,goa",
+      "technology": "Node"
+    },
+    {
+      "id": "fnllnp",
+      "tags": "Element,Container,store",
+      "technology": "Redis"
+    }
+  ],
+  "layout": {
+    "1hpneug": {
+      "x": 950,
+      "y": 50
+    },
+    "1ijm7xd": {
+      "x": 50,
+      "y": 50
+    },
+    "fnllnp": {
+      "x": 475,
+      "y": 50
+    },
+    "e-13dn014": [
+      {
+        "x": 650,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 692,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 713,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 776,
+        "y": 50,
+        "auto": true
+      }
+    ],
+    "e-q71c5a": [
+      {
+        "x": 215,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 257,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 267.5,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 320,
+        "y": 50,
+        "auto": true
+      }
+    ]
+  }
+}]]></script>
+<defs>
+	<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="strokeWidth">
+		<path fill="context-stroke" stroke="none" d="M0,0 L10,5 L0,10 Z" class="arrowHead"></path>
+	</marker>
+	<g id="icon-circle" transform="translate(0,-12)" class="icon">
+		<circle cx="7" cy="7" r="7"></circle>
+	</g>
+	<g id="icon-cube" transform="translate(0, -14)" class="icon">
+		<path d="M 5 0 h 10 v 10 l -5 5 h -10 v -10 l 5 -5 M 0 5 h 10 v 10 M 15 0 l -5 5"></path>
+	</g>
+	<filter id="shadow">
+		<feDropShadow dx="3" dy="3" stdDeviation="5" flood-color="#00000030" flood-opacity="1"></feDropShadow>
+	</filter>
+</defs><g class="zoom" transform="scale(1) translate(165, 115)"><g class="groups"><g class="group"><rect x="-115" y="-65" rx="0" ry="0" width="1230" height="260" style="fill: rgba(0, 0, 0, 0.02); stroke: rgb(102, 102, 102); stroke-width: 3; stroke-dasharray: 4;"></rect><text x="-90" y="173" style="font-family: Arial, sans-serif; fill: rgb(102, 102, 102); font-size: 22px; font-weight: bold; cursor: default;">Pulse Replicated Map</text></g></g><g class="edges"><g class="edge" id="13dn014" data-from="fnllnp" data-to="1hpneug"><rect x="664.2578125" y="11.5" rx="0" ry="0" width="97.484375" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="var(--mdl-rel-default-color, #757575)" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="713" dy="24px" font-size="22px" font-weight="normal">Update</tspan></text><path marker-end="url(#arrow)" d="M615,50 L650,50 L692,50 L713,50 L776,50 L810,50.000000000000014" class="edge" fill="none" stroke="var(--mdl-rel-default-color, #757575)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-3ynyal3" cx="650" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-2680o2p" cx="692" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1bfk9j2" cx="713" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-2d3kg6n" cx="776" cy="50" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="q71c5a" data-from="1ijm7xd" data-to="fnllnp"><rect x="239.4296875" y="11.5" rx="0" ry="0" width="56.140625" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="267.5" dy="24px" font-size="22px" font-weight="normal">Set</tspan></text><path marker-end="url(#arrow)" d="M190,50 L215,50 L257,50 L267.5,50 L320,50 L335,50.000000000000014" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-24a5lxl" cx="215" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-l9m1hf" cx="257" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-8xxz1r" cx="267.5" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-105101n" cx="320" cy="50" r="7" fill="none" class="v-dot auto"></circle></g></g><g class="nodes"><g class="node" id="1hpneug" transform="translate(950,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Node B</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Node]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Application node</tspan></text></g></g><g class="node" id="1ijm7xd" transform="translate(50,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Node A</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Node]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Application node</tspan></text></g></g><g class="node" id="fnllnp" transform="translate(475,50)" label-offset-y="29.473684210526315"><path d="M 0,14.736842105263158 a140,14.736842105263158 0,0,0 280 0 a 140,14.736842105263158 0,0,0 -280 0 l 0,150.5263157894737 a 140,14.736842105263158 0,0,0 280 0 l 0,-150.5263157894737" transform="translate(-140,-90)" class="nodeBorder" fill="var(--mdl-store-bg, #9d89e8)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></path><g transform="translate(0,-77.73684210526315)"><text x="0" y="29.473684210526315" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Replicated Map</tspan></text><text x="0" y="83.47368421052632" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[store: Redis]</text><text x="0" y="101.47368421052632" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Eventually-consistent key-value</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">store</tspan></text></g></g></g></g></svg>

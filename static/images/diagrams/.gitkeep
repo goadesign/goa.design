@@ -1,0 +1,2 @@
+# This directory contains generated SVG diagrams from the Model DSL.
+# Run 'make diagrams' to regenerate them.

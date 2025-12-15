@@ -4,7 +4,7 @@
   {{- with $title -}}
   <h4 class="alert-heading">{{ . }}</h4>
   {{- end -}}
-  {{ .Inner }}
+  {{ .Inner | markdownify }}
 </div>
 
 

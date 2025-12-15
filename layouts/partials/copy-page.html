@@ -1,0 +1,103 @@
+{{/*
+  Copy Page Dropdown Component
+  
+  Provides a dropdown button with options to copy page content as Markdown or Plain Text.
+  Designed for LLM-optimized documentation - allows users to easily copy entire pages
+  for pasting into LLM contexts (Claude, GPT, etc.).
+  
+  Usage: {{ partial "copy-page.html" . }}
+*/}}
+
+<div class="copy-page-dropdown" id="copy-page-dropdown">
+  <button class="copy-page-btn" aria-haspopup="true" aria-expanded="false" aria-label="Copy page content">
+    <i class="fas fa-copy" aria-hidden="true"></i>
+    <span>Copy page</span>
+    <i class="fas fa-chevron-down dropdown-arrow" aria-hidden="true"></i>
+  </button>
+  <div class="copy-page-menu" role="menu" aria-label="Copy format options">
+    <button class="copy-page-menu-item" role="menuitem" data-format="markdown">
+      <i class="fab fa-markdown" aria-hidden="true"></i>
+      <span>Copy as Markdown</span>
+    </button>
+    <button class="copy-page-menu-item" role="menuitem" data-format="plaintext">
+      <i class="fas fa-file-lines" aria-hidden="true"></i>
+      <span>Copy as Plain Text</span>
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  
+  // Wait for DOM and CopyPage to be ready
+  function init() {
+    if (typeof window.CopyPage === 'undefined') {
+      // Retry if CopyPage not loaded yet
+      setTimeout(init, 50);
+      return;
+    }
+    
+    var dropdown = document.getElementById('copy-page-dropdown');
+    if (!dropdown) return;
+    
+    var btn = dropdown.querySelector('.copy-page-btn');
+    var menu = dropdown.querySelector('.copy-page-menu');
+    var menuItems = dropdown.querySelectorAll('.copy-page-menu-item');
+    
+    // Toggle dropdown
+    function toggleDropdown(open) {
+      var isOpen = typeof open === 'boolean' ? open : !dropdown.classList.contains('open');
+      dropdown.classList.toggle('open', isOpen);
+      menu.classList.toggle('visible', isOpen);
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+    
+    // Close dropdown when clicking outside
+    function handleClickOutside(e) {
+      if (!dropdown.contains(e.target)) {
+        toggleDropdown(false);
+      }
+    }
+    
+    // Handle keyboard navigation
+    function handleKeydown(e) {
+      if (e.key === 'Escape') {
+        toggleDropdown(false);
+        btn.focus();
+      }
+    }
+    
+    // Button click handler
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDropdown();
+    });
+    
+    // Menu item click handlers
+    menuItems.forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var format = item.getAttribute('data-format');
+        window.CopyPage.copyPageContent(format);
+        toggleDropdown(false);
+      });
+    });
+    
+    // Close on outside click
+    document.addEventListener('click', handleClickOutside);
+    
+    // Keyboard support
+    dropdown.addEventListener('keydown', handleKeydown);
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>

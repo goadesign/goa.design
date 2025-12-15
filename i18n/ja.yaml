@@ -50,10 +50,12 @@ goa_ai_hero_badge_text: "Goa-AI 登場"
 goa_ai_hero_title_1: "AIエージェントを構築"
 goa_ai_hero_title_2: "Goaのやり方で"
 goa_ai_hero_description: "デザインファーストの哲学をエージェントシステムに適用。強力なDSLでエージェント、ツール、ポリシーを定義。型安全なコード、構造化ストリーミング、本番環境対応の耐久性を実現。"
-goa_ai_hero_feature_1: "デザインファーストエージェント"
-goa_ai_hero_feature_2: "実行ツリーと構成"
-goa_ai_hero_feature_3: "構造化ストリーミング"
-goa_ai_hero_feature_4: "Temporal耐久性"
+goa_ai_hero_feature_design: "型付き契約でエージェントを定義"
+goa_ai_hero_feature_mcp: "あらゆるMCPサーバーに接続"
+goa_ai_hero_feature_registries: "クラスター間でツールを発見"
+goa_ai_hero_feature_runtrees: "エージェントを階層的に構成"
+goa_ai_hero_feature_streaming: "型付きイベントをリアルタイム配信"
+goa_ai_hero_feature_durability: "Temporalでクラッシュを生き残る"
 goa_ai_hero_cta_primary: "Goa-AIを探索"
 goa_ai_hero_cta_secondary: "クイックスタート"
 
@@ -96,6 +98,15 @@ why_goa_production_desc: "世界中の企業がAPIの構築とスケーリング
 trust_section_title: "世界中のエンジニアリングチームに信頼されています"
 trust_section_subtitle: "Goa を使って堅牢で保守可能な API を構築している企業のコミュニティに参加しましょう"
 
+# Goa Hero Section Features
+goa_hero_feature_design: "強力なDSLでAPIを設計"
+goa_hero_feature_codegen: "サーバー、クライアント、ドキュメントを生成"
+goa_hero_feature_transports: "HTTP、gRPC、WebSocketをサポート"
+goa_hero_feature_validation: "組み込みのリクエストバリデーション"
+goa_hero_feature_docs: "OpenAPI仕様を自動生成"
+goa_hero_feature_extensible: "拡張可能なプラグインアーキテクチャ"
+goa_hero_cta_primary: "Goaを探索"
+
 # Common actions
 learn_more: "詳細を見る"
-get_started: "構築を始めましょう"
+get_started: "クイックスタート"

@@ -1,0 +1,28 @@
+{{/*
+  Diagram shortcode - inlines SVG diagrams for CSS theming support.
+  
+  Usage:
+    {{< diagram name="GoaWorkflow" >}}
+    {{< diagram name="GoaWorkflow" caption="Goa three-phase workflow" >}}
+    {{< diagram name="GoaWorkflow" class="my-custom-class" >}}
+  
+  The SVG is inlined so it inherits CSS custom properties from the page,
+  enabling light/dark theme support via --mdl-* variables.
+*/}}
+
+{{- $name := .Get "name" -}}
+{{- $caption := .Get "caption" -}}
+{{- $class := .Get "class" | default "" -}}
+{{- $path := printf "static/images/diagrams/%s.svg" $name -}}
+{{- $svg := os.ReadFile $path -}}
+
+<figure class="diagram {{ $class }}">
+  {{- if $svg -}}
+    {{- $svg | safeHTML -}}
+  {{- else -}}
+    <p class="diagram-error">Diagram not found: {{ $name }}</p>
+  {{- end -}}
+  {{- if $caption -}}
+    <figcaption>{{ $caption }}</figcaption>
+  {{- end -}}
+</figure>

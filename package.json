@@ -2,7 +2,14 @@
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.3",
-    "postcss-cli": "^11.0.0"
+    "postcss-cli": "^11.0.0",
+    "vitest": "^2.1.0",
+    "fast-check": "^3.22.0",
+    "jsdom": "^25.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.6.0"
