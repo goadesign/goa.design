@@ -3,6 +3,7 @@ name: Publish
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -46,18 +47,25 @@ jobs:
 
       - name: Generate Diagrams
         run: |
-          cd diagrams && mdl svg goa.design/docs/diagrams -dir ../static/images/diagrams -all
+          # Headless Chrome may require a valid DBus session in CI.
+          # If DBUS_SESSION_BUS_ADDRESS is set to an unsupported address type,
+          # Chrome can fail to start (dbus/bus.cc:406 Unknown address type).
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/tmp/dbus-session-bus"
+          dbus-daemon --session --fork --address="$DBUS_SESSION_BUS_ADDRESS"
+          cd diagrams && mdl svg goa.design/docs/diagrams -dir ../static/images/diagrams -all -timeout 60s
 
       - name: Build
         run: hugo --minify
 
       - name: Auth
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/654303510937/locations/global/workloadIdentityPools/goadesign-deploy-pool/providers/goadesign-deploy-provider'
           service_account: 'goa-design-deploy@goa-design.iam.gserviceaccount.com'
 
       - name: Deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: public
