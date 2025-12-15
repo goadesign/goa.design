@@ -1,0 +1,43 @@
+{{/*
+  Custom Sidebar - Flat Top-Level Navigation
+
+  Docsy v0.13+ invokes this template with a dict that includes:
+    - context: the current page
+  We render a flat, always-expanded docs nav (no foldable checkboxes, no "Documentation" root).
+*/}}
+
+{{ $p := .context }}
+{{ $docsSection := $p.Site.GetPage "/docs" }}
+
+<nav id="td-section-nav" class="td-sidebar-nav collapse foldable-nav" aria-label="Documentation navigation">
+  <ul class="td-sidebar-nav-list">
+    {{ range $docsSection.Sections.ByWeight }}
+      {{ $isActive := or (eq $p.RelPermalink .RelPermalink) ($p.IsDescendant .) }}
+      <li class="td-sidebar-nav-item{{ if $isActive }} active-path{{ end }}">
+        <a href="{{ .RelPermalink }}"
+           class="td-sidebar-nav-link td-sidebar-nav-link--section{{ if eq $p.RelPermalink .RelPermalink }} active{{ end }}"
+           id="m-{{ .RelPermalink | anchorize }}">
+          <span class="nav-link-text">{{ .LinkTitle }}</span>
+        </a>
+
+        {{ $pages := .Pages.ByWeight }}
+        {{ if gt (len $pages) 0 }}
+          <ul class="td-sidebar-nav-sublist">
+            {{ range $pages }}
+              {{ $childActive := eq $p.RelPermalink .RelPermalink }}
+              <li class="td-sidebar-nav-subitem">
+                <a href="{{ .RelPermalink }}"
+                   class="td-sidebar-nav-sublink{{ if $childActive }} active{{ end }}"
+                   id="m-{{ .RelPermalink | anchorize }}">
+                  <span class="nav-link-text">{{ .LinkTitle }}</span>
+                </a>
+              </li>
+            {{ end }}
+          </ul>
+        {{ end }}
+      </li>
+    {{ end }}
+  </ul>
+</nav>
+
+

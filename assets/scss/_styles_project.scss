@@ -29,6 +29,7 @@ $card-shadow: 0 8px 16px rgba($color-elevation, 0.15);
 $docs-sidebar-left-width: 15rem;
 $docs-content-max-width: 900px;
 $docs-sidebar-right-width: 13rem;
+$docs-gutter-width: 1.5rem;
 
 // Mixins
 @mixin hover-lift {
@@ -608,7 +609,7 @@ body {
   // Centered offset + left sidebar
   margin-left: calc(var(--docs-center-offset) + var(--docs-sidebar-left));
   // Centered offset + right sidebar
-  margin-right: calc(var(--docs-center-offset) + var(--docs-sidebar-right));
+  margin-right: calc(var(--docs-center-offset) + var(--docs-gutter) + var(--docs-sidebar-right));
   
   .container-fluid {
     padding: 0 2rem;
@@ -782,10 +783,11 @@ body {
   --docs-sidebar-left: #{$docs-sidebar-left-width};
   --docs-content-width: #{$docs-content-max-width};
   --docs-sidebar-right: #{$docs-sidebar-right-width};
-  --docs-center-offset: max(0px, calc((100vw - var(--docs-sidebar-left) - var(--docs-content-width) - var(--docs-sidebar-right)) / 2));
+  --docs-gutter: #{$docs-gutter-width};
+  --docs-center-offset: max(0px, calc((100vw - var(--docs-sidebar-left) - var(--docs-content-width) - var(--docs-gutter) - var(--docs-sidebar-right)) / 2));
 }
 
-.td-main:not(.td-home .td-main) {
+body:not(.td-home) .td-main {
   padding: 0;
   margin-top: 0;
 
@@ -969,7 +971,7 @@ body {
   .td-sidebar-toc {
     position: fixed;
     top: 4rem;
-    left: calc(var(--docs-center-offset) + var(--docs-sidebar-left) + var(--docs-content-width));
+    left: calc(var(--docs-center-offset) + var(--docs-sidebar-left) + var(--docs-content-width) + var(--docs-gutter));
     height: calc(100vh - 4rem);
     overflow-y: auto;
     width: $docs-sidebar-right-width;
@@ -2802,7 +2804,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 
 // Large tablets and small desktops - revert to left-aligned when viewport is narrow
 @media (max-width: 1400px) {
-  .td-main:not(.td-home .td-main) {
+  body:not(.td-home) .td-main {
     // At narrower viewports, fall back to left-aligned layout
     .td-sidebar {
       left: 0;
@@ -2810,7 +2812,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     }
     
     .td-sidebar-toc {
-      left: calc(13rem + 700px);
+      left: calc(13rem + 700px + var(--docs-gutter));
       width: 11rem;
     }
     
@@ -2824,7 +2826,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   
   .td-footer {
     margin-left: 13rem;
-    margin-right: 11rem;
+    margin-right: calc(11rem + var(--docs-gutter));
   }
   
   .card-grid {
@@ -2838,7 +2840,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 
 // Tablets - hide right TOC sidebar
 @media (max-width: 992px) {
-  .td-main:not(.td-home .td-main) {
+  body:not(.td-home) .td-main {
     .td-sidebar {
       left: 0;
       width: 12rem;
@@ -2923,7 +2925,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     }
   }
   
-  .td-main:not(.td-home .td-main) {
+  body:not(.td-home) .td-main {
     margin-top: 1rem;
     flex-direction: column;
     
@@ -3210,7 +3212,7 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     }
   }
   
-  .td-main:not(.td-home .td-main) {
+  body:not(.td-home) .td-main {
     main,
     .td-main main,
     .container-fluid {
