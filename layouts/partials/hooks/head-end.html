@@ -3,7 +3,8 @@
 (function() {
   var stored = null;
   try { stored = localStorage.getItem('goa-theme'); } catch(e) {}
-  var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  // Default to dark mode unless the user explicitly chose a theme.
+  var theme = stored || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
 })();
 </script>

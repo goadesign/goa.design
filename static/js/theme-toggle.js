@@ -10,15 +10,7 @@
   const DARK = 'dark';
   const LIGHT = 'light';
 
-  // Get the system preference
-  function getSystemPreference() {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return DARK;
-    }
-    return LIGHT;
-  }
-
-  // Get the stored theme or fall back to system preference
+  // Get the stored theme or fall back to dark mode (site default).
   function getStoredTheme() {
     try {
       return localStorage.getItem(THEME_KEY);
@@ -54,7 +46,7 @@
 
   // Get current theme
   function getCurrentTheme() {
-    return document.documentElement.getAttribute('data-theme') || LIGHT;
+    return document.documentElement.getAttribute('data-theme') || DARK;
   }
 
   // Toggle between themes
@@ -68,7 +60,7 @@
   // Initialize theme on page load
   function initTheme() {
     const stored = getStoredTheme();
-    const theme = stored || getSystemPreference();
+    const theme = stored || DARK;
     applyTheme(theme);
   }
 
@@ -121,17 +113,8 @@
     }
   }
 
-  // Listen for system preference changes
-  function watchSystemPreference() {
-    if (window.matchMedia) {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-        // Only auto-switch if user hasn't set a preference
-        if (!getStoredTheme()) {
-          applyTheme(e.matches ? DARK : LIGHT);
-        }
-      });
-    }
-  }
+  // Note: we intentionally do not auto-switch based on system preference.
+  // Default is dark unless the user explicitly selects light.
 
   // Initialize immediately to prevent flash
   initTheme();
@@ -140,11 +123,9 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       insertToggleButton();
-      watchSystemPreference();
     });
   } else {
     insertToggleButton();
-    watchSystemPreference();
   }
 })();
 
