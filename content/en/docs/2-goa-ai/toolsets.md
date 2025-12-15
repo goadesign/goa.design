@@ -4,10 +4,6 @@ weight: 4
 description: "Learn about toolset types, execution models, validation, retry hints, and tool catalogs in Goa-AI."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/3-concepts/3-toolsets/
-  - /en/docs/8-goa-ai/3-concepts/6-tool-validation-retry-hints/
-  - /en/docs/8-goa-ai/3-concepts/7-tool-catalogs-schemas/
-  - /docs/8-goa-ai/3-concepts/3-toolsets/
 ---
 
 Toolsets are collections of tools that agents can use. Goa-AI supports several toolset types, each with different execution models and use cases.
@@ -38,6 +34,63 @@ Declared via `MCPToolset(service, suite)` and referenced via `Use(MCPToolset(...
 - Generated registration sets `DecodeInExecutor=true` so raw JSON is passed through to the MCP executor
 - MCP executor decodes using its own codecs
 - Generated wrappers handle JSON schemas/encoders and transports (HTTP/SSE/stdio) with retries and tracing
+
+### When to Use BindTo vs Inline Implementations
+
+**Use `BindTo` when:**
+- The tool should call an existing Goa service method
+- You want generated transforms between tool and method types
+- The service method already has the business logic you need
+- You want to reuse validation and error handling from the service layer
+
+```go
+// Tool bound to existing service method
+Tool("search", "Search documents", func() {
+    Args(SearchPayload)
+    Return(SearchResult)
+    BindTo("Search")  // Calls the Search method on the same service
+})
+```
+
+**Use inline implementations when:**
+- The tool has custom logic not tied to a service method
+- You need to orchestrate multiple service calls
+- The tool is purely computational (no external calls)
+- You want full control over the execution flow
+
+```go
+// Tool with custom executor implementation
+Tool("summarize", "Summarize multiple documents", func() {
+    Args(func() {
+        Attribute("doc_ids", ArrayOf(String), "Document IDs to summarize")
+        Required("doc_ids")
+    })
+    Return(func() {
+        Attribute("summary", String, "Combined summary")
+        Required("summary")
+    })
+    // No BindTo - implement in executor
+})
+```
+
+For inline implementations, you write the executor logic directly:
+
+```go
+func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+    switch call.Name {
+    case specs.Summarize:
+        args, _ := specs.UnmarshalSummarizePayload(call.Payload)
+        // Custom logic: fetch multiple docs, combine, summarize
+        summary := e.summarizeDocuments(ctx, args.DocIDs)
+        return &planner.ToolResult{
+            Name:   call.Name,
+            Result: &specs.SummarizeResult{Summary: summary},
+        }, nil
+    }
+    return nil, fmt.Errorf("unknown tool: %s", call.Name)
+}
+
+```
 
 ### Bounded Tool Results
 
@@ -203,6 +256,89 @@ The bounded contract helps:
 - **UIs** display truncation indicators and pagination controls
 - **Policies** enforce size limits and detect runaway queries
 
+### Injected Fields
+
+The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but required by the service method. This is useful for session IDs, user context, authentication tokens, and other runtime-provided values.
+
+#### How Inject Works
+
+When you mark a field with `Inject`:
+
+1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
+2. **Generated setter**: Codegen emits a setter method on the payload struct
+3. **Runtime population**: You populate the field via a `ToolInterceptor` before execution
+
+#### DSL Declaration
+
+```go
+Tool("get_user_data", "Get data for current user", func() {
+    Args(func() {
+        Attribute("session_id", String, "Current session ID")
+        Attribute("query", String, "Data query")
+        Required("session_id", "query")
+    })
+    Return(func() {
+        Attribute("data", ArrayOf(String), "Query results")
+        Required("data")
+    })
+    BindTo("UserService", "GetData")
+    Inject("session_id")  // Hidden from LLM, populated at runtime
+})
+```
+
+#### Generated Code
+
+Codegen produces a setter method for each injected field:
+
+```go
+// Generated payload struct
+type GetUserDataPayload struct {
+    SessionID string `json:"session_id"`
+    Query     string `json:"query"`
+}
+
+// Generated setter for injected field
+func (p *GetUserDataPayload) SetSessionID(v string) {
+    p.SessionID = v
+}
+```
+
+#### Runtime Population via ToolInterceptor
+
+Use a `ToolInterceptor` to populate injected fields before tool execution:
+
+```go
+type SessionInterceptor struct{}
+
+func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+    // Extract session from context (set by your auth middleware)
+    sessionID, ok := ctx.Value(sessionKey).(string)
+    if !ok {
+        return fmt.Errorf("session ID not found in context")
+    }
+    
+    // Populate injected field using generated setter
+    switch call.Name {
+    case specs.GetUserData:
+        payload, _ := specs.UnmarshalGetUserDataPayload(call.Payload)
+        payload.SetSessionID(sessionID)
+        call.Payload, _ = json.Marshal(payload)
+    }
+    return nil
+}
+
+// Register interceptor with runtime
+rt := runtime.New(runtime.WithToolInterceptor(&SessionInterceptor{}))
+```
+
+#### When to Use Inject
+
+Use `Inject` for fields that:
+- Are required by the service but shouldn't be chosen by the LLM
+- Come from runtime context (session, user, tenant, request ID)
+- Contain sensitive values (auth tokens, API keys)
+- Are infrastructure concerns (tracing IDs, correlation IDs)
+
 ---
 
 ## Execution Models
@@ -317,6 +453,53 @@ The explicit metadata pattern provides several benefits:
 - **Testability**: Easy to construct test metadata without mocking context
 - **Clarity**: No hidden dependencies on context keys or middleware ordering
 - **Correlation**: Direct access to parent/child relationships for nested agent-tool calls
+- **Traceability**: Complete causal chain from user input to tool execution to final response
+
+---
+
+## Async & Durable Execution
+ 
+Goa-AI uses **Temporal Activities** for all service-backed tool executions. This "async-first" architecture is implicit and requires no special DSL.
+ 
+### Implicit Async
+ 
+When a planner decides to call a tool, the runtime does not block the OS thread. Instead:
+ 
+1. The runtime schedules a **Temporal Activity** for the tool call.
+2. The agent workflow suspends execution (saving state).
+3. The activity executes (on a local worker, remote worker, or even a different cluster).
+4. When the activity completes, the workflow wakes up, restores state, and resumes with the result.
+ 
+This means **every tool call** is automatically parallelizable, durable, and long-running. You do **not** need to configure `InterruptsAllowed` for this standard async behavior.
+ 
+### Pause & Resume (Agent-Level)
+ 
+`InterruptsAllowed(true)` is distinct: it allows the **Agent itself** to pause and wait for an arbitrary external signal (like a user's clarification) that is *not* tied to a currently running tool activity.
+ 
+| Feature | Implicit Async | Pause & Resume |
+| :--- | :--- | :--- |
+| **Scope** | Single Tool Execution | Entire Agent Workflow |
+| **Trigger** | Calling any service-backed tool | Missing arguments or Planner request |
+| **Policy Required** | None (Default) | `InterruptsAllowed(true)` |
+| **Use Case** | Slow API, Batch Job, processing | Human-in-the-loop, Clarification |
+ 
+Ensure you verify that your use case requires *agent-level* pausing before enabling the policy; often, standard tool async is sufficient.
+ 
+### Non-Blocking Planners
+ 
+From the perspective of the **planner (LLM)**, the interaction feels synchronous: the model requests a tool, "pauses", and then "sees" the result in the next turn.
+ 
+From the perspective of the **infrastructure**, it is fully asynchronous and non-blocking. This allows a single small agent worker to manage thousands of concurrent long-running agent executions without running out of threads or memory.
+ 
+### Survival Across Restarts
+ 
+Because execution is durable, you can restart your entire backend—including the agent workers—while tools are mid-execution. When the systems come back up:
+ 
+- Pending tool activities will be picked up by workers.
+- Completed tools will report results to their parent workflows.
+- Agents will resume exactly where they left off.
+ 
+This capability is essential for building robust, production-grade agentic systems that operate reliably in dynamic environments.
 
 ---
 

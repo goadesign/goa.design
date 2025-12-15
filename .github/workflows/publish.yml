@@ -36,6 +36,18 @@ jobs:
           npm init -y
           npm install postcss postcss-cli autoprefixer
 
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Install mdl
+        run: go install goa.design/model/cmd/mdl@latest
+
+      - name: Generate Diagrams
+        run: |
+          cd diagrams && mdl svg goa.design/docs/diagrams -dir ../static/images/diagrams -all
+
       - name: Build
         run: hugo --minify
 

@@ -5,10 +5,6 @@ weight: 3
 description: "Understand how the Goa-AI runtime orchestrates agents, enforces policies, and manages state."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/3-concepts/2-runtime/
-  - /en/docs/8-goa-ai/3-concepts/9-policies-labels/
-  - /en/docs/8-goa-ai/3-concepts/10-llm-integration/
-  - /docs/8-goa-ai/3-concepts/2-runtime/
 ---
 
 ## Architecture Overview
@@ -65,10 +61,10 @@ func main() {
     }
 
     client := chat.NewClient(rt)
-    out, err := client.Run(ctx, []*model.Message{{
+    out, err := client.Run(ctx, "session-1", []*model.Message{{
         Role:  model.ConversationRoleUser,
         Parts: []model.Part{model.TextPart{Text: "Summarize the latest status."}},
-    }}, runtime.WithSessionID("session-1"))
+    }})
     if err != nil {
         panic(err)
     }
@@ -92,7 +88,7 @@ rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
 
 // No agent registration needed in a caller-only process
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, msgs, runtime.WithSessionID("s1"))
+out, err := client.Run(ctx, "s1", msgs)
 ```
 
 ### Worker Example
@@ -324,6 +320,71 @@ Behind the scenes, pause/resume signals update the run store and emit `run_pause
 
 ---
 
+## Tool Confirmation
+
+Goa-AI supports **runtime-enforced** confirmation gates for sensitive tools (writes, deletes, commands).
+
+You can enable confirmation in two ways:
+
+- **Design-time (common case):** declare `Confirmation(...)` inside the tool DSL. Codegen stores
+  the policy in `tools.ToolSpec.Confirmation`.
+- **Runtime (override/dynamic):** pass `runtime.WithToolConfirmation(...)` when constructing the runtime
+  to require confirmation for additional tools or override design-time behavior.
+
+At execution time, the workflow emits an out-of-band confirmation request and only executes the tool
+after an explicit approval is provided. When denied, the runtime synthesizes a schema-compliant tool
+result so the transcript remains valid and the planner can react deterministically.
+
+### Confirmation protocol
+
+At runtime, confirmation is implemented as a dedicated await/decision protocol:
+
+- **Await payload** (streamed as `await_confirmation`):
+
+  ```json
+  {
+    "id": "...",
+    "title": "...",
+    "prompt": "...",
+    "tool_name": "atlas.commands.change_setpoint",
+    "tool_call_id": "toolcall-1",
+    "payload": { "...": "canonical tool arguments (JSON)" }
+  }
+  ```
+
+- **Provide decision** (via `ProvideConfirmation` on the runtime):
+
+  ```go
+  err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
+      RunID:       "run-123",
+      ID:         "await-1",
+      Approved:    true,              // or false
+      RequestedBy: "user:123",
+      Labels:      map[string]string{"source": "front-ui"},
+      Metadata:    map[string]any{"ticket_id": "INC-42"},
+  })
+  ```
+
+Notes:
+
+- Consumers should treat confirmation as a runtime protocol:
+  - Use the accompanying `RunPaused` reason (`await_confirmation`) to decide when to display a confirmation UI.
+  - Do not couple UI behavior to a specific confirmation tool name; treat it as an internal transport detail.
+- Confirmation templates (`PromptTemplate` and `DeniedResultTemplate`) are Go `text/template` strings
+  executed with `missingkey=error`. In addition to the standard template functions (e.g. `printf`),
+  Goa-AI provides:
+  - `json v` → JSON encodes `v` (useful for optional pointer fields or embedding structured values).
+  - `quote s` → returns a Go-escaped quoted string (like `fmt.Sprintf("%q", s)`).
+
+### Runtime validation
+
+The runtime validates confirmation interactions at the boundary:
+
+- The confirmation `ID` matches the pending await identifier when provided.
+- The decision object is well-formed (non-empty `RunID`, boolean `Approved` value).
+
+---
+
 ## Planner Contract
 
 Planners implement:
@@ -350,9 +411,11 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
 - `features/memory/mongo` – durable memory store
 - `features/run/mongo` – run metadata store + search repositories
+- `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers
-- `features/model/{bedrock,openai}` – model client adapters for planners
+- `features/model/{anthropic,bedrock,openai}` – model client adapters for planners
 - `features/model/middleware` – shared `model.Client` middlewares (e.g., adaptive rate limiting)
+- `features/policy/basic` – simple policy engine with allow/block lists and retry hint handling
 
 ### Model Client Throughput & Rate Limiting
 

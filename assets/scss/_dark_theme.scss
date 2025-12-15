@@ -78,6 +78,15 @@
   --section-index-bg: #ffffff;
   --section-index-border: rgba(91, 192, 235, 0.1);
   
+  // Architecture Diagrams (Model DSL SVGs)
+  // These variables override inline SVG colors for theming
+  --mdl-goa-bg: #5bc0eb;           // Primary elements (services, components, tools)
+  --mdl-goa-color: #ffffff;        // Text on primary elements
+  --mdl-store-bg: #9d89e8;         // Data stores (cylinders)
+  --mdl-store-color: #ffffff;      // Text on stores
+  --mdl-queue-bg: #00cec9;         // Queues/streams (pipes)
+  --mdl-queue-color: #ffffff;      // Text on queues
+  --mdl-rel-default-color: #757575; // Relationship lines
   // TOC
   --toc-link-color: #595959;
   --toc-link-hover: #5bc0eb;
@@ -145,8 +154,8 @@
   --breadcrumb-text: rgba(201, 209, 217, 0.85);
   --breadcrumb-separator: rgba(201, 209, 217, 0.4);
   
-  // Documentation
-  --doc-link-color: #58a6ff;
+  // Documentation - use same vibrant blue as light mode
+  --doc-link-color: #5bc0eb;
   --doc-inline-code-bg: rgba(91, 192, 235, 0.12);
   --doc-inline-code-text: #ff79c6;
   
@@ -159,7 +168,7 @@
   
   // TOC
   --toc-link-color: #c9d1d9;
-  --toc-link-hover: #58a6ff;
+  --toc-link-hover: #5bc0eb;
 
   // Bootstrap Table Variables (for .table-striped compatibility)
   --bs-table-bg: transparent;
@@ -169,6 +178,16 @@
   --bs-table-striped-color: #c9d1d9;
   --bs-table-hover-bg: rgba(91, 192, 235, 0.08);
   --bs-table-hover-color: #c9d1d9;
+  
+  // Architecture Diagrams (Model DSL SVGs) - Dark theme overrides
+  // More saturated, vibrant colors that pop on dark backgrounds
+  --mdl-goa-bg: #38bdf8;           // Brighter sky blue
+  --mdl-goa-color: #0c1222;        // Dark text for contrast
+  --mdl-store-bg: #a78bfa;         // Brighter violet
+  --mdl-store-color: #0c1222;      // Dark text for contrast
+  --mdl-queue-bg: #2dd4bf;         // Brighter teal
+  --mdl-queue-color: #0c1222;      // Dark text for contrast
+  --mdl-rel-default-color: #94a3b8; // Lighter slate for dark backgrounds
 }
 
 // -----------------------------------------------------------------------------
@@ -471,7 +490,7 @@ body[data-theme="dark"] {
         color: var(--doc-link-color);
         
         &:hover {
-          color: lighten(#58a6ff, 10%);
+          color: lighten(#5bc0eb, 10%);
         }
       }
       
@@ -517,7 +536,7 @@ body[data-theme="dark"] {
         color: var(--doc-link-color) !important;
         
         &:hover {
-          color: lighten(#58a6ff, 15%) !important;
+          color: lighten(#5bc0eb, 15%) !important;
         }
       }
     }
@@ -587,7 +606,7 @@ body[data-theme="dark"] {
         color: var(--doc-link-color) !important;
         
         &:hover {
-          color: lighten(#58a6ff, 10%) !important;
+          color: lighten(#5bc0eb, 10%) !important;
         }
       }
     }
@@ -775,7 +794,7 @@ body[data-theme="dark"] {
         border-bottom-color: rgba(88, 166, 255, 0.3);
         
         &:hover {
-          color: lighten(#58a6ff, 10%);
+          color: lighten(#5bc0eb, 10%);
           border-bottom-color: var(--doc-link-color);
         }
       }
@@ -882,14 +901,14 @@ body[data-theme="dark"] {
       
       .sponsor-info {
         p {
-          color: var(--color-text-muted);
+          color: var(--color-text) !important;
         }
         
         .btn-link {
-          color: var(--doc-link-color);
+          color: var(--doc-link-color) !important;
           
           &:hover {
-            color: lighten(#58a6ff, 10%);
+            color: lighten(#5bc0eb, 10%) !important;
           }
         }
       }
@@ -929,12 +948,13 @@ body[data-theme="dark"] {
   pre[class*="language-"],
   code[class*="language-"] {
     background: #0d1117 !important;
-    border: 1px solid rgba(91, 192, 235, 0.15);
+    border: none;
     border-radius: 8px;
   }
   
   .highlight pre {
     background: #0d1117 !important;
+    border: none;
   }
   
   // Line numbers if present
@@ -1018,10 +1038,16 @@ body[data-theme="dark"] {
   }
   
   // Tables - override Bootstrap .table-striped styles
+  // Also handle table wrappers that might be added by Hugo/Bootstrap
+  .table-responsive,
+  .td-content > div:has(> table) {
+    background: transparent !important;
+  }
+  
   table,
   .table,
   .td-content table {
-    background: var(--color-bg-elevated) !important;
+    background: transparent !important;
     --bs-table-bg: transparent;
     --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
     --bs-table-hover-bg: rgba(91, 192, 235, 0.08);
@@ -1033,6 +1059,7 @@ body[data-theme="dark"] {
     }
     
     td {
+      background: transparent !important;
       color: var(--color-text) !important;
       border-color: var(--color-border-subtle) !important;
     }

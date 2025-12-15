@@ -6,12 +6,6 @@ description: "Design-first API development with automatic code generation for Go
 llm_optimized: true
 content_scope: "Complete Goa Documentation"
 aliases:
-  - /en/docs/1-introduction/
-  - /en/docs/1-introduction/1-what-is-goa/
-  - /en/docs/1-introduction/2-why-goa/
-  - /docs/1-introduction/
-  - /docs/1-introduction/1-what-is-goa/
-  - /docs/1-introduction/2-why-goa/
 ---
 
 ## Overview
@@ -26,6 +20,65 @@ Goa is a design-first framework for building microservices in Go. Define your AP
 - **Multi-Transport** — Support for HTTP and gRPC from a single design
 - **Validation** — Built-in request validation based on your design
 - **Documentation** — Auto-generated OpenAPI specifications
+
+## How Goa Works
+
+Goa follows a three-phase workflow that separates API design from implementation, ensuring consistency and reducing boilerplate.
+
+{{< figure src="/images/diagrams/GoaWorkflow.svg" alt="Goa three-phase workflow: Design → Generate → Implement" class="img-fluid" >}}
+
+### Phase 1: Design (You Write)
+
+In the design phase, you define your API using Goa's DSL in Go files (typically in a `design/` directory):
+
+- **Types**: Define data structures with validation rules
+- **Services**: Group related methods together
+- **Methods**: Define operations with payloads and results
+- **Transports**: Map methods to HTTP endpoints and/or gRPC procedures
+- **Security**: Define authentication and authorization schemes
+
+**What you create**: `design/*.go` files containing your API specification as Go code.
+
+### Phase 2: Generate (Automated)
+
+Run `goa gen` to automatically generate all boilerplate code:
+
+```bash
+goa gen myservice/design
+```
+
+**What Goa creates** (in the `gen/` directory):
+- Server scaffolding with request routing and validation
+- Type-safe client libraries
+- OpenAPI/Swagger specifications
+- Protocol Buffer definitions (for gRPC)
+- Transport encoders/decoders
+
+**Important**: Never edit files in `gen/` — they are regenerated each time you run `goa gen`.
+
+### Phase 3: Implement (You Write)
+
+Write your business logic by implementing the generated service interfaces:
+
+```go
+// service.go - You write this
+type helloService struct{}
+
+func (s *helloService) SayHello(ctx context.Context, p *hello.SayHelloPayload) (string, error) {
+    return fmt.Sprintf("Hello, %s!", p.Name), nil
+}
+```
+
+**What you create**: Service implementation files that contain your actual business logic.
+
+### What's Hand-Written vs Auto-Generated
+
+| You Write | Goa Generates |
+|-----------|---------------|
+| `design/*.go` — API definitions | `gen/` — All transport code |
+| `service.go` — Business logic | OpenAPI specifications |
+| `cmd/*/main.go` — Server startup | Protocol Buffer definitions |
+| Tests and custom middleware | Request validation |
 
 ## Documentation Guides
 

@@ -4,26 +4,6 @@ weight: 3
 description: "Complete guide to Goa's code generation - commands, process, generated code structure, and customization options."
 llm_optimized: true
 aliases:
-  - /en/docs/4-concepts/2-code-generation/
-  - /en/docs/4-concepts/2-code-generation/1-command/
-  - /en/docs/4-concepts/2-code-generation/2-process/
-  - /en/docs/4-concepts/2-code-generation/3-interface/
-  - /en/docs/4-concepts/2-code-generation/4-client/
-  - /en/docs/4-concepts/2-code-generation/5-http/
-  - /en/docs/4-concepts/2-code-generation/6-grpc/
-  - /en/docs/4-concepts/2-code-generation/7-customization/
-  - /en/docs/4-concepts/2-code-generation/8-types-and-validation/
-  - /en/docs/4-concepts/2-code-generation/9-views-and-results/
-  - /docs/4-concepts/2-code-generation/
-  - /docs/4-concepts/2-code-generation/1-command/
-  - /docs/4-concepts/2-code-generation/2-process/
-  - /docs/4-concepts/2-code-generation/3-interface/
-  - /docs/4-concepts/2-code-generation/4-client/
-  - /docs/4-concepts/2-code-generation/5-http/
-  - /docs/4-concepts/2-code-generation/6-grpc/
-  - /docs/4-concepts/2-code-generation/7-customization/
-  - /docs/4-concepts/2-code-generation/8-types-and-validation/
-  - /docs/4-concepts/2-code-generation/9-views-and-results/
 ---
 
 Goa's code generation transforms your design into production-ready code. Rather than just scaffolding, Goa generates complete, runnable service implementations that follow best practices and maintain consistency across your entire API.
@@ -601,3 +581,12 @@ Common plugin use cases:
 - Custom validation rules
 - Cross-cutting concerns (logging, metrics)
 - Configuration file generation
+
+---
+
+## See Also
+
+- [DSL Reference](dsl-reference/) — Complete DSL reference for design files
+- [HTTP Guide](http-guide/) — HTTP transport features and customization
+- [gRPC Guide](grpc-guide/) — gRPC transport features and Protocol Buffers
+- [Quickstart](quickstart/) — Getting started with code generation

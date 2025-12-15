@@ -4,13 +4,127 @@ weight: 2
 description: "Complete reference for Goa-AI's DSL functions - agents, toolsets, policies, and MCP integration."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/3-concepts/
-  - /en/docs/8-goa-ai/3-concepts/1-dsl/
-  - /docs/8-goa-ai/3-concepts/
-  - /docs/8-goa-ai/3-concepts/1-dsl/
 ---
 
 This document provides a complete reference for Goa-AI's DSL functions. Use it alongside the [Runtime](./runtime.md) guide to understand how designs translate into runtime behavior.
+
+## DSL Quick Reference
+
+| Function | Context | Description |
+|----------|---------|-------------|
+| **Agent Functions** | | |
+| `Agent` | Service | Defines an LLM-based agent |
+| `Use` | Agent | Declares toolset consumption |
+| `Export` | Agent, Service | Exposes toolsets to other agents |
+| `AgentToolset` | Use argument | References toolset from another agent |
+| `UseAgentToolset` | Agent | Alias for AgentToolset + Use |
+| `Passthrough` | Tool (in Export) | Deterministic forwarding to service method |
+| `DisableAgentDocs` | API | Disables AGENTS_QUICKSTART.md generation |
+| **Toolset Functions** | | |
+| `Toolset` | Top-level | Declares a provider-owned toolset |
+| `FromMCP` | Toolset argument | Configures MCP-backed toolset |
+| `FromRegistry` | Toolset argument | Configures registry-backed toolset |
+| `Description` | Toolset | Sets toolset description |
+| **Tool Functions** | | |
+| `Tool` | Toolset, Method | Defines a callable tool |
+| `Args` | Tool | Defines input parameter schema |
+| `Return` | Tool | Defines output result schema |
+| `Artifact` | Tool | Defines sidecar data schema (not sent to model) |
+| `BoundedResult` | Tool | Marks result as bounded view |
+| `Tags` | Tool, Toolset | Attaches metadata labels |
+| `BindTo` | Tool | Binds tool to service method |
+| `Inject` | Tool | Marks fields as runtime-injected |
+| `CallHintTemplate` | Tool | Display template for invocations |
+| `ResultHintTemplate` | Tool | Display template for results |
+| `ResultReminder` | Tool | Static system reminder after tool result |
+| `Confirmation` | Tool | Requires explicit out-of-band confirmation before execution |
+| **Policy Functions** | | |
+| `RunPolicy` | Agent | Configures execution constraints |
+| `DefaultCaps` | RunPolicy | Sets resource limits |
+| `MaxToolCalls` | DefaultCaps | Maximum tool invocations |
+| `MaxConsecutiveFailedToolCalls` | DefaultCaps | Maximum consecutive failures |
+| `TimeBudget` | RunPolicy | Simple wall-clock limit |
+| `Timing` | RunPolicy | Fine-grained timeout configuration |
+| `Budget` | Timing | Overall run budget |
+| `Plan` | Timing | Planner activity timeout |
+| `Tools` | Timing | Tool activity timeout |
+| `History` | RunPolicy | Conversation history management |
+| `KeepRecentTurns` | History | Sliding window policy |
+| `Compress` | History | Model-assisted summarization |
+| `Cache` | RunPolicy | Prompt caching configuration |
+| `AfterSystem` | Cache | Checkpoint after system messages |
+| `AfterTools` | Cache | Checkpoint after tool definitions |
+| `InterruptsAllowed` | RunPolicy | Enable pause/resume |
+| `OnMissingFields` | RunPolicy | Validation behavior |
+| **MCP Functions** | | |
+| `MCPServer` | Service | Enables MCP support |
+| `MCP` | Service | Alias for MCPServer |
+| `ProtocolVersion` | MCP option | Sets MCP protocol version |
+| `MCPTool` | Method | Marks method as MCP tool |
+| `MCPToolset` | Top-level | Declares MCP-derived toolset |
+| `Resource` | Method | Marks method as MCP resource |
+| `WatchableResource` | Method | Marks method as subscribable resource |
+| `StaticPrompt` | Service | Adds static prompt template |
+| `DynamicPrompt` | Method | Marks method as prompt generator |
+| `Notification` | Method | Marks method as notification sender |
+| `Subscription` | Method | Marks method as subscription handler |
+| `SubscriptionMonitor` | Method | SSE monitor for subscriptions |
+| **Registry Functions** | | |
+| `Registry` | Top-level | Declares a registry source |
+| `URL` | Registry | Sets registry endpoint |
+| `APIVersion` | Registry | Sets API version |
+| `Timeout` | Registry | Sets HTTP timeout |
+| `Retry` | Registry | Configures retry policy |
+| `SyncInterval` | Registry | Sets catalog refresh interval |
+| `CacheTTL` | Registry | Sets local cache duration |
+| `Federation` | Registry | Configures external registry imports |
+| `Include` | Federation | Glob patterns to import |
+| `Exclude` | Federation | Glob patterns to skip |
+| `PublishTo` | Export | Configures registry publication |
+| `Version` | Toolset | Pins registry toolset version |
+| **Schema Functions** | | |
+| `Attribute` | Args, Return, Artifact | Defines schema field (general use) |
+| `Field` | Args, Return, Artifact | Defines numbered proto field (gRPC) |
+| `Required` | Schema | Marks fields as required |
+
+### Field vs Attribute
+
+Both `Field` and `Attribute` define schema fields, but they serve different purposes:
+
+**`Attribute(name, type, description, dsl)`** - General-purpose schema definition:
+- Used for JSON-only schemas
+- No field numbering required
+- Simpler syntax for most use cases
+
+```go
+Args(func() {
+    Attribute("query", String, "Search query")
+    Attribute("limit", Int, "Maximum results", func() {
+        Default(10)
+    })
+    Required("query")
+})
+```
+
+**`Field(number, name, type, description, dsl)`** - Numbered fields for gRPC/protobuf:
+- Required when generating gRPC services
+- Field numbers must be unique and stable
+- Use when your service exposes both HTTP and gRPC transports
+
+```go
+Args(func() {
+    Field(1, "query", String, "Search query")
+    Field(2, "limit", Int, "Maximum results", func() {
+        Default(10)
+    })
+    Required("query")
+})
+```
+
+**When to use which:**
+- Use `Attribute` for agent tools that only use JSON (most common case)
+- Use `Field` when your Goa service has gRPC transport and tools bind to those methods
+- Mixing is allowed but not recommended within the same schema
 
 ## Overview
 
@@ -602,6 +716,44 @@ Tool("web_search", "Search the web", func() {
 })
 ```
 
+### Confirmation
+
+`Confirmation(dsl)` declares that a tool must be explicitly approved out-of-band before it
+executes. This is intended for **operator-sensitive** tools (writes, deletes, commands).
+
+**Context**: Inside `Tool`
+
+At generation time, Goa-AI records confirmation policy in the generated tool spec. At runtime, the
+workflow emits a confirmation request using `AwaitConfirmation` and executes the tool only after an
+explicit approval is provided.
+
+Minimal example:
+
+```go
+Tool("dangerous_write", "Write a stateful change", func() {
+    Args(DangerousWriteArgs)
+    Return(DangerousWriteResult)
+    Confirmation(func() {
+        Title("Confirm change")
+        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+    })
+})
+```
+
+Notes:
+
+- The runtime owns how confirmation is requested. The built-in confirmation protocol uses a dedicated
+  `AwaitConfirmation` await and a `ProvideConfirmation` decision call. See the Runtime guide for the
+  expected payloads and execution flow.
+- Confirmation templates (`PromptTemplate` and `DeniedResultTemplate`) are Go `text/template` strings
+  executed with `missingkey=error`. In addition to the standard template functions (e.g. `printf`),
+  Goa-AI provides:
+  - `json v` → JSON encodes `v` (useful for optional pointer fields or embedding structured values).
+  - `quote s` → returns a Go-escaped quoted string (like `fmt.Sprintf("%q", s)`).
+- Confirmation can also be enabled dynamically at runtime via `runtime.WithToolConfirmation(...)`
+  (useful for environment-based policies or per-deployment overrides).
+
 ### CallHintTemplate and ResultHintTemplate
 
 `CallHintTemplate(template)` and `ResultHintTemplate(template)` configure display templates for tool invocations and results. Templates are Go text/template strings rendered with the tool's typed payload or result struct to produce concise hints shown during and after execution.
@@ -710,6 +862,87 @@ Tool("analyze_data", "Analyze dataset", func() {
     CallHintTemplate("Analyzing {{ .DatasetID }} ({{ .AnalysisType }})")
     ResultHintTemplate("{{ count .Insights }} insights in {{ .ProcessingTimeMs }}ms")
 })
+```
+
+### ResultReminder
+
+`ResultReminder(text)` configures a static system reminder that is injected into the conversation after the tool result is returned. Use this to provide backstage guidance to the model about how to interpret or present the result to the user.
+
+**Context**: Inside `Tool`
+
+The reminder text is automatically wrapped in `<system-reminder>` tags by the runtime. Do not include the tags in the text.
+
+**Static vs Dynamic Reminders:**
+
+`ResultReminder` is for static, design-time reminders that apply every time the tool is called. For dynamic reminders that depend on runtime state or tool result content, use `PlannerContext.AddReminder()` in your planner implementation instead. Dynamic reminders support:
+- Rate limiting (minimum turns between emissions)
+- Per-run caps (maximum emissions per run)
+- Runtime addition/removal based on conditions
+- Priority tiers (safety vs guidance)
+
+**Basic Example:**
+
+```go
+Tool("get_time_series", "Get time series data", func() {
+    Args(func() {
+        Attribute("device_id", String, "Device identifier")
+        Attribute("start_time", String, "Start timestamp")
+        Attribute("end_time", String, "End timestamp")
+        Required("device_id", "start_time", "end_time")
+    })
+    Return(func() {
+        Attribute("series", ArrayOf(DataPoint), "Time series data points")
+        Attribute("summary", String, "Summary for the model")
+        Required("series", "summary")
+    })
+    ResultReminder("The user sees a rendered graph of this data in the UI.")
+})
+```
+
+**When to Use ResultReminder:**
+
+- When the UI renders tool results in a special way (charts, graphs, tables) that the model should know about
+- When the model should avoid repeating information that's already visible to the user
+- When there's important context about how results are presented that affects how the model should respond
+- When you want consistent guidance that applies to every invocation of the tool
+
+**Multiple Tools with Reminders:**
+
+When multiple tools in a single turn have result reminders, they are combined into a single system message:
+
+```go
+Tool("get_metrics", "Get device metrics", func() {
+    Args(func() { /* ... */ })
+    Return(func() { /* ... */ })
+    ResultReminder("Metrics are displayed as a dashboard widget.")
+})
+
+Tool("get_alerts", "Get active alerts", func() {
+    Args(func() { /* ... */ })
+    Return(func() { /* ... */ })
+    ResultReminder("Alerts are shown in a priority-sorted list with severity indicators.")
+})
+```
+
+**Dynamic Reminders via PlannerContext:**
+
+For reminders that depend on runtime conditions, use the planner API instead:
+
+```go
+// In your planner implementation
+func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
+    // Add a dynamic reminder based on tool results
+    for _, tr := range input.ToolResults {
+        if tr.Name == "get_time_series" && hasAnomalies(tr.Result) {
+            input.Agent.AddReminder(reminder.Reminder{
+                ID:   "anomaly_detected",
+                Text: "Anomalies were detected in the time series. Highlight these to the user.",
+                Priority: reminder.TierGuidance,
+            })
+        }
+    }
+    // ... rest of planner logic
+}
 ```
 
 ### Tags
@@ -1047,14 +1280,23 @@ Both policies preserve logical turn boundaries as atomic units. A "turn" consist
 This ensures the model always sees complete interaction sequences, never partial turns that could confuse context.
 
 ### InterruptsAllowed
-
-`InterruptsAllowed(bool)` signals that human-in-the-loop interruptions should be honored. When enabled, the runtime supports pause/resume operations.
-
+ 
+`InterruptsAllowed(bool)` signals that human-in-the-loop interruptions should be honored. When enabled, the runtime supports pause/resume operations, which are essential for clarification loops and durable await states.
+ 
 **Context**: Inside `RunPolicy`
-
+ 
+**Key Benefits:**
+- Enables the agent to **pause** execution when missing required information (see `OnMissingFields`).
+- Allows the planner to **await** user input via clarification tools.
+- Ensures the agent state is preserved exclusively during the pause, consuming no compute resources until resumed.
+ 
 ```go
 RunPolicy(func() {
+    // Enable pause/resume capability
     InterruptsAllowed(true)
+    
+    // Automatically pause when required tool arguments are missing
+    OnMissingFields("await_clarification")
 })
 ```
 
@@ -1135,6 +1377,19 @@ Service("calculator", func() {
         })
         MCPTool("add", "Add two numbers")
     })
+})
+```
+
+### ProtocolVersion
+
+`ProtocolVersion(version)` configures the MCP protocol version supported by the server. It returns a configuration function for use with `MCPServer` or `MCP`.
+
+**Context**: Option argument to `MCPServer` or `MCP`
+
+```go
+Service("calculator", func() {
+    // Specify protocol version as an option
+    MCPServer("calc", "1.0.0", ProtocolVersion("2025-06-18"))
 })
 ```
 

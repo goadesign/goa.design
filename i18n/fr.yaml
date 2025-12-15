@@ -1,0 +1,114 @@
+# Site title and meta
+site_title: "Goa :: La conception d'abord."
+site_description: "Goa est un framework de génération de code puissant pour Go, permettant une approche conception d'abord pour construire des APIs et microservices idiomatiques — clairs, évolutifs et sans code répétitif."
+
+# Navigation
+nav_search_placeholder: "Rechercher"
+nav_godoc: "GoDoc"
+nav_github: "GitHub"
+nav_edit: "Modifier"
+
+# Footer
+footer_slogan: "La conception d'abord."
+footer_languages: "Langues"
+footer_find_us: "Retrouvez-nous ailleurs"
+footer_copyright: " 2015-%s par Raphael Simon et les contributeurs Goa"
+footer_logo_by: "Logo par Jason Melgoza"
+
+# Hero Section
+hero_title: "La Conception D'abord !"
+hero_description: "Arrêtez d'écrire du code répétitif. Commencez à concevoir des solutions qui comptent.</br>Laissez Goa s'occuper du reste."
+
+# Features Section
+feature_codegen_title: "Développement Accéléré"
+feature_codegen_desc: "Goa génère automatiquement 30 à 50% de votre base de code. Concentrez-vous sur votre logique métier tandis que Goa gère le transport, la validation, la documentation et la génération de clients."
+
+feature_design_title: "Basé sur la Conception"
+feature_design_desc: "Votre conception est votre contrat. Goa assure que votre implémentation, documentation et SDKs clients restent parfaitement synchronisés. Plus de dérive entre les spécifications et le code."
+
+feature_best_practice_title: "Meilleures Pratiques"
+feature_best_practice_desc: "Validation intégrée, gestion des erreurs et intégration de middleware. Obtenez des fonctionnalités de sécurité et de fiabilité de niveau entreprise sans la complexité de niveau entreprise."
+
+# Section Navigation
+subsections_title: "Dans Cette Section"
+
+# Goa-AI Section
+goa_ai_section_title: "Goa-AI : Les Agents comme Systèmes"
+goa_ai_section_description: "Goa-AI apporte la philosophie conception d'abord aux systèmes agentiques. Construisez des agents robustes et typés qui se composent proprement et évoluent sans effort."
+goa_ai_section_features: |
+  <ul>
+    <li><strong>Contrats Conception D'abord :</strong> Schémas forts et indices de réparation automatique pour une utilisation robuste des outils</li>
+    <li><strong>Agents comme Systèmes :</strong> Composition via les Arbres d'Exécution, pas de chaînes plates</li>
+    <li><strong>Streaming Structuré :</strong> Événements typés pour des interfaces riches et conscientes de la topologie</li>
+    <li><strong>Prêt pour la Production :</strong> Durabilité Temporal, politiques et intégration MCP</li>
+  </ul>
+goa_ai_section_cta: "Découvrir Goa-AI"
+
+# Goa-AI Hero Section
+goa_ai_hero_badge: "NOUVEAU"
+goa_ai_hero_badge_text: "Présentation de Goa-AI"
+goa_ai_hero_title_1: "Construisez des Agents IA"
+goa_ai_hero_title_2: "À la Manière Goa"
+goa_ai_hero_description: "Apportez la philosophie conception d'abord aux systèmes agentiques. Définissez les agents, outils et politiques avec un DSL puissant. Obtenez du code typé, du streaming structuré et une durabilité prête pour la production."
+goa_ai_hero_feature_design: "Définir des agents avec contrats typés"
+goa_ai_hero_feature_mcp: "Connecter tout serveur MCP"
+goa_ai_hero_feature_registries: "Découvrir les outils entre clusters"
+goa_ai_hero_feature_runtrees: "Composer des agents en hiérarchies"
+goa_ai_hero_feature_streaming: "Streamer des événements typés"
+goa_ai_hero_feature_durability: "Survivre aux pannes avec Temporal"
+goa_ai_hero_cta_primary: "Explorer Goa-AI"
+goa_ai_hero_cta_secondary: "Démarrage Rapide"
+
+# Wizard
+wizard_section_title: "Assistant de Conception Goa"
+wizard_section_description: "Laissez l'<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Assistant de Conception Goa</a> alimenté par l'IA guider la création de votre API"
+wizard_section_features: |
+  <ul>
+    <li>Générez des conceptions Goa à travers de simples conversations en langage naturel</li>
+    <li>Obtenez des suggestions intelligentes et des meilleures pratiques en temps réel</li>
+    <li>Apprenez le DSL Goa avec des exemples pratiques et des explications détaillées</li>
+  </ul>
+wizard_section_cta: "Commencer"
+wizard_section_note: "(nécessite un abonnement <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>)" 
+
+# Sponsors section
+sponsors_title: "Sponsors"
+
+sponsor_incidentio_title: "incident.io : Rebondissez plus fort après chaque incident"
+sponsor_incidentio_desc: "Utilisez notre plateforme pour permettre à votre équipe de gérer les incidents de bout en bout.<br/>Corrigez rapidement et apprenez des incidents pour construire des produits plus résilients."
+sponsor_incidentio_link: "En Savoir Plus"
+
+sponsor_speakeasy_title: "Speakeasy : DevEx Entreprise pour votre API"
+sponsor_speakeasy_desc: "Notre plateforme facilite la création de SDKs prêts pour la production riches en fonctionnalités.<br/>Accélérez les intégrations et réduisez les erreurs en donnant à votre API la DevEx qu'elle mérite."
+sponsor_speakeasy_link: "Intégrer avec Goa"
+
+design_first_title: "Développement Bien Fait"
+design_first_description: "Goa transforme la façon dont vous construisez des microservices en Go.<br/>Concevez votre solution une fois, et regardez Goa générer des serveurs prêts pour la production, des clients typés et une documentation complète.<br/>Concentrez-vous sur l'essentiel : construire d'excellents services qui évoluent."
+
+# Why Goa Section
+why_goa_title: "Pourquoi les Équipes Choisissent Goa"
+why_goa_type_safe_title: "Développement Rapide"
+why_goa_type_safe_desc: "Réduisez le temps de développement avec la génération automatique de code. 30 à 50% de code en moins à écrire, tester et maintenir signifie une mise sur le marché plus rapide."
+why_goa_boilerplate_title: "Zéro Code Répétitif"
+why_goa_boilerplate_desc: "Plus besoin de copier-coller des handlers et middleware. Concentrez-vous sur votre logique métier tandis que Goa s'occupe du reste."
+why_goa_production_title: "Prêt pour la Production"
+why_goa_production_desc: "Utilisé par des entreprises du monde entier pour construire et faire évoluer leurs APIs. Éprouvé au combat, performant et fiable."
+
+# Trust Section
+trust_section_title: "Adopté par des Équipes d'Ingénierie dans le Monde Entier"
+trust_section_subtitle: "Rejoignez la communauté croissante d'entreprises utilisant Goa pour construire des APIs robustes et maintenables"
+
+# Goa Hero Section Features
+goa_hero_feature_design: "Concevez des APIs avec un DSL puissant"
+goa_hero_feature_codegen: "Générez serveurs, clients et docs"
+goa_hero_feature_transports: "Support HTTP, gRPC et WebSocket"
+goa_hero_feature_validation: "Validation des requêtes intégrée"
+goa_hero_feature_docs: "Spécifications OpenAPI auto-générées"
+goa_hero_feature_extensible: "Architecture de plugins extensible"
+goa_hero_cta_primary: "Explorer Goa"
+
+# Common actions
+learn_more: "En Savoir Plus"
+get_started: "Démarrage Rapide"
+
+

@@ -1,10 +1,11 @@
 {{/*
-  Custom Sidebar - LLM-Optimized Documentation
+  Custom Sidebar - Flat Top-Level Navigation
   
-  Flattened navigation structure with LLM-optimized indicators.
+  Renders Goa and Goa-AI sections as top-level items (not nested under Documentation).
   All sections always expanded, no collapsing.
   
-  Requirements: 4.1, 4.2, 4.3
+  CSS styling is in assets/scss/_custom.scss under "LEFT SIDEBAR (Navigation)".
+  If you change this partial, update the CSS comments and selectors accordingly.
 */}}
 
 {{/* Get the docs section - use language-aware path */}}
@@ -12,14 +13,13 @@
 
 <nav id="td-section-nav" class="td-sidebar-nav" aria-label="Documentation navigation">
   <ul class="td-sidebar-nav-list">
-    {{/* Iterate through top-level sections */}}
+    {{/* Iterate through top-level sections (Goa, Goa-AI) - these become top-level nav items */}}
     {{ range $docsSection.Sections }}
       {{ $isActive := or (eq $.RelPermalink .RelPermalink) ($.IsDescendant .) }}
-      {{ $isLLMOptimized := .Params.llm_optimized | default false }}
       {{ $hasChildren := gt (len .Pages) 0 }}
       
       <li class="td-sidebar-nav-item{{ if $isActive }} active-path{{ end }}">
-        {{/* Section link - bold title */}}
+        {{/* Section link - NOT bold (styling controlled by CSS) */}}
         <a href="{{ .RelPermalink }}" 
            class="td-sidebar-nav-link td-sidebar-nav-link--section{{ if eq $.RelPermalink .RelPermalink }} active{{ end }}"
            id="m-{{ .RelPermalink | anchorize }}">
@@ -45,4 +45,6 @@
     {{ end }}
   </ul>
 </nav>
+
+
 

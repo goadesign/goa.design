@@ -1,6 +1,8 @@
 {{ define "main" }}
 <section class="section-goa-ai-hero">
     <div class="goa-ai-hero-bg"></div>
+    <div class="goa-ai-hero-curves"></div>
+    <div class="goa-ai-hero-curves-extra"></div>
     <div class="container">
         <div class="goa-ai-hero-content">
             <div class="goa-ai-badge">
@@ -12,38 +14,56 @@
                 <span class="title-light">{{ T "goa_ai_hero_title_2" }}</span>
             </h2>
             <p class="goa-ai-hero-lead">{{ T "goa_ai_hero_description" }}</p>
-            <div class="goa-ai-hero-features">
-                <div class="hero-feature">
-                    <i class="fas fa-cube"></i>
-                    <span>{{ T "goa_ai_hero_feature_1" }}</span>
-                </div>
-                <div class="hero-feature">
-                    <i class="fas fa-project-diagram"></i>
-                    <span>{{ T "goa_ai_hero_feature_2" }}</span>
-                </div>
-                <div class="hero-feature">
-                    <i class="fas fa-stream"></i>
-                    <span>{{ T "goa_ai_hero_feature_3" }}</span>
-                </div>
-                <div class="hero-feature">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>{{ T "goa_ai_hero_feature_4" }}</span>
-                </div>
-            </div>
+            <ul class="goa-ai-hero-features-list">
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/" }}#design-first-agents" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_design" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_mcp" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/" }}#tool-registries" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_registries" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/" }}#run-trees-composition" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_runtrees" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/" }}#structured-streaming" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_streaming" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+            <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/" }}#temporal-durability" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_durability" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ relref . "/docs/2-goa-ai/toolsets/" }}#async-and-durable-execution" class="hero-feature-item">
+                        <span class="feature-text">{{ T "goa_ai_hero_feature_async" }}</span>
+                        <i class="fas fa-arrow-right feature-arrow"></i>
+                    </a>
+                </li>
+            </ul>
             <div class="goa-ai-hero-cta">
-                {{ if eq .Lang "en" }}
                 <a href="{{ relref . "/docs/2-goa-ai/" }}" class="btn btn-goa-ai-primary">
-                {{ else }}
-                <a href="{{ relref . "/docs/8-goa-ai/" }}" class="btn btn-goa-ai-primary">
-                {{ end }}
                     <span>{{ T "goa_ai_hero_cta_primary" }}</span>
                     <i class="fas fa-rocket ms-2"></i>
                 </a>
-                {{ if eq .Lang "en" }}
                 <a href="{{ relref . "/docs/2-goa-ai/quickstart/" }}" class="btn btn-goa-ai-secondary">
-                {{ else }}
-                <a href="{{ relref . "/docs/8-goa-ai/2-getting-started/" }}" class="btn btn-goa-ai-secondary">
-                {{ end }}
                     <span>{{ T "goa_ai_hero_cta_secondary" }}</span>
                     <i class="fas fa-arrow-right ms-2"></i>
                 </a>
@@ -64,118 +84,67 @@
         </div>
     </div>
     <div class="goa-ai-hero-particles"></div>
+    <a href="#goa-hero" class="scroll-indicator" aria-label="Scroll to next section">
+        <i class="fas fa-chevron-down"></i>
+    </a>
 </section>
 
-<section class="td-box td-box--primary td-box--gradient hero-section">
+<section id="goa-hero" class="td-box td-box--primary td-box--gradient hero-section">
+    <div class="goa-hero-curves"></div>
+    <div class="goa-hero-curves-extra"></div>
     <div class="container text-center">
         <div class="hero-logo">
             <img src="{{ "img/goa-logo.png" | relURL }}" alt="Goa Design Logo" class="goa-logo">
         </div>
         <h1 class="display-1">{{ T "hero_title" }}</h1>
         <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
-        {{ if eq .Lang "en" }}
-        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-goa/quickstart/" }}">
-        {{ else }}
-        <a class="btn btn-lg btn-secondary" href="{{ relref . "/docs/1-introduction/" }}">
-        {{ end }}
-            {{ T "get_started" }} <i class="fas fa-arrow-alt-circle-right ms-2"></i>
-        </a>
-    </div>
-</section>
-
-<section class="section-1">
-    <div class="container">
-        <div class="text-center">
-            <h2>{{ T "design_first_title" }}</h2>
-            <p class="lead">{{ T "design_first_description" | safeHTML }}</p>
-        </div>
-    </div>
-</section>
-
-<section class="section-2">
-    <div class="container">
-        <div class="card-grid">
-            <div class="card-wrapper">
-                <div class="card">
-                    {{ if eq .Lang "en" }}
-                    <a href="{{ relref . "/docs/1-goa/code-generation/" }}" class="text-dark text-decoration-none">
-                    {{ else }}
-                    <a href="{{ relref . "/docs/4-concepts/2-code-generation" }}" class="text-dark text-decoration-none">
-                    {{ end }}
-                        <div class="card-body text-center">
-                            <i class="fas fa-code fa-3x mb-2"></i>
-                            <h3 class="card-title">{{ T "feature_codegen_title" }}</h3>
-                            <p class="card-text">{{ T "feature_codegen_desc" }}</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="card-wrapper">
-                <div class="card">
-                    {{ if eq .Lang "en" }}
-                    <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}" class="text-dark text-decoration-none">
-                    {{ else }}
-                    <a href="{{ relref . "/docs/4-concepts/1-design-language" }}" class="text-dark text-decoration-none">
-                    {{ end }}
-                        <div class="card-body text-center">
-                            <i class="fas fa-pencil-ruler fa-3x mb-2"></i>
-                            <h3 class="card-title">{{ T "feature_design_title" }}</h3>
-                            <p class="card-text">{{ T "feature_design_desc" }}</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="card-wrapper">
-                <div class="card">
-                    {{ if eq .Lang "en" }}
-                    <a href="{{ relref . "/docs/1-goa/" }}" class="text-dark text-decoration-none">
-                    {{ else }}
-                    <a href="{{ relref . "/docs/1-introduction/2-why-goa" }}" class="text-dark text-decoration-none">
-                    {{ end }}
-                        <div class="card-body text-center">
-                            <i class="fas fa-check-circle fa-3x mb-2"></i>
-                            <h3 class="card-title">{{ T "feature_best_practice_title" }}</h3>
-                            <p class="card-text">{{ T "feature_best_practice_desc" }}</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="section-wizard">
-    <div class="container">
-        <div class="text-center">
-            <div class="wizard-logo-wrapper">
-                <div class="wizard-logo">
-                    <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard">
-                        <img src="{{ "img/goa-wizard.webp" | relURL }}" alt="Goa Design Wizard">
-                    </a>
-                    <div class="wizard-glow"></div>
-                </div>
-            </div>
-            <h2>{{ T "wizard_section_title" }}</h2>
-            <p class="lead">{{ T "wizard_section_description" | safeHTML }}</p>
-        </div>
-        <div class="wizard-features">
-            <div class="features-content">
-                {{ T "wizard_section_features" | safeHTML }}
-            </div>
-            <div class="wizard-cta">
-                <a href="https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard" class="btn btn-lg btn-primary">
-                    {{ T "wizard_section_cta" }} <i class="fas fa-wand-magic-sparkles ms-2"></i>
+        <ul class="goa-hero-features-list">
+            <li>
+                <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_design" }}</span>
                 </a>
-                <div class="wizard-note mt-3">
-                    {{ T "wizard_section_note" | safeHTML }}
-                </div>
-            </div>
+            </li>
+            <li>
+                <a href="{{ relref . "/docs/1-goa/code-generation/" }}" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_codegen" }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ relref . "/docs/1-goa/http-guide/" }}" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_transports" }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}#validation" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_validation" }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ relref . "/docs/1-goa/code-generation/" }}#openapi-generation" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_docs" }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ relref . "/docs/1-goa/interceptors/" }}" class="hero-feature-item">
+                    <span class="feature-text">{{ T "goa_hero_feature_extensible" }}</span>
+                </a>
+            </li>
+        </ul>
+        <div class="goa-hero-cta">
+            <a href="{{ relref . "/docs/1-goa/" }}" class="btn btn-lg btn-secondary">
+                {{ T "goa_hero_cta_primary" }} <i class="fas fa-book ms-2"></i>
+            </a>
+            <a href="{{ relref . "/docs/1-goa/quickstart/" }}" class="btn btn-lg btn-outline-light">
+                {{ T "get_started" }} <i class="fas fa-arrow-right ms-2"></i>
+            </a>
         </div>
     </div>
-    <div class="wizard-background"></div>
+    <a href="#why-goa" class="scroll-indicator" aria-label="Scroll to next section">
+        <i class="fas fa-chevron-down"></i>
+    </a>
 </section>
 
-<section class="section-why">
+<section id="why-goa" class="section-why">
     <div class="container">
         <div class="text-center">
             <h2>{{ T "why_goa_title" }}</h2>
@@ -258,6 +227,42 @@
         </div>
     </div>
 </section>
+
+<!-- Scroll Position Restoration -->
+<script>
+  (function() {
+    // Save scroll position before navigating away
+    var links = document.querySelectorAll('.hero-feature-item, .goa-ai-hero-cta a, .goa-hero-cta a');
+    links.forEach(function(link) {
+      link.addEventListener('click', function() {
+        sessionStorage.setItem('homeScrollPos', window.scrollY.toString());
+      });
+    });
+    
+    // Restore scroll position when returning via back button
+    if (performance.navigation && performance.navigation.type === 2) {
+      // Back/forward navigation (older API)
+      var savedPos = sessionStorage.getItem('homeScrollPos');
+      if (savedPos) {
+        setTimeout(function() {
+          window.scrollTo(0, parseInt(savedPos, 10));
+        }, 0);
+      }
+    }
+    
+    // Modern API for back/forward cache
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        var savedPos = sessionStorage.getItem('homeScrollPos');
+        if (savedPos) {
+          setTimeout(function() {
+            window.scrollTo(0, parseInt(savedPos, 10));
+          }, 0);
+        }
+      }
+    });
+  })();
+</script>
 
 <!-- Gurubase Widget - theme controlled by theme-toggle.js -->
 <script>

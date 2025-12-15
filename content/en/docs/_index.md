@@ -7,15 +7,6 @@ description: >
 llm_optimized: true
 content_scope: "Complete Documentation"
 aliases:
-  - /en/docs/4-concepts/
-  - /en/docs/4-concepts/6-transports/
-  - /en/docs/3-tutorials/
-  - /en/docs/7-community/
-  - /en/docs/7-community/1-contributing/
-  - /en/docs/7-community/2-support/
-  - /docs/4-concepts/
-  - /docs/3-tutorials/
-  - /docs/7-community/
 ---
 
 {{< section-llm-info >}}
@@ -114,3 +105,7 @@ func (s *service) Add(ctx context.Context, p *calc.AddPayload) (int, error) {
 - [Gophers Slack](https://gophers.slack.com/messages/goa) — #goa channel
 - [GitHub Discussions](https://github.com/goadesign/goa/discussions) — Questions and ideas
 - [Bluesky](https://goadesign.bsky.social) — Updates and announcements
+
+## Contributing
+
+Want to improve the documentation? See the [Contributing Guide](contributing/) for guidelines on canonical homes, cross-linking patterns, and content strategy.

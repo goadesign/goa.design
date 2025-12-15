@@ -5,26 +5,31 @@ weight: 8
 description: "Set up Temporal for durable workflows, stream events to UIs, apply adaptive rate limiting, and use system reminders."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/5-real-world/
-  - /en/docs/8-goa-ai/5-real-world/1-temporal-setup/
-  - /en/docs/8-goa-ai/5-real-world/2-streaming-ui/
-  - /en/docs/8-goa-ai/3-concepts/11-system-reminders/
-  - /docs/8-goa-ai/5-real-world/
 ---
 
 ## Model Rate Limiting
 
-This section covers adaptive rate limiting for model clients to manage throughput and handle provider throttling gracefully.
+Every model provider enforces rate limits. Exceed them and your requests fail with 429 errors. Worse: in a multi-replica deployment, each replica independently hammers the API, causing *aggregate* throttling that's invisible to individual processes.
+
+### The Problem
+
+**Scenario:** You deploy 10 replicas of your agent service. Each replica thinks it has 100K tokens/minute available. Combined, they send 1M tokens/minute—10x your actual quota. The provider throttles aggressively. Requests fail randomly across all replicas.
+
+**Without rate limiting:**
+- Requests fail unpredictably with 429s
+- No visibility into remaining capacity
+- Retries make congestion worse
+- User experience degrades under load
+
+**With adaptive rate limiting:**
+- Each replica shares a coordinated budget
+- Requests queue until capacity is available
+- Backoff propagates across the cluster
+- Graceful degradation instead of failures
 
 ### Overview
 
 The `features/model/middleware` package provides an **AIMD-style adaptive rate limiter** that sits at the model client boundary. It estimates token costs, blocks callers until capacity is available, and automatically adjusts its tokens-per-minute budget in response to rate limiting signals from providers.
-
-Key features:
-- **Adaptive throughput**: Automatically backs off when throttled and probes for more capacity on success
-- **Token estimation**: Estimates request cost based on message content
-- **Process-local or cluster-aware**: Operates locally by default, or coordinates across processes using Pulse replicated maps
-- **Middleware pattern**: Wraps any `model.Client` transparently
 
 ### AIMD Strategy
 
@@ -154,12 +159,52 @@ rt := runtime.New(
 )
 ```
 
+### What Happens Under Load
+
+| Traffic Level | Without Limiter | With Limiter |
+|---------------|-----------------|--------------|
+| Below quota | Requests succeed | Requests succeed |
+| At quota | Random 429 failures | Requests queue, then succeed |
+| Burst above quota | Cascade of failures, provider blocks | Backoff absorbs burst, gradual recovery |
+| Sustained overload | All requests fail | Requests queue with bounded latency |
+
+### Tuning Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `initialTPM` | (required) | Starting tokens-per-minute budget |
+| `maxTPM` | (required) | Ceiling for probing |
+| Floor | 10% of initial | Minimum budget (prevents starvation) |
+| Recovery rate | 5% of initial | Additive increase per success |
+| Backoff factor | 0.5 | Multiplicative decrease on 429 |
+
+**Example:** With `initialTPM=60000, maxTPM=120000`:
+- Floor: 6,000 TPM
+- Recovery: +3,000 TPM per successful batch
+- Backoff: halve current TPM on 429
+
+### Monitoring
+
+Track rate limiter behavior with metrics and logs:
+
+```go
+// The limiter logs backoff events at WARN level
+// Monitor for sustained throttling by tracking:
+// - Wait time distribution (how long requests queue)
+// - Backoff frequency (how often 429s occur)
+// - Current TPM vs. initial TPM
+
+// Example: export current capacity to Prometheus
+currentTPM := limiter.CurrentTPM()
+```
+
 ### Best Practices
 
 - **One limiter per model/provider**: Create separate limiters for different models to isolate their budgets
 - **Set realistic initial TPM**: Start with your provider's documented rate limit or a conservative estimate
 - **Use cluster-aware limiting in production**: Coordinate across replicas to avoid aggregate throttling
 - **Monitor backoff events**: Log or emit metrics when backoffs occur to detect sustained throttling
+- **Set maxTPM above initial**: Leave headroom for probing when traffic is below quota
 
 ---
 
@@ -169,27 +214,67 @@ This section covers setting up Temporal for durable agent workflows in productio
 
 ### Overview
 
-Temporal provides durable execution, replay, retries, signals, and workers for your Goa-AI agents. The Goa-AI runtime includes a Temporal adapter that implements the `engine.Engine` interface.
+Temporal provides durable execution for your Goa-AI agents. Agent runs become Temporal workflows with event-sourced history. Tool calls become activities with configurable retries. Every state transition is persisted. A restarted worker replays history and resumes exactly where it left off.
+
+### How Durability Works
+
+| Component | Role | Durability |
+|-----------|------|------------|
+| **Workflow** | Agent run orchestration | Event-sourced; survives restarts |
+| **Plan Activity** | LLM inference call | Retries on transient failures |
+| **Execute Tool Activity** | Tool invocation | Per-tool retry policies |
+| **State** | Turn history, tool results | Persisted in workflow history |
+
+**Concrete example:** Your agent calls an LLM, which returns 3 tool calls. Two tools complete. The third tool's service crashes.
+
+- ❌ **Without Temporal:** The entire run fails. You re-run inference ($$$) and re-execute the two successful tools.
+- ✅ **With Temporal:** Only the crashed tool retries. The workflow replays from history—no new LLM call, no re-running completed tools. Cost: one retry, not a full restart.
+
+### What Survives Failures
+
+| Failure Scenario | Without Temporal | With Temporal |
+|------------------|------------------|---------------|
+| Worker process crashes | Run lost, restart from zero | Replays from history, continues |
+| Tool call times out | Run fails (or manual handling) | Automatic retry with backoff |
+| Rate limit (429) | Run fails | Backs off, retries automatically |
+| Network partition | Partial progress lost | Resumes after reconnect |
+| Deploy during run | In-flight runs fail | Workers drain, new workers resume |
 
 ### Installation
 
-**Option 1: Temporal Cloud**
+**Option 1: Docker (Development)**
 
-Sign up at [temporal.io](https://temporal.io) and configure your client with cloud credentials.
+One-liner for local development:
+```bash
+docker run --rm -d --name temporal-dev -p 7233:7233 temporalio/auto-setup:latest
+```
 
-**Option 2: Self-Hosted Temporal**
-
-Deploy Temporal using Docker Compose or Kubernetes. See the [Temporal documentation](https://docs.temporal.io) for deployment guides.
-
-**Option 3: Temporalite (Development)**
+**Option 2: Temporalite (Development)**
 
 ```bash
 go install go.temporal.io/server/cmd/temporalite@latest
 temporalite start
 ```
 
+**Option 3: Temporal Cloud (Production)**
+
+Sign up at [temporal.io](https://temporal.io) and configure your client with cloud credentials.
+
+**Option 4: Self-Hosted (Production)**
+
+Deploy Temporal using Docker Compose or Kubernetes. See the [Temporal documentation](https://docs.temporal.io) for deployment guides.
+
 ### Runtime Configuration
 
+Goa-AI abstracts the execution backend behind the `Engine` interface. Swap engines without changing agent code:
+
+**In-Memory Engine** (development):
+```go
+// Default: no external dependencies
+rt := runtime.New()
+```
+
+**Temporal Engine** (production):
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
@@ -213,6 +298,39 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
+### Configuring Activity Retries
+
+Tool calls are Temporal activities. Configure retries per toolset in the DSL:
+
+```go
+Use("external_apis", func() {
+    // Flaky external services: retry aggressively
+    ActivityOptions(engine.ActivityOptions{
+        Timeout: 30 * time.Second,
+        RetryPolicy: engine.RetryPolicy{
+            MaxAttempts:        5,
+            InitialInterval:    time.Second,
+            BackoffCoefficient: 2.0,
+        },
+    })
+    
+    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
+    Tool("query_database", "Query external DB", func() { /* ... */ })
+})
+
+Use("local_compute", func() {
+    // Fast local tools: minimal retries
+    ActivityOptions(engine.ActivityOptions{
+        Timeout: 5 * time.Second,
+        RetryPolicy: engine.RetryPolicy{
+            MaxAttempts: 2,
+        },
+    })
+    
+    Tool("calculate", "Pure computation", func() { /* ... */ })
+})
+```
+
 ### Worker Setup
 
 Workers poll task queues and execute workflows/activities. Workers are automatically started for each registered agent—no manual worker configuration needed in most cases.
@@ -220,9 +338,10 @@ Workers poll task queues and execute workflows/activities. Workers are automatic
 ### Best Practices
 
 - **Use separate namespaces** for different environments (dev, staging, prod)
-- **Configure retry policies** in your workflow definitions
+- **Configure retry policies** per toolset based on reliability characteristics
 - **Monitor workflow execution** using Temporal's UI and observability tools
-- **Set appropriate timeouts** for activities and workflows
+- **Set appropriate timeouts** for activities—balance reliability vs. hung detection
+- **Use Temporal Cloud** for production to avoid operational burden
 
 ---
 
@@ -344,10 +463,53 @@ The runtime installs a default `stream.Subscriber` that:
 - maps hook events to `stream.Event` values
 - uses the **default `StreamProfile`**, which emits assistant replies, planner thoughts, tool start/update/end, awaits, usage, workflow, and `AgentRunStarted` links, with child runs kept on their own streams
 
-For advanced scenarios, you can build subscribers with explicit profiles:
-- `stream.UserChatProfile()` – user-facing chat views (linked child runs)
-- `stream.AgentDebugProfile()` – debug views (flattened children plus links)
-- `stream.MetricsProfile()` – usage and workflow only
+### Stream Profiles
+
+Not every consumer needs every event. **Stream profiles** filter events for different audiences, reducing noise and bandwidth for specific use cases.
+
+| Profile | Use Case | Included Events |
+|---------|----------|-----------------|
+| `UserChatProfile()` | End-user chat UI | Assistant replies, tool start/end, workflow completion |
+| `AgentDebugProfile()` | Developer debugging | Everything including planner thoughts |
+| `MetricsProfile()` | Observability pipelines | Usage and workflow events only |
+
+**Using built-in profiles:**
+
+```go
+// User-facing chat: replies, tool status, completion
+profile := stream.UserChatProfile()
+
+// Debug view: everything including planner thoughts
+profile := stream.AgentDebugProfile()
+
+// Metrics pipeline: just usage and workflow events
+profile := stream.MetricsProfile()
+
+sub, _ := stream.NewSubscriberWithProfile(sink, profile)
+```
+
+**Custom profiles:**
+
+```go
+// Fine-grained control over which events to emit
+profile := stream.StreamProfile{
+    Assistant:  true,
+    Thought:    false,  // Skip planner thinking
+    ToolStart:  true,
+    ToolUpdate: true,
+    ToolEnd:    true,
+    Usage:      false,  // Skip usage events
+    Workflow:   true,
+    RunStarted: true,   // Include agent-run-started links
+}
+
+sub, _ := stream.NewSubscriberWithProfile(sink, profile)
+```
+
+Custom profiles are useful when:
+- You need specific events for a specialized consumer (e.g., progress tracking)
+- You want to reduce payload size for mobile clients
+- You're building analytics pipelines that only need certain events
 
 ### Advanced: Pulse & Stream Bridges
 
@@ -384,7 +546,23 @@ rt := runtime.New(
 
 ## System Reminders
 
-System reminders are a runtime facility for delivering **structured, priority-aware, rate-limited guidance** to models without polluting user-visible conversations. They enable agents to inject contextual hints (safety warnings, data-state alerts, workflow nudges) that shape model behavior while remaining invisible to end users.
+Models drift. They forget instructions. They ignore context that was clear 10 turns ago. When your agent executes long-running tasks, you need a way to inject *dynamic, contextual guidance* without polluting the user conversation.
+
+### The Problem
+
+**Scenario:** Your agent manages a todo list. After 20 turns, the user asks "what's next?" but the model has drifted—it doesn't remember there's a pending todo in progress. You need to nudge it *without* the user seeing an awkward "REMINDER: you have a todo in progress" message.
+
+**Without system reminders:**
+- You bloat the system prompt with every possible scenario
+- Guidance gets lost in long conversations
+- No way to inject context based on tool results
+- Users see internal agent scaffolding
+
+**With system reminders:**
+- Inject guidance dynamically based on runtime state
+- Rate-limit repetitive hints to avoid prompt bloat
+- Priority tiers ensure safety guidance is never suppressed
+- Invisible to users—injected as `<system-reminder>` blocks
 
 ### Overview
 
@@ -443,9 +621,23 @@ Two mechanisms prevent reminder spam:
 
 ### Usage Pattern
 
-**Registering Reminders from Planners**
+**Static Reminders via DSL**
 
-Use `PlannerContext.AddReminder()` to register or update a reminder:
+For reminders that should always appear after a specific tool result, use the `ResultReminder` DSL function in your tool definition:
+
+```go
+Tool("get_time_series", "Get time series data", func() {
+    Args(func() { /* ... */ })
+    Return(func() { /* ... */ })
+    ResultReminder("The user sees a rendered graph of this data in the UI.")
+})
+```
+
+This is ideal when the reminder applies to every invocation of the tool. See the [DSL Reference](./dsl-reference.md#resultreminder) for details.
+
+**Dynamic Reminders from Planners**
+
+For reminders that depend on runtime state or tool result content, use `PlannerContext.AddReminder()`:
 
 ```go
 func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
@@ -604,6 +796,29 @@ in.Agent.AddReminder(reminder.Reminder{
 **Cross-Agent Reminders**
 
 Reminders are run-scoped. If an agent-as-tool emits a safety reminder, it only affects that child run. To propagate reminders across agent boundaries, the parent planner must explicitly re-register them based on child results or use shared session state.
+
+### When to Use Reminders
+
+| Scenario | Priority | Example |
+|----------|----------|---------|
+| Security constraints | `TierSafety` | "This file is malware—analyze only, never execute" |
+| Data staleness | `TierCorrect` | "Results are 24h old; re-query if freshness matters" |
+| Truncated results | `TierCorrect` | "Only showing first 100 results; narrow your search" |
+| Workflow nudges | `TierGuidance` | "No todo is in progress; pick one and start" |
+| Completion hints | `TierGuidance` | "All tasks done; provide your final response" |
+
+### What Reminders Look Like in the Transcript
+
+```
+User: What should I do next?
+
+<system-reminder>You have 3 pending todos. Currently working on: "Review PR #42". 
+Focus on completing the current todo before starting new work.</system-reminder>
+
+User: What should I do next?
+```
+
+The model sees the reminder; the user sees only their message and the response. Reminders are injected transparently by the runtime.
 
 ---
 

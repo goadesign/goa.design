@@ -4,33 +4,6 @@ weight: 4
 description: "Complete guide to HTTP transport in Goa - routing, content negotiation, WebSocket, SSE, CORS, and static content."
 llm_optimized: true
 aliases:
-  - /en/docs/4-concepts/3-http/
-  - /en/docs/4-concepts/3-http/1-content/
-  - /en/docs/4-concepts/3-http/2-routing/
-  - /en/docs/4-concepts/3-http/3-websocket/
-  - /en/docs/4-concepts/3-http/4-cors/
-  - /en/docs/3-tutorials/1-rest-api/
-  - /en/docs/3-tutorials/1-rest-api/1-designing/
-  - /en/docs/3-tutorials/1-rest-api/2-implementing/
-  - /en/docs/3-tutorials/1-rest-api/3-running/
-  - /en/docs/3-tutorials/1-rest-api/4-encoding/
-  - /en/docs/3-tutorials/4-streaming/
-  - /en/docs/3-tutorials/4-streaming/1-introduction/
-  - /en/docs/3-tutorials/4-streaming/2-designing/
-  - /en/docs/3-tutorials/4-streaming/3-server-side/
-  - /en/docs/3-tutorials/4-streaming/4-client-side/
-  - /en/docs/3-tutorials/4-streaming/5-bidirectional/
-  - /en/docs/3-tutorials/4-streaming/6-views/
-  - /en/docs/3-tutorials/4-streaming/7-raw-binary/
-  - /en/docs/3-tutorials/4-streaming/8-sse/
-  - /en/docs/3-tutorials/5-static-content/
-  - /en/docs/3-tutorials/5-static-content/1-serving-files/
-  - /en/docs/3-tutorials/5-static-content/2-template-integration/
-  - /en/docs/3-tutorials/5-static-content/3-single-page-apps/
-  - /docs/4-concepts/3-http/
-  - /docs/3-tutorials/1-rest-api/
-  - /docs/3-tutorials/4-streaming/
-  - /docs/3-tutorials/5-static-content/
 ---
 
 This guide covers HTTP-specific features in Goa, from basic routing to advanced topics like WebSocket streaming and content negotiation.
@@ -282,6 +255,8 @@ func main() {
 
 ## WebSocket Integration
 
+> **Design Recap**: Streaming is defined at the design level using `StreamingPayload` and `StreamingResult`. The DSL is transport-agnostic — the same design works for HTTP (WebSocket/SSE) and gRPC. See [DSL Reference: Streaming](dsl-reference/#streaming) for design patterns. This section covers HTTP-specific WebSocket implementation.
+
 WebSocket enables real-time, bidirectional communication. Goa implements WebSocket through its streaming DSL.
 
 ### Streaming Patterns
@@ -380,6 +355,8 @@ func (cm *ConnectionManager) AddConnection(id string, stream Stream) {
 ---
 
 ## Server-Sent Events
+
+> **Design Recap**: SSE uses `StreamingResult` at the design level with `ServerSentEvents()` in the HTTP mapping. See [DSL Reference: Streaming](dsl-reference/#streaming) for design patterns.
 
 SSE provides one-way server-to-client streaming over HTTP. It's ideal for:
 - Real-time notifications
@@ -546,6 +523,8 @@ var _ = Service("calc", func() {
 
 ## Static Content
 
+> **Design Recap**: Static file serving uses the `Files` DSL function. This is an HTTP-only feature. See [DSL Reference: Static Files](dsl-reference/#static-files) for design patterns.
+
 Serve static files using the `Files` function:
 
 ```go
@@ -573,6 +552,19 @@ var _ = Service("spa", func() {
     Files("/{*path}", "./dist/index.html")
 })
 ```
+
+---
+
+---
+
+## See Also
+
+- [DSL Reference: Streaming](dsl-reference/#streaming) — Design-level streaming patterns
+- [DSL Reference: Static Files](dsl-reference/#static-files) — Files DSL for static content
+- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) — Design-level error definitions
+- [gRPC Guide](grpc-guide/) — gRPC transport features
+- [Error Handling Guide](error-handling/) — Complete error handling patterns
+- [Clue Documentation](../3-ecosystem/clue/) — HTTP middleware for observability
 
 ---
 

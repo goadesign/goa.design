@@ -4,12 +4,6 @@ weight: 1
 description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
 llm_optimized: true
 aliases:
-  - /en/docs/2-getting-started/
-  - /en/docs/2-getting-started/1-installation/
-  - /en/docs/2-getting-started/2-first-service/
-  - /docs/2-getting-started/
-  - /docs/2-getting-started/1-installation/
-  - /docs/2-getting-started/2-first-service/
 ---
 
 This guide walks you through installing Goa and creating your first service. By the end, you'll have a working HTTP API that you can extend and customize.

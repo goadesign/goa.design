@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# Translation helper script for goa.design
+#
+# Usage:
+#   ./scripts/translate <file_or_directory>     # Translate to all languages
+#   ./scripts/translate --lang FR <path>        # Translate to French only
+#   ./scripts/translate --dry-run <path>        # Show what would be translated
+#   ./scripts/translate --force <path>          # Force re-translation
+#   ./scripts/translate --help                  # Show help
+#
+# Examples:
+#   ./scripts/translate content/en/docs/1-goa/quickstart.md
+#   ./scripts/translate content/en/docs/1-goa/
+#   ./scripts/translate content/en/docs/
+#
+# Setup:
+#   1. Copy .env.example to .env
+#   2. Add your DeepL API key to .env
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+VENV_DIR="$PROJECT_ROOT/.venv"
+PYTHON="$VENV_DIR/bin/python3"
+
+# Load environment variables from .env if it exists
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
+# Check for API key
+if [ -z "$DEEPL_API_KEY" ]; then
+    echo "Error: DEEPL_API_KEY not set"
+    echo ""
+    echo "Setup instructions:"
+    echo "  1. Copy .env.example to .env:"
+    echo "     cp .env.example .env"
+    echo "  2. Edit .env and add your DeepL API key"
+    echo ""
+    echo "Or set it directly:"
+    echo "  export DEEPL_API_KEY='your-api-key'"
+    exit 1
+fi
+
+# Check for Python
+if ! command -v python3 &> /dev/null; then
+    echo "Error: python3 is required"
+    exit 1
+fi
+
+# Create virtual environment if needed
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+fi
+
+# Install deepl if needed
+if ! "$PYTHON" -c "import deepl" 2>/dev/null; then
+    echo "Installing deepl package..."
+    "$VENV_DIR/bin/pip" install --quiet deepl
+fi
+
+# Run the translation script
+exec "$PYTHON" "$SCRIPT_DIR/translate.py" "$@"
+

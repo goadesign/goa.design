@@ -15,7 +15,7 @@ enableRobotsTXT = true
 
 # Language configuration
 defaultContentLanguage = "en"
-defaultContentLanguageInSubdir = true
+defaultContentLanguageInSubdir = false
 
 # Configure languages
 [languages]
@@ -38,11 +38,11 @@ defaultContentLanguageInSubdir = true
     [[languages.it.menu.main]]
       name = "Goa"
       weight = 1
-      url = "/docs/1-introduction/"
+      url = "/docs/1-goa/"
     [[languages.it.menu.main]]
       name = "Goa AI"
       weight = 2
-      url = "/docs/8-goa-ai/"
+      url = "/docs/2-goa-ai/"
   [languages.ja]
     languageName = "日本語"
     contentDir = "content/ja"
@@ -50,11 +50,35 @@ defaultContentLanguageInSubdir = true
     [[languages.ja.menu.main]]
       name = "Goa"
       weight = 1
-      url = "/docs/1-introduction/"
+      url = "/docs/1-goa/"
     [[languages.ja.menu.main]]
       name = "Goa AI"
       weight = 2
-      url = "/docs/8-goa-ai/"
+      url = "/docs/2-goa-ai/"
+  [languages.fr]
+    languageName = "Français"
+    contentDir = "content/fr"
+    weight = 4
+    [[languages.fr.menu.main]]
+      name = "Goa"
+      weight = 1
+      url = "/docs/1-goa/"
+    [[languages.fr.menu.main]]
+      name = "Goa AI"
+      weight = 2
+      url = "/docs/2-goa-ai/"
+  [languages.es]
+    languageName = "Español"
+    contentDir = "content/es"
+    weight = 5
+    [[languages.es.menu.main]]
+      name = "Goa"
+      weight = 1
+      url = "/docs/1-goa/"
+    [[languages.es.menu.main]]
+      name = "Goa AI"
+      weight = 2
+      url = "/docs/2-goa-ai/"
 
 [params]
   title = "Goa – Design. Generate. Scale."
@@ -62,6 +86,11 @@ defaultContentLanguageInSubdir = true
   images = ["img/social/goa-card.png"]
   copyright = "Raphael Simon and the Goa contributors"
   offlineSearch = true
+  
+  # Enable Mermaid diagrams with custom dark theme
+  [params.mermaid]
+    enable = true
+    version = "10"
   
   # Repository configuration
   github_repo = "https://github.com/goadesign/goa.design"

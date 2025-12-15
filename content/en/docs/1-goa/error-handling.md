@@ -4,20 +4,6 @@ weight: 6
 description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
 llm_optimized: true
 aliases:
-  - /en/docs/3-tutorials/3-error-handling/
-  - /en/docs/3-tutorials/3-error-handling/1-introduction/
-  - /en/docs/3-tutorials/3-error-handling/2-defining-errors/
-  - /en/docs/3-tutorials/3-error-handling/3-error-types/
-  - /en/docs/3-tutorials/3-error-handling/4-transport-mapping/
-  - /en/docs/3-tutorials/3-error-handling/5-consuming-errors/
-  - /en/docs/3-tutorials/3-error-handling/6-overriding-serialization/
-  - /en/docs/3-tutorials/3-error-handling/7-best-practices/
-  - /en/docs/5-real-world/1-error-handling/
-  - /en/docs/5-real-world/1-error-handling/1-domain-vs-transport/
-  - /en/docs/5-real-world/1-error-handling/2-error-propagation/
-  - /en/docs/5-real-world/1-error-handling/3-error-serialization/
-  - /docs/3-tutorials/3-error-handling/
-  - /docs/5-real-world/1-error-handling/
 ---
 
 Goa provides a robust error handling system that enables you to define, manage, and communicate errors effectively across your services. This guide covers everything from basic error definitions to advanced customization.
@@ -499,3 +485,12 @@ func secureErrorFormatter(ctx context.Context, err error) goahttp.Statuser {
     return formatValidationError(err)
 }
 ```
+
+---
+
+## See Also
+
+- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) — Design-level error definitions
+- [HTTP Guide](http-guide/) — HTTP status code mapping and error responses
+- [gRPC Guide](grpc-guide/#error-handling) — gRPC status code mapping
+- [Clue Documentation](../3-ecosystem/clue/) — Error logging and observability

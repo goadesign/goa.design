@@ -4,11 +4,6 @@ weight: 7
 description: "Manage state with transcripts, memory stores, sessions, and runs in Goa-AI."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/3-concepts/5-transcripts/
-  - /en/docs/8-goa-ai/5-real-world/3-memory-persistence/
-  - /en/docs/8-goa-ai/5-real-world/4-sessions-runs-memory/
-  - /docs/8-goa-ai/3-concepts/5-transcripts/
-  - /docs/8-goa-ai/5-real-world/3-memory-persistence/
 ---
 
 This guide covers Goa-AI's transcript model, memory persistence, and how to model multi-turn conversations and long-running workflows.
@@ -130,7 +125,19 @@ if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
 
 ### Ledger API
 
-For advanced use cases, you can interact with the ledger directly:
+For advanced use cases, you can interact with the ledger directly. The ledger provides these key methods:
+
+| Method | Description |
+|--------|-------------|
+| `NewLedger()` | Creates a new empty ledger |
+| `AppendThinking(part)` | Appends a thinking part to the current assistant message |
+| `AppendText(text)` | Appends visible text to the current assistant message |
+| `DeclareToolUse(id, name, args)` | Declares a tool invocation in the current assistant message |
+| `FlushAssistant()` | Finalizes the current assistant message and prepares for user input |
+| `AppendUserToolResults(results)` | Appends tool results as a user message |
+| `BuildMessages()` | Returns the complete transcript as `[]*model.Message` |
+
+**Example usage:**
 
 ```go
 import "goa.design/goa-ai/runtime/agent/transcript"
@@ -159,6 +166,8 @@ l.AppendUserToolResults([]transcript.ToolResultSpec{{
 // Build provider-ready messages
 messages := l.BuildMessages()
 ```
+
+**Note:** Most users don't need to interact with the ledger directly. The runtime automatically maintains the ledger through event capture and reconstruction. Use the ledger API only for advanced scenarios like custom planners or debugging tools.
 
 ### Why This Matters
 
@@ -191,9 +200,8 @@ When calling an agent:
 
 ```go
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, messages,
-    runtime.WithSessionID("chat-session-123"), // required
-    runtime.WithTurnID("turn-1"),              // optional but recommended for chat
+out, err := client.Run(ctx, "chat-session-123", messages,
+    runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
 ```
 

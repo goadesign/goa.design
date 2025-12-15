@@ -1,0 +1,234 @@
+<svg id="graph" width="1455" height="1060" viewBox="0 0 1455 1060" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
+  "name": "RegistryTopology",
+  "description": "Agent-registry-provider topology",
+  "version": "1.0.0",
+  "elements": [
+    {
+      "id": "025v4a",
+      "tags": "Element,Container,goa",
+      "technology": "Agent"
+    },
+    {
+      "id": "18bdwnw",
+      "tags": "Element,Container,goa",
+      "technology": "Provider"
+    },
+    {
+      "id": "195cpqt",
+      "tags": "Element,Container,goa",
+      "technology": "Provider"
+    },
+    {
+      "id": "1r1lfz7",
+      "tags": "Element,Container,goa",
+      "technology": "Agent"
+    },
+    {
+      "id": "1rbl1o6",
+      "tags": "Element,Container,goa",
+      "technology": "Agent"
+    },
+    {
+      "id": "1yh661g",
+      "tags": "Element,Container,goa",
+      "technology": "Registry"
+    },
+    {
+      "id": "ecktqw",
+      "tags": "Element,Container,goa",
+      "technology": "Provider"
+    }
+  ],
+  "layout": {
+    "025v4a": {
+      "x": 50,
+      "y": 400
+    },
+    "18bdwnw": {
+      "x": 1075,
+      "y": 400
+    },
+    "195cpqt": {
+      "x": 1075,
+      "y": 50
+    },
+    "1r1lfz7": {
+      "x": 50,
+      "y": 50
+    },
+    "1rbl1o6": {
+      "x": 50,
+      "y": 750
+    },
+    "1yh661g": {
+      "x": 550,
+      "y": 400
+    },
+    "ecktqw": {
+      "x": 1075,
+      "y": 750
+    },
+    "e-19phqpo": [
+      {
+        "x": 710.5238095238095,
+        "y": 406,
+        "auto": true
+      },
+      {
+        "x": 779.2857142857142,
+        "y": 406,
+        "auto": true
+      },
+      {
+        "x": 810.7857142857142,
+        "y": 406,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 911.047619047619,
+        "y": 406,
+        "auto": true
+      }
+    ],
+    "e-1iehwpv": [
+      {
+        "x": 215,
+        "y": 762,
+        "auto": true
+      },
+      {
+        "x": 283.76190476190476,
+        "y": 481,
+        "auto": true
+      },
+      {
+        "x": 297.76190476190476,
+        "y": 481,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 380.5238095238095,
+        "y": 481,
+        "auto": true
+      }
+    ],
+    "e-1nj2308": [
+      {
+        "x": 710.5238095238095,
+        "y": 481,
+        "auto": true
+      },
+      {
+        "x": 779.2857142857142,
+        "y": 481,
+        "auto": true
+      },
+      {
+        "x": 810.7857142857142,
+        "y": 481,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 842.2857142857142,
+        "y": 481,
+        "auto": true
+      },
+      {
+        "x": 911.047619047619,
+        "y": 762,
+        "auto": true
+      }
+    ],
+    "e-1txmuqe": [
+      {
+        "x": 215,
+        "y": 406,
+        "auto": true
+      },
+      {
+        "x": 283.76190476190476,
+        "y": 406,
+        "auto": true
+      },
+      {
+        "x": 297.76190476190476,
+        "y": 406,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 380.5238095238095,
+        "y": 406,
+        "auto": true
+      }
+    ],
+    "e-baqdbt": [
+      {
+        "x": 215,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 283.76190476190476,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 297.76190476190476,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 311.76190476190476,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 380.5238095238095,
+        "y": 331,
+        "auto": true
+      }
+    ],
+    "e-duxlad": [
+      {
+        "x": 710.5238095238095,
+        "y": 331,
+        "auto": true
+      },
+      {
+        "x": 779.2857142857142,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 810.7857142857142,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 911.047619047619,
+        "y": 50,
+        "auto": true
+      }
+    ]
+  }
+}]]></script>
+<defs>
+	<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="strokeWidth">
+		<path fill="context-stroke" stroke="none" d="M0,0 L10,5 L0,10 Z" class="arrowHead"></path>
+	</marker>
+	<g id="icon-circle" transform="translate(0,-12)" class="icon">
+		<circle cx="7" cy="7" r="7"></circle>
+	</g>
+	<g id="icon-cube" transform="translate(0, -14)" class="icon">
+		<path d="M 5 0 h 10 v 10 l -5 5 h -10 v -10 l 5 -5 M 0 5 h 10 v 10 M 15 0 l -5 5"></path>
+	</g>
+	<filter id="shadow">
+		<feDropShadow dx="3" dy="3" stdDeviation="5" flood-color="#00000030" flood-opacity="1"></feDropShadow>
+	</filter>
+</defs><g class="zoom" transform="scale(1) translate(165, 115)"><g class="groups"><g class="group"><rect x="-115" y="-65" rx="0" ry="0" width="1355" height="960" style="fill: rgba(0, 0, 0, 0.02); stroke: rgb(102, 102, 102); stroke-width: 3; stroke-dasharray: 4;"></rect><text x="-90" y="873" style="font-family: Arial, sans-serif; fill: rgb(102, 102, 102); font-size: 22px; font-weight: bold; cursor: default;">Registry Topology</text></g></g><g class="edges"><g class="edge" id="19phqpo" data-from="1yh661g" data-to="18bdwnw"><rect x="746.9263392857142" y="367.5" rx="0" ry="0" width="127.71875" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="367.5" text-anchor="middle" stroke="none" font-size="22" fill="var(--mdl-rel-default-color, #757575)" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="810.7857142857142" dy="24px" font-size="22px" font-weight="normal">Streaming</tspan></text><path marker-end="url(#arrow)" d="M690,405.2328685849896 L710.5238095238095,406 L779.2857142857142,406 L810.7857142857142,406 L911.047619047619,406 L935,405.123438861458" class="edge" fill="none" stroke="var(--mdl-rel-default-color, #757575)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-2vj6imd" cx="710.5238095238095" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-kya4r2" cx="779.2857142857142" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-23cnr8f" cx="810.7857142857142" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1q7yehd" cx="911.047619047619" cy="406" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1iehwpv" data-from="1rbl1o6" data-to="1yh661g"><rect x="257.87127976190476" y="442.5" rx="0" ry="0" width="79.78125" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="442.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="297.76190476190476" dy="24px" font-size="22px" font-weight="normal">gRPC</tspan></text><path marker-end="url(#arrow)" d="M190,760.1818181818181 L215,762 L283.76190476190476,481 L297.76190476190476,481 L380.5238095238095,481 L410,466.9120539477381" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-2pjr6jb" cx="215" cy="762" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3npujva" cx="283.76190476190476" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1we8jie" cx="297.76190476190476" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-jp9pbo" cx="380.5238095238095" cy="481" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1nj2308" data-from="1yh661g" data-to="ecktqw"><rect x="746.9263392857142" y="442.5" rx="0" ry="0" width="127.71875" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="442.5" text-anchor="middle" stroke="none" font-size="22" fill="var(--mdl-rel-default-color, #757575)" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="810.7857142857142" dy="24px" font-size="22px" font-weight="normal">Streaming</tspan></text><path marker-end="url(#arrow)" d="M690,470.64372589735984 L710.5238095238095,481 L779.2857142857142,481 L810.7857142857142,481 L842.2857142857142,481 L911.047619047619,762 L935,760.246877722916" class="edge" fill="none" stroke="var(--mdl-rel-default-color, #757575)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-2thw6dm" cx="710.5238095238095" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-116j6qg" cx="779.2857142857142" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-2e1wz8x" cx="810.7857142857142" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3zsd1r8" cx="842.2857142857142" cy="481" r="7" fill="none" class="v-dot auto"></circle><circle id="v-dp3wfx" cx="911.047619047619" cy="762" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1txmuqe" data-from="025v4a" data-to="1yh661g"><rect x="257.87127976190476" y="367.5" rx="0" ry="0" width="79.78125" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="367.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="297.76190476190476" dy="24px" font-size="22px" font-weight="normal">gRPC</tspan></text><path marker-end="url(#arrow)" d="M190,405.09090909090907 L215,406 L283.76190476190476,406 L297.76190476190476,406 L380.5238095238095,406 L410,404.9564484405732" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-277zi37" cx="215" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1wpxb1p" cx="283.76190476190476" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3tfiq5f" cx="297.76190476190476" cy="406" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1i3vm40" cx="380.5238095238095" cy="406" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="baqdbt" data-from="1r1lfz7" data-to="1yh661g"><rect x="257.87127976190476" y="11.5" rx="0" ry="0" width="79.78125" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="297.76190476190476" dy="24px" font-size="22px" font-weight="normal">gRPC</tspan></text><path marker-end="url(#arrow)" d="M190,50 L215,50 L283.76190476190476,50 L297.76190476190476,50 L311.76190476190476,50 L380.5238095238095,331 L410,343.00084293340825" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-2eho806" cx="215" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3yts0e" cx="283.76190476190476" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-v8733e" cx="297.76190476190476" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1va2bre" cx="311.76190476190476" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3dfj9mz" cx="380.5238095238095" cy="331" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="duxlad" data-from="1yh661g" data-to="195cpqt"><rect x="746.9263392857142" y="11.5" rx="0" ry="0" width="127.71875" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="var(--mdl-rel-default-color, #757575)" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="810.7857142857142" dy="24px" font-size="22px" font-weight="normal">Streaming</tspan></text><path marker-end="url(#arrow)" d="M690,339.8220112726194 L710.5238095238095,331 L779.2857142857142,50 L810.7857142857142,50 L911.047619047619,50 L935,50.000000000000014" class="edge" fill="none" stroke="var(--mdl-rel-default-color, #757575)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-2qzb67g" cx="710.5238095238095" cy="331" r="7" fill="none" class="v-dot auto"></circle><circle id="v-22xjtoj" cx="779.2857142857142" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1d2fo5x" cx="810.7857142857142" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-4e8nyud" cx="911.047619047619" cy="50" r="7" fill="none" class="v-dot auto"></circle></g></g><g class="nodes"><g class="node" id="025v4a" transform="translate(50,400)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Agent N</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Agent]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">AI agent consuming tools</tspan></text></g></g><g class="node" id="18bdwnw" transform="translate(1075,400)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Provider 2</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Provider]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Toolset provider service</tspan></text></g></g><g class="node" id="195cpqt" transform="translate(1075,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Provider 1</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Provider]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Toolset provider service</tspan></text></g></g><g class="node" id="1r1lfz7" transform="translate(50,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Agent 1</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Agent]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">AI agent consuming tools</tspan></text></g></g><g class="node" id="1rbl1o6" transform="translate(50,750)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Agent 2</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Agent]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">AI agent consuming tools</tspan></text></g></g><g class="node" id="1yh661g" transform="translate(550,400)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-63)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Registry</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Registry]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Clustered gateway for toolset</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">discovery</tspan></text></g></g><g class="node" id="ecktqw" transform="translate(1075,750)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-54)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Provider N</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Provider]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">Toolset provider service</tspan></text></g></g></g></g></svg>

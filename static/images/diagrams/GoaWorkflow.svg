@@ -1,0 +1,96 @@
+<svg id="graph" width="1380" height="360" viewBox="0 0 1380 360" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
+  "name": "GoaWorkflow",
+  "description": "Goa three-phase workflow: Design → Generate → Implement",
+  "version": "1.0.0",
+  "elements": [
+    {
+      "id": "10bd1h2",
+      "tags": "Element,Container,goa,folder",
+      "technology": "Go DSL"
+    },
+    {
+      "id": "1ndjp49",
+      "tags": "Element,Container,goa",
+      "technology": "Go"
+    },
+    {
+      "id": "ctzipr",
+      "tags": "Element,Container,goa",
+      "technology": "CLI"
+    }
+  ],
+  "layout": {
+    "10bd1h2": {
+      "x": 50,
+      "y": 50
+    },
+    "1ndjp49": {
+      "x": 1000,
+      "y": 50
+    },
+    "ctzipr": {
+      "x": 525,
+      "y": 50
+    },
+    "e-18tii9r": [
+      {
+        "x": 215,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 257,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 292,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 369,
+        "y": 50,
+        "auto": true
+      }
+    ],
+    "e-1xnhfua": [
+      {
+        "x": 699,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 741,
+        "y": 50,
+        "auto": true
+      },
+      {
+        "x": 765.5,
+        "y": 50,
+        "label": true,
+        "auto": true
+      },
+      {
+        "x": 832,
+        "y": 50,
+        "auto": true
+      }
+    ]
+  }
+}]]></script>
+<defs>
+	<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="strokeWidth">
+		<path fill="context-stroke" stroke="none" d="M0,0 L10,5 L0,10 Z" class="arrowHead"></path>
+	</marker>
+	<g id="icon-circle" transform="translate(0,-12)" class="icon">
+		<circle cx="7" cy="7" r="7"></circle>
+	</g>
+	<g id="icon-cube" transform="translate(0, -14)" class="icon">
+		<path d="M 5 0 h 10 v 10 l -5 5 h -10 v -10 l 5 -5 M 0 5 h 10 v 10 M 15 0 l -5 5"></path>
+	</g>
+	<filter id="shadow">
+		<feDropShadow dx="3" dy="3" stdDeviation="5" flood-color="#00000030" flood-opacity="1"></feDropShadow>
+	</filter>
+</defs><g class="zoom" transform="scale(1) translate(165, 115)"><g class="groups"><g class="group"><rect x="-115" y="-65" rx="0" ry="0" width="1280" height="260" style="fill: rgba(0, 0, 0, 0.02); stroke: rgb(102, 102, 102); stroke-width: 3; stroke-dasharray: 4;"></rect><text x="-90" y="173" style="font-family: Arial, sans-serif; fill: rgb(102, 102, 102); font-size: 22px; font-weight: bold; cursor: default;">Goa Framework</text></g></g><g class="edges"><g class="edge" id="18tii9r" data-from="10bd1h2" data-to="ctzipr"><rect x="229.5390625" y="11.5" rx="0" ry="0" width="124.921875" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="292" dy="24px" font-size="22px" font-weight="normal">feeds into</tspan></text><path marker-end="url(#arrow)" d="M190,50 L215,50 L257,50 L292,50 L369,50 L385,50.000000000000014" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-3uw2flq" cx="215" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-m5rmg3" cx="257" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1ei4i0g" cx="292" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-3u3d8g8" cx="369" cy="50" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1xnhfua" data-from="ctzipr" data-to="1ndjp49"><rect x="713.2421875" y="11.5" rx="0" ry="0" width="104.515625" height="37" style="fill: none; stroke: none;"></rect><text x="0" y="11.5" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="765.5" dy="24px" font-size="22px" font-weight="normal">used by</tspan></text><path marker-end="url(#arrow)" d="M665,50 L699,50 L741,50 L765.5,50 L832,50 L860,50.000000000000014" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-1qy8svw" cx="699" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-mduqkc" cx="741" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1kuff3u" cx="765.5" cy="50" r="7" fill="none" class="v-dot auto"></circle><circle id="v-2nv0zvl" cx="832" cy="50" r="7" fill="none" class="v-dot auto"></circle></g></g><g class="nodes"><g class="node" id="10bd1h2" transform="translate(50,50)" label-offset-y="28"><g class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"><path d="M0,-62 l14,-28 h112 v28"></path><rect rx="3" ry="3" x="-140" y="-62" width="280" height="152"></rect></g><g transform="translate(0,-77)"><text x="0" y="28" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Design</tspan></text><text x="0" y="82" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[folder: Go DSL]</text><text x="0" y="100" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">design/*.go - Define your API</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">using Goa DSL</tspan></text></g></g><g class="node" id="1ndjp49" transform="translate(1000,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-63)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Implement</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: Go]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">service.go - Write your business</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">logic</tspan></text></g></g><g class="node" id="ctzipr" transform="translate(525,50)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,-72)"><text x="0" y="0" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="24px" font-size="22px" font-weight="bold">Generate</tspan></text><text x="0" y="54" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" font-size="16.5" style="font-family: Arial, sans-serif; stroke: none;">[goa: CLI]</text><text x="0" y="72" text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="0" dy="18px" font-size="16px" font-weight="normal">goa gen - Produces server</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">scaffolding, clients, OpenAPI</tspan><tspan x="0" dy="18px" font-size="16px" font-weight="normal">specs</tspan></text></g></g></g></g></svg>

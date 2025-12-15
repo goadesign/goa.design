@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="dslGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="codegenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="runtimeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="engineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+    <linearGradient id="featuresGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+    
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowheadBi" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ec4899"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="900" height="520" fill="#0f172a"/>
+  
+  <!-- DSL Layer -->
+  <g filter="url(#shadow)">
+    <rect x="30" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#dslGrad)" stroke-width="2"/>
+    <rect x="30" y="30" width="160" height="40" rx="12" fill="url(#dslGrad)"/>
+    <text x="110" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">DSL</text>
+    
+    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
+      <rect x="45" y="85" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="110" y="106" text-anchor="middle">Agents</text>
+      
+      <rect x="45" y="127" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="110" y="148" text-anchor="middle">Toolsets</text>
+      
+      <rect x="45" y="169" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="110" y="190" text-anchor="middle">Policies</text>
+      
+      <rect x="45" y="211" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="110" y="232" text-anchor="middle">MCP Servers</text>
+      
+      <rect x="45" y="253" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="110" y="274" text-anchor="middle">Registries</text>
+    </g>
+  </g>
+  
+  <!-- Arrow: DSL → Codegen -->
+  <path d="M 200 170 L 240 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Code Generation Layer -->
+  <g filter="url(#shadow)">
+    <rect x="250" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#codegenGrad)" stroke-width="2"/>
+    <rect x="250" y="30" width="160" height="40" rx="12" fill="url(#codegenGrad)"/>
+    <text x="330" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Codegen</text>
+    
+    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="11">
+      <rect x="265" y="85" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="330" y="106" text-anchor="middle">Tool Specs</text>
+      
+      <rect x="265" y="127" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="330" y="148" text-anchor="middle">Workflow Activities</text>
+      
+      <rect x="265" y="169" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="330" y="190" text-anchor="middle">Registry Clients</text>
+      
+      <rect x="265" y="211" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="330" y="232" text-anchor="middle">MCP Wrappers</text>
+      
+      <rect x="265" y="253" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="330" y="274" text-anchor="middle">Type Codecs</text>
+    </g>
+  </g>
+  
+  <!-- Arrow: Codegen → Runtime -->
+  <path d="M 420 170 L 460 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Runtime Layer -->
+  <g filter="url(#shadow)">
+    <rect x="470" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#runtimeGrad)" stroke-width="2"/>
+    <rect x="470" y="30" width="160" height="40" rx="12" fill="url(#runtimeGrad)"/>
+    <text x="550" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Runtime</text>
+    
+    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
+      <rect x="485" y="85" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="550" y="106" text-anchor="middle">Planner</text>
+      
+      <rect x="485" y="127" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="550" y="148" text-anchor="middle">Executor</text>
+      
+      <rect x="485" y="169" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="550" y="190" text-anchor="middle">Memory Store</text>
+      
+      <rect x="485" y="211" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="550" y="232" text-anchor="middle">Event Bus</text>
+      
+      <rect x="485" y="253" width="130" height="32" rx="6" fill="#334155"/>
+      <text x="550" y="274" text-anchor="middle">Policy Engine</text>
+    </g>
+  </g>
+  
+  <!-- Arrow: Runtime → Engine -->
+  <path d="M 640 170 L 680 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Engine Layer -->
+  <g filter="url(#shadow)">
+    <rect x="690" y="70" width="180" height="140" rx="12" fill="#1e293b" stroke="url(#engineGrad)" stroke-width="2"/>
+    <rect x="690" y="70" width="180" height="40" rx="12" fill="url(#engineGrad)"/>
+    <text x="780" y="96" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Engine</text>
+    
+    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
+      <rect x="705" y="125" width="70" height="32" rx="6" fill="#334155"/>
+      <text x="740" y="146" text-anchor="middle">In-Memory</text>
+      
+      <rect x="785" y="125" width="70" height="32" rx="6" fill="#334155"/>
+      <text x="820" y="146" text-anchor="middle">Temporal</text>
+      
+      <text x="780" y="185" text-anchor="middle" fill="#94a3b8" font-size="10">Dev ↔ Production</text>
+    </g>
+  </g>
+  
+  <!-- Features Layer -->
+  <g filter="url(#shadow)">
+    <rect x="690" y="240" width="180" height="200" rx="12" fill="#1e293b" stroke="url(#featuresGrad)" stroke-width="2"/>
+    <rect x="690" y="240" width="180" height="40" rx="12" fill="url(#featuresGrad)"/>
+    <text x="780" y="266" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+    
+    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="11">
+      <rect x="705" y="295" width="150" height="28" rx="6" fill="#334155"/>
+      <text x="780" y="314" text-anchor="middle">Model Clients</text>
+      
+      <rect x="705" y="333" width="150" height="28" rx="6" fill="#334155"/>
+      <text x="780" y="352" text-anchor="middle">Persistence</text>
+      
+      <rect x="705" y="371" width="150" height="28" rx="6" fill="#334155"/>
+      <text x="780" y="390" text-anchor="middle">Pulse Streaming</text>
+      
+      <rect x="705" y="409" width="150" height="28" rx="6" fill="#334155"/>
+      <text x="780" y="428" text-anchor="middle">Registry Gateway</text>
+    </g>
+  </g>
+  
+  <!-- Bidirectional Arrow: Runtime ↔ Features -->
+  <path d="M 630 280 Q 665 340 690 340" stroke="#ec4899" stroke-width="2" fill="none" marker-end="url(#arrowheadBi)"/>
+  <path d="M 690 340 Q 665 340 630 280" stroke="#ec4899" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
+  
+  <!-- Labels for providers -->
+  <g fill="#64748b" font-family="Inter, system-ui, sans-serif" font-size="9">
+    <text x="780" y="478" text-anchor="middle">Bedrock · OpenAI · MongoDB · Redis</text>
+  </g>
+  
+  <!-- Flow label -->
+  <text x="330" y="340" text-anchor="middle" fill="#64748b" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500">Define → Generate → Execute</text>
+  
+  <!-- Decorative dots -->
+  <circle cx="30" cy="500" r="3" fill="#6366f1" opacity="0.5"/>
+  <circle cx="45" cy="500" r="3" fill="#06b6d4" opacity="0.5"/>
+  <circle cx="60" cy="500" r="3" fill="#10b981" opacity="0.5"/>
+  <circle cx="75" cy="500" r="3" fill="#f59e0b" opacity="0.5"/>
+  <circle cx="90" cy="500" r="3" fill="#ec4899" opacity="0.5"/>
+</svg>
+
+
+
+
+
+
+

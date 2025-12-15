@@ -4,38 +4,13 @@ weight: 8
 description: "Production-ready patterns for Goa services - observability, security, and common deployment patterns."
 llm_optimized: true
 aliases:
-  - /en/docs/5-real-world/
-  - /en/docs/5-real-world/2-observability/
-  - /en/docs/5-real-world/2-observability/1-setup/
-  - /en/docs/5-real-world/2-observability/2-tracing/
-  - /en/docs/5-real-world/2-observability/3-metrics/
-  - /en/docs/5-real-world/2-observability/4-logging/
-  - /en/docs/5-real-world/2-observability/5-health/
-  - /en/docs/5-real-world/2-observability/6-debugging/
-  - /en/docs/5-real-world/3-common-patterns/
-  - /en/docs/5-real-world/3-common-patterns/1-clients/
-  - /en/docs/5-real-world/3-common-patterns/2-file-upload-download/
-  - /en/docs/5-real-world/4-security/
-  - /en/docs/5-real-world/4-security/1-basic-auth/
-  - /en/docs/5-real-world/4-security/2-api-key/
-  - /en/docs/5-real-world/4-security/3-jwt/
-  - /en/docs/5-real-world/4-security/4-oauth2/
-  - /en/docs/5-real-world/4-security/5-best-practices/
-  - /en/docs/6-advanced/
-  - /en/docs/6-advanced/1-plugins/
-  - /en/docs/6-advanced/2-multiple-services/
-  - /en/docs/6-advanced/3-diagrams/
-  - /en/docs/6-advanced/4-elegant-monolith/
-  - /en/docs/6-advanced/5-sticky-cookies/
-  - /docs/5-real-world/
-  - /docs/6-advanced/
 ---
 
 This guide covers essential patterns for running Goa services in production, including observability, security, and common deployment patterns.
 
 ## Observability
 
-Modern distributed systems require comprehensive observability. Goa recommends [Clue](https://github.com/goadesign/clue), built on OpenTelemetry, for observability.
+Modern distributed systems require comprehensive observability. Goa recommends [Clue](https://github.com/goadesign/clue), built on OpenTelemetry, for observability. This section covers common patterns; for complete API documentation, see [Clue Documentation](../3-ecosystem/clue/).
 
 ### The Three Pillars
 
@@ -414,3 +389,12 @@ Production-ready Goa services should include:
 5. **Monitoring**: Debug endpoints and profiling capabilities
 
 These patterns ensure your services are reliable, secure, and maintainable in production environments.
+
+---
+
+## See Also
+
+- [Clue Documentation](../3-ecosystem/clue/) — Complete observability toolkit with detailed API reference
+- [DSL Reference: Security](dsl-reference/#security) — Security scheme definitions
+- [Error Handling Guide](error-handling/) — Error handling patterns and best practices
+- [Interceptors](interceptors/) — Middleware and interceptor patterns

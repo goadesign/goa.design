@@ -4,19 +4,6 @@ weight: 5
 description: "Complete guide to gRPC transport in Goa - service design, streaming patterns, error handling, and Protocol Buffer integration."
 llm_optimized: true
 aliases:
-  - /en/docs/4-concepts/4-grpc/
-  - /en/docs/4-concepts/4-grpc/1-overview/
-  - /en/docs/4-concepts/4-grpc/2-service-design/
-  - /en/docs/4-concepts/4-grpc/3-streaming/
-  - /en/docs/4-concepts/4-grpc/4-errors/
-  - /en/docs/4-concepts/4-grpc/5-implementation/
-  - /en/docs/4-concepts/4-grpc/6-protocol-buffers/
-  - /en/docs/3-tutorials/2-grpc-service/
-  - /en/docs/3-tutorials/2-grpc-service/1-designing/
-  - /en/docs/3-tutorials/2-grpc-service/2-implementing/
-  - /en/docs/3-tutorials/2-grpc-service/3-runing/
-  - /docs/4-concepts/4-grpc/
-  - /docs/3-tutorials/2-grpc-service/
 ---
 
 Goa provides comprehensive support for building gRPC services through its DSL and code generation. This guide covers service design, streaming patterns, error handling, and implementation.
@@ -187,6 +174,8 @@ Method("create", func() {
 
 ## Streaming Patterns
 
+> **Design Recap**: Streaming is defined at the design level using `StreamingPayload` and `StreamingResult`. The DSL is transport-agnostic — the same design works for both HTTP and gRPC. See [DSL Reference: Streaming](dsl-reference/#streaming) for design patterns. This section covers gRPC-specific streaming implementation.
+
 gRPC supports three streaming patterns.
 
 ### Server-Side Streaming
@@ -351,6 +340,8 @@ func (s *chatService) Connect(ctx context.Context, stream chat.ConnectServerStre
 ---
 
 ## Error Handling
+
+> **Design Recap**: Errors are defined at the design level using the `Error` DSL at API, service, or method scope. See [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) for design patterns. This section covers gRPC-specific status code mapping.
 
 ### Status Codes
 
@@ -543,6 +534,18 @@ var _ = Service("calculator", func() {
     })
 })
 ```
+
+---
+
+---
+
+## See Also
+
+- [DSL Reference: Streaming](dsl-reference/#streaming) — Design-level streaming patterns
+- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) — Design-level error definitions
+- [HTTP Guide](http-guide/) — HTTP transport features
+- [Error Handling Guide](error-handling/) — Complete error handling patterns
+- [Clue Documentation](../3-ecosystem/clue/) — gRPC interceptors for observability
 
 ---
 

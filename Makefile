@@ -1,4 +1,4 @@
-.PHONY: help serve clean build start setup update-deps prereqs
+.PHONY: help serve clean build start setup update-deps prereqs diagrams diagrams-check
 
 # Default Hugo port
 PORT ?= 1313
@@ -67,9 +67,24 @@ clean:
 	rm -rf .hugo_build.lock
 
 ## Build the site for production with minification
-build: setup
+build: setup diagrams
 	@echo "Building site..."
 	hugo --minify
+
+## Generate architecture diagrams from Model DSL
+diagrams:
+	@echo "Generating diagrams..."
+	@cd diagrams && mdl svg goa.design/docs/diagrams -dir ../static/images/diagrams -all -compact -direction RIGHT
+
+## Check if diagrams are up-to-date (for CI)
+diagrams-check:
+	@echo "Checking diagram freshness..."
+	@mkdir -p /tmp/diagrams-check
+	@cd diagrams && mdl svg goa.design/docs/diagrams -dir /tmp/diagrams-check -all
+	@diff -r static/images/diagrams /tmp/diagrams-check || \
+		(echo "Diagrams are out of date. Run 'make diagrams'" && exit 1)
+	@rm -rf /tmp/diagrams-check
+	@echo "Diagrams are up-to-date"
 
 ## Update npm dependencies
 update-deps: check-npm  ## Update npm dependencies

@@ -4,11 +4,6 @@ weight: 5
 description: "Learn how to compose agents using agent-as-tool patterns, run trees, and streaming topology."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/4-tutorials/
-  - /en/docs/8-goa-ai/4-tutorials/2-agent-composition/
-  - /en/docs/8-goa-ai/3-concepts/8-run-trees-streaming-topology/
-  - /docs/8-goa-ai/4-tutorials/
-  - /docs/8-goa-ai/4-tutorials/2-agent-composition/
 ---
 
 This guide demonstrates how to compose agents by treating one agent as a tool of another, and explains how Goa-AI models agent runs as a tree with streaming projections for different audiences.
@@ -127,9 +122,66 @@ func main() {
 
 ---
 
+## Passthrough: Deterministic Tool Forwarding
+
+For exported tools that should bypass the planner entirely and forward directly to a service method, use `Passthrough`. This is useful when:
+
+- You want deterministic, predictable behavior (no LLM decision-making)
+- The tool is a simple wrapper around an existing service method
+- You need guaranteed latency without planner overhead
+
+### When to Use Passthrough vs Normal Execution
+
+| Scenario | Use Passthrough | Use Normal Execution |
+|----------|-----------------|----------------------|
+| Simple CRUD operations | ✓ | |
+| Logging/audit tools | ✓ | |
+| Tools requiring LLM reasoning | | ✓ |
+| Multi-step workflows | | ✓ |
+| Tools that may need retries with hints | | ✓ |
+
+### DSL Declaration
+
+```go
+Export("logging-tools", func() {
+    Tool("log_message", "Log a message", func() {
+        Args(func() {
+            Attribute("level", String, "Log level", func() {
+                Enum("debug", "info", "warn", "error")
+            })
+            Attribute("message", String, "Message to log")
+            Required("level", "message")
+        })
+        Return(func() {
+            Attribute("logged", Boolean, "Whether the message was logged")
+            Required("logged")
+        })
+        // Bypass planner, forward directly to LoggingService.LogMessage
+        Passthrough("log_message", "LoggingService", "LogMessage")
+    })
+})
+```
+
+### Runtime Behavior
+
+When a consumer agent calls a passthrough tool:
+
+1. The runtime receives the tool call from the consumer's planner
+2. Instead of invoking the provider agent's planner, it directly calls the target service method
+3. The result is returned to the consumer without any LLM processing
+
+This provides:
+- **Predictable latency**: No LLM inference delay
+- **Deterministic behavior**: Same input always produces same output
+- **Cost efficiency**: No token usage for simple operations
+
+---
+
 ## Run Trees and Sessions
 
 Goa-AI models execution as a **tree of runs and tools**:
+
+{{< figure src="/images/diagrams/RunTree.svg" alt="Hierarchical agent execution with run trees" >}}
 
 - **Run** – one execution of an agent:
   - Identified by a `RunID`

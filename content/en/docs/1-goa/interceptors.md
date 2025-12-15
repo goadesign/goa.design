@@ -4,19 +4,6 @@ weight: 7
 description: "Complete guide to interceptors and middleware in Goa - type-safe Goa interceptors, HTTP middleware, and gRPC interceptors."
 llm_optimized: true
 aliases:
-  - /en/docs/4-concepts/5-interceptors/
-  - /en/docs/4-concepts/5-interceptors/1-goa-interceptors/
-  - /en/docs/4-concepts/5-interceptors/1-goa-interceptors/1-getting-started/
-  - /en/docs/4-concepts/5-interceptors/1-goa-interceptors/2-interceptor-types/
-  - /en/docs/4-concepts/5-interceptors/1-goa-interceptors/3-interceptor-implementation/
-  - /en/docs/4-concepts/5-interceptors/1-goa-interceptors/4-best-practices/
-  - /en/docs/4-concepts/5-interceptors/2-http-middleware/
-  - /en/docs/4-concepts/5-interceptors/2-http-middleware/1-combining/
-  - /en/docs/4-concepts/5-interceptors/2-http-middleware/2-custom/
-  - /en/docs/4-concepts/5-interceptors/3-grpc-interceptors/
-  - /en/docs/4-concepts/5-interceptors/3-grpc-interceptors/1-unary/
-  - /en/docs/4-concepts/5-interceptors/3-grpc-interceptors/2-stream/
-  - /docs/4-concepts/5-interceptors/
 ---
 
 Goa provides a comprehensive solution for request processing that combines type-safe interceptors with traditional middleware patterns. This guide covers all three approaches.
@@ -436,3 +423,12 @@ Service Method → Goa Interceptors → HTTP/gRPC Middleware
 - Test interceptors/middleware in isolation
 - Consider performance impact
 - Document the purpose of each interceptor
+
+---
+
+## See Also
+
+- [DSL Reference](dsl-reference/) — Interceptor DSL definitions
+- [HTTP Guide](http-guide/) — HTTP-specific middleware patterns
+- [gRPC Guide](grpc-guide/) — gRPC interceptor patterns
+- [Clue Documentation](../3-ecosystem/clue/) — Observability interceptors and middleware

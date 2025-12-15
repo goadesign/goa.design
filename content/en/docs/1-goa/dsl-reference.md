@@ -4,20 +4,6 @@ weight: 2
 description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
 llm_optimized: true
 aliases:
-  - /en/docs/4-concepts/1-design-language/
-  - /en/docs/4-concepts/1-design-language/1-data-modeling/
-  - /en/docs/4-concepts/1-design-language/2-api/
-  - /en/docs/4-concepts/1-design-language/3-services-methods/
-  - /en/docs/4-concepts/1-design-language/4-http-mapping/
-  - /en/docs/4-concepts/1-design-language/5-grpc-mapping/
-  - /en/docs/4-concepts/1-design-language/6-security/
-  - /docs/4-concepts/1-design-language/
-  - /docs/4-concepts/1-design-language/1-data-modeling/
-  - /docs/4-concepts/1-design-language/2-api/
-  - /docs/4-concepts/1-design-language/3-services-methods/
-  - /docs/4-concepts/1-design-language/4-http-mapping/
-  - /docs/4-concepts/1-design-language/5-grpc-mapping/
-  - /docs/4-concepts/1-design-language/6-security/
 ---
 
 Goa's Domain Specific Language (DSL) is the cornerstone of the design-first approach. This reference covers all aspects of the DSL, from basic type definitions to complex transport mappings and security schemes.
@@ -481,6 +467,316 @@ Method("processEvents", func() {
     })
 })
 ```
+
+---
+
+## Streaming
+
+Streaming enables real-time, continuous data exchange between clients and servers. Goa's streaming DSL is transport-agnostic — the same design works for both HTTP (WebSocket, Server-Sent Events) and gRPC streaming.
+
+### Streaming Patterns
+
+Goa supports three streaming patterns:
+
+| Pattern | DSL | Use Case |
+|---------|-----|----------|
+| Server-to-Client | `StreamingResult` | Live feeds, notifications, progress updates |
+| Client-to-Server | `StreamingPayload` | File uploads, event ingestion |
+| Bidirectional | Both | Chat, real-time collaboration |
+
+### StreamingPayload
+
+Use `StreamingPayload` when clients send a stream of messages to the server:
+
+```go
+// Client streams events, server returns summary
+Method("ingestEvents", func() {
+    Description("Ingest a stream of analytics events")
+    
+    StreamingPayload(func() {
+        Field(1, "event_type", String, "Type of event")
+        Field(2, "timestamp", String, "ISO 8601 timestamp")
+        Field(3, "properties", MapOf(String, Any), "Event properties")
+        Required("event_type", "timestamp")
+    })
+    
+    Result(func() {
+        Field(1, "events_processed", Int64, "Total events ingested")
+        Field(2, "errors", Int64, "Events that failed validation")
+        Required("events_processed", "errors")
+    })
+})
+```
+
+### StreamingResult
+
+Use `StreamingResult` when the server sends a stream of messages to the client:
+
+```go
+// Client subscribes, server streams updates
+Method("subscribe", func() {
+    Description("Subscribe to real-time price updates")
+    
+    Payload(func() {
+        Field(1, "symbols", ArrayOf(String), "Stock symbols to watch")
+        Required("symbols")
+    })
+    
+    StreamingResult(func() {
+        Field(1, "symbol", String, "Stock symbol")
+        Field(2, "price", Float64, "Current price")
+        Field(3, "change", Float64, "Price change percentage")
+        Field(4, "timestamp", String, "Update timestamp")
+        Required("symbol", "price", "timestamp")
+    })
+})
+```
+
+### Bidirectional Streaming
+
+Combine both for full-duplex communication:
+
+```go
+// Real-time chat with structured messages
+Method("chat", func() {
+    Description("Bidirectional chat stream")
+    
+    StreamingPayload(func() {
+        Field(1, "message", String, "Chat message content")
+        Field(2, "room_id", String, "Target chat room")
+        Field(3, "reply_to", String, "Message ID being replied to")
+        Required("message", "room_id")
+    })
+    
+    StreamingResult(func() {
+        Field(1, "id", String, "Message ID")
+        Field(2, "sender", String, "Sender username")
+        Field(3, "message", String, "Message content")
+        Field(4, "room_id", String, "Chat room")
+        Field(5, "timestamp", String, "When message was sent")
+        Required("id", "sender", "message", "room_id", "timestamp")
+    })
+})
+```
+
+### Transport Mapping
+
+The same streaming design maps to different transports:
+
+```go
+Method("watch", func() {
+    StreamingResult(Event)
+    
+    // HTTP: WebSocket by default, or SSE with ServerSentEvents()
+    HTTP(func() {
+        GET("/events/watch")
+        // ServerSentEvents()  // Uncomment for SSE instead of WebSocket
+    })
+    
+    // gRPC: Server-side streaming RPC
+    GRPC(func() {
+        Response(CodeOK)
+    })
+})
+```
+
+**See also:**
+- [HTTP Guide: WebSocket Integration](http-guide/#websocket-integration) — HTTP-specific streaming implementation
+- [HTTP Guide: Server-Sent Events](http-guide/#server-sent-events) — SSE for one-way server streaming
+- [gRPC Guide: Streaming Patterns](grpc-guide/#streaming-patterns) — gRPC streaming implementation
+
+---
+
+## Static Files
+
+The `Files` DSL serves static content directly from the filesystem. This is an HTTP-only feature — gRPC does not support static file serving.
+
+### Basic Usage
+
+```go
+var _ = Service("web", func() {
+    // Serve a directory
+    Files("/static/{*path}", "./public/static")
+    
+    // Serve a specific file
+    Files("/favicon.ico", "./public/favicon.ico")
+    
+    // Serve index.html for root
+    Files("/", "./public/index.html")
+})
+```
+
+### Directory Serving
+
+The `{*path}` wildcard captures the remaining URL path:
+
+```go
+// Request: GET /assets/css/style.css
+// Serves: ./static/css/style.css
+Files("/assets/{*path}", "./static")
+```
+
+### Single Page Applications
+
+For SPAs with client-side routing, serve the same HTML for all routes:
+
+```go
+var _ = Service("spa", func() {
+    // API endpoints
+    Method("getData", func() {
+        HTTP(func() { GET("/api/data") })
+    })
+    
+    // Static assets
+    Files("/assets/{*path}", "./dist/assets")
+    
+    // SPA catch-all — serves index.html for all other routes
+    Files("/{*path}", "./dist/index.html")
+})
+```
+
+**Note**: `Files` is HTTP-only. For detailed patterns including template integration, see [HTTP Guide: Static Content](http-guide/#static-content).
+
+---
+
+## Error Handling (Design Level)
+
+Errors in Goa are defined at the design level and automatically mapped to transport-specific responses. This section covers the DSL for defining errors; for transport mapping details, see [Error Handling Guide](error-handling/).
+
+### Error Scopes
+
+Errors can be defined at three levels:
+
+| Scope | Availability | Use Case |
+|-------|--------------|----------|
+| API-level | All services | Common errors (unauthorized, rate limited) |
+| Service-level | All methods in service | Domain errors (not found, invalid state) |
+| Method-level | Single method only | Operation-specific errors |
+
+### API-Level Errors
+
+Define once, use everywhere:
+
+```go
+var _ = API("myapi", func() {
+    // Define common errors
+    Error("unauthorized", ErrorResult, "Authentication required")
+    Error("rate_limited", ErrorResult, "Too many requests", func() {
+        Temporary()  // Client should retry
+    })
+    
+    // Map to transports
+    HTTP(func() {
+        Response("unauthorized", StatusUnauthorized)
+        Response("rate_limited", StatusTooManyRequests)
+    })
+    
+    GRPC(func() {
+        Response("unauthorized", CodeUnauthenticated)
+        Response("rate_limited", CodeResourceExhausted)
+    })
+})
+```
+
+### Service-Level Errors
+
+Available to all methods in the service:
+
+```go
+var _ = Service("users", func() {
+    // Service-wide errors
+    Error("not_found", ErrorResult, "User not found")
+    Error("already_exists", ErrorResult, "User already exists")
+    
+    HTTP(func() {
+        Response("not_found", StatusNotFound)
+        Response("already_exists", StatusConflict)
+    })
+    
+    Method("get", func() {
+        // Can return not_found without declaring it
+    })
+    
+    Method("create", func() {
+        // Can return already_exists without declaring it
+    })
+})
+```
+
+### Method-Level Errors
+
+Specific to a single operation:
+
+```go
+Method("transfer", func() {
+    Description("Transfer funds between accounts")
+    
+    Payload(func() {
+        Field(1, "from_account", String)
+        Field(2, "to_account", String)
+        Field(3, "amount", Float64)
+        Required("from_account", "to_account", "amount")
+    })
+    
+    Result(TransferResult)
+    
+    // Method-specific errors
+    Error("insufficient_funds", ErrorResult, "Account has insufficient balance")
+    Error("account_locked", ErrorResult, "Account is locked for transfers")
+    
+    HTTP(func() {
+        POST("/transfer")
+        Response("insufficient_funds", StatusUnprocessableEntity)
+        Response("account_locked", StatusForbidden)
+    })
+})
+```
+
+### Error Properties
+
+Mark errors with semantic properties:
+
+```go
+Error("service_unavailable", ErrorResult, func() {
+    Description("Backend service is temporarily unavailable")
+    Temporary()  // Client should retry
+})
+
+Error("request_timeout", ErrorResult, func() {
+    Description("Request exceeded time limit")
+    Timeout()    // Deadline was exceeded
+})
+
+Error("internal_error", ErrorResult, func() {
+    Description("Unexpected server error")
+    Fault()      // Server-side issue
+})
+```
+
+### Custom Error Types
+
+For errors needing additional context:
+
+```go
+var ValidationError = Type("ValidationError", func() {
+    Field(1, "name", String, "Error name", func() {
+        Meta("struct:error:name")  // Required for custom error types
+    })
+    Field(2, "message", String, "Error message")
+    Field(3, "field", String, "Field that failed validation")
+    Field(4, "value", Any, "Invalid value provided")
+    Required("name", "message", "field")
+})
+
+Method("create", func() {
+    Error("validation_error", ValidationError, "Input validation failed")
+})
+```
+
+**See also:**
+- [Error Handling Guide](error-handling/) — Complete error handling patterns
+- [HTTP Guide: Error Responses](http-guide/#best-practices) — HTTP status code mapping
+- [gRPC Guide: Error Handling](grpc-guide/#error-handling) — gRPC status code mapping
 
 ---
 

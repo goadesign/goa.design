@@ -4,10 +4,6 @@ weight: 6
 description: "Integrate external MCP servers into your agents with generated wrappers and callers."
 llm_optimized: true
 aliases:
-  - /en/docs/8-goa-ai/3-concepts/4-mcp-integration/
-  - /en/docs/8-goa-ai/4-tutorials/3-mcp-toolsets/
-  - /docs/8-goa-ai/3-concepts/4-mcp-integration/
-  - /docs/8-goa-ai/4-tutorials/3-mcp-toolsets/
 ---
 
 Goa-AI provides first-class support for integrating MCP (Model Context Protocol) servers into your agents. MCP toolsets allow agents to consume tools from external MCP servers through generated wrappers and callers.
