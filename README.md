@@ -3,18 +3,38 @@
 This repository contains the source code of [https://goa.design](https://goa.design). The site is
 a static website built using [hugo](http://gohugo.io).
 
+## Documentation structure
+
+The main documentation lives under `content/en/docs/` (English source of truth):
+
+- `content/en/docs/1-goa/`: Goa framework docs
+- `content/en/docs/2-goa-ai/`: Goa-AI docs (agents, toolsets, runtime, MCP, etc.)
+- `content/en/docs/3-ecosystem/`: Ecosystem docs (e.g., Clue, Pulse, Model)
+
+Translated content mirrors the same structure under `content/{lang}/docs/` (for example `content/it/docs/`, `content/fr/docs/`).
+
 ## Contributing
 
 Is that typo bugging you? us too! If you want to do something about it:
 
 1. [Fork](https://help.github.com/articles/fork-a-repo/) and [clone](https://help.github.com/articles/cloning-a-repository/) the repo
-2. Open a terminal, `cd` into the cloned repo and run `make`
-3. Edit the content of the markdown files in the `/content` directory.
+2. Open a terminal, `cd` into the cloned repo and run `make start` (or `make serve`)
+3. Edit the content of the markdown files in the `content/` directory.
 4. Submit a [Pull Request](https://help.github.com/articles/using-pull-requests/)
 
-`make` starts a server on your box that "live-loads" all changes you make to the content (that is
+`make serve` starts a server on your box that "live-loads" all changes you make to the content (that is
 the page should refresh itself each time you save a content page). Once `make` complete simply open
 a browser to [http://localhost:1313](http://localhost:1313) and browse to the page you are editing.
+
+### Diagrams
+
+Some diagrams are generated from the Model DSL and committed under `static/images/diagrams/`.
+
+Generate/update diagrams:
+
+```bash
+make diagrams
+```
 
 ### Run the documentation using Docker without having to install Go
 
@@ -48,29 +68,27 @@ docker rmi golang:1.24.2;
 
 ## Translations
 
-Translations are kept under the `content` directory. Each language has its own file extension of
-the form `<code>.md` where `<code>` is the ISO 2 letter
-[language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
+Translations are kept under the `content/` directory:
 
-To contribute to an existing translation:
+- English source: `content/en/docs/`
+- Translations: `content/{lang}/docs/` (same paths as English)
 
-1. Fork and Clone the repo.
-2. Checkout the language specific branch (named after the language code).
-3. Make your changes in the branch in `content/<code>`.
-4. Send Pull Requests to the branch.
-5. When the translation is ready send a PR to the `master` branch.
+### Translating docs (recommended)
 
-To start a new translation:
+We provide a translation helper script backed by DeepL:
 
-1. Open a new issue describing the new language being translated to
-2. [Figure out your language code](http://www.sitepoint.com/web-foundations/iso-2-letter-language-codes/).
-   For example: `ja`, `zh`, `es`, `de`, ...etc.
-3. A team member will make a new branch. For example `fr` or `ja`.
-4. Fork the branch and add the required files, see below.
-5. Send PRs to the branch (this can be work in progress).
-6. When the translation is ready send a PR to the `master` branch.
+```bash
+# 1) Configure API key
+cp .env.example .env
+${EDITOR:-vi} .env
 
-The files that support a given language are:
+# 2) Translate changed English docs to all supported languages
+./scripts/translate content/en/docs/
+```
 
-* `layouts/<code>/`: contains the layout pages
-* `layouts/partials/<code>/`: contains the partials files
+Notes:
+
+- The full workflow is documented in `scripts/TRANSLATION.md`.
+- The script uses a cache file (`.translation-cache.json`, gitignored) so only changed English files are reprocessed.
+- **Japanese (`JA`) is not auto-translated**: `./scripts/translate --lang JA ...` will print which files need a **manual update** and record the English hash so only future changes are re-flagged.
+- UI strings live under `i18n/*.yaml` and are maintained manually.
