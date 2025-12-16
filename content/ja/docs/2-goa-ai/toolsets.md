@@ -877,4 +877,3 @@ type Artifact struct {
 - **[Agent Composition](./agent-composition.md)** - agent-as-tool パターンで複雑なシステムを構築する
 - **[MCP Integration](./mcp-integration.md)** - 外部ツールサーバに接続する
 - **[Runtime](./runtime.md)** - ツール実行フローを理解する
-

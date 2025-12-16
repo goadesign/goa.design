@@ -458,5 +458,3 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 - **[MCP Integration](./mcp-integration.md)** - 外部ツールサーバーへ接続する
 - **[Memory & Sessions](./memory-sessions.md)** - 文字起こしとメモリストアで状態を管理する
 - **[Production](./production.md)** - Temporal とストリーミング UI を用いてデプロイする
-
-

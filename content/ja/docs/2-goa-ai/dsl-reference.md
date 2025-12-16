@@ -1829,4 +1829,3 @@ var _ = Service("orchestrator", func() {
 - **[ランタイム](./runtime.md)** - 設計が実行時の挙動にどう変換されるかを理解する
 - **[ツールセット](./toolsets.md)** - ツールセットの実行モデルを深掘りする
 - **[MCP 連携](./mcp-integration.md)** - MCP サーバのランタイム配線を理解する
-
