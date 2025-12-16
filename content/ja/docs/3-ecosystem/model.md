@@ -934,5 +934,3 @@ var _ = Design("My Service", func() {
 - [Model GitHub Repository](https://github.com/goadesign/model) — ソースコードと例
 - [C4 Model](https://c4model.com) — C4 モデルのドキュメント
 - [Structurizr](https://structurizr.com) — 図のホスティングサービス
-
-

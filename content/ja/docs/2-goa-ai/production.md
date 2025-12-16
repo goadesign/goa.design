@@ -830,5 +830,3 @@ User: What should I do next?
 - トランスクリプト永続化のために [Memory & Sessions](./memory-sessions/) を読む
 - agent-as-tool パターンとして [Agent Composition](./agent-composition/) を読む
 - ツール実行モデルとして [Toolsets](./toolsets/) を読む
-
-

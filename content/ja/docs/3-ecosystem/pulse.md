@@ -734,5 +734,3 @@ func GetUser(ctx context.Context, id string) (*User, error) {
 
 - [Pulse GitHub Repository](https://github.com/goadesign/pulse) — ソースコードと例
 - [Redis Streams Documentation](https://redis.io/docs/data-types/streams/) — Redis Streams の概念
-
-

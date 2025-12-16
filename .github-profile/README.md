@@ -188,11 +188,3 @@ Help build Goa
 <div align="center">
   <sub>Made with ❤️ by the Goa Design team and <a href="https://github.com/goadesign/goa/graphs/contributors">contributors</a></sub>
 </div>
-
-
-
-
-
-
-
-

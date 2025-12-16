@@ -298,4 +298,3 @@ for _, tool := range schema.Tools {
 - [Toolsets](./toolsets/) を読んでツールの定義方法を学ぶ
 - [Production](./production/) でデプロイパターンを確認する
 - [Agent Composition](./agent-composition/) でエージェント間のツール共有を理解する
-

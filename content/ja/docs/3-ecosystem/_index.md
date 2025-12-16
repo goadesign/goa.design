@@ -124,4 +124,3 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 ```
-

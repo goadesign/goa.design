@@ -713,5 +713,3 @@ goa gen quickstart/design
 | [Toolsets](toolsets/) | サービス実装ツール、変換、executor |
 | [Agent Composition](agent-composition/) | agent-as-tool パターンの詳細 |
 | [Production](production/) | Temporal セットアップ、UI へのストリーミング、レート制限 |
-
-
