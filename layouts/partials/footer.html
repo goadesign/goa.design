@@ -16,6 +16,9 @@
       
       {{/* Right: Social icons */}}
       <div class="col-auto td-footer__social">
+        <a class="td-footer__avatar" href="{{ "/" | relURL }}" aria-label="Goa home">
+          <img src="{{ "img/avatar.svg" | relURL }}" alt="Goa Design Avatar" width="32" height="32" loading="lazy" decoding="async">
+        </a>
         <ul class="td-footer__links-list">
           {{ with .Site.Params.links.user }}
             {{ range . }}

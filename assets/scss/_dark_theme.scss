@@ -718,6 +718,10 @@ body[data-theme="dark"] {
     .hero-logo .goa-logo {
       filter: brightness(0) invert(1) drop-shadow(0 4px 24px rgba(91, 192, 235, 0.4));
     }
+
+    .hero-logo .goa-avatar {
+      filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.5));
+    }
     
     .display-1 {
       text-shadow: 

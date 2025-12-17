@@ -1,6 +1,6 @@
 <div align="center">
   
-![Goa Design](banner.svg)
+<img src="avatar.svg" alt="Goa Design" width="160" />
 
 [![Documentation](https://img.shields.io/badge/📖_Docs-goa.design-5bc0eb?style=for-the-badge&labelColor=0d1117)](https://goa.design)
 [![Gitter](https://img.shields.io/badge/💬_Chat-Gitter-fb4fcf?style=for-the-badge&labelColor=0d1117)](https://gitter.im/goadesign/goa)
