@@ -235,7 +235,7 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("compile_report")
 			Add("extract_key_points")
 			Add("format_markdown")
-			AutoLayout(RankTopBottom)
+			AutoLayout(RankLeftRight)
 		})
 
 		ContainerView(RegistryClusterSystem, "RegistryCluster", "Multi-node registry cluster with shared Redis state", func() {
@@ -243,7 +243,7 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("Registry 2")
 			Add("Registry N")
 			Add("Shared State")
-			AutoLayout(RankBottomTop)
+			AutoLayout(RankLeftRight)
 		})
 
 		ContainerView(RegistryTopologySystem, "RegistryTopology", "Agent-registry-provider topology", func() {
@@ -262,7 +262,7 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("Store")
 			Add("Health Tracker")
 			Add("Stream Manager")
-			AutoLayout(RankTopBottom)
+			AutoLayout(RankLeftRight)
 		})
 
 		ContainerView(PulseStreamingSystem, "PulseStreaming", "Event streaming architecture", func() {
