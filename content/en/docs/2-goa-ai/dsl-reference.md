@@ -151,7 +151,7 @@ Declare agents inside a regular Goa `Service` definition. The DSL augments Goa's
 Running `goa gen` produces:
 
 - Agent packages (`gen/<service>/agents/<agent>`) with workflow definitions, planner activities, and registration helpers
-- Tool codecs/specs with typed payload/result structs and JSON codecs
+- Toolset owner packages (`gen/<service>/toolsets/<toolset>`) with typed payload/result structs, specs, codecs, and (when applicable) transforms
 - Activity handlers for plan/execute/resume loops
 - Registration helpers that wire the design into the runtime
 
@@ -217,8 +217,9 @@ var _ = Service("orchestrator", func() {
 Running `goa gen example.com/assistant/design` produces:
 
 - `gen/orchestrator/agents/chat`: workflow + planner activities + agent registry
-- `gen/orchestrator/agents/chat/specs`: payload/result structs, JSON codecs, tool schemas
-- `gen/orchestrator/agents/chat/agenttools`: helpers that expose exported tools to other agents
+- `gen/orchestrator/agents/chat/specs`: agent tool catalog (aggregated `ToolSpec`s + `tool_schemas.json`)
+- `gen/orchestrator/toolsets/<toolset>`: toolset-owned types/specs/codecs/transforms for service-owned toolsets
+- `gen/orchestrator/agents/chat/exports/<export>`: exported toolsets (agent-as-tool) packages
 - MCP-aware registration helpers when an `MCPToolset` is referenced via `Use`
 
 ### Typed Tool Identifiers
@@ -628,7 +629,7 @@ Tool("list_devices", "List devices with pagination", func() {
         Attribute("returned", Int, "Number of devices returned")
         Attribute("total", Int, "Total devices matching filter")
         Attribute("truncated", Boolean, "Whether results were truncated")
-        Required("devices", "returned")
+        Required("devices", "returned", "truncated")
     })
     BoundedResult()
 })
@@ -691,7 +692,7 @@ var DeviceToolset = Toolset("devices", func() {
             Attribute("total", Int, "Total matching devices")
             Attribute("truncated", Boolean, "Results were capped")
             Attribute("refinement_hint", String, "How to narrow results")
-            Required("devices", "returned")
+            Required("devices", "returned", "truncated")
         })
         BoundedResult()
         BindTo("DeviceService", "ListDevices")

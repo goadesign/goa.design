@@ -14,7 +14,7 @@ Les ensembles d'outils sont des collections d'outils que les agents peuvent util
 
 Déclarés via `Toolset("name", func() { ... })` ; les outils peuvent `BindTo` être des méthodes de service Goa ou être mis en œuvre par des exécuteurs personnalisés.
 
-- Codegen émet des spécifications/types/codecs par outil sous `gen/<service>/tools/<toolset>/`
+- Codegen émet des spécifications/types/codecs par outil sous `gen/<service>/toolsets/<toolset>/`
 - Les agents qui `Use` ces ensembles d'outils importent les spécifications du fournisseur et obtiennent des constructeurs d'appels typés et des usines d'exécution
 - Les applications enregistrent des exécuteurs qui décodent les arguments typés (via des codecs fournis par le moteur d'exécution), utilisent éventuellement des transformations, appellent des clients de service et renvoient des `ToolResult`
 
@@ -23,7 +23,7 @@ Déclarés via `Toolset("name", func() { ... })` ; les outils peuvent `BindTo` �
 Définis dans un bloc `Export` de l'agent et éventuellement `Use` mis en œuvre par d'autres agents.
 
 - Le service reste propriétaire ; l'agent est l'implémentation
-- Codegen émet des aides `agenttools/<toolset>` côté fournisseur avec `NewRegistration` et des constructeurs d'appels typés
+- Codegen émet des paquets d'export côté fournisseur sous `gen/<service>/agents/<agent>/exports/<export>` avec `NewRegistration` et des constructeurs d'appels typés
 - Les aides côté consommateur dans les agents qui `Use` l'ensemble d'outils exportés délèguent aux aides côté fournisseur tout en gardant les métadonnées de routage centralisées
 - L'exécution se fait en ligne ; les charges utiles sont transmises sous forme de JSON canonique et décodées uniquement à la frontière si cela est nécessaire pour les invites
 
@@ -147,7 +147,7 @@ Tool("list_devices", "List devices with pagination", func() {
         Attribut("total", Int, "Nombre total de dispositifs correspondants")
         Attribut("truncated", Boolean, "Résultats plafonnés")
         Attribut("refinement_hint", String, "Comment réduire les résultats")
-        Required("devices", "returned")
+        Required("devices", "returned", "truncated")
     })
     BoundedResult()
     BindTo("DeviceService", "ListDevices")
@@ -183,6 +183,13 @@ func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
 ```
 
 #### Implementing Bounded Tools
+
+Bounded tools are a hard contract: services implement truncation and populate bounds metadata on every successful code path.
+
+**Contract:**
+
+- `Returned` and `Truncated` must always be set.
+- `Returned == 0` means “empty result” → `Total == 0` and `Truncated == false`.
 
 Services implement truncation and populate bounds metadata:
 
@@ -508,7 +515,7 @@ When a tool is bound to a Goa method via `BindTo`, code generation analyzes the 
 - `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
 - `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
 
-Transforms are emitted under `gen/<service>/agents/<agent>/specs/<toolset>/transforms.go` and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
+Transforms are emitted under the toolset owner package (for example `gen/<service>/toolsets/<toolset>/transforms.go`) and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
 
 ---
 
@@ -517,14 +524,14 @@ Transforms are emitted under `gen/<service>/agents/<agent>/specs/<toolset>/trans
 Each toolset defines typed tool identifiers (`tools.Ident`) for all generated tools—including non-exported toolsets. Prefer these constants over ad-hoc strings:
 
 ```go
-import chattools "example.com/assistant/gen/orchestrator/agents/chat/agenttools/search"
+import searchspecs "example.com/assistant/gen/orchestrator/toolsets/search"
 
 // Utilisation d'une constante générée au lieu de chaînes/cast ad-hoc
-spec, _ := rt.ToolSpec(chattools.Search)
-schemas, _ := rt.ToolSchema(chattools.Search)
+spec, _ := rt.ToolSpec(searchspecs.Search)
+schemas, _ := rt.ToolSchema(searchspecs.Search)
 ```
 
-For exported toolsets (agent-as-tool), Goa-AI also generates **agenttools** packages with:
+For exported toolsets (agent-as-tool), Goa-AI generates export packages under `gen/<service>/agents/<agent>/exports/<export>` with:
 - Typed tool IDs
 - Alias payload/result types
 - Codecs

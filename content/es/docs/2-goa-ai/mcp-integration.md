@@ -14,7 +14,7 @@ La integración MCP sigue el siguiente flujo de trabajo:
 
 1. **Diseño del servicio**: Declarar el servidor MCP a través del DSL MCP de Goa
 2. **Diseño del agente**: Hacer referencia a esa suite con `Use(MCPToolset("service", "suite"))`
-3. **Generación de código**: Produce tanto el servidor MCP JSON-RPC clásico (opcional) como el ayudante de registro en tiempo de ejecución, además de códecs/especificaciones de herramientas reflejados en el paquete del agente
+3. **Generación de código**: Produce el servidor MCP JSON-RPC (cuando está respaldado por Goa), además de helpers de registro en runtime y specs/codecs del toolset (propiedad de la suite)
 4. **Cableado en tiempo de ejecución**: Instanciar un transporte `mcpruntime.Caller` (HTTP/SSE/stdio). Los ayudantes generados registran el conjunto de herramientas y adaptan los errores JSON-RPC a valores `planner.RetryHint`
 5. **Ejecución del planificador**: Los planificadores simplemente ponen en cola las llamadas a herramientas con cargas útiles JSON canónicas; el tiempo de ejecución las reenvía al llamador MCP, persiste los resultados a través de ganchos y aflora la telemetría estructurada
 
