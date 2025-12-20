@@ -150,7 +150,7 @@ import (
 `goa gen` は次を生成します:
 
 - エージェントパッケージ（`gen/<service>/agents/<agent>`）: ワークフロー定義、プランナーアクティビティ、登録ヘルパー
-- ツールコーデック/スペック: 型付きの payload/result 構造体と JSON コーデック
+- ツールセットのオーナー・パッケージ（`gen/<service>/toolsets/<toolset>`）: 型付きの payload/result 構造体、specs、codecs、（該当する場合）transforms
 - plan/execute/resume ループ用のアクティビティハンドラ
 - デザインをランタイムに配線する登録ヘルパー
 
@@ -216,8 +216,9 @@ var _ = Service("orchestrator", func() {
 `goa gen example.com/assistant/design` を実行すると、例えば次が生成されます:
 
 - `gen/orchestrator/agents/chat`: ワークフロー + プランナーアクティビティ + エージェントレジストリ
-- `gen/orchestrator/agents/chat/specs`: payload/result 構造体、JSON コーデック、ツールスキーマ
-- `gen/orchestrator/agents/chat/agenttools`: エクスポートされたツールを他エージェントへ公開するヘルパー
+- `gen/orchestrator/agents/chat/specs`: エージェントのツールカタログ（`ToolSpec` の集約 + `tool_schemas.json`）
+- `gen/orchestrator/toolsets/<toolset>`: サービス所有ツールセットの types/specs/codecs/transforms
+- `gen/orchestrator/agents/chat/exports/<export>`: エクスポートされたツールセット（agent-as-tool）パッケージ
 - `MCPToolset` が `Use` で参照された場合の MCP 対応登録ヘルパー
 
 ### 型付きツール識別子
@@ -627,7 +628,7 @@ Tool("list_devices", "List devices with pagination", func() {
         Attribute("returned", Int, "Number of devices returned")
         Attribute("total", Int, "Total devices matching filter")
         Attribute("truncated", Boolean, "Whether results were truncated")
-        Required("devices", "returned")
+        Required("devices", "returned", "truncated")
     })
     BoundedResult()
 })
@@ -690,7 +691,7 @@ var DeviceToolset = Toolset("devices", func() {
             Attribute("total", Int, "Total matching devices")
             Attribute("truncated", Boolean, "Results were capped")
             Attribute("refinement_hint", String, "How to narrow results")
-            Required("devices", "returned")
+            Required("devices", "returned", "truncated")
         })
         BoundedResult()
         BindTo("DeviceService", "ListDevices")
@@ -1829,3 +1830,4 @@ var _ = Service("orchestrator", func() {
 - **[ランタイム](./runtime.md)** - 設計が実行時の挙動にどう変換されるかを理解する
 - **[ツールセット](./toolsets.md)** - ツールセットの実行モデルを深掘りする
 - **[MCP 連携](./mcp-integration.md)** - MCP サーバのランタイム配線を理解する
+

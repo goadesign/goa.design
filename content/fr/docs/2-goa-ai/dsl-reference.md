@@ -151,7 +151,7 @@ Déclarer des agents à l'intérieur d'une définition Goa `Service` normale. Le
 L'exécution de `goa gen` produit :
 
 - Des paquets d'agents (`gen/<service>/agents/<agent>`) avec des définitions de flux de travail, des activités de planification et des aides à l'enregistrement
-- Codecs/spécifiques d'outils avec des structures de charge utile/résultat typées et des codecs JSON
+- Paquets propriétaires du toolset (`gen/<service>/toolsets/<toolset>`) avec structs typés payload/result, specs, codecs et (le cas échéant) transforms
 - Des gestionnaires d'activité pour les boucles de planification/exécution/reprise
 - Des aides à l'enregistrement qui intègrent la conception dans le moteur d'exécution
 
@@ -217,8 +217,9 @@ var _ = Service("orchestrator", func() {
 L'exécution `goa gen example.com/assistant/design` produit :
 
 - `gen/orchestrator/agents/chat` : flux de travail + activités du planificateur + registre des agents
-- `gen/orchestrator/agents/chat/specs` : structures de charge utile/résultat, codecs JSON, schémas d'outils
-- `gen/orchestrator/agents/chat/agenttools` : aides qui exposent les outils exportés à d'autres agents
+- `gen/orchestrator/agents/chat/specs` : catalogue d'outils de l'agent (agrégation de `ToolSpec`s + `tool_schemas.json`)
+- `gen/orchestrator/toolsets/<toolset>` : types/specs/codecs/transforms du toolset (propriété du service)
+- `gen/orchestrator/agents/chat/exports/<export>` : paquets de toolsets exportés (agent-as-tool)
 - Aides à l'enregistrement tenant compte des MCP lorsqu'un `MCPToolset` est référencé par l'intermédiaire d'un `Use`
 
 ### Identificateurs d'outils typés
@@ -628,7 +629,7 @@ Tool("list_devices", "List devices with pagination", func() {
         Attribute("returned", Int, "Number of devices returned")
         Attribute("total", Int, "Total devices matching filter")
         Attribute("truncated", Boolean, "Whether results were truncated")
-        Required("devices", "returned")
+        Required("devices", "returned", "truncated")
     })
     BoundedResult()
 })
@@ -691,7 +692,7 @@ var DeviceToolset = Toolset("devices", func() {
             Attribute("total", Int, "Total matching devices")
             Attribute("truncated", Boolean, "Results were capped")
             Attribute("refinement_hint", String, "How to narrow results")
-            Required("devices", "returned")
+            Required("devices", "returned", "truncated")
         })
         BoundedResult()
         BindTo("DeviceService", "ListDevices")

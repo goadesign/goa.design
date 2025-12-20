@@ -14,7 +14,7 @@ I set di strumenti sono raccolte di strumenti che gli agenti possono utilizzare.
 
 Dichiarati tramite `Toolset("name", func() { ... })`; gli strumenti possono `BindTo` metodi del servizio Goa o essere implementati da esecutori personalizzati.
 
-- Codegen emette specifiche/tipi/codici per gli strumenti sotto `gen/<service>/tools/<toolset>/`
+- Codegen emette specifiche/tipi/codici per gli strumenti sotto `gen/<service>/toolsets/<toolset>/`
 - Gli agenti che `Use` questi set di strumenti importano le specifiche del provider e ottengono costruttori di chiamate tipizzate e fabbriche di esecutori
 - Le applicazioni registrano gli esecutori che decodificano gli argomenti tipizzati (tramite i codec forniti dal runtime), usano facoltativamente le trasformazioni, chiamano i client di servizio e restituiscono `ToolResult`
 
@@ -23,7 +23,7 @@ Dichiarati tramite `Toolset("name", func() { ... })`; gli strumenti possono `Bin
 Definiti nel blocco `Export` di un agente e facoltativamente `Use`dagli altri agenti.
 
 - La proprietà è ancora del servizio; l'agente è l'implementazione
-- Codegen emette aiutanti lato fornitore `agenttools/<toolset>` con `NewRegistration` e costruttori di chiamate digitate
+- Codegen emette pacchetti di export lato fornitore sotto `gen/<service>/agents/<agent>/exports/<export>` con `NewRegistration` e costruttori di chiamate tipizzati
 - Gli helper lato consumatore negli agenti che `Use` il toolset esportato delegano agli helper del fornitore mantenendo i metadati di routing centralizzati
 - L'esecuzione avviene in linea; i payload sono passati come JSON canonico e decodificati solo al limite, se necessario per i prompt
 
@@ -183,6 +183,13 @@ func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
 ```
 
 #### Implementing Bounded Tools
+
+Bounded tools are a hard contract: services implement truncation and populate bounds metadata on every successful code path.
+
+**Contract:**
+
+- `Returned` and `Truncated` must always be set.
+- `Returned == 0` means “empty result” → `Total == 0` and `Truncated == false`.
 
 Services implement truncation and populate bounds metadata:
 
@@ -508,7 +515,7 @@ When a tool is bound to a Goa method via `BindTo`, code generation analyzes the 
 - `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
 - `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
 
-Transforms are emitted under `gen/<service>/agents/<agent>/specs/<toolset>/transforms.go` and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
+Transforms are emitted under the toolset owner package (for example `gen/<service>/toolsets/<toolset>/transforms.go`) and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
 
 ---
 
@@ -517,14 +524,14 @@ Transforms are emitted under `gen/<service>/agents/<agent>/specs/<toolset>/trans
 Each toolset defines typed tool identifiers (`tools.Ident`) for all generated tools—including non-exported toolsets. Prefer these constants over ad-hoc strings:
 
 ```go
-import chattools "example.com/assistant/gen/orchestrator/agents/chat/agenttools/search"
+import searchspecs "example.com/assistant/gen/orchestrator/toolsets/search"
 
 // Usare una costante generata invece di stringhe/cast ad hoc
-spec, _ := rt.ToolSpec(chattools.Search)
-schemas, _ := rt.ToolSchema(chattools.Search)
+spec, _ := rt.ToolSpec(searchspecs.Search)
+schemas, _ := rt.ToolSchema(searchspecs.Search)
 ```
 
-For exported toolsets (agent-as-tool), Goa-AI also generates **agenttools** packages with:
+For exported toolsets (agent-as-tool), Goa-AI generates export packages under `gen/<service>/agents/<agent>/exports/<export>` with:
 - Typed tool IDs
 - Alias payload/result types
 - Codecs

@@ -14,7 +14,7 @@ aliases:
 
 `Toolset("name", func() { ... })` で宣言します。ツールは Goa サービスメソッドに `BindTo` でき、またはカスタムエクゼキュータで実装できます。
 
-- `gen/<service>/tools/<toolset>/` の配下に、ツールセット単位の specs / types / codecs が生成されます
+- `gen/<service>/toolsets/<toolset>/` の配下に、ツールセット単位の specs / types / codecs が生成されます
 - これらのツールセットを `Use` するエージェントは、プロバイダ側 specs を import し、型付きのコールビルダとエクゼキュータ・ファクトリを取得します
 - アプリケーションは、（ランタイム提供のコーデック経由で）型付き引数をデコードし、必要に応じて transforms を使い、サービスクライアントを呼び出して `ToolResult` を返すエクゼキュータを登録します
 
@@ -23,7 +23,7 @@ aliases:
 エージェントの `Export` ブロックで定義し、必要に応じて他のエージェントが `Use` できます。
 
 - 所有権はあくまでサービス側にあり、エージェントが実装になります
-- プロバイダ側には `agenttools/<toolset>` のヘルパが生成され、`NewRegistration` と型付きのコールビルダを提供します
+- プロバイダ側には `gen/<service>/agents/<agent>/exports/<export>` 配下に export パッケージが生成され、`NewRegistration` と型付きのコールビルダを提供します
 - エクスポートされたツールセットを `Use` するコンシューマ側のヘルパは、ルーティング用メタデータを一元化したままプロバイダ側ヘルパへ委譲します
 - 実行はインラインで行われます。ペイロードは正規（canonical）の JSON として渡され、プロンプト作成のために必要な場合のみ境界でデコードされます
 
@@ -150,7 +150,7 @@ Tool("list_devices", "List devices with pagination", func() {
         Attribute("total", Int, "Total matching devices")
         Attribute("truncated", Boolean, "Results were capped")
         Attribute("refinement_hint", String, "How to narrow results")
-        Required("devices", "returned")
+        Required("devices", "returned", "truncated")
     })
     BoundedResult()
     BindTo("DeviceService", "ListDevices")
@@ -514,7 +514,7 @@ Goa-AI は、サービス連携のツール実行に **Temporal Activities** を
 - `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
 - `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
 
-Transforms は `gen/<service>/agents/<agent>/specs/<toolset>/transforms.go` に生成され、Goa の GoTransform を使って安全にフィールドをマッピングします。transform が生成されない場合は、エクゼキュータ側で明示的なマッパーを書いてください。
+Transforms はツールセットのオーナー・パッケージ（例: `gen/<service>/toolsets/<toolset>/transforms.go`）に生成され、Goa の GoTransform を使って安全にフィールドをマッピングします。transform が生成されない場合は、エクゼキュータ側で明示的なマッパーを書いてください。
 
 ---
 
@@ -523,11 +523,11 @@ Transforms は `gen/<service>/agents/<agent>/specs/<toolset>/transforms.go` に�
 各ツールセットは、生成されたすべてのツール（非エクスポートのツールセットを含む）に対して、型付きツール ID（`tools.Ident`）を定義します。アドホックな文字列ではなく、これらの定数を使ってください：
 
 ```go
-import chattools "example.com/assistant/gen/orchestrator/agents/chat/agenttools/search"
+import searchspecs "example.com/assistant/gen/orchestrator/toolsets/search"
 
 // Use a generated constant instead of ad-hoc strings/casts
-spec, _ := rt.ToolSpec(chattools.Search)
-schemas, _ := rt.ToolSchema(chattools.Search)
+spec, _ := rt.ToolSpec(searchspecs.Search)
+schemas, _ := rt.ToolSchema(searchspecs.Search)
 ```
 
 エクスポートされたツールセット（agent-as-tool）については、Goa-AI は **agenttools** パッケージも生成します：
@@ -877,3 +877,4 @@ type Artifact struct {
 - **[Agent Composition](./agent-composition.md)** - agent-as-tool パターンで複雑なシステムを構築する
 - **[MCP Integration](./mcp-integration.md)** - 外部ツールサーバに接続する
 - **[Runtime](./runtime.md)** - ツール実行フローを理解する
+

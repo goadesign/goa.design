@@ -14,7 +14,7 @@ MCP integration follows this workflow:
 
 1. **Service design**: Declare the MCP server via Goa's MCP DSL
 2. **Agent design**: Reference that suite with `Use(MCPToolset("service", "suite"))`
-3. **Code generation**: Produces both the classic MCP JSON-RPC server (optional) and the runtime registration helper, plus tool codecs/specs mirrored into the agent package
+3. **Code generation**: Produces the MCP JSON-RPC server (when Goa-backed) plus runtime registration helpers and toolset-owned specs/codecs for the suite
 4. **Runtime wiring**: Instantiate an `mcpruntime.Caller` transport (HTTP/SSE/stdio). Generated helpers register the toolset and adapt JSON-RPC errors into `planner.RetryHint` values
 5. **Planner execution**: Planners simply enqueue tool calls with canonical JSON payloads; the runtime forwards them to the MCP caller, persists results via hooks, and surfaces structured telemetry
 
