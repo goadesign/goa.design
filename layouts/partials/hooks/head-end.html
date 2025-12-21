@@ -1,3 +1,15 @@
+{{- $sha := getenv "GIT_SHA" -}}
+{{- if not $sha -}}
+  {{- with .Site.GitInfo -}}
+    {{- $sha = .Hash -}}
+  {{- end -}}
+{{- end -}}
+{{- if $sha -}}
+  {{- $short := slicestr $sha 0 12 -}}
+  <meta name="goa.design.git_sha" content="{{ $sha }}">
+  <meta name="goa.design.git_short_sha" content="{{ $short }}">
+{{- end -}}
+
 {{/* Theme initialization - runs early to prevent flash of wrong theme */}}
 <script>
 (function() {
