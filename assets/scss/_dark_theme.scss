@@ -396,21 +396,37 @@ body[data-theme="dark"] {
     color: var(--color-text);
   }
   
-  // Navbar - Darker with subtle glow
+  // Navbar - Dark with subtle gradient
   .td-navbar {
-    background: var(--navbar-bg) !important;
-    border-bottom: 1px solid rgba(91, 192, 235, 0.2);
+    background: linear-gradient(
+      135deg,
+      #1a2530 0%,
+      #181c28 40%,
+      #1a1a24 70%,
+      #1c1820 100%
+    ) !important;
+    border-bottom: 1px solid rgba(91, 192, 235, 0.15);
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.3),
       0 0 40px rgba(91, 192, 235, 0.05);
+    
+    // Make container transparent so navbar gradient shows through
+    .container,
+    .container-fluid {
+      background: transparent !important;
+    }
     
     &::after {
       // Keep the vibrant gradient bar but add glow
       box-shadow: 0 2px 15px rgba(91, 192, 235, 0.3);
     }
     
-    .navbar-brand::before {
-      background: rgba(91, 192, 235, 0.25);
+    .navbar-brand {
+      // Logo has its own gradient background - enhance hover glow in dark mode
+      &:hover svg,
+      &:hover img {
+        box-shadow: 0 4px 16px rgba(91, 192, 235, 0.4);
+      }
     }
     
     // Dark mode search - collapsed state (circular button)
