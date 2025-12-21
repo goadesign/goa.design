@@ -12,7 +12,7 @@
       {{/* Center: Copyright */}}
       <div class="col td-footer__center">
         <span>&copy; {{ now.Year }} {{ .Site.Params.copyright | default .Site.Title }}</span>
-        {{- $sha := getenv "GIT_SHA" -}}
+        {{- $sha := getenv "HUGO_GIT_SHA" -}}
         {{- if not $sha -}}
           {{- with .Site.GitInfo -}}
             {{- $sha = .Hash -}}

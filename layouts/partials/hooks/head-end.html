@@ -1,4 +1,4 @@
-{{- $sha := getenv "GIT_SHA" -}}
+{{- $sha := getenv "HUGO_GIT_SHA" -}}
 {{- if not $sha -}}
   {{- with .Site.GitInfo -}}
     {{- $sha = .Hash -}}
