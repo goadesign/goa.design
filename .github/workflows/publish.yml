@@ -56,6 +56,8 @@ jobs:
 
       - name: Build
         run: hugo --minify
+        env:
+          HUGO_GIT_SHA: ${{ github.sha }}
 
       - name: Auth
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
