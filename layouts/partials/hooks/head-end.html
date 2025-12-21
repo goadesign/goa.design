@@ -1,6 +1,6 @@
 {{- $sha := getenv "HUGO_GIT_SHA" -}}
-{{- if $sha -}}
-  {{- $short := slicestr $sha 0 12 -}}
+{{- if and $sha (ge (len $sha) 12) -}}
+  {{- $short := substr $sha 0 12 -}}
   <meta name="goa.design.git_sha" content="{{ $sha }}">
   <meta name="goa.design.git_short_sha" content="{{ $short }}">
 {{- end -}}
