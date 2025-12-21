@@ -13,8 +13,8 @@
       <div class="col td-footer__center">
         <span>&copy; {{ now.Year }} {{ .Site.Params.copyright | default .Site.Title }}</span>
         {{- $sha := getenv "HUGO_GIT_SHA" -}}
-        {{- if $sha -}}
-          {{- $short := slicestr $sha 0 12 -}}
+        {{- if and $sha (ge (len $sha) 12) -}}
+          {{- $short := substr $sha 0 12 -}}
           <span class="td-footer__build">
             &middot;
             <a href="https://github.com/goadesign/goa.design/commit/{{ $sha }}" target="_blank" rel="noopener" title="{{ $sha }}">Build {{ $short }}</a>
