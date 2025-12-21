@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Regenerate all diagrams from the model DSL.
+# Run this locally before committing changes to diagrams/.
+set -euo pipefail
+
+cd "$(dirname "$0")/../diagrams"
+
+if ! command -v mdl &>/dev/null; then
+  echo "mdl not found. Install with: go install goa.design/model/cmd/mdl@latest" >&2
+  exit 1
+fi
+
+echo "Regenerating diagrams..."
+mdl svg goa.design/docs/diagrams -dir ../static/images/diagrams -all -compact -direction RIGHT -timeout 60s
+echo "Done. Diagrams written to static/images/diagrams/"
+

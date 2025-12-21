@@ -13,11 +13,6 @@
       <div class="col td-footer__center">
         <span>&copy; {{ now.Year }} {{ .Site.Params.copyright | default .Site.Title }}</span>
         {{- $sha := getenv "HUGO_GIT_SHA" -}}
-        {{- if not $sha -}}
-          {{- with .Site.GitInfo -}}
-            {{- $sha = .Hash -}}
-          {{- end -}}
-        {{- end -}}
         {{- if $sha -}}
           {{- $short := slicestr $sha 0 12 -}}
           <span class="td-footer__build">

@@ -1,9 +1,4 @@
 {{- $sha := getenv "HUGO_GIT_SHA" -}}
-{{- if not $sha -}}
-  {{- with .Site.GitInfo -}}
-    {{- $sha = .Hash -}}
-  {{- end -}}
-{{- end -}}
 {{- if $sha -}}
   {{- $short := slicestr $sha 0 12 -}}
   <meta name="goa.design.git_sha" content="{{ $sha }}">
