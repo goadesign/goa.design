@@ -12,6 +12,19 @@
       {{/* Center: Copyright */}}
       <div class="col td-footer__center">
         <span>&copy; {{ now.Year }} {{ .Site.Params.copyright | default .Site.Title }}</span>
+        {{- $sha := getenv "GIT_SHA" -}}
+        {{- if not $sha -}}
+          {{- with .Site.GitInfo -}}
+            {{- $sha = .Hash -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if $sha -}}
+          {{- $short := slicestr $sha 0 12 -}}
+          <span class="td-footer__build">
+            &middot;
+            <a href="https://github.com/goadesign/goa.design/commit/{{ $sha }}" target="_blank" rel="noopener" title="{{ $sha }}">Build {{ $short }}</a>
+          </span>
+        {{- end -}}
       </div>
       
       {{/* Right: Social icons */}}

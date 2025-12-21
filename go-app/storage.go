@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -15,6 +14,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/appengine/v2"
 	"google.golang.org/appengine/v2/memcache"
 	"google.golang.org/appengine/v2/urlfetch"
 )
@@ -108,7 +108,7 @@ func (s *Storage) OpenFile(ctx context.Context, bucket, name string) (*Object, e
 // Objects fetched from the network are cached before returning
 // from this function.
 func (s *Storage) Open(ctx context.Context, bucket, name string) (*Object, error) {
-	key := s.CacheKey(bucket, name)
+	key := s.CacheKey(ctx, bucket, name)
 	o, err := getCache(ctx, key)
 	if err != nil {
 		u := fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, name))
@@ -120,7 +120,7 @@ func (s *Storage) Open(ctx context.Context, bucket, name string) (*Object, error
 // Stat is similar to Read except the returned Object.Body may be nil.
 // In the case where Body is not nil, calling Body.Close() is not required.
 func (s *Storage) Stat(ctx context.Context, bucket, name string) (*Object, error) {
-	if o, err := getCache(ctx, s.CacheKey(bucket, name)); err == nil {
+	if o, err := getCache(ctx, s.CacheKey(ctx, bucket, name)); err == nil {
 		return o, nil
 	}
 	u := fmt.Sprintf("%s/%s", s.Base, path.Join(bucket, name))
@@ -152,13 +152,15 @@ func (s *Storage) Stat(ctx context.Context, bucket, name string) (*Object, error
 // PurgeCache removes cached object from memcache.
 // It does not return an error in the case of cache miss.
 func (s *Storage) PurgeCache(ctx context.Context, bucket, name string) error {
-	return purgeCache(ctx, s.CacheKey(bucket, name))
+	return purgeCache(ctx, s.CacheKey(ctx, bucket, name))
 }
 
 // CacheKey returns a key to cache an object under, computed from
 // s.Base, bucket and then name.
-func (s *Storage) CacheKey(bucket, name string) string {
-	return fmt.Sprintf("%s/%s/%s", os.Getenv("CURRENT_VERSION_ID"), s.Base, path.Join(bucket, name))
+func (s *Storage) CacheKey(ctx context.Context, bucket, name string) string {
+	// VersionID is stable for the lifetime of a deployed version and changes on each deployment.
+	// It ensures cached objects do not bleed across versions.
+	return fmt.Sprintf("%s/%s/%s", appengine.VersionID(ctx), s.Base, path.Join(bucket, name))
 }
 
 // fetch retrieves object from the given url.

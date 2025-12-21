@@ -1,5 +1,7 @@
 runtime: go123
 app_engine_apis: true
+env_variables:
+  FLUSH_MEMCACHE_ON_DEPLOY: "1"
 handlers:
   - url: /.*
     script: auto
