@@ -365,6 +365,22 @@ In fase di runtime, la conferma è implementata come un protocollo di attesa/dec
   })
   ```
 
+### Eventi di autorizzazione dello strumento
+
+Quando viene fornita una decisione, il runtime emette un evento di autorizzazione di primo ordine:
+
+- **Hook event**: `hooks.ToolAuthorization`
+- **Stream event type**: `tool_authorization`
+
+Questo evento è il record canonico “chi/quando/cosa” per una chiamata tool confermata:
+
+- `tool_name`, `tool_call_id`
+- `approved` (true/false)
+- `summary` (riepilogo deterministico renderizzato dal runtime)
+- `approved_by` (copiato da `interrupt.ConfirmationDecision.RequestedBy`, identificatore di principal stabile)
+
+L’evento viene emesso immediatamente dopo la ricezione della decisione (prima dell’esecuzione del tool se approvato e prima della sintesi del risultato negato se rifiutato).
+
 Note:
 
 - I consumatori devono trattare la conferma come un protocollo di runtime:
