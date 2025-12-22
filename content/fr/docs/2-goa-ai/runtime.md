@@ -365,6 +365,22 @@ Lors de l'exécution, la confirmation est mise en œuvre sous la forme d'un prot
   })
   ```
 
+### Événements d’autorisation d’outil
+
+Lorsqu’une décision est fournie, le runtime émet un événement d’autorisation de premier ordre :
+
+- **Hook event** : `hooks.ToolAuthorization`
+- **Stream event type** : `tool_authorization`
+
+Cet événement est l’enregistrement canonique “qui/quand/quoi” pour un appel d’outil confirmé :
+
+- `tool_name`, `tool_call_id`
+- `approved` (true/false)
+- `summary` (résumé déterministe rendu par le runtime)
+- `approved_by` (copié depuis `interrupt.ConfirmationDecision.RequestedBy`, identifiant de principal stable)
+
+L’événement est émis immédiatement après réception de la décision (avant l’exécution de l’outil si approuvé, et avant la synthèse du résultat refusé si refusé).
+
 Notes :
 
 - Les consommateurs doivent traiter la confirmation comme un protocole d'exécution :

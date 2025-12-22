@@ -365,6 +365,22 @@ En tiempo de ejecución, la confirmación se implementa como un protocolo await/
   })
   ```
 
+### Eventos de autorización de herramientas
+
+Cuando se proporciona una decisión, el runtime emite un evento de autorización de primer orden:
+
+- **Hook event**: `hooks.ToolAuthorization`
+- **Stream event type**: `tool_authorization`
+
+Este evento es el registro canónico “quién/cuándo/qué” para una llamada de herramienta confirmada:
+
+- `tool_name`, `tool_call_id`
+- `approved` (true/false)
+- `summary` (resumen determinista renderizado por el runtime)
+- `approved_by` (copiado de `interrupt.ConfirmationDecision.RequestedBy`, identificador de principal estable)
+
+El evento se emite inmediatamente después de recibir la decisión (antes de ejecutar la herramienta si se aprueba y antes de sintetizar el resultado denegado si se rechaza).
+
 Notas:
 
 - Los consumidores deben tratar la confirmación como un protocolo en tiempo de ejecución:

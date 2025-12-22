@@ -364,6 +364,22 @@ err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
 })
 ```
 
+### ツール承認イベント
+
+決定が提供されると、ランタイムは第一級の承認イベントを発行します:
+
+- **Hook event**: `hooks.ToolAuthorization`
+- **Stream event type**: `tool_authorization`
+
+このイベントは、確認が必要なツール呼び出しに対する “who/when/what” の正規レコードです:
+
+- `tool_name`, `tool_call_id`
+- `approved` (true/false)
+- `summary` (ランタイムが決定論的にレンダリングする要約)
+- `approved_by` (`interrupt.ConfirmationDecision.RequestedBy` からコピーされる安定 principal ID)
+
+イベントは決定受信直後に発行されます（承認時はツール実行前、拒否時は拒否結果の合成前）。
+
 注意:
 
 - コンシューマは確認を「ランタイムプロトコル」として扱うべきです。

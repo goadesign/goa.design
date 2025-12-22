@@ -365,6 +365,22 @@ At runtime, confirmation is implemented as a dedicated await/decision protocol:
   })
   ```
 
+### Tool authorization events
+
+When a decision is provided, the runtime emits a first-class authorization event:
+
+- **Hook event**: `hooks.ToolAuthorization`
+- **Stream event type**: `tool_authorization`
+
+This event is the canonical “who/when/what” record for a confirmed tool call:
+
+- `tool_name`, `tool_call_id`
+- `approved` (true/false)
+- `summary` (deterministic runtime-rendered summary)
+- `approved_by` (copied from `interrupt.ConfirmationDecision.RequestedBy`, intended to be a stable principal identifier)
+
+The event is emitted immediately after the decision is received (before tool execution when approved, and before the denied tool result is synthesized when denied).
+
 Notes:
 
 - Consumers should treat confirmation as a runtime protocol:
