@@ -15,8 +15,11 @@ Toolsets are collections of tools that agents can use. Goa-AI supports several t
 Declared via `Toolset("name", func() { ... })`; tools may `BindTo` Goa service methods or be implemented by custom executors.
 
 - Codegen emits per-toolset specs/types/codecs/transforms under `gen/<service>/toolsets/<toolset>/`
+- When using the Internal Tool Registry, codegen also emits `gen/<service>/toolsets/<toolset>/provider.go` for registry-routed, service-side execution
 - Agents that `Use` these toolsets import the provider specs and get typed call builders and executor factories
 - Applications register executors that decode typed args (via runtime-provided codecs), optionally use transforms, call service clients, and return `ToolResult`
+
+If you deploy the Internal Tool Registry for cross-process invocation, the owning service runs a provider loop that subscribes to `toolset:<toolsetID>:requests` and publishes results to `result:<toolUseID>`. See the [Registry docs]({{< ref "/docs/2-goa-ai/registry.md" >}}) for the provider wiring snippet.
 
 ### Agent-Implemented Toolsets (Agent-as-Tool)
 

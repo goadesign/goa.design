@@ -127,6 +127,45 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 この設計により、プロバイダーが非健全な場合はタイムアウト待ちではなく、呼び出しが即時に失敗します。
 
+## プロバイダー統合（サービス側）
+
+レジストリによるルーティングは半分に過ぎません。**ツールセットの所有サービス側プロセスで、ツール実行ループ（プロバイダーループ）を動かす必要があります**。
+
+サービス所有でメソッド連携のツールセット（`BindTo(...)` で宣言されたツール）の場合、コード生成は次の provider アダプタを出力します：
+
+- `gen/<service>/toolsets/<toolset>/provider.go`
+
+生成された provider は次を行います：
+
+- 生成済み payload codec を使って、受信した payload JSON をデコード
+- 生成済み transforms を使って、Goa メソッド用の payload を構築
+- 連携先のサービスメソッドを呼び出し
+- 生成済み result codec を使って、結果 JSON（および任意の artifacts/sidecars）をエンコード
+
+レジストリのゲートウェイからの呼び出しを処理するには、生成された provider をランタイムの provider ループに接続します：
+
+```go
+handler := toolsetpkg.NewProvider(serviceImpl)
+go func() {
+    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+        Pong: func(ctx context.Context, pingID string) error {
+            return registryClient.Pong(ctx, &registry.PongPayload{
+                PingID:  pingID,
+                Toolset: toolsetID,
+            })
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+}()
+```
+
+ストリーム ID は決定的です：
+
+- 呼び出し: `toolset:<toolsetID>:requests`
+- 結果: `result:<toolUseID>`
+
 ## 設定
 
 ### Config 構造体

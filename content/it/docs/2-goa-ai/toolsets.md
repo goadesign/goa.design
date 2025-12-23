@@ -15,8 +15,11 @@ I set di strumenti sono raccolte di strumenti che gli agenti possono utilizzare.
 Dichiarati tramite `Toolset("name", func() { ... })`; gli strumenti possono `BindTo` metodi del servizio Goa o essere implementati da esecutori personalizzati.
 
 - Codegen emette specifiche/tipi/codici per gli strumenti sotto `gen/<service>/toolsets/<toolset>/`
+- Quando si usa il Registro interno degli strumenti, codegen emette anche `gen/<service>/toolsets/<toolset>/provider.go` per l'esecuzione lato servizio instradata dal registro
 - Gli agenti che `Use` questi set di strumenti importano le specifiche del provider e ottengono costruttori di chiamate tipizzate e fabbriche di esecutori
 - Le applicazioni registrano gli esecutori che decodificano gli argomenti tipizzati (tramite i codec forniti dal runtime), usano facoltativamente le trasformazioni, chiamano i client di servizio e restituiscono `ToolResult`
+
+Se distribuisci il Registro interno degli strumenti per l'invocazione tra processi, il servizio proprietario esegue un loop provider che si sottoscrive a `toolset:<toolsetID>:requests` e pubblica i risultati su `result:<toolUseID>`. Vedi la documentazione del [Registro]({{< ref "/docs/2-goa-ai/registry.md" >}}) per lo snippet di cablaggio del provider.
 
 ### Set di strumenti implementati dagli agenti (Agent-as-Tool)
 

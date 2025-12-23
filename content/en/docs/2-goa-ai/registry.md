@@ -127,6 +127,45 @@ When `CallTool` is invoked, the registry performs these steps in sequence:
 
 This design ensures that tool calls fail fast when providers are unhealthy, rather than waiting for timeouts.
 
+## Provider Integration (Service-Side)
+
+Registry routing is only half of the story: **providers must run a tool execution loop** in the toolset-owning service process.
+
+For service-owned, method-backed toolsets (tools declared with `BindTo(...)`), code generation emits a provider adapter at:
+
+- `gen/<service>/toolsets/<toolset>/provider.go`
+
+The generated provider:
+
+- Decodes the incoming tool payload JSON using the generated payload codec
+- Builds the Goa method payload using generated transforms
+- Calls the bound service method
+- Encodes the tool result JSON (and optional artifacts/sidecars) using the generated result codec
+
+To serve tool calls from the registry gateway, wire the generated provider into the runtime provider loop:
+
+```go
+handler := toolsetpkg.NewProvider(serviceImpl)
+go func() {
+    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+        Pong: func(ctx context.Context, pingID string) error {
+            return registryClient.Pong(ctx, &registry.PongPayload{
+                PingID:  pingID,
+                Toolset: toolsetID,
+            })
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+}()
+```
+
+Stream IDs are deterministic:
+
+- Tool calls: `toolset:<toolsetID>:requests`
+- Results: `result:<toolUseID>`
+
 ## Configuration
 
 ### Config Struct

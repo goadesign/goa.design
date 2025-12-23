@@ -127,6 +127,45 @@ Cuando se invoca `CallTool`, el registro realiza estos pasos en secuencia:
 
 Este diseño asegura que las llamadas a la herramienta fallen rápidamente cuando los proveedores no son saludables, en lugar de esperar a que expiren los tiempos de espera.
 
+## Integración del proveedor (lado del servicio)
+
+El enrutamiento del registro es solo la mitad de la historia: los **proveedores deben ejecutar un bucle de ejecución de herramientas** dentro del proceso del servicio propietario del toolset.
+
+Para toolsets propios del servicio y respaldados por métodos (herramientas declaradas con `BindTo(...)`), la generación de código emite un adaptador de proveedor en:
+
+- `gen/<service>/toolsets/<toolset>/provider.go`
+
+El proveedor generado:
+
+- Decodifica el JSON del payload entrante usando el códec de payload generado
+- Construye el payload del método Goa usando las transformaciones generadas
+- Llama al método del servicio enlazado
+- Codifica el JSON del resultado (y los artifacts/sidecars opcionales) usando el códec de resultado generado
+
+Para servir llamadas desde el gateway del registro, conecta el proveedor generado al bucle de proveedor del runtime:
+
+```go
+handler := toolsetpkg.NewProvider(serviceImpl)
+go func() {
+    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+        Pong: func(ctx context.Context, pingID string) error {
+            return registryClient.Pong(ctx, &registry.PongPayload{
+                PingID:  pingID,
+                Toolset: toolsetID,
+            })
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+}()
+```
+
+Los IDs de stream son deterministas:
+
+- Llamadas: `toolset:<toolsetID>:requests`
+- Resultados: `result:<toolUseID>`
+
 ## Configuración
 
 ### Config Struct

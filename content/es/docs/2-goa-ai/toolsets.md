@@ -15,8 +15,11 @@ Los conjuntos de herramientas son colecciones de herramientas que los agentes pu
 Declaradas mediante `Toolset("name", func() { ... })`; las herramientas pueden `BindTo` métodos de servicio Goa o ser implementadas por ejecutores personalizados.
 
 - Codegen emite especificaciones/tipos/codecs por herramienta en `gen/<service>/toolsets/<toolset>/`
+- Cuando se usa el Registro interno de herramientas, codegen también emite `gen/<service>/toolsets/<toolset>/provider.go` para la ejecución del lado del servicio enrutada por el registro
 - Los agentes que `Use` estos conjuntos de herramientas importan las especificaciones del proveedor y obtienen constructores de llamadas tipadas y fábricas de ejecutores
 - Las aplicaciones registran ejecutores que decodifican argumentos tipados (a través de códecs proporcionados en tiempo de ejecución), opcionalmente utilizan transformaciones, llaman a clientes de servicios y devuelven `ToolResult`
+
+Si despliegas el Registro interno de herramientas para invocación entre procesos, el servicio propietario ejecuta un bucle de proveedor que se suscribe a `toolset:<toolsetID>:requests` y publica resultados en `result:<toolUseID>`. Ver los [docs del Registro]({{< ref "/docs/2-goa-ai/registry.md" >}}) para el snippet de cableado del proveedor.
 
 ### Conjuntos de herramientas implementadas en agentes (Agent-as-Tool)
 
