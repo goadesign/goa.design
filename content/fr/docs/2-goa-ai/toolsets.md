@@ -15,8 +15,11 @@ Les ensembles d'outils sont des collections d'outils que les agents peuvent util
 Déclarés via `Toolset("name", func() { ... })` ; les outils peuvent `BindTo` être des méthodes de service Goa ou être mis en œuvre par des exécuteurs personnalisés.
 
 - Codegen émet des spécifications/types/codecs par outil sous `gen/<service>/toolsets/<toolset>/`
+- Lorsqu'on utilise le registre d'outils interne, codegen émet aussi `gen/<service>/toolsets/<toolset>/provider.go` pour l'exécution côté service routée par le registre
 - Les agents qui `Use` ces ensembles d'outils importent les spécifications du fournisseur et obtiennent des constructeurs d'appels typés et des usines d'exécution
 - Les applications enregistrent des exécuteurs qui décodent les arguments typés (via des codecs fournis par le moteur d'exécution), utilisent éventuellement des transformations, appellent des clients de service et renvoient des `ToolResult`
+
+Si vous déployez le registre d'outils interne pour l'invocation inter-processus, le service propriétaire exécute une boucle fournisseur qui s'abonne à `toolset:<toolsetID>:requests` et publie les résultats sur `result:<toolUseID>`. Voir la documentation du [Registre]({{< ref "/docs/2-goa-ai/registry.md" >}}) pour l'extrait de câblage du fournisseur.
 
 ### Ensembles d'outils mis en œuvre par l'agent (Agent-as-Tool)
 

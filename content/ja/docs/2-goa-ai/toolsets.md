@@ -15,8 +15,11 @@ aliases:
 `Toolset("name", func() { ... })` で宣言します。ツールは Goa サービスメソッドに `BindTo` でき、またはカスタムエクゼキュータで実装できます。
 
 - `gen/<service>/toolsets/<toolset>/` の配下に、ツールセット単位の specs / types / codecs が生成されます
+- 内部ツールレジストリを使用する場合、レジストリ経由のサービス側実行のために `gen/<service>/toolsets/<toolset>/provider.go` も生成されます
 - これらのツールセットを `Use` するエージェントは、プロバイダ側 specs を import し、型付きのコールビルダとエクゼキュータ・ファクトリを取得します
 - アプリケーションは、（ランタイム提供のコーデック経由で）型付き引数をデコードし、必要に応じて transforms を使い、サービスクライアントを呼び出して `ToolResult` を返すエクゼキュータを登録します
+
+プロセス間呼び出しのために内部ツールレジストリをデプロイする場合、所有サービスは `toolset:<toolsetID>:requests` に subscribe して `result:<toolUseID>` に publish する provider ループを実行します。provider の接続スニペットは [レジストリのドキュメント]({{< ref "/docs/2-goa-ai/registry.md" >}}) を参照してください。
 
 ### エージェント実装のツールセット（Agent-as-Tool）
 

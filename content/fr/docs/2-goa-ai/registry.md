@@ -127,6 +127,45 @@ Lorsque `CallTool` est invoqué, le registre effectue les étapes suivantes dans
 
 Cette conception garantit que les appels d'outils échouent rapidement lorsque les fournisseurs ne sont pas en bonne santé, plutôt que d'attendre des délais d'attente.
 
+## Intégration du fournisseur (côté service)
+
+Le routage via le registre n'est que la moitié de l'histoire : les **fournisseurs doivent exécuter une boucle d'exécution des outils** dans le processus du service propriétaire du toolset.
+
+Pour les toolsets appartenant à un service et soutenus par une méthode (outils déclarés avec `BindTo(...)`), la génération de code émet un adaptateur de fournisseur à l'emplacement :
+
+- `gen/<service>/toolsets/<toolset>/provider.go`
+
+Le fournisseur généré :
+
+- Décode le JSON du payload entrant à l'aide du codec de payload généré
+- Construit le payload de la méthode Goa à l'aide des transformations générées
+- Appelle la méthode de service liée
+- Encode le JSON du résultat (et les artifacts/sidecars optionnels) à l'aide du codec de résultat généré
+
+Pour servir les appels depuis la passerelle du registre, connectez le fournisseur généré à la boucle fournisseur du runtime :
+
+```go
+handler := toolsetpkg.NewProvider(serviceImpl)
+go func() {
+    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+        Pong: func(ctx context.Context, pingID string) error {
+            return registryClient.Pong(ctx, &registry.PongPayload{
+                PingID:  pingID,
+                Toolset: toolsetID,
+            })
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+}()
+```
+
+Les IDs de stream sont déterministes :
+
+- Appels : `toolset:<toolsetID>:requests`
+- Résultats : `result:<toolUseID>`
+
 ## Configuration
 
 ### Config
