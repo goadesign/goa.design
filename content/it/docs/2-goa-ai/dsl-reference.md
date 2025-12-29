@@ -30,7 +30,9 @@ Questo documento fornisce un riferimento completo alle funzioni DSL di Goa-AI. U
 | `Args` | Tool | Definisce lo schema dei parametri di input |
 | `Return` | Tool | Definisce lo schema dei risultati di output |
 | `Artifact` | Tool | Definisce lo schema dei dati sidecar (non inviati al modello) |
-| `BoundedResult` | Strumento | Contrassegna il risultato come vista delimitata |
+| `BoundedResult` | Strumento | Contrassegna il risultato come vista delimitata; applica la forma canonica dei campi di bounds; un sotto-DSL opzionale può dichiarare i campi cursor |
+| `Cursor` | BoundedResult | Dichiara quale campo del payload contiene il cursor di paginazione (opzionale) |
+| `NextCursor` | BoundedResult | Dichiara quale campo del risultato contiene il cursor della pagina successiva (opzionale) |
 | `Tags` | Tool, Toolset | Allega etichette di metadati |
 | `BindTo` | Tool | Lega lo strumento al metodo di servizio |
 | `Inject` | Tool | Contrassegna i campi come iniettati a tempo di esecuzione |
@@ -610,7 +612,9 @@ func handleToolResult(result *planner.ToolResult) {
 
 **Contesto**: All'interno di `Tool`
 
-`BoundedResult` non modifica di per sé lo schema dello strumento; annota lo strumento in modo che codegen e i servizi possano allegare e applicare i limiti in modo uniforme.
+`BoundedResult` impone una forma canonica per i risultati delimitati. Gli strumenti dichiarano
+o tutti i campi standard (`returned`, `total`, `truncated`, `refinement_hint`), oppure nessuno e
+lasciando che `BoundedResult()` li aggiunga. Le dichiarazioni parziali vengono rifiutate.
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -637,7 +641,8 @@ Tool("list_devices", "List devices with pagination", func() {
 
 **Il contratto agent.Bounds:**
 
-Quando uno strumento è contrassegnato con `BoundedResult()`, il runtime si aspetta che il risultato dello strumento implementi l'interfaccia `agent.BoundedResult` o includa campi che possono essere mappati su `agent.Bounds`:
+Quando uno strumento è contrassegnato con `BoundedResult()`, i tipi di risultato generati implementano
+`agent.BoundedResult` tramite `ResultBounds()`, e il runtime deriva `planner.ToolResult.Bounds` da questo metodo:
 
 ```go
 // agent.Bounds describes how a tool result has been bounded

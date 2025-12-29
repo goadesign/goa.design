@@ -162,8 +162,7 @@ Tool("list_devices", "Listar dispositivos con paginación", func() {
 When a tool is marked with `BoundedResult()`:
 
 - The generated tool spec includes `BoundedResult: true`
-- The generated result alias type includes a `Bounds *agent.Bounds` field
-- Generated result types implement the `agent.BoundedResult` interface:
+- Generated result types implement the `agent.BoundedResult` interface via `ResultBounds()`:
 
 ```go
 // Implementación de la interfaz generada

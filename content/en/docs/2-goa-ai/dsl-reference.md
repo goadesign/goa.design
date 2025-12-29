@@ -30,7 +30,9 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Args` | Tool | Defines input parameter schema |
 | `Return` | Tool | Defines output result schema |
 | `Artifact` | Tool | Defines sidecar data schema (not sent to model) |
-| `BoundedResult` | Tool | Marks result as bounded view |
+| `BoundedResult` | Tool | Marks result as bounded view; enforces canonical bounds fields; optional sub-DSL can declare paging cursor fields |
+| `Cursor` | BoundedResult | Declares which payload field carries the paging cursor (optional) |
+| `NextCursor` | BoundedResult | Declares which result field carries the next-page cursor (optional) |
 | `Tags` | Tool, Toolset | Attaches metadata labels |
 | `BindTo` | Tool | Binds tool to service method |
 | `Inject` | Tool | Marks fields as runtime-injected |
@@ -610,7 +612,9 @@ func handleToolResult(result *planner.ToolResult) {
 
 **Context**: Inside `Tool`
 
-`BoundedResult` does not change the tool schema by itself; it annotates the tool so codegen and services can attach and enforce bounds in a uniform way.
+`BoundedResult` enforces a canonical bounded-result shape. Tools either declare the full set of
+standard bounds fields (`returned`, `total`, `truncated`, `refinement_hint`) or declare none and let
+`BoundedResult()` add them. Mixed/partial declarations are rejected.
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -637,7 +641,8 @@ Tool("list_devices", "List devices with pagination", func() {
 
 **The agent.Bounds Contract:**
 
-When a tool is marked with `BoundedResult()`, the runtime expects the tool's result to implement the `agent.BoundedResult` interface or include fields that can be mapped to `agent.Bounds`:
+When a tool is marked with `BoundedResult()`, generated result types implement `agent.BoundedResult`
+via `ResultBounds()`, and the runtime derives `planner.ToolResult.Bounds` from that method:
 
 ```go
 // agent.Bounds describes how a tool result has been bounded

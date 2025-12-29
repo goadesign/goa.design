@@ -610,7 +610,9 @@ func handleToolResult(result *planner.ToolResult) {
 
 **Contexto**: Dentro de `Tool`
 
-`BoundedResult` no cambia el esquema de la herramienta por sí mismo; anota la herramienta para que codegen y los servicios puedan adjuntar y aplicar límites de manera uniforme.
+`BoundedResult` aplica una forma canónica para resultados acotados. Las herramientas o bien declaran
+el conjunto completo de campos estándar (`returned`, `total`, `truncated`, `refinement_hint`), o no
+declaran ninguno y dejan que `BoundedResult()` los agregue. Las declaraciones parciales se rechazan.
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -637,7 +639,8 @@ Tool("list_devices", "List devices with pagination", func() {
 
 **El contrato agent.Bounds:**
 
-Cuando una herramienta está marcada con `BoundedResult()`, el tiempo de ejecución espera que el resultado de la herramienta implemente la interfaz `agent.BoundedResult` o incluya campos que puedan asignarse a `agent.Bounds`:
+Cuando una herramienta está marcada con `BoundedResult()`, los tipos de resultado generados implementan
+`agent.BoundedResult` mediante `ResultBounds()`, y el runtime deriva `planner.ToolResult.Bounds` a partir de ese método:
 
 ```go
 // agent.Bounds describes how a tool result has been bounded

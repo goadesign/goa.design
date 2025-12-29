@@ -30,7 +30,9 @@ aliases:
 | `Args` | Tool | 入力パラメータのスキーマを定義する |
 | `Return` | Tool | 出力結果のスキーマを定義する |
 | `Artifact` | Tool | サイドカーデータのスキーマを定義する（モデルには送らない） |
-| `BoundedResult` | Tool | 結果が「境界付きビュー」であることを示す |
+| `BoundedResult` | Tool | 結果を「境界付きビュー」としてマークし、bounds フィールドの標準形を適用する（任意で cursor 設定のサブ DSL を指定可能） |
+| `Cursor` | BoundedResult | ページング用 cursor を格納する payload フィールド名を指定する（任意） |
+| `NextCursor` | BoundedResult | 次ページ cursor を格納する result フィールド名を指定する（任意） |
 | `Tags` | Tool, Toolset | メタデータラベルを付与する |
 | `BindTo` | Tool | ツールをサービスメソッドにバインドする |
 | `Inject` | Tool | ランタイム注入フィールドを指定する |
