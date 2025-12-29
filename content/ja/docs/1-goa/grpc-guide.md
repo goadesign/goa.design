@@ -48,8 +48,8 @@ var _ = Service("calculator", func() {
     Description("The Calculator service performs arithmetic operations")
 
     GRPC(func() {
-        Metadata("package", "calculator.v1")
-        Metadata("go.package", "calculatorpb")
+        Meta("package", "calculator.v1")
+        Meta("go.package", "calculatorpb")
     })
 
     Method("add", func() {
@@ -88,10 +88,11 @@ Method("add", func() {
         Required("sum")
     })
 
+    Error("overflow", ErrorResult, "Integer overflow")
+
     GRPC(func() {
         Response(CodeOK)
-        Response("not_found", CodeNotFound)
-        Response("invalid_argument", CodeInvalidArgument)
+        Response("overflow", CodeOutOfRange)
     })
 })
 ```
@@ -425,7 +426,6 @@ func (s *users) CreateUser(ctx context.Context, p *users.CreateUserPayload) (*us
 package main
 
 import (
-    "context"
     "log"
     "net"
 
