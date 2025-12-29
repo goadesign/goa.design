@@ -165,8 +165,7 @@ Tool("list_devices", "List devices with pagination", func() {
 ツールを `BoundedResult()` でマークすると：
 
 - 生成されるツール仕様に `BoundedResult: true` が含まれます
-- 生成される結果エイリアス型に `Bounds *agent.Bounds` フィールドが追加されます
-- 生成された結果型が `agent.BoundedResult` インタフェースを実装します：
+- 生成された結果型が `ResultBounds()` を通じて `agent.BoundedResult` インタフェースを実装します：
 
 ```go
 // Generated interface implementation
