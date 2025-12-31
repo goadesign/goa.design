@@ -66,10 +66,17 @@ jobs:
           workload_identity_provider: 'projects/654303510937/locations/global/workloadIdentityPools/goadesign-deploy-pool/providers/goadesign-deploy-provider'
           service_account: 'goa-design-deploy@goa-design.iam.gserviceaccount.com'
 
-      - name: Deploy
+      - name: Deploy Static Content
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: public
           destination: goa.design
           parent: false
+
+      - name: Deploy App Engine
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: google-github-actions/deploy-appengine@v2
+        with:
+          project_id: goa-design
+          working_directory: go-app
