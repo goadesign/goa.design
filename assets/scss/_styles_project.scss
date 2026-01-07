@@ -843,25 +843,16 @@ body {
   --docs-center-offset: max(0px, calc((100vw - var(--docs-sidebar-left) - var(--docs-content-width) - var(--docs-gutter) - var(--docs-sidebar-right)) / 2));
 }
 
+// Base docs layout (mobile-first)
 body:not(.td-home) .td-main {
   padding: 0;
   margin-top: 0;
+  display: flex;
+  flex-direction: column;
 
-  // Left Sidebar - fixed positioning, centered with content
   .td-sidebar {
-    position: fixed;
-    top: 3rem;
-    left: var(--docs-center-offset);
-    height: calc(100vh - 3rem);
-    overflow-y: auto;
-    width: $docs-sidebar-left-width;
     font-size: $font-size-sm;
-    padding-top: 1.5rem !important;
-    padding-left: 1rem;
-    margin-top: 0;
-    border-right: 0;
     background: var(--sidebar-bg, #fff);
-    z-index: 100;
 
     .td-sidebar__search {
       display: none !important;
@@ -869,33 +860,62 @@ body:not(.td-home) .td-main {
 
     .td-sidebar-nav {
       padding-top: 0 !important;
-      padding-bottom: 2rem;
-      
+
       .tree-root {
         font-size: 1em !important;
         font-weight: normal !important;
         color: $color-gradient-start;
         border-color: $color-gradient-start;
-        padding: 1.25rem 0 0.5rem 0;
-        margin: 0 0 1em 0;
-        height: 2.5rem;
-        display: flex;
-        align-items: center;
       }
     }
   }
 
-  // Main Content Area with Breadcrumbs
   main,
   .td-main main,
   .container-fluid {
-    padding-top: 2rem;
-    max-width: $docs-content-max-width;
     width: 100%;
-    // Centered offset + left sidebar width
-    margin-left: calc(var(--docs-center-offset) + var(--docs-sidebar-left));
-    padding-left: 0.25rem !important;
-    padding-right: 0 !important;
+  }
+}
+
+// Desktop docs layout - fixed sidebar positioning
+@media (min-width: 769px) {
+  body:not(.td-home) .td-main {
+    display: block;
+
+    .td-sidebar {
+      position: fixed;
+      top: 3rem;
+      left: var(--docs-center-offset);
+      height: calc(100vh - 3rem);
+      overflow-y: auto;
+      width: $docs-sidebar-left-width;
+      padding-top: 1.5rem !important;
+      padding-left: 1rem;
+      margin-top: 0;
+      border-right: 0;
+      z-index: 100;
+
+      .td-sidebar-nav {
+        padding-bottom: 2rem;
+
+        .tree-root {
+          padding: 1.25rem 0 0.5rem 0;
+          margin: 0 0 1em 0;
+          height: 2.5rem;
+          display: flex;
+          align-items: center;
+        }
+      }
+    }
+
+    main,
+    .td-main main,
+    .container-fluid {
+      padding-top: 2rem;
+      max-width: $docs-content-max-width;
+      margin-left: calc(var(--docs-center-offset) + var(--docs-sidebar-left));
+      padding-left: 0.25rem !important;
+      padding-right: 0 !important;
 
     // Content Card styling
     .td-content {
@@ -1072,7 +1092,8 @@ body:not(.td-home) .td-main {
       font-size: $font-size-sm;
     }
   }
-}
+  }  // closes body:not(.td-home) .td-main
+}  // closes @media (min-width: 769px)
 
 .td-toc {
   #TableOfContents {
@@ -2981,37 +3002,30 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     }
   }
   
+  // Mobile docs layout - builds on mobile-first base styles
   body:not(.td-home) .td-main {
     margin-top: 1rem;
-    flex-direction: column;
-    
+
     .td-sidebar {
-      left: 0;
-      width: 100%;
-      max-height: none;
-      position: relative;
-      border-right: 0;
       border-bottom: 1px solid rgba($color-border, 0.2);
-      padding: 0.5rem 1rem !important;
-      
+      padding: 0.5rem 1rem;
+
       .td-sidebar-nav {
+        padding-bottom: 1rem;
+
         .tree-root {
           padding: 0.75rem 0;
           margin: 0;
           height: auto;
         }
-        
-        // Remove bottom padding on mobile since banner is hidden
-        padding-bottom: 1rem;
       }
     }
-    
+
     main,
     .td-main main,
     .container-fluid {
-      margin-left: 0;
-      padding: 0 !important;
-      
+      padding: 0;
+
       .td-content {
         margin: 0.5rem;
         padding: 1rem;
