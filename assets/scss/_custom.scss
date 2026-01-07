@@ -408,6 +408,14 @@
   }
 }
 
+// Mobile: show only the active section's child links to keep the sidebar compact.
+// The top-level sections remain visible so users can quickly switch sections.
+@media (max-width: 768px) {
+  .td-sidebar-nav-item:not(.active-path) .td-sidebar-nav-sublist {
+    display: none;
+  }
+}
+
 // =============================================================================
 // RIGHT SIDEBAR (Table of Contents)
 // =============================================================================
