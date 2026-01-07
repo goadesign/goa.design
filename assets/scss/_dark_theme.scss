@@ -731,10 +731,6 @@ body[data-theme="dark"] {
       inset 0 -10px 15px -5px rgba(91, 192, 235, 0.3),
       0 10px 15px -5px rgba(0, 0, 0, 0.5);
     
-    .hero-logo .goa-logo {
-      filter: brightness(0) invert(1) drop-shadow(0 4px 24px rgba(91, 192, 235, 0.4));
-    }
-
     .hero-logo .goa-avatar {
       filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.5));
     }
@@ -1129,7 +1125,7 @@ body[data-theme="dark"] {
   }
   
   // Images - subtle border for contrast
-  img:not(.goa-logo):not(.sponsor-logo img):not(.company-logo img) {
+  img:not(.goa-avatar):not(.sponsor-logo img):not(.company-logo img) {
     border-radius: 8px;
   }
   

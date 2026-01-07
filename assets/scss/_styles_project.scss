@@ -395,39 +395,18 @@ body {
       align-items: center;
       gap: 1rem;
       
-      .goa-logo {
-        width: 380px;
-        height: auto;
-        filter: brightness(0) invert(1) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.3));
-        animation: logoFloat 5s ease-in-out infinite, logoGlow 3s ease-in-out infinite;
-        
-        @media (max-width: 768px) {
-          width: 220px;
-        }
-      }
-
       .goa-avatar {
-        width: 120px;
+        width: 180px;
         height: auto;
         filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.25));
         animation: avatarFloat 6s ease-in-out infinite;
-        
+
         @media (max-width: 768px) {
-          width: 90px;
+          width: 130px;
         }
       }
     }
 
-    @keyframes logoFloat {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-12px) rotate(1deg); }
-    }
-    
-    @keyframes logoGlow {
-      0%, 100% { filter: brightness(0) invert(1) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.3)); }
-      50% { filter: brightness(0) invert(1) drop-shadow(0 12px 50px rgba(255, 255, 255, 0.2)) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.3)); }
-    }
-    
     @keyframes avatarFloat {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-6px); }
@@ -3047,10 +3026,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
         padding: 0 1rem !important;
       }
       
-      .hero-logo .goa-logo {
-        width: 200px;
-      }
-      
       .display-1 {
         font-size: 2.25rem;
       }
@@ -3308,10 +3283,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
   }
   
   .td-home .td-box--primary {
-    .hero-logo .goa-logo {
-      width: 160px;
-    }
-    
     .display-1 {
       font-size: 1.75rem;
     }
