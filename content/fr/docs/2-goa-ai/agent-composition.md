@@ -186,7 +186,7 @@ Goa-AI modélise l'exécution comme un **arbre d'exécutions et d'outils** :
 - **Run** - une exécution d'un agent :
   - Identifié par un `RunID`
   - Décrit par `run.Context` (RunID, SessionID, TurnID, labels, caps)
-  - Suivi durable via `run.Record` (statut, horodatage, étiquettes)
+  - Suivi durable via `runlog.Store` (journal append-only; pagination par curseur)
 
 - **Session** - une conversation ou un flux de travail couvrant une ou plusieurs exécutions :
   - `SessionID` regroupe des runs liés (par exemple, chat multi-tours)

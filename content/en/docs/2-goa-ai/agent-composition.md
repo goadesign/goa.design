@@ -186,7 +186,7 @@ Goa-AI models execution as a **tree of runs and tools**:
 - **Run** – one execution of an agent:
   - Identified by a `RunID`
   - Described by `run.Context` (RunID, SessionID, TurnID, labels, caps)
-  - Tracked durably via `run.Record` (status, timestamps, labels)
+  - Tracked durably via `runlog.Store` (append-only run event log; cursor-paginated)
 
 - **Session** – a conversation or workflow spanning one or more runs:
   - `SessionID` groups related runs (e.g., multi-turn chat)

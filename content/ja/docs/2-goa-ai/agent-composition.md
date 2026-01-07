@@ -187,7 +187,7 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 - **Run** – エージェントの 1 回の実行:
   - `RunID` で識別
   - `run.Context`（RunID, SessionID, TurnID, labels, caps）で記述
-  - `run.Record`（status, timestamps, labels）で永続追跡
+  - `runlog.Store`（append-only の run event log。cursor paging）で永続追跡
 
 - **Session** – 1 回以上のランにまたがる会話またはワークフロー:
   - `SessionID` が関連するランをグルーピング（例: マルチターンチャット）
