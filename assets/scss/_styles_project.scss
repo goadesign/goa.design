@@ -826,8 +826,6 @@ body {
 body:not(.td-home) .td-main {
   padding: 0;
   margin-top: 0;
-  display: flex;
-  flex-direction: column;
 
   .td-sidebar {
     font-size: $font-size-sm;
@@ -853,6 +851,40 @@ body:not(.td-home) .td-main {
   .td-main main,
   .container-fluid {
     width: 100%;
+  }
+}
+
+// Mobile docs layout - collapsible sidebar, full-width content
+@media (max-width: 768px) {
+  body:not(.td-home) .td-main {
+    display: block;
+
+    .td-sidebar {
+      position: static;
+      width: 100%;
+      height: auto;
+      border-bottom: 1px solid rgba($color-border, 0.15);
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .td-sidebar-toc {
+      display: none;
+    }
+
+    main,
+    .td-main main,
+    .container-fluid {
+      margin-left: 0;
+      padding: 0;
+      width: 100%;
+
+      .td-content {
+        margin: 0.5rem;
+        padding: 1rem;
+        border-radius: 8px;
+      }
+    }
   }
 }
 
@@ -2978,38 +3010,6 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
     &::after {
       height: 6px;
       bottom: -6px;
-    }
-  }
-  
-  // Mobile docs layout - builds on mobile-first base styles
-  body:not(.td-home) .td-main {
-    margin-top: 1rem;
-
-    .td-sidebar {
-      border-bottom: 1px solid rgba($color-border, 0.2);
-      padding: 0.5rem 1rem;
-
-      .td-sidebar-nav {
-        padding-bottom: 1rem;
-
-        .tree-root {
-          padding: 0.75rem 0;
-          margin: 0;
-          height: auto;
-        }
-      }
-    }
-
-    main,
-    .td-main main,
-    .container-fluid {
-      padding: 0;
-
-      .td-content {
-        margin: 0.5rem;
-        padding: 1rem;
-        border-radius: 8px;
-      }
     }
   }
   
