@@ -9,7 +9,7 @@
 {{ $p := .context }}
 {{ $docsSection := $p.Site.GetPage "/docs" }}
 
-<nav id="td-section-nav" class="td-sidebar-nav collapse foldable-nav" aria-label="Documentation navigation">
+<nav id="td-section-nav" class="td-sidebar-nav" aria-label="Documentation navigation">
   <ul class="td-sidebar-nav-list">
     {{ range $docsSection.Sections.ByWeight }}
       {{ $isActive := or (eq $p.RelPermalink .RelPermalink) ($p.IsDescendant .) }}

@@ -408,55 +408,13 @@
   }
 }
 
-// Mobile behavior for left docs nav
-// ---------------------------------------------------------------------------
-// On mobile, use Docsy's built-in collapse behavior with hamburger toggle.
-// The nav starts collapsed and can be toggled open/closed.
+// Mobile: show only the active section's child links to keep the sidebar compact.
+// The top-level sections remain visible so users can quickly switch sections.
 @media (max-width: 768px) {
-  // Style the hamburger toggle button
-  .td-sidebar__toggle {
-    display: flex !important;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    margin: 0.5rem;
-    background: var(--color-bg-alt, $color-surface-alt);
-    border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.1));
-    border-radius: 6px;
-    font-family: $font-family-docs;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: var(--color-text, $color-text);
-    cursor: pointer;
-    width: calc(100% - 1rem);
-
-    &:hover {
-      background: var(--color-highlight, $color-highlight);
-      border-color: var(--doc-link-color, $color-accent);
-    }
-
-    // Rotate icon when expanded
-    &[aria-expanded="true"] {
-      .fa-bars::before {
-        content: "\f00d"; // X icon
-      }
-    }
-  }
-
-  // Collapsed nav styling
-  .td-sidebar-nav.collapse:not(.show) {
+  .td-sidebar-nav-item:not(.active-path) .td-sidebar-nav-sublist {
     display: none;
   }
-
-  .td-sidebar-nav.collapse.show,
-  .td-sidebar-nav.collapsing {
-    display: block;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
-    margin-bottom: 0.5rem;
-  }
 }
-
 
 // =============================================================================
 // RIGHT SIDEBAR (Table of Contents)

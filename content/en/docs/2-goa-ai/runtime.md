@@ -137,7 +137,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
                           (loop while tools needed)
 ```
 
-The runtime emits `RunPhaseChanged` hook events at each transition, allowing stream subscribers to track progress in real time.
+The runtime emits `RunPhaseChanged` hook events for **non-terminal** phases (e.g., `planning`, `executing_tools`, `synthesizing`) so stream subscribers can track progress in real time.
 
 ### Phase vs Status
 
@@ -146,23 +146,36 @@ Phases are distinct from `run.Status`:
 - **Status** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) is the coarse-grained lifecycle state stored in durable run metadata
 - **Phase** provides finer-grained visibility into the execution loop, intended for streaming/UX surfaces
 
-### RunPhaseChanged Events
+### Lifecycle events: phase changes vs terminal completion
 
-The runtime emits `RunPhaseChanged` hook events whenever a run transitions between phases. Stream subscribers translate these events into `stream.Workflow` payloads for external consumers.
+The runtime emits:
 
-```go
-// Hook event emitted by runtime
-hooks.NewRunPhaseChangedEvent(runID, agentID, sessionID, run.PhasePlanning)
+- **`RunPhaseChanged`** for non-terminal phase transitions.
+- **`RunCompleted`** once per run for terminal lifecycle (success / failed / canceled).
 
-// Translated to stream event by subscriber
-stream.Workflow{
-    Data: WorkflowPayload{
-        Phase: "planning",
-    },
-}
-```
+Stream subscribers translate both into `workflow` stream events (`stream.WorkflowPayload`):
 
-The `stream.Subscriber` maps `RunPhaseChanged` events to `EventWorkflow` stream events when the profile's `Workflow` flag is enabled. This allows UIs to display progress indicators like "Planning...", "Executing tools...", or "Synthesizing response..." based on the current phase.
+- **Non-terminal updates** (from `RunPhaseChanged`): `phase` only.
+- **Terminal update** (from `RunCompleted`): `status` + terminal `phase`, plus structured error fields on failures.
+
+**Terminal status mapping**
+
+- `status="success"` → `phase="completed"`
+- `status="failed"` → `phase="failed"`
+- `status="canceled"` → `phase="canceled"`
+
+**Cancellation is not an error**
+
+For `status="canceled"`, the stream payload **must not** include a user-facing `error`. Consumers should treat cancellation as a terminal, non-error end state.
+
+**Failures are structured**
+
+For `status="failed"`, the stream payload includes:
+
+- `error_kind`: stable classifier for UX/decisioning (provider kinds like `rate_limited`, `unavailable`, or runtime kinds like `timeout`/`internal`)
+- `retryable`: whether retrying may succeed without changing input
+- `error`: **user-safe** message suitable for direct display
+- `debug_error`: raw error string for logs/diagnostics (not for UI)
 
 ---
 
@@ -230,7 +243,7 @@ Goa-AI integrates with pluggable policy engines via `policy.Engine`. Policies re
 
 Labels flow into:
 - `run.Context.Labels` – available to planners during a run
-- `run.Record.Labels` – persisted with run metadata (useful for search/dashboards)
+- run log events (`runlog.Store`) – persisted alongside lifecycle events for audit/search/dashboards (where indexed)
 
 ---
 
@@ -240,6 +253,12 @@ Labels flow into:
 - **Agent-as-tool**: Generated agent-tool toolsets run provider agents as child runs (inline from the planner's perspective) and adapt their `RunOutput` into a `planner.ToolResult` with a `RunLink` handle back to the child run
 - **MCP toolsets**: Runtime forwards canonical JSON to generated callers; callers handle transport
 
+### Tool payload defaults
+
+Tool payload decoding follows Goa’s **decode-body → transform** pattern and applies Goa-style defaults deterministically for tool payloads.
+
+See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
+
 ---
 
 ## Memory, Streaming, Telemetry
@@ -248,7 +267,7 @@ Labels flow into:
 
 - **Memory stores** (`memory.Store`) subscribe and append durable memory events (user/assistant messages, tool calls, tool results, planner notes, thinking) per `(agentID, RunID)`.
 
-- **Run stores** (`run.Store`) track run metadata (status, phases, labels, timestamps) for search and operational dashboards.
+- **Run event stores** (`runlog.Store`) append the canonical hook event log per `RunID` for audit/debug UIs and run introspection.
 
 - **Stream sinks** (`stream.Sink`, for example Pulse or custom SSE/WebSocket) receive typed `stream.Event` values produced by the `stream.Subscriber`. A `StreamProfile` controls which event kinds are emitted and how child runs are projected (off, flattened, linked).
 
@@ -426,7 +445,7 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
 - `features/memory/mongo` – durable memory store
-- `features/run/mongo` – run metadata store + search repositories
+- `features/runlog/mongo` – run event log store (append-only, cursor-paginated)
 - `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers
 - `features/model/{anthropic,bedrock,openai}` – model client adapters for planners

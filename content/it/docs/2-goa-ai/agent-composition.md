@@ -186,7 +186,7 @@ Goa-AI modella l'esecuzione come un **albero di esecuzioni e strumenti**:
 - **Esecuzione** - un'esecuzione di un agente:
   - Identificato da un `RunID`
   - Descritta da `run.Context` (RunID, SessionID, TurnID, label, caps)
-  - Tracciato in modo duraturo tramite `run.Record` (status, timestamp, label)
+  - Tracciato in modo duraturo tramite `runlog.Store` (log append-only; paginazione per cursor)
 
 - **Sessione** - una conversazione o un flusso di lavoro che comprende una o più sessioni:
   - `SessionID` raggruppa le sessioni correlate (ad esempio, chat a più turni)

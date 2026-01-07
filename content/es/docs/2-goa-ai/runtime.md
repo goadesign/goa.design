@@ -137,7 +137,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
                           (loop while tools needed)
 ```
 
-El tiempo de ejecución emite eventos de gancho `RunPhaseChanged` en cada transición, lo que permite a los suscriptores del flujo seguir el progreso en tiempo real.
+El runtime emite eventos `RunPhaseChanged` para fases **no terminales** (por ejemplo `planning`, `executing_tools`, `synthesizing`) para que los suscriptores del stream puedan seguir el progreso en tiempo real.
 
 ### Fase vs Estado
 
@@ -146,23 +146,36 @@ Las fases son distintas de `run.Status`:
 - **Estado** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) es el estado del ciclo de vida de grano grueso almacenado en metadatos de ejecución duraderos
 - **Fase** proporciona una visibilidad más detallada del bucle de ejecución, pensada para superficies de streaming/UX
 
-### Eventos RunPhaseChanged
+### Eventos de ciclo de vida: cambios de fase vs finalización
 
-El tiempo de ejecución emite eventos de gancho `RunPhaseChanged` cada vez que una ejecución realiza una transición entre fases. Los suscriptores de flujo traducen estos eventos en cargas útiles `stream.Workflow` para consumidores externos.
+El runtime emite:
 
-```go
-// Hook event emitted by runtime
-hooks.NewRunPhaseChangedEvent(runID, agentID, sessionID, run.PhasePlanning)
+- **`RunPhaseChanged`** para transiciones de fase no terminales.
+- **`RunCompleted`** una vez por run para el estado terminal (success / failed / canceled).
 
-// Translated to stream event by subscriber
-stream.Workflow{
-    Data: WorkflowPayload{
-        Phase: "planning",
-    },
-}
-```
+Los suscriptores del stream traducen ambos en eventos `workflow` (`stream.WorkflowPayload`):
 
-El `stream.Subscriber` mapea `RunPhaseChanged` eventos a `EventWorkflow` eventos de flujo cuando la bandera `Workflow` del perfil está habilitada. Esto permite que las interfaces de usuario muestren indicadores de progreso como "Planificando...", "Ejecutando herramientas..." o "Sintetizando respuesta..." en función de la fase actual.
+- **Actualizaciones no terminales** (desde `RunPhaseChanged`): solo `phase`.
+- **Actualización terminal** (desde `RunCompleted`): `status` + `phase` terminal, y campos de error estructurados en fallos.
+
+**Mapping de status terminal**
+
+- `status="success"` → `phase="completed"`
+- `status="failed"` → `phase="failed"`
+- `status="canceled"` → `phase="canceled"`
+
+**Cancelar no es un error**
+
+Para `status="canceled"`, el payload del stream **no debe** incluir un `error` para el usuario. Los consumidores deben tratar la cancelación como un estado terminal sin error.
+
+**Los fallos son estructurados**
+
+Para `status="failed"`, el payload del stream incluye:
+
+- `error_kind`: clasificador estable para UX/decisiones (kinds provider como `rate_limited`, `unavailable`, o kinds runtime como `timeout`/`internal`)
+- `retryable`: si reintentar puede funcionar sin cambiar la entrada
+- `error`: mensaje **seguro para el usuario** (mostrar directamente)
+- `debug_error`: error crudo para logs/diagnóstico (no para UI)
 
 ---
 
@@ -230,7 +243,7 @@ Goa-AI se integra con motores de políticas enchufables a través de `policy.Eng
 
 Las etiquetas fluyen hacia:
 - `run.Context.Labels` - disponibles para los planificadores durante una ejecución
-- `run.Record.Labels` - persisten con los metadatos de ejecución (útil para búsquedas/paneles)
+- eventos del log de ejecución (`runlog.Store`) - persistidos junto con eventos de ciclo de vida para auditoría/búsqueda/paneles (cuando se indexan)
 
 ---
 
@@ -240,6 +253,12 @@ Las etiquetas fluyen hacia:
 - **Agente como herramienta**: Los conjuntos de herramientas de agentes generados ejecutan agentes proveedores como ejecuciones secundarias (en línea desde la perspectiva del planificador) y adaptan su `RunOutput` a un `planner.ToolResult` con un `RunLink` de vuelta a la ejecución secundaria
 - **Conjuntos de herramientas MCP**: El tiempo de ejecución reenvía el JSON canónico a las llamadas generadas; las llamadas se encargan del transporte
 
+### Tool payload defaults
+
+Tool payload decoding follows Goa’s **decode-body → transform** pattern and applies Goa-style defaults deterministically for tool payloads.
+
+See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
+
 ---
 
 ## Memoria, Streaming, Telemetría
@@ -248,7 +267,7 @@ Las etiquetas fluyen hacia:
 
 - **Los almacenes de memoria** (`memory.Store`) suscriben y añaden eventos de memoria duraderos (mensajes de usuario/asistente, llamadas a herramientas, resultados de herramientas, notas del planificador, pensamiento) por `(agentID, RunID)`.
 
-- **Almacenes de ejecución** (`run.Store`): rastrean los metadatos de ejecución (estado, fases, etiquetas, marcas de tiempo) para la búsqueda y los paneles operativos.
+- **Almacenes de eventos de ejecución** (`runlog.Store`): anexan el log canónico de eventos hook por `RunID` para UI de auditoría/debug e introspección.
 
 - **Los sumideros de flujos (`stream.Sink`, por ejemplo Pulse o SSE/WebSocket personalizados) reciben valores `stream.Event` producidos por el `stream.Subscriber`. Un `StreamProfile` controla qué tipos de eventos se emiten y cómo se proyectan las ejecuciones hijas (desactivadas, aplanadas, enlazadas).
 
@@ -426,7 +445,7 @@ Los planificadores también reciben un `PlannerContext` a través de `input.Agen
 
 - `features/mcp/*` - MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
 - `features/memory/mongo` - almacén de memoria duradera
-- `features/run/mongo` - almacén de metadatos de ejecución + repositorios de búsqueda
+- `features/runlog/mongo` - almacén de eventos de ejecución (append-only, paginación por cursor)
 - `features/session/mongo` - almacén de metadatos de sesión
 - `features/stream/pulse` - ayudantes de receptor/suscriptor de pulsos
 - `features/model/{anthropic,bedrock,openai}` - adaptadores de cliente modelo para planificadores
