@@ -3004,7 +3004,8 @@ body > div > main > section.section.section-sponsors > div > div > div:nth-child
 // Small tablets and large phones - collapse left sidebar
 @media (max-width: 768px) {
   body:not(.td-home) {
-    padding-top: 0 !important;
+    // Offset fixed navbar (min-height 3.5rem) + its accent bar (6px below).
+    padding-top: calc(3.5rem + 6px) !important;
   }
   
   .td-navbar {
