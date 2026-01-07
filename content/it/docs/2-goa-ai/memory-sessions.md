@@ -33,12 +33,16 @@ Al confine del modello, Goa-AI utilizza i valori `model.Message` per rappresenta
 |-----------|-------------|
 | `ThinkingPart` | Contenuto del ragionamento del fornitore (testo in chiaro + firma o byte redatti). Non è rivolto all'utente; è usato per la verifica/riproduzione e per le interfacce utente opzionali di "ragionamento". |
 | `TextPart` | Testo visibile all'utente (domande, risposte, spiegazioni). |
+| `ImagePart` | Multimodal image content (bytes or URL/metadata) for providers that support images. |
+| `DocumentPart` | Document content (text/bytes/URI/chunks) attached to messages for providers that support document parts. |
+| `CitationsPart` | Structured citations metadata produced by providers (for UI display / audit). |
 | `ToolUsePart` | Chiamata allo strumento avviata dall'assistente con `ID`, `Name` (ID strumento canonico) e `Input` (carico utile JSON). |
 | `ToolResultPart` | Risultato dell'utente/strumento correlato a un uso precedente dello strumento tramite `ToolUseID` e `Content` (payload JSON). |
+| `CacheCheckpointPart` | Marker for prompt cache boundaries (provider-dependent, not user-facing). |
 
-**L'ordine è sacro
-- Il messaggio di un assistente che utilizza uno strumento è tipicamente simile a: `ThinkingPart`, poi uno o più `ToolUsePart`, poi `TextPart` opzionale
-- Un messaggio di risultato utente/strumento contiene tipicamente uno o più `ToolResultPart` che fanno riferimento a precedenti ID di utilizzo dello strumento, oltre a un testo opzionale dell'utente
+**L'ordine è sacro:**
+- Il messaggio di un assistente che utilizza uno strumento è tipicamente simile a: `ThinkingPart` (se presente), poi `TextPart` opzionale, poi uno o più `ToolUsePart`
+- Un messaggio di risultato utente/strumento contiene tipicamente uno o più `ToolResultPart` che fanno riferimento a precedenti ID di utilizzo dello strumento, oltre a contenuto opzionale dell'utente (`TextPart`, `ImagePart`, `DocumentPart`)
 
 Gli adattatori dei provider di Goa-AI (ad esempio, Bedrock Converse) ricodificano queste parti in blocchi specifici del provider **senza riordino**.
 
@@ -205,7 +209,7 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 )
 ```
 
-- `SessionID`: Raggruppa tutte le corse per una conversazione; spesso viene utilizzato come chiave di ricerca negli archivi delle corse e nei dashboard
+- `SessionID`: Raggruppa tutte le corse per una conversazione; spesso viene utilizzato come chiave di ricerca nei log di esecuzione e nei dashboard
 - `TurnID`: Raggruppa gli eventi per un singolo utente → interazione con l'assistente; opzionale ma utile per le interfacce utente e i log
 
 ---
@@ -232,24 +236,20 @@ Tipi chiave:
 - **`memory.Snapshot`** - vista immutabile della cronologia memorizzata di una corsa (`AgentID`, `RunID`, `Events []memory.Event`)
 - **`memory.Event`** - singola voce persistente con `Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`), `thinking`, `Timestamp`, `Data` e `Labels`
 
-### Esegui negozio (`run.Store`)
+### Run Log (`runlog.Store`)
 
-Conserva i metadati dell'esecuzione a grana grossa:
-- `RunID`, `AgentID`, `SessionID`, `TurnID`
-- Stato, timestamp, etichette
+Conserva il **log canonico, append-only** degli eventi di esecuzione. Il runtime aggiunge eventi hook durante l’esecuzione e i consumer paginano tramite cursor opaco per UI e diagnostica.
 
 ```go
 type Store interface {
-    Upsert(ctx context.Context, record run.Record) error
-    Load(ctx context.Context, runID string) (run.Record, error)
+    Append(ctx context.Context, e *runlog.Event) error
+    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
 }
 ```
 
-`run.Record` catture:
-- `AgentID`, `RunID`, `SessionID`, `TurnID`
-- `Status` (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`)
-- `StartedAt`, `UpdatedAt`
-- `Labels` (inquilino, priorità, ecc.)
+`runlog.Page` contiene:
+- `Events` (ordinati dal più vecchio al più recente)
+- `NextCursor` (vuoto quando non ci sono altri eventi)
 
 ---
 
@@ -260,37 +260,55 @@ Con le implementazioni supportate da MongoDB:
 ```go
 import (
     memorymongo "goa.design/goa-ai/features/memory/mongo"
-    runmongo    "goa.design/goa-ai/features/run/mongo"
+    memorymongoclient "goa.design/goa-ai/features/memory/mongo/clients/mongo"
+    runlogmongo "goa.design/goa-ai/features/runlog/mongo"
+    runlogmongoclient "goa.design/goa-ai/features/runlog/mongo/clients/mongo"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 mongoClient := newMongoClient()
 
-memStore, err := memorymongo.NewStore(memorymongo.Options{Client: mongoClient})
+memClient, err := memorymongoclient.New(memorymongoclient.Options{
+    Client:   mongoClient,
+    Database: "goa_ai",
+})
 if err != nil {
     log.Fatal(err)
 }
 
-runStore, err := runmongo.NewStore(runmongo.Options{Client: mongoClient})
+memStore, err := memorymongo.NewStore(memClient)
+if err != nil {
+    log.Fatal(err)
+}
+
+runlogClient, err := runlogmongoclient.New(runlogmongoclient.Options{
+    Client:   mongoClient,
+    Database: "goa_ai",
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+runEventStore, err := runlogmongo.NewStore(runlogClient)
 if err != nil {
     log.Fatal(err)
 }
 
 rt := runtime.New(
     runtime.WithMemoryStore(memStore),
-    runtime.WithRunStore(runStore),
+    runtime.WithRunEventStore(runEventStore),
 )
 ```
 
 Una volta configurati:
-- I sottoscrittori predefiniti persistono in memoria ed eseguono automaticamente i metadati
+- I subscriber predefiniti persistono memoria ed eventi di esecuzione automaticamente
 - È possibile ricostruire le trascrizioni da `memory.Store` in qualsiasi momento per richiamare i modelli, alimentare le UI o eseguire analisi offline
 
 ---
 
 ## Archivi personalizzati
 
-Implementare le interfacce `memory.Store` e `run.Store` per i backend personalizzati:
+Implementare le interfacce `memory.Store` e `runlog.Store` per i backend personalizzati:
 
 ```go
 // Memory store
@@ -299,10 +317,10 @@ type Store interface {
     AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
 }
 
-// Run store
+// Run log store
 type Store interface {
-    Upsert(ctx context.Context, record run.Record) error
-    Load(ctx context.Context, runID string) (run.Record, error)
+    Append(ctx context.Context, e *runlog.Event) error
+    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
 }
 ```
 
@@ -324,7 +342,7 @@ type Store interface {
 
 ### Ricerca e cruscotti
 
-- Interrogazione di `run.Store` per `SessionID`, etichette, stato
+- Pagina `runlog.Store` per `RunID` per UI audit/debug
 - Caricamento delle trascrizioni da `memory.Store` su richiesta per le corse selezionate
 
 ---

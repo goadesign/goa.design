@@ -137,7 +137,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
                           (loop while tools needed)
 ```
 
-Le moteur d'exécution émet des événements de type `RunPhaseChanged` à chaque transition, ce qui permet aux abonnés du flux de suivre la progression en temps réel.
+Le moteur d'exécution émet des événements `RunPhaseChanged` pour les phases **non terminales** (par exemple `planning`, `executing_tools`, `synthesizing`) afin que les abonnés au flux puissent suivre la progression en temps réel.
 
 ### Phase vs Statut
 
@@ -146,23 +146,36 @@ Les phases sont distinctes des `run.Status` :
 - **Status** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) est l'état du cycle de vie à gros grain stocké dans les métadonnées d'exécution durables
 - **La phase** offre une visibilité plus fine de la boucle d'exécution, destinée aux surfaces de streaming/UX
 
-### Événements RunPhaseChanged
+### Événements de cycle de vie : changements de phase vs fin d'exécution
 
-Le moteur d'exécution émet des événements de type `RunPhaseChanged` hook chaque fois qu'une exécution passe d'une phase à l'autre. Les abonnés au flux traduisent ces événements en charges utiles `stream.Workflow` pour les consommateurs externes.
+Le runtime émet :
 
-```go
-// Hook event emitted by runtime
-hooks.NewRunPhaseChangedEvent(runID, agentID, sessionID, run.PhasePlanning)
+- **`RunPhaseChanged`** pour les transitions de phase non terminales.
+- **`RunCompleted`** une seule fois par run pour l'état terminal (success / failed / canceled).
 
-// Translated to stream event by subscriber
-stream.Workflow{
-    Data: WorkflowPayload{
-        Phase: "planning",
-    },
-}
-```
+Les abonnés au flux traduisent les deux en événements `workflow` (`stream.WorkflowPayload`) :
 
-Le `stream.Subscriber` fait correspondre les événements `RunPhaseChanged` aux événements de flux `EventWorkflow` lorsque l'indicateur `Workflow` du profil est activé. Cela permet aux interfaces utilisateur d'afficher des indicateurs de progression tels que "Planification...", "Exécution des outils..." ou "Synthèse de la réponse..." en fonction de la phase en cours.
+- **Mises à jour non terminales** (depuis `RunPhaseChanged`) : `phase` uniquement.
+- **Mise à jour terminale** (depuis `RunCompleted`) : `status` + `phase` terminale, plus des champs d'erreur structurés en cas d'échec.
+
+**Mapping du status terminal**
+
+- `status="success"` → `phase="completed"`
+- `status="failed"` → `phase="failed"`
+- `status="canceled"` → `phase="canceled"`
+
+**L'annulation n'est pas une erreur**
+
+Pour `status="canceled"`, le payload de stream **ne doit pas** inclure de message `error` destiné à l'utilisateur. Les consommateurs doivent traiter l'annulation comme un état terminal non erroné.
+
+**Les échecs sont structurés**
+
+Pour `status="failed"`, le payload de stream inclut :
+
+- `error_kind` : classificateur stable pour l'UX/décision (kinds provider comme `rate_limited`, `unavailable`, ou kinds runtime comme `timeout`/`internal`)
+- `retryable` : indique si une nouvelle tentative peut réussir sans modifier l'entrée
+- `error` : message **sûr pour l'utilisateur** (affichage direct)
+- `debug_error` : erreur brute pour logs/diagnostics (pas pour UI)
 
 ---
 
@@ -230,7 +243,7 @@ Goa-AI s'intègre à des moteurs de politiques enfichables via `policy.Engine`. 
 
 Les étiquettes sont transférées dans :
 - `run.Context.Labels` - disponibles pour les planificateurs au cours d'une exécution
-- `run.Record.Labels` - conservées avec les métadonnées de l'exécution (utiles pour la recherche/les tableaux de bord)
+- journal d'exécution (`runlog.Store`) - persisté avec les événements de cycle de vie pour audit/recherche/tableaux de bord (lorsqu'indexé)
 
 ---
 
@@ -240,6 +253,12 @@ Les étiquettes sont transférées dans :
 - **Outil généré en tant qu'outil** : Les outils d'agent générés exécutent les agents fournisseurs en tant qu'exécutions enfant (en ligne du point de vue du planificateur) et adaptent leur `RunOutput` en un `planner.ToolResult` avec une poignée `RunLink` renvoyée à l'exécution enfant
 - **OutilsMCP** : Le moteur d'exécution transmet le JSON canonique aux appelants générés ; les appelants gèrent le transport
 
+### Tool payload defaults
+
+Tool payload decoding follows Goa’s **decode-body → transform** pattern and applies Goa-style defaults deterministically for tool payloads.
+
+See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
+
 ---
 
 ## Mémoire, flux, télémétrie
@@ -248,7 +267,7 @@ Les étiquettes sont transférées dans :
 
 - **Les magasins de mémoire** (`memory.Store`) souscrivent et ajoutent des événements de mémoire durables (messages de l'utilisateur/assistant, appels d'outils, résultats d'outils, notes du planificateur, réflexion) par `(agentID, RunID)`.
 
-- **Magasins d'exécution** (`run.Store`) suivent les métadonnées d'exécution (statut, phases, étiquettes, horodatages) pour la recherche et les tableaux de bord opérationnels.
+- **Magasins d'événements d'exécution** (`runlog.Store`) ajoutent le journal canonique des événements hook par `RunID` pour UI audit/debug et introspection.
 
 - **Les puits de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs typées `stream.Event` produites par le `stream.Subscriber`. Une `StreamProfile` contrôle les types d'événements émis et la manière dont les parcours enfants sont projetés (désactivés, aplatis, liés).
 
@@ -426,7 +445,7 @@ Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` q
 
 - `features/mcp/*` - suite MCP DSL/codegen/appels en temps réel (HTTP/SSE/stdio)
 - `features/memory/mongo` - mémoire durable
-- `features/run/mongo` - magasin de métadonnées d'exécution + référentiels de recherche
+- `features/runlog/mongo` - magasin d'événements d'exécution (append-only, pagination par curseur)
 - `features/session/mongo` - magasin de métadonnées de session
 - `features/stream/pulse` - aides pour les puits d'impulsion et les abonnés
 - `features/model/{anthropic,bedrock,openai}` - adaptateurs de client de modèle pour les planificateurs

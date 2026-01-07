@@ -138,7 +138,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
                           (loop while tools needed)
 ```
 
-ランタイムは各遷移で `RunPhaseChanged` フックイベントを発行し、ストリーム購読者がリアルタイムに進捗を追跡できるようにします。
+ランタイムは `planning` / `executing_tools` / `synthesizing` などの **非終端フェーズ**に対して `RunPhaseChanged` フックイベントを発行し、ストリーム購読者がリアルタイムに進捗を追跡できるようにします。
 
 ### Phase と Status の違い
 
@@ -147,23 +147,36 @@ prompted → planning → executing_tools → planning → synthesizing → comp
 - **Status**（`pending`, `running`, `completed`, `failed`, `canceled`, `paused`）は、耐久化された run メタデータに格納される粗い粒度のライフサイクル状態です。
 - **Phase** は、ストリーミング/UX 向けに実行ループをより細かく可視化するものです。
 
-### RunPhaseChanged イベント
+### ライフサイクルイベント: フェーズ遷移 vs 終端完了
 
-ランタイムは、run がフェーズ間を遷移するたびに `RunPhaseChanged` フックイベントを発行します。ストリーム購読者は、これらのイベントを外部コンシューマー向けの `stream.Workflow` ペイロードに変換します。
+ランタイムは次を発行します:
 
-```go
-// Hook event emitted by runtime
-hooks.NewRunPhaseChangedEvent(runID, agentID, sessionID, run.PhasePlanning)
+- **`RunPhaseChanged`**: 非終端フェーズ遷移。
+- **`RunCompleted`**: run ごとに 1 回の終端ライフサイクル（success / failed / canceled）。
 
-// Translated to stream event by subscriber
-stream.Workflow{
-    Data: WorkflowPayload{
-        Phase: "planning",
-    },
-}
-```
+ストリーム購読者は、両方を `workflow` ストリームイベント（`stream.WorkflowPayload`）に変換します:
 
-`stream.Subscriber` は、プロファイルの `Workflow` フラグが有効な場合に、`RunPhaseChanged` を `EventWorkflow` のストリームイベントにマッピングします。これにより UI は、現在のフェーズに基づいて「Planning...」「Executing tools...」「Synthesizing...」のような進捗インジケータを表示できます。
+- **非終端更新**（`RunPhaseChanged`）: `phase` のみ。
+- **終端更新**（`RunCompleted`）: `status` + 終端 `phase`。失敗時は構造化されたエラー情報を含みます。
+
+**終端 status のマッピング**
+
+- `status="success"` → `phase="completed"`
+- `status="failed"` → `phase="failed"`
+- `status="canceled"` → `phase="canceled"`
+
+**キャンセルはエラーではありません**
+
+`status="canceled"` の場合、ストリームペイロードにユーザー向け `error` を含めてはいけません。
+
+**失敗は構造化されます**
+
+`status="failed"` の場合、ストリームペイロードに以下が含まれます:
+
+- `error_kind`
+- `retryable`
+- `error`（ユーザー向け）
+- `debug_error`（診断向け）
 
 ---
 
@@ -233,7 +246,7 @@ Goa-AI は `policy.Engine` を介してプラガブルなポリシーエンジ�
 ラベルは次に流れます。
 
 - `run.Context.Labels` – run 中にプランナーが参照可能
-- `run.Record.Labels` – run メタデータに永続化され、検索/ダッシュボードに有用
+- runlog イベント（`runlog.Store`）– ライフサイクルイベントとともに永続化され、検索/ダッシュボードに有用（インデックスされる場合）
 
 ---
 
@@ -243,6 +256,12 @@ Goa-AI は `policy.Engine` を介してプラガブルなポリシーエンジ�
 - **Agent-as-tool**: 生成された agent-tool ツールセットはプロバイダーエージェントを子ランとして実行し（プランナー視点ではインライン）、その `RunOutput` を `planner.ToolResult` に変換し、子ランへの `RunLink`（ハンドル）を返します。
 - **MCP toolsets**: ランタイムは正規 JSON を生成済み caller へ転送し、caller がトランスポートを扱います。
 
+### Tool payload defaults
+
+Tool payload decoding follows Goa’s **decode-body → transform** pattern and applies Goa-style defaults deterministically for tool payloads.
+
+See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
+
 ---
 
 ## メモリ、ストリーミング、テレメトリ
@@ -251,7 +270,7 @@ Goa-AI は `policy.Engine` を介してプラガブルなポリシーエンジ�
 
 - **Memory stores**（`memory.Store`）は、`(agentID, RunID)` ごとに耐久化されるメモリイベント（ユーザー/アシスタントメッセージ、ツール呼び出し、ツール結果、プランナーノート、思考）を購読し追記します。
 
-- **Run stores**（`run.Store`）は、検索や運用ダッシュボードのための run メタデータ（status、phases、labels、timestamps）を追跡します。
+- **Run event stores**（`runlog.Store`）は、`RunID` ごとに hook イベントのカノニカルログを追記し、audit/debug UI と run の introspection に利用できます。
 
 - **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別と、子ランをどう投影するか（off / flatten / linked）を制御します。
 
@@ -424,7 +443,7 @@ type Planner interface {
 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers（HTTP/SSE/stdio）
 - `features/memory/mongo` – durable memory store
-- `features/run/mongo` – run metadata store + search repositories
+- `features/runlog/mongo` – run event log store（append-only, cursor pagination）
 - `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers
 - `features/model/{anthropic,bedrock,openai}` – モデルクライアントアダプター（プランナー向け）

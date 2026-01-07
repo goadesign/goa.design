@@ -34,13 +34,17 @@ Goa-AI は、**トランスクリプト**を 1 つの run における唯一の�
 |-----------|-------------|
 | `ThinkingPart` | プロバイダーの推論コンテンツ (プレーンテキスト + 署名、またはマスクされたバイト列)。ユーザー向けではなく、監査/リプレイや任意の「thinking」UI のために使われます。 |
 | `TextPart` | ユーザーに表示するテキスト (質問、回答、説明など)。 |
+| `ImagePart` | Multimodal image content (bytes or URL/metadata) for providers that support images. |
+| `DocumentPart` | Document content (text/bytes/URI/chunks) attached to messages for providers that support document parts. |
+| `CitationsPart` | Structured citations metadata produced by providers (for UI display / audit). |
 | `ToolUsePart` | アシスタントが開始するツール呼び出し。`ID`、`Name` (正規のツール ID)、`Input` (JSON ペイロード) を持ちます。 |
 | `ToolResultPart` | 以前の tool_use に紐づく user/tool の結果。`ToolUseID` と `Content` (JSON ペイロード) を持ちます。 |
+| `CacheCheckpointPart` | Marker for prompt cache boundaries (provider-dependent, not user-facing). |
 
 **順序は神聖です (Order is sacred):**
 
 - ツールを使うアシスタントメッセージは、通常 `ThinkingPart` の後に 1 つ以上の `ToolUsePart`、そして任意で `TextPart` が続きます。
-- user/tool の結果メッセージは、通常、以前の tool_use ID を参照する 1 つ以上の `ToolResultPart` と、任意の user テキストを含みます。
+- user/tool の結果メッセージは、通常、以前の tool_use ID を参照する 1 つ以上の `ToolResultPart` と、任意の user コンテンツ (`TextPart`, `ImagePart`, `DocumentPart`) を含みます。
 
 Goa-AI のプロバイダーアダプター (例: Bedrock Converse) は、これらのパーツを **並べ替えずに** プロバイダー固有のブロックへ再エンコードします。
 
@@ -208,12 +212,12 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 )
 ```
 
-- `SessionID`: 会話に属するすべてのランをグループ化します。ランストアやダッシュボードの検索キーとしてよく使われます。
+- `SessionID`: 会話に属するすべてのランをグループ化します。ランログやダッシュボードの検索キーとしてよく使われます。
 - `TurnID`: 1 回の user → assistant 相互作用に関するイベントをグループ化します。必須ではありませんが、UI やログに便利です。
 
 ---
 
-## メモリストアとランストア
+## メモリストアとランログ
 
 Goa-AI の feature モジュールは、補完関係にあるストアを提供します。
 
@@ -237,7 +241,7 @@ type Store interface {
 - **`memory.Snapshot`** – ランの保存履歴の不変ビュー (`AgentID`, `RunID`, `Events []memory.Event`)
 - **`memory.Event`** – 単一の永続化エントリ。`Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`, `thinking`)、`Timestamp`、`Data`、`Labels` を持ちます
 
-### ランストア (`run.Store`)
+### ランログ (`runlog.Store`)
 
 粗粒度のランメタデータを永続化します。
 
@@ -246,17 +250,15 @@ type Store interface {
 
 ```go
 type Store interface {
-    Upsert(ctx context.Context, record run.Record) error
-    Load(ctx context.Context, runID string) (run.Record, error)
+    Append(ctx context.Context, e *runlog.Event) error
+    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
 }
 ```
 
-`run.Record` には次が含まれます。
+`runlog.Page` には次が含まれます。
 
-- `AgentID`, `RunID`, `SessionID`, `TurnID`
-- `Status` (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`)
-- `StartedAt`, `UpdatedAt`
-- `Labels` (tenant、priority など)
+- `Events`（古い順）
+- `NextCursor`（空の場合はこれ以上イベントがない）
 
 ---
 
@@ -267,38 +269,56 @@ MongoDB ベースの実装では次のように配線します。
 ```go
 import (
     memorymongo "goa.design/goa-ai/features/memory/mongo"
-    runmongo    "goa.design/goa-ai/features/run/mongo"
+    memorymongoclient "goa.design/goa-ai/features/memory/mongo/clients/mongo"
+    runlogmongo "goa.design/goa-ai/features/runlog/mongo"
+    runlogmongoclient "goa.design/goa-ai/features/runlog/mongo/clients/mongo"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 mongoClient := newMongoClient()
 
-memStore, err := memorymongo.NewStore(memorymongo.Options{Client: mongoClient})
+memClient, err := memorymongoclient.New(memorymongoclient.Options{
+    Client:   mongoClient,
+    Database: "goa_ai",
+})
 if err != nil {
     log.Fatal(err)
 }
 
-runStore, err := runmongo.NewStore(runmongo.Options{Client: mongoClient})
+memStore, err := memorymongo.NewStore(memClient)
+if err != nil {
+    log.Fatal(err)
+}
+
+runlogClient, err := runlogmongoclient.New(runlogmongoclient.Options{
+    Client:   mongoClient,
+    Database: "goa_ai",
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+runEventStore, err := runlogmongo.NewStore(runlogClient)
 if err != nil {
     log.Fatal(err)
 }
 
 rt := runtime.New(
     runtime.WithMemoryStore(memStore),
-    runtime.WithRunStore(runStore),
+    runtime.WithRunEventStore(runEventStore),
 )
 ```
 
 設定すると次のようになります。
 
-- デフォルトのサブスクライバーが、メモリとランメタデータを自動的に永続化します。
+- デフォルトのサブスクライバーが、メモリとランイベントを自動的に永続化します。
 - `memory.Store` からいつでもトランスクリプトを再構築でき、モデル再呼び出し、UI 表示、オフライン分析に利用できます。
 
 ---
 
 ## カスタムストア
 
-カスタムバックエンド向けに `memory.Store` と `run.Store` インターフェイスを実装できます。
+カスタムバックエンド向けに `memory.Store` と `runlog.Store` インターフェイスを実装できます。
 
 ```go
 // Memory store
@@ -307,10 +327,10 @@ type Store interface {
     AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
 }
 
-// Run store
+// Run log store
 type Store interface {
-    Upsert(ctx context.Context, record run.Record) error
-    Load(ctx context.Context, runID string) (run.Record, error)
+    Append(ctx context.Context, e *runlog.Event) error
+    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
 }
 ```
 
@@ -332,7 +352,7 @@ type Store interface {
 
 ### 検索とダッシュボード
 
-- `run.Store` を `SessionID`、ラベル、ステータスでクエリします
+- `runlog.Store` を `RunID` + cursor でページングして audit/debug UI を構築します
 - `memory.Store` から選択したランのトランスクリプトをオンデマンドで読み込みます
 
 ---
