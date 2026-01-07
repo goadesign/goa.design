@@ -880,6 +880,7 @@ a.td-edit-page { display: none; }
 }
 
 @media (max-width: #{$breakpoint-tablet - 1px}) {
+  // Mobile typography adjustments for docs content
   .td-content {
     max-width: none;
     padding: 1rem;
@@ -889,17 +890,11 @@ a.td-edit-page { display: none; }
     h2 { font-size: 1.25rem; }
     h3 { font-size: 1.125rem; }
     pre { font-size: $font-size-xxs; padding: 0.75rem; }
-    // Wrap tables in scrollable container on mobile
     table {
       display: table;
       width: 100%;
       overflow-x: visible;
     }
-  }
-  .td-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.08));
   }
   .td-sidebar-toc { display: none; }
   .toc-auto-container { margin: 1rem 0 1.5rem; }
