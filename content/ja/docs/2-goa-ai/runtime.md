@@ -32,9 +32,9 @@ Goa-AI は実行時に、少数の合成可能な構成要素を中心にシス�
 
 - **Planners**: LLM による戦略レイヤで、`PlanStart` / `PlanResume` を実装します。プランナーは、ツールを呼ぶか直接回答するかを決め、ランタイムはその決定に対して上限（caps）と時間予算（time budget）を強制します。
 
-- **Run tree & agent-as-tool**: あるエージェントが別のエージェントをツールとして呼ぶと、ランタイムは独自の `RunID` を持つ実際の子ランを開始します。親の `ToolResult` には子ランへの `RunLink`（`*run.Handle`）が格納され、さらに親ランには `AgentRunStarted` イベントが発行されるため、UI やデバッガは必要に応じて子ランのストリームへアタッチできます。
+- **Run tree & agent-as-tool**: あるエージェントが別のエージェントをツールとして呼ぶと、ランタイムは独自の `RunID` を持つ実際の子ランを開始します。親の `ToolResult` には子ランへの `RunLink`（`*run.Handle`）が格納され、ストリーミングでは `child_run_linked` イベントが親ツールコールと子ランを結び付けます。
 
-- **Streams & profiles**: 各ランは `stream.Event` のストリーム（アシスタント応答、プランナーの思考、ツール start/update/end、await、usage、workflow、agent-run links など）を持ちます。`stream.StreamProfile` は、対象（チャット UI、デバッグ、メトリクス）に応じてどのイベント種別を可視化するか、また子ランをどう投影するか（off / flatten / linked）を選択します。
+- **Session-owned streams & profiles**: Goa-AI は型付けされた `stream.Event` を **セッション所有ストリーム**（`session/<session_id>`）へ発行します。イベントは `RunID` と `SessionID` を持ち、`run_stream_end` が SSE/WebSocket をタイマーなしで閉じるための明示マーカーになります。`stream.StreamProfile` は、対象（チャット UI、デバッグ、メトリクス）に応じてどのイベント種別を可視化するかを選択します。
 
 ---
 
@@ -57,6 +57,11 @@ func main() {
     ctx := context.Background()
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: newChatPlanner()})
     if err != nil {
+        panic(err)
+    }
+
+    // Sessions are first-class: create a session before starting runs under it.
+    if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
         panic(err)
     }
 
@@ -89,6 +94,9 @@ rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
 
 // No agent registration needed in a caller-only process
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "s1"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
@@ -272,29 +280,41 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 
 - **Run event stores**（`runlog.Store`）は、`RunID` ごとに hook イベントのカノニカルログを追記し、audit/debug UI と run の introspection に利用できます。
 
-- **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別と、子ランをどう投影するか（off / flatten / linked）を制御します。
+- **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別を制御します。
 
 - **Telemetry**: OTEL 対応のロギング、メトリクス、トレーシングが workflow/activity を end-to-end で計測します。
 
-### 単一 run のイベント購読
+### セッションストリームの消費（Pulse）
 
-グローバルシンクに加えて、`Runtime.SubscribeRun` ヘルパーで特定の run ID のイベントストリームを観測できます。
+プロダクションでは一般に以下のパターンを取ります：
+
+- 共有バス（Pulse / Redis Streams）からセッションストリーム（`session/<session_id>`）を消費する
+- `run_id` でフィルタして run ごとのカード/レーンを構築する
+- アクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了する
 
 ```go
-type mySink struct{}
+import "goa.design/goa-ai/runtime/agent/stream"
 
-func (s *mySink) Send(ctx context.Context, e stream.Event) error {
-    // deliver event to SSE/WebSocket, logs, etc.
-    return nil
-}
-
-func (s *mySink) Close(ctx context.Context) error { return nil }
-
-stop, err := rt.SubscribeRun(ctx, "run-123", &mySink{})
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
 if err != nil {
     panic(err)
 }
-defer stop()
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+    case err := <-errs:
+        panic(err)
+    }
+}
 ```
 
 ---

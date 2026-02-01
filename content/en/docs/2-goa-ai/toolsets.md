@@ -371,7 +371,7 @@ Agent-as-tool toolsets execute inline from the planner's perspective while the r
 3. It calls the toolset's `Execute(ctx, call)` with canonical JSON payload and tool metadata (including parent `RunID` and `ToolCallID`)
 4. The generated agent-tool executor builds nested agent messages (system + user) from the tool payload and runs the provider agent as a child run
 5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
-6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and an `agent_run_started` link event so UIs and debuggers can attach to the child run's stream on demand
+6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
 
 ---
 

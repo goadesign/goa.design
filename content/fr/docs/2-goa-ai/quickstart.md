@@ -168,6 +168,10 @@ func main() {
 
     // Create runtime with in-memory engine (no external dependencies)
     rt := runtime.New()
+    sessionID := "demo-session"
+    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
+        panic(err)
+    }
 
     // Register the agent with its planner and executor
     err := assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
@@ -182,7 +186,7 @@ func main() {
     client := assistant.NewClient(rt)
 
     // Start a run with a user message
-    out, err := client.Run(ctx, []*model.Message{{
+    out, err := client.Run(ctx, sessionID, []*model.Message{{
         Role:  model.ConversationRoleUser,
         Parts: []model.Part{model.TextPart{Text: "What's the weather?"}},
     }})
@@ -278,11 +282,11 @@ type ConsoleSink struct{}
 func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
     // Type switch on event to handle different event kinds
     switch e := event.(type) {
-    case *stream.ToolStart:
+    case stream.ToolStart:
         fmt.Printf("🔧 Tool: %s\n", e.Data.ToolName)
-    case *stream.ToolEnd:
+    case stream.ToolEnd:
         fmt.Printf("✅ Done: %s\n", e.Data.ToolName)
-    case *stream.Workflow:
+    case stream.Workflow:
         fmt.Printf("📋 %s\n", e.Data.Phase)
     // Other events: AssistantReply, PlannerThought, UsageDelta, etc.
     }
@@ -296,6 +300,10 @@ func main() {
 
     // Pass the sink to the runtime—all events flow through it
     rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+    sessionID := "demo-session"
+    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
+        panic(err)
+    }
 
     _ = assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
         Planner:  &StubPlanner{},
@@ -303,7 +311,7 @@ func main() {
     })
 
     client := assistant.NewClient(rt)
-    out, _ := client.Run(ctx, []*model.Message{{
+    out, _ := client.Run(ctx, sessionID, []*model.Message{{
         Role:  model.ConversationRoleUser,
         Parts: []model.Part{model.TextPart{Text: "What's the weather?"}},
     }})
@@ -534,9 +542,9 @@ type ConsoleSink struct{}
 
 func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
     switch e := event.(type) {
-    case *stream.ToolStart:
+    case stream.ToolStart:
         fmt.Printf("🔧 Tool: %s\n", e.Data.ToolName)
-    case *stream.AssistantReply:
+    case stream.AssistantReply:
         // Print text chunks as they arrive (streaming output)
         fmt.Print(e.Data.Text)
     }
@@ -572,6 +580,10 @@ func main() {
         runtime.WithStream(&ConsoleSink{}),
         runtime.WithModelClient("openai", modelClient),
     )
+    sessionID := "demo-session"
+    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
+        panic(err)
+    }
 
     // Register the agent with the real planner
     err = assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
@@ -584,7 +596,7 @@ func main() {
 
     // Run the agent
     client := assistant.NewClient(rt)
-    out, err := client.Run(ctx, []*model.Message{{
+    out, err := client.Run(ctx, sessionID, []*model.Message{{
         Role:  model.ConversationRoleUser,
         Parts: []model.Part{model.TextPart{Text: "What's the weather in Paris?"}},
     }})

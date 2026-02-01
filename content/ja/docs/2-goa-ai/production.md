@@ -282,12 +282,19 @@ rt := runtime.New()
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
     "go.temporal.io/sdk/client"
+
+    // 生成されたツール specs 集約。
+    // 生成パッケージは次を提供します: func Spec(tools.Ident) (*tools.ToolSpec, bool)
+    specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
 temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
+        // 必須: goa-ai の workflow 境界コントラクトを強制します。
+        // ツール結果/アーティファクトは境界を canonical JSON bytes (api.ToolEvent/api.ToolArtifact) として横断します。
+        DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
@@ -359,7 +366,7 @@ Goa-AI は run ごとに型付きイベントストリームを公開してお�
 - WebSockets
 - メッセージバス（Pulse、Redis Streams など）
 
-各 workflow run は自身のストリームを持ちます。エージェントが他のエージェントをツールとして呼ぶ場合、ランタイムは子 run を開始し、`AgentRunStarted` イベントと `RunLink` ハンドルでリンクします。UI は run ID で任意の run を購読でき、どの程度詳細に描画するかを選べます。
+セッションに属するストリーミング可視イベントは、単一のストリーム `session/<session_id>` に追記されます。各イベントは `run_id` と `session_id` を持ち、`child_run_linked` で親ツールコールと子 run をリンクします。UI はアクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了できます（タイマー不要）。
 
 ### Stream Sink インタフェース
 
@@ -387,7 +394,7 @@ type Sink interface {
 | `AwaitExternalTools` | プランナーが外部ツール結果を待機している |
 | `Usage` | モデル呼び出しごとのトークン使用量 |
 | `Workflow` | run のライフサイクルとフェーズ更新 |
-| `AgentRunStarted` | 親ツール呼び出しから子エージェント run へのリンク |
+| `ChildRunLinked` | 親ツール呼び出しから子エージェント run へのリンク |
 
 トランスポート層は通常、コンパイル時の安全性のために `stream.Event` に対して type switch します。
 
@@ -401,8 +408,10 @@ case stream.ToolStart:
     // e.Data.ToolCallID, e.Data.ToolName, e.Data.Payload
 case stream.ToolEnd:
     // e.Data.Result, e.Data.Error, e.Data.ResultPreview
-case stream.AgentRunStarted:
+case stream.ChildRunLinked:
     // e.Data.ToolName, e.Data.ToolCallID, e.Data.ChildRunID, e.Data.ChildAgentID
+case stream.RunStreamEnd:
+    // run has no more stream-visible events
 }
 ```
 
@@ -426,9 +435,11 @@ func (s *SSESink) Send(ctx context.Context, event stream.Event) error {
     case stream.ToolEnd:
         fmt.Fprintf(s.w, "data: tool_end: %s status=%v\n\n",
             e.Data.ToolName, e.Data.Error == nil)
-    case stream.AgentRunStarted:
-        fmt.Fprintf(s.w, "data: agent_run_started: %s child=%s\n\n",
+    case stream.ChildRunLinked:
+        fmt.Fprintf(s.w, "data: child_run_linked: %s child=%s\n\n",
             e.Data.ToolName, e.Data.ChildRunID)
+    case stream.RunStreamEnd:
+        fmt.Fprintf(s.w, "data: run_stream_end: %s\n\n", e.RunID())
     }
     s.w.(http.Flusher).Flush()
     return nil
@@ -439,18 +450,9 @@ func (s *SSESink) Close(ctx context.Context) error {
 }
 ```
 
-### run ごとの購読
+### セッションストリームの購読（Pulse）
 
-特定 run のイベントを購読します。
-
-```go
-sink := &SSESink{w: w}
-stop, err := rt.SubscribeRun(ctx, runID, sink)
-if err != nil {
-    return err
-}
-defer stop()
-```
+プロダクションでは UI はセッションストリーム（`session/<session_id>`）を購読し、`run_id` でフィルタして描画します。アクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了します。
 
 ### グローバルな Stream Sink
 
@@ -464,7 +466,7 @@ rt := runtime.New(
 
 runtime はデフォルトの `stream.Subscriber` をインストールします。これは:
 - hook イベントを `stream.Event` にマップし
-- **デフォルト `StreamProfile`**を使用して、アシスタント返信、プランナー思考、ツール start/update/end、await、usage、workflow、`AgentRunStarted` を出力します（子 run は自身のストリームに残します）
+- **デフォルト `StreamProfile`**を使用して、アシスタント返信、プランナー思考、ツール start/update/end、await、usage、workflow、`child_run_linked`、および終端マーカー `run_stream_end` を出力します
 
 ### Stream Profile
 
@@ -497,13 +499,13 @@ sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 // Fine-grained control over which events to emit
 profile := stream.StreamProfile{
     Assistant:  true,
-    Thought:    false,  // Skip planner thinking
+    Thoughts:   false,  // Skip planner thinking
     ToolStart:  true,
     ToolUpdate: true,
     ToolEnd:    true,
     Usage:      false,  // Skip usage events
     Workflow:   true,
-    RunStarted: true,   // Include agent-run-started links
+    ChildRuns:  true,   // Include parent tool → child run links
 }
 
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
@@ -530,11 +532,12 @@ Goa-AI は次を提供します:
 pulseClient := pulse.NewClient(redisClient)
 s, err := pulseSink.NewSink(pulseSink.Options{
     Client: pulseClient,
-    StreamIDFunc: func(ev stream.Event) (string, error) {
-        if ev.RunID() == "" {
-            return "", errors.New("missing run id")
+    // Optional: override stream naming (defaults to `session/<SessionID>`).
+    StreamID: func(ev stream.Event) (string, error) {
+        if ev.SessionID() == "" {
+            return "", errors.New("missing session id")
         }
-        return fmt.Sprintf("run/%s", ev.RunID()), nil
+        return fmt.Sprintf("session/%s", ev.SessionID()), nil
     },
 })
 if err != nil { log.Fatal(err) }

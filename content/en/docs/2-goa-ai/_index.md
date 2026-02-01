@@ -83,15 +83,11 @@ Goa-AI's **run tree model** gives you hierarchical execution with full observabi
 
 Black-box agents are a liability. When your agent calls a tool, starts thinking, or encounters an error, you need to know *immediately*—not after the request times out.
 
-Goa-AI emits **typed events** throughout execution: `assistant_reply` for streaming text, `tool_start`/`tool_end` for tool lifecycle, `planner_thought` for reasoning visibility, `usage` for token tracking. Events flow through a simple **Sink** interface to any transport.
+Goa-AI emits **typed events** throughout execution: `assistant_reply` for streaming text, `tool_start`/`tool_end` for tool lifecycle, `planner_thought` for reasoning visibility, `usage` for token tracking. Events flow through a simple **Sink** interface to any transport, and production UIs consume a single **session-owned stream** (`session/<session_id>`) and close when they observe `run_stream_end` for the active run.
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
-
-// Or subscribe to a specific run
-stop, _ := rt.SubscribeRun(ctx, runID, connectionSink)
-defer stop()
 ```
 
 **Stream profiles** filter events for different consumers: `UserChatProfile()` for end-user UIs, `AgentDebugProfile()` for developer views, `MetricsProfile()` for observability pipelines. Built-in sinks for Pulse (Redis Streams) enable distributed streaming across services.

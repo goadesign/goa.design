@@ -32,9 +32,9 @@ At runtime, Goa-AI organizes your system around a small set of composable constr
 
 - **Planners**: Your LLM-driven strategy layer implementing `PlanStart` / `PlanResume`. Planners decide when to call tools versus answer directly; the runtime enforces caps and time budgets around those decisions.
 
-- **Run tree & agent-as-tool**: When an agent calls another agent as a tool, the runtime starts a real child run with its own `RunID`. The parent `ToolResult` carries a `RunLink` (`*run.Handle`) pointing to the child, and a corresponding `AgentRunStarted` event is emitted in the parent run so UIs and debuggers can attach to the child stream on demand.
+- **Run tree & agent-as-tool**: When an agent calls another agent as a tool, the runtime starts a real child run with its own `RunID`. The parent `ToolResult` carries a `RunLink` (`*run.Handle`) pointing to the child, and a corresponding `child_run_linked` stream event is emitted so UIs can correlate parent tool calls with child run IDs without guessing.
 
-- **Streams & profiles**: Every run has its own stream of `stream.Event` values (assistant replies, planner thoughts, tool start/update/end, awaits, usage, workflow, and agent-run links). `stream.StreamProfile` selects which event kinds are visible for a given audience (chat UI, debug, metrics) and how child runs are projected: off, flattened, or linked.
+- **Session-owned streams & profiles**: Goa-AI publishes typed `stream.Event` values into a **session-owned stream** (`session/<session_id>`). Events carry both `RunID` and `SessionID`, and include an explicit boundary marker (`run_stream_end`) so consumers can close SSE/WebSocket deterministically without timers. `stream.StreamProfile` selects which event kinds are visible for a given audience (chat UI, debug, metrics).
 
 ---
 
@@ -57,6 +57,11 @@ func main() {
     ctx := context.Background()
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: newChatPlanner()})
     if err != nil {
+        panic(err)
+    }
+
+    // Sessions are first-class: create a session before starting runs under it.
+    if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
         panic(err)
     }
 
@@ -88,6 +93,9 @@ rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
 
 // No agent registration needed in a caller-only process
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "s1"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
@@ -269,29 +277,61 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 
 - **Run event stores** (`runlog.Store`) append the canonical hook event log per `RunID` for audit/debug UIs and run introspection.
 
-- **Stream sinks** (`stream.Sink`, for example Pulse or custom SSE/WebSocket) receive typed `stream.Event` values produced by the `stream.Subscriber`. A `StreamProfile` controls which event kinds are emitted and how child runs are projected (off, flattened, linked).
+- **Stream sinks** (`stream.Sink`, for example Pulse or custom SSE/WebSocket) receive typed `stream.Event` values produced by the `stream.Subscriber`. A `StreamProfile` controls which event kinds are emitted.
 
 - **Telemetry**: OTEL-aware logging, metrics, and tracing instrument workflows and activities end to end.
 
-### Observing Events for a Single Run
+### Consuming a Session Stream (Pulse)
 
-In addition to global sinks, you can observe the event stream for a single run ID using the `Runtime.SubscribeRun` helper:
+In production, the common pattern is:
+
+- publish runtime stream events to Pulse (Redis Streams) using a `stream.Sink`
+- subscribe to the **session stream** (`session/<session_id>`) from your UI fan-out (SSE/WebSocket)
+- stop streaming a run when you observe `type=="run_stream_end"` for the active run ID
 
 ```go
-type mySink struct{}
+import (
+    pulsestream "goa.design/goa-ai/features/stream/pulse"
+    "goa.design/goa-ai/runtime/agent/runtime"
+    "goa.design/goa-ai/runtime/agent/stream"
+)
 
-func (s *mySink) Send(ctx context.Context, e stream.Event) error {
-    // deliver event to SSE/WebSocket, logs, etc.
-    return nil
-}
-
-func (s *mySink) Close(ctx context.Context) error { return nil }
-
-stop, err := rt.SubscribeRun(ctx, "run-123", &mySink{})
+streams, err := pulsestream.NewRuntimeStreams(pulsestream.RuntimeStreamsOptions{
+    Client: pulseClient,
+})
 if err != nil {
     panic(err)
 }
-defer stop()
+rt := runtime.New(
+    runtime.WithEngine(eng),
+    runtime.WithStream(streams.Sink()),
+)
+
+sub, err := streams.NewSubscriber(pulsestream.SubscriberOptions{SinkName: "ui"})
+if err != nil {
+    panic(err)
+}
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
+if err != nil {
+    panic(err)
+}
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+        // evt.SessionID(), evt.RunID(), evt.Type(), evt.Payload()
+    case err := <-errs:
+        panic(err)
+    }
+}
 ```
 
 ---

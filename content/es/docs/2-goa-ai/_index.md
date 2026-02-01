@@ -83,15 +83,11 @@ El **modelo de árbol de ejecución** de Goa-AI te proporciona una ejecución je
 
 Los agentes de caja negra son un lastre. Cuando su agente llama a una herramienta, empieza a pensar o se encuentra con un error, usted necesita saberlo *inmediatamente*, no después de que se agote el tiempo de espera de la solicitud.
 
-Goa-AI emite **eventos tipados** a lo largo de la ejecución: `assistant_reply` para el flujo de texto, `tool_start`/`tool_end` para el ciclo de vida de la herramienta, `planner_thought` para la visibilidad del razonamiento, `usage` para el seguimiento de tokens. Los eventos fluyen a través de una sencilla interfaz **Sink** a cualquier transporte.
+Goa-AI emite **eventos tipados** a lo largo de la ejecución: `assistant_reply` para el flujo de texto, `tool_start`/`tool_end` para el ciclo de vida de la herramienta, `planner_thought` para la visibilidad del razonamiento, `usage` para el seguimiento de tokens. Los eventos fluyen a través de una sencilla interfaz **Sink** a cualquier transporte y, en producción, las UIs consumen un único flujo **propiedad de la sesión** (`session/<session_id>`) y cierran al observar `run_stream_end` para la ejecución activa.
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
-
-// Or subscribe to a specific run
-stop, _ := rt.SubscribeRun(ctx, runID, connectionSink)
-defer stop()
 ```
 
 *los **perfiles de flujo** filtran los eventos para diferentes consumidores: `UserChatProfile()` para UIs de usuario final, `AgentDebugProfile()` para vistas de desarrollador, `MetricsProfile()` para pipelines de observabilidad. Los sumideros integrados para Pulse (Redis Streams) permiten la transmisión distribuida entre servicios.
