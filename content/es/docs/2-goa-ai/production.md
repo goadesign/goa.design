@@ -279,12 +279,19 @@ rt := runtime.New()
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
     "go.temporal.io/sdk/client"
+
+    // Agregado de especificaciones generado para tus herramientas.
+    // El paquete generado expone: func Spec(tools.Ident) (*tools.ToolSpec, bool)
+    specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
 temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
+        // Requerido: hacer cumplir el contrato de límites de workflow de goa-ai.
+        // Los resultados/artefactos cruzan límites como bytes JSON canónicos (api.ToolEvent/api.ToolArtifact).
+        DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
@@ -351,12 +358,12 @@ Esta sección muestra cómo transmitir eventos de agente a UIs en tiempo real us
 
 ### Visión General
 
-Goa-AI expone **flujos por ejecución** de eventos tipificados que pueden ser entregados a las UIs vía:
+Goa-AI publica un **flujo propiedad de la sesión** de eventos tipificados que puede entregarse a las UIs vía:
 - Eventos enviados por el servidor (SSE)
 - WebSockets
 - Buses de mensajes (Pulse, Redis Streams, etc.)
 
-Cada ejecución de flujo de trabajo tiene su propio flujo; cuando los agentes llaman a otros agentes como herramientas, el tiempo de ejecución inicia ejecuciones hijas y las enlaza usando eventos `AgentRunStarted` y manejadores `RunLink`. Las interfaces de usuario pueden suscribirse a cualquier ejecución por ID y elegir cuántos detalles mostrar.
+Todos los eventos visibles para una sesión se anexan a un único flujo: `session/<session_id>`. Cada evento lleva `run_id` y `session_id`, y el runtime emite `child_run_linked` para vincular llamadas de herramienta padre con ejecuciones hijas, además de `run_stream_end` como marcador explícito para cerrar SSE/WebSocket sin temporizadores.
 
 ### Interfaz Stream Sink
 
@@ -384,7 +391,8 @@ El paquete `stream` define tipos de eventos concretos que implementan `stream.Ev
 | `AwaitExternalTools` | El planificador está esperando los resultados de la herramienta externa | `Usage` | El planificador está esperando los resultados de la herramienta externa | `Usage` | `Usage` | El planificador está esperando los resultados de la herramienta externa
 | `Usage` | Uso de tokens por invocación del modelo | | `Workflow` | El planificador está esperando una aclaración humana
 | `Workflow` | Ejecutar actualizaciones de ciclo de vida y fase |
-| `AgentRunStarted` | Enlace desde una llamada a una herramienta padre a la ejecución de un agente hijo | `Usage`
+| `ChildRunLinked` | Enlace desde una llamada a una herramienta padre a la ejecución de un agente hijo |
+| `RunStreamEnd` | Marcador explícito: no se esperan más eventos visibles para esa ejecución |
 
 Los transportes suelen cambiar de tipo en `stream.Event` por seguridad en tiempo de compilación:
 
@@ -398,8 +406,10 @@ case stream.ToolStart:
     // e.Data.ToolCallID, e.Data.ToolName, e.Data.Payload
 case stream.ToolEnd:
     // e.Data.Result, e.Data.Error, e.Data.ResultPreview
-case stream.AgentRunStarted:
+case stream.ChildRunLinked:
     // e.Data.ToolName, e.Data.ToolCallID, e.Data.ChildRunID, e.Data.ChildAgentID
+case stream.RunStreamEnd:
+    // run has no more stream-visible events
 }
 ```
 
@@ -423,9 +433,11 @@ func (s *SSESink) Send(ctx context.Context, event stream.Event) error {
     case stream.ToolEnd:
         fmt.Fprintf(s.w, "data: tool_end: %s status=%v\n\n",
             e.Data.ToolName, e.Data.Error == nil)
-    case stream.AgentRunStarted:
-        fmt.Fprintf(s.w, "data: agent_run_started: %s child=%s\n\n",
+    case stream.ChildRunLinked:
+        fmt.Fprintf(s.w, "data: child_run_linked: %s child=%s\n\n",
             e.Data.ToolName, e.Data.ChildRunID)
+    case stream.RunStreamEnd:
+        fmt.Fprintf(s.w, "data: run_stream_end: %s\n\n", e.RunID())
     }
     s.w.(http.Flusher).Flush()
     return nil
@@ -436,18 +448,9 @@ func (s *SSESink) Close(ctx context.Context) error {
 }
 ```
 
-### Suscripción por ejecución
+### Suscripción al flujo de sesión (Pulse)
 
-Suscribirse a los eventos de una carrera específica:
-
-```go
-sink := &SSESink{w: w}
-stop, err := rt.SubscribeRun(ctx, runID, sink)
-if err != nil {
-    return err
-}
-defer stop()
-```
+En producción, las UIs consumen el flujo de sesión (`session/<session_id>`) desde un bus compartido y filtran por `run_id`. Cierra SSE/WebSocket cuando observes `run_stream_end` para la ejecución activa.
 
 ### Sumidero Global de Corridas
 
@@ -461,7 +464,7 @@ rt := runtime.New(
 
 El tiempo de ejecución instala un `stream.Subscriber` por defecto que:
 - asigna eventos de gancho a valores `stream.Event`
-- utiliza el **default `StreamProfile`**, que emite respuestas del asistente, pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, flujo de trabajo y enlaces `AgentRunStarted`, con ejecuciones hijas mantenidas en sus propios flujos
+- utiliza el **default `StreamProfile`**, que emite respuestas del asistente, pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, flujo de trabajo, enlaces `child_run_linked` y el marcador terminal `run_stream_end`
 
 ### Stream Profiles
 
@@ -494,13 +497,13 @@ sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 // Fine-grained control over which events to emit
 profile := stream.StreamProfile{
     Assistant:  true,
-    Thought:    false,  // Skip planner thinking
+    Thoughts:   false,  // Skip planner thinking
     ToolStart:  true,
     ToolUpdate: true,
     ToolEnd:    true,
     Usage:      false,  // Skip usage events
     Workflow:   true,
-    RunStarted: true,   // Include agent-run-started links
+    ChildRuns:  true,   // Include parent tool → child run links
 }
 
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
@@ -515,7 +518,7 @@ Los perfiles personalizados son útiles cuando:
 
 En las configuraciones de producción, a menudo se desea
 - publicar eventos en un bus compartido (por ejemplo, Pulse)
-- mantener **flujos por ejecución** en ese bus (un tema/clave por ejecución)
+- utilizar un **flujo propiedad de la sesión** en ese bus (`session/<session_id>`)
 
 Goa-AI proporciona:
 - `features/stream/pulse` - una implementación `stream.Sink` respaldada por Pulse
@@ -527,11 +530,12 @@ Cableado típico:
 pulseClient := pulse.NewClient(redisClient)
 s, err := pulseSink.NewSink(pulseSink.Options{
     Client: pulseClient,
-    StreamIDFunc: func(ev stream.Event) (string, error) {
-        if ev.RunID() == "" {
-            return "", errors.New("missing run id")
+    // Optional: override stream naming (defaults to `session/<SessionID>`).
+    StreamID: func(ev stream.Event) (string, error) {
+        if ev.SessionID() == "" {
+            return "", errors.New("missing session id")
         }
-        return fmt.Sprintf("run/%s", ev.RunID()), nil
+        return fmt.Sprintf("session/%s", ev.SessionID()), nil
     },
 })
 if err != nil { log.Fatal(err) }

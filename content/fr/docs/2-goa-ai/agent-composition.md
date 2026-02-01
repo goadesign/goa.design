@@ -118,7 +118,7 @@ func main() {
 - **Export** : Déclare les ensembles d'outils que d'autres agents peuvent utiliser
 - **AgentToolset** : Fait référence à un jeu d'outils exporté d'un autre agent
 - **Inline Execution** : Du point de vue de l'appelant, un agent-as-tool se comporte comme un appel d'outil normal ; le runtime exécute l'agent fournisseur en tant que run enfant et agrège ses résultats en un seul `ToolResult` (avec un `RunLink` renvoyant au run enfant)
-- **Cross-Process** : Les agents peuvent être exécutés sur différents travailleurs tout en conservant un arbre d'exécution cohérent ; les événements `AgentRunStarted` et les gestionnaires d'exécution relient les appels d'outils parents aux exécutions d'agents enfants pour la diffusion en continu et l'observabilité
+- **Cross-Process** : Les agents peuvent être exécutés sur différents travailleurs tout en conservant un arbre d'exécution cohérent ; les événements `ChildRunLinked` et les gestionnaires d'exécution relient les appels d'outils parents aux exécutions d'agents enfants pour la diffusion en continu et l'observabilité
 
 ---
 
@@ -220,132 +220,85 @@ RunLink *run.Handle
 
 Ce `RunLink` permet :
 - Aux planificateurs de raisonner sur l'exécution de l'enfant (par exemple, pour l'audit/l'enregistrement)
-- Aux interfaces utilisateur de créer des "cartes d'agent" imbriquées qui peuvent s'abonner au flux de l'exécution enfant
+- Aux interfaces utilisateur de créer des "cartes d'agent" imbriquées et de rendre les événements en filtrant le flux de session par `run_id`
 - Des outils externes pour naviguer d'une exécution parentale à ses enfants sans deviner
 
 ---
 
-## Flux par exécution
+## Flux détenu par la session
 
-Chaque exécution a son **propre flux** de valeurs `stream.Event` :
+Goa-AI publie les événements `stream.Event` dans un unique **flux détenu par la session** :
 
-- `AssistantReply`, `PlannerThought`, `ToolStart`, `ToolUpdate`, `PlannerThought`
-- `ToolStart`, `ToolUpdate`, `ToolEnd`
-- `AwaitClarification`, `AwaitExternalTools`
-- `Usage`, `Workflow`
-- `AgentRunStarted` (lien de l'outil parent → exécution enfant)
+- `session/<session_id>`
 
-Les consommateurs s'inscrivent pour chaque exécution :
+Ce flux contient les événements pour toutes les exécutions de la session, y compris les exécutions d’agents imbriqués (agent-as-tool). Chaque événement porte `run_id` et `session_id`, et le runtime émet :
+
+- `child_run_linked` : relie un appel d’outil parent (`tool_call_id`) à l’exécution enfant (`child_run_id`)
+- `run_stream_end` : marqueur explicite signifiant « plus aucun événement visible ne sera émis pour cette exécution »
+
+Les consommateurs s’abonnent **une fois par session** et ferment SSE/WebSocket lorsqu’ils observent `run_stream_end` pour le `run_id` actif.
 
 ```go
-sink := &MySink{}
-stop, err := rt.SubscribeRun(ctx, runID, sink)
-if err != nil { /* handle */ }
-defer stop()
-```
+import "goa.design/goa-ai/runtime/agent/stream"
 
-Cette méthode permet d'éviter les casques d'incendie globaux et laisse les interfaces utilisateur libres :
-- D'attacher une connexion par exécution (par exemple, par session de chat)
-- Décider du moment où il convient d'explorer les agents enfants en s'abonnant à leurs exécutions à l'aide des métadonnées `AgentRunStarted` (`ChildRunID`, `ChildAgentID`)
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
+if err != nil {
+    panic(err)
+}
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+    case err := <-errs:
+        panic(err)
+    }
+}
+```
 
 ---
 
-## Profils de flux et politiques pour les enfants
+## Profils de flux
 
-`stream.StreamProfile` décrit ce qu'un public voit. Chaque profil contrôle :
-
-- Les types d'événements inclus (`Assistant`, `Thoughts`, `ToolStart`, `ToolUpdate`, `ToolEnd`, `AwaitClarification`, `AwaitExternalTools`, `Usage`, `Workflow`, `AgentRuns`)
-- Comment les courses des enfants sont projetées via `ChildStreamPolicy`
+`stream.StreamProfile` décrit quels types d’événements sont émis pour une audience.
 
 ### Structure StreamProfile
 
 ```go
 type StreamProfile struct {
-    Assistant          bool              // Assistant reply events
-    Thoughts           bool              // Planner thinking/reasoning events
-    ToolStart          bool              // Tool invocation start events
-    ToolUpdate         bool              // Tool progress update events
-    ToolEnd            bool              // Tool completion events
-    AwaitClarification bool              // Human clarification requests
-    AwaitExternalTools bool              // External tool execution requests
-    Usage              bool              // Token usage events
-    Workflow           bool              // Run lifecycle events
-    AgentRuns          bool              // Agent-as-tool link events
-    ChildPolicy        ChildStreamPolicy // How child runs are projected
+    Assistant          bool // assistant_reply
+    Thoughts           bool // planner_thought
+    ToolStart          bool // tool_start
+    ToolUpdate         bool // tool_update
+    ToolEnd            bool // tool_end
+    AwaitClarification bool // await_clarification
+    AwaitConfirmation  bool // await_confirmation
+    AwaitQuestions     bool // await_questions
+    AwaitExternalTools bool // await_external_tools
+    ToolAuthorization  bool // tool_authorization
+    Usage              bool // usage
+    Workflow           bool // workflow
+    ChildRuns          bool // child_run_linked (outil parent → exécution enfant)
 }
 ```
-
-### Options de ChildStreamPolicy
-
-L'option `ChildStreamPolicy` contrôle la manière dont les agents imbriqués apparaissent dans le flux :
-
-| Politique - Constante - Comportement - Politique - Politique - Constante - Comportement - Politique - Politique - Politique - Constante - Comportement - Politique - Politique
-|--------|----------|----------|
-| La politique de l'agent est la suivante : `ChildStreamPolicy` | Les exécutions enfants sont cachées à cette audience ; seuls les appels à l'outil parent et les résultats sont visibles. C'est la meilleure solution pour les pipelines de métriques qui n'ont pas besoin de détails imbriqués. |
-| Les événements des enfants sont projetés dans le flux d'exécution parent, ce qui crée une vue de débogage de type "tuyau d'arrosage". Utile pour le débogage opérationnel lorsque vous souhaitez que tous les événements soient regroupés dans un seul flux. |
-`ChildStreamPolicyLinked` Le parent émet des événements de lien `AgentRunStarted` ; les événements des enfants restent sur leurs propres flux. Les interfaces utilisateur peuvent s'abonner aux flux enfants à la demande. Idéal pour les interfaces de chat structurées. |
 
 ### Profils intégrés
 
-Goa-AI propose trois profils intégrés pour les cas d'utilisation courants :
+Goa-AI fournit des profils intégrés pour les cas d’utilisation courants :
 
-**`stream.UserChatProfile()`** - Interfaces de chat pour l'utilisateur final
+- `stream.DefaultProfile()` émet tous les types d’événements.
+- `stream.UserChatProfile()` convient aux interfaces utilisateur finales.
+- `stream.AgentDebugProfile()` convient aux vues de débogage/développeur.
+- `stream.MetricsProfile()` n’émet que `Usage` et `Workflow`.
 
-```go
-// Returns a profile suitable for end-user chat views
-func UserChatProfile() StreamProfile {
-    return StreamProfile{
-        Assistant:          true,
-        Thoughts:           true,
-        ToolStart:          true,
-        ToolUpdate:         true,
-        ToolEnd:            true,
-        AwaitClarification: true,
-        AwaitExternalTools: true,
-        Usage:              true,
-        Workflow:           true,
-        AgentRuns:          true,
-        ChildPolicy:        ChildStreamPolicyLinked,
-    }
-}
-```
-
-- Emet tous les types d'événements pour un rendu riche de l'interface utilisateur
-- Utilise la politique **Linked** pour les enfants afin que les interfaces utilisateur puissent rendre des "cartes d'agent" imbriquées et s'abonner à des flux d'enfants à la demande
-- Maintient la voie de discussion principale propre tout en permettant d'explorer les agents imbriqués
-
-**`stream.AgentDebugProfile()`** - Débogage opérationnel
-
-```go
-// Returns a verbose profile for debugging views
-func AgentDebugProfile() StreamProfile {
-    p := DefaultProfile()
-    p.ChildPolicy = ChildStreamPolicyFlatten
-    return p
-}
-```
-
-- Emet tous les types d'événements comme `UserChatProfile`
-- Utilise la politique **Flatten** pour projeter tous les événements enfants dans le flux parent
-- Emet toujours des liens `AgentRunStarted` pour la corrélation
-- Idéal pour les consoles de débogage et les outils de dépannage
-
-**`stream.MetricsProfile()`** - Pipelines de télémétrie
-
-```go
-// Returns a profile for metrics/telemetry pipelines
-func MetricsProfile() StreamProfile {
-    return StreamProfile{
-        Usage:       true,
-        Workflow:    true,
-        ChildPolicy: ChildStreamPolicyOff,
-    }
-}
-```
-
-- N'émet que les événements `Usage` et `Workflow`
-- Utilise la politique **Off** pour les enfants afin de masquer entièrement les exécutions imbriquées
-- Frais généraux minimes pour le suivi des coûts et des performances
+Dans le modèle de streaming détenu par la session, il n’y a pas de souscriptions séparées pour les exécutions enfants. `child_run_linked` sert à construire l’arbre d’exécution et à attacher les événements à la bonne carte tout en consommant un seul flux `session/<session_id>`.
 
 ### Câblage des profils aux abonnés
 
@@ -384,43 +337,29 @@ toolsOnlyProfile := stream.StreamProfile{
     ToolUpdate:  true,
     ToolEnd:     true,
     Workflow:    true,
-    ChildPolicy: stream.ChildStreamPolicyLinked,
+    ChildRuns:   true,
 }
 
 // Custom profile: everything except usage (for privacy-sensitive contexts)
 noUsageProfile := stream.DefaultProfile()
 noUsageProfile.Usage = false
 
-// Custom profile: flatten child runs but skip thoughts
-flatNoThoughts := stream.StreamProfile{
-    Assistant:          true,
-    ToolStart:          true,
-    ToolUpdate:         true,
-    ToolEnd:            true,
-    AwaitClarification: true,
-    AwaitExternalTools: true,
-    Usage:              true,
-    Workflow:           true,
-    AgentRuns:          true,
-    ChildPolicy:        stream.ChildStreamPolicyFlatten,
-}
-
 sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 ```
 
 ### Lignes directrices pour la sélection des profils
 
-| Profil recommandé - Raison d'être - Public - Profil recommandé - Raison d'être - Profil recommandé - Raison d'être - Raison d'être
-|----------|---------------------|-----------|
-| `UserChatProfile()` | Structure épurée avec des cartes d'agents extensibles
-| Console d'administration/débogage `AgentDebugProfile()` | Visibilité complète avec des événements enfants aplatis |
-| | Métriques/facturation | `MetricsProfile()` | Evénements minimaux pour l'agrégation |
-| Enregistrement d'audit | Personnalisé (tous les événements, liés) | Enregistrement complet avec hiérarchie structurée |
-| Tableaux de bord en temps réel | Personnalisé (flux de travail + utilisation) | Suivi de l'état et des coûts uniquement |
+| Audience | Profil recommandé | Justification |
+|----------|------------------|---------------|
+| UI chat utilisateur final | `UserChatProfile()` | Structure épurée avec des cartes d'agents imbriquées |
+| Console d'administration/débogage | `AgentDebugProfile()` | Visibilité complète des outils, attentes et phases |
+| Métriques/facturation | `MetricsProfile()` | Événements minimaux pour l'agrégation |
+| Audit | `DefaultProfile()` | Enregistrement complet avec champs de corrélation par exécution |
+| Tableaux de bord en temps réel | Personnalisé (workflow + usage) | Suivi de l'état et des coûts uniquement |
 
 Les applications choisissent le profil lors du câblage des puits et des ponts (par exemple, Pulse, SSE, WebSocket) :
-- Les interfaces de dialogue en ligne restent propres et structurées (parcours d'enfants liés, cartes d'agent)
-- Les consoles de débogage peuvent voir les flux d'événements imbriqués complets
+- Les interfaces de dialogue en ligne restent propres et structurées (cartes imbriquées pilotées par `child_run_linked`)
+- Les consoles de débogage peuvent voir le détail complet dans le même flux de session
 - Les pipelines de métrologie voient juste assez pour agréger l'utilisation et les statuts
 
 ---
@@ -429,22 +368,15 @@ Les applications choisissent le profil lors du câblage des puits et des ponts (
 
 Étant donné l'arbre d'exécution + le modèle de flux, une interface utilisateur de chat typique peut.. :
 
-1. S'abonner à l'exécution **root chat** avec un profil de chat utilisateur
-2. Rendre :
-   - Réponses de l'assistant
-   - Lignes d'outils pour les outils de premier niveau
-   - événements "Agent run started" sous forme de **Cartes d'agent** imbriquées
-3. Lorsque l'utilisateur développe une carte :
-   - S'abonner à l'exécution de l'enfant en utilisant `ChildRunID`
-   - Rendre la ligne temporelle de cet agent (pensées, outils, attentes) à l'intérieur de la carte
-   - Garder la voie de discussion principale propre
+1. S’abonner au flux de session (`session/<session_id>`) avec un profil chat utilisateur.
+2. Suivre l’exécution active (`active_run_id`) et rendre :
+   - Réponses de l’assistant (`assistant_reply`)
+   - Cycle de vie des outils (`tool_start`/`tool_update`/`tool_end`)
+   - Liens d’exécutions enfants (`child_run_linked`) comme **cartes d’agent** imbriquées par `child_run_id`
+3. Pour chaque carte, rendre la timeline de l’exécution enfant en filtrant le même flux de session par `run_id == child_run_id` (sans souscriptions supplémentaires).
+4. Fermer SSE/WebSocket lorsque vous observez `run_stream_end` pour `active_run_id`.
 
-Les outils de débogage peuvent s'abonner avec un profil de débogage pour voir :
-- Les événements enfants aplatis
-- Les métadonnées explicites parent/enfant
-- Les arbres d'exécution complets pour le dépannage
-
-L'idée clé : **La topologie de l'exécution (arbre d'exécution) est toujours préservée**, et la diffusion en continu n'est qu'un ensemble de projections sur cet arbre pour différents publics.
+L’idée clé : **la topologie d’exécution (arbre) est préservée via des IDs et des événements de lien**, et le streaming est un unique log ordonné par session que vous projetez en voies/cartes en filtrant par `run_id`.
 
 ---
 

@@ -83,15 +83,11 @@ Il **modello ad albero di esecuzione** di Goa-AI offre un'esecuzione gerarchica 
 
 Gli agenti black-box sono un problema. Quando il vostro agente chiama uno strumento, inizia a pensare o incontra un errore, dovete saperlo *immediatamente*, non dopo il timeout della richiesta.
 
-Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per lo streaming del testo, `tool_start`/`tool_end` per il ciclo di vita dello strumento, `planner_thought` per la visibilità del ragionamento, `usage` per il tracciamento dei token. Gli eventi fluiscono attraverso una semplice interfaccia **Sink** verso qualsiasi trasporto.
+Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per lo streaming del testo, `tool_start`/`tool_end` per il ciclo di vita dello strumento, `planner_thought` per la visibilità del ragionamento, `usage` per il tracciamento dei token. Gli eventi fluiscono attraverso una semplice interfaccia **Sink** verso qualsiasi trasporto e, in produzione, le UI consumano un unico stream **di proprietà della sessione** (`session/<session_id>`) e chiudono quando osservano `run_stream_end` per la run attiva.
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
-
-// Or subscribe to a specific run
-stop, _ := rt.SubscribeRun(ctx, runID, connectionSink)
-defer stop()
 ```
 
 *i *profili di stream** filtrano gli eventi per i diversi consumatori: `UserChatProfile()` per le interfacce utente, `AgentDebugProfile()` per le viste degli sviluppatori, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra i servizi.

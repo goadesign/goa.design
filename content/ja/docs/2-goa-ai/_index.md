@@ -83,15 +83,11 @@ Goa-AI の **ランツリー（run tree）モデル**は、完全な可観測性
 
 ブラックボックスなエージェントはリスクです。ツール呼び出し、思考の開始、エラーの発生を *今すぐ* 知る必要があります（タイムアウト後では遅い）。
 
-Goa-AI は実行中に **型付けされたイベント**を発行します。たとえば、ストリーミングテキストの `assistant_reply`、ツールのライフサイクルを表す `tool_start`/`tool_end`、推論の可視化のための `planner_thought`、トークン消費の `usage` などです。イベントはシンプルな **Sink** インターフェースを介して任意のトランスポートへ流せます。
+Goa-AI は実行中に **型付けされたイベント**を発行します。たとえば、ストリーミングテキストの `assistant_reply`、ツールのライフサイクルを表す `tool_start`/`tool_end`、推論の可視化のための `planner_thought`、トークン消費の `usage` などです。イベントはシンプルな **Sink** インターフェースを介して任意のトランスポートへ流せます。プロダクションでは UI は **セッション所有ストリーム**（`session/<session_id>`）を 1 本購読し、アクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了します。
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
-
-// Or subscribe to a specific run
-stop, _ := rt.SubscribeRun(ctx, runID, connectionSink)
-defer stop()
 ```
 
 **Stream profiles** は消費者ごとにイベントをフィルタします。エンドユーザ UI 用の `UserChatProfile()`、開発者向けの `AgentDebugProfile()`、観測基盤向けの `MetricsProfile()` など。Pulse（Redis Streams）用の組み込み sink により、サービス間で分散ストリーミングできます。

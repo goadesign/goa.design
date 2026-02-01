@@ -32,9 +32,9 @@ Au moment de l'exécution, Goa-AI organise votre système autour d'un petit ense
 
 - **Planificateurs** : Votre couche de stratégie basée sur le LLM mettant en œuvre `PlanStart` / `PlanResume`. Les planificateurs décident quand appeler les outils plutôt que de répondre directement ; le moteur d'exécution applique des plafonds et des budgets de temps autour de ces décisions.
 
-- **Arbre d'exécution et agent en tant qu'outil** : Lorsqu'un agent appelle un autre agent en tant qu'outil, le runtime démarre un véritable run enfant avec son propre `RunID`. Le `ToolResult` parent porte un `RunLink` (`*run.Handle`) pointant vers l'enfant, et un événement `AgentRunStarted` correspondant est émis dans l'exécution parent afin que les interfaces utilisateur et les débogueurs puissent s'attacher au flux de l'enfant à la demande.
+- **Arbre d'exécution et agent en tant qu'outil** : Lorsqu'un agent appelle un autre agent en tant qu'outil, le runtime démarre un véritable run enfant avec son propre `RunID`. Le `ToolResult` parent porte un `RunLink` (`*run.Handle`) pointant vers l'enfant, et un événement de streaming `child_run_linked` est émis pour corréler l’appel de l’outil parent avec le `RunID` enfant.
 
-- **Streams et profils** : Chaque exécution a son propre flux de valeurs `stream.Event` (réponses de l'assistant, réflexions du planificateur, démarrage/mise à jour/fin de l'outil, attentes, utilisation, flux de travail et liens entre l'agent et l'exécution). `stream.StreamProfile` sélectionne les types d'événements visibles pour un public donné (interface de discussion, débogage, mesures) et la manière dont les exécutions enfantines sont projetées : désactivées, aplaties ou liées.
+- **Streams et profils** : Goa-AI publie des valeurs `stream.Event` typées dans un **flux détenu par la session** (`session/<session_id>`). Les événements portent `RunID` et `SessionID` et le runtime émet `run_stream_end` comme marqueur explicite pour fermer SSE/WebSocket sans temporisateurs. `stream.StreamProfile` sélectionne les types d'événements visibles pour un public donné (UI chat, debug, métriques).
 
 ---
 
@@ -57,6 +57,11 @@ func main() {
     ctx := context.Background()
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: newChatPlanner()})
     if err != nil {
+        panic(err)
+    }
+
+    // Sessions are first-class: create a session before starting runs under it.
+    if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
         panic(err)
     }
 
@@ -88,6 +93,9 @@ rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
 
 // No agent registration needed in a caller-only process
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "s1"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
@@ -269,29 +277,41 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 
 - **Magasins d'événements d'exécution** (`runlog.Store`) ajoutent le journal canonique des événements hook par `RunID` pour UI audit/debug et introspection.
 
-- **Les puits de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs typées `stream.Event` produites par le `stream.Subscriber`. Une `StreamProfile` contrôle les types d'événements émis et la manière dont les parcours enfants sont projetés (désactivés, aplatis, liés).
+- **Les puits de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs typées `stream.Event` produites par le `stream.Subscriber`. Une `StreamProfile` contrôle les types d'événements émis.
 
 - **Télémétrie** : La journalisation, la métrologie et le traçage des flux de travail et des activités de bout en bout sont pris en compte par OTEL.
 
-### Observer les événements d'une seule série
+### Consommer le flux de session (Pulse)
 
-En plus des puits globaux, vous pouvez observer le flux d'événements pour un seul ID d'exécution en utilisant l'aide `Runtime.SubscribeRun` :
+En production, le schéma habituel est :
+
+- consommer le flux de session (`session/<session_id>`) depuis un bus partagé (Pulse / Redis Streams)
+- filtrer par `run_id` pour construire des cartes/voies par exécution
+- fermer SSE/WebSocket à l’observation de `run_stream_end` pour le `run_id` actif
 
 ```go
-type mySink struct{}
+import "goa.design/goa-ai/runtime/agent/stream"
 
-func (s *mySink) Send(ctx context.Context, e stream.Event) error {
-    // deliver event to SSE/WebSocket, logs, etc.
-    return nil
-}
-
-func (s *mySink) Close(ctx context.Context) error { return nil }
-
-stop, err := rt.SubscribeRun(ctx, "run-123", &mySink{})
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
 if err != nil {
     panic(err)
 }
-defer stop()
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+    case err := <-errs:
+        panic(err)
+    }
+}
 ```
 
 ---

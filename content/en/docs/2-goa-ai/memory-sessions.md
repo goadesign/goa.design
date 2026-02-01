@@ -204,6 +204,9 @@ When calling an agent:
 
 ```go
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
@@ -211,6 +214,8 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 
 - `SessionID`: Groups all runs for a conversation; often used as a search key in run logs and dashboards
 - `TurnID`: Groups events for a single user → assistant interaction; optional but helpful for UIs and logs
+
+Sessions are ended explicitly (for example, when a conversation is deleted). Once a session is ended, new runs must not start under it.
 
 ---
 

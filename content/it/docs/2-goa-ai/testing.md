@@ -417,14 +417,21 @@ rt := runtime.New(
 ```go
 type DebugSink struct{}
 
-func (s *DebugSink) Receive(event stream.Event) error {
-    fmt.Printf("[%s] %T: %+v\n", time.Now().Format(time.RFC3339), event, event)
+func (s *DebugSink) Send(ctx context.Context, event stream.Event) error {
+    fmt.Printf("[%s] %s run=%s session=%s payload=%v\n",
+        time.Now().Format(time.RFC3339),
+        event.Type(),
+        event.RunID(),
+        event.SessionID(),
+        event.Payload(),
+    )
     return nil
 }
 
-// Subscribe to run events
-stop, err := rt.SubscribeRun(ctx, runID, &DebugSink{})
-defer stop()
+func (s *DebugSink) Close(ctx context.Context) error { return nil }
+
+// Wire the sink into the runtime to observe all stream events.
+rt := runtime.New(runtime.WithStream(&DebugSink{}))
 ```
 
 #### Ispezionare le specifiche dello strumento in fase di esecuzione

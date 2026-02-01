@@ -83,15 +83,11 @@ Le **modèle d'arbre d'exécution** de Goa-AI vous donne une exécution hiérarc
 
 Les agents "boîte noire" sont un handicap. Lorsque votre agent appelle un outil, commence à réfléchir ou rencontre une erreur, vous devez le savoir *immédiatement*, pas après que la requête ait expiré.
 
-Goa-AI émet des **événements typés** tout au long de l'exécution : `assistant_reply` pour le texte en continu, `tool_start`/`tool_end` pour le cycle de vie de l'outil, `planner_thought` pour la visibilité du raisonnement, `usage` pour le suivi des jetons. Les événements transitent par une simple interface **Sink** vers n'importe quel transport.
+Goa-AI émet des **événements typés** tout au long de l'exécution : `assistant_reply` pour le texte en continu, `tool_start`/`tool_end` pour le cycle de vie de l'outil, `planner_thought` pour la visibilité du raisonnement, `usage` pour le suivi des jetons. Les événements transitent par une simple interface **Sink** vers n'importe quel transport et, en production, les UIs consomment un flux **détenu par la session** (`session/<session_id>`) et ferment à l’observation de `run_stream_end` pour l’exécution active.
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
-
-// Or subscribe to a specific run
-stop, _ := rt.SubscribeRun(ctx, runID, connectionSink)
-defer stop()
 ```
 
 *les *profils de flux** filtrent les événements pour différents consommateurs : `UserChatProfile()` pour les interfaces utilisateur, `AgentDebugProfile()` pour les vues des développeurs, `MetricsProfile()` pour les pipelines d'observabilité. Les puits intégrés pour Pulse (Redis Streams) permettent une diffusion en continu distribuée entre les services.

@@ -368,7 +368,7 @@ Agent-as-Tool のツールセットは、プランナー視点では「インラ
 3. 親の `RunID` と `ToolCallID` を含むツールメタデータ、および正規 JSON ペイロードとともに `Execute(ctx, call)` を呼ぶ
 4. 生成済み agent-tool エクゼキュータが、ツールペイロードからネストしたエージェントメッセージ（system + user）を組み立て、プロバイダ側エージェントを子ランとして実行する
 5. 子ラン側で plan/execute/resume ループを完走し、`RunOutput` とツールイベントが親 `planner.ToolResult` に集約される（結果ペイロード、集約テレメトリ、`ChildrenCount`、子ランへの `RunLink` を含む）
-6. ストリーム購読者が親ツールコールの `tool_start` / `tool_end` に加え、`agent_run_started` のリンクイベントも発行するため、UI やデバッガは必要に応じて子ランのストリームへアタッチできる
+6. ストリーム購読者が親ツールコールの `tool_start` / `tool_end` に加え、`child_run_linked` のリンクイベントも発行するため、UI は単一のセッションストリームを消費しながらネストされたエージェントカードを構築できる
 
 ---
 

@@ -33,6 +33,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `BoundedResult` | Tool | Marks result as bounded view; enforces canonical bounds fields; optional sub-DSL can declare paging cursor fields |
 | `Cursor` | BoundedResult | Declares which payload field carries the paging cursor (optional) |
 | `NextCursor` | BoundedResult | Declares which result field carries the next-page cursor (optional) |
+| `Idempotent` | Tool | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags` | Tool, Toolset | Attaches metadata labels |
 | `BindTo` | Tool | Binds tool to service method |
 | `Inject` | Tool | Marks fields as runtime-injected |
@@ -721,6 +722,33 @@ Tool("web_search", "Search the web", func() {
     Args(func() { /* ... */ })
 })
 ```
+
+### Idempotent
+
+`Idempotent()` marks the current tool as idempotent *within a run transcript*.
+When set, runtimes/planners may treat repeated tool calls with identical arguments
+as redundant and avoid executing them once a successful result already exists in
+the transcript.
+
+**Context**: Inside `Tool`
+
+**When to use**
+
+Use `Idempotent()` only when the tool result is a pure function of its arguments
+for the lifetime of a run transcript (for example, retrieving a documentation
+section by stable identifier).
+
+**When not to use**
+
+Do not mark tools idempotent when their result depends on changing external state
+but the tool payload does not carry a time/version parameter (for example,
+“get current mode” or “get current status” snapshots without an `as_of` input).
+
+**Code generation**
+
+When a tool is marked `Idempotent()`, codegen emits the tag
+`goa-ai.idempotency=transcript` into the generated `tools.ToolSpec.Tags`. This
+tag is consumed by runtimes/planners that implement transcript-aware de-duplication.
 
 ### Confirmation
 

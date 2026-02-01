@@ -204,6 +204,9 @@ Lors de l'appel d'un agent :
 
 ```go
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
@@ -211,6 +214,8 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 
 - `SessionID` : Regroupe toutes les exécutions pour une conversation ; souvent utilisé comme clé de recherche dans les journaux d'exécution et les tableaux de bord
 - `TurnID` : Regroupe les événements d'un seul utilisateur → interaction avec l'assistant ; facultatif mais utile pour les interfaces utilisateur et les journaux
+
+Les sessions se terminent explicitement (par exemple lors de la suppression d’une conversation). Une fois une session terminée, aucune nouvelle exécution ne doit démarrer sous celle-ci.
 
 ---
 

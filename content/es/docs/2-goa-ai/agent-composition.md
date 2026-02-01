@@ -118,7 +118,7 @@ func main() {
 - **Exportación**: Declara conjuntos de herramientas que otros agentes pueden utilizar
 - **Conjunto de herramientas del agente Hace referencia a un conjunto de herramientas exportado de otro agente
 - **Ejecución en línea**: Desde la perspectiva de quien llama, un agente como herramienta se comporta como una llamada a herramienta normal; el tiempo de ejecución ejecuta el agente proveedor como una ejecución hija y agrega su salida en un único `ToolResult` (con un `RunLink` de vuelta a la ejecución hija)
-- **Proceso cruzado**: Los agentes pueden ejecutarse en diferentes trabajadores manteniendo un árbol de ejecución coherente; los eventos `AgentRunStarted` y los gestores de ejecución vinculan las llamadas de la herramienta padre a las ejecuciones de los agentes hijo para el streaming y la observabilidad
+- **Proceso cruzado**: Los agentes pueden ejecutarse en diferentes trabajadores manteniendo un árbol de ejecución coherente; los eventos `child_run_linked` y los gestores de ejecución vinculan las llamadas de la herramienta padre a las ejecuciones de los agentes hijo para el streaming y la observabilidad
 
 ---
 
@@ -220,132 +220,85 @@ RunLink *run.Handle
 
 Este `RunLink` permite:
 - Los planificadores razonar sobre la ejecución hija (por ejemplo, para auditoría/registro)
-- Interfaces de usuario para crear "tarjetas de agente" anidadas que puedan suscribirse al flujo de la ejecución hija
+- Interfaces de usuario para crear "tarjetas de agente" anidadas y renderizar eventos de la ejecución hija filtrando el flujo de sesión por `run_id`
 - Herramientas externas para navegar desde una ejecución padre a sus hijas sin adivinar
 
 ---
 
-## Flujos por ejecución
+## Flujos propiedad de la sesión
 
-Cada ejecución tiene su propio flujo de valores `stream.Event`:
+Goa-AI publica eventos `stream.Event` en un único **flujo propiedad de la sesión**:
 
-- `AssistantReply`, `PlannerThought`
-- `ToolStart`, `ToolUpdate`, `ToolEnd`
-- `AwaitClarification`, `AwaitExternalTools`
-- `Usage`, `Workflow`
-- `AgentRunStarted` (enlace de herramienta padre → herramienta hijo)
+- `session/<session_id>`
 
-Los consumidores se suscriben por ejecución:
+Ese flujo contiene eventos para todas las ejecuciones de la sesión, incluidas ejecuciones anidadas de agentes (agent-as-tool). Cada evento lleva `run_id` y `session_id`, y el runtime emite:
+
+- `child_run_linked`: vincula una llamada de herramienta padre (`tool_call_id`) con la ejecución hija (`child_run_id`)
+- `run_stream_end`: marcador explícito que significa “no habrá más eventos visibles para esta ejecución”
+
+Los consumidores se suscriben **una vez por sesión** y cierran SSE/WebSocket al observar `run_stream_end` para el `run_id` activo.
 
 ```go
-sink := &MySink{}
-stop, err := rt.SubscribeRun(ctx, runID, sink)
-if err != nil { /* handle */ }
-defer stop()
-```
+import "goa.design/goa-ai/runtime/agent/stream"
 
-Esto evita firehoses globales y permite UIs:
-- Adjuntar una conexión por ejecución (por ejemplo, por sesión de chat)
-- Decidir cuándo "profundizar" en los agentes secundarios suscribiéndose a sus ejecuciones mediante metadatos `AgentRunStarted` (`ChildRunID`, `ChildAgentID`)
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
+if err != nil {
+    panic(err)
+}
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+    case err := <-errs:
+        panic(err)
+    }
+}
+```
 
 ---
 
-## Perfiles de flujo y políticas de agentes hijo
+## Perfiles de flujo
 
-`stream.StreamProfile` describe lo que ve un público. Cada perfil controla:
-
-- Qué tipos de eventos se incluyen (`Assistant`, `Thoughts`, `ToolStart`, `ToolUpdate`, `ToolEnd`, `AwaitClarification`, `AwaitExternalTools`, `Usage`, `Workflow`, `AgentRuns`)
-- Cómo se proyectan las ejecuciones secundarias a través de `ChildStreamPolicy`
+`stream.StreamProfile` describe qué tipos de eventos se emiten para una audiencia.
 
 ### Estructura de StreamProfile
 
 ```go
 type StreamProfile struct {
-    Assistant          bool              // Assistant reply events
-    Thoughts           bool              // Planner thinking/reasoning events
-    ToolStart          bool              // Tool invocation start events
-    ToolUpdate         bool              // Tool progress update events
-    ToolEnd            bool              // Tool completion events
-    AwaitClarification bool              // Human clarification requests
-    AwaitExternalTools bool              // External tool execution requests
-    Usage              bool              // Token usage events
-    Workflow           bool              // Run lifecycle events
-    AgentRuns          bool              // Agent-as-tool link events
-    ChildPolicy        ChildStreamPolicy // How child runs are projected
+    Assistant          bool // assistant_reply
+    Thoughts           bool // planner_thought
+    ToolStart          bool // tool_start
+    ToolUpdate         bool // tool_update
+    ToolEnd            bool // tool_end
+    AwaitClarification bool // await_clarification
+    AwaitConfirmation  bool // await_confirmation
+    AwaitQuestions     bool // await_questions
+    AwaitExternalTools bool // await_external_tools
+    ToolAuthorization  bool // tool_authorization
+    Usage              bool // usage
+    Workflow           bool // workflow
+    ChildRuns          bool // child_run_linked (herramienta padre → ejecución hija)
 }
 ```
-
-### Opciones de ChildStreamPolicy
-
-`ChildStreamPolicy` controla cómo aparecen las ejecuciones anidadas del agente en el flujo:
-
-| Política | Constante | Comportamiento |
-|--------|----------|----------|
-| **Off** | `ChildStreamPolicyOff` | Las ejecuciones hijas se ocultan de esta audiencia; sólo las llamadas a la herramienta padre y los resultados son visibles. Mejor para pipelines de métricas que no necesitan detalles anidados. |
-| **Flatten** | `ChildStreamPolicyFlatten` | Los eventos hijos se proyectan en el flujo de ejecución padre, creando una vista "firehose" estilo depuración. Útil para la depuración operativa donde desea todos los eventos en un flujo. |
-| **Linked** | `ChildStreamPolicyLinked` | El padre emite eventos de enlace `AgentRunStarted`; los eventos hijos permanecen en sus propios flujos. Las interfaces de usuario pueden suscribirse a los flujos hijos bajo demanda. Ideal para interfaces de chat estructuradas. |
 
 ### Perfiles incorporados
 
-Goa-AI proporciona tres perfiles incorporados para casos de uso comunes:
+Goa-AI proporciona perfiles incorporados para casos de uso comunes:
 
-**`stream.UserChatProfile()`** - Interfaces de chat de usuario final
+- `stream.DefaultProfile()` emite todos los tipos de eventos.
+- `stream.UserChatProfile()` es adecuado para UIs de usuario final.
+- `stream.AgentDebugProfile()` es adecuado para vistas de depuración/desarrollador.
+- `stream.MetricsProfile()` emite sólo `Usage` y `Workflow`.
 
-```go
-// Returns a profile suitable for end-user chat views
-func UserChatProfile() StreamProfile {
-    return StreamProfile{
-        Assistant:          true,
-        Thoughts:           true,
-        ToolStart:          true,
-        ToolUpdate:         true,
-        ToolEnd:            true,
-        AwaitClarification: true,
-        AwaitExternalTools: true,
-        Usage:              true,
-        Workflow:           true,
-        AgentRuns:          true,
-        ChildPolicy:        ChildStreamPolicyLinked,
-    }
-}
-```
-
-- Emite todos los tipos de eventos para una renderización enriquecida de la UI
-- Utiliza la política **Linked** child para que las UI puedan renderizar "tarjetas de agente" anidadas y suscribirse a flujos child bajo demanda
-- Mantiene el carril de chat principal limpio al tiempo que permite el desglose en agentes anidados
-
-**`stream.AgentDebugProfile()`** - Depuración operativa
-
-```go
-// Returns a verbose profile for debugging views
-func AgentDebugProfile() StreamProfile {
-    p := DefaultProfile()
-    p.ChildPolicy = ChildStreamPolicyFlatten
-    return p
-}
-```
-
-- Emite todos los tipos de eventos como `UserChatProfile`
-- Utiliza la política **Flatten** child para proyectar todos los eventos child en el stream padre
-- Sigue emitiendo enlaces `AgentRunStarted` para la correlación
-- Ideal para consolas de depuración y herramientas de solución de problemas
-
-**`stream.MetricsProfile()`** - Canalizaciones de telemetría
-
-```go
-// Returns a profile for metrics/telemetry pipelines
-func MetricsProfile() StreamProfile {
-    return StreamProfile{
-        Usage:       true,
-        Workflow:    true,
-        ChildPolicy: ChildStreamPolicyOff,
-    }
-}
-```
-
-- Sólo emite eventos `Usage` y `Workflow`
-- Utiliza la política hija **Off** para ocultar por completo las ejecuciones anidadas
-- Gastos generales mínimos para el seguimiento de costes y la supervisión del rendimiento
+En el modelo de streaming propiedad de la sesión, no se requieren suscripciones separadas para ejecuciones hijas. `child_run_linked` existe para construir el árbol de ejecuciones y adjuntar eventos al “agent card” correcto mientras se consume un único flujo `session/<session_id>`.
 
 ### Cableado de perfiles a suscriptores
 
@@ -384,26 +337,12 @@ toolsOnlyProfile := stream.StreamProfile{
     ToolUpdate:  true,
     ToolEnd:     true,
     Workflow:    true,
-    ChildPolicy: stream.ChildStreamPolicyLinked,
+    ChildRuns:   true,
 }
 
 // Custom profile: everything except usage (for privacy-sensitive contexts)
 noUsageProfile := stream.DefaultProfile()
 noUsageProfile.Usage = false
-
-// Custom profile: flatten child runs but skip thoughts
-flatNoThoughts := stream.StreamProfile{
-    Assistant:          true,
-    ToolStart:          true,
-    ToolUpdate:         true,
-    ToolEnd:            true,
-    AwaitClarification: true,
-    AwaitExternalTools: true,
-    Usage:              true,
-    Workflow:           true,
-    AgentRuns:          true,
-    ChildPolicy:        stream.ChildStreamPolicyFlatten,
-}
 
 sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 ```
@@ -411,16 +350,16 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 ### Pautas de selección de perfiles
 
 | Audiencia | Perfil Recomendado | Justificación |
-|----------|---------------------|-----------|
-| UI de chat para el usuario final | `UserChatProfile()` | Estructura limpia con tarjetas de agente ampliables | | Consola de administración/depuración | <x id="148"/
-| Consola de administración/depuración | `AgentDebugProfile()` | Visibilidad completa con eventos hijo aplanados |
+|----------|---------------------|---------------|
+| UI de chat para el usuario final | `UserChatProfile()` | Estructura limpia con tarjetas de agente anidadas |
+| Consola de administración/depuración | `AgentDebugProfile()` | Visibilidad completa de herramientas, esperas y fases |
 | Métricas/facturación | `MetricsProfile()` | Eventos mínimos para agregación |
-| Registro de auditorías | Personalizado (todos los eventos, enlazados) | Registro completo con jerarquía estructurada |
-| Cuadros de mando en tiempo real | Personalizados (flujo de trabajo + uso) | Sólo seguimiento de estado y costes |
+| Registro de auditorías | `DefaultProfile()` | Registro completo con campos de correlación por ejecución |
+| Cuadros de mando en tiempo real | Personalizado (workflow + usage) | Sólo seguimiento de estado y costes |
 
 Las aplicaciones eligen el perfil al cablear los sumideros y los puentes (p. ej., Pulse, SSE, WebSocket) de modo que:
-- Las interfaces de usuario de chat se mantienen limpias y estructuradas (ejecuciones secundarias vinculadas, tarjetas de agente)
-- Las consolas de depuración pueden ver flujos de eventos anidados completos
+- Las interfaces de usuario de chat se mantienen limpias y estructuradas (tarjetas anidadas impulsadas por `child_run_linked`)
+- Las consolas de depuración pueden ver el detalle completo en el mismo flujo de sesión
 - Las canalizaciones de métricas ven lo suficiente para agregar el uso y los estados
 
 ---
@@ -429,22 +368,15 @@ Las aplicaciones eligen el perfil al cablear los sumideros y los puentes (p. ej.
 
 Dado el modelo de árbol de ejecución + streaming, una interfaz de usuario de chat típica puede:
 
-1. Suscribirse a la **ejecución de chat raíz** con un perfil de chat de usuario
-2. Renderizar:
-   - Respuestas del asistente
-   - Filas de herramientas de nivel superior
-   - eventos "Ejecución de agente iniciada" como **Tarjetas de agente** anidadas
-3. Cuando el usuario expande una tarjeta:
-   - Suscribirse a la ejecución del agente hijo usando `ChildRunID`
-   - Renderiza la propia línea de tiempo de ese agente (pensamientos, herramientas, esperas) dentro de la tarjeta
-   - Mantener limpio el carril principal del chat
+1. Suscribirse al flujo de sesión (`session/<session_id>`) usando un perfil de chat de usuario.
+2. Seguir la ejecución activa (`active_run_id`) y renderizar:
+   - Respuestas del asistente (`assistant_reply`)
+   - Ciclo de vida de herramientas (`tool_start`/`tool_update`/`tool_end`)
+   - Enlaces a ejecuciones hijas (`child_run_linked`) como **Tarjetas de agente** anidadas por `child_run_id`
+3. Para cada tarjeta, renderizar la línea de tiempo de la ejecución hija filtrando el mismo flujo de sesión por `run_id == child_run_id` (sin suscripciones adicionales).
+4. Cerrar SSE/WebSocket cuando observes `run_stream_end` para `active_run_id`.
 
-Las herramientas de depuración pueden suscribirse con un perfil de depuración para ver:
-- Eventos hijo aplanados
-- Metadatos explícitos padre/hijo
-- Árboles de ejecución completos para la resolución de problemas
-
-La idea clave: **la topología de ejecución (árbol de ejecución) siempre se conserva**, y el streaming es sólo un conjunto de proyecciones sobre ese árbol para diferentes públicos.
+La idea clave: **la topología de ejecución (árbol de ejecución) se conserva por IDs y eventos de enlace**, y el streaming es un único log ordenado por sesión que proyectas en carriles/tarjetas filtrando por `run_id`.
 
 ---
 

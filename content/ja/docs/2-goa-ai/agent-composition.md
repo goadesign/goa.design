@@ -118,7 +118,7 @@ func main() {
 - **Export**: 他のエージェントが利用できるツールセットを宣言します
 - **AgentToolset**: 別のエージェントからエクスポートされたツールセットを参照します
 - **Inline Execution**: 呼び出し側の視点では、agent-as-tool は通常のツール呼び出しのように振る舞います。ランタイムはプロバイダエージェントを子ランとして実行し、その出力を単一の `ToolResult`（子ランへの `RunLink` 付き）に集約します
-- **Cross-Process**: 異なるワーカー上でエージェントが実行されても、一貫したランツリーを維持できます。`AgentRunStarted` イベントとランハンドルが、親のツール呼び出しと子エージェントランをリンクし、ストリーミングと可観測性を実現します
+- **Cross-Process**: 異なるワーカー上でエージェントが実行されても、一貫したランツリーを維持できます。`ChildRunLinked` イベントとランハンドルが、親のツール呼び出しと子エージェントランをリンクし、ストリーミングと可観測性を実現します
 
 ---
 
@@ -222,133 +222,83 @@ RunLink *run.Handle
 この `RunLink` により次が可能になります:
 
 - プランナーが子ランについて推論できる（例: 監査/ロギング）
-- UI がネストされた「エージェントカード」を作り、子ランのストリームを購読できる
+- UI がネストされた「エージェントカード」を作り、セッションストリームを `run_id` でフィルタして子ランのイベントを描画できる
 - 外部ツールが推測無しで親ランから子ランへ辿れる
 
 ---
 
-## ランごとのストリーム
+## セッション所有ストリーム
 
-各ランは `stream.Event` 値の **独自のストリーム** を持ちます:
+Goa-AI は `stream.Event` を単一の **セッション所有ストリーム** に発行します:
 
-- `AssistantReply`, `PlannerThought`
-- `ToolStart`, `ToolUpdate`, `ToolEnd`
-- `AwaitClarification`, `AwaitExternalTools`
-- `Usage`, `Workflow`
-- `AgentRunStarted`（親ツール → 子ランへのリンク）
+- `session/<session_id>`
 
-コンシューマはラン単位でサブスクライブします:
+このストリームには、セッションに属するすべての run（agent-as-tool による子 run を含む）のイベントが含まれます。各イベントは `run_id` と `session_id` を持ち、ランタイムは次を発行します:
+
+- `child_run_linked`: 親ツール呼び出し（`tool_call_id`）と子 run（`child_run_id`）をリンクする
+- `run_stream_end`: 「この run に対してこれ以上ストリーム可視イベントは出ない」ことを示す明示マーカー
+
+コンシューマは **セッション単位で 1 回** 購読し、アクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了します。
 
 ```go
-sink := &MySink{}
-stop, err := rt.SubscribeRun(ctx, runID, sink)
-if err != nil { /* handle */ }
-defer stop()
+import "goa.design/goa-ai/runtime/agent/stream"
+
+events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
+if err != nil {
+    panic(err)
+}
+defer cancel()
+
+activeRunID := "run-123"
+for {
+    select {
+    case evt, ok := <-events:
+        if !ok {
+            return
+        }
+        if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
+            return
+        }
+    case err := <-errs:
+        panic(err)
+    }
+}
 ```
-
-これによりグローバルな「firehose」を避けつつ、UI は次ができます:
-
-- ランごとに 1 接続をアタッチ（例: チャットセッションごと）
-- `AgentRunStarted` のメタデータ（`ChildRunID`, `ChildAgentID`）を使って、必要なときだけ子ランを購読し「ドリルイン」する
 
 ---
 
-## ストリームプロファイルと子ランのポリシー
+## ストリームプロファイル
 
-`stream.StreamProfile` は「どのオーディエンスに何を見せるか」を記述します。各プロファイルは次を制御します:
-
-- 含めるイベント種別（`Assistant`, `Thoughts`, `ToolStart`, `ToolUpdate`, `ToolEnd`, `AwaitClarification`, `AwaitExternalTools`, `Usage`, `Workflow`, `AgentRuns`）
-- `ChildStreamPolicy` による子ランの投影方法
+`stream.StreamProfile` は「どのオーディエンスに何を見せるか」を記述し、購読者（subscriber）が出力するイベント種別を制御します。
 
 ### StreamProfile の構造
 
 ```go
 type StreamProfile struct {
-    Assistant          bool              // Assistant reply events
-    Thoughts           bool              // Planner thinking/reasoning events
-    ToolStart          bool              // Tool invocation start events
-    ToolUpdate         bool              // Tool progress update events
-    ToolEnd            bool              // Tool completion events
-    AwaitClarification bool              // Human clarification requests
-    AwaitExternalTools bool              // External tool execution requests
-    Usage              bool              // Token usage events
-    Workflow           bool              // Run lifecycle events
-    AgentRuns          bool              // Agent-as-tool link events
-    ChildPolicy        ChildStreamPolicy // How child runs are projected
+    Assistant          bool // assistant_reply
+    Thoughts           bool // planner_thought
+    ToolStart          bool // tool_start
+    ToolUpdate         bool // tool_update
+    ToolEnd            bool // tool_end
+    AwaitClarification bool // await_clarification
+    AwaitConfirmation  bool // await_confirmation
+    AwaitQuestions     bool // await_questions
+    AwaitExternalTools bool // await_external_tools
+    ToolAuthorization  bool // tool_authorization
+    Usage              bool // usage
+    Workflow           bool // workflow
+    ChildRuns          bool // child_run_linked（親ツール → 子 run のリンク）
 }
 ```
-
-### ChildStreamPolicy のオプション
-
-`ChildStreamPolicy` は、ネストされたエージェントランがストリーム上でどう見えるかを制御します:
-
-| ポリシー | 定数 | 挙動 |
-|----------|------|------|
-| **Off** | `ChildStreamPolicyOff` | 子ランはこのオーディエンスから隠れます。親ツール呼び出しと結果のみが見えます。ネストの詳細を必要としないメトリクスパイプラインに最適です。 |
-| **Flatten** | `ChildStreamPolicyFlatten` | 子イベントを親ランストリームに投影し、デバッグ向けの「firehose」ビューを作ります。1 つのストリームで全イベントを見たい運用デバッグに有用です。 |
-| **Linked** | `ChildStreamPolicyLinked` | 親は `AgentRunStarted` のリンクイベントを発行し、子イベントは子ストリームに残します。UI はオンデマンドで子ストリームを購読できます。構造化されたチャット UI に最適です。 |
 
 ### 組み込みプロファイル
 
-Goa-AI は一般的な用途に向けて 3 つの組み込みプロファイルを提供します:
+- `stream.DefaultProfile()` は全イベント種別を出力します。
+- `stream.UserChatProfile()` はエンドユーザー向け UI に適したプロファイルです。
+- `stream.AgentDebugProfile()` はデバッグ/開発者向けのプロファイルです。
+- `stream.MetricsProfile()` は `Usage` と `Workflow` のみを出力します。
 
-**`stream.UserChatProfile()`** – エンドユーザー向けチャット UI
-
-```go
-// Returns a profile suitable for end-user chat views
-func UserChatProfile() StreamProfile {
-    return StreamProfile{
-        Assistant:          true,
-        Thoughts:           true,
-        ToolStart:          true,
-        ToolUpdate:         true,
-        ToolEnd:            true,
-        AwaitClarification: true,
-        AwaitExternalTools: true,
-        Usage:              true,
-        Workflow:           true,
-        AgentRuns:          true,
-        ChildPolicy:        ChildStreamPolicyLinked,
-    }
-}
-```
-
-- リッチな UI レンダリングのため、すべてのイベントタイプを出力します
-- UI がネストされた「エージェントカード」をレンダリングし、オンデマンドで子ストリームを購読できるよう **Linked** を使います
-- 子エージェントにドリルダウン可能にしつつ、メインのチャットレーンをクリーンに保ちます
-
-**`stream.AgentDebugProfile()`** – 運用デバッグ
-
-```go
-// Returns a verbose profile for debugging views
-func AgentDebugProfile() StreamProfile {
-    p := DefaultProfile()
-    p.ChildPolicy = ChildStreamPolicyFlatten
-    return p
-}
-```
-
-- `UserChatProfile` と同様にすべてのイベントタイプを出力します
-- すべての子イベントを親ストリームへ投影するため **Flatten** を使います
-- 相関のために `AgentRunStarted` リンクも出力します
-- デバッグコンソールやトラブルシューティングツールに最適です
-
-**`stream.MetricsProfile()`** – テレメトリ/メトリクスパイプライン
-
-```go
-// Returns a profile for metrics/telemetry pipelines
-func MetricsProfile() StreamProfile {
-    return StreamProfile{
-        Usage:       true,
-        Workflow:    true,
-        ChildPolicy: ChildStreamPolicyOff,
-    }
-}
-```
-
-- `Usage` と `Workflow` のみを出力します
-- ネストしたランを完全に隠すため **Off** を使います
-- コスト追跡や性能監視向けにオーバーヘッドを最小化します
+セッション所有ストリーミングでは子 run のために別ストリーム購読は不要です。`child_run_linked` を使って run tree を構築し、同一の `session/<session_id>` ストリームを `run_id` でフィルタしてカードに紐付けます。
 
 ### サブスクライバへのプロファイル適用
 
@@ -387,26 +337,12 @@ toolsOnlyProfile := stream.StreamProfile{
     ToolUpdate:  true,
     ToolEnd:     true,
     Workflow:    true,
-    ChildPolicy: stream.ChildStreamPolicyLinked,
+    ChildRuns:   true,
 }
 
 // Custom profile: everything except usage (for privacy-sensitive contexts)
 noUsageProfile := stream.DefaultProfile()
 noUsageProfile.Usage = false
-
-// Custom profile: flatten child runs but skip thoughts
-flatNoThoughts := stream.StreamProfile{
-    Assistant:          true,
-    ToolStart:          true,
-    ToolUpdate:         true,
-    ToolEnd:            true,
-    AwaitClarification: true,
-    AwaitExternalTools: true,
-    Usage:              true,
-    Workflow:           true,
-    AgentRuns:          true,
-    ChildPolicy:        stream.ChildStreamPolicyFlatten,
-}
 
 sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 ```
@@ -416,15 +352,15 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 | オーディエンス | 推奨プロファイル | 理由 |
 |----------------|------------------|------|
 | エンドユーザー向けチャット UI | `UserChatProfile()` | エージェントカードを展開できる、クリーンで構造化された表示 |
-| 管理者/デバッグコンソール | `AgentDebugProfile()` | 子イベントをフラット化して完全に可視化 |
+| 管理者/デバッグコンソール | `AgentDebugProfile()` | ツール、await、workflow フェーズの詳細を可視化 |
 | メトリクス/課金 | `MetricsProfile()` | 集計に必要な最小限のイベント |
-| 監査ログ | カスタム（全イベント、リンク） | 構造化された階層を保った完全な記録 |
+| 監査ログ | `DefaultProfile()` | run 相関フィールドを含む完全な記録 |
 | リアルタイムダッシュボード | カスタム（workflow + usage） | ステータスとコスト追跡のみ |
 
 アプリケーションは、シンクやブリッジ（例: Pulse、SSE、WebSocket）を配線する際にプロファイルを選択することで、次を両立できます:
 
-- チャット UI はクリーンで構造化されたまま（リンクされた子ラン、エージェントカード）
-- デバッグコンソールはネストしたイベントストリームをすべて可視化
+- チャット UI はクリーンで構造化されたまま（`child_run_linked` によるネストカード）
+- デバッグコンソールは同じセッションストリームで詳細を可視化
 - メトリクスパイプラインは使用量とステータスを集計するのに十分な情報のみを取得
 
 ---
@@ -433,23 +369,15 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 
 ランツリー + ストリーミングモデルを踏まえると、典型的なチャット UI は次のように設計できます:
 
-1. ユーザーチャットプロファイルで **ルートのチャットラン** を購読する
-2. 次をレンダリングする:
-   - アシスタントの返信
-   - トップレベルツールのツール行
-   - 「Agent run started」イベントをネストされた **エージェントカード** として表示
-3. ユーザーがカードを展開したら:
-   - `ChildRunID` を使って子ランを購読する
-   - そのエージェントのタイムライン（thoughts, tools, awaits）をカード内にレンダリングする
-   - メインのチャットレーンをクリーンに保つ
+1. セッションストリーム（`session/<session_id>`）をユーザーチャットプロファイルで購読する
+2. アクティブ run（`active_run_id`）を追跡し、次をレンダリングする:
+   - アシスタントの返信（`assistant_reply`）
+   - ツールのライフサイクル（`tool_start`/`tool_update`/`tool_end`）
+   - 子 run リンク（`child_run_linked`）をネストされた **エージェントカード** として表示（`child_run_id` でカードを作る）
+3. 各カードの中身は、同じセッションストリームを `run_id == child_run_id` でフィルタして描画する（追加の購読は不要）
+4. `active_run_id` の `run_stream_end` を観測したら SSE/WebSocket を終了する
 
-デバッグツールはデバッグプロファイルでサブスクライブすることで次を見られます:
-
-- フラット化された子イベント
-- 明示的な親/子メタデータ
-- トラブルシューティングのための完全なランツリー
-
-重要な点は、**実行トポロジー（ランツリー）は常に保持され**、ストリーミングはそのツリーに対するオーディエンス別の投影にすぎない、ということです。
+重要な点は、**実行トポロジー（ランツリー）は ID とリンクイベントで保持され**、ストリーミングはセッション単位の 1 本の順序付きログを `run_id` で投影して UI のレーン/カードを作る、ということです。
 
 ---
 

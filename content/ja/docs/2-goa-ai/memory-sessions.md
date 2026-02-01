@@ -207,6 +207,9 @@ Goa-AI は会話状態を 3 つの層に分けて扱います。
 
 ```go
 client := chat.NewClient(rt)
+if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
@@ -214,6 +217,8 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 
 - `SessionID`: 会話に属するすべてのランをグループ化します。ランログやダッシュボードの検索キーとしてよく使われます。
 - `TurnID`: 1 回の user → assistant 相互作用に関するイベントをグループ化します。必須ではありませんが、UI やログに便利です。
+
+セッションは明示的に終了します（例: 会話の削除）。セッションが終了したら、その下で新しい run を開始してはいけません。
 
 ---
 
