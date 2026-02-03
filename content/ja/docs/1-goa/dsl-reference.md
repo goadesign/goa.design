@@ -239,6 +239,16 @@ var Address = Type("Address", func() {
 })
 ```
 
+例を省略した場合、Goa はデフォルトでランダムなシードを使って例を自動生成します。
+
+決定的な例を生成するには、`Randomizer` 関数を使用して、例が一貫して予測可能になるようにします：
+
+```go
+var _ = API("exampleAPI", func() {
+    Randomizer(expr.NewDeterministicRandomizer())
+})
+```
+
 ---
 
 ## API 定義
