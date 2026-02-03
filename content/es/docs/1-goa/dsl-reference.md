@@ -239,6 +239,16 @@ var Address = Type("Address", func() {
 })
 ```
 
+Cuando se omiten los ejemplos, Goa los genera automáticamente de forma predeterminada usando una semilla aleatoria.
+
+Para generar ejemplos deterministas, utilice la función `Randomizer` para garantizar que los ejemplos sean consistentes y predecibles:
+
+```go
+var _ = API("exampleAPI", func() {
+    Randomizer(expr.NewDeterministicRandomizer())
+})
+```
+
 ---
 
 ## Definición de la API
