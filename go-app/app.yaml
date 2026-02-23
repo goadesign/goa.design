@@ -1,5 +1,7 @@
 runtime: go123
 app_engine_apis: true
+automatic_scaling:
+  max_instances: 2
 env_variables:
   FLUSH_MEMCACHE_ON_DEPLOY: "1"
 handlers:
