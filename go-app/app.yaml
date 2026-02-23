@@ -1,4 +1,4 @@
-runtime: go123
+runtime: go124
 app_engine_apis: true
 automatic_scaling:
   max_instances: 2
