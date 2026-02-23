@@ -82,5 +82,5 @@ jobs:
 
       - name: Deploy App Engine
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: gcloud app deploy --project=goa-design --quiet --verbosity=debug --no-cache
+        run: gcloud app deploy --project=goa-design --quiet
         working-directory: go-app
