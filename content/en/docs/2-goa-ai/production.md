@@ -208,6 +208,61 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Prompt Overrides with Mongo Store
+
+Production prompt management typically uses:
+
+- baseline prompt specs registered in `runtime.PromptRegistry`, and
+- scoped override records persisted in Mongo via `features/prompt/mongo`.
+
+### Wiring
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+    "goa.design/goa-ai/runtime/agent/runtime"
+)
+
+promptClient, err := clientmongo.New(clientmongo.Options{
+    Client:     mongoClient,
+    Database:   "aura",
+    Collection: "prompt_overrides", // optional (default is prompt_overrides)
+})
+if err != nil {
+    panic(err)
+}
+
+promptStore, err := promptmongo.NewStore(promptClient)
+if err != nil {
+    panic(err)
+}
+
+rt := runtime.New(
+    runtime.WithEngine(temporalEng),
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+### Override Resolution and Rollout
+
+Override precedence is deterministic:
+
+1. `session` scope
+2. `facility` scope
+3. `org` scope
+4. global scope
+5. baseline spec (when no override exists)
+
+Recommended rollout strategy:
+
+- Register new baseline specs first.
+- Roll out overrides at broad scope (`org`), then narrow to `facility`/`session` for canaries.
+- Track effective versions through `prompt_rendered` events and `model.Request.PromptRefs`.
+- Roll back by writing a newer override at the same scope (or removing scope-specific overrides to fall back).
+
+---
+
 ## Temporal Setup
 
 This section covers setting up Temporal for durable agent workflows in production environments.
@@ -290,7 +345,8 @@ temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Required: enforce goa-ai's workflow boundary contract.
-        // Tool results/artifacts cross boundaries as canonical JSON bytes (api.ToolEvent/api.ToolArtifact).
+        // Tool results, server-data, and UI artifacts cross boundaries as canonical JSON bytes
+        // (api.ToolEvent/api.ToolArtifact).
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{

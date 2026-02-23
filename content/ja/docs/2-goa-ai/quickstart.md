@@ -225,6 +225,29 @@ Assistant: Tokyo is 22°C and sunny!
 
 このスタブプランナーはフローをハードコードしていますが、実際の LLM プランナーも同じパターンです（違いは、会話に応じて動的に決めることだけです）。
 
+### 任意: Prompt Override Store を追加する
+
+最初からランタイム管理の prompt override を使いたい場合は、runtime 作成時に prompt store を接続します。
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+)
+
+promptClient, _ := clientmongo.New(clientmongo.Options{
+    Client:   mongoClient,
+    Database: "quickstart",
+})
+promptStore, _ := promptmongo.NewStore(promptClient)
+
+rt := runtime.New(
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+prompt store なしでも実行できます。その場合、runtime はベースライン prompt spec のみを使用します。
+
 ---
 
 ## ステップ 3: ストリーミングを追加する

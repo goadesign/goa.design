@@ -17,6 +17,17 @@ The registry acts as both a **catalog** and a **gateway**:
 
 This decouples agents from toolset providers, enabling independent scaling, deployment, and lifecycle management.
 
+### Tool Registry vs Prompt Registry
+
+These are different systems with different responsibilities:
+
+- **Internal Tool Registry** (this page): cross-process discovery/invocation of toolsets and tool calls.
+- **Runtime Prompt Registry** (`runtime.PromptRegistry`): in-process prompt spec registration and rendering,
+  optionally backed by a prompt override store (`runtime.WithPromptStore`).
+
+The tool registry does not store prompt templates or resolve prompt overrides. Prompt rendering remains in
+the runtime/planner layer and emits `prompt_rendered` observability events.
+
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
 ## Multi-Node Clustering
@@ -140,7 +151,7 @@ The generated provider:
 - Decodes the incoming tool payload JSON using the generated payload codec
 - Builds the Goa method payload using generated transforms
 - Calls the bound service method
-- Encodes the tool result JSON (and optional artifacts/sidecars) using the generated result codec
+- Encodes the tool result JSON together with any declared server-data (optional observer-facing server-data and always-on server-only metadata) using the generated result codec
 
 To serve tool calls from the registry gateway, wire the generated provider into the runtime provider loop:
 

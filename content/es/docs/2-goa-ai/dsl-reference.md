@@ -29,7 +29,8 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Tool` | Conjunto de herramientas, método | Define una herramienta invocable |
 | `Args` | Herramienta | Define un esquema de parámetros de entrada |
 | `Return` | Herramienta | Define el esquema de resultados de salida | `Return` | Herramienta | Define el esquema de resultados de salida
-| `Artifact` | Herramienta | Define esquema de datos sidecar (no enviados al modelo) |
+| `ServerData` | Herramienta | Define esquema de datos del servidor (nunca enviados al proveedor del modelo) |
+| `ServerDataDefault` | Herramienta | Emisión por defecto para server-data opcional cuando `server_data` se omite o es `"auto"` |
 | `BoundedResult` | Herramienta | Marca resultado como vista acotada |
 | `Tags` | Herramienta, conjunto de herramientas | Adjunta etiquetas de metadatos |
 | `BindTo` | Herramienta | Une herramienta a método de servicio |
@@ -83,9 +84,22 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `PublishTo` | Exportar | Configura la publicación del registro |
 | `Version` | Conjunto de herramientas | Configura la versión del conjunto de herramientas del registro | `Version` | Conjunto de herramientas | Configura la versión del conjunto de herramientas del registro
 | **Funciones de Esquema** | | | |
-| `Attribute` | Args, Return, Artifact | Define el campo de esquema (uso general) | | `Version` | Funciones de esquema
-| `Field` | Args, Return, Artifact | Define campo de proto numerado (gRPC) |
+| `Attribute` | Args, Return, ServerData | Define el campo de esquema (uso general) | | `Version` | Funciones de esquema
+| `Field` | Args, Return, ServerData | Define campo de proto numerado (gRPC) |
 | `Required` | Esquema | Marca campos como obligatorios |
+
+## Gestión de prompts (ruta de integración v1)
+
+Goa-AI v1 **no** requiere una DSL dedicada de prompts (`Prompt(...)`, `Prompts(...)`).
+La gestión de prompts es actualmente runtime-driven:
+
+- Registra los prompt specs base en `runtime.PromptRegistry`.
+- Configura overrides por alcance con `runtime.WithPromptStore(...)`.
+- Renderiza prompts desde planners con `PlannerContext.RenderPrompt(...)`.
+- Adjunta la procedencia de prompts renderizados en `model.Request.PromptRefs`.
+
+Para flujos de agent-as-tool, mapea IDs de herramienta a IDs de prompt con opciones
+de runtime como `runtime.WithPromptSpec(...)` en los registros de agent-tools.
 
 ### Campo vs Atributo
 
@@ -523,9 +537,9 @@ Tool("search", "Search documents", func() {
 })
 ```
 
-### Artifact
+### ServerData
 
-`Artifact(kind, val, args...)` define un esquema de artefacto tipado para los resultados de la herramienta. Los datos de artefactos (también conocidos como datos sidecar) se adjuntan a `planner.ToolResult.Artifacts` pero nunca se envían al proveedor del modelo: son para datos de fidelidad completa que respaldan un resultado orientado al modelo delimitado.
+`ServerData(kind, val, args...)` define datos del servidor tipados emitidos junto a un resultado de herramienta. Los datos del servidor nunca se envían al proveedor del modelo.
 
 **Contexto**: Dentro de `Tool`
 
@@ -533,7 +547,30 @@ Tool("search", "Search documents", func() {
 - `kind`: Un identificador de cadena para el tipo de artefacto (por ejemplo, `"time_series"`, `"chart_data"`, `"full_results"`). Esto permite a los consumidores identificar y manejar adecuadamente los diferentes tipos de artefactos.
 - `val`: La definición del esquema, siguiendo los mismos patrones que `Args` y `Return`-ya sea una función con llamadas `Attribute()`, un tipo de usuario Goa o un tipo primitivo.
 
-**Cuándo utilizar Artifact:**
+**Enrutamiento por audiencia (`Audience*`):**
+
+Cada entrada `ServerData` declara una audiencia para enrutar el payload sin depender de convenciones de nombres en `kind`:
+
+- `"timeline"`: se persiste y es elegible para proyección hacia observadores (p. ej., tarjetas en la UI/timeline)
+- `"internal"`: adjunto para composición entre herramientas; no se persiste ni se renderiza
+- `"evidence"`: referencias de procedencia; se persiste por separado de las tarjetas del timeline
+
+Establece la audiencia dentro del bloque DSL de `ServerData`:
+
+```go
+ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
+    AudienceInternal()
+    FromMethodResultField("chart_sidecar")
+})
+
+ServerData("aura.evidence", ArrayOf(Evidence), func() {
+    AudienceEvidence()
+    ModeAlways()
+    FromMethodResultField("evidence")
+})
+```
+
+**Cuándo utilizar ServerData:**
 - Cuando los resultados de la herramienta necesitan incluir datos de fidelidad completa para UIs (cuadros, gráficos, tablas) mientras se mantienen las cargas útiles del modelo acotadas
 - Cuando se desea adjuntar grandes conjuntos de resultados que excederían los límites del contexto del modelo
 - Cuando los consumidores posteriores necesitan datos estructurados que el modelo no necesita ver
@@ -553,11 +590,12 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    Artifact("time_series", func() {
+    ServerData("atlas.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
+    ServerDataDefault("off")
 })
 ```
 
@@ -581,21 +619,20 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    Artifact("metrics", TimeSeriesArtifact)
+    ServerData("atlas.metrics", TimeSeriesArtifact)
 })
 ```
 
 **Acceso en tiempo de ejecución:**
 
-En tiempo de ejecución, los datos del artefacto están disponibles en `planner.ToolResult.Artifacts`:
+En tiempo de ejecución, los artefactos (proyectados desde server-data opcional) están disponibles en `planner.ToolResult.Artifacts`:
 
 ```go
 // In a stream subscriber or result handler
 func handleToolResult(result *planner.ToolResult) {
-    if result.Artifacts != nil {
-        // Access the artifact by kind
-        if tsData, ok := result.Artifacts["time_series"]; ok {
-            // tsData contains the full time series for UI rendering
+    for _, art := range result.Artifacts {
+        if art.Kind == "atlas.time_series" {
+            // art.Data contains the full time series for UI rendering
         }
     }
 }

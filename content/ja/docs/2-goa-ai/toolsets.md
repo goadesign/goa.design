@@ -235,7 +235,7 @@ func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) 
 
 ```go
 // In a stream subscriber
-func handleToolEnd(event *stream.ToolEndEvent) {
+func handleToolEnd(event *stream.ToolEnd) {
     if event.Bounds != nil && event.Bounds.Truncated {
         log.Printf("Tool %s returned %d of %d results (truncated)",
             event.ToolName, event.Bounds.Returned, *event.Bounds.Total)
@@ -708,18 +708,19 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 ここで `toolID` は、生成された specs もしくは agenttools パッケージの型付き `tools.Ident` 定数です。
 
-### 型付きサイドカー（Artifacts）
+### Server Data と UI アーティファクト
 
-ツールによっては、UI や監査では有用でもモデルプロバイダへ渡すには重すぎる **リッチな成果物**（完全な時系列、トポロジーグラフ、大規模な結果セットなど）を返したい場合があります。Goa-AI はこれを **typed sidecars（型付きサイドカー）**（別名 artifacts）としてモデル化します。
+ツールによっては、UI や監査では有用でもモデルプロバイダへ渡すには重すぎる **リッチな観測者向け出力**（完全な時系列、トポロジーグラフ、大規模な結果セットなど）を返したい場合があります。Goa-AI はモデル向けでない出力を **server-data** としてモデル化し、任意の server-data は **UI アーティファクト**に投影できます。
 
-#### モデル向け結果とサイドカーデータ
+#### モデル向け結果と server-data
 
 重要なのは「どのデータがどこへ流れるか」です：
 
 | データ種別 | モデルへ送る | 保存/ストリーム | 目的 |
 |----------|-------------|----------------|------|
 | **モデル向け結果** | ✓ | ✓ | LLM が推論するための bounded な要約 |
-| **サイドカー / Artifact** | ✗ | ✓ | UI、監査、下流コンシューマのための完全忠実度データ |
+| **任意 server-data（UI アーティファクト）** | ✗ | ✓ | UI、監査、下流コンシューマのための完全忠実度データ |
+| **always-on server-data** | ✗ | ✓ | 永続化/テレメトリのためのサーバー専用メタデータ（任意 UI 出力として扱わない） |
 
 この分離により：
 
@@ -728,9 +729,9 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 - モデルが見る必要のない provenance / 監査データを付けられる
 - モデルは要約で作業しながら、大きなデータセットを UI へストリームできる
 
-#### DSL での artifacts 宣言
+#### DSL での ServerData 宣言
 
-`Tool` 定義内で `Artifact(kind, schema)` を使います：
+`Tool` 定義内で `ServerData(kind, schema)` を使います：
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -748,16 +749,17 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    // Sidecar: full-fidelity data for UIs
-    Artifact("time_series", func() {
+    // Server-data: full-fidelity data for observers (e.g., UIs)
+    ServerData("atlas.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
+    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
-`kind`（例：`"time_series"`）は artifact の種類を識別し、UI が適切なレンダラへディスパッチするために使います。
+`kind`（例：`"atlas.time_series"`）は server-data の種類を識別し、UI が適切なレンダラへディスパッチするために使います。
 
 #### 生成される specs とヘルパ
 
@@ -765,21 +767,14 @@ specs パッケージでは、各 `tools.ToolSpec` が次を含みます：
 
 - `Payload tools.TypeSpec`：入力スキーマ
 - `Result tools.TypeSpec`：モデル向け出力スキーマ
-- `Sidecar *tools.TypeSpec`（任意）：artifact スキーマ
+- `ServerData []*tools.ServerDataSpec`：結果に付随して発行される server-only ペイロード
+- `ServerDataDefault string`：任意 server-data の既定発行モード（`"on"`/`"off"`）
 
-Goa-AI は sidecar を扱うための型付きヘルパを生成します：
-
-```go
-// Get artifact from a tool result
-func GetGetTimeSeriesSidecar(res *planner.ToolResult) (*GetTimeSeriesSidecar, error)
-
-// Attach artifact to a tool result
-func SetGetTimeSeriesSidecar(res *planner.ToolResult, sc *GetTimeSeriesSidecar) error
-```
+任意 server-data のエントリはツール spec に JSON codec を含み、コンシューマが UI アーティファクトへ投影できます。
 
 #### ランタイムでの利用パターン
 
-**ツールエクゼキュータ側**では、結果に artifacts を付与します：
+**ツールエクゼキュータ側**では、任意 server-data から投影された UI アーティファクトを結果に付与します：
 
 ```go
 func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
@@ -800,34 +795,34 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
     }
     
     // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesSidecar{
+    artifact := &specs.GetTimeSeriesServerData{
         DataPoints: fullData.Points,
         Metadata:   fullData.Metadata,
     }
-    
-    // Attach artifact to result
-    toolResult := &planner.ToolResult{
+
+    return &planner.ToolResult{
         Name:   call.Name,
         Result: result,
-    }
-    specs.SetGetTimeSeriesSidecar(toolResult, artifact)
-    
-    return toolResult, nil
+        Artifacts: []*planner.Artifact{
+            {
+                Kind:       "atlas.time_series",
+                Data:       artifact,
+                SourceTool: call.Name,
+            },
+        },
+    }, nil
 }
 ```
 
 **ストリーム購読者や UI ハンドラ側**では、artifacts にアクセスします：
 
 ```go
-func handleToolEnd(event *stream.ToolEndEvent) {
-    // Artifacts are available on the event
+func handleToolEnd(event *stream.ToolEnd) {
     for _, artifact := range event.Artifacts {
         switch artifact.Kind {
-        case "time_series":
-            // Render time series chart
+        case "atlas.time_series":
             renderTimeSeriesChart(artifact.Data)
-        case "topology":
-            // Render network graph
+        case "atlas.topology":
             renderTopologyGraph(artifact.Data)
         }
     }
@@ -840,23 +835,25 @@ func handleToolEnd(event *stream.ToolEndEvent) {
 
 ```go
 type Artifact struct {
-    Kind       string       // Logical type (e.g., "time_series", "chart_data")
+    Kind       string       // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
     Data       any          // JSON-serializable payload
     SourceTool tools.Ident  // Tool that produced this artifact
     RunLink    *run.Handle  // Link to nested agent run (for agent-as-tool)
 }
 ```
 
-#### artifacts を使うべきとき
+#### ServerData / artifacts を使うべきとき
 
-次の場合に artifacts を使います：
+次の場合に server-data を使います：
 
 - モデルのコンテキストには大きすぎるデータ（時系列、ログ、大きな表）を結果として扱いたい
 - UI が可視化のために構造化データ（チャート、グラフ、地図）を必要とする
 - モデルが推論するデータと、ユーザが見るデータを分離したい
 - モデルは要約で作業しつつ、下流システムには完全忠実度が必要
 
-次の場合は artifacts を避けます：
+永続化専用のメタデータを UI/観測者のトグルに関係なく必ず発行したい場合は **always-on server-data** を使います。
+
+次の場合は server-data を避けます：
 
 - 完全な結果がモデルコンテキストに収まる
 - 完全データを必要とする UI / 下流コンシューマが存在しない

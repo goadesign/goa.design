@@ -267,11 +267,37 @@ Tool payload decoding follows Goa’s **decode-body → transform** pattern and 
 
 See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
 
+## Contratti runtime dei prompt
+
+La gestione dei prompt e nativa del runtime e versionata:
+
+- `runtime.PromptRegistry` conserva registrazioni immutabili delle prompt spec baseline (`prompt.PromptSpec`).
+- `runtime.WithPromptStore(prompt.Store)` abilita la risoluzione degli override con scope (`session` -> `facility` -> `org` -> global).
+- I planner chiamano `PlannerContext.RenderPrompt(ctx, id, data)` per risolvere e rendere il contenuto.
+- Il contenuto renderizzato include metadati `prompt.PromptRef` per provenance; i planner possono allegarli a `model.Request.PromptRefs`.
+
+```go
+content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
+    "AssistantName": "Ops Assistant",
+})
+if err != nil {
+    return nil, err
+}
+
+resp, err := modelClient.Complete(ctx, &model.Request{
+    RunID:      input.RunContext.RunID,
+    Messages:   input.Messages,
+    PromptRefs: []prompt.PromptRef{content.Ref},
+})
+```
+
+`PromptRefs` sono metadati runtime per audit/provenance e non fanno parte del payload wire verso il provider.
+
 ---
 
 ## Memoria, flusso, telemetria
 
-- **Hook bus** pubblica eventi hook strutturati per l'intero ciclo di vita dell'agente: avvio/completamento dell'esecuzione, cambiamenti di fase, programmazione/risultati/aggiornamenti dello strumento, note del pianificatore e blocchi di pensiero, attese, suggerimenti per il tentativo e collegamenti all'agente come strumento.
+- **Hook bus** pubblica eventi hook strutturati per l'intero ciclo di vita dell'agente: avvio/completamento dell'esecuzione, cambiamenti di fase, `prompt_rendered`, programmazione/risultati/aggiornamenti dello strumento, note del pianificatore e blocchi di pensiero, attese, suggerimenti per il tentativo e collegamenti all'agente come strumento.
 
 - i **Memory Store** (`memory.Store`) sottoscrivono e aggiungono eventi di memoria durevoli (messaggi di utenti/assistenti, chiamate agli strumenti, risultati degli strumenti, note del pianificatore, riflessioni) per `(agentID, RunID)`.
 
@@ -455,6 +481,7 @@ type Planner interface {
 
 I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che espone i servizi del runtime:
 - `ModelClient(id string)` - ottenere un client di modello indipendente dal provider
+- `RenderPrompt(ctx, id, data)` - risolvere e renderizzare il contenuto prompt per lo scope corrente della run
 - `AddReminder(r reminder.Reminder)` - registrare promemoria di sistema di runscope
 - `RemoveReminder(id string)` - cancellare i promemoria quando le precondizioni non sono più valide
 - `Memory()` - accedere alla cronologia delle conversazioni
@@ -465,6 +492,7 @@ I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che esp
 
 - `features/mcp/*` - Chiamate DSL/codegen/runtime della suite MCP (HTTP/SSE/stdio)
 - `features/memory/mongo` - archivio di memoria durevole
+- `features/prompt/mongo` - prompt store Mongo per override dei prompt
 - `features/runlog/mongo` - archivio di eventi di esecuzione (append-only, paginazione per cursor)
 - `features/session/mongo` - archivio dei metadati di sessione
 - `features/stream/pulse` - Aiutanti di Pulse sink/subscriber

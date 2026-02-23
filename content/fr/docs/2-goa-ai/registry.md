@@ -17,6 +17,16 @@ Le registre agit à la fois comme un **catalogue** et une **passerelle** :
 
 Les agents sont ainsi dissociés des fournisseurs d'outils, ce qui permet une mise à l'échelle, un déploiement et une gestion du cycle de vie indépendants.
 
+### Registre d'outils vs registre de prompts
+
+Ce sont deux systemes differents avec des responsabilites differentes :
+
+- **Registre interne d'outils** (cette page) : decouverte/invocation inter-processus des toolsets et tool calls.
+- **Registre de prompts du runtime** (`runtime.PromptRegistry`) : enregistrement et rendu in-process des prompt specs, avec support optionnel d'un prompt store (`runtime.WithPromptStore`).
+
+Le registre d'outils ne stocke pas de templates de prompts et ne resout pas les overrides de prompts.
+Le rendu des prompts reste dans la couche runtime/planner et emet des evenements d'observabilite `prompt_rendered`.
+
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
 ## Mise en grappe de plusieurs nœuds
@@ -140,7 +150,7 @@ Le fournisseur généré :
 - Décode le JSON du payload entrant à l'aide du codec de payload généré
 - Construit le payload de la méthode Goa à l'aide des transformations générées
 - Appelle la méthode de service liée
-- Encode le JSON du résultat (et les artifacts/sidecars optionnels) à l'aide du codec de résultat généré
+- Encode le JSON du résultat ainsi que toute server-data déclarée (server-data optionnelles pour les observateurs et server-data always-on côté serveur) à l'aide du codec de résultat généré
 
 Pour servir les appels depuis la passerelle du registre, connectez le fournisseur généré à la boucle fournisseur du runtime :
 

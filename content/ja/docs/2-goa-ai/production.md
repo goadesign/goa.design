@@ -208,6 +208,61 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Mongo Store を使った Prompt Override
+
+本番での Prompt 管理は通常、次の組み合わせで行います。
+
+- `runtime.PromptRegistry` に登録したベースライン prompt spec
+- `features/prompt/mongo` で Mongo に永続化したスコープ付き override レコード
+
+### 配線
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+    "goa.design/goa-ai/runtime/agent/runtime"
+)
+
+promptClient, err := clientmongo.New(clientmongo.Options{
+    Client:     mongoClient,
+    Database:   "aura",
+    Collection: "prompt_overrides", // 任意（既定は prompt_overrides）
+})
+if err != nil {
+    panic(err)
+}
+
+promptStore, err := promptmongo.NewStore(promptClient)
+if err != nil {
+    panic(err)
+}
+
+rt := runtime.New(
+    runtime.WithEngine(temporalEng),
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+### Override 解決順序とロールアウト
+
+override の優先順位は決定的です。
+
+1. `session` スコープ
+2. `facility` スコープ
+3. `org` スコープ
+4. グローバルスコープ
+5. ベースライン spec（override が存在しない場合）
+
+推奨ロールアウト手順:
+
+- まず新しいベースライン prompt spec を登録する
+- override は広いスコープ（`org`）から開始し、`facility`/`session` へ絞ってカナリア展開する
+- `prompt_rendered` イベントと `model.Request.PromptRefs` で実効バージョンを追跡する
+- 同一スコープにより新しい override を書く（またはスコープ固有 override を削除する）ことでロールバックする
+
+---
+
 ## Temporal セットアップ
 
 このセクションは、本番環境における耐久性のあるエージェントワークフローのために Temporal をセットアップする方法を扱います。
@@ -293,7 +348,7 @@ temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // 必須: goa-ai の workflow 境界コントラクトを強制します。
-        // ツール結果/アーティファクトは境界を canonical JSON bytes (api.ToolEvent/api.ToolArtifact) として横断します。
+        // ツール結果/サーバーデータ/アーティファクトは境界を canonical JSON bytes (api.ToolEvent/api.ToolArtifact) として横断します。
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{

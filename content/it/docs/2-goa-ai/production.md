@@ -208,6 +208,61 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Override dei prompt con Mongo Store
+
+In produzione, la gestione dei prompt usa in genere:
+
+- prompt spec baseline registrate in `runtime.PromptRegistry`, e
+- record di override con scope persistiti in Mongo tramite `features/prompt/mongo`.
+
+### Wiring
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+    "goa.design/goa-ai/runtime/agent/runtime"
+)
+
+promptClient, err := clientmongo.New(clientmongo.Options{
+    Client:     mongoClient,
+    Database:   "aura",
+    Collection: "prompt_overrides", // opzionale (default: prompt_overrides)
+})
+if err != nil {
+    panic(err)
+}
+
+promptStore, err := promptmongo.NewStore(promptClient)
+if err != nil {
+    panic(err)
+}
+
+rt := runtime.New(
+    runtime.WithEngine(temporalEng),
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+### Risoluzione degli override e rollout
+
+La precedenza degli override e deterministica:
+
+1. scope `session`
+2. scope `facility`
+3. scope `org`
+4. scope globale
+5. prompt spec baseline (quando non esiste override)
+
+Strategia di rollout consigliata:
+
+- Registra prima le nuove prompt spec baseline.
+- Esegui gli override prima su scope ampio (`org`), poi restringi a `facility`/`session` per i canary.
+- Traccia le versioni effettive tramite eventi `prompt_rendered` e `model.Request.PromptRefs`.
+- Esegui rollback scrivendo un override piu recente nello stesso scope (o rimuovendo override specifici per tornare al fallback).
+
+---
+
 ## Impostazione temporale
 
 Questa sezione tratta l'impostazione di Temporal per i flussi di lavoro degli agenti durevoli negli ambienti di produzione.
@@ -290,7 +345,7 @@ temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Richiesto: far rispettare il contratto di confine dei workflow di goa-ai.
-        // I risultati/artefatti attraversano i confini come JSON canonico (api.ToolEvent/api.ToolArtifact).
+        // I risultati, server-data e artefatti attraversano i confini come JSON canonico (api.ToolEvent/api.ToolArtifact).
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{

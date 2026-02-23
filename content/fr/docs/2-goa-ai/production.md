@@ -208,6 +208,61 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Overrides de prompts avec Mongo Store
+
+En production, la gestion des prompts utilise generalement :
+
+- des prompt specs de base enregistrees dans `runtime.PromptRegistry`, et
+- des enregistrements d'override scopes persistes dans Mongo via `features/prompt/mongo`.
+
+### Branchement
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+    "goa.design/goa-ai/runtime/agent/runtime"
+)
+
+promptClient, err := clientmongo.New(clientmongo.Options{
+    Client:     mongoClient,
+    Database:   "aura",
+    Collection: "prompt_overrides", // optionnel (defaut: prompt_overrides)
+})
+if err != nil {
+    panic(err)
+}
+
+promptStore, err := promptmongo.NewStore(promptClient)
+if err != nil {
+    panic(err)
+}
+
+rt := runtime.New(
+    runtime.WithEngine(temporalEng),
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+### Resolution des overrides et deploiement progressif
+
+La priorite des overrides est deterministe :
+
+1. scope `session`
+2. scope `facility`
+3. scope `org`
+4. scope global
+5. prompt spec de base (quand aucun override n'existe)
+
+Strategie de rollout recommandee :
+
+- Enregistrer d'abord les nouvelles prompt specs de base.
+- Deployer les overrides d'abord sur un scope large (`org`), puis reduire vers `facility`/`session` pour les canaris.
+- Suivre les versions effectives via les evenements `prompt_rendered` et `model.Request.PromptRefs`.
+- Revenir en arriere en ecrivant un override plus recent au meme scope (ou en supprimant des overrides scopes pour revenir au fallback).
+
+---
+
 ## Configuration temporelle
 
 Cette section couvre la configuration de Temporal pour les flux de travail d'agents durables dans les environnements de production.
@@ -290,7 +345,7 @@ temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Requis : faire respecter le contrat de limites de workflow de goa-ai.
-        // Les résultats/artefacts traversent les frontières sous forme de JSON canonique (api.ToolEvent/api.ToolArtifact).
+        // Les résultats, server-data, et artefacts traversent les frontières sous forme de JSON canonique (api.ToolEvent/api.ToolArtifact).
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{

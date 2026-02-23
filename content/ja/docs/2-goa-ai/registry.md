@@ -17,6 +17,16 @@ llm_optimized: true
 
 これにより、エージェントとツールセットプロバイダーが疎結合になり、スケール、デプロイ、ライフサイクル管理をそれぞれ独立して行えます。
 
+### Tool Registry と Prompt Registry の違い
+
+両者は別システムであり、責務も異なります。
+
+- **内部 Tool Registry**（本ページ）: プロセス境界をまたぐ toolset / tool call の発見と呼び出し。
+- **Runtime Prompt Registry**（`runtime.PromptRegistry`）: プロセス内での prompt spec 登録とレンダリング（必要に応じて `runtime.WithPromptStore` による prompt store を利用）。
+
+Tool Registry は prompt template を保存せず、prompt override の解決もしません。
+prompt の解決・レンダリングは runtime/planner 層で行われ、`prompt_rendered` 観測イベントを発行します。
+
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
 ## マルチノード・クラスタリング
@@ -140,7 +150,7 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 - 生成済み payload codec を使って、受信した payload JSON をデコード
 - 生成済み transforms を使って、Goa メソッド用の payload を構築
 - 連携先のサービスメソッドを呼び出し
-- 生成済み result codec を使って、結果 JSON（および任意の artifacts/sidecars）をエンコード
+- 生成済み result codec を使って、結果 JSON を宣言済み server-data（観測者向け任意 server-data とサーバー専用 always-on メタデータを含む）とともにエンコード
 
 レジストリのゲートウェイからの呼び出しを処理するには、生成された provider をランタイムの provider ループに接続します：
 

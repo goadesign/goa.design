@@ -239,11 +239,11 @@ When a bounded tool executes:
 
 ```go
 // In un sottoscrittore di flusso
-func handleToolEnd(event *stream.ToolEndEvent) {
+func handleToolEnd(event *stream.ToolEnd) {
     if event.Bounds != nil && event.Bounds.Truncated {
         log.Printf("Lo strumento %s ha restituito %d di %d risultati (troncati)",
             event.ToolName, event.Bounds.Returned, *event.Bounds.Total)
-        se event.Bounds.RefinementHint != "" {
+        if event.Bounds.RefinementHint != "" {
             log.Printf("Suggerimento: %s", event.Bounds.RefinementHint)
         }
     }
@@ -703,152 +703,147 @@ specs := rt.ToolSpecsForAgent(chat.AgentID) // []ToolSpec per un agente
 
 Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
 
-### Typed Sidecars and Artifacts
+### Server Data e artefatti UI
 
-Some tools need to return **rich artifacts** (full time series, topology graphs, large result sets) that are useful for UIs and audits but too heavy for model providers. Goa-AI models these as **typed sidecars** (also called artifacts):
+Alcuni tool devono restituire **output ricco orientato agli osservatori** (serie temporali complete, grafi di topologia, grandi set di risultati) utile per UI e audit, ma troppo pesante per i provider di modelli. Goa-AI modella tutto l'output non rivolto al modello come **server-data**. I server-data opzionali possono essere proiettati in **artefatti UI**.
 
-#### Model-Facing vs Sidecar Data
+#### Risultato per il modello vs server-data
 
-The key distinction is what data flows where:
+La distinzione principale e dove scorrono i dati:
 
-| Data Type | Sent to Model | Stored/Streamed | Purpose |
+| Tipo di dato | Inviato al modello | Salvato/streaming | Scopo |
 |-----------|---------------|-----------------|---------|
-| **Model-facing result** | ✓ | ✓ | Bounded summary the LLM reasons about |
-| **Sidecar/Artifact** | ✗ | ✓ | Full-fidelity data for UIs, audits, downstream consumers |
+| **Risultato per il modello** | ✓ | ✓ | Riassunto delimitato su cui ragiona il LLM |
+| **Server-data opzionale (artefatti UI)** | ✗ | ✓ | Dati ad alta fedelta per UI, audit e consumer a valle |
+| **Server-data always-on** | ✗ | ✓ | Metadati solo server per persistenza/telemetria (mai come output UI opzionale) |
 
-This separation lets you:
-- Keep model context windows bounded and focused
-- Provide rich visualizations (charts, graphs, tables) without bloating LLM prompts
-- Attach provenance and audit data that models don't need to see
-- Stream large datasets to UIs while the model works with summaries
+Questa separazione permette di:
+- Mantenere la finestra di contesto del modello delimitata e focalizzata
+- Fornire visualizzazioni ricche (grafici, tabelle, mappe) senza gonfiare i prompt del LLM
+- Allegare dati di provenance e audit che il modello non deve vedere
+- Streammare grandi dataset alle UI mentre il modello lavora su riassunti
 
-#### Declaring Artifacts in DSL
+#### Dichiarare ServerData nel DSL
 
-Use the `Artifact(kind, schema)` function inside a `Tool` definition:
+Usa `ServerData(kind, schema)` dentro la definizione di `Tool`:
 
 ```go
-Tool("get_time_series", "Ottieni i dati delle serie temporali", func() {
+Tool("get_time_series", "Get time series data", func() {
     Args(func() {
-        Attributo("device_id", String, "Identificatore del dispositivo")
-        Attributo("start_time", Stringa, "Timestamp iniziale (RFC3339)")
-        Attributo("end_time", Stringa, "Timestamp di fine (RFC3339)")
+        Attribute("device_id", String, "Device identifier")
+        Attribute("start_time", String, "Start timestamp (RFC3339)")
+        Attribute("end_time", String, "End timestamp (RFC3339)")
         Required("device_id", "start_time", "end_time")
     })
-    // Risultato rivolto al modello: riepilogo delimitato
+    // Model-facing result: bounded summary
     Return(func() {
-        Attributo("summary", String, "Riepilogo del modello")
-        Attributo("count", Int, "Numero di punti dati")
-        Attributo("min_value", Float64, "Valore minimo nell'intervallo")
-        Attributo("max_value", Float64, "Valore massimo nell'intervallo")
-        Richiesto("summary", "count")
+        Attribute("summary", String, "Summary for the model")
+        Attribute("count", Int, "Number of data points")
+        Attribute("min_value", Float64, "Minimum value in range")
+        Attribute("max_value", Float64, "Maximum value in range")
+        Required("summary", "count")
     })
-    // Sidecar: dati a piena fedeltà per le UI
-    Artefatto("time_series", func() {
-        Attributo("data_points", ArrayOf(TimeSeriesPoint), "Dati completi della serie temporale")
-        Attributo("metadata", MapOf(String, String), "Metadati aggiuntivi")
-        Richiesto("data_points")
+    // Server-data: full-fidelity data for observers (e.g., UIs)
+    ServerData("atlas.time_series", func() {
+        Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
+        Attribute("metadata", MapOf(String, String), "Additional metadata")
+        Required("data_points")
     })
+    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
-The `kind` parameter (e.g., `"time_series"`) identifies the artifact type so UIs can dispatch appropriate renderers.
+Il parametro `kind` (ad esempio `"atlas.time_series"`) identifica il tipo di server-data cosi le UI possono instradare il renderer corretto.
 
-#### Generated Specs and Helpers
+#### Specs e helper generati
 
-In the specs packages, each `tools.ToolSpec` entry includes:
-- `Payload tools.TypeSpec` – tool input schema
-- `Result tools.TypeSpec` – model-facing output schema
-- `Sidecar *tools.TypeSpec` (optional) – artifact schema
+Nei package specs, ogni entry `tools.ToolSpec` include:
+- `Payload tools.TypeSpec` – schema di input del tool
+- `Result tools.TypeSpec` – schema di output orientato al modello
+- `ServerData []*tools.ServerDataSpec` – payload solo-server emessi insieme al risultato
+- `ServerDataDefault string` – modalita di emissione predefinita per server-data opzionale (`"on"`/`"off"`)
 
-Goa-AI generates typed helpers for working with sidecars:
+Le entry di server-data opzionale includono un codec JSON nel tool spec e possono essere proiettate in artefatti UI dai consumer.
 
-```go
-// Ottenere un artefatto da uno strumento risultato
-func GetGetTimeSeriesSidecar(res *planner.ToolResult) (*GetTimeSeriesSidecar, error)
+#### Pattern d'uso runtime
 
-// Associa l'artefatto al risultato di uno strumento
-func SetGetTimeSeriesSidecar(res *planner.ToolResult, sc *GetTimeSeriesSidecar) errore
-```
-
-#### Runtime Usage Patterns
-
-**In tool executors**, attach artifacts to results:
+**Negli esecutori dei tool**, allega artefatti UI (proiettati da server-data opzionale) ai risultati:
 
 ```go
 func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
     args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
-    
-    // Recupera i dati completi
+
+    // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
-    se err := nil {
-        return &planner.ToolResult{Errore: planner.ToolErrorFromError(err)}, nil
+    if err != nil {
+        return &planner.ToolResult{Error: planner.ToolErrorFromError(err)}, nil
     }
-    
-    // Costruire un risultato delimitato rivolto al modello
-    risultato := &specs.GetTimeSeriesResult{
-        Summary: fmt.Sprintf("Recuperati %d punti dati da %s a %s", len(fullData.Points), args.StartTime, args.EndTime),
-        Count: len(fullData.Points),
+
+    // Build bounded model-facing result
+    result := &specs.GetTimeSeriesResult{
+        Summary:  fmt.Sprintf("Retrieved %d data points from %s to %s", len(fullData.Points), args.StartTime, args.EndTime),
+        Count:    len(fullData.Points),
         MinValue: fullData.Min,
         MaxValue: fullData.Max,
     }
-    
-    // Costruire l'artefatto a piena fedeltà per le UI
-    artefatto := &specs.GetTimeSeriesSidecar{
+
+    // Build full-fidelity artifact for UIs
+    artifact := &specs.GetTimeSeriesServerData{
         DataPoints: fullData.Points,
-        Metadati: fullData.Metadata,
+        Metadata:   fullData.Metadata,
     }
-    
-    // Allega l'artefatto al risultato
-    toolResult := &planner.ToolResult{
-        Nome: call.Name,
-        Risultato: risultato,
-    }
-    specs.SetGetTimeSeriesSidecar(toolResult, artefatto)
-    
-    restituisce toolResult, nil
+
+    return &planner.ToolResult{
+        Name:   call.Name,
+        Result: result,
+        Artifacts: []*planner.Artifact{
+            {
+                Kind:       "atlas.time_series",
+                Data:       artifact,
+                SourceTool: call.Name,
+            },
+        },
+    }, nil
 }
 ```
 
-**In stream subscribers or UI handlers**, access artifacts:
+**Nei subscriber stream o handler UI**, accedi agli artefatti:
 
 ```go
-func handleToolEnd(event *stream.ToolEndEvent) {
-    // Gli artefatti sono disponibili sull'evento
+func handleToolEnd(event *stream.ToolEnd) {
     for _, artifact := range event.Artifacts {
         switch artifact.Kind {
-        case "time_series":
-            // Renderizza il grafico delle serie temporali
+        case "atlas.time_series":
             renderTimeSeriesChart(artifact.Data)
-        case "topology":
-            // Renderizza il grafico della rete
+        case "atlas.topology":
             renderTopologyGraph(artifact.Data)
         }
     }
 }
 ```
 
-#### Artifact Structure
+#### Struttura dell'artefatto
 
-The `planner.Artifact` type carries:
+Il tipo `planner.Artifact` contiene:
 
 ```go
-tipo Artefatto struct {
-    Kind string // Tipo logico (ad esempio, "time_series", "chart_data")
-    Data any // Carico utile serializzabile in JSON
-    SourceTool tools.Ident // Strumento che ha prodotto questo artefatto
-    RunLink *run.Handle // Collegamento all'esecuzione dell'agente nidificato (per agent-as-tool)
+type Artifact struct {
+    Kind       string      // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
+    Data       any         // JSON-serializable payload
+    SourceTool tools.Ident // Tool that produced this artifact
+    RunLink    *run.Handle // Link to nested agent run (for agent-as-tool)
 }
 ```
 
-#### Quando usare gli artefatti
+#### Quando usare ServerData / artefatti
 
-Utilizzare gli artefatti quando:
+Utilizzare server-data/artefatti quando:
 - I risultati dello strumento includono dati troppo grandi per il contesto del modello (serie temporali, log, tabelle di grandi dimensioni)
 - Le interfacce utente hanno bisogno di dati strutturati per la visualizzazione (grafici, diagrammi, mappe)
 - Si vuole separare ciò che il modello ragiona da ciò che gli utenti vedono
 - I sistemi a valle hanno bisogno di dati a piena fedeltà, mentre il modello lavora con sintesi
 
-Evitare gli artefatti quando:
+Evitare server-data quando:
 - Il risultato completo si inserisce comodamente nel contesto del modello
 - Non c'è un'interfaccia utente o un utente a valle che abbia bisogno dei dati completi
 - Il risultato delimitato contiene già tutto ciò che serve

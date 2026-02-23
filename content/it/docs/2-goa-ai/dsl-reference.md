@@ -29,7 +29,8 @@ Questo documento fornisce un riferimento completo alle funzioni DSL di Goa-AI. U
 | `Tool` | Toolset, Method | Definisce uno strumento richiamabile |
 | `Args` | Tool | Definisce lo schema dei parametri di input |
 | `Return` | Tool | Definisce lo schema dei risultati di output |
-| `Artifact` | Tool | Definisce lo schema dei dati sidecar (non inviati al modello) |
+| `ServerData` | Tool | Definisce lo schema dei dati server (mai inviati al fornitore del modello) |
+| `ServerDataDefault` | Tool | Emissione predefinita dei server-data opzionali quando `server_data` è omesso o vale `"auto"` |
 | `BoundedResult` | Strumento | Contrassegna il risultato come vista delimitata; applica la forma canonica dei campi di bounds; un sotto-DSL opzionale può dichiarare i campi cursor |
 | `Cursor` | BoundedResult | Dichiara quale campo del payload contiene il cursor di paginazione (opzionale) |
 | `NextCursor` | BoundedResult | Dichiara quale campo del risultato contiene il cursor della pagina successiva (opzionale) |
@@ -85,9 +86,22 @@ Questo documento fornisce un riferimento completo alle funzioni DSL di Goa-AI. U
 | `PublishTo` | Export | Configura la pubblicazione del registro |
 | `Version` | Toolset | Seleziona la versione del set di strumenti del registro |
 | **Funzioni dello Schema** | | | |
-| `Attribute` | Args, Return, Artifact | Definisce un campo dello schema (uso generale) |
-| `Field` | Args, Return, Artifact | Definisce un campo proto numerato (gRPC) |
+| `Attribute` | Args, Return, ServerData | Definisce un campo dello schema (uso generale) |
+| `Field` | Args, Return, ServerData | Definisce un campo proto numerato (gRPC) |
 | `Required` | Schema | Contrassegna i campi come obbligatori |
+
+## Gestione dei prompt (percorso di integrazione v1)
+
+Goa-AI v1 **non** richiede una DSL dedicata ai prompt (`Prompt(...)`, `Prompts(...)`).
+La gestione dei prompt e attualmente guidata dal runtime:
+
+- Registra le prompt spec baseline in `runtime.PromptRegistry`.
+- Configura override con scope tramite `runtime.WithPromptStore(...)`.
+- Esegue il render dei prompt dai planner con `PlannerContext.RenderPrompt(...)`.
+- Allega la provenance dei prompt renderizzati in `model.Request.PromptRefs`.
+
+Per i flussi agent-as-tool, mappa gli ID tool agli ID prompt con opzioni runtime
+come `runtime.WithPromptSpec(...)` nelle registrazioni degli agent-tools.
 
 ### Campo vs Attributo
 
@@ -525,15 +539,38 @@ Tool("search", "Search documents", func() {
 })
 ```
 
-### Artefatto
+### ServerData
 
-`Artifact(kind, val, args...)` definisce uno schema di artefatto tipizzato per i risultati dello strumento. I dati dell'artefatto (noti anche come dati secondari) sono allegati a `planner.ToolResult.Artifacts` ma non vengono mai inviati al fornitore del modello: sono dati a piena fedeltà che supportano un risultato delimitato rivolto al modello.
+`ServerData(kind, val, args...)` definisce dati server tipizzati emessi insieme a un risultato di tool. I server-data non vengono mai inviati al fornitore del modello.
 
 **Contesto**: Dentro `Tool`
 
 **Parametri:**
 - `kind`: Un identificatore di stringa per il tipo di artefatto (ad esempio, `"time_series"`, `"chart_data"`, `"full_results"`). Ciò consente ai consumatori di identificare e gestire in modo appropriato i diversi tipi di artefatto.
 - `val`: la definizione dello schema, che segue gli stessi schemi di `Args` e `Return`: una funzione con chiamate `Attribute()`, un tipo utente Goa o un tipo primitivo.
+
+**Instradamento per audience (`Audience*`):**
+
+Ogni voce `ServerData` dichiara una audience che i consumer a valle usano per instradare il payload senza dipendere dalle convenzioni di naming del `kind`:
+
+- `"timeline"`: persistita e idonea alla proiezione verso osservatori (ad es. card UI/timeline)
+- `"internal"`: allegato per la composizione tra tool; non persistito né renderizzato
+- `"evidence"`: riferimenti di provenienza; persistiti separatamente dalle card del timeline
+
+Imposta l’audience nel blocco DSL di `ServerData`:
+
+```go
+ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
+    AudienceInternal()
+    FromMethodResultField("chart_sidecar")
+})
+
+ServerData("aura.evidence", ArrayOf(Evidence), func() {
+    AudienceEvidence()
+    ModeAlways()
+    FromMethodResultField("evidence")
+})
+```
 
 **Quando usare l'artefatto
 - Quando i risultati dello strumento devono includere dati a piena fedeltà per le interfacce utente (grafici, diagrammi, tabelle), mantenendo i payload del modello limitati
@@ -555,11 +592,12 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    Artifact("time_series", func() {
+    ServerData("atlas.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
+    ServerDataDefault("off")
 })
 ```
 
@@ -583,21 +621,20 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    Artifact("metrics", TimeSeriesArtifact)
+    ServerData("atlas.metrics", TimeSeriesArtifact)
 })
 ```
 
 **Accesso al runtime:**
 
-In fase di esecuzione, i dati dell'artefatto sono disponibili su `planner.ToolResult.Artifacts`:
+In fase di esecuzione, gli artefatti UI (proiettati dai server-data opzionali) sono disponibili su `planner.ToolResult.Artifacts`:
 
 ```go
 // In a stream subscriber or result handler
 func handleToolResult(result *planner.ToolResult) {
-    if result.Artifacts != nil {
-        // Access the artifact by kind
-        if tsData, ok := result.Artifacts["time_series"]; ok {
-            // tsData contains the full time series for UI rendering
+    for _, art := range result.Artifacts {
+        if art.Kind == "atlas.time_series" {
+            // art.Data contains the full time series for UI rendering
         }
     }
 }

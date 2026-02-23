@@ -17,6 +17,16 @@ Il registro funge sia da **catalogo** che da **gateway**:
 
 Questo disaccoppia gli agenti dai fornitori di set di strumenti, consentendo di scalare, distribuire e gestire il ciclo di vita in modo indipendente.
 
+### Tool Registry vs Prompt Registry
+
+Sono sistemi distinti con responsabilita diverse:
+
+- **Registro interno degli strumenti** (questa pagina): scoperta/invocazione cross-process di toolset e tool call.
+- **Prompt Registry del runtime** (`runtime.PromptRegistry`): registrazione e rendering in-process delle prompt spec, opzionalmente con un prompt store (`runtime.WithPromptStore`).
+
+Il registro strumenti non memorizza template di prompt e non risolve override di prompt.
+Il rendering dei prompt resta nel layer runtime/planner ed emette eventi di osservabilita `prompt_rendered`.
+
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
 ## Clustering multi-nodo
@@ -140,7 +150,7 @@ Il provider generato:
 - Decodifica il JSON del payload in ingresso usando il codec del payload generato
 - Costruisce il payload del metodo Goa usando le trasformazioni generate
 - Chiama il metodo del servizio collegato
-- Codifica il JSON del risultato (e gli artifacts/sidecars opzionali) usando il codec del risultato generato
+- Codifica il JSON del risultato insieme a qualsiasi server-data dichiarata (server-data opzionali per gli osservatori e server-data always-on lato server) usando il codec del risultato generato
 
 Per servire le chiamate dal gateway del registro, collega il provider generato al loop provider del runtime:
 

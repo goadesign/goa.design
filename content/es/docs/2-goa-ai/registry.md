@@ -17,6 +17,16 @@ El registro actúa como **catálogo** y **puerta de enlace**:
 
 Esto desvincula a los agentes de los proveedores de conjuntos de herramientas, lo que permite un escalado, despliegue y gestión del ciclo de vida independientes.
 
+### Registro de herramientas vs registro de prompts
+
+Son sistemas distintos con responsabilidades distintas:
+
+- **Registro interno de herramientas** (esta página): descubrimiento/invocación entre procesos de toolsets y tool calls.
+- **Registro de prompts del runtime** (`runtime.PromptRegistry`): registro y render de prompt specs dentro del proceso, opcionalmente respaldado por un prompt store (`runtime.WithPromptStore`).
+
+El registro de herramientas no almacena plantillas de prompts ni resuelve overrides de prompts.
+El render de prompts permanece en la capa runtime/planner y emite eventos de observabilidad `prompt_rendered`.
+
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
 ## Agrupación de nodos múltiples

@@ -29,7 +29,8 @@ aliases:
 | `Tool` | Toolset, Method | 呼び出し可能なツールを定義する |
 | `Args` | Tool | 入力パラメータのスキーマを定義する |
 | `Return` | Tool | 出力結果のスキーマを定義する |
-| `Artifact` | Tool | サイドカーデータのスキーマを定義する（モデルには送らない） |
+| `ServerData` | Tool | ツール結果に付随するサーバーデータ（モデルには送らない）のスキーマを定義する |
+| `ServerDataDefault` | Tool | 予約フィールド `server_data` が省略/`"auto"` のときの既定値（`"on"`/`"off"`）を設定する |
 | `BoundedResult` | Tool | 結果を「境界付きビュー」としてマークし、bounds フィールドの標準形を適用する（任意で cursor 設定のサブ DSL を指定可能） |
 | `Cursor` | BoundedResult | ページング用 cursor を格納する payload フィールド名を指定する（任意） |
 | `NextCursor` | BoundedResult | 次ページ cursor を格納する result フィールド名を指定する（任意） |
@@ -85,9 +86,22 @@ aliases:
 | `PublishTo` | Export | レジストリ公開先を設定する |
 | `Version` | Toolset | レジストリツールセットのバージョンを固定する |
 | **スキーマ関数** | | |
-| `Attribute` | Args, Return, Artifact | スキーマフィールドを定義する（一般） |
-| `Field` | Args, Return, Artifact | proto フィールド番号付きで定義する（gRPC） |
+| `Attribute` | Args, Return, ServerData | スキーマフィールドを定義する（一般） |
+| `Field` | Args, Return, ServerData | proto フィールド番号付きで定義する（gRPC） |
 | `Required` | Schema | 必須フィールドを指定する |
+
+## Prompt 管理（v1 統合パス）
+
+Goa-AI v1 では、専用の Prompt DSL（`Prompt(...)`, `Prompts(...)`）は **不要** です。
+現在の Prompt 管理はランタイム主導で行います。
+
+- ベースラインの prompt spec を `runtime.PromptRegistry` に登録する
+- スコープ付き override を `runtime.WithPromptStore(...)` で有効化する
+- プランナーから `PlannerContext.RenderPrompt(...)` で prompt を解決・描画する
+- 描画した prompt の provenance を `model.Request.PromptRefs` に付与する
+
+agent-as-tool フローでは、agent-tool 登録時に `runtime.WithPromptSpec(...)` などの
+ランタイムオプションを使い、tool ID と prompt ID を対応付けます。
 
 ### Field と Attribute の違い
 
@@ -524,17 +538,41 @@ Tool("search", "Search documents", func() {
 })
 ```
 
-### Artifact
+### ServerData
 
-`Artifact(kind, val, args...)` は、ツール結果に付随する型付きアーティファクト（サイドカーデータ）のスキーマを定義します。アーティファクトデータは `planner.ToolResult.Artifacts` に付与されますが、モデルプロバイダへは送信されません。これは、モデルに見せる結果を境界付きに保ちつつ、UI などに必要な完全なデータを保持するために使います。
+`ServerData(kind, val, args...)` は、ツール結果に付随する **サーバー専用の構造化データ** のスキーマを定義します。server-data はモデルプロバイダへは送信されません。
+任意の server-data は多くの場合、観測者向けの UI アーティファクト（例: チャート/カード）に投影され、モデル向けの結果を境界付き・トークン効率良く保つために使います。一方、always-on の server-data はサーバー側で常に発行/永続化されるメタデータであり、任意の観測者出力として扱ってはいけません。
 
 **コンテキスト**: `Tool` の内部
 
 **パラメータ:**
-- `kind`: アーティファクト種別の文字列識別子（例: `"time_series"`, `"chart_data"`, `"full_results"`）
+- `kind`: server-data 種別の文字列識別子（例: `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`）。コンシューマは kind で投影/処理を判別します。
 - `val`: スキーマ定義（`Args`/`Return` と同様に、`Attribute()` を含む関数、Goa ユーザー型、またはプリミティブ型）
 
-**Artifact を使う場面:**
+**Audience によるルーティング（`Audience*`）:**
+
+各 `ServerData` エントリは audience を宣言し、下流コンシューマが kind の命名規約に依存せずに payload をルーティングできるようにします:
+
+- `"timeline"`: 永続化され、観測者向け（例: UI/timeline カード）へ投影可能
+- `"internal"`: ツール合成用の添付データ。永続化・レンダリングしない
+- `"evidence"`: provenance（証跡）参照。timeline カードとは別経路で永続化
+
+`ServerData` の DSL ブロック内で設定します:
+
+```go
+ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
+    AudienceInternal()
+    FromMethodResultField("chart_sidecar")
+})
+
+ServerData("aura.evidence", ArrayOf(Evidence), func() {
+    AudienceEvidence()
+    ModeAlways()
+    FromMethodResultField("evidence")
+})
+```
+
+**ServerData を使う場面:**
 - UI（チャート/グラフ/テーブル）が高忠実度データを必要とし、モデル向けは境界付きで十分なとき
 - モデルのコンテキスト制限を超える大きな結果セットを添付したいとき
 - 下流のコンシューマが、モデルには不要だが構造化されたデータを必要とするとき
@@ -554,18 +592,19 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    Artifact("time_series", func() {
+    ServerData("atlas.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
+    ServerDataDefault("off") // 既定はオプトイン（呼び出し側は `server_data:"on"` を指定できる）
 })
 ```
 
-**Goa 型をアーティファクトスキーマに使う例:**
+**Goa 型を server-data スキーマに使う例:**
 
 ```go
-var TimeSeriesArtifact = Type("TimeSeriesArtifact", func() {
+var TimeSeriesServerData = Type("TimeSeriesServerData", func() {
     Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
     Attribute("unit", String, "Measurement unit")
     Attribute("resolution", String, "Data resolution (e.g., '1m', '5m', '1h')")
@@ -582,21 +621,20 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    Artifact("metrics", TimeSeriesArtifact)
+    ServerData("atlas.metrics", TimeSeriesServerData)
 })
 ```
 
 **ランタイムでの参照:**
 
-実行時には、アーティファクトデータは `planner.ToolResult.Artifacts` から参照できます:
+実行時には、任意 server-data から投影された観測者向けアーティファクトが `planner.ToolResult.Artifacts` から参照できます:
 
 ```go
 // In a stream subscriber or result handler
 func handleToolResult(result *planner.ToolResult) {
-    if result.Artifacts != nil {
-        // Access the artifact by kind
-        if tsData, ok := result.Artifacts["time_series"]; ok {
-            // tsData contains the full time series for UI rendering
+    for _, art := range result.Artifacts {
+        if art.Kind == "atlas.time_series" {
+            // art.Data contains the full time series for UI rendering
         }
     }
 }

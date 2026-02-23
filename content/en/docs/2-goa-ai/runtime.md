@@ -269,9 +269,38 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 
 ---
 
+## Prompt Runtime Contracts
+
+Prompt management is runtime-native and versioned:
+
+- `runtime.PromptRegistry` stores immutable baseline `prompt.PromptSpec` registrations.
+- `runtime.WithPromptStore(prompt.Store)` enables scoped override resolution (`session` -> `facility` -> `org` -> global).
+- Planners call `PlannerContext.RenderPrompt(ctx, id, data)` to resolve and render prompt content.
+- Rendered content includes `prompt.PromptRef` metadata for provenance; planners can attach these to
+  `model.Request.PromptRefs`.
+
+```go
+content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
+    "AssistantName": "Ops Assistant",
+})
+if err != nil {
+    return nil, err
+}
+
+resp, err := modelClient.Complete(ctx, &model.Request{
+    RunID:      input.RunContext.RunID,
+    Messages:   input.Messages,
+    PromptRefs: []prompt.PromptRef{content.Ref},
+})
+```
+
+`PromptRefs` are runtime metadata for audit/provenance and are not provider wire payload fields.
+
+---
+
 ## Memory, Streaming, Telemetry
 
-- **Hook bus** publishes structured hook events for the full agent lifecycle: run start/completion, phase changes, tool scheduling/results/updates, planner notes and thinking blocks, awaits, retry hints, and agent-as-tool links.
+- **Hook bus** publishes structured hook events for the full agent lifecycle: run start/completion, phase changes, `prompt_rendered`, tool scheduling/results/updates, planner notes and thinking blocks, awaits, retry hints, and agent-as-tool links.
 
 - **Memory stores** (`memory.Store`) subscribe and append durable memory events (user/assistant messages, tool calls, tool results, planner notes, thinking) per `(agentID, RunID)`.
 
@@ -475,6 +504,7 @@ type Planner interface {
 
 Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
 - `ModelClient(id string)` - get a provider-agnostic model client
+- `RenderPrompt(ctx, id, data)` - resolve and render prompt content for the current run scope
 - `AddReminder(r reminder.Reminder)` - register run-scoped system reminders
 - `RemoveReminder(id string)` - clear reminders when preconditions no longer hold
 - `Memory()` - access conversation history
@@ -485,6 +515,7 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
 - `features/memory/mongo` – durable memory store
+- `features/prompt/mongo` – Mongo-backed prompt override store
 - `features/runlog/mongo` – run event log store (append-only, cursor-paginated)
 - `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers

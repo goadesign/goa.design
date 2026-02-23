@@ -225,6 +225,29 @@ Assistant: Tokyo is 22°C and sunny!
 
 The stub planner hardcodes this flow, but a real LLM planner follows the same pattern—it just decides dynamically based on the conversation.
 
+### Optional: Add Prompt Override Store
+
+If you want runtime-managed prompt overrides from day one, wire a prompt store when creating the runtime:
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+)
+
+promptClient, _ := clientmongo.New(clientmongo.Options{
+    Client:   mongoClient,
+    Database: "quickstart",
+})
+promptStore, _ := promptmongo.NewStore(promptClient)
+
+rt := runtime.New(
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+You can still run without a prompt store; the runtime then uses only baseline prompt specs.
+
 ---
 
 ## Step 3: Add Streaming

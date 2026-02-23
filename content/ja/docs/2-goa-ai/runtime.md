@@ -270,11 +270,37 @@ Tool payload decoding follows Goa’s **decode-body → transform** pattern and 
 
 See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
 
+## Prompt ランタイムコントラクト
+
+Prompt 管理はランタイムネイティブで、バージョン管理されます。
+
+- `runtime.PromptRegistry` は不変なベースライン `prompt.PromptSpec` 登録を保持する
+- `runtime.WithPromptStore(prompt.Store)` はスコープ付き override 解決（`session` -> `facility` -> `org` -> global）を有効化する
+- プランナーは `PlannerContext.RenderPrompt(ctx, id, data)` を呼び、prompt 内容を解決・描画する
+- 描画済み内容には provenance 用の `prompt.PromptRef` が含まれ、プランナーは `model.Request.PromptRefs` に付与できる
+
+```go
+content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
+    "AssistantName": "Ops Assistant",
+})
+if err != nil {
+    return nil, err
+}
+
+resp, err := modelClient.Complete(ctx, &model.Request{
+    RunID:      input.RunContext.RunID,
+    Messages:   input.Messages,
+    PromptRefs: []prompt.PromptRef{content.Ref},
+})
+```
+
+`PromptRefs` は監査/プロベナンス向けのランタイムメタデータであり、プロバイダー wire payload のフィールドではありません。
+
 ---
 
 ## メモリ、ストリーミング、テレメトリ
 
-- **Hook bus** は、run の開始/完了、フェーズ変更、ツールのスケジューリング/結果/更新、プランナーノートと思考ブロック、await、retry hints、agent-as-tool links など、エージェントライフサイクル全体の構造化フックイベントを publish します。
+- **Hook bus** は、run の開始/完了、フェーズ変更、`prompt_rendered`、ツールのスケジューリング/結果/更新、プランナーノートと思考ブロック、await、retry hints、agent-as-tool links など、エージェントライフサイクル全体の構造化フックイベントを publish します。
 
 - **Memory stores**（`memory.Store`）は、`(agentID, RunID)` ごとに耐久化されるメモリイベント（ユーザー/アシスタントメッセージ、ツール呼び出し、ツール結果、プランナーノート、思考）を購読し追記します。
 
@@ -453,6 +479,7 @@ type Planner interface {
 プランナーは `input.Agent` 経由でランタイムサービスを提供する `PlannerContext` も受け取ります。
 
 - `ModelClient(id string)` - provider-agnostic なモデルクライアントを取得する
+- `RenderPrompt(ctx, id, data)` - 現在の run scope で prompt 内容を解決・描画する
 - `AddReminder(r reminder.Reminder)` - run スコープの system reminder を登録する
 - `RemoveReminder(id string)` - 前提条件が満たされなくなったときに reminder を削除する
 - `Memory()` - 会話履歴へアクセスする
@@ -463,6 +490,7 @@ type Planner interface {
 
 - `features/mcp/*` – MCP suite DSL/codegen/runtime callers（HTTP/SSE/stdio）
 - `features/memory/mongo` – durable memory store
+- `features/prompt/mongo` – Mongo-backed prompt override store
 - `features/runlog/mongo` – run event log store（append-only, cursor pagination）
 - `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers

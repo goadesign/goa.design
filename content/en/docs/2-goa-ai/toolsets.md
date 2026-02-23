@@ -705,18 +705,19 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
 
-### Typed Sidecars and Artifacts
+### Server Data and UI Artifacts
 
-Some tools need to return **rich artifacts** (full time series, topology graphs, large result sets) that are useful for UIs and audits but too heavy for model providers. Goa-AI models these as **typed sidecars** (also called artifacts):
+Some tools need to return **rich observer-facing output** (full time series, topology graphs, large result sets) that is useful for UIs and audits but too heavy for model providers. Goa-AI models all non-model output as **server-data**. Optional server-data may be projected into **UI artifacts**.
 
-#### Model-Facing vs Sidecar Data
+#### Model-Facing vs Server Data
 
 The key distinction is what data flows where:
 
 | Data Type | Sent to Model | Stored/Streamed | Purpose |
 |-----------|---------------|-----------------|---------|
 | **Model-facing result** | ✓ | ✓ | Bounded summary the LLM reasons about |
-| **Sidecar/Artifact** | ✗ | ✓ | Full-fidelity data for UIs, audits, downstream consumers |
+| **Optional server-data (UI artifacts)** | ✗ | ✓ | Full-fidelity data for UIs, audits, downstream consumers |
+| **Always server-data** | ✗ | ✓ | Server-only metadata for persistence/telemetry (never treated as optional UI output) |
 
 This separation lets you:
 - Keep model context windows bounded and focused
@@ -724,9 +725,9 @@ This separation lets you:
 - Attach provenance and audit data that models don't need to see
 - Stream large datasets to UIs while the model works with summaries
 
-#### Declaring Artifacts in DSL
+#### Declaring ServerData in DSL
 
-Use the `Artifact(kind, schema)` function inside a `Tool` definition:
+Use the `ServerData(kind, schema)` function inside a `Tool` definition:
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -744,37 +745,31 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    // Sidecar: full-fidelity data for UIs
-    Artifact("time_series", func() {
+    // Server-data: full-fidelity data for observers (e.g., UIs)
+    ServerData("atlas.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
+    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
-The `kind` parameter (e.g., `"time_series"`) identifies the artifact type so UIs can dispatch appropriate renderers.
+The `kind` parameter (e.g., `"atlas.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
 
 #### Generated Specs and Helpers
 
 In the specs packages, each `tools.ToolSpec` entry includes:
 - `Payload tools.TypeSpec` – tool input schema
 - `Result tools.TypeSpec` – model-facing output schema
-- `Sidecar *tools.TypeSpec` (optional) – artifact schema
+- `ServerData []*tools.ServerDataSpec` – server-only payloads emitted alongside the result
+- `ServerDataDefault string` – default emission mode for optional server-data ("on"/"off")
 
-Goa-AI generates typed helpers for working with sidecars:
-
-```go
-// Get artifact from a tool result
-func GetGetTimeSeriesSidecar(res *planner.ToolResult) (*GetTimeSeriesSidecar, error)
-
-// Attach artifact to a tool result
-func SetGetTimeSeriesSidecar(res *planner.ToolResult, sc *GetTimeSeriesSidecar) error
-```
+Optional server-data entries include a JSON codec in the tool spec and are eligible for projection into UI artifacts by consumers.
 
 #### Runtime Usage Patterns
 
-**In tool executors**, attach artifacts to results:
+**In tool executors**, attach UI artifacts (projected from optional server-data) to results:
 
 ```go
 func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
@@ -795,34 +790,34 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
     }
     
     // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesSidecar{
+    artifact := &specs.GetTimeSeriesServerData{
         DataPoints: fullData.Points,
         Metadata:   fullData.Metadata,
     }
-    
-    // Attach artifact to result
-    toolResult := &planner.ToolResult{
+
+    return &planner.ToolResult{
         Name:   call.Name,
         Result: result,
-    }
-    specs.SetGetTimeSeriesSidecar(toolResult, artifact)
-    
-    return toolResult, nil
+        Artifacts: []*planner.Artifact{
+            {
+                Kind:       "atlas.time_series",
+                Data:       artifact,
+                SourceTool: call.Name,
+            },
+        },
+    }, nil
 }
 ```
 
 **In stream subscribers or UI handlers**, access artifacts:
 
 ```go
-func handleToolEnd(event *stream.ToolEndEvent) {
-    // Artifacts are available on the event
+func handleToolEnd(event *stream.ToolEnd) {
     for _, artifact := range event.Artifacts {
         switch artifact.Kind {
-        case "time_series":
-            // Render time series chart
+        case "atlas.time_series":
             renderTimeSeriesChart(artifact.Data)
-        case "topology":
-            // Render network graph
+        case "atlas.topology":
             renderTopologyGraph(artifact.Data)
         }
     }
@@ -835,22 +830,24 @@ The `planner.Artifact` type carries:
 
 ```go
 type Artifact struct {
-    Kind       string       // Logical type (e.g., "time_series", "chart_data")
+    Kind       string       // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
     Data       any          // JSON-serializable payload
     SourceTool tools.Ident  // Tool that produced this artifact
     RunLink    *run.Handle  // Link to nested agent run (for agent-as-tool)
 }
 ```
 
-#### When to Use Artifacts
+#### When to Use ServerData / Artifacts
 
-Use artifacts when:
+Use server-data when:
 - Tool results include data too large for model context (time series, logs, large tables)
 - UIs need structured data for visualization (charts, graphs, maps)
 - You want to separate what the model reasons about from what users see
 - Downstream systems need full-fidelity data while the model works with summaries
 
-Avoid artifacts when:
+Use **always server-data** when you need persistence-only metadata that must be emitted regardless of UI/observer toggles.
+
+Avoid server-data when:
 - The full result fits comfortably in model context
 - There's no UI or downstream consumer that needs the full data
 - The bounded result already contains everything needed

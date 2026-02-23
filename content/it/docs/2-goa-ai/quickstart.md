@@ -225,6 +225,29 @@ Assistant: Tokyo is 22°C and sunny!
 
 Il pianificatore stub codifica questo flusso, ma un vero pianificatore LLM segue lo stesso schema: decide solo dinamicamente in base alla conversazione.
 
+### Opzionale: aggiungere un Prompt Override Store
+
+Se vuoi override dei prompt gestiti a runtime fin dal primo giorno, collega un prompt store quando crei il runtime:
+
+```go
+import (
+    promptmongo "goa.design/goa-ai/features/prompt/mongo"
+    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
+)
+
+promptClient, _ := clientmongo.New(clientmongo.Options{
+    Client:   mongoClient,
+    Database: "quickstart",
+})
+promptStore, _ := promptmongo.NewStore(promptClient)
+
+rt := runtime.New(
+    runtime.WithPromptStore(promptStore),
+)
+```
+
+Puoi anche eseguire senza prompt store; in quel caso, il runtime usa solo le prompt spec baseline.
+
 ---
 
 ## Passo 3: Aggiungere il flusso
