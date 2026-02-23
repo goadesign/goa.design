@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	golang.org/x/oauth2 v0.27.0
-	google.golang.org/appengine/v2 v2.0.1
+	google.golang.org/appengine/v2 v2.0.6
 )
 
 require (
