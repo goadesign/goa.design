@@ -20,19 +20,126 @@ Cuando se procesan peticiones en un servicio Goa, se dispone de tres herramienta
 
 | Preocupación | Herramienta |
 |---------|------|
-| Validación de lógica de negocio Interceptores Goa
-| Transformación de datos - Interceptores Goa
-| Enriquecimiento de peticiones y respuestas (Goa Interceptors)
-| Registro, rastreo Middleware HTTP/gRPC
-| Compresión, CORS Middleware HTTP
-| Gestión de metadatos Interceptores gRPC
-| Limitación de velocidad HTTP/gRPC Middleware
+| Validación de lógica de negocio | Interceptores Goa |
+| Transformación de datos | Interceptores Goa |
+| Enriquecimiento de petición/respuesta | Interceptores Goa |
+| Logging, trazas | Middleware HTTP/gRPC |
+| Compresión, CORS | Middleware HTTP |
+| Gestión de metadatos | Interceptores gRPC |
+| Limitación de velocidad | Middleware HTTP/gRPC |
 
 ---
 
-## Interceptores gRPC
+## Interceptores Goa
 
 Los interceptores Goa proporcionan acceso seguro a los tipos de dominio de su servicio, con comprobaciones en tiempo de compilación y métodos de ayuda generados.
+
+### Modelo de ejecución (código generado)
+
+Los interceptores no son “ganchos mágicos” del runtime. En Goa son **wrappers de endpoints generados**. El DSL indica qué campos puede leer/escribir un interceptor y la generación produce:
+
+- **Contrato del lado del servicio** en `gen/<service>/service_interceptors.go`
+  - Interfaz `ServerInterceptors`: un método por interceptor
+  - Estructuras `*<Interceptor>Info`: metadatos de servicio/método + accesores
+  - Interfaces de acceso `*Payload` / `*Result`: solo los campos que declaraste como legibles/escribibles
+- **Contrato del lado del cliente** en `gen/<service>/client_interceptors.go`
+  - Interfaz `ClientInterceptors` y sus tipos `*Info` + accesores
+- **Cadena de wrappers** en `gen/<service>/interceptor_wrappers.go`
+  - `Wrap<Method>Endpoint` y `Wrap<Method>ClientEndpoint` por método
+  - En streaming, wrappers de stream que interceptan `SendWithContext` / `RecvWithContext`
+- **Cableado** en `gen/<service>/endpoints.go` y `gen/<service>/client.go`
+  - `NewEndpoints` aplica wrappers del lado servidor alrededor de los endpoints del servicio
+  - `NewClient` aplica wrappers del lado cliente alrededor de los endpoints del transporte
+
+La consecuencia importante es: **los interceptores del servidor se ejecutan después del decode del transporte y antes del método del servicio**, y **los interceptores del cliente se ejecutan antes del encode del transporte y después del decode de la respuesta** (porque envuelven el mismo endpoint tipado que llama tu código cliente).
+
+### Contrato del interceptor del servidor
+
+Goa genera una interfaz por servicio. Cada método del interceptor debe llamar a `next` exactamente una vez para continuar (o devolver un error/respuesta antes):
+
+```go
+type ServerInterceptors interface {
+    RequestAudit(ctx context.Context, info *RequestAuditInfo, next goa.Endpoint) (any, error)
+}
+```
+
+En tiempo de ejecución, normalmente:
+
+1. Usas `info.Payload()` / `info.Result(res)` para acceso **type-safe** (recomendado).
+2. Usas `info.Service()`, `info.Method()` y `info.CallType()` para etiquetar logs/métricas con identificadores estables.
+3. Llamas a `next(ctx, info.RawPayload())` para continuar la cadena.
+4. Opcionalmente mutas el payload antes de `next`, o mutas el result después.
+
+Ejemplo (enriquecimiento del result + timing):
+
+```go
+type Interceptors struct{}
+
+func (i *Interceptors) RequestAudit(ctx context.Context, info *RequestAuditInfo, next goa.Endpoint) (any, error) {
+    start := time.Now()
+
+    res, err := next(ctx, info.RawPayload())
+    if err != nil {
+        return nil, err
+    }
+
+    r := info.Result(res)
+    r.SetProcessedAt(time.Now().UTC().Format(time.RFC3339Nano))
+    r.SetDuration(int(time.Since(start).Milliseconds()))
+
+    return res, nil
+}
+```
+
+Por qué importan las interfaces de acceso:
+
+- Si declaras `ReadPayload(Attribute("recordID"))`, Goa genera `RecordID() <type>`.
+- Si declaras `WriteResult(Attribute("cachedAt"))`, Goa genera `SetCachedAt(<type>)`.
+- El interceptor no puede tocar campos que no declaraste; ese es el contrato en tiempo de compilación.
+
+### Contrato del interceptor del cliente
+
+Los interceptores de cliente son lo mismo, pero del lado cliente: envuelven el endpoint de transporte que pasas a `gen/<service>.NewClient(...)`.
+
+En la práctica eso significa:
+
+- `info.RawPayload()` es el **payload tipado del método** (por ejemplo, `*GetPayload`), no un `*http.Request`.
+- Si “escribes” en el payload en el interceptor, el endpoint de transporte codificará esos cambios (headers/body/etc.) según los mapeos del transporte.
+- Puedes usar `info.Result(res)` para leer/escribir campos del result tras decodificar la respuesta.
+
+### Orden (qué corre primero de verdad)
+
+Los interceptores se aplican generando una cadena de wrappers. El `Wrap<Method>Endpoint` generado es la fuente de verdad del orden.
+
+Conceptualmente, la generación hace algo así:
+
+```go
+func WrapGetEndpoint(endpoint goa.Endpoint, i ServerInterceptors) goa.Endpoint {
+    endpoint = wrapGetCache(endpoint, i)
+    endpoint = wrapGetJWTAuth(endpoint, i)
+    endpoint = wrapGetRequestAudit(endpoint, i)
+    endpoint = wrapGetSetDeadline(endpoint, i)
+    endpoint = wrapGetTraceRequest(endpoint, i)
+    return endpoint
+}
+```
+
+Cada `wrap...` devuelve un nuevo endpoint que llama al interceptor con `next` apuntando al endpoint anterior. Por eso:
+
+- **En la entrada (petición)**: el **último** wrapper se ejecuta primero.
+- **En la salida (respuesta)**: el **primer** wrapper se ejecuta primero.
+
+Si el orden importa, usa este modelo mental en vez de una regla genérica: **mira el wrap generado del método**.
+
+### Interceptores de streaming (Send/Recv)
+
+En streaming bidireccional, la generación envuelve el stream para que cada envío/recepción sea interceptado. Un mismo interceptor puede invocarse con distintos tipos de llamada:
+
+- `goa.InterceptorUnary`: interceptación única de la llamada al endpoint del stream
+- `goa.InterceptorStreamingSend`: interceptación de cada `SendWithContext`
+- `goa.InterceptorStreamingRecv`: interceptación de cada `RecvWithContext`
+
+Usa `info.CallType()` si necesitas ramificar. En send, `info.RawPayload()` es el mensaje. En recv, el “payload” lo produce `next` (tu interceptor lo ve como valor de retorno).
 
 ### Definición de Interceptores
 
@@ -83,7 +190,7 @@ var _ = Service("calculator", func() {
 ### Implementación de interceptores
 
 ```go
-func (i *ServerInterceptors) RequestLogger(ctx context.Context, info *RequestLoggerInfo, next goa.Endpoint) (any, error) {
+func (i *Interceptors) RequestLogger(ctx context.Context, info *RequestLoggerInfo, next goa.Endpoint) (any, error) {
     start := time.Now()
     
     // Call next interceptor or endpoint
@@ -207,11 +314,12 @@ var ClientMetadataEnricher = Interceptor("ClientMetadataEnricher", func() {
 
 ### Orden de ejecución
 
-1. Interceptores a nivel de servicio (por orden de declaración)
-2. Interceptores a nivel de método (por orden de declaración)
-3. El punto final real
-4. Interceptores a nivel de método (orden inverso)
-5. Interceptores a nivel de servicio (orden inverso)
+Goa aplica interceptores construyendo una cadena de wrappers alrededor del endpoint de cada método. La forma más sencilla de entender el orden exacto (sobre todo cuando mezclas interceptores a nivel de servicio y de método) es mirar el `Wrap<Method>Endpoint` generado y recordar:
+
+- **El último wrapper se ejecuta primero** en la ruta de petición.
+- **El primer wrapper se ejecuta primero** en la ruta de respuesta.
+
+Si necesitas un contrato estable en tu propio código, trata el wrap generado como la especificación canónica del orden para ese método.
 
 ---
 

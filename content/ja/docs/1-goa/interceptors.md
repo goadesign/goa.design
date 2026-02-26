@@ -34,6 +34,113 @@ Goa サービスでリクエストを処理するとき、3 つの補完的な�
 
 Goa インターセプターは、コンパイル時のチェックと生成されたヘルパーメソッドによって、 サービスのドメイン型への型安全なアクセスを提供します。
 
+### ランタイムモデル（生成コード）
+
+インターセプターはランタイムにある「魔法のフック」ではありません。Goa では **生成された endpoint ラッパー**です。DSL はインターセプターが読み書きできるフィールドを宣言し、コード生成は次を出力します：
+
+- **サービス側の契約** `gen/<service>/service_interceptors.go`
+  - `ServerInterceptors` インターフェース：インターセプターごとに 1 メソッド
+  - `*<Interceptor>Info` 構造体：サービス/メソッドのメタデータ + アクセサ
+  - `*Payload` / `*Result` アクセサ・インターフェース：宣言した読み/書き対象フィールドのみ
+- **クライアント側の契約** `gen/<service>/client_interceptors.go`
+  - `ClientInterceptors` インターフェースと `*Info` + アクセサ型
+- **ラッパーチェーン** `gen/<service>/interceptor_wrappers.go`
+  - メソッドごとの `Wrap<Method>Endpoint` と `Wrap<Method>ClientEndpoint`
+  - ストリーミングでは `SendWithContext` / `RecvWithContext` をインターセプトする stream ラッパー
+- **配線（wiring）** `gen/<service>/endpoints.go` と `gen/<service>/client.go`
+  - `NewEndpoints` がサービス endpoint の周りに server wrapper を適用
+  - `NewClient` が transport endpoint の周りに client wrapper を適用
+
+重要な帰結：**サーバーインターセプターは transport のデコード後〜サービスメソッド前に実行**され、**クライアントインターセプターは transport のエンコード前に実行され、レスポンスのデコード後にも実行**されます（クライアントコードが呼ぶ型付き endpoint 抽象をそのままラップするため）。
+
+### サーバーインターセプターの契約
+
+Goa はサービスごとにインターフェースを生成します。各インターセプターは `next` をちょうど 1 回呼んで処理を進める必要があります（あるいは早期にエラー/レスポンスを返します）：
+
+```go
+type ServerInterceptors interface {
+    RequestAudit(ctx context.Context, info *RequestAuditInfo, next goa.Endpoint) (any, error)
+}
+```
+
+実行時には通常：
+
+1. `info.Payload()` / `info.Result(res)` で **型安全**にアクセス（推奨）。
+2. `info.Service()` / `info.Method()` / `info.CallType()` でログ・メトリクスに安定した識別子を付与。
+3. `next(ctx, info.RawPayload())` を呼んでチェーンを継続。
+4. 必要に応じて `next` の前に payload を、後に result を変更。
+
+例（result の付加情報 + 処理時間）：
+
+```go
+type Interceptors struct{}
+
+func (i *Interceptors) RequestAudit(ctx context.Context, info *RequestAuditInfo, next goa.Endpoint) (any, error) {
+    start := time.Now()
+
+    res, err := next(ctx, info.RawPayload())
+    if err != nil {
+        return nil, err
+    }
+
+    r := info.Result(res)
+    r.SetProcessedAt(time.Now().UTC().Format(time.RFC3339Nano))
+    r.SetDuration(int(time.Since(start).Milliseconds()))
+
+    return res, nil
+}
+```
+
+アクセサ・インターフェースが重要な理由：
+
+- `ReadPayload(Attribute("recordID"))` を宣言すると、`RecordID() <type>` が生成されます。
+- `WriteResult(Attribute("cachedAt"))` を宣言すると、`SetCachedAt(<type>)` が生成されます。
+- 宣言していないフィールドにはアクセスできず、契約がコンパイル時に守られます。
+
+### クライアントインターセプターの契約
+
+クライアント側も同じ考え方です。`gen/<service>.NewClient(...)` に渡す transport endpoint をラップします。
+
+実際には：
+
+- `info.RawPayload()` は **メソッドの型付き payload**（例：`*GetPayload`）であり、`*http.Request` ではありません。
+- インターセプターが payload に「書き込み」すれば、その変更は transport マッピングに従ってエンコード（header/body など）されます。
+- レスポンスのデコード後、`info.Result(res)` で result フィールドを読み書きできます。
+
+### 順序（実際に何が先に動くか）
+
+インターセプターは wrapper チェーンとして適用されます。順序の真実は生成された `Wrap<Method>Endpoint` にあります。
+
+概念的には次のような形になります：
+
+```go
+func WrapGetEndpoint(endpoint goa.Endpoint, i ServerInterceptors) goa.Endpoint {
+    endpoint = wrapGetCache(endpoint, i)
+    endpoint = wrapGetJWTAuth(endpoint, i)
+    endpoint = wrapGetRequestAudit(endpoint, i)
+    endpoint = wrapGetSetDeadline(endpoint, i)
+    endpoint = wrapGetTraceRequest(endpoint, i)
+    return endpoint
+}
+```
+
+各 `wrap...` は「前の endpoint を `next` として呼ぶ」新しい endpoint を返します。その結果：
+
+- **リクエスト方向**：**最後**の wrapper が最初に実行されます。
+- **レスポンス方向**：**最初**の wrapper が最初に実行されます。
+
+順序が重要なら、一般的なルールよりも **対象メソッドの生成 wrap** を見て判断してください。
+
+### ストリーミング・インターセプター（Send/Recv）
+
+双方向ストリーミングでは、生成コードが stream をラップして送受信ごとにインターセプトします。単一のインターセプターが複数の呼び出し種別で呼ばれることがあります：
+
+- `goa.InterceptorUnary`：stream endpoint 呼び出しの 1 回だけのインターセプト
+- `goa.InterceptorStreamingSend`：各 `SendWithContext` のインターセプト
+- `goa.InterceptorStreamingRecv`：各 `RecvWithContext` のインターセプト
+
+必要なら `info.CallType()` で分岐します。send では `info.RawPayload()` がメッセージです。recv では「payload」は `next` が生成し（返り値として見えます）。
+
 ### インターセプターの定義
 
 ```go
@@ -83,7 +190,7 @@ var _ = Service("calculator", func() {
 ### インターセプターの実装
 
 ```go
-func (i *ServerInterceptors) RequestLogger(ctx context.Context, info *RequestLoggerInfo, next goa.Endpoint) (any, error) {
+func (i *Interceptors) RequestLogger(ctx context.Context, info *RequestLoggerInfo, next goa.Endpoint) (any, error) {
     start := time.Now()
     
     // Call next interceptor or endpoint
@@ -207,11 +314,12 @@ var ClientMetadataEnricher = Interceptor("ClientMetadataEnricher", func() {
 
 ### 実行順序
 
-1.サービスレベルのインターセプター（宣言順）
-2.メソッドレベルのインターセプター（宣言順）
-3.実際のエンドポイント
-4.メソッドレベルのインターセプター（逆順）
-5.サービスレベルのインターセプター（逆順）
+Goa は各メソッドの endpoint の周りに wrapper チェーンを構築してインターセプターを適用します。特にサービスレベルとメソッドレベルを混在させたときの「正確な順序」を理解する最も簡単な方法は、生成された `Wrap<Method>Endpoint` を見て、次を覚えることです：
+
+- **最後**の wrapper が **リクエスト方向で最初**に実行される
+- **最初**の wrapper が **レスポンス方向で最初**に実行される
+
+順序を安定した契約として扱いたい場合は、そのメソッドの生成 wrap を順序仕様の正として扱ってください。
 
 ---
 
