@@ -31,6 +31,22 @@ $font-size-sm: 0.875rem;         // 14px
 $font-size-xs: 0.8125rem;        // 13px
 $font-size-xxs: 0.75rem;         // 12px
 
+// -----------------------------------------------------------------------------
+// Documentation Typography (Industry baseline)
+// -----------------------------------------------------------------------------
+// Docs pages intentionally use larger text than the default Bootstrap scale.
+// Keep $font-size-* as the generic design scale and use these tokens for docs UI
+// (content + left nav + right TOC + breadcrumbs).
+$docs-font-size-body-desktop: 1.125rem;     // 18px
+$docs-font-size-body-mobile: 1rem;          // 16px
+$docs-font-size-breadcrumb: 0.9375rem;      // 15px
+$docs-font-size-nav: 1rem;                  // 16px
+$docs-font-size-nav-sub: 0.9375rem;         // 15px
+$docs-font-size-toc: 0.9375rem;             // 15px
+$docs-font-size-toc-sub: 0.875rem;          // 14px
+$docs-font-size-code-block: 0.9375rem;      // 15px
+$docs-font-size-code-block-mobile: 0.875rem; // 14px
+
 // Code sizes
 $font-size-code-inline: 0.875em; // Relative to parent
 $font-size-code-block: 0.8125rem; // 13px

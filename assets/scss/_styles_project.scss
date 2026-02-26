@@ -195,7 +195,7 @@ body {
       background: transparent;
       
       .breadcrumb-item {
-        font-size: 0.95rem;
+        font-size: $docs-font-size-breadcrumb;
         color: rgba($color-text, 0.85);
         line-height: 1.5;
         
@@ -784,7 +784,7 @@ body {
     padding: 0 1rem;
     
     .breadcrumb-item {
-      font-size: 0.9rem;
+      font-size: $docs-font-size-breadcrumb;
       color: rgba($color-text, 0.7);
       
       a {
@@ -828,7 +828,7 @@ body:not(.td-home) .td-main {
   margin-top: 0;
 
   .td-sidebar {
-    font-size: $font-size-sm;
+    font-size: $docs-font-size-nav;
     background: var(--sidebar-bg, #fff);
 
     .td-sidebar__search {
@@ -860,9 +860,13 @@ body:not(.td-home) .td-main {
     display: block;
 
     .td-sidebar {
-      position: static;
-      width: 100%;
-      height: auto;
+      // Docsy defaults are quite opinionated on small viewports. Use explicit
+      // overrides so the docs remain readable once typography is scaled up.
+      position: static !important;
+      top: auto !important;
+      left: auto !important;
+      width: 100% !important;
+      height: auto !important;
       max-height: 40vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -878,9 +882,9 @@ body:not(.td-home) .td-main {
     main,
     .td-main main,
     .container-fluid {
-      margin-left: 0;
-      padding: 0;
-      width: 100%;
+      margin-left: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
 
       .td-content {
         margin: 0.5rem;
@@ -1065,7 +1069,7 @@ body:not(.td-home) .td-main {
     height: calc(100vh - 3rem);
     overflow-y: auto;
     width: $docs-sidebar-right-width;
-    font-size: $font-size-sm;
+    font-size: $docs-font-size-toc;
     border-left: 0;
     padding-top: 1.5rem !important;
     padding-left: 0.125rem;
@@ -1076,7 +1080,7 @@ body:not(.td-home) .td-main {
 
   a[class^="td-page-meta--"] {
     color: $color-gradient-start !important;
-    font-size: 0.9rem;
+    font-size: $docs-font-size-nav-sub;
     transition: all 0.3s ease;
     
     &:hover {
@@ -1103,7 +1107,7 @@ body:not(.td-home) .td-main {
     }
 
     .td-page-meta__edit {
-      font-size: $font-size-sm;
+      font-size: $docs-font-size-nav-sub;
     }
   }
   }  // closes body:not(.td-home) .td-main

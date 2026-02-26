@@ -17,7 +17,7 @@
 
 .td-content {
   font-family: $font-family-homepage;  // Charter serif for body text (matches live site)
-  font-size: $font-size-body;
+  font-size: $docs-font-size-body-desktop;
   line-height: $line-height-base;
   max-width: $content-max-width;
 
@@ -93,7 +93,7 @@
 
   pre {
     font-family: $font-family-code;
-    font-size: $font-size-code-block;
+    font-size: $docs-font-size-code-block;
     line-height: $line-height-code;
     padding: 1rem 1.25rem;
     margin: 1.5rem 0;
@@ -204,7 +204,7 @@
     max-width: 100%;
     margin: 1.5rem 0;
     border-collapse: collapse;
-    font-size: $font-size-body;
+    font-size: inherit;
     background: transparent;
     th, td {
       padding: 0.75rem 1rem;
@@ -321,7 +321,7 @@
   // -------------------------------------------------------------------------
   .td-sidebar-nav-sublink {
     font-family: $font-family-docs;
-    font-size: $font-size-xs; // Matches right nav subsection size
+    font-size: $docs-font-size-nav-sub;
     font-weight: $font-weight-normal !important;
     color: var(--color-text, $color-text);
     padding: 0.25rem 0.5rem;
@@ -435,7 +435,7 @@
     font-family: $font-family-docs;
 
     a {
-      font-size: $font-size-xs;
+      font-size: $docs-font-size-toc;
       font-weight: $font-weight-normal;
       color: var(--toc-link-color, $color-text);
       padding: 0.25rem 0 0.25rem 0.5rem;
@@ -464,7 +464,7 @@
       padding: 0;
       margin: 0;
       ul a {
-        font-size: $font-size-xxs;
+        font-size: $docs-font-size-toc-sub;
         color: var(--color-text-muted, $color-text-muted);
       }
     }
@@ -602,7 +602,7 @@ a.td-edit-page { display: none; }
 .toc-auto-link {
   display: block;
   font-family: $font-family-docs;
-  font-size: $font-size-sm;
+  font-size: $docs-font-size-toc;
   font-weight: $font-weight-normal;
   color: var(--color-text, $color-text);
   padding: 0.375rem 0.5rem;
@@ -626,7 +626,7 @@ a.td-edit-page { display: none; }
 
 .toc-indent-1 .toc-auto-link,
 .toc-indent-2 .toc-auto-link {
-  font-size: $font-size-xs;
+  font-size: $docs-font-size-toc-sub;
   color: var(--color-text-muted, $color-text-muted);
 }
 
@@ -854,13 +854,14 @@ a.td-edit-page { display: none; }
   .td-content {
     max-width: none;
     padding: 1.25rem 1.5rem;
+    font-size: $docs-font-size-body-mobile;
     h1 { font-size: 1.75rem; }
     h2 { font-size: 1.375rem; }
     h3 { font-size: 1.125rem; }
-    pre { font-size: $font-size-xxs; padding: 0.875rem 1rem; }
+    pre { font-size: $docs-font-size-code-block-mobile; padding: 0.875rem 1rem; }
   }
   .td-sidebar { width: 12rem; }
-  .td-sidebar .td-sidebar-nav a.td-sidebar-link { font-size: $font-size-xs; }
+  .td-sidebar .td-sidebar-nav a.td-sidebar-link { font-size: $docs-font-size-nav-sub; }
   .td-sidebar-toc { display: none; }
 }
 
@@ -871,10 +872,11 @@ a.td-edit-page { display: none; }
     padding: 1rem;
     margin: 0.5rem;
     border-radius: 8px;
+    font-size: $docs-font-size-body-mobile;
     h1 { font-size: 1.5rem; margin-bottom: 1rem; }
     h2 { font-size: 1.25rem; }
     h3 { font-size: 1.125rem; }
-    pre { font-size: $font-size-xxs; padding: 0.75rem; }
+    pre { font-size: $docs-font-size-code-block-mobile; padding: 0.75rem; }
     table {
       display: table;
       width: 100%;
@@ -894,7 +896,7 @@ a.td-edit-page { display: none; }
     h1 { font-size: 1.375rem; }
     h2 { font-size: 1.125rem; }
     h3 { font-size: 1rem; }
-    p, li { font-size: $font-size-sm; }
+    p, li { font-size: inherit; }
   }
 }
 
