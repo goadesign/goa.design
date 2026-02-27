@@ -310,6 +310,18 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Telemetry**: OTEL 対応のロギング、メトリクス、トレーシングが workflow/activity を end-to-end で計測します。
 
+### ツール呼び出しヒント（DisplayHint）
+
+ツール呼び出しには、ユーザー向けの `DisplayHint`（例: UI 表示用）を含めることができます。
+
+契約:
+
+- hooks のイベントコンストラクタはヒントをレンダリングしません。ツール呼び出しのスケジュールイベントは既定で `DisplayHint==""` です。
+- ランタイムは、型付き payload をデコードして DSL の `CallHintTemplate` を実行できる場合、公開時に **永続的な** 呼び出しヒントを付与して保存できます。
+- 型付きデコードに失敗する、またはテンプレートが登録されていない場合、ランタイムは `DisplayHint` を空のままにします（生の JSON に対してヒントをレンダリングしません）。
+- producer が hook イベントを公開する前に `DisplayHint`（非空）を明示的に設定した場合、ランタイムはそれを権威ある値として扱い、上書きしません。
+- consumer ごとの文言変更（例: UI の表現）にはランタイムで `runtime.WithHintOverrides` を設定します。override は、ストリームの `tool_start` イベントにおいて DSL テンプレートより優先されます。
+
 ### セッションストリームの消費（Pulse）
 
 プロダクションでは一般に以下のパターンを取ります：

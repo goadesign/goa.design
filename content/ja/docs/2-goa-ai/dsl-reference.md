@@ -799,6 +799,14 @@ Tool("dangerous_write", "Write a stateful change", func() {
 - テンプレートは `missingkey=error` でコンパイルされます（参照するフィールドは必ず存在している必要があります）
 - 任意フィールドには `{{ if .Field }}` や `{{ with .Field }}` を使ってください
 
+**ランタイム契約:**
+
+- hooks のイベントコンストラクタはヒントをレンダリングしません。ツール呼び出しのスケジュールイベントは既定で `DisplayHint==""` です。
+- ランタイムは、型付き payload をデコードして `CallHintTemplate` を実行できる場合、公開時に **永続的な** 呼び出しヒントを付与して保存できます。
+- 型付きデコードに失敗する、またはテンプレートが登録されていない場合、ランタイムは `DisplayHint` を空のままにします（生の JSON に対してヒントをレンダリングしません）。
+- producer が hook イベントを公開する前に `DisplayHint`（非空）を明示的に設定した場合、ランタイムはそれを権威ある値として扱い、上書きしません。
+- consumer ごとの文言変更（例: UI の表現）にはランタイムで `runtime.WithHintOverrides` を設定します。override は、ストリームの `tool_start` イベントにおいて DSL テンプレートより優先されます。
+
 **基本例:**
 
 ```go
