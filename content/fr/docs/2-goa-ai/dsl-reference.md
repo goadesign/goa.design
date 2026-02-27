@@ -810,6 +810,14 @@ Notes :
 - Les modèles sont compilés avec `missingkey=error` - tous les champs référencés doivent exister
 - Utiliser les blocs `{{ if .Field }}` ou `{{ with .Field }}` pour les champs facultatifs
 
+**Contrat d'exécution :**
+
+- Les constructeurs d'événements de hooks ne rendent pas les indices. Les événements de planification d'outil ont `DisplayHint==""` par défaut.
+- Le runtime peut enrichir et persister un indice d'appel **durable** au moment de la publication en décodant la charge utile typée et en exécutant `CallHintTemplate`.
+- Si le décodage typé échoue ou si aucun modèle n'est enregistré, le runtime laisse `DisplayHint` vide. Les indices ne sont jamais rendus à partir de JSON brut.
+- Si un producteur définit explicitement `DisplayHint` (non vide) avant de publier l'événement hook, le runtime le considère comme faisant autorité et ne l'écrase pas.
+- Pour des variations par consommateur (par exemple, une formulation UI différente), configurez `runtime.WithHintOverrides` sur le runtime. Les overrides ont la priorité sur les templates DSL pour les événements `tool_start` streamés.
+
 **Exemple de base:**
 
 ```go

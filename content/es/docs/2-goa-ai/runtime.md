@@ -307,6 +307,18 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Telemetría**: El registro, las métricas y el seguimiento de los flujos de trabajo y las actividades de OTEL de principio a fin.
 
+### Pistas de llamada de herramienta (DisplayHint)
+
+Las llamadas a herramientas pueden llevar un `DisplayHint` orientado al usuario (por ejemplo, para UIs).
+
+Contrato:
+
+- Los constructores de hooks no renderizan pistas. Los eventos de planificación de herramientas tienen `DisplayHint==""` por defecto.
+- El runtime puede enriquecer y persistir una pista de llamada **duradera** en el momento de publicación decodificando la carga útil tipificada y ejecutando el `CallHintTemplate` del DSL.
+- Si falla la decodificación tipificada o no hay plantilla registrada, el runtime deja `DisplayHint` vacío. Las pistas nunca se renderizan contra JSON en bruto.
+- Si un productor establece explícitamente `DisplayHint` (no vacío) antes de publicar el evento de hook, el runtime lo trata como autoritativo y no lo sobrescribe.
+- Para cambios por consumidor (por ejemplo, texto UI), configure `runtime.WithHintOverrides` en el runtime. Los overrides tienen precedencia sobre las plantillas DSL para eventos `tool_start` streameados.
+
 ### Consumir el flujo de sesión (Pulse)
 
 En producción, el patrón habitual es:

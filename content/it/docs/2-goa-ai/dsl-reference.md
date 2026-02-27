@@ -810,6 +810,14 @@ Note:
 - I modelli sono compilati con `missingkey=error`: tutti i campi di riferimento devono esistere
 - Usare i blocchi `{{ if .Field }}` o `{{ with .Field }}` per i campi opzionali
 
+**Contratto di runtime:**
+
+- I costruttori di hook non renderizzano suggerimenti. Gli eventi di pianificazione dei tool hanno `DisplayHint==""` per impostazione predefinita.
+- Il runtime può arricchire e persistere un suggerimento di chiamata **duraturo** al momento della pubblicazione decodificando il payload tipizzato ed eseguendo `CallHintTemplate`.
+- Se la decodifica tipizzata fallisce o non è registrato alcun template, il runtime lascia `DisplayHint` vuoto. I suggerimenti non vengono mai renderizzati a partire da JSON grezzo.
+- Se un producer imposta esplicitamente `DisplayHint` (non vuoto) prima di pubblicare l'evento hook, il runtime lo considera autorevole e non lo sovrascrive.
+- Per variazioni per-consumer (ad esempio testo UI), configurare `runtime.WithHintOverrides` sul runtime. Gli override hanno la precedenza sui template DSL per gli eventi `tool_start` streammati.
+
 **Esempio di base:**
 
 ```go

@@ -307,6 +307,18 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Télémétrie** : La journalisation, la métrologie et le traçage des flux de travail et des activités de bout en bout sont pris en compte par OTEL.
 
+### Indices d'appel d'outil (DisplayHint)
+
+Les appels d'outils peuvent transporter un `DisplayHint` destiné à l'utilisateur (par exemple, pour des UI).
+
+Contrat :
+
+- Les constructeurs d'événements de hooks ne rendent pas les indices. Les événements de planification d'outil ont `DisplayHint==""` par défaut.
+- Le runtime peut enrichir et persister un indice d'appel **durable** au moment de la publication en décodant la charge utile typée et en exécutant le `CallHintTemplate` DSL.
+- Si le décodage typé échoue ou si aucun modèle n'est enregistré, le runtime laisse `DisplayHint` vide. Les indices ne sont jamais rendus à partir de JSON brut.
+- Si un producteur définit explicitement `DisplayHint` (non vide) avant de publier l'événement hook, le runtime le considère comme faisant autorité et ne l'écrase pas.
+- Pour des variations par consommateur (par exemple, une formulation UI différente), configurez `runtime.WithHintOverrides` sur le runtime. Les overrides ont la priorité sur les templates DSL pour les événements `tool_start` streamés.
+
 ### Consommer le flux de session (Pulse)
 
 En production, le schéma habituel est :

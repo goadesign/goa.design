@@ -839,6 +839,18 @@ Notes:
 - Templates are compiled with `missingkey=error`—all referenced fields must exist
 - Use `{{ if .Field }}` or `{{ with .Field }}` blocks for optional fields
 
+**Runtime contract:**
+
+- Hook constructors do not render hints. Tool call scheduled events default to `DisplayHint==""`.
+- The runtime may enrich and persist a durable default call hint at publish time by decoding the typed tool
+  payload and executing the `CallHintTemplate`.
+- When typed decoding fails or no template is registered, the runtime leaves `DisplayHint` empty. Hints are
+  never rendered against raw JSON bytes.
+- If a producer explicitly sets `DisplayHint` (non-empty) before publishing the hook event, the runtime treats
+  it as authoritative and does not overwrite it.
+- For per-consumer wording changes, configure `runtime.WithHintOverrides` on the runtime. Overrides take
+  precedence over DSL-authored templates for streamed `tool_start` events.
+
 **Basic Example:**
 
 ```go
