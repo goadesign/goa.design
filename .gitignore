@@ -25,3 +25,6 @@ static/img/social/.DS_Store
 .venv/
 .env
 .kiro/
+
+# go-app build artifact (App Engine binary)
+go-app/goa.design
