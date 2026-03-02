@@ -102,6 +102,10 @@ Goa-AI v1 では、専用の Prompt DSL（`Prompt(...)`, `Prompts(...)`）は **
 
 agent-as-tool フローでは、agent-tool 登録時に `runtime.WithPromptSpec(...)` などの
 ランタイムオプションを使い、tool ID と prompt ID を対応付けます。
+これは任意です。consumer 側で prompt コンテンツを設定しない場合、ランタイムは
+ツールの canonical JSON payload を子 run の user message としてそのまま渡し、
+provider 側の planner はサーバー側で注入したコンテキストを使って自分の prompt を
+描画できます。
 
 ### Field と Attribute の違い
 

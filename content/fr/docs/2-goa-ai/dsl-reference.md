@@ -102,6 +102,10 @@ La gestion des prompts est actuellement pilotee par le runtime :
 
 Pour les flux agent-as-tool, mapper les IDs d'outil aux IDs de prompt avec des options
 runtime comme `runtime.WithPromptSpec(...)` sur les enregistrements d'agent-tools.
+C'est optionnel : si aucun contenu de prompt n'est configuré côté consumer, le runtime
+utilise le payload JSON canonique de l'outil comme message utilisateur du run enfant,
+et les planners provider peuvent rendre leurs propres prompts avec du contexte injecté
+côté serveur.
 
 ### Champ vs Attribut
 

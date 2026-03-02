@@ -103,6 +103,9 @@ Prompt management is currently runtime-driven:
 
 For agent-as-tool flows, map tool IDs to prompt IDs using runtime options such as
 `runtime.WithPromptSpec(...)` on agent-tool registrations.
+This is optional: when no consumer-side prompt content is configured, the runtime
+uses the canonical JSON tool payload as the nested user message and provider
+planners can render their own prompts with injected server-side context.
 
 ### Field vs Attribute
 
