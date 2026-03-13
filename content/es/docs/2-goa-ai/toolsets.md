@@ -373,6 +373,34 @@ Agent-as-tool toolsets execute inline from the planner's perspective while the r
 5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
 6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
 
+### Materializadores de resultados
+
+Los toolsets pueden registrar un materializador tipado de resultados:
+
+```go
+reg := runtime.ToolsetRegistration{
+    Name: "chat.ask_question",
+    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
+        return nil, fmt.Errorf("externally provided")
+    },
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        // Adjunte aquí sidecars deterministas solo del servidor.
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
+}
+```
+
+Contrato:
+
+- `ResultMaterializer` se ejecuta tanto en la **ruta de ejecución normal** como en la **ruta de espera con resultados proporcionados externamente**.
+- Recibe el `planner.ToolRequest` tipado original junto con el `planner.ToolResult` tipado, antes de que el runtime codifique JSON para hooks, límites del workflow o llamadores.
+- Úselo para adjuntar `result.ServerData` o para normalizar de forma determinista la forma semántica del resultado.
+- Debe mantenerse puro y determinista; cuando se ejecuta dentro del código del workflow no debe realizar E/S.
+
+Este es el lugar canónico para derivar sidecars solo para observadores a partir del payload original de la herramienta y del resultado tipado, manteniendo esos sidecars invisibles para los proveedores de modelos.
+
 ---
 
 ## Executor-First Model

@@ -395,6 +395,34 @@ if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
 
 En coulisses, les signaux de pause/reprise mettent à jour le magasin d'exécution et émettent des événements de type `run_paused`/`run_resumed` pour que les couches de l'interface utilisateur restent synchronisées.
 
+### Fournir des résultats d’outils externes
+
+Certaines attentes se reprennent avec des **résultats d’outils fournis par un acteur externe** plutôt que par `ExecuteToolActivity` lui-même. Les cas typiques sont les outils pilotés par l’interface utilisateur, comme les questions structurées, ou les services passerelles qui collectent des résultats depuis un autre système avant de réveiller l’exécution.
+
+Utilisez `ProvideToolResults` avec des résultats bruts fournis :
+
+```go
+err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
+    RunID: "run-123",
+    ID:    "await-1",
+    Results: []*api.ProvidedToolResult{
+        {
+            Name:       "chat.ask_question.ask_question",
+            ToolCallID: "toolcall-1",
+            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+        },
+    },
+})
+```
+
+Contrat :
+
+- Les appelants fournissent le **JSON de résultat canonique brut** ainsi que `Bounds`, `Error` et `RetryHint` en option.
+- Les appelants ne construisent **pas** `api.ToolEvent` ; c’est l’enveloppe interne de workflow du runtime.
+- Le runtime décode le résultat fourni à l’aide de la spécification d’outil enregistrée, exécute la matérialisation typée du résultat, attache les sidecars purement serveur, ajoute le `tool_result` canonique au transcript/run log, puis reprend seulement ensuite la planification.
+
+Cela maintient le chemin d’attente conceptuellement aligné sur le chemin d’exécution normal : les deux flux convergent vers le même contrat typé `planner.ToolResult` avant publication.
+
 ---
 
 ## Confirmation de l'outil

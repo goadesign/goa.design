@@ -370,6 +370,34 @@ Agent-as-Tool のツールセットは、プランナー視点では「インラ
 5. 子ラン側で plan/execute/resume ループを完走し、`RunOutput` とツールイベントが親 `planner.ToolResult` に集約される（結果ペイロード、集約テレメトリ、`ChildrenCount`、子ランへの `RunLink` を含む）
 6. ストリーム購読者が親ツールコールの `tool_start` / `tool_end` に加え、`child_run_linked` のリンクイベントも発行するため、UI は単一のセッションストリームを消費しながらネストされたエージェントカードを構築できる
 
+### 結果マテリアライザ
+
+toolset には、型付きの結果マテリアライザを登録できます。
+
+```go
+reg := runtime.ToolsetRegistration{
+    Name: "chat.ask_question",
+    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
+        return nil, fmt.Errorf("externally provided")
+    },
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        // 決定論的な server-only sidecar をここで付与します。
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
+}
+```
+
+契約:
+
+- `ResultMaterializer` は、**通常の実行パス** と **外部提供結果による await パス** の両方で実行されます。
+- ランタイムが hooks、workflow 境界、呼び出し側向けに JSON をエンコードする前に、元の型付き `planner.ToolRequest` と型付き `planner.ToolResult` を受け取ります。
+- `result.ServerData` を付与したり、結果の意味的な形を決定論的に正規化したりする用途に使います。
+- 純粋かつ決定論的である必要があります。workflow コード内で動く場合、I/O を行ってはいけません。
+
+これは、元のツール payload と型付き結果から observer-only sidecar を導出しつつ、それらの sidecar をモデルプロバイダから見えないままに保つための正規の場所です。
+
 ---
 
 ## エクゼキュータ・ファースト（Executor-First）モデル

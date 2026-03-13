@@ -398,6 +398,34 @@ if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
 
 内部では pause/resume シグナルが run ストアを更新し、`run_paused` / `run_resumed` フックイベントを発行するため、UI レイヤは同期を維持できます。
 
+### 外部ツール結果の提供
+
+一部の await は、`ExecuteToolActivity` 自身ではなく **外部アクターが提供したツール結果** によって再開されます。代表例は、構造化質問のような UI 管理ツールや、別システムから結果を集めて run を再開させるブリッジサービスです。
+
+生の提供結果とともに `ProvideToolResults` を使います：
+
+```go
+err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
+    RunID: "run-123",
+    ID:    "await-1",
+    Results: []*api.ProvidedToolResult{
+        {
+            Name:       "chat.ask_question.ask_question",
+            ToolCallID: "toolcall-1",
+            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+        },
+    },
+})
+```
+
+契約:
+
+- 呼び出し側は、**正規の生結果 JSON** と、任意の `Bounds`、`Error`、`RetryHint` を渡します。
+- 呼び出し側が `api.ToolEvent` を構築することは **ありません**。それはランタイム内部の workflow エンベロープです。
+- ランタイムは、登録済みツール仕様を使って提供結果をデコードし、型付きの結果 materialization を実行し、必要な server-only sidecar を付与し、正規の `tool_result` を transcript/run log に追記してから、計画処理を再開します。
+
+これにより await パスは通常の実行パスと概念的に揃います。どちらのフローも、公開前に同じ型付き `planner.ToolResult` 契約へ収束します。
+
 ---
 
 ## ツール確認（Tool Confirmation）

@@ -395,6 +395,34 @@ if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
 
 Dietro le quinte, i segnali di pausa/ripresa aggiornano l'archivio delle esecuzioni ed emettono eventi di aggancio `run_paused`/`run_resumed`, in modo che i livelli dell'interfaccia utente rimangano sincronizzati.
 
+### Fornire risultati esterni degli strumenti
+
+Alcune attese riprendono con **risultati degli strumenti forniti da un attore esterno** invece che da `ExecuteToolActivity` stesso. Gli esempi più comuni sono gli strumenti gestiti dalla UI, come le domande strutturate, oppure i servizi ponte che raccolgono risultati da un altro sistema e poi riattivano la run.
+
+Usare `ProvideToolResults` con risultati grezzi forniti:
+
+```go
+err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
+    RunID: "run-123",
+    ID:    "await-1",
+    Results: []*api.ProvidedToolResult{
+        {
+            Name:       "chat.ask_question.ask_question",
+            ToolCallID: "toolcall-1",
+            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+        },
+    },
+})
+```
+
+Contratto:
+
+- I chiamanti forniscono il **JSON di risultato canonico grezzo** insieme a `Bounds`, `Error` e `RetryHint` opzionali.
+- I chiamanti **non** costruiscono `api.ToolEvent`; quello è l’involucro interno di workflow del runtime.
+- Il runtime decodifica il risultato fornito usando la specifica registrata dello strumento, esegue la materializzazione tipizzata del risultato, allega eventuali sidecar solo server, aggiunge il `tool_result` canonico al transcript/run log e solo dopo riprende la pianificazione.
+
+Questo mantiene il percorso di attesa concettualmente allineato al percorso di esecuzione normale: entrambi i flussi convergono sullo stesso contratto tipizzato `planner.ToolResult` prima della pubblicazione.
+
 ---
 
 ## Conferma dello strumento

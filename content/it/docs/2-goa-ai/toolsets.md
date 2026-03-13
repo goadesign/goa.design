@@ -371,6 +371,34 @@ Agent-as-tool toolsets execute inline from the planner's perspective while the r
 5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
 6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
 
+### Materializzatori di risultati
+
+I toolset possono registrare un materializzatore di risultati tipizzato:
+
+```go
+reg := runtime.ToolsetRegistration{
+    Name: "chat.ask_question",
+    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
+        return nil, fmt.Errorf("externally provided")
+    },
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        // Allegare qui sidecar deterministici solo lato server.
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
+}
+```
+
+Contratto:
+
+- `ResultMaterializer` viene eseguito sia sul **percorso di esecuzione normale** sia sul **percorso di attesa con risultati forniti esternamente**.
+- Riceve il `planner.ToolRequest` tipizzato originale insieme al `planner.ToolResult` tipizzato, prima che il runtime codifichi il JSON per hook, confini del workflow o chiamanti.
+- Usarlo per allegare `result.ServerData` oppure per normalizzare in modo deterministico la forma semantica del risultato.
+- Deve restare puro e deterministico; quando viene eseguito nel codice del workflow non deve fare I/O.
+
+Questo è il punto canonico in cui derivare sidecar destinati solo agli osservatori a partire dal payload originale dello strumento e dal risultato tipizzato, mantenendo tali sidecar invisibili ai provider di modelli.
+
 ---
 
 ## Executor-First Model

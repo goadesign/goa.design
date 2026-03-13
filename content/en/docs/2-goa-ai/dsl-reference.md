@@ -31,9 +31,9 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Return` | Tool | Defines output result schema |
 | `ServerData` | Tool | Defines server-only data schema (never sent to model providers) |
 | `ServerDataDefault` | Tool | Default emission for optional server-data when `server_data` is omitted or `"auto"` |
-| `BoundedResult` | Tool | Marks result as bounded view; enforces canonical bounds fields; optional sub-DSL can declare paging cursor fields |
+| `BoundedResult` | Tool | Declares a runtime-owned bounded-result contract; optional sub-DSL can declare paging cursor fields |
 | `Cursor` | BoundedResult | Declares which payload field carries the paging cursor (optional) |
-| `NextCursor` | BoundedResult | Declares which result field carries the next-page cursor (optional) |
+| `NextCursor` | BoundedResult | Declares the projected result field name for the next-page cursor (optional) |
 | `Idempotent` | Tool | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags` | Tool, Toolset | Attaches metadata labels |
 | `BindTo` | Tool | Binds tool to service method |
@@ -491,7 +491,7 @@ Tool("search", "Search indexed documentation", func() {
         Required("documents")
     })
     CallHintTemplate("Searching for: {{ .Query }}")
-    ResultHintTemplate("Found {{ len .Documents }} documents")
+    ResultHintTemplate("Found {{ len .Result.Documents }} documents")
     Tags("docs", "search")
 })
 ```
@@ -647,68 +647,63 @@ func handleToolResult(result *planner.ToolResult) {
 
 ### BoundedResult
 
-`BoundedResult()` marks the current tool's result as a bounded view over a potentially larger data set. It is a lightweight contract that tells the runtime and services that this tool:
-
-1. May return a subset of available data
-2. Should surface truncation metadata (`agent.Bounds`) alongside its result
+`BoundedResult()` marks the current tool's result as a bounded view over a potentially larger data set.
+It declares a runtime-owned bounds contract while keeping the authored result type semantic and
+domain-specific.
 
 **Context**: Inside `Tool`
 
-`BoundedResult` enforces a canonical bounded-result shape. Tools either declare the full set of
-standard bounds fields (`returned`, `total`, `truncated`, `refinement_hint`) or declare none and let
-`BoundedResult()` add them. Mixed/partial declarations are rejected.
+Canonical model-visible fields:
+
+- `returned` (required, `Int`)
+- `truncated` (required, `Boolean`)
+- `total` (optional, `Int`)
+- `refinement_hint` (optional, `String`)
+- `next_cursor` (optional, `String`) when declared via `NextCursor(...)`
+
+`BoundedResult` is the single source of truth for that contract:
+
+- codegen records it in generated `tools.ToolSpec.Bounds`
+- codegen projects the canonical bounded fields into the generated JSON result schema
+- successful bounded executions must set `planner.ToolResult.Bounds`
+- the runtime projects those bounds into encoded `tool_result` JSON, result-hint template data,
+  hooks, and stream events
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
-        Attribute("filter", String, "Optional filter expression")
-        Attribute("limit", Int, "Maximum devices to return", func() {
-            Default(100)
-            Maximum(1000)
-        })
-        Attribute("offset", Int, "Pagination offset", func() {
-            Default(0)
-        })
+        Attribute("site_id", String, "Site identifier")
+        Attribute("cursor", String, "Opaque pagination cursor")
+        Required("site_id")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "List of devices")
-        Attribute("returned", Int, "Number of devices returned")
-        Attribute("total", Int, "Total devices matching filter")
-        Attribute("truncated", Boolean, "Whether results were truncated")
-        Required("devices", "returned", "truncated")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
 })
 ```
 
-**The agent.Bounds Contract:**
-
-When a tool is marked with `BoundedResult()`, generated result types implement `agent.BoundedResult`
-via `ResultBounds()`, and the runtime derives `planner.ToolResult.Bounds` from that method:
-
-```go
-// agent.Bounds describes how a tool result has been bounded
-type Bounds struct {
-    Returned       int    // Number of items in the bounded view
-    Total          *int   // Best-effort total before truncation (optional)
-    Truncated      bool   // Whether any caps were applied
-    RefinementHint string // Guidance on how to narrow the query
-}
-
-// agent.BoundedResult interface for typed results
-type BoundedResult interface {
-    ResultBounds() *Bounds
-}
-```
+Tool-facing return types must not declare `returned`, `total`, `truncated`,
+`refinement_hint`, or `next_cursor` just so the model can see them. Keep the semantic result focused
+on domain data. Method-backed tools may still use richer service method result types internally, but
+the Goa-AI tool contract comes from `BoundedResult(...)`, not duplicated tool return fields. Within
+those bound method results, only `returned` and `truncated` may be required; `total`,
+`refinement_hint`, and `next_cursor` remain optional parts of the bounds contract.
 
 **Service Responsibility:**
 
 Services are responsible for:
 1. Applying their own truncation logic (pagination, limits, depth caps)
-2. Populating the bounds metadata in the result
-3. Optionally providing a `RefinementHint` when results are truncated
+2. Populating `planner.ToolResult.Bounds`
+3. Setting `Bounds.NextCursor` when another page exists
+4. Optionally providing a `RefinementHint` when results are truncated
 
-The runtime does not compute subsets or truncation itself—it only enforces that bounded tools surface a consistent `Bounds` contract on their results.
+The runtime does not compute subsets or truncation itself. It only validates and projects the bounds
+metadata that tools report.
 
 **When to Use BoundedResult:**
 
@@ -717,43 +712,28 @@ The runtime does not compute subsets or truncation itself—it only enforces tha
 - Tools that apply depth or size caps to nested structures
 - Any tool where the model needs to understand that results may be incomplete
 
-**Complete Example with Bounds:**
-
-```go
-var DeviceToolset = Toolset("devices", func() {
-    Tool("list_devices", "List IoT devices", func() {
-        Args(func() {
-            Attribute("site_id", String, "Site identifier")
-            Attribute("status", String, "Filter by status", func() {
-                Enum("online", "offline", "unknown")
-            })
-            Attribute("limit", Int, "Maximum results", func() {
-                Default(50)
-                Maximum(500)
-            })
-            Required("site_id")
-        })
-        Return(func() {
-            Attribute("devices", ArrayOf(Device), "Matching devices")
-            Attribute("returned", Int, "Count of returned devices")
-            Attribute("total", Int, "Total matching devices")
-            Attribute("truncated", Boolean, "Results were capped")
-            Attribute("refinement_hint", String, "How to narrow results")
-            Required("devices", "returned", "truncated")
-        })
-        BoundedResult()
-        BindTo("DeviceService", "ListDevices")
-    })
-})
-```
-
 **Runtime Behavior:**
 
+```go
+result := &planner.ToolResult{
+    Result: &ListDevicesResult{
+        Devices: devices,
+    },
+    Bounds: &agent.Bounds{
+        Returned:       len(devices),
+        Total:          ptr(total),
+        Truncated:      truncated,
+        NextCursor:     nextCursor,
+        RefinementHint: refinementHint,
+    },
+}
+```
+
 When a bounded tool executes:
-1. The runtime decodes the result and checks for `agent.BoundedResult` implementation
-2. If the result implements the interface, `ResultBounds()` is called to extract bounds
-3. The bounds metadata is attached to `planner.ToolResult.Bounds`
-4. Stream subscribers and finalizers can access bounds for UI display or logging
+1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
+2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`.
+3. The same `planner.ToolResult.Bounds` struct remains the canonical runtime contract for planners,
+   hooks, and UIs.
 
 Tools can include a display title using the standard `Title()` DSL function:
 
@@ -831,15 +811,17 @@ Notes:
 
 ### CallHintTemplate and ResultHintTemplate
 
-`CallHintTemplate(template)` and `ResultHintTemplate(template)` configure display templates for tool invocations and results. Templates are Go text/template strings rendered with the tool's typed payload or result struct to produce concise hints shown during and after execution.
+`CallHintTemplate(template)` and `ResultHintTemplate(template)` configure display templates for tool invocations and results. Templates are Go text/template strings rendered with typed Go values to produce concise hints shown during and after execution.
 
 **Context**: Inside `Tool`
 
 **Key Points:**
 
-- Templates receive typed Go structs, not raw JSON—use Go field names (e.g., `.Query`, `.DeviceID`) not JSON keys (e.g., `.query`, `.device_id`)
+- Call templates receive the typed payload as the template root (for example, `.Query`, `.DeviceID`)
+- Result templates receive an explicit wrapper where semantic fields live under `.Result` and bounded metadata lives under `.Bounds`
 - Keep hints concise: ≤140 characters recommended for clean UI display
 - Templates are compiled with `missingkey=error`—all referenced fields must exist
+- Use Go field names, not JSON keys
 - Use `{{ if .Field }}` or `{{ with .Field }}` blocks for optional fields
 
 **Runtime contract:**
@@ -869,13 +851,16 @@ Tool("search", "Search documents", func() {
         Required("count", "results")
     })
     CallHintTemplate("Searching for: {{ .Query }}")
-    ResultHintTemplate("Found {{ .Count }} results")
+    ResultHintTemplate("Found {{ .Result.Count }} results")
 })
 ```
 
 **Typed Struct Fields:**
 
-Templates receive the generated Go payload/result structs. Field names follow Go naming conventions (PascalCase), not JSON conventions (snake_case or camelCase):
+Call templates receive the generated Go payload struct as the template root.
+Result templates receive the runtime preview wrapper, so semantic fields live
+under `.Result` and bounded metadata lives under `.Bounds`. Field names follow
+Go naming conventions (PascalCase), not JSON conventions (snake_case or camelCase):
 
 ```go
 // DSL definition
@@ -893,7 +878,7 @@ Tool("get_device_status", "Get device status", func() {
     })
     // Use Go field names (PascalCase), not JSON keys
     CallHintTemplate("Checking status of {{ .DeviceID }}")
-    ResultHintTemplate("{{ .DeviceName }}: {{ if .IsOnline }}online{{ else }}offline{{ end }}")
+    ResultHintTemplate("{{ .Result.DeviceName }}: {{ if .Result.IsOnline }}online{{ else }}offline{{ end }}")
 })
 ```
 
@@ -914,7 +899,7 @@ Tool("list_items", "List items with optional filter", func() {
         Required("items", "total")
     })
     CallHintTemplate("Listing items{{ with .Category }} in {{ . }}{{ end }}")
-    ResultHintTemplate("{{ .Total }} items{{ if .Truncated }} (truncated){{ end }}")
+    ResultHintTemplate("{{ .Result.Total }} items{{ if .Result.Truncated }} (truncated){{ end }}")
 })
 ```
 
@@ -947,7 +932,7 @@ Tool("analyze_data", "Analyze dataset", func() {
         Required("insights", "processing_time_ms")
     })
     CallHintTemplate("Analyzing {{ .DatasetID }} ({{ .AnalysisType }})")
-    ResultHintTemplate("{{ count .Insights }} insights in {{ .ProcessingTimeMs }}ms")
+    ResultHintTemplate("{{ count .Result.Insights }} insights in {{ .Result.ProcessingTimeMs }}ms")
 })
 ```
 

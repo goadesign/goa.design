@@ -267,6 +267,41 @@ Tool payload decoding follows Goa’s **decode-body → transform** pattern and 
 
 See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
 
+### Bounded tool results
+
+Tools that return partial views of larger datasets should declare `BoundedResult(...)`
+in the DSL. The runtime contract for those tools is:
+
+- generated `tools.ToolSpec.Bounds` declares the canonical bounded-result schema
+- successful executions must populate `planner.ToolResult.Bounds`
+- the runtime projects those bounds into emitted `tool_result` JSON, result-hint
+  template data under `.Bounds`, hook payloads, and stream events
+
+Canonical projected fields:
+
+- `returned` (required)
+- `truncated` (required)
+- `total` (optional)
+- `refinement_hint` (optional)
+- `next_cursor` (optional, when declared via `NextCursor(...)`)
+
+`planner.ToolResult.Bounds` remains the single machine-readable runtime contract.
+Authored Go result types stay semantic and domain-specific; they do not need to
+duplicate the canonical bounded fields just so models can see them.
+
+For method-backed `BindTo` tools, the bound service method result still needs to
+carry the canonical bounded fields so the generated executor can build
+`planner.ToolResult.Bounds` before projection. Explicit tool-facing `Return(...)`
+shapes must not duplicate those canonical fields. Within the bound method
+result, only `returned` and `truncated` may be required; `total`,
+`refinement_hint`, and `next_cursor` remain optional and are omitted from emitted
+JSON whenever runtime bounds omit them.
+
+When a service boundary must assemble canonical result JSON outside
+`ExecuteToolActivity`, use `runtime.EncodeCanonicalToolResult(...)` rather than
+calling the generated result codec and bounded-result projection helpers
+separately.
+
 ---
 
 ## Prompt Runtime Contracts
@@ -421,6 +456,34 @@ if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
 ```
 
 Behind the scenes, pause/resume signals update the run store and emit `run_paused`/`run_resumed` hook events so UI layers stay in sync.
+
+### Providing External Tool Results
+
+Some awaits resume with **tool results supplied by an external actor** rather than by `ExecuteToolActivity` itself. Common examples are UI-owned tools such as structured questions, or bridge services that collect results from another system and then wake the run back up.
+
+Use `ProvideToolResults` with raw provided results:
+
+```go
+err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
+    RunID: "run-123",
+    ID:    "await-1",
+    Results: []*api.ProvidedToolResult{
+        {
+            Name:       "chat.ask_question.ask_question",
+            ToolCallID: "toolcall-1",
+            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+        },
+    },
+})
+```
+
+Contract:
+
+- Callers provide the **raw canonical result JSON** plus optional `Bounds`, `Error`, and `RetryHint`.
+- Callers do **not** construct `api.ToolEvent`; that is the runtime's internal workflow envelope.
+- The runtime decodes the provided result using the registered tool spec, runs typed result materialization, attaches any server-only sidecars, appends the canonical `tool_result` to the transcript/run log, and only then resumes planning.
+
+This keeps the await path conceptually aligned with the normal execution path: both flows converge on the same typed `planner.ToolResult` contract before publication.
 
 ---
 

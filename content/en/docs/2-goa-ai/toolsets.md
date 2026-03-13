@@ -124,7 +124,7 @@ type Bounds struct {
 The runtime does not compute subsets or truncation itself—**services are responsible for**:
 
 1. **Applying truncation logic**: Pagination, result limits, depth caps, time windows
-2. **Populating bounds metadata**: Setting `Returned`, `Total`, `Truncated` accurately
+2. **Populating runtime bounds metadata**: Setting `planner.ToolResult.Bounds`
 3. **Providing refinement hints**: Guiding users/models on how to narrow queries when results are truncated
 
 This design keeps truncation logic where domain knowledge lives (in services) while providing a uniform contract for the runtime, planners, and UIs to consume.
@@ -137,24 +137,17 @@ Use the DSL helper `BoundedResult()` inside a `Tool` definition:
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("status", String, "Filter by status", func() {
-            Enum("online", "offline", "unknown")
-        })
-        Attribute("limit", Int, "Maximum results", func() {
-            Default(50)
-            Maximum(500)
-        })
+        Attribute("cursor", String, "Opaque pagination cursor")
         Required("site_id")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "Matching devices")
-        Attribute("returned", Int, "Count of returned devices")
-        Attribute("total", Int, "Total matching devices")
-        Attribute("truncated", Boolean, "Results were capped")
-        Attribute("refinement_hint", String, "How to narrow results")
-        Required("devices", "returned", "truncated")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
     BindTo("DeviceService", "ListDevices")
 })
 ```
@@ -163,26 +156,21 @@ Tool("list_devices", "List devices with pagination", func() {
 
 When a tool is marked with `BoundedResult()`:
 
-- The generated tool spec includes `BoundedResult: true`
-- Generated result types implement the `agent.BoundedResult` interface via `ResultBounds()`:
+- The generated tool spec includes `tools.ToolSpec.Bounds`
+- The generated JSON result schema includes the canonical bounded fields (`returned`, `total`,
+  `truncated`, `refinement_hint`, and optional `next_cursor`)
+- The semantic Go result type stays domain-specific; it does not need to duplicate those fields
+
+For method-backed `BindTo` tools, the bound service method result still needs to
+carry the canonical bounded fields so the generated executor can build
+`planner.ToolResult.Bounds` before runtime projection.
 
 ```go
-// Generated interface implementation
-type ListDevicesResult struct {
-    Devices        []*Device
-    Returned       int
-    Total          *int
-    Truncated      bool
-    RefinementHint string
-}
-
-func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
-    return &agent.Bounds{
-        Returned:       r.Returned,
-        Total:          r.Total,
-        Truncated:      r.Truncated,
-        RefinementHint: r.RefinementHint,
-    }
+spec.Bounds = &tools.BoundsSpec{
+    Paging: &tools.PagingSpec{
+        CursorField:     "cursor",
+        NextCursorField: "next_cursor",
+    },
 }
 ```
 
@@ -192,40 +180,29 @@ Bounded tools are a hard contract: services implement truncation and populate bo
 
 **Contract:**
 
-- `Returned` and `Truncated` must always be set.
-- `Returned == 0` means “empty result” → `Total == 0` and `Truncated == false`.
+- `Bounds.Returned` and `Bounds.Truncated` must always be set on successful bounded tool results.
+- `Bounds.Total`, `Bounds.NextCursor`, and `Bounds.RefinementHint` are optional and should only be set when known.
 
 Services implement truncation and populate bounds metadata:
 
 ```go
-func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) (*ListDevicesResult, error) {
-    // Query with limit + 1 to detect truncation
-    devices, err := s.repo.QueryDevices(ctx, p.SiteID, p.Status, p.Limit+1)
+func (s *DeviceToolset) ListDevices(ctx context.Context, p *ListDevicesPayload) (*planner.ToolResult, error) {
+    devices, total, nextCursor, truncated, err := s.repo.QueryDevices(ctx, p.SiteID, p.Cursor)
     if err != nil {
         return nil, err
     }
-    
-    // Determine if results were truncated
-    truncated := len(devices) > p.Limit
-    if truncated {
-        devices = devices[:p.Limit] // Trim to requested limit
-    }
-    
-    // Get total count (optional, may be expensive)
-    total, _ := s.repo.CountDevices(ctx, p.SiteID, p.Status)
-    
-    // Build refinement hint when truncated
-    var hint string
-    if truncated {
-        hint = "Add a status filter or reduce the site scope to see fewer results"
-    }
-    
-    return &ListDevicesResult{
-        Devices:        devices,
-        Returned:       len(devices),
-        Total:          &total,
-        Truncated:      truncated,
-        RefinementHint: hint,
+
+    return &planner.ToolResult{
+        Result: &ListDevicesResult{
+            Devices: devices,
+        },
+        Bounds: &agent.Bounds{
+            Returned:       len(devices),
+            Total:          ptr(total),
+            Truncated:      truncated,
+            NextCursor:     nextCursor,
+            RefinementHint: "Add a status filter or reduce the site scope to see fewer results",
+        },
     }, nil
 }
 ```
@@ -234,9 +211,9 @@ func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) 
 
 When a bounded tool executes:
 
-1. The runtime decodes the result and checks for `agent.BoundedResult` implementation
-2. If the result implements the interface, `ResultBounds()` extracts bounds metadata
-3. Bounds are attached to `planner.ToolResult.Bounds`
+1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
+2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`
+3. Bounds remain attached to `planner.ToolResult.Bounds`
 4. Stream subscribers and finalizers can access bounds for UI display, logging, or policy decisions
 
 ```go
@@ -372,6 +349,34 @@ Agent-as-tool toolsets execute inline from the planner's perspective while the r
 4. The generated agent-tool executor builds nested agent messages (system + user) from the tool payload and runs the provider agent as a child run
 5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
 6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
+
+### Result Materializers
+
+Toolsets may register a typed result materializer:
+
+```go
+reg := runtime.ToolsetRegistration{
+    Name: "chat.ask_question",
+    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
+        return nil, fmt.Errorf("externally provided")
+    },
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        // Attach deterministic, server-only sidecars here.
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
+}
+```
+
+Contract:
+
+- `ResultMaterializer` runs on both the **normal execution path** and the **externally provided-result await path**.
+- It receives the original typed `planner.ToolRequest` plus the typed `planner.ToolResult`, before the runtime encodes JSON for hooks, workflow boundaries, or callers.
+- Use it to attach `result.ServerData` or to normalize the semantic result shape in a deterministic way.
+- Keep it pure and deterministic; when it runs inside workflow code it must not perform I/O.
+
+This is the canonical place to derive observer-only sidecars from the original tool payload and the typed result while keeping those sidecars invisible to model providers.
 
 ---
 
