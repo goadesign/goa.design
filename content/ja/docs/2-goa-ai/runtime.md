@@ -362,6 +362,46 @@ for {
 - **In-memory**: 高速な開発ループ、外部依存なし
 - **Temporal**: 耐久実行、リプレイ、リトライ、シグナル、ワーカー。アダプタがアクティビティとコンテキスト伝搬を統合します。
 
+### セマンティックな Timing と Temporal の Liveness
+
+Goa-AI は公開ランタイム契約をエンジン非依存に保ちます:
+
+- `RunPolicy.Timing.Plan` と `RunPolicy.Timing.Tools` はセマンティックな「試行ごとの予算」
+- `runtime.WithTiming(...)` は run ごとにそれらのセマンティック予算を上書きする
+- `runtime.WithWorker(...)` はキュー配置のためのもので、ワークフローエンジン調整ではない
+
+Temporal アダプタを使っていて、キュー待ちや liveness を調整したい
+場合は、それらを Temporal エンジン側で設定します:
+
+```go
+eng, err := temporal.NewWorker(temporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "temporal:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: temporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: temporal.ActivityDefaults{
+        Planner: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+if err != nil {
+    panic(err)
+}
+```
+
+この分離により、ワークフローのメカニクスは Temporal の境界の内側に
+保たれ、汎用ランタイムは Temporal とインメモリエンジンの両方に対して
+正直なままでいられます。
+
 ---
 
 ## Run コントラクト

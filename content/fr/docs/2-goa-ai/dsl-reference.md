@@ -1173,6 +1173,13 @@ RunPolicy(func() {
 })
 ```
 
+`Timing` reste au niveau sémantique du runtime. `Plan(...)` et `Tools(...)`
+bornent la durée pendant laquelle une tentative saine du planificateur ou d'un
+outil peut s'exécuter une fois démarrée. Ils ne configurent pas les mécanismes
+du moteur de workflow tels que les délais d'attente en file ou la vivacité via
+heartbeat. Si vous utilisez l'adaptateur Temporal, configurez ces mécanismes
+avec `temporal.Options.ActivityDefaults`.
+
 **Fonctions de temporisation:**
 
 | La fonction de synchronisation est la suivante : - Fonction - Description - Affectation
@@ -1183,10 +1190,18 @@ RunPolicy(func() {
 
 **Comment la temporisation affecte le comportement de l'exécution:**
 
-Le moteur d'exécution traduit ces valeurs DSL en options d'activité temporelles (ou en délais équivalents pour le moteur) :
-- `Budget` devient le délai d'exécution du flux de travail
-- `Plan` devient le délai d'attente pour les activités `PlanStart` et `PlanResume`
-- `Tools` devient le délai d'attente par défaut pour les activités `ExecuteTool`
+Le runtime traduit ces valeurs DSL en budgets de tentative agnostiques au
+moteur :
+- `Budget` définit le budget sémantique en temps réel du run. Le runtime
+  l'applique au travail du planificateur et des outils, puis dérive le délai
+  d'exécution du moteur sous la forme
+  `Budget + FinalizerGrace + marge du moteur`, afin que le dernier tour de
+  `PlanResume` et le nettoyage terminal aient encore le temps d'aboutir.
+- `Plan` devient le budget par tentative de `PlanStart` et `PlanResume`
+- `Tools` devient le budget par défaut par tentative de `ExecuteTool`
+
+Le comportement Temporal spécifique à l'attente en file et à la vivacité est
+ajouté séparément par l'adaptateur Temporal.
 
 **Exemple complet:**
 

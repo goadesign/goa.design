@@ -1173,6 +1173,13 @@ RunPolicy(func() {
 })
 ```
 
+`Timing` resta nel livello semantico del runtime. `Plan(...)` e `Tools(...)`
+limitano per quanto tempo può eseguire un tentativo sano del planner o di uno
+strumento una volta avviato. Non configurano meccaniche del motore di workflow
+come i timeout di attesa in coda o la liveness a heartbeat. Se si usa
+l'adattatore Temporal, configurare tali meccaniche con
+`temporal.Options.ActivityDefaults`.
+
 **Funzioni di temporizzazione
 
 | Funzione | Descrizione | Influenza |
@@ -1183,10 +1190,18 @@ RunPolicy(func() {
 
 **Come la temporizzazione influisce sul comportamento in fase di esecuzione
 
-Il runtime traduce questi valori DSL in opzioni di attività temporali (o timeout equivalenti del motore):
-- `Budget` diventa il timeout di esecuzione del flusso di lavoro
-- `Plan` diventa il timeout dell'attività per le attività `PlanStart` e `PlanResume`
-- `Tools` diventa il timeout predefinito per le attività `ExecuteTool`
+Il runtime traduce questi valori DSL in budget di tentativo indipendenti dal
+motore:
+- `Budget` imposta il budget semantico di wall-clock della run. Il runtime
+  applica tale budget al lavoro del planner e degli strumenti e ricava il
+  timeout del motore come `Budget + FinalizerGrace + margine del motore`, in
+  modo che l'ultimo turno di `PlanResume` e la pulizia terminale abbiano ancora
+  tempo per concludersi.
+- `Plan` diventa il budget per tentativo di `PlanStart` e `PlanResume`
+- `Tools` diventa il budget predefinito per tentativo di `ExecuteTool`
+
+Il comportamento Temporal specifico per attesa in coda e liveness viene
+aggiunto separatamente dall'adattatore Temporal.
 
 **Esempio completo:**
 

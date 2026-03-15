@@ -84,7 +84,7 @@ func main() {
 Two roles use the runtime:
 
 - **Client-only** (submit runs): Constructs a runtime with a client-capable engine and does not register agents. Use the generated `<agent>.NewClient(rt)` which carries the route (workflow + queue) registered by remote workers.
-- **Worker** (execute runs): Constructs a runtime with a worker-capable engine, registers agents (with real planners), and lets the engine poll and execute workflows/activities.
+- **Worker** (execute runs): Constructs a runtime with a worker-capable engine, registers toolsets and agents, then seals registration so polling starts only after the local runtime registry is complete.
 
 ### Client-Only Example
 
@@ -102,9 +102,25 @@ out, err := client.Run(ctx, "s1", msgs)
 ### Worker Example
 
 ```go
-rt := runtime.New(runtime.WithEngine(temporalWorker)) // worker-enabled engine
-err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
-// Start engine worker loop per engine's integration (for example, Temporal worker.Run()).
+eng, err := temporal.NewWorker(temporal.Options{
+    ClientOptions: &client.Options{HostPort: "temporal:7233", Namespace: "default"},
+    WorkerOptions: temporal.WorkerOptions{TaskQueue: "orchestrator.chat"},
+})
+if err != nil {
+    panic(err)
+}
+defer eng.Close()
+
+rt := runtime.New(runtime.WithEngine(eng))
+if err := chat.RegisterUsedToolsets(ctx, rt /* executors... */); err != nil {
+    panic(err)
+}
+if err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner}); err != nil {
+    panic(err)
+}
+if err := rt.Seal(ctx); err != nil {
+    panic(err)
+}
 ```
 
 ---
@@ -420,6 +436,45 @@ for {
 
 - **In-memory**: Fast dev loop, no external deps
 - **Temporal**: Durable execution, replay, retries, signals, workers; adapters wire activities and context propagation
+
+### Semantic timing vs Temporal liveness
+
+Goa-AI keeps the public runtime contract engine-agnostic:
+
+- `RunPolicy.Timing.Plan` and `RunPolicy.Timing.Tools` are semantic attempt budgets
+- `runtime.WithTiming(...)` overrides those semantic budgets for a run
+- `runtime.WithWorker(...)` is for queue placement, not workflow-engine tuning
+
+If you use the Temporal adapter and need queue-wait or liveness tuning, configure
+it on the Temporal engine itself:
+
+```go
+eng, err := temporal.NewWorker(temporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "temporal:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: temporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: temporal.ActivityDefaults{
+        Planner: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+if err != nil {
+    panic(err)
+}
+```
+
+This split keeps workflow mechanics behind the Temporal boundary while the
+generic runtime stays honest across both Temporal and the in-memory engine.
 
 ---
 

@@ -394,6 +394,14 @@ Use("local_compute", func() {
 })
 ```
 
+Generated plan/resume and execute-tool activities now default to a 3-attempt
+exponential retry policy (`1s` initial interval, backoff coefficient `2`), and
+the runtime's hook-publishing activity uses the same policy. That is safe only
+because retried attempts are identified logically: hook events carry stable
+event keys, and tool executions are expected to persist/replay canonical
+results by `ToolCallID` instead of repeating side effects. Override the retry
+policy only when a tool boundary cannot honor that replay contract.
+
 ### Worker Setup
 
 Workers poll task queues and execute workflows/activities. Workers are automatically started for each registered agent—no manual worker configuration needed in most cases.

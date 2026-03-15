@@ -1171,6 +1171,13 @@ RunPolicy(func() {
 })
 ```
 
+`Timing` se mantiene en la capa semántica del runtime. `Plan(...)` y
+`Tools(...)` delimitan cuánto puede ejecutarse un intento sano del planificador
+o de una herramienta una vez que empieza. No configuran mecánicas del motor de
+workflow como los tiempos de espera en cola o la vivacidad por heartbeat. Si
+usa el adaptador Temporal, configure esas mecánicas con
+`temporal.Options.ActivityDefaults`.
+
 **Funciones de temporización
 
 | Función | Descripción | Afecta |
@@ -1181,10 +1188,20 @@ RunPolicy(func() {
 
 **Cómo afecta la temporización al comportamiento en tiempo de ejecución:**
 
-El tiempo de ejecución traduce estos valores DSL en opciones de actividad Temporal (o tiempos de espera del motor equivalentes):
-- `Budget` se convierte en el tiempo de espera de ejecución del flujo de trabajo
-- `Plan` se convierte en el tiempo de espera de actividad para `PlanStart` y `PlanResume` actividades
-- `Tools` se convierte en el tiempo de espera de la actividad por defecto para las actividades `ExecuteTool`
+El runtime traduce estos valores DSL en presupuestos por intento agnósticos del
+motor:
+- `Budget` establece el presupuesto semántico de reloj de pared para la
+  ejecución. El runtime aplica ese presupuesto al trabajo del planificador y de
+  las herramientas, y deriva el tiempo de espera del motor como
+  `Budget + FinalizerGrace + holgura del motor` para que el turno final de
+  `PlanResume` y la limpieza terminal todavía tengan margen para terminar.
+- `Plan` se convierte en el presupuesto por intento de `PlanStart` y
+  `PlanResume`
+- `Tools` se convierte en el presupuesto por intento predeterminado de
+  `ExecuteTool`
+
+El comportamiento específico de Temporal para espera en cola y vivacidad se
+superpone por separado en el adaptador Temporal.
 
 **Ejemplo completo:**
 

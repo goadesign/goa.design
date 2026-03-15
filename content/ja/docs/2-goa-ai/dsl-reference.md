@@ -1162,6 +1162,13 @@ RunPolicy(func() {
 })
 ```
 
+`Timing` はランタイムのセマンティック層にとどまります。`Plan(...)`
+と `Tools(...)` は、健全なプランナー/ツールの 1 回の試行が開始後に
+どれだけ実行できるかを表す予算です。キュー待ちタイムアウトや
+heartbeat による liveness など、ワークフローエンジン固有の仕組みは
+設定しません。Temporal アダプタを使う場合、それらの仕組みは
+`temporal.Options.ActivityDefaults` で設定します。
+
 **Timing 関数:**
 
 | 関数 | 説明 | 影響範囲 |
@@ -1172,10 +1179,17 @@ RunPolicy(func() {
 
 **Timing がランタイムに与える影響:**
 
-ランタイムはこれらの DSL 値を、Temporal のアクティビティオプション（または同等のエンジンのタイムアウト）へ変換します:
-- `Budget` → ワークフローの実行タイムアウト
-- `Plan` → `PlanStart` / `PlanResume` のアクティビティタイムアウト
-- `Tools` → `ExecuteTool` のデフォルトアクティビティタイムアウト
+ランタイムはこれらの DSL 値を、エンジン非依存の「試行予算」に変換します:
+- `Budget` は run 全体のセマンティックな wall-clock 予算を設定します。
+  ランタイムはこの予算をプランナー/ツール作業に適用し、さらにエンジン
+  の run timeout を `Budget + FinalizerGrace + エンジンの余裕分`
+  として導出します。これにより、最後の `PlanResume` ターンと終端
+  クリーンアップにも完了の余地が残ります。
+- `Plan` は `PlanStart` / `PlanResume` の試行予算になります
+- `Tools` は `ExecuteTool` のデフォルト試行予算になります
+
+Temporal 固有のキュー待ちや liveness の挙動は、Temporal アダプタ側で
+別途積み上げられます。
 
 **完全な例:**
 

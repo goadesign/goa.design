@@ -359,6 +359,46 @@ for {
 - **En memoria**: Bucle de desarrollo rápido, sin desarrollo externo
 - **Temporal**: Ejecución duradera, repetición, reintentos, señales, trabajadores; actividades de cableado de adaptadores y propagación de contexto
 
+### Tiempos semánticos frente a la vivacidad de Temporal
+
+Goa-AI mantiene el contrato público del runtime agnóstico del motor:
+
+- `RunPolicy.Timing.Plan` y `RunPolicy.Timing.Tools` son presupuestos semánticos por intento
+- `runtime.WithTiming(...)` sustituye esos presupuestos semánticos para una ejecución
+- `runtime.WithWorker(...)` sirve para la colocación en cola, no para ajustar el motor de workflow
+
+Si usa el adaptador de Temporal y necesita ajustar la espera en cola o la
+vivacidad, configúrelo en el propio motor Temporal:
+
+```go
+eng, err := temporal.NewWorker(temporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "temporal:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: temporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: temporal.ActivityDefaults{
+        Planner: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: temporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+if err != nil {
+    panic(err)
+}
+```
+
+Esta separación mantiene la mecánica del workflow detrás del límite de Temporal,
+mientras que el runtime genérico sigue siendo honesto tanto con Temporal como
+con el motor en memoria.
+
 ---
 
 ## Contratos de ejecución

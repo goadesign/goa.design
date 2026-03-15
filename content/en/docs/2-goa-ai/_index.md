@@ -115,7 +115,7 @@ Goa-AI uses **Temporal** for durable execution. Agent runs become workflows; too
 rt := runtime.New()
 
 // Production: Temporal for durability
-eng, _ := temporal.New(temporal.Options{
+eng, _ := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })

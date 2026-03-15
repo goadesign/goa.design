@@ -393,6 +393,16 @@ Use("local_compute", func() {
 })
 ```
 
+Les activités générées de plan/resume et d'execute-tool utilisent désormais par
+défaut une politique de réessai exponentiel sur 3 tentatives (intervalle
+initial `1s`, coefficient de backoff `2`), et l'activité du runtime qui publie
+les hooks utilise la même politique. Cela n'est sûr que parce que les tentatives
+relancées possèdent une identité logique stable : les événements de hook portent
+des clés d'événement stables et les exécutions d'outils doivent persister/rejouer
+le résultat canonique par `ToolCallID` au lieu de répéter des effets de bord.
+Ne remplacez la politique de réessai que lorsqu'une frontière d'outil ne peut
+pas respecter ce contrat de rejeu.
+
 ### Configuration du travailleur
 
 Les travailleurs interrogent les files d'attente de tâches et exécutent les flux de travail/activités. Les travailleurs sont automatiquement démarrés pour chaque agent enregistré - aucune configuration manuelle des travailleurs n'est nécessaire dans la plupart des cas.

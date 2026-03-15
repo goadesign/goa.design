@@ -393,6 +393,16 @@ Use("local_compute", func() {
 })
 ```
 
+Le attività generate di plan/resume ed execute-tool usano ora per impostazione
+predefinita una politica di retry esponenziale di 3 tentativi (intervallo
+iniziale `1s`, coefficiente di backoff `2`), e la stessa politica è usata anche
+dall'attività runtime che pubblica gli hook. Questo è sicuro solo perché i
+tentativi ritentati hanno un'identità logica stabile: gli eventi hook portano
+chiavi evento stabili e le esecuzioni degli strumenti devono persistere/riprodurre
+il risultato canonico tramite `ToolCallID` invece di ripetere effetti collaterali.
+Sovrascrivi la politica di retry solo quando un confine di tool non può
+rispettare questo contratto di replay.
+
 ### Configurazione del lavoratore
 
 I worker eseguono il polling delle code di attività e l'esecuzione di flussi di lavoro/attività. I worker vengono avviati automaticamente per ogni agente registrato; nella maggior parte dei casi non è necessaria una configurazione manuale dei worker.

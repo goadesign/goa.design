@@ -1190,6 +1190,12 @@ RunPolicy(func() {
 })
 ```
 
+`Timing` stays at the semantic runtime layer. `Plan(...)` and `Tools(...)`
+bound how long a healthy planner or tool attempt may execute once it starts.
+They do not configure workflow-engine mechanics such as queue-wait timeouts or
+heartbeat liveness. If you use the Temporal adapter, configure those mechanics
+with `temporal.Options.ActivityDefaults`.
+
 **Timing Functions:**
 
 | Function | Description | Affects |
@@ -1200,10 +1206,16 @@ RunPolicy(func() {
 
 **How Timing Affects Runtime Behavior:**
 
-The runtime translates these DSL values into Temporal activity options (or equivalent engine timeouts):
-- `Budget` becomes the workflow execution timeout
-- `Plan` becomes the activity timeout for `PlanStart` and `PlanResume` activities
-- `Tools` becomes the default activity timeout for `ExecuteTool` activities
+The runtime translates these DSL values into engine-agnostic attempt budgets:
+- `Budget` sets the semantic wall-clock budget for the run. The runtime enforces
+  that budget for planner/tool work and derives the engine run timeout as
+  `Budget + FinalizerGrace + engine headroom` so the final planner resume turn
+  and terminal cleanup still have room to finish.
+- `Plan` becomes the attempt budget for `PlanStart` and `PlanResume`
+- `Tools` becomes the default attempt budget for `ExecuteTool`
+
+Temporal-specific queue-wait and liveness behavior are layered on separately by
+the Temporal adapter.
 
 **Complete Example:**
 

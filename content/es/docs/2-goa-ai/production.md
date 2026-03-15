@@ -393,6 +393,16 @@ Use("local_compute", func() {
 })
 ```
 
+Las actividades generadas de plan/resume y execute-tool usan ahora por defecto
+una política de reintento exponencial de 3 intentos (`1s` inicial, coeficiente
+de retroceso `2`), y la actividad del runtime que publica hooks usa la misma
+política. Esto solo es seguro porque los intentos reintentados tienen una
+identidad lógica estable: los eventos de hook llevan claves de evento estables
+y las ejecuciones de herramientas deben persistir/reproducir el resultado
+canónico por `ToolCallID` en lugar de repetir efectos laterales. Cambie la
+política de reintento solo cuando un límite de herramienta no pueda respetar
+ese contrato de reproducción.
+
 ### Configuración del trabajador
 
 Los trabajadores sondean colas de tareas y ejecutan flujos de trabajo/actividades. Los trabajadores se inician automáticamente para cada agente registrado, sin necesidad de configuración manual en la mayoría de los casos.

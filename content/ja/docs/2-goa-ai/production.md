@@ -396,6 +396,15 @@ Use("local_compute", func() {
 })
 ```
 
+生成される plan/resume activity と execute-tool activity は、いまでは
+既定で 3 回の指数バックオフ付きリトライ（初期待機 `1s`、係数 `2`）を
+使います。runtime の hook 公開 activity も同じポリシーです。これは
+再試行される試行が論理的に同一視できる場合にだけ安全です。hook event
+は安定した event key を持ち、tool 実行は副作用を再実行するのではなく
+`ToolCallID` 単位で canonical な結果を永続化・再生する必要があります。
+この replay 契約を満たせない tool 境界でだけ、リトライポリシーを個別に
+上書きしてください。
+
 ### ワーカーのセットアップ
 
 ワーカーは task queue をポーリングし、workflow/activity を実行します。登録された各エージェントに対してワーカーは自動的に開始されるため、ほとんどのケースで手動設定は不要です。
