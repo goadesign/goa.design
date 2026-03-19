@@ -497,6 +497,12 @@ En tiempo de ejecución, la confirmación se implementa como un protocolo await/
   }
   ```
 
+Contrato:
+
+- `payload` siempre contiene los argumentos JSON canónicos de la herramienta para la llamada pendiente. Si se aprueba, esos son los argumentos que ejecuta el runtime.
+- Las sobreescrituras de confirmación pueden personalizar el prompt y el resultado denegado, pero no introducen un canal separado de payload de visualización ni cambian el significado de `payload`.
+- Los productos que necesiten una IU de confirmación más rica deben materializarla en la capa de aplicación a partir del payload canónico y de lecturas propias de la aplicación.
+
 - **Proporcionar decisión** (a través de `ProvideConfirmation` en el tiempo de ejecución):
 
   ```go

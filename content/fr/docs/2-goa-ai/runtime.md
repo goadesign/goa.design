@@ -498,6 +498,12 @@ Lors de l'exécution, la confirmation est mise en œuvre sous la forme d'un prot
   }
   ```
 
+Contrat :
+
+- `payload` contient toujours les arguments JSON canoniques de l’appel d’outil en attente. Si l’appel est approuvé, ce sont ces arguments que le runtime exécute.
+- Les surcharges de confirmation peuvent personnaliser le prompt et le rendu du résultat refusé, mais elles n’introduisent pas de canal de payload d’affichage séparé et ne changent pas la signification de `payload`.
+- Les produits qui ont besoin d’une UI de confirmation plus riche doivent la matérialiser dans la couche application à partir du payload canonique et de lectures détenues par l’application.
+
 - **Fournir une décision** (via `ProvideConfirmation` sur le runtime) :
 
   ```go

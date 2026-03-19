@@ -498,6 +498,12 @@ In fase di runtime, la conferma è implementata come un protocollo di attesa/dec
   }
   ```
 
+Contratto:
+
+- `payload` contiene sempre gli argomenti JSON canonici del tool per la chiamata in attesa. Se la chiamata viene approvata, sono questi gli argomenti che il runtime esegue.
+- Le override di conferma possono personalizzare il prompt e il rendering del risultato negato, ma non introducono un canale separato di display payload e non cambiano il significato di `payload`.
+- I prodotti che hanno bisogno di una UI di conferma più ricca devono materializzarla nel layer applicativo a partire dal payload canonico e da letture possedute dall’applicazione.
+
 - **Provvedere alla decisione** (tramite `ProvideConfirmation` sul runtime):
 
   ```go

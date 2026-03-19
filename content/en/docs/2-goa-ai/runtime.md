@@ -574,6 +574,12 @@ At runtime, confirmation is implemented as a dedicated await/decision protocol:
   }
   ```
 
+Contract:
+
+- `payload` always contains the canonical JSON tool arguments for the pending call. If approved, those are the arguments the runtime executes.
+- Confirmation overrides may customize the prompt and denied-result rendering, but they do not introduce a separate display-payload channel or change the meaning of `payload`.
+- Products that need a richer confirmation UI should materialize it in the application layer from the canonical payload plus application-owned reads.
+
 - **Provide decision** (via `ProvideConfirmation` on the runtime):
 
   ```go
