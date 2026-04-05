@@ -90,8 +90,45 @@ This creates a `gen/` directory with:
 - **Agent registration helpers** — wire your agent to the runtime
 - **Tool specs and codecs** — type-safe payload/result handling
 - **JSON schemas** — for LLM tool definitions
+- **`gen/<service>/completions/`** — typed direct-completion helpers when your service declares `Completion(...)`
 
 Never edit files in `gen/`—they're regenerated on every `goa gen` run.
+
+### Optional: Add a Typed Direct Completion
+
+Tool calls are great for callable capabilities. When you want the assistant to
+return a typed structured answer directly, declare a service-owned completion:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("demo", func() {
+    Completion("draft_task", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+Completion names are part of the structured-output contract. They must be
+1-64 ASCII characters, may contain letters, digits, `_`, and `-`, and must
+start with a letter or digit.
+
+Regeneration emits `gen/demo/completions/` with the result schema, typed codecs,
+and generated helpers such as `CompleteDraftTask(...)`,
+`StreamCompleteDraftTask(...)`, and `DecodeDraftTaskChunk(...)`.
+
+The unary helper issues a unary model request with provider-enforced structured
+output and decodes the assistant response through the generated codec. The
+streaming helper stays on the raw `model.Streamer` surface: `completion_delta`
+chunks are preview-only, exactly one final `completion` chunk is canonical, and
+`DecodeDraftTaskChunk(...)` decodes only that final payload. Generated
+completion helpers reject tool-enabled requests and caller-supplied
+`StructuredOutput`. Providers that do not implement structured output return
+`model.ErrStructuredOutputUnsupported`.
 
 ---
 

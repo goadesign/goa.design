@@ -90,8 +90,47 @@ goa gen quickstart/design
 - **エージェント登録ヘルパー** — ランタイムへエージェントを配線する
 - **ツール仕様とコーデック** — 型安全なペイロード/結果の取り扱い
 - **JSON スキーマ** — LLM のツール定義用
+- **`gen/<service>/completions/`** — サービスが `Completion(...)` を宣言したときの型付き直接 completion ヘルパー
 
 `gen/` 配下のファイルは絶対に手で編集しないでください。`goa gen` を実行するたびに再生成されます。
+
+### オプション: 型付き直接 Completion を追加する
+
+ツール呼び出しは、呼び出し可能な能力を表すのに最適です。アシスタントに
+型付きの構造化応答を直接返してほしい場合は、サービス所有の completion を
+宣言します。
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("demo", func() {
+    Completion("draft_task", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+completion 名は structured output コントラクトの一部です。1 文字以上
+64 文字以下の ASCII で、使用できるのは英字・数字・`_`・`-` のみ、
+先頭は英字または数字でなければなりません。
+
+再生成すると、`gen/demo/completions/` に結果スキーマ、型付き codec、
+そして `CompleteDraftTask(...)`、`StreamCompleteDraftTask(...)`、
+`DecodeDraftTaskChunk(...)` のような生成 helper が出力されます。
+
+unary helper は provider に強制された structured output を伴う unary
+なモデルリクエストを発行し、生成 codec を通してアシスタント応答を
+デコードします。streaming helper は raw な `model.Streamer` の表面に
+留まります。`completion_delta` chunk はプレビュー専用で、正規なのは
+最後の 1 つの `completion` chunk だけであり、
+`DecodeDraftTaskChunk(...)` はその最終 payload だけをデコードします。
+生成された completion helper は、ツール有効化リクエストと呼び出し側が
+指定した `StructuredOutput` を拒否します。structured output を実装
+しない provider は `model.ErrStructuredOutputUnsupported` を返します。
 
 ---
 

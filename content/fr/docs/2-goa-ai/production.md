@@ -701,7 +701,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Cette fonction est idéale lorsque le rappel s'applique à chaque invocation de l'outil. Voir la [Référence DSL] (./dsl-reference.md#resultreminder) pour plus de détails.
+Cette fonction est idéale lorsque le rappel s'applique à chaque invocation de l'outil. Voir la [Référence DSL](./dsl-reference.md#resultreminder) pour plus de détails.
 
 **Rappels dynamiques des planificateurs**
 

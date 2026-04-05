@@ -11,6 +11,20 @@ aliases:
 
 El tiempo de ejecución de Goa-AI orquesta el bucle planificar/ejecutar/reanudar, impone políticas, gestiona el estado y se coordina con motores, planificadores, herramientas, memoria, ganchos y módulos de características.
 
+Además de las herramientas, el runtime también soporta contratos
+`Completion(...)` tipados para respuestas finales directas del asistente.
+
+Estos contratos generan helpers unarios y de streaming en
+`gen/<service>/completions`. Los nombres de completion son validos por
+construccion: 1-64 caracteres ASCII, solo letras/digitos/`_`/`-`, y deben
+empezar por una letra o un digito. En streaming, `completion_delta` sirve solo
+como vista previa y un unico chunk final `completion` es canonico; los
+proveedores sin structured output devuelven
+`model.ErrStructuredOutputUnsupported`.
+Los esquemas generados son canonicos y neutrales respecto del proveedor; los
+adaptadores de modelo pueden normalizarlos a un subconjunto soportado, pero
+deben fallar explicitamente cuando no puedan preservar el contrato declarado.
+
 | Capa Responsabilidad
 | --- | --- |
 | DSL + Codegen Produce registros de agentes, especificaciones/codecs de herramientas, flujos de trabajo, adaptadores MCP
@@ -26,7 +40,7 @@ En tiempo de ejecución, Goa-AI organiza su sistema en torno a un pequeño conju
 
 - **Agentes**: Orquestadores de larga vida identificados por `agent.Ident` (por ejemplo, `service.chat`). Cada agente posee un planificador, una política de ejecución, flujos de trabajo generados y registros de herramientas.
 
-- **Ejecuciones**: Una única ejecución de un agente. Las ejecuciones se identifican mediante `RunID` y se rastrean a través de `run.Context` y `run.Handle`, y se agrupan mediante `SessionID` y `TurnID` para formar conversaciones.
+- **Ejecuciones**: Una única ejecución de un agente. Las ejecuciones se identifican mediante `RunID` y se rastrean a través de `run.Context` y `run.Handle`. Las ejecuciones con sesión se agrupan mediante `SessionID` y `TurnID` para formar conversaciones; las ejecuciones one-shot son explícitamente sin sesión.
 
 - **Conjuntos de herramientas y herramientas**: Colecciones nombradas de capacidades, identificadas por `tools.Ident` (`service.toolset.tool`). Los conjuntos de herramientas respaldados por servicios llaman a APIs; los conjuntos de herramientas respaldados por agentes ejecutan otros agentes como herramientas.
 
@@ -97,6 +111,33 @@ if _, err := rt.CreateSession(ctx, "s1"); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "s1", msgs)
+```
+
+### Ejecuciones one-shot sin sesión
+
+Utiliza `StartOneShot` y `OneShotRun` cuando quieras trabajo duradero que no esté asociado a una sesión existente.
+
+- `Start` / `Run` son con sesión: requieren un `SessionID` concreto, participan en el ciclo de vida de la sesión y emiten eventos de stream con alcance de sesión.
+- `StartOneShot` / `OneShotRun` son sin sesión: no reciben `SessionID`, no crean una sesión y sólo anexan eventos canónicos al run log para su inspección por `RunID`.
+- `StartOneShot` devuelve inmediatamente un `engine.WorkflowHandle`. `OneShotRun` es el wrapper bloqueante que llama a `handle.Wait(ctx)` por ti.
+
+```go
+client := chat.NewClient(rt)
+
+handle, err := client.StartOneShot(ctx, msgs,
+    runtime.WithRunID("run-123"),
+    runtime.WithLabels(map[string]string{"tenant": "acme"}),
+)
+if err != nil {
+    panic(err)
+}
+
+out, err := handle.Wait(ctx)
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(out.RunID)
 ```
 
 ### Ejemplo de trabajador
@@ -251,6 +292,7 @@ Goa-AI se integra con motores de políticas enchufables a través de `policy.Eng
 
 Las etiquetas fluyen hacia:
 - `run.Context.Labels` - disponibles para los planificadores durante una ejecución
+- entrada de actividad de herramienta (`api.ToolInput.Labels`) - clonada en las ejecuciones de herramientas despachadas para que las actividades observen los mismos metadatos de ejecución, salvo que el planificador sobrescriba las etiquetas para una llamada concreta
 - eventos del log de ejecución (`runlog.Store`) - persistidos junto con eventos de ciclo de vida para auditoría/búsqueda/paneles (cuando se indexan)
 
 ---
@@ -403,7 +445,8 @@ con el motor en memoria.
 
 ## Contratos de ejecución
 
-- `SessionID` se requiere al inicio de la ejecución. `Start` falla rápido cuando `SessionID` está vacío o es un espacio en blanco
+- `SessionID` se requiere para inicios con sesión. `Start` y `Run` fallan rápido cuando `SessionID` está vacío o contiene solo espacios
+- `StartOneShot` y `OneShotRun` son explícitamente sin sesión. No requieren ni crean una sesión y no emiten eventos de stream con alcance de sesión
 - Los agentes deben registrarse antes de la primera ejecución. El tiempo de ejecución rechaza el registro después del envío de la primera ejecución con `ErrRegistrationClosed` para mantener deterministas a los trabajadores del motor
 - Los ejecutores de herramientas reciben metadatos explícitos por llamada (`ToolCallMeta`) en lugar de pescar valores de `context.Context`
 - No confíe en fallbacks implícitos; todos los identificadores de dominio (ejecución, sesión, turno, correlación) deben pasarse explícitamente

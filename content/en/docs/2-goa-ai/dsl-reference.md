@@ -14,6 +14,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 |----------|---------|-------------|
 | **Agent Functions** | | |
 | `Agent` | Service | Defines an LLM-based agent |
+| `Completion` | Service | Declares a service-owned typed direct assistant-output contract |
 | `Use` | Agent | Declares toolset consumption |
 | `Export` | Agent, Service | Exposes toolsets to other agents |
 | `AgentToolset` | Use argument | References toolset from another agent |
@@ -28,7 +29,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | **Tool Functions** | | |
 | `Tool` | Toolset, Method | Defines a callable tool |
 | `Args` | Tool | Defines input parameter schema |
-| `Return` | Tool | Defines output result schema |
+| `Return` | Tool, Completion | Defines the model-visible result schema |
 | `ServerData` | Tool | Defines server-only data schema (never sent to model providers) |
 | `ServerDataDefault` | Tool | Default emission for optional server-data when `server_data` is omitted or `"auto"` |
 | `BoundedResult` | Tool | Declares a runtime-owned bounded-result contract; optional sub-DSL can declare paging cursor fields |
@@ -171,6 +172,7 @@ Declare agents inside a regular Goa `Service` definition. The DSL augments Goa's
 Running `goa gen` produces:
 
 - Agent packages (`gen/<service>/agents/<agent>`) with workflow definitions, planner activities, and registration helpers
+- Service-owned completion packages (`gen/<service>/completions`) when the service declares `Completion(...)`
 - Toolset owner packages (`gen/<service>/toolsets/<toolset>`) with typed payload/result structs, specs, codecs, and (when applicable) transforms
 - Activity handlers for plan/execute/resume loops
 - Registration helpers that wire the design into the runtime
@@ -257,6 +259,51 @@ var Specs = []tools.ToolSpec{
 ```
 
 Use these constants anywhere you need to reference tools.
+
+### Service-Owned Typed Completions
+
+Tools are not the only structured contract Goa-AI can own. Use
+`Completion(...)` when the assistant should return a typed final answer directly
+instead of issuing a tool call:
+
+```go
+var Draft = Type("Draft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(Draft)
+    })
+})
+```
+
+Completion names are part of the structured-output contract. They must be
+1-64 ASCII characters, may contain letters, digits, `_`, and `-`, and must
+start with a letter or digit.
+
+`goa gen` emits a package under `gen/<service>/completions` with:
+
+- generated result schemas and typed Go types
+- generated JSON codecs and validation helpers
+- typed `completion.Spec` values
+- generated `Complete<Name>(ctx, client, req)` helpers
+- generated `StreamComplete<Name>(ctx, client, req)` and `Decode<Name>Chunk(...)`
+  helpers
+
+Unary helpers decode the final assistant response directly. Streaming helpers
+stay on the raw `model.Streamer` surface: `completion_delta` chunks are
+preview-only, exactly one final `completion` chunk is canonical, and
+`Decode<Name>Chunk(...)` decodes only that final payload.
+
+Generated completion helpers reject tool-enabled requests and caller-supplied
+`StructuredOutput`. Providers that do not implement structured output fail
+explicitly with `model.ErrStructuredOutputUnsupported`.
+The generated schema remains the canonical service contract; model adapters may
+normalize it for provider-specific constrained decoding, but they must reject
+providers that cannot represent the declared contract.
 
 ### Cross-Process Inline Composition
 

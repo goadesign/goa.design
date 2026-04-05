@@ -8,6 +8,21 @@ aliases:
 
 Questo documento fornisce un riferimento completo alle funzioni DSL di Goa-AI. Utilizzatelo insieme alla guida [Runtime](./runtime.md) per capire come i progetti si traducono in comportamenti di runtime.
 
+Goa-AI supporta anche contratti `Completion(...)` di proprieta del servizio per
+output diretti e tipizzati dell'assistente. Quando esegui `goa gen`, questi
+contratti generano codice sotto `gen/<service>/completions`.
+
+I nomi delle completion fanno parte del contratto: 1-64 caratteri ASCII, solo
+lettere/cifre/`_`/`-`, e devono iniziare con una lettera o una cifra. Il codice
+generato include helper unary (`Complete<Name>(...)`) e di streaming
+(`StreamComplete<Name>(...)`, `Decode<Name>Chunk(...)`). I frammenti
+`completion_delta` sono solo anteprime; un unico chunk finale `completion` e
+canonico.
+Lo schema generato rimane il contratto di servizio canonico; gli adattatori
+del modello possono normalizzarlo a un sottoinsieme specifico del provider
+per il decoding vincolato, ma devono rifiutare esplicitamente i provider che
+non possono rappresentare il contratto dichiarato.
+
 ## Riferimento rapido al DSL
 
 | Funzione | Contesto | Descrizione |

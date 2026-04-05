@@ -13,7 +13,7 @@ The Goa-AI runtime orchestrates the plan/execute/resume loop, enforces policies,
 
 | Layer | Responsibility |
 | --- | --- |
-| DSL + Codegen | Produce agent registries, tool specs/codecs, workflows, MCP adapters |
+| DSL + Codegen | Produce agent registries, tool specs/codecs, completion specs/codecs, workflows, MCP adapters |
 | Runtime Core | Orchestrates plan/start/resume loop, policy enforcement, hooks, memory, streaming |
 | Workflow Engine Adapter | Temporal adapter implements `engine.Engine`; other engines can plug in |
 | Feature Modules | Optional integrations (MCP, Pulse, Mongo stores, model providers) |
@@ -26,9 +26,11 @@ At runtime, Goa-AI organizes your system around a small set of composable constr
 
 - **Agents**: Long-lived orchestrators identified by `agent.Ident` (for example, `service.chat`). Each agent owns a planner, run policy, generated workflows, and tool registrations.
 
-- **Runs**: A single execution of an agent. Runs are identified by a `RunID` and tracked via `run.Context` and `run.Handle`, and are grouped by `SessionID` and `TurnID` to form conversations.
+- **Runs**: A single execution of an agent. Runs are identified by a `RunID` and tracked via `run.Context` and `run.Handle`. Sessionful runs are grouped by `SessionID` and `TurnID` to form conversations; one-shot runs are explicitly sessionless.
 
 - **Toolsets & tools**: Named collections of capabilities, identified by `tools.Ident` (`service.toolset.tool`). Service-backed toolsets call APIs; agent-backed toolsets run other agents as tools.
+
+- **Completions**: Service-owned typed direct assistant-output contracts generated under `gen/<service>/completions`. Completion helpers attach provider-enforced structured output to unary and direct-streaming model requests, then decode the canonical typed payload through generated codecs.
 
 - **Planners**: Your LLM-driven strategy layer implementing `PlanStart` / `PlanResume`. Planners decide when to call tools versus answer directly; the runtime enforces caps and time budgets around those decisions.
 
@@ -79,6 +81,89 @@ func main() {
 
 ---
 
+## Typed Direct Completions
+
+Not every structured interaction should be modeled as a tool call. When your
+service needs a typed final assistant answer, declare `Completion(...)` in the
+DSL and regenerate.
+
+`goa gen` emits `gen/<service>/completions` with:
+
+- result schemas and typed result/union types
+- generated JSON codecs and validation helpers
+- typed `completion.Spec` values
+- generated `Complete<Name>(ctx, client, req)` helpers
+- generated `StreamComplete<Name>(ctx, client, req)` and `Decode<Name>Chunk(chunk)` helpers
+
+Services may declare completions without declaring any `Agent(...)`. Agent
+quickstart/example scaffolding is emitted only for services that actually own
+agents.
+
+Those helpers clone the request, attach provider-neutral structured output
+metadata, call the underlying `model.Client`, and decode the canonical typed
+payload through the generated codec:
+
+```go
+resp, err := taskcompletion.CompleteDraftFromTranscript(ctx, modelClient, &model.Request{
+    Messages: []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Create a startup investigation task."}},
+    }},
+})
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(resp.Value.Name)
+```
+
+Streaming completions stay on the raw `model.Streamer` surface and decode the
+final canonical `completion` chunk only:
+
+```go
+stream, err := taskcompletion.StreamCompleteDraftFromTranscript(ctx, modelClient, &model.Request{
+    Messages: []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Create a startup investigation task."}},
+    }},
+})
+if err != nil {
+    panic(err)
+}
+defer stream.Close()
+
+for {
+    chunk, err := stream.Recv()
+    if errors.Is(err, io.EOF) {
+        break
+    }
+    if err != nil {
+        panic(err)
+    }
+    value, ok, err := taskcompletion.DecodeDraftFromTranscriptChunk(chunk)
+    if err != nil {
+        panic(err)
+    }
+    if ok {
+        fmt.Println(value.Name)
+    }
+}
+```
+
+Typed completion helpers are intentionally strict:
+
+- Unary helpers accept unary requests only.
+- Completion names are validated at the DSL boundary: 1-64 ASCII characters,
+  letters/digits/`_`/`-` only, and must start with a letter or digit.
+- Unary and streaming helpers reject tool-enabled requests and caller-supplied `StructuredOutput`.
+- Streaming providers emit `completion_delta*` preview fragments plus exactly one canonical `completion` chunk, or reject the request explicitly.
+- `Decode<Name>Chunk` ignores preview chunks and decodes only the final `completion`.
+- Completion streams stay on the direct `model.Streamer` path; do not route them through planner streaming helpers, which are for assistant transcript text/tool execution events.
+- Providers that do not implement structured output surface `model.ErrStructuredOutputUnsupported`.
+- Generated schemas are canonical and provider-neutral; provider adapters may normalize them to a supported subset, but must fail explicitly when they cannot preserve the declared contract.
+
+---
+
 ## Client-Only vs Worker
 
 Two roles use the runtime:
@@ -97,6 +182,33 @@ if _, err := rt.CreateSession(ctx, "s1"); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "s1", msgs)
+```
+
+### Sessionless One-Shot Runs
+
+Use `StartOneShot` and `OneShotRun` when you want durable work that is not attached to an existing session.
+
+- `Start` / `Run` are sessionful: they require a concrete `SessionID`, participate in session lifecycle, and emit session-scoped stream events.
+- `StartOneShot` / `OneShotRun` are sessionless: they take no `SessionID`, do not create one, and append only canonical run-log events for introspection by `RunID`.
+- `StartOneShot` returns an `engine.WorkflowHandle` immediately. `OneShotRun` is the blocking convenience wrapper that calls `handle.Wait(ctx)` for you.
+
+```go
+client := chat.NewClient(rt)
+
+handle, err := client.StartOneShot(ctx, msgs,
+    runtime.WithRunID("run-123"),
+    runtime.WithLabels(map[string]string{"tenant": "acme"}),
+)
+if err != nil {
+    panic(err)
+}
+
+out, err := handle.Wait(ctx)
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(out.RunID)
 ```
 
 ### Worker Example
@@ -267,6 +379,7 @@ Goa-AI integrates with pluggable policy engines via `policy.Engine`. Policies re
 
 Labels flow into:
 - `run.Context.Labels` – available to planners during a run
+- tool activity input (`api.ToolInput.Labels`) – cloned into dispatched tool executions so tool activities observe the same run-scoped metadata unless the planner overrides labels for one specific call
 - run log events (`runlog.Store`) – persisted alongside lifecycle events for audit/search/dashboards (where indexed)
 
 ---
@@ -480,7 +593,8 @@ generic runtime stays honest across both Temporal and the in-memory engine.
 
 ## Run Contracts
 
-- `SessionID` is required at run start. `Start` fails fast when `SessionID` is empty or whitespace
+- `SessionID` is required for sessionful starts. `Start` and `Run` fail fast when `SessionID` is empty or whitespace
+- `StartOneShot` and `OneShotRun` are explicitly sessionless. They do not require or create a session and do not emit session-scoped stream events
 - Agents must be registered before the first run. The runtime rejects registration after the first run submission with `ErrRegistrationClosed` to keep engine workers deterministic
 - Tool executors receive explicit per-call metadata (`ToolCallMeta`) rather than fishing values from `context.Context`
 - Do not rely on implicit fallbacks; all domain identifiers (run, session, turn, correlation) must be passed explicitly

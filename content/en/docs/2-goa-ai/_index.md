@@ -10,7 +10,7 @@ aliases:
 
 ## Overview
 
-Goa-AI extends Goa's design-first philosophy to agentic systems. Define agents, toolsets, and policies in a DSL; generate production-ready code with typed contracts, durable workflows, and streaming events.
+Goa-AI extends Goa's design-first philosophy to agentic systems. Define agents, toolsets, service-owned completions, and policies in a DSL; generate production-ready code with typed contracts, durable workflows, and streaming events.
 
 ---
 
@@ -54,6 +54,52 @@ When the LLM calls this tool with invalid arguments—say, an empty `code` strin
 - **Self-healing agents** — Validation errors trigger automatic retries with feedback
 
 → Learn more in the [DSL Reference](dsl-reference/) and [Quickstart](quickstart/)
+
+---
+
+### Typed Direct Completions {#typed-direct-completions}
+
+**Not every structured interaction should be a tool call.**
+
+Sometimes the right contract is a typed final assistant answer: no tool
+invocation, no handwritten JSON parsing, no parallel schema definition hidden in
+prompt text.
+
+Goa-AI models that explicitly with `Completion(...)` on a service:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+Completion names are part of the structured-output contract. They must be
+1-64 ASCII characters, may contain letters, digits, `_`, and `-`, and must
+start with a letter or digit.
+
+Codegen emits `gen/<service>/completions/` with the JSON schema, typed codecs,
+and generated helpers that request provider-enforced structured output and
+decode the final assistant response through the generated codec. Streaming
+helpers stay on the raw `model.Streamer` surface: `completion_delta` chunks are
+preview-only, exactly one final `completion` chunk is canonical, and generated
+`Decode<Name>Chunk(...)` helpers decode only that final payload. Providers that
+do not implement structured output fail explicitly with
+`model.ErrStructuredOutputUnsupported`.
+
+**Benefits:**
+- **One contract surface** — Reuse Goa types, validations, and `OneOf` for direct assistant output
+- **No hand-parsed JSON** — Generated codecs own encoding, decoding, and validation
+- **Provider-neutral structured output** — The helper hides provider wiring behind a typed API
+
+→ Learn more in the [DSL Reference](dsl-reference/) and [Runtime](runtime/)
 
 ---
 
@@ -191,6 +237,7 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | [Structured Streaming](#structured-streaming) | Real-time typed events for UIs and observability |
 | [Temporal Durability](#temporal-durability) | Fault-tolerant execution that survives failures |
 | [Typed Contracts](dsl-reference/) | End-to-end type safety for all tool operations |
+| [Typed Direct Completions](#typed-direct-completions) | Structured final assistant answers with generated codecs and helpers |
 
 ## Documentation Guides
 

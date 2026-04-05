@@ -10,7 +10,54 @@ aliases:
 
 ## Aperçu
 
-Goa-AI étend la philosophie "design-first" de Goa aux systèmes agentiques. Définissez des agents, des ensembles d'outils et des politiques dans un DSL ; générez du code prêt à la production avec des contrats typés, des flux de travail durables et des événements en continu.
+Goa-AI étend la philosophie "design-first" de Goa aux systèmes agentiques. Définissez des agents, des ensembles d'outils, des completions possédées par le service et des politiques dans un DSL ; générez du code prêt à la production avec des contrats typés, des flux de travail durables et des événements en continu.
+
+---
+
+### Completions Directes Typées {#typed-direct-completions}
+
+**Toutes les interactions structurées ne doivent pas devenir des appels d'outil.**
+
+Parfois, le bon contrat est une réponse finale typée de l'assistant : sans
+invocation d'outil, sans JSON analysé à la main, sans définition de schéma
+parallèle cachée dans le texte du prompt.
+
+Goa-AI modélise cela explicitement avec `Completion(...)` sur un service :
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+Les noms de completion font partie du contrat de structured output. Ils doivent
+faire 1 à 64 caractères ASCII, peuvent contenir des lettres, des chiffres,
+`_` et `-`, et doivent commencer par une lettre ou un chiffre.
+
+Le codegen produit `gen/<service>/completions/` avec le schéma JSON, des
+codecs typés et des aides générées qui demandent un structured output imposé
+par le fournisseur et décodent la réponse finale de l'assistant via le codec
+généré. Les aides de streaming restent sur la surface brute `model.Streamer` :
+les chunks `completion_delta` ne servent que d'aperçu, un seul chunk final
+`completion` est canonique et les aides générées `Decode<Name>Chunk(...)` ne
+décodent que cette charge utile finale. Les fournisseurs qui n'implémentent
+pas le structured output échouent explicitement avec
+`model.ErrStructuredOutputUnsupported`.
+
+**Avantages :**
+- **Une seule surface de contrat** — Réutilisez les types Goa, les validations et `OneOf` pour la sortie directe de l'assistant
+- **Pas de JSON analysé à la main** — Les codecs générés prennent en charge l'encodage, le décodage et la validation
+- **Structured output neutre vis-à-vis du fournisseur** — L'aide masque l'intégration spécifique au fournisseur derrière une API typée
+
+→ Pour en savoir plus, consultez [DSL Reference](dsl-reference/) et [Runtime](runtime/)
 
 ---
 
@@ -18,7 +65,7 @@ Goa-AI étend la philosophie "design-first" de Goa aux systèmes agentiques. Dé
 
 ### Design-First Agents {#design-first-agents}
 
-**Arrêtez d'écrire un code d'agent fragile. Commencez par des contrats
+**Arrêtez d'écrire un code d'agent fragile. Commencez par des contrats.**
 
 La plupart des cadres d'agents vous obligent à relier impérativement les invites, les outils et les appels d'API. Lorsque les choses se cassent - et elles se cassent - vous devez déboguer un code éparpillé sans source de vérité claire.
 
@@ -90,15 +137,15 @@ Goa-AI émet des **événements typés** tout au long de l'exécution : `assista
 rt := runtime.New(runtime.WithStream(mySink))
 ```
 
-*les *profils de flux** filtrent les événements pour différents consommateurs : `UserChatProfile()` pour les interfaces utilisateur, `AgentDebugProfile()` pour les vues des développeurs, `MetricsProfile()` pour les pipelines d'observabilité. Les puits intégrés pour Pulse (Redis Streams) permettent une diffusion en continu distribuée entre les services.
+**Les profils de flux** filtrent les événements pour différents consommateurs : `UserChatProfile()` pour les interfaces utilisateur, `AgentDebugProfile()` pour les vues des développeurs, `MetricsProfile()` pour les pipelines d'observabilité. Les puits intégrés pour Pulse (Redis Streams) permettent une diffusion en continu distribuée entre les services.
 
 **Avantages:**
-- **Agrément de transport** - Les mêmes événements fonctionnent sur WebSocket, SSE, Pulse, ou des backends personnalisés
+- **Transport agnostique** - Les mêmes événements fonctionnent sur WebSocket, SSE, Pulse, ou des backends personnalisés
 - **Contrats typés** - Pas d'analyse de chaîne ; les événements sont fortement typés avec des charges utiles documentées
-- **Livraison sélective - Les profils de flux filtrent les événements par consommateur
+- **Livraison sélective** - Les profils de flux filtrent les événements par consommateur
 - **Prêt pour le multi-tenant** - Les événements portent `RunID` et `SessionID` pour le routage et le filtrage
 
-→ Détails de la mise en œuvre dans [Production Streaming] (production/#streaming-ui)
+→ Détails de la mise en œuvre dans [Streaming de production](production/#streaming-ui)
 
 ---
 
@@ -128,7 +175,7 @@ rt := runtime.New(runtime.WithEngine(eng))
 - **Gestion de la limite de taux** - Le backoff exponentiel absorbe l'étranglement de l'API
 - **Sécurité des déploiements** - Les déploiements continus ne perdent pas le travail en cours
 
-→ Guide d'installation et configuration de la reprise dans [Production] (production/#temporal-setup)
+→ Guide d'installation et configuration de la reprise dans [Production](production/#temporal-setup)
 
 ---
 
@@ -182,28 +229,29 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 
 ## Résumé des caractéristiques principales
 
-| Caractéristiques de l'offre de l'entreprise
+| Caractéristique | Ce que vous obtenez |
 |---------|--------------|
 | [Design-First Agents](#design-first-agents) | Définition d'agents en DSL, génération de code à sécurité de type |
-| Intégration MCP](mcp-integration/) | Support natif du protocole Model Context | | Registres d'outils](mcp-integration/)
-| | Registres d'outils](#tool-registries) | Découverte en grappe + fédération de registres publics |
+| [Intégration MCP](mcp-integration/) | Support natif du protocole Model Context |
+| [Registres d'outils](#tool-registries) | Découverte en grappe + fédération de registres publics |
 | [Run Trees](#run-trees-composition) | Agents appelant des agents avec une traçabilité complète |
-| Événements typés en temps réel pour les interfaces utilisateur et l'observabilité |
-| Durabilité temporelle](#temporal-durability) | Exécution tolérante aux fautes qui survit aux défaillances |
+| [Streaming structuré](#structured-streaming) | Événements typés en temps réel pour les interfaces utilisateur et l'observabilité |
+| [Durabilité temporelle](#temporal-durability) | Exécution tolérante aux fautes qui survit aux défaillances |
 | [Contrats typés](dsl-reference/) | Sécurité de type de bout en bout pour toutes les opérations de l'outil |
+| [Completions Directes Typées](#typed-direct-completions) | Réponses finales structurées de l'assistant avec codecs et aides générés |
 
 ## Guides de documentation
 
-| Guide de l'utilisateur - Description - ~Tokens - ~Tokens - ~Tokens - ~Tokens - ~Tokens
+| Guide | Description | ~Tokens |
 |-------|-------------|---------|
 | [Quickstart](quickstart/) | Installation et premier agent | ~2,700 |
-| DSL Reference](dsl-reference/) | DSL complet : agents, toolsets, policies, MCP | ~3,600 |
+| [Référence DSL](dsl-reference/) | DSL complet : agents, toolsets, policies, MCP | ~3,600 |
 | [Runtime](runtime/) | Architecture du runtime, boucle plan/execute, moteurs | ~2,400 |
 | [Outils](toolsets/) | Types d'outils, modèles d'exécution, transformations | ~2 300 |
-| Composition de l'agent](agent-composition/) | Agent en tant qu'outil, arbres d'exécution, topologie de streaming | ~1.400 |
+| [Composition de l'agent](agent-composition/) | Agent en tant qu'outil, arbres d'exécution, topologie de streaming | ~1.400 |
 | [Intégration MCP](mcp-integration/) | Serveurs MCP, transports, wrappers générés | ~1,200 |
 | [Mémoire et sessions](memory-sessions/) | Transcriptions, mémoires, sessions, exécutions | ~1.600 |
-| Production](production/) | Configuration temporelle, interface utilisateur en continu, intégration de modèles | ~2 200 |
+| [Production](production/) | Configuration temporelle, interface utilisateur en continu, intégration de modèles | ~2 200 |
 | [Test et dépannage](testing/) | Agents de test, planificateurs, outils, erreurs courantes | ~2 000 |
 
 **Total de la section:** ~21 400 jetons
@@ -214,15 +262,15 @@ Goa-AI suit un pipeline **define → generate → execute** qui transforme les c
 
 {{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI Architecture" class="img-fluid" >}}
 
-**Layer Overview:**
+**Vue d'ensemble des couches :**
 
-| Couche - Objectif - Objectif - Objectif - Objectif
+| Couche | Objectif |
 |-------|---------|
-| La couche de base est composée de deux couches : **DSL** | Déclarer les agents, les outils, les politiques et les intégrations externes dans un code Go à version contrôlée
-| La couche d'exécution a pour but de générer des spécifications, des codecs, des définitions de flux de travail et des clients de registre sécurisés par type, sans jamais modifier `gen/` | La couche d'exécution a pour but d'exécuter les tâches de la couche d'exécution
-| Le moteur d'exécution exécute la boucle plan/exécution avec l'application de la politique, la persistance de la mémoire et le flux d'événements
-| Le moteur d'exécution de la boucle plan/exécution avec persistance de la mémoire et flux d'événements
-| Les caractéristiques de l'application sont les suivantes : - Branchez des fournisseurs de modèles (OpenAI, Anthropic, AWS Bedrock), de la persistance (Mongo), du streaming (Pulse) et des registres (AWS)
+| **DSL** | Déclarer les agents, les outils, les politiques et les intégrations externes dans un code Go versionné |
+| **Codegen** | Générer des spécifications sûres, des codecs, des définitions de flux de travail et des clients de registre ; ne jamais modifier `gen/` |
+| **Runtime** | Exécuter la boucle plan/execute avec application des politiques, persistance mémoire et streaming d'événements |
+| **Engine** | Changer de backend d'exécution : in-memory pour le développement, Temporal pour la durabilité en production |
+| **Features** | Brancher des fournisseurs de modèles (OpenAI, Anthropic, AWS Bedrock), la persistance (Mongo), le streaming (Pulse) et les registres |
 
 **Points d'intégration clés:**
 

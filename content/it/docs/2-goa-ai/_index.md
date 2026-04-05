@@ -10,7 +10,55 @@ aliases:
 
 ## Panoramica
 
-Goa-AI estende la filosofia design-first di Goa ai sistemi agenziali. Definisce agenti, set di strumenti e politiche in un DSL; genera codice pronto per la produzione con contratti tipizzati, flussi di lavoro durevoli ed eventi in streaming.
+Goa-AI estende la filosofia design-first di Goa ai sistemi agenziali. Definisce agenti, set di strumenti, completions di proprieta del servizio e politiche in un DSL; genera codice pronto per la produzione con contratti tipizzati, flussi di lavoro durevoli ed eventi in streaming.
+
+---
+
+### Completion Dirette Tipizzate {#typed-direct-completions}
+
+**Non tutte le interazioni strutturate devono essere chiamate di strumento.**
+
+A volte il contratto giusto e una risposta finale tipizzata dell'assistente:
+nessuna invocazione di strumenti, nessun JSON analizzato a mano, nessuna
+definizione di schema parallela nascosta nel testo del prompt.
+
+Goa-AI modella questa esigenza esplicitamente con `Completion(...)` su un
+servizio:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+I nomi delle completion fanno parte del contratto di structured output. Devono
+avere da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-`,
+e devono iniziare con una lettera o una cifra.
+
+Il codegen produce `gen/<service>/completions/` con lo schema JSON, codec
+tipizzati e helper generati che richiedono structured output imposto dal
+provider e decodificano la risposta finale dell'assistente tramite il codec
+generato. Gli helper di streaming restano sulla superficie grezza di
+`model.Streamer`: i chunk `completion_delta` sono solo anteprime, esattamente
+un chunk finale `completion` e canonico e gli helper generati
+`Decode<Name>Chunk(...)` decodificano solo quel payload finale. I provider che
+non implementano structured output falliscono esplicitamente con
+`model.ErrStructuredOutputUnsupported`.
+
+**Vantaggi:**
+- **Un'unica superficie di contratto** — Riutilizza tipi Goa, validazioni e `OneOf` per l'output diretto dell'assistente
+- **Nessun JSON analizzato a mano** — I codec generati gestiscono codifica, decodifica e validazione
+- **Structured output neutrale rispetto al provider** — L'helper nasconde l'integrazione specifica del provider dietro un'API tipizzata
+
+→ Approfondisci con [DSL Reference](dsl-reference/) e [Runtime](runtime/)
 
 ---
 
@@ -53,7 +101,7 @@ Quando l'LLM chiama questo strumento con argomenti non validi, ad esempio una st
 - **Modelli coerenti** - Ogni agente segue la stessa struttura
 - **Agenti auto-riparativi** - Gli errori di convalida attivano tentativi automatici con feedback
 
-→ Per saperne di più, consultare [DSL Reference] (dsl-reference/) e [Quickstart] (quickstart/)
+→ Per saperne di più, consultare [Riferimento DSL](dsl-reference/) e [Avvio rapido](quickstart/)
 
 ---
 
@@ -79,7 +127,7 @@ Il **modello ad albero di esecuzione** di Goa-AI offre un'esecuzione gerarchica 
 
 ### Flusso strutturato {#structured-streaming}
 
-**Visibilità in tempo reale di ogni decisione presa dai vostri agenti **
+**Visibilità in tempo reale di ogni decisione presa dai vostri agenti.**
 
 Gli agenti black-box sono un problema. Quando il vostro agente chiama uno strumento, inizia a pensare o incontra un errore, dovete saperlo *immediatamente*, non dopo il timeout della richiesta.
 
@@ -90,7 +138,7 @@ Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per l
 rt := runtime.New(runtime.WithStream(mySink))
 ```
 
-*i *profili di stream** filtrano gli eventi per i diversi consumatori: `UserChatProfile()` per le interfacce utente, `AgentDebugProfile()` per le viste degli sviluppatori, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra i servizi.
+**I profili di stream** filtrano gli eventi per i diversi consumatori: `UserChatProfile()` per le interfacce utente, `AgentDebugProfile()` per le viste degli sviluppatori, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra i servizi.
 
 **Benefici:**
 - **Agnostico al trasporto** - Gli stessi eventi funzionano su WebSocket, SSE, Pulse o backend personalizzati
@@ -98,7 +146,7 @@ rt := runtime.New(runtime.WithStream(mySink))
 - **Consegna selettiva** - I profili di flusso filtrano gli eventi per ogni consumatore
 - **Pronto per più tenant** - Gli eventi riportano `RunID` e `SessionID` per l'instradamento e il filtraggio
 
-→ Dettagli di implementazione in [Production Streaming] (production/#streaming-ui)
+→ Dettagli di implementazione in [streaming di produzione](production/#streaming-ui)
 
 ---
 
@@ -128,7 +176,7 @@ rt := runtime.New(runtime.WithEngine(eng))
 - **Gestione dei limiti di velocità** - Il backoff esponenziale assorbe il throttling delle API
 - **Sicuro per i deploy** - I deploy in rotazione non perdono il lavoro svolto in volo
 
-→ Guida all'installazione e configurazione dei tentativi in [Produzione] (production/#temporal-setup)
+→ Guida all'installazione e configurazione dei tentativi in [Produzione](production/#temporal-setup)
 
 ---
 
@@ -186,21 +234,22 @@ Più nodi del registro con lo stesso nome formano automaticamente un cluster tra
 |---------|--------------|
 | [Agenti Design-First](#design-first-agents) | Definizione degli agenti in DSL, generazione di codice type-safe |
 | [Integrazione MCP](mcp-integration/) | Supporto nativo del Model Context Protocol |
-| [Tool Registries](#tool-registries) | Rilevamento in cluster + federazione di registri pubblici |
-| [Run Trees](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa |
-| [Structured Streaming](#structured-streaming) | Eventi digitati in tempo reale per le interfacce utente e osservabilità |
-| [Temporal Durability](#temporal-durability) | Esecuzione tollerante ai guasti che sopravvive ai fallimenti |
+| [Registri degli strumenti](#tool-registries) | Rilevamento in cluster + federazione di registri pubblici |
+| [Alberi di esecuzione](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa |
+| [Streaming strutturato](#structured-streaming) | Eventi tipizzati in tempo reale per interfacce utente e osservabilità |
+| [Durabilità con Temporal](#temporal-durability) | Esecuzione tollerante ai guasti che sopravvive ai fallimenti |
 | [Contratti tipizzati](dsl-reference/) | Sicurezza di tipo end-to-end per tutte le operazioni dello strumento |
+| [Completion Dirette Tipizzate](#typed-direct-completions) | Risposte finali strutturate dell'assistente con codec e helper generati |
 
 ## Guide alla documentazione
 
 | Guida | Descrizione | ~Tokens |
 |-------|-------------|---------|
-| [Quickstart](quickstart/) | Installazione e primo agente | ~2,700 |
-| [DSL Reference](dsl-reference/) | DSL completo: agenti, toolset, policy, MCP | ~3.600 |
+| [Avvio rapido](quickstart/) | Installazione e primo agente | ~2,700 |
+| [Riferimento DSL](dsl-reference/) | DSL completo: agenti, toolset, policy, MCP | ~3.600 |
 | [Runtime](runtime/) | Architettura del runtime, ciclo di pianificazione/esecuzione, motori | ~2,400 |
 | [Toolsets](toolsets/) | Tipi di toolset, modelli di esecuzione, trasformazioni | ~2,300 |
-| [Agent Composition](agent-composition/) | Agent-as-tool, alberi di esecuzione, topologia di streaming | ~1.400 |
+| [Composizione degli agenti](agent-composition/) | Agent-as-tool, alberi di esecuzione, topologia di streaming | ~1.400 |
 | [Integrazione MCP](mcp-integration/) | Server MCP, trasporti, wrapper generati | ~1.200 |
 | [Memoria e sessioni](memory-sessions/) | Trascrizioni, archivi di memoria, sessioni, esecuzioni | ~1.600 |
 | [Produzione](production/) | Impostazione temporale, UI in streaming, integrazione del modello | ~2.200 |
@@ -214,17 +263,17 @@ Goa-AI segue una pipeline **define → generate → execute** che trasforma i pr
 
 {{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI Architecture" class="img-fluid" >}}
 
-**Panoramica dei livelli
+**Panoramica dei livelli:**
 
 | Strato | Scopo |
 |-------|---------|
-| **DSL** | Dichiarare agenti, strumenti, politiche e integrazioni esterne in codice Go controllato dalla versione
+| **DSL** | Dichiarare agenti, strumenti, politiche e integrazioni esterne in codice Go controllato dalla versione |
 | **Codegen** | Generare specifiche, codec, definizioni di workflow e client di registro sicuri per il tipo, senza mai modificare `gen/` |
-**Runtime** | Eseguire il ciclo di pianificazione/esecuzione con l'applicazione dei criteri, la persistenza della memoria e lo streaming degli eventi
+| **Runtime** | Eseguire il ciclo di pianificazione/esecuzione con l'applicazione dei criteri, la persistenza della memoria e lo streaming degli eventi |
 | **Engine** | Scambia i backend di esecuzione: in-memory per lo sviluppo, Temporal per la durabilità in produzione |
 | **Features** | Plug in model provider (OpenAI, Anthropic, AWS Bedrock), persistenza (Mongo), streaming (Pulse) e registri |
 
-**Punti chiave di integrazione
+**Punti chiave di integrazione:**
 
 - **Clienti di modello** - Astraggono i provider LLM dietro un'interfaccia unificata; passano da OpenAI, Anthropic o Bedrock senza modificare il codice dell'agente
 - **Registro** - Scoprire e invocare set di strumenti attraverso i confini dei processi; clusterizzato tramite Redis per una scalabilità orizzontale
@@ -299,8 +348,8 @@ var _ = Service("calculator", func() {
 
 ## Iniziare
 
-Iniziare con la guida [Quickstart] (quickstart/) per installare Goa-AI e creare il primo agente.
+Iniziare con la guida [Avvio rapido](quickstart/) per installare Goa-AI e creare il primo agente.
 
-Per una copertura completa del DSL, vedere [DSL Reference](dsl-reference/).
+Per una copertura completa del DSL, vedere il [Riferimento DSL](dsl-reference/).
 
 Per comprendere l'architettura del runtime, consultare la guida [Runtime](runtime/).

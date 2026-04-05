@@ -10,7 +10,54 @@ aliases:
 
 ## 概要
 
-Goa-AI は、Goa の **design-first**（設計を単一の真実の源にする）哲学を、エージェント型システムに拡張します。DSL でエージェント・ツールセット・ポリシーを宣言し、**型付けされたコントラクト**、**耐久性のあるワークフロー**、**ストリーミングイベント**を備えたプロダクション品質の実装を生成します。
+Goa-AI は、Goa の **design-first**（設計を単一の真実の源にする）哲学を、エージェント型システムに拡張します。DSL でエージェント・ツールセット・サービス所有の completion・ポリシーを宣言し、**型付けされたコントラクト**、**耐久性のあるワークフロー**、**ストリーミングイベント**を備えたプロダクション品質の実装を生成します。
+
+---
+
+### 型付き直接 Completion {#typed-direct-completions}
+
+**構造化されたやり取りのすべてがツール呼び出しである必要はありません。**
+
+適切な契約が、型付きの最終アシスタント応答であることもあります。
+ツール呼び出しは不要で、手書きの JSON パースも不要で、プロンプト文中に
+並行したスキーマ定義を隠す必要もありません。
+
+Goa-AI はそれを `Completion(...)` としてサービス上で明示的に表現します。
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+completion 名は structured output コントラクトの一部です。1 文字以上
+64 文字以下の ASCII で、使用できるのは英字・数字・`_`・`-` のみ、
+先頭は英字または数字でなければなりません。
+
+codegen は `gen/<service>/completions/` に JSON スキーマ、型付き codec、
+そして provider に強制された structured output を要求し、生成 codec
+経由で最終アシスタント応答をデコードする helper を生成します。
+streaming helper は raw な `model.Streamer` の表面に留まります。
+`completion_delta` chunk はプレビュー専用で、正規なのは最後の 1 つの
+`completion` chunk だけです。生成される `Decode<Name>Chunk(...)`
+helper はその最終 payload だけをデコードします。structured output を
+実装しない provider は `model.ErrStructuredOutputUnsupported` で
+明示的に失敗します。
+
+**メリット:**
+- **単一の契約面** — 直接アシスタント出力に対しても Goa の型、バリデーション、`OneOf` を再利用できる
+- **手書きの JSON パースが不要** — 生成 codec がエンコード、デコード、バリデーションを担う
+- **provider 非依存の structured output** — helper が provider 固有の配線を型付き API の裏に隠す
+
+→ 詳細は [DSL Reference](dsl-reference/) と [Runtime](runtime/) を参照してください。
 
 ---
 
@@ -191,6 +238,7 @@ var CorpRegistry = Registry("corp", func() {
 | [Structured Streaming](#structured-streaming) | UI と観測のためのリアルタイム型付きイベント |
 | [Temporal Durability](#temporal-durability) | 障害に強い、耐久実行 |
 | [Typed Contracts](dsl-reference/) | ツール操作のエンドツーエンド型安全性 |
+| [型付き直接 Completion](#typed-direct-completions) | 生成 codec と helper を備えた構造化された最終アシスタント応答 |
 
 ## ドキュメントガイド
 

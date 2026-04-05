@@ -313,7 +313,7 @@ temporalite start
 
 **Opzione 3: Nuvola Temporale (Produzione)**
 
-Registrarsi su [temporal.io] (https://temporal.io) e configurare il client con le credenziali del cloud.
+Registrarsi su [temporal.io](https://temporal.io) e configurare il client con le credenziali del cloud.
 
 **Opzione 4: Self-Hosted (Produzione)**
 
@@ -701,7 +701,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Questa funzione è ideale quando il promemoria si applica a ogni invocazione dello strumento. Per maggiori dettagli, vedere [DSL Reference] (./dsl-reference.md#resultreminder).
+Questa funzione è ideale quando il promemoria si applica a ogni invocazione dello strumento. Per maggiori dettagli, vedere il [Riferimento DSL](./dsl-reference.md#resultreminder).
 
 **Ricordi dinamici dai pianificatori**
 

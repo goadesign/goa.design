@@ -8,7 +8,7 @@ aliases:
 ---
 
 {{< alert title="Tested Example" color="info" >}}
-Questo codice è testato in CI. Se qualcosa non funziona, [segnalare un problema] (https://github.com/goadesign/goa-ai/issues).
+Questo codice è testato in CI. Se qualcosa non funziona, [segnalare un problema](https://github.com/goadesign/goa-ai/issues).
 {{< /alert >}}
 
 Nei prossimi 10 minuti, costruirete da zero un sistema agenziale pronto per la produzione. Strumenti sicuri dal punto di vista tipologico, streaming in tempo reale, validazione automatica con tentativi di autoguarigione, integrazione LLM e composizione di agenti, il tutto da un DSL dichiarativo. Roba da matti.
@@ -90,8 +90,47 @@ Questo crea una cartella `gen/` con:
 - **Aiutanti di registrazione dell'agente** - collegano l'agente al runtime
 - **Specifiche degli strumenti e codec** - gestione del carico utile/risultato sicuro dal punto di vista del tipo
 - **Schemi JSON** - per le definizioni degli strumenti LLM
+- **`gen/<service>/completions/`** - helper di completion tipizzata diretta quando il servizio dichiara `Completion(...)`
 
 Non modificare mai i file in `gen/`: vengono rigenerati a ogni esecuzione di `goa gen`.
+
+### Opzionale: Aggiungere una Completion Diretta Tipizzata
+
+Le chiamate di strumento sono ottime per capacità invocabili. Quando vuoi che
+l'assistente restituisca direttamente una risposta strutturata e tipizzata,
+dichiara una completion di proprietà del servizio:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("demo", func() {
+    Completion("draft_task", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+I nomi delle completion fanno parte del contratto di structured output. Devono
+avere da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-`,
+e devono iniziare con una lettera o una cifra.
+
+La rigenerazione produce `gen/demo/completions/` con lo schema di risultato,
+codec tipizzati e helper generati come `CompleteDraftTask(...)`,
+`StreamCompleteDraftTask(...)` e `DecodeDraftTaskChunk(...)`.
+
+L'helper unary emette una richiesta unary al modello con structured output
+imposto dal provider e decodifica la risposta dell'assistente tramite il codec
+generato. L'helper di streaming resta sulla superficie grezza di
+`model.Streamer`: i chunk `completion_delta` sono solo anteprime, esattamente
+un chunk finale `completion` e canonico e `DecodeDraftTaskChunk(...)`
+decodifica solo quel payload finale. Gli helper di completion generati
+rifiutano richieste con strumenti abilitati e `StructuredOutput` fornito dal
+chiamante. I provider che non implementano structured output restituiscono
+`model.ErrStructuredOutputUnsupported`.
 
 ---
 

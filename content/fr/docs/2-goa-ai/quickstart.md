@@ -88,10 +88,49 @@ goa gen quickstart/design
 
 Ceci crée un répertoire `gen/` avec :
 - **Aide à l'enregistrement de l'agent** - connectez votre agent au runtime
-- **Tool specs and codecs** - gestion sûre des données utiles et des résultats
+- **Spécifications d'outils et codecs** - gestion sûre des données utiles et des résultats
 - **Schémas JSON** - pour les définitions d'outils LLM
+- **`gen/<service>/completions/`** - aides de completion typée directe quand le service déclare `Completion(...)`
 
 Ne modifiez jamais les fichiers dans `gen/` - ils sont régénérés à chaque exécution de `goa gen`.
+
+### Option : Ajouter une Completion Directe Typée
+
+Les appels d'outil sont parfaits pour les capacités invocables. Lorsque vous
+voulez que l'assistant retourne directement une réponse structurée et typée,
+déclarez une completion possédée par le service :
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("demo", func() {
+    Completion("draft_task", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+Les noms de completion font partie du contrat de structured output. Ils doivent
+faire 1 à 64 caractères ASCII, peuvent contenir des lettres, des chiffres,
+`_` et `-`, et doivent commencer par une lettre ou un chiffre.
+
+La régénération produit `gen/demo/completions/` avec le schéma de résultat,
+des codecs typés et des aides générées comme `CompleteDraftTask(...)`,
+`StreamCompleteDraftTask(...)` et `DecodeDraftTaskChunk(...)`.
+
+L'aide unaire émet une requête unaire au modèle avec un structured output
+imposé par le fournisseur et décode la réponse de l'assistant via le codec
+généré. L'aide de streaming reste sur la surface brute `model.Streamer` :
+les chunks `completion_delta` ne servent que d'aperçu, exactement un chunk
+final `completion` est canonique et `DecodeDraftTaskChunk(...)` ne décode que
+cette charge utile finale. Les aides de completion générées rejettent les
+requêtes avec outils activés et `StructuredOutput` fourni par l'appelant. Les
+fournisseurs qui n'implémentent pas le structured output retournent
+`model.ErrStructuredOutputUnsupported`.
 
 ---
 
@@ -99,7 +138,7 @@ Ne modifiez jamais les fichiers dans `gen/` - ils sont régénérés à chaque e
 
 Avant de connecter un vrai LLM, nous allons comprendre comment les agents Goa-AI fonctionnent en utilisant un planificateur stub. Cela rend le flux explicite et vous aide à déboguer les problèmes plus tard.
 
-**The plan/execute loop:**
+**La boucle plan/execute :**
 1. L'exécution appelle `PlanStart` avec le message de l'utilisateur
 2. Le planificateur renvoie une réponse finale ou l'outil appelle
 3. Si des outils ont été appelés, le moteur d'exécution les exécute et appelle `PlanResume` avec les résultats

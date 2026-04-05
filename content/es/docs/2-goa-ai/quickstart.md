@@ -90,8 +90,47 @@ Esto crea un directorio `gen/` con:
 - **Ayudantes de registro de agente** - cablea tu agente al tiempo de ejecución
 - **Especificaciones de herramientas y codecs** - manejo seguro de la carga útil/resultado
 - **Esquemas JSON** - para definiciones de herramientas LLM
+- **`gen/<service>/completions/`** - helpers de completion tipada directa cuando el servicio declara `Completion(...)`
 
 Nunca edites archivos en `gen/` - se regeneran en cada ejecución de `goa gen`.
+
+### Opcional: Añadir una Completion Directa Tipada
+
+Las llamadas de herramienta son ideales para capacidades invocables. Cuando
+quieras que el asistente devuelva directamente una respuesta estructurada y
+tipada, declara una completion propiedad del servicio:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("demo", func() {
+    Completion("draft_task", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+Los nombres de completion forman parte del contrato de structured output. Deben
+tener entre 1 y 64 caracteres ASCII, pueden contener letras, dígitos, `_` y
+`-`, y deben empezar por una letra o un dígito.
+
+La regeneración produce `gen/demo/completions/` con el esquema de resultado,
+codecs tipados y helpers generados como `CompleteDraftTask(...)`,
+`StreamCompleteDraftTask(...)` y `DecodeDraftTaskChunk(...)`.
+
+El helper unario emite una solicitud unaria al modelo con structured output
+forzado por el provider y decodifica la respuesta del asistente con el codec
+generado. El helper de streaming permanece en la superficie raw de
+`model.Streamer`: los chunks `completion_delta` son solo vistas previas,
+exactamente un chunk final `completion` es canónico y
+`DecodeDraftTaskChunk(...)` decodifica solo ese payload final. Los helpers de
+completion generados rechazan solicitudes con herramientas habilitadas y
+`StructuredOutput` suministrado por el llamador. Los providers que no
+implementan structured output devuelven `model.ErrStructuredOutputUnsupported`.
 
 ---
 
