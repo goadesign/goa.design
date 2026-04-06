@@ -62,11 +62,11 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `InterruptsAllowed` | RunPolicy | Enable pause/resume |
 | `OnMissingFields` | RunPolicy | Validation behavior |
 | **MCP Functions** | | |
-| `MCPServer` | Service | Enables MCP support |
-| `MCP` | Service | Alias for MCPServer |
+| `MCP` | Service | Enables MCP support |
 | `ProtocolVersion` | MCP option | Sets MCP protocol version |
-| `MCPTool` | Method | Marks method as MCP tool |
-| `MCPToolset` | Top-level | Declares MCP-derived toolset |
+| `Tool` | Method | Marks a method as an MCP tool in an MCP-enabled service |
+| `Toolset(FromMCP(...))` | Top-level | Declares a Goa-backed MCP-derived toolset |
+| `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level | Declares an external MCP toolset with inline schemas |
 | `Resource` | Method | Marks method as MCP resource |
 | `WatchableResource` | Method | Marks method as subscribable resource |
 | `StaticPrompt` | Service | Adds static prompt template |
@@ -204,7 +204,7 @@ var DocsToolset = Toolset("docs.search", func() {
     })
 })
 
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Description("Human front door for the knowledge agent.")
@@ -242,7 +242,7 @@ Running `goa gen example.com/assistant/design` produces:
 - `gen/orchestrator/agents/chat/specs`: agent tool catalog (aggregated `ToolSpec`s + `tool_schemas.json`)
 - `gen/orchestrator/toolsets/<toolset>`: toolset-owned types/specs/codecs/transforms for service-owned toolsets
 - `gen/orchestrator/agents/chat/exports/<export>`: exported toolsets (agent-as-tool) packages
-- MCP-aware registration helpers when an `MCPToolset` is referenced via `Use`
+- MCP-aware registration helpers when an MCP-backed toolset is referenced via `Use`
 
 ### Typed Tool Identifiers
 
@@ -350,7 +350,7 @@ var _ = Service("orchestrator", func() {
 `Use(value, dsl)` declares that an agent consumes a toolset. The toolset can be:
 
 - A top-level `Toolset` variable
-- An `MCPToolset` reference
+- A toolset declared with `FromMCP(...)` or `FromExternalMCP(...)`
 - An inline toolset definition (string name + DSL)
 - An `AgentToolset` reference for agent-as-tool composition
 
@@ -366,8 +366,8 @@ Agent("chat", "Conversational runner", func() {
         Tool("notify") // consume only this tool from CommonTools
     })
     
-    // Reference an MCP toolset
-    Use(MCPToolset("assistant", "assistant-mcp"))
+    // Reference an MCP toolset declared at top level
+    Use(AssistantSuite)
     
     // Inline agent-local toolset definition
     Use("helpers", func() {
@@ -679,15 +679,15 @@ Tool("get_metrics", "Get device metrics", func() {
 
 **Runtime access:**
 
-At runtime, observer-facing artifacts (projected from optional server-data) are available on `planner.ToolResult.Artifacts`:
+At runtime, observer-facing projections from optional server-data are carried on
+`planner.ToolResult.ServerData`. Decode those canonical JSON bytes with the
+generated server-data codecs for the tool's declared kinds:
 
 ```go
 // In a stream subscriber or result handler
 func handleToolResult(result *planner.ToolResult) {
-    for _, art := range result.Artifacts {
-        if art.Kind == "atlas.time_series" {
-            // art.Data contains the full time series for UI rendering
-        }
+    if len(result.ServerData) > 0 {
+        // Decode with the generated server-data codecs for this tool.
     }
 }
 ```
@@ -1051,8 +1051,15 @@ For reminders that depend on runtime conditions, use the planner API instead:
 // In your planner implementation
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
-    for _, tr := range input.ToolResults {
-        if tr.Name == "get_time_series" && hasAnomalies(tr.Result) {
+    for _, tr := range input.ToolOutputs {
+        if tr.Name != "get_time_series" || tr.Error != nil {
+            continue
+        }
+        result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
+        if err != nil {
+            return nil, err
+        }
+        if hasAnomalies(result) {
             input.Agent.AddReminder(reminder.Reminder{
                 ID:   "anomaly_detected",
                 Text: "Anomalies were detected in the time series. Highlight these to the user.",
@@ -1117,8 +1124,8 @@ var _ = Service("orchestrator", func() {
 `Inject(fields...)` marks specific payload fields as "injected" (server-side infrastructure). Injected fields are:
 
 1. Hidden from the LLM (excluded from the JSON schema sent to the model)
-2. Exposed in the generated struct with a Setter method
-3. Intended to be populated by runtime hooks (`ToolInterceptor`)
+2. Validated as required `String` fields on the bound method payload
+3. Populated from `runtime.ToolCallMeta` by generated executors, with optional `ToolInterceptor.Inject` hooks
 
 **Context**: Inside `Tool`
 
@@ -1137,12 +1144,16 @@ Tool("get_data", "Get data for current session", func() {
 })
 ```
 
-At runtime, use a `ToolInterceptor` to populate injected fields:
+Supported injected field names are fixed: `run_id`, `session_id`, `turn_id`,
+`tool_call_id`, and `parent_tool_call_id`.
+
+At runtime, generated service executors copy matching values from
+`runtime.ToolCallMeta` before optional typed interceptors run:
 
 ```go
-func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
-    if call.Name == "data.get_data" {
-        call.Payload.SetSessionID(ctx.Value(sessionKey).(string))
+func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
+    if p, ok := payload.(*dataservice.GetPayload); ok {
+        p.SessionID = meta.SessionID
     }
     return nil
 }
@@ -1478,11 +1489,9 @@ Agent("chat", "Conversational runner", func() {
 
 Goa-AI provides DSL functions for declaring Model Context Protocol (MCP) servers within Goa services.
 
-### MCPServer
+### MCP
 
-`MCPServer(name, version, opts...)` enables MCP support for the current service. It configures the service to expose tools, resources, and prompts via the MCP protocol.
-
-**Alias**: `MCP(name, version, opts...)` is an alias for `MCPServer`. Both functions are identical in behavior.
+`MCP(name, version, opts...)` enables MCP support for the current service. It configures the service to expose tools, resources, and prompts via the MCP protocol.
 
 **Context**: Inside `Service`
 
@@ -1490,11 +1499,7 @@ Goa-AI provides DSL functions for declaring Model Context Protocol (MCP) servers
 Service("calculator", func() {
     Description("Calculator MCP server")
     
-    // Using MCPServer
-    MCPServer("calc", "1.0.0", ProtocolVersion("2025-06-18"))
-    
-    // Or equivalently using the MCP alias
-    // MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("add", func() {
         Payload(func() {
@@ -1506,27 +1511,27 @@ Service("calculator", func() {
             Attribute("sum", Int, "Result of addition")
             Required("sum")
         })
-        MCPTool("add", "Add two numbers")
+        Tool("add", "Add two numbers")
     })
 })
 ```
 
 ### ProtocolVersion
 
-`ProtocolVersion(version)` configures the MCP protocol version supported by the server. It returns a configuration function for use with `MCPServer` or `MCP`.
+`ProtocolVersion(version)` configures the MCP protocol version supported by the server. It returns a configuration function for use with `MCP`.
 
-**Context**: Option argument to `MCPServer` or `MCP`
+**Context**: Option argument to `MCP`
 
 ```go
 Service("calculator", func() {
     // Specify protocol version as an option
-    MCPServer("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
 })
 ```
 
-### MCPTool
+### Tool (in Method Context)
 
-`MCPTool(name, description)` marks the current method as an MCP tool. The method's payload becomes the tool input schema and the result becomes the output schema.
+Inside a `Method` in an MCP-enabled service, `Tool(name, description)` marks the current method as an MCP tool. The method's payload becomes the tool input schema and the result becomes the output schema.
 
 **Context**: Inside `Method` (service must have MCP enabled)
 
@@ -1541,22 +1546,20 @@ Method("search", func() {
         Attribute("results", ArrayOf(String), "Search results")
         Required("results")
     })
-    MCPTool("search", "Search documents by query")
+    Tool("search", "Search documents by query")
 })
 ```
 
-### MCPToolset
+### Toolset with `FromMCP` / `FromExternalMCP`
 
-`MCPToolset(service, toolset)` declares an MCP-defined toolset derived from a Goa MCP server.
+Use `Toolset(FromMCP(service, toolset))` for Goa-defined MCP servers in the same design, or `Toolset("name", FromExternalMCP(service, toolset), func() { ... })` for external MCP servers with inline schemas.
 
 **Context**: Top-level
-
-There are two usage patterns:
 
 **Goa-backed MCP server:**
 
 ```go
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Agent("chat", func() {
@@ -1565,10 +1568,13 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
+`FromMCP` must point at a Goa service in the same design that declares `MCP(...)`.
+The generator lifts tool schemas from that service's MCP methods.
+
 **External MCP server with inline schemas:**
 
 ```go
-var RemoteSearch = MCPToolset("remote", "search", func() {
+var RemoteSearch = Toolset("remote-search", FromExternalMCP("remote", "search"), func() {
     Tool("web_search", "Search the web", func() {
         Args(func() { Attribute("query", String) })
         Return(func() { Attribute("results", ArrayOf(String)) })
@@ -1579,6 +1585,9 @@ Agent("helper", "", func() {
     Use(RemoteSearch)
 })
 ```
+
+`FromExternalMCP` requires inline `Tool(...)` declarations because the external
+server's schemas do not come from the local Goa design.
 
 ### Resource and WatchableResource
 
@@ -1614,7 +1623,7 @@ Method("system_status", func() {
 
 ```go
 Service("assistant", func() {
-    MCPServer("assistant", "1.0")
+    MCP("assistant", "1.0")
     
     // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
@@ -1690,7 +1699,7 @@ Method("watch_subscriptions", func() {
 var _ = Service("assistant", func() {
     Description("Full-featured MCP server example")
     
-    MCPServer("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
@@ -1706,7 +1715,7 @@ var _ = Service("assistant", func() {
             Attribute("results", ArrayOf(String), "Search results")
             Required("results")
         })
-        MCPTool("search", "Search documents by query")
+        Tool("search", "Search documents by query")
     })
     
     Method("get_readme", func() {

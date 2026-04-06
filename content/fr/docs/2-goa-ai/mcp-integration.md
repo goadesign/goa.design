@@ -13,7 +13,7 @@ Goa-AI fournit un support de premier ordre pour l'intégration de serveurs MCP (
 L'intégration MCP suit ce flux de travail :
 
 1. **Conception du service** : Déclarer le serveur MCP via le DSL MCP de Goa
-2. **Conception de l'agent** : Référencez cette suite avec `Use(MCPToolset("service", "suite"))`
+2. **Conception de l'agent** : Référencez cette suite avec `Use(AssistantSuite)`
 3. **Génération de code** : Produit le serveur MCP JSON-RPC (lorsqu'il est généré par Goa), ainsi que des aides d'enregistrement runtime et des specs/codecs propriétaires du toolset (suite)
 4. **Câblage d'exécution** : Instanciation d'un transport `mcpruntime.Caller` (HTTP/SSE/stdio). Les aides générées enregistrent l'ensemble d'outils et adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint`
 5. **Exécution du planificateur** : Les planificateurs lancent simplement des appels d'outils avec des charges utiles JSON canoniques ; le moteur d'exécution les transmet à l'appelant MCP, conserve les résultats par l'intermédiaire de crochets et présente des données télémétriques structurées
@@ -37,7 +37,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCPServer("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -48,7 +48,7 @@ var _ = Service("assistant", func() {
             Attribute("results", ArrayOf(String), "Search results")
             Required("results")
         })
-        MCPTool("search", "Search documents by query")
+        Tool("search", "Search documents by query")
     })
 })
 ```
@@ -58,7 +58,7 @@ var _ = Service("assistant", func() {
 Faites ensuite référence à la suite MCP dans votre agent :
 
 ```go
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Agent("chat", "Conversational runner", func() {
@@ -76,7 +76,7 @@ var _ = Service("orchestrator", func() {
 Pour les serveurs MCP externes (non soutenus par Goa), déclarer les outils avec des schémas en ligne :
 
 ```go
-var RemoteSearch = MCPToolset("remote", "search", func() {
+var RemoteSearch = Toolset("remote-search", FromExternalMCP("remote", "search"), func() {
     Tool("web_search", "Search the web", func() {
         Args(func() { Attribute("query", String) })
         Return(func() { Attribute("results", ArrayOf(String)) })
@@ -272,7 +272,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCPServer("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -283,12 +283,12 @@ var _ = Service("assistant", func() {
             Attribute("results", ArrayOf(String), "Search results")
             Required("results")
         })
-        MCPTool("search", "Search documents by query")
+        Tool("search", "Search documents by query")
     })
 })
 
 // Agent that uses MCP tools
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Agent("chat", "Conversational runner", func() {

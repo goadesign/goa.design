@@ -32,7 +32,7 @@ Definiti nel blocco `Export` di un agente e facoltativamente `Use`dagli altri ag
 
 ### Set di strumenti MCP
 
-Dichiarati tramite `MCPToolset(service, suite)` e referenziati tramite `Use(MCPToolset(...))`.
+Dichiarati tramite `Toolset(FromMCP(service, suite))` e referenziati tramite `Use(AssistantSuite)`.
 
 - La registrazione generata imposta `DecodeInExecutor=true` in modo che il JSON grezzo sia passato all'esecutore MCP
 - L'esecutore MCP decodifica utilizzando i propri codec
@@ -272,8 +272,8 @@ The `Inject` DSL function marks specific payload fields as "injected"—server-s
 When you mark a field with `Inject`:
 
 1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
-2. **Generated setter**: Codegen emits a setter method on the payload struct
-3. **Runtime population**: You populate the field via a `ToolInterceptor` before execution
+2. **Validated at design time**: Il campo deve esistere come `String` obbligatoria nel payload del metodo associato
+3. **Executor population**: Gli esecutori generati copiano i valori da `runtime.ToolCallMeta` prima di eseguire hook opzionali
 
 #### DSL Declaration
 
@@ -295,47 +295,39 @@ Tool("get_user_data", "Ottieni dati per l'utente corrente", func() {
 
 #### Generated Code
 
-Codegen produces a setter method for each injected field:
+Gli esecutori generati per gli strumenti associati a metodi copiano i campi iniettati da `runtime.ToolCallMeta` nel payload tipizzato del metodo prima di invocare il client di servizio:
 
 ```go
-// Carico utile generato struct
-type GetUserDataPayload struct {
-    Stringa SessionID `json:"session_id"`
-    Query string `json:"query"`
-}
-
-// Setter generato per il campo iniettato
-func (p *GetUserDataPayload) SetSessionID(v string) {
-    p.SessionID = v
-}
+p := specs.InitGetUserDataMethodPayload(toolArgs)
+p.SessionID = meta.SessionID
 ```
 
-#### Runtime Population via ToolInterceptor
+I nomi dei campi iniettati supportati sono fissi: `run_id`, `session_id`, `turn_id`, `tool_call_id` e `parent_tool_call_id`.
 
-Use a `ToolInterceptor` to populate injected fields before tool execution:
+#### Runtime Population via Generated Interceptors
+
+Gli esecutori di servizio generati espongono anche hook tipizzati. Usali per derivare campi del payload del metodo dal contesto della richiesta o da altro stato di runtime:
 
 ```go
-tipo SessionInterceptor struct{}
+type SessionInterceptor struct{}
 
-func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
-    // Estrae la sessione dal contesto (impostata dal middleware di autenticazione)
+func (i *SessionInterceptor) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
     sessionID, ok := ctx.Value(sessionKey).(string)
     if !ok {
-        return fmt.Errorf("ID sessione non trovato nel contesto")
+        return fmt.Errorf("session ID not found in context")
     }
-    
-    // Popola il campo iniettato usando il setter generato
-    switch call.Name {
-    case specs.GetUserData:
-        payload, _ := specs.UnmarshalGetUserDataPayload(call.Payload)
-        payload.SetSessionID(sessionID)
-        call.Payload, _ = json.Marshal(payload)
+
+    switch p := payload.(type) {
+    case *userservice.GetDataPayload:
+        p.SessionID = sessionID
     }
     return nil
 }
 
-// Registra l'intercettore con il runtime
-rt := runtime.New(runtime.WithToolInterceptor(&SessionInterceptor{}))
+exec := usertools.NewChatUserToolsExec(
+    usertools.WithClient(userClient),
+    usertools.WithInterceptors(&SessionInterceptor{}),
+)
 ```
 
 #### When to Use Inject
@@ -658,11 +650,11 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
 
 ```go
 func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolResults) == 0 {
+    if len(in.ToolOutputs) == 0 {
         return &planner.PlanResult{}, nil
     }
 
-    last := in.ToolResults[len(in.ToolResults)-1]
+    last := in.ToolOutputs[len(in.ToolOutputs)-1]
     se last.Error := nil && last.RetryHint := nil {
         hint := last.RetryHint
 

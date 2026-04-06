@@ -13,7 +13,7 @@ Goa-AI provides first-class support for integrating MCP (Model Context Protocol)
 MCP integration follows this workflow:
 
 1. **Service design**: Declare the MCP server via Goa's MCP DSL
-2. **Agent design**: Reference that suite with `Use(MCPToolset("service", "suite"))`
+2. **Agent design**: Reference that suite via a toolset declared with `FromMCP(...)` or `FromExternalMCP(...)`
 3. **Code generation**: Produces the MCP JSON-RPC server (when Goa-backed) plus runtime registration helpers and toolset-owned specs/codecs for the suite
 4. **Runtime wiring**: Instantiate an `mcpruntime.Caller` transport (HTTP/SSE/stdio). Generated helpers register the toolset and adapt JSON-RPC errors into `planner.RetryHint` values
 5. **Planner execution**: Planners simply enqueue tool calls with canonical JSON payloads; the runtime forwards them to the MCP caller, persists results via hooks, and surfaces structured telemetry
@@ -37,7 +37,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCPServer("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -48,7 +48,7 @@ var _ = Service("assistant", func() {
             Attribute("results", ArrayOf(String), "Search results")
             Required("results")
         })
-        MCPTool("search", "Search documents by query")
+        Tool("search", "Search documents by query")
     })
 })
 ```
@@ -58,7 +58,7 @@ var _ = Service("assistant", func() {
 Then reference the MCP suite in your agent:
 
 ```go
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Agent("chat", "Conversational runner", func() {
@@ -76,7 +76,7 @@ var _ = Service("orchestrator", func() {
 For external MCP servers (not Goa-backed), declare tools with inline schemas:
 
 ```go
-var RemoteSearch = MCPToolset("remote", "search", func() {
+var RemoteSearch = Toolset("remote-search", FromExternalMCP("remote", "search"), func() {
     Tool("web_search", "Search the web", func() {
         Args(func() { Attribute("query", String) })
         Return(func() { Attribute("results", ArrayOf(String)) })
@@ -272,7 +272,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCPServer("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -283,12 +283,12 @@ var _ = Service("assistant", func() {
             Attribute("results", ArrayOf(String), "Search results")
             Required("results")
         })
-        MCPTool("search", "Search documents by query")
+        Tool("search", "Search documents by query")
     })
 })
 
 // Agent that uses MCP tools
-var AssistantSuite = MCPToolset("assistant", "assistant-mcp")
+var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
 
 var _ = Service("orchestrator", func() {
     Agent("chat", "Conversational runner", func() {

@@ -32,7 +32,9 @@ Defined in an agent `Export` block, and optionally `Use`d by other agents.
 
 ### MCP Toolsets
 
-Declared via `MCPToolset(service, suite)` and referenced via `Use(MCPToolset(...))`.
+Declared via `Toolset(FromMCP(service, suite))` for Goa-backed MCP suites, or
+`Toolset("name", FromExternalMCP(service, suite), func() { ... })` for external
+MCP servers with inline tool schemas.
 
 - Generated registration sets `DecodeInExecutor=true` so raw JSON is passed through to the MCP executor
 - MCP executor decodes using its own codecs
@@ -251,8 +253,8 @@ The `Inject` DSL function marks specific payload fields as "injected"—server-s
 When you mark a field with `Inject`:
 
 1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
-2. **Generated setter**: Codegen emits a setter method on the payload struct
-3. **Runtime population**: You populate the field via a `ToolInterceptor` before execution
+2. **Validated at design time**: The bound method payload must expose the field as a required `String`
+3. **Executor population**: Generated service executors copy supported values from `runtime.ToolCallMeta` before optional interceptor hooks run
 
 #### DSL Declaration
 
@@ -274,47 +276,42 @@ Tool("get_user_data", "Get data for current user", func() {
 
 #### Generated Code
 
-Codegen produces a setter method for each injected field:
+Generated method-backed executors copy injected fields from `runtime.ToolCallMeta`
+onto the typed method payload before invoking the service client:
 
 ```go
-// Generated payload struct
-type GetUserDataPayload struct {
-    SessionID string `json:"session_id"`
-    Query     string `json:"query"`
-}
-
-// Generated setter for injected field
-func (p *GetUserDataPayload) SetSessionID(v string) {
-    p.SessionID = v
-}
+p := specs.InitGetUserDataMethodPayload(toolArgs)
+p.SessionID = meta.SessionID
 ```
 
-#### Runtime Population via ToolInterceptor
+Supported injected field names are fixed: `run_id`, `session_id`, `turn_id`,
+`tool_call_id`, and `parent_tool_call_id`.
 
-Use a `ToolInterceptor` to populate injected fields before tool execution:
+#### Runtime Population via Generated Interceptors
+
+Generated service executors also expose typed interceptor hooks. Use them to
+derive method payload fields from request context or other runtime state:
 
 ```go
 type SessionInterceptor struct{}
 
-func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
-    // Extract session from context (set by your auth middleware)
+func (i *SessionInterceptor) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
     sessionID, ok := ctx.Value(sessionKey).(string)
     if !ok {
         return fmt.Errorf("session ID not found in context")
     }
-    
-    // Populate injected field using generated setter
-    switch call.Name {
-    case specs.GetUserData:
-        payload, _ := specs.UnmarshalGetUserDataPayload(call.Payload)
-        payload.SetSessionID(sessionID)
-        call.Payload, _ = json.Marshal(payload)
+
+    switch p := payload.(type) {
+    case *userservice.GetDataPayload:
+        p.SessionID = sessionID
     }
     return nil
 }
 
-// Register interceptor with runtime
-rt := runtime.New(runtime.WithToolInterceptor(&SessionInterceptor{}))
+exec := usertools.NewChatUserToolsExec(
+    usertools.WithClient(userClient),
+    usertools.WithInterceptors(&SessionInterceptor{}),
+)
 ```
 
 #### When to Use Inject
@@ -637,11 +634,11 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
 
 ```go
 func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolResults) == 0 {
+    if len(in.ToolOutputs) == 0 {
         return &planner.PlanResult{}, nil
     }
 
-    last := in.ToolResults[len(in.ToolResults)-1]
+    last := in.ToolOutputs[len(in.ToolOutputs)-1]
     if last.Error != nil && last.RetryHint != nil {
         hint := last.RetryHint
 

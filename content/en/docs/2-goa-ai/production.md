@@ -709,9 +709,12 @@ For reminders that depend on runtime state or tool result content, use `PlannerC
 
 ```go
 func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    for _, tr := range in.ToolResults {
+    for _, tr := range in.ToolOutputs {
         if tr.Name == "search_documents" {
-            result := tr.Result.(SearchResult)
+            result, err := specs.UnmarshalSearchDocumentsResult(tr.Result)
+            if err != nil {
+                return nil, err
+            }
             if result.Truncated {
                 in.Agent.AddReminder(reminder.Reminder{
                     ID:       "search.truncated",
@@ -788,9 +791,12 @@ Follow all instructions carefully.
 
 ```go
 func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    for _, tr := range in.ToolResults {
+    for _, tr := range in.ToolOutputs {
         if tr.Name == "todos.update_todos" {
-            snap := tr.Result.(TodosSnapshot)
+            snap, err := specs.UnmarshalUpdateTodosResult(tr.Result)
+            if err != nil {
+                return nil, err
+            }
             
             var rem *reminder.Reminder
             if len(snap.Items) == 0 {

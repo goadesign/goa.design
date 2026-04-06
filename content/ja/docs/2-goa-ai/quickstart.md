@@ -569,7 +569,7 @@ func interpretResponse(resp *model.Response) (*planner.PlanResult, error) {
     for _, part := range msg.Parts {
         switch p := part.(type) {
         case model.ToolUsePart:
-            // LLM wants to call a tool—convert to ToolCall
+            // LLM wants to call a tool—convert to ToolRequest
             payload, _ := json.Marshal(p.Input)
             toolCalls = append(toolCalls, planner.ToolRequest{
                 Name:       p.Name,

@@ -32,7 +32,7 @@ aliases:
 
 ### MCP ツールセット
 
-`MCPToolset(service, suite)` で宣言し、`Use(MCPToolset(...))` で参照します。
+`Toolset(FromMCP(service, suite))` で宣言し、`Use(AssistantSuite)` で参照します。
 
 - 生成される登録は `DecodeInExecutor=true` を設定し、生の JSON が MCP エクゼキュータへそのまま渡されます
 - MCP エクゼキュータは自身のコーデックでデコードします
@@ -270,8 +270,8 @@ func handleToolEnd(event *stream.ToolEnd) {
 フィールドを `Inject` でマークすると：
 
 1. **LLM から隠される**：モデルプロバイダへ送る JSON Schema から除外されます
-2. **setter が生成される**：コード生成がペイロード構造体に setter メソッドを追加します
-3. **ランタイムで設定する**：実行前に `ToolInterceptor` で値を埋めます
+2. **設計時に検証される**：バインド先メソッド payload 上の必須 `String` フィールドでなければなりません
+3. **executor が設定する**：生成 executor が `runtime.ToolCallMeta` から値をコピーし、その後で必要なら hook を実行します
 
 #### DSL での宣言
 
@@ -293,47 +293,39 @@ Tool("get_user_data", "Get data for current user", func() {
 
 #### 生成されるコード
 
-注入フィールドごとに setter が生成されます：
+メソッドにバインドされたツール向けの生成 executor は、サービスクライアントを呼ぶ前に `runtime.ToolCallMeta` から注入フィールドを型付きメソッド payload へコピーします:
 
 ```go
-// Generated payload struct
-type GetUserDataPayload struct {
-    SessionID string `json:"session_id"`
-    Query     string `json:"query"`
-}
-
-// Generated setter for injected field
-func (p *GetUserDataPayload) SetSessionID(v string) {
-    p.SessionID = v
-}
+p := specs.InitGetUserDataMethodPayload(toolArgs)
+p.SessionID = meta.SessionID
 ```
 
-#### ToolInterceptor によるランタイム設定
+サポートされる注入フィールド名は固定で、`run_id`、`session_id`、`turn_id`、`tool_call_id`、`parent_tool_call_id` です。
 
-`ToolInterceptor` で、実行前に注入フィールドを埋めます：
+#### 生成された interceptor による実行時設定
+
+生成されたサービス executor は型付き hook も公開します。リクエストコンテキストや他のランタイム状態からメソッド payload を補完したい場合はそれを使います:
 
 ```go
 type SessionInterceptor struct{}
 
-func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
-    // Extract session from context (set by your auth middleware)
+func (i *SessionInterceptor) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
     sessionID, ok := ctx.Value(sessionKey).(string)
     if !ok {
         return fmt.Errorf("session ID not found in context")
     }
-    
-    // Populate injected field using generated setter
-    switch call.Name {
-    case specs.GetUserData:
-        payload, _ := specs.UnmarshalGetUserDataPayload(call.Payload)
-        payload.SetSessionID(sessionID)
-        call.Payload, _ = json.Marshal(payload)
+
+    switch p := payload.(type) {
+    case *userservice.GetDataPayload:
+        p.SessionID = sessionID
     }
     return nil
 }
 
-// Register interceptor with runtime
-rt := runtime.New(runtime.WithToolInterceptor(&SessionInterceptor{}))
+exec := usertools.NewChatUserToolsExec(
+    usertools.WithClient(userClient),
+    usertools.WithInterceptors(&SessionInterceptor{}),
+)
 ```
 
 #### Inject を使うべきとき
@@ -660,11 +652,11 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
 
 ```go
 func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolResults) == 0 {
+    if len(in.ToolOutputs) == 0 {
         return &planner.PlanResult{}, nil
     }
 
-    last := in.ToolResults[len(in.ToolResults)-1]
+    last := in.ToolOutputs[len(in.ToolOutputs)-1]
     if last.Error != nil && last.RetryHint != nil {
         hint := last.RetryHint
 
