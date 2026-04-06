@@ -1091,7 +1091,7 @@ Tool("get_data", "Get data for current session", func() {
 Au moment de l'exécution, utilisez un `ToolInterceptor` pour remplir les champs injectés :
 
 ```go
-func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
     if call.Name == "data.get_data" {
         call.Payload.SetSessionID(ctx.Value(sessionKey).(string))
     }

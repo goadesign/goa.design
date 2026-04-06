@@ -1091,7 +1091,7 @@ Tool("get_data", "Get data for current session", func() {
 In fase di esecuzione, utilizzare un `ToolInterceptor` per popolare i campi iniettati:
 
 ```go
-func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
     if call.Name == "data.get_data" {
         call.Payload.SetSessionID(ctx.Value(sessionKey).(string))
     }

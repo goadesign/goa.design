@@ -757,7 +757,9 @@ type Planner interface {
 `PlanResult` contains tool calls, final response, annotations, and optional `RetryHint`. The runtime enforces caps, schedules tool activities, and feeds tool results back into `PlanResume` until a final response is produced.
 
 Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
-- `ModelClient(id string)` - get a provider-agnostic model client
+- `AdvertisedToolDefinitions()` - get the runtime-filtered tool definitions visible to the model for this turn
+- `ModelClient(id string)` - get a raw provider-agnostic model client
+- `PlannerModelClient(id string)` - get a planner-scoped model client with runtime-owned event emission
 - `RenderPrompt(ctx, id, data)` - resolve and render prompt content for the current run scope
 - `AddReminder(r reminder.Reminder)` - register run-scoped system reminders
 - `RemoveReminder(id string)` - clear reminders when preconditions no longer hold
@@ -855,71 +857,87 @@ modelClient, err := openai.NewFromAPIKey(apiKey, "gpt-4o")
 
 ### Using Model Clients in Planners
 
-Planners obtain model clients through the runtime's `PlannerContext`:
+Planners obtain model clients through the runtime's `PlannerContext`. There are
+two explicit integration styles:
+
+- `PlannerModelClient(id)` for planner-scoped streaming with runtime-owned event emission
+- `ModelClient(id)` when you need raw transport access and will pair it with `planner.ConsumeStream` or emit `PlannerEvents` yourself
+
+#### PlannerModelClient (Recommended)
+
+`PlannerContext.PlannerModelClient(id)` returns a planner-scoped client that
+owns `AssistantChunk`, `PlannerThinkingBlock`, and `UsageDelta` emission. Its
+`Stream(...)` method drains the underlying provider stream and returns a
+`planner.StreamSummary`:
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
-    
+    mc, ok := input.Agent.PlannerModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+    if !ok {
+        return nil, errors.New("model not configured")
+    }
+
     req := &model.Request{
-        RunID:    input.Run.RunID,
         Messages: input.Messages,
-        Tools:    input.Tools,
+        Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
-    
-    streamer, err := mc.Stream(ctx, req)
+
+    sum, err := mc.Stream(ctx, req)
     if err != nil {
         return nil, err
     }
-    defer streamer.Close()
-    
-    // Drain stream and build response...
+    if len(sum.ToolCalls) > 0 {
+        return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
+    }
+    return &planner.PlanResult{
+        FinalResponse: &planner.FinalResponse{
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: sum.Text}},
+            },
+        },
+        Streamed: true, // Assistant text was already streamed
+    }, nil
 }
 ```
 
-The runtime wraps the underlying `model.Client` with an event-decorated client that emits planner events (thinking blocks, assistant chunks, usage) as you read from the stream.
+This is the safest integration style because the planner-scoped client does not
+expose a raw `model.Streamer`, so it cannot be combined accidentally with
+`planner.ConsumeStream`.
 
-### Automatic Event Capture
+#### Raw Client + ConsumeStream
 
-The runtime automatically captures streaming events from model clients, eliminating the need for planners to manually emit events. When you call `input.Agent.ModelClient(id)`, the runtime returns a decorated client that:
-
-- Emits `AssistantChunk` events for text content as you read from the stream
-- Emits `PlannerThinkingBlock` events for reasoning/thinking content
-- Emits `UsageDelta` events for token usage metrics
-
-This decoration happens transparently:
+When you need the raw `model.Client`, fetch it from `PlannerContext.ModelClient`
+and pair it with `planner.ConsumeStream`:
 
 ```go
-func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    // ModelClient returns a decorated client that auto-emits events
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
-    
-    streamer, err := mc.Stream(ctx, req)
-    if err != nil {
-        return nil, err
-    }
-    defer streamer.Close()
-    
-    // Simply drain the stream - events are emitted automatically
-    var text strings.Builder
-    var toolCalls []model.ToolCall
-    for {
-        chunk, err := streamer.Recv()
-        if errors.Is(err, io.EOF) {
-            break
-        }
-        if err != nil {
-            return nil, err
-        }
-        // Process chunk for your planner logic
-        // Events are already emitted by the decorated client
-    }
-    // ...
+mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+if !ok {
+    return nil, errors.New("model not configured")
+}
+req := &model.Request{
+    Messages: input.Messages,
+    Tools:    input.Agent.AdvertisedToolDefinitions(),
+    Stream:   true,
+}
+streamer, err := mc.Stream(ctx, req)
+if err != nil {
+    return nil, err
+}
+sum, err := planner.ConsumeStream(ctx, streamer, req, input.Events)
+if err != nil {
+    return nil, err
 }
 ```
 
-**Important**: If you need to use `planner.ConsumeStream`, obtain a raw `model.Client` that is not wrapped by the runtime. Mixing the decorated client with `ConsumeStream` will double-emit events.
+This helper drains the stream, emits assistant/thinking/usage events, and
+returns a `StreamSummary` with accumulated text and tool calls.
+
+Use the raw client path when you need full control over stream consumption, want
+custom early-stop behavior, or want to manage `PlannerEvents` explicitly. Do not
+mix `PlannerModelClient.Stream(...)` with `planner.ConsumeStream`; choose one
+stream owner per planner turn.
 
 ### Bedrock Message Ordering Validation
 

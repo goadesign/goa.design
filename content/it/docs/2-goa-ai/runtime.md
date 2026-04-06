@@ -610,7 +610,9 @@ type Planner interface {
 `PlanResult` contiene le chiamate allo strumento, la risposta finale, le annotazioni e l'opzione `RetryHint`. Il runtime fa rispettare i tappi, pianifica le attività dello strumento e alimenta i risultati dello strumento in `PlanResume` finché non viene prodotta una risposta finale.
 
 I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che espone i servizi del runtime:
-- `ModelClient(id string)` - ottenere un client di modello indipendente dal provider
+- `AdvertisedToolDefinitions()` - ottenere le definizioni degli strumenti filtrate dal runtime e visibili al modello in questo turno
+- `ModelClient(id string)` - ottenere un client di modello grezzo indipendente dal provider
+- `PlannerModelClient(id string)` - ottenere un client di modello con ambito planner e emissione degli eventi gestita dal runtime
 - `RenderPrompt(ctx, id, data)` - risolvere e renderizzare il contenuto prompt per lo scope corrente della run
 - `AddReminder(r reminder.Reminder)` - registrare promemoria di sistema di runscope
 - `RemoveReminder(id string)` - cancellare i promemoria quando le precondizioni non sono più valide
@@ -708,71 +710,89 @@ modelClient, err := openai.NewFromAPIKey(apiKey, "gpt-4o")
 
 ### Utilizzo dei client modello nei pianificatori
 
-I pianificatori ottengono i client di modello attraverso il runtime `PlannerContext`:
+I pianificatori ottengono i client di modello tramite il `PlannerContext` del
+runtime. Ora esistono due stili di integrazione espliciti:
+
+- `PlannerModelClient(id)` per lo streaming con ambito planner e l'emissione degli eventi gestita dal runtime
+- `ModelClient(id)` quando serve accesso grezzo al trasporto e lo si abbinerà a `planner.ConsumeStream` oppure si emetteranno `PlannerEvents` manualmente
+
+#### PlannerModelClient (Consigliato)
+
+`PlannerContext.PlannerModelClient(id)` restituisce un client con ambito planner
+che si occupa dell'emissione di `AssistantChunk`, `PlannerThinkingBlock` e
+`UsageDelta`. Il suo metodo `Stream(...)` drena il flusso del provider
+sottostante e restituisce un `planner.StreamSummary`:
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
-    
+    mc, ok := input.Agent.PlannerModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+    if !ok {
+        return nil, errors.New("model not configured")
+    }
+
     req := &model.Request{
-        RunID:    input.Run.RunID,
         Messages: input.Messages,
-        Tools:    input.Tools,
+        Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
-    
-    streamer, err := mc.Stream(ctx, req)
+
+    sum, err := mc.Stream(ctx, req)
     if err != nil {
         return nil, err
     }
-    defer streamer.Close()
-    
-    // Drain stream and build response...
+    if len(sum.ToolCalls) > 0 {
+        return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
+    }
+    return &planner.PlanResult{
+        FinalResponse: &planner.FinalResponse{
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: sum.Text}},
+            },
+        },
+        Streamed: true, // Assistant text was already streamed
+    }, nil
 }
 ```
 
-Il runtime avvolge il sottostante `model.Client` con un client decorato da eventi che emette eventi del pianificatore (blocchi di pensiero, pezzi di assistente, utilizzo) mentre si legge dal flusso.
+Questo è lo stile di integrazione più sicuro perché il client con ambito
+planner non espone un `model.Streamer` grezzo e quindi non può essere combinato
+accidentalmente con `planner.ConsumeStream`.
 
-### Cattura automatica degli eventi
+#### Client grezzo + ConsumeStream
 
-Il runtime cattura automaticamente gli eventi in streaming dai client del modello, eliminando la necessità per i pianificatori di emettere manualmente gli eventi. Quando si chiama `input.Agent.ModelClient(id)`, il runtime restituisce un client decorato che:
-
-- Emette eventi `AssistantChunk` per il contenuto testuale durante la lettura dal flusso
-- Emette eventi `PlannerThinkingBlock` per il contenuto di ragionamento e di pensiero
-- Emette eventi `UsageDelta` per le metriche di utilizzo dei token
-
-Questa decorazione avviene in modo trasparente:
+Quando serve il `model.Client` grezzo, recuperarlo tramite
+`PlannerContext.ModelClient` e abbinarlo a `planner.ConsumeStream`:
 
 ```go
-func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    // ModelClient returns a decorated client that auto-emits events
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
-    
-    streamer, err := mc.Stream(ctx, req)
-    if err != nil {
-        return nil, err
-    }
-    defer streamer.Close()
-    
-    // Simply drain the stream - events are emitted automatically
-    var text strings.Builder
-    var toolCalls []model.ToolCall
-    for {
-        chunk, err := streamer.Recv()
-        if errors.Is(err, io.EOF) {
-            break
-        }
-        if err != nil {
-            return nil, err
-        }
-        // Process chunk for your planner logic
-        // Events are already emitted by the decorated client
-    }
-    // ...
+mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+if !ok {
+    return nil, errors.New("model not configured")
+}
+req := &model.Request{
+    Messages: input.Messages,
+    Tools:    input.Agent.AdvertisedToolDefinitions(),
+    Stream:   true,
+}
+streamer, err := mc.Stream(ctx, req)
+if err != nil {
+    return nil, err
+}
+sum, err := planner.ConsumeStream(ctx, streamer, req, input.Events)
+if err != nil {
+    return nil, err
 }
 ```
 
-**Importante**: Se è necessario usare `planner.ConsumeStream`, ottenere un `model.Client` grezzo, non avvolto dal runtime. Mescolando il client decorato con `ConsumeStream` si otterrà una doppia emissione di eventi.
+Questo helper drena il flusso, emette eventi di assistente/pensiero/uso e
+restituisce uno `StreamSummary` con il testo accumulato e le chiamate agli
+strumenti.
+
+Usare il percorso del client grezzo quando serve controllo totale sul consumo
+del flusso, un comportamento personalizzato di arresto anticipato o quando si
+vuole gestire `PlannerEvents` esplicitamente. Non mescolare
+`PlannerModelClient.Stream(...)` con `planner.ConsumeStream`; scegliere un solo
+proprietario del flusso per turno del planner.
 
 ### Convalida dell'ordinamento dei messaggi di Bedrock
 

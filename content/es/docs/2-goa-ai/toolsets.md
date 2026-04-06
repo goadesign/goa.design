@@ -319,7 +319,7 @@ Use a `ToolInterceptor` to populate injected fields before tool execution:
 ```go
 type SessionInterceptor struct{}
 
-func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
     // Extrae la sesión del contexto (establecida por el middleware de autenticación)
     sessionID, ok := ctx.Value(sessionKey).(string)
     if !ok {

@@ -1080,7 +1080,7 @@ Tool("get_data", "Get data for current session", func() {
 実行時は `ToolInterceptor` を使って注入フィールドを設定します:
 
 ```go
-func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+func (h *Handler) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
     if call.Name == "data.get_data" {
         call.Payload.SetSessionID(ctx.Value(sessionKey).(string))
     }

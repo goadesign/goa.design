@@ -315,7 +315,7 @@ func (p *GetUserDataPayload) SetSessionID(v string) {
 ```go
 type SessionInterceptor struct{}
 
-func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolCall) error {
+func (i *SessionInterceptor) InterceptToolCall(ctx context.Context, call *planner.ToolRequest) error {
     // Extract session from context (set by your auth middleware)
     sessionID, ok := ctx.Value(sessionKey).(string)
     if !ok {

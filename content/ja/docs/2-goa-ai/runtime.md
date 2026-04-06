@@ -607,7 +607,9 @@ type Planner interface {
 
 プランナーは `input.Agent` 経由でランタイムサービスを提供する `PlannerContext` も受け取ります。
 
-- `ModelClient(id string)` - provider-agnostic なモデルクライアントを取得する
+- `AdvertisedToolDefinitions()` - このターンでモデルに見えている、runtime がフィルタ済みのツール定義を取得する
+- `ModelClient(id string)` - provider-agnostic な生のモデルクライアントを取得する
+- `PlannerModelClient(id string)` - planner ターン専用で runtime-owned なイベント発行を行うモデルクライアントを取得する
 - `RenderPrompt(ctx, id, data)` - 現在の run scope で prompt 内容を解決・描画する
 - `AddReminder(r reminder.Reminder)` - run スコープの system reminder を登録する
 - `RemoveReminder(id string)` - 前提条件が満たされなくなったときに reminder を削除する
@@ -706,70 +708,88 @@ modelClient, err := openai.NewFromAPIKey(apiKey, "gpt-4o")
 ### プランナーでモデルクライアントを使う
 
 プランナーはランタイムの `PlannerContext` 経由でモデルクライアントを取得します。
+現在は、統合スタイルが明示的に 2 つあります。
+
+- `PlannerModelClient(id)` は planner ターン専用の streaming と runtime-owned なイベント発行に使う
+- `ModelClient(id)` は生の transport アクセスが必要で、`planner.ConsumeStream` と組み合わせるか `PlannerEvents` を自前で発行したいときに使う
+
+#### PlannerModelClient（推奨）
+
+`PlannerContext.PlannerModelClient(id)` は、`AssistantChunk`、
+`PlannerThinkingBlock`、`UsageDelta` の発行を担う planner ターン専用の
+クライアントを返します。`Stream(...)` は基盤となる provider stream を
+drain し、`planner.StreamSummary` を返します。
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+    mc, ok := input.Agent.PlannerModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+    if !ok {
+        return nil, errors.New("model not configured")
+    }
 
     req := &model.Request{
-        RunID:    input.Run.RunID,
         Messages: input.Messages,
-        Tools:    input.Tools,
+        Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
 
-    streamer, err := mc.Stream(ctx, req)
+    sum, err := mc.Stream(ctx, req)
     if err != nil {
         return nil, err
     }
-    defer streamer.Close()
-
-    // Drain stream and build response...
+    if len(sum.ToolCalls) > 0 {
+        return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
+    }
+    return &planner.PlanResult{
+        FinalResponse: &planner.FinalResponse{
+            Message: &model.Message{
+                Role:  model.ConversationRoleAssistant,
+                Parts: []model.Part{model.TextPart{Text: sum.Text}},
+            },
+        },
+        Streamed: true, // Assistant text was already streamed
+    }, nil
 }
 ```
 
-ランタイムは、基礎となる `model.Client` をイベント装飾したクライアントでラップし、ストリームから読み取るたびにプランナーイベント（thinking blocks、assistant chunks、usage）を発行します。
+これは最も安全な統合スタイルです。planner 専用クライアントは生の
+`model.Streamer` を公開しないため、`planner.ConsumeStream` と誤って
+組み合わせることがありません。
 
-### 自動イベントキャプチャ
+#### 生の Client + ConsumeStream
 
-ランタイムはモデルクライアントのストリーミングイベントを自動的に取り込み、プランナーが手動でイベントを発行する必要をなくします。`input.Agent.ModelClient(id)` は、次のイベントを自動発行する装飾クライアントを返します。
-
-- ストリームから読み取ったテキストコンテンツに対して `AssistantChunk` イベントを発行
-- 推論/思考コンテンツに対して `PlannerThinkingBlock` イベントを発行
-- トークン使用量に対して `UsageDelta` イベントを発行
-
-この装飾は透過的に行われます。
+生の `model.Client` が必要な場合は `PlannerContext.ModelClient` から取得し、
+`planner.ConsumeStream` と組み合わせます。
 
 ```go
-func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
-    // ModelClient returns a decorated client that auto-emits events
-    mc := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
-
-    streamer, err := mc.Stream(ctx, req)
-    if err != nil {
-        return nil, err
-    }
-    defer streamer.Close()
-
-    // Simply drain the stream - events are emitted automatically
-    var text strings.Builder
-    var toolCalls []model.ToolCall
-    for {
-        chunk, err := streamer.Recv()
-        if errors.Is(err, io.EOF) {
-            break
-        }
-        if err != nil {
-            return nil, err
-        }
-        // Process chunk for your planner logic
-        // Events are already emitted by the decorated client
-    }
-    // ...
+mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
+if !ok {
+    return nil, errors.New("model not configured")
+}
+req := &model.Request{
+    Messages: input.Messages,
+    Tools:    input.Agent.AdvertisedToolDefinitions(),
+    Stream:   true,
+}
+streamer, err := mc.Stream(ctx, req)
+if err != nil {
+    return nil, err
+}
+sum, err := planner.ConsumeStream(ctx, streamer, req, input.Events)
+if err != nil {
+    return nil, err
 }
 ```
 
-**Important**: `planner.ConsumeStream` を使う必要がある場合は、ランタイムにラップされていない生の `model.Client` を取得してください。装飾クライアントと `ConsumeStream` を混ぜると、イベントが二重に発行されます。
+この helper は stream を drain し、assistant / thinking / usage の
+イベントを発行しつつ、集約済みのテキストとツール呼び出しを含む
+`StreamSummary` を返します。
+
+生の client 経路は、stream 消費を完全に制御したい場合、early-stop の
+独自挙動が必要な場合、または `PlannerEvents` を明示的に扱いたい場合に
+使います。`PlannerModelClient.Stream(...)` と
+`planner.ConsumeStream` を混在させず、planner ターンごとに stream owner
+を 1 つ選んでください。
 
 ### Bedrock メッセージ順序の検証
 

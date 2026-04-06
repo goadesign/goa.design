@@ -169,7 +169,7 @@ type StubPlanner struct{}
 func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
     // Request a tool call: "toolset.tool_name" format
     return &planner.PlanResult{
-        ToolCalls: []*planner.ToolCall{{
+        ToolCalls: []planner.ToolRequest{{
             Name:    "weather.get_weather",        // toolset.tool format
             Payload: []byte(`{"city": "Tokyo"}`),  // JSON matching Args schema
         }},
@@ -316,7 +316,7 @@ type StubPlanner struct{}
 
 func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
     return &planner.PlanResult{
-        ToolCalls: []*planner.ToolCall{{Name: "weather.get_weather", Payload: []byte(`{"city":"Tokyo"}`)}},
+        ToolCalls: []planner.ToolRequest{{Name: "weather.get_weather", Payload: []byte(`{"city":"Tokyo"}`)}},
     }, nil
 }
 
@@ -505,7 +505,8 @@ type RealPlanner struct {
 }
 
 func (p *RealPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
-    // Get the model client by the ID we registered it with
+    // Get the raw model client by the ID we registered it with.
+    // Use PlannerModelClient instead when you want runtime-owned streaming events.
     client, ok := in.Agent.ModelClient("openai")
     if !ok {
         return nil, fmt.Errorf("no model client")
@@ -517,11 +518,12 @@ func (p *RealPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*pl
         Parts: []model.Part{model.TextPart{Text: p.systemPrompt}},
     }}, in.Messages...)
 
-    // Call the LLM with messages and available tools
-    // in.Tools contains the JSON schemas generated from your DSL
+    // Call the LLM with messages and available tools.
+    // AdvertisedToolDefinitions returns the JSON schemas generated from your DSL
+    // after runtime filtering for the current turn.
     resp, err := client.Complete(ctx, &model.Request{
         Messages: msgs,
-        Tools:    in.Tools,
+        Tools:    in.Agent.AdvertisedToolDefinitions(),
     })
     if err != nil {
         return nil, err
@@ -544,7 +546,7 @@ func (p *RealPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInpu
 
     resp, err := client.Complete(ctx, &model.Request{
         Messages: msgs,
-        Tools:    in.Tools,
+        Tools:    in.Agent.AdvertisedToolDefinitions(),
     })
     if err != nil {
         return nil, err
@@ -561,7 +563,7 @@ func interpretResponse(resp *model.Response) (*planner.PlanResult, error) {
     }
 
     msg := resp.Content[len(resp.Content)-1]
-    var toolCalls []*planner.ToolCall
+    var toolCalls []planner.ToolRequest
 
     // Check each part of the response for tool calls or text
     for _, part := range msg.Parts {
@@ -569,9 +571,10 @@ func interpretResponse(resp *model.Response) (*planner.PlanResult, error) {
         case model.ToolUsePart:
             // LLM wants to call a tool—convert to ToolCall
             payload, _ := json.Marshal(p.Input)
-            toolCalls = append(toolCalls, &planner.ToolCall{
-                Name:    p.Name,
-                Payload: payload,
+            toolCalls = append(toolCalls, planner.ToolRequest{
+                Name:       p.Name,
+                Payload:    payload,
+                ToolCallID: p.ID,
             })
         case model.TextPart:
             // Text response (used if no tool calls)
@@ -634,7 +637,8 @@ func main() {
     //     panic(err)
     // }
     // // Then use: runtime.WithModelClient("claude", bedrockClient)
-    // // And in planner: in.Agent.ModelClient("claude")
+    // // And in planners for raw access: in.Agent.ModelClient("claude")
+    // // Or for runtime-owned streaming: in.Agent.PlannerModelClient("claude")
 
     // Create runtime with streaming and model client
     // The ID ("openai") is how the planner retrieves it
