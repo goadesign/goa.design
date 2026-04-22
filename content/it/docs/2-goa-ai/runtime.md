@@ -249,9 +249,10 @@ Agent("chat", "Conversational runner", func() {
 
 Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 
-- **Caps**: `MaxToolCalls` - chiamate totali allo strumento per esecuzione. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
+- **Caps**: `MaxToolCalls` - chiamate totali allo strumento *con budget* per esecuzione. Gli strumenti marcati `Bookkeeping()` nel DSL sono esenti e non consumano mai questo cap. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
+- **Completamento atomico del run**: gli strumenti dichiarati `TerminalRun()` nel DSL chiudono il run immediatamente dopo una chiamata riuscita, senza richiedere un turno di finalizzazione del planner.
 - **Comportamento dei campi mancanti**: `OnMissingFields` - regola cosa succede quando la validazione indica campi mancanti.
 
 ### Sovrascritture dei criteri di runtime
@@ -272,7 +273,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 
 | Campo | Descrizione |
 | --- | --- |
-| `MaxToolCalls` | Chiamate totali massime allo strumento per esecuzione |
+| `MaxToolCalls` | Chiamate massime agli strumenti *con budget* per esecuzione (gli strumenti `Bookkeeping()` sono esenti) |
 | `MaxConsecutiveFailedToolCalls` | Fallimenti consecutivi prima di interrompere l'esecuzione |
 | `TimeBudget` | Budget del wall-clock per la corsa |
 | `FinalizerGrace` | Finestra riservata per la finalizzazione |

@@ -47,7 +47,7 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Uses("format_markdown", "invokes")
 		})
 
-		Container("compile_report", "Tool call returning final_report", "Tool", func() {
+		Container("compile_report", "Terminal tool call returning the final report", "Tool", func() {
 			Tag("goa")
 		})
 

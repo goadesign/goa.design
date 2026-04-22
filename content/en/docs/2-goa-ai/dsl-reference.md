@@ -1,11 +1,10 @@
 ---
-
-## title: DSL Reference
-
+title: DSL Reference
 weight: 2
 description: "Complete reference for Goa-AI's DSL functions - agents, toolsets, policies, and MCP integration."
 llm_optimized: true
 aliases:
+---
 
 This document provides a complete reference for Goa-AI's DSL functions. Use it alongside the [Runtime](./runtime.md) guide to understand how designs translate into runtime behavior.
 
@@ -45,6 +44,8 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `ResultHintTemplate`                                    | Tool                     | Display template for results                                                                                       |
 | `ResultReminder`                                        | Tool                     | Static system reminder after tool result                                                                           |
 | `Confirmation`                                          | Tool                     | Requires explicit out-of-band confirmation before execution                                                        |
+| `TerminalRun`                                           | Tool                     | Marks the tool terminal: the run completes immediately after it executes (no follow-up planner turn)               |
+| `Bookkeeping`                                           | Tool                     | Marks the tool as bookkeeping: calls do not consume the run-level `MaxToolCalls` retrieval budget                  |
 | **Policy Functions**                                    |                          |                                                                                                                    |
 | `RunPolicy`                                             | Agent                    | Configures execution constraints                                                                                   |
 | `DefaultCaps`                                           | RunPolicy                | Sets resource limits                                                                                               |
@@ -1178,6 +1179,65 @@ func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCal
 }
 ```
 
+### TerminalRun
+
+`TerminalRun()` marks the current tool as terminal for the run. Once the tool executes successfully, the runtime completes the run immediately after publishing the tool result without requesting a follow-up `PlanResume`/finalization turn.
+
+**Context**: Inside `Tool`
+
+Use `TerminalRun()` for tools whose result is the user-facing terminal output of the run—for example, a final-report renderer or a "commit this run" tool. The tool result is the run's terminal artifact; extra model narration is neither needed nor desirable.
+
+```go
+Tool("commit_task", "Commit the terminal task artifact", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    TerminalRun()
+})
+```
+
+**Runtime behavior:**
+
+- Codegen records the flag on `tools.ToolSpec.TerminalRun`.
+- After a successful terminal tool call, the runtime finalizes the run without calling `PlanResume`.
+- Terminal tools compose naturally with `Bookkeeping()` (see below): the typical "commit this run" tool is both terminal and bookkeeping, so it always executes even when the retrieval budget is exhausted and ends the run atomically.
+
+### Bookkeeping
+
+`Bookkeeping()` marks the current tool as a bookkeeping tool that does not consume the run-level `MaxToolCalls` retrieval budget. The runtime does not decrement `RemainingToolCalls` for bookkeeping calls and never drops them when trimming a batch to fit the remaining budget.
+
+**Context**: Inside `Tool`
+
+Use `Bookkeeping()` for structured progress, status, finding, and terminal-commit tools whose cost is record-keeping rather than retrieval or side-effecting work. Classic examples are status updates, progress markers, and the atomic "commit this run" tool that writes the final artifact.
+
+```go
+Tool("set_step_status", "Update step status", func() {
+    Args(SetStepStatusArgs)
+    Return(SetStepStatusResult)
+    Bookkeeping()
+})
+```
+
+**Runtime behavior:**
+
+- Codegen records the flag on `tools.ToolSpec.Bookkeeping`.
+- Bookkeeping calls never count against `MaxToolCalls` and are never discarded when the runtime trims a batch to fit the remaining budget. Budgeted (non-bookkeeping) calls are trimmed first; bookkeeping calls retain their original position.
+- Unknown tools are treated as budgeted; only tools declared `Bookkeeping()` in the DSL (or marked bookkeeping on the runtime `ToolSpec`) are exempt.
+
+**Composition with `TerminalRun()`:**
+
+A terminal-commit tool is typically both bookkeeping and terminal:
+
+```go
+Tool("commit_task", "Commit the terminal task artifact", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    Bookkeeping()  // always executes, even when the budget is exhausted
+    TerminalRun()  // ends the run atomically once it succeeds
+})
+```
+
+This pattern guarantees that the run can always finalize deterministically: the commit tool is exempt from the retrieval budget, and once it succeeds the run is done without a follow-up planner turn.
+
 ---
 
 ## Policy Functions
@@ -1230,7 +1290,7 @@ RunPolicy(func() {
 })
 ```
 
-**MaxToolCalls(n)**: Sets the maximum number of tool invocations allowed. If exceeded, the runtime aborts.
+**MaxToolCalls(n)**: Sets the maximum number of budgeted tool invocations allowed per run. Tools declared `Bookkeeping()` are exempt from this cap and do not count toward `n`. When the budget is exhausted, the runtime stops scheduling budgeted calls and finalizes the run through the planner with termination reason `tool_cap`.
 
 **MaxConsecutiveFailedToolCalls(n)**: Sets the maximum consecutive failed tool calls before abort. Prevents infinite retry loops.
 

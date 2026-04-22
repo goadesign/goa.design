@@ -56,6 +56,8 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `ResultHintTemplate` | Tool | 結果表示用テンプレート（ヒント） |
 | `ResultReminder` | Tool | ツール結果後の静的なシステムリマインダ |
 | `Confirmation` | Tool | 実行前に明示的な帯域外確認を要求する |
+| `TerminalRun` | Tool | ツールを run の終端としてマーク: ツール成功直後にランが終了し、後続プランナーターンは行われない |
+| `Bookkeeping` | Tool | ツールを bookkeeping としてマーク: 呼び出しは run レベルの `MaxToolCalls` バジェットを消費しない |
 | **ポリシー関数** | | |
 | `RunPolicy` | Agent | 実行制約を設定する |
 | `DefaultCaps` | RunPolicy | リソース制限を設定する |
@@ -1090,6 +1092,65 @@ func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCal
 }
 ```
 
+### TerminalRun
+
+`TerminalRun()` は現在のツールを run の終端としてマークします。ツールが成功して実行されると、ランタイムはツール結果を公開した直後にランを終了し、`PlanResume`/ファイナライズターンを追加で要求しません。
+
+**コンテキスト**: `Tool` の内部
+
+最終的なユーザー向け出力がツール結果そのものであるようなツール（最終レポートのレンダラーや、「この run をコミット」するツールなど）に `TerminalRun()` を使用します。ツール結果がランの終端アーティファクトであり、モデルによる追加のナレーションは不要です。
+
+```go
+Tool("commit_task", "タスクの終端アーティファクトをコミット", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    TerminalRun()
+})
+```
+
+**ランタイム動作:**
+
+- コード生成はこのフラグを `tools.ToolSpec.TerminalRun` に記録します。
+- 終端ツール呼び出しが成功した後、ランタイムは `PlanResume` を呼ばずにランを完了します。
+- 終端ツールは `Bookkeeping()`（下記参照）と自然に合成されます。典型的な「この run をコミット」ツールは終端かつ bookkeeping であり、リトリーバル予算が枯渇していても常に実行可能で、ランを原子的に終了できます。
+
+### Bookkeeping
+
+`Bookkeeping()` は現在のツールを bookkeeping ツールとしてマークし、run レベルの `MaxToolCalls` リトリーバル予算を消費しないようにします。ランタイムは bookkeeping 呼び出しについて `RemainingToolCalls` をデクリメントせず、バッチを残り予算に収めるために切り詰める際にも bookkeeping 呼び出しを破棄しません。
+
+**コンテキスト**: `Tool` の内部
+
+コストがリトリーバルや副作用ではなく「記録」である構造化された進捗・ステータス・ファインディング・終端コミット系のツールに `Bookkeeping()` を使用します。ステータス更新、進捗マーカー、最終成果物を書き込む原子的な「この run をコミット」ツールが典型例です。
+
+```go
+Tool("set_step_status", "ステップのステータスを更新", func() {
+    Args(SetStepStatusArgs)
+    Return(SetStepStatusResult)
+    Bookkeeping()
+})
+```
+
+**ランタイム動作:**
+
+- コード生成はこのフラグを `tools.ToolSpec.Bookkeeping` に記録します。
+- bookkeeping 呼び出しは `MaxToolCalls` に計上されず、ランタイムがバッチを残り予算に合わせて切り詰める際にも破棄されません。予算対象（非 bookkeeping）の呼び出しが先に切り詰められ、bookkeeping 呼び出しは元の位置を維持します。
+- 未知のツールは予算対象として扱われます。DSL で `Bookkeeping()` として宣言された（またはランタイムの `ToolSpec` で bookkeeping としてマークされた）ツールのみが免除されます。
+
+**`TerminalRun()` との合成:**
+
+終端コミットツールは通常 bookkeeping かつ終端として宣言されます:
+
+```go
+Tool("commit_task", "タスクの終端アーティファクトをコミット", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    Bookkeeping()  // 予算が尽きても常に実行される
+    TerminalRun()  // 成功するとランを原子的に終了する
+})
+```
+
+このパターンにより、ランは常に決定的にファイナライズできます。コミットツールはリトリーバル予算から免除され、成功するとその後のプランナーターンなしで run が終了します。
+
 ---
 
 ## ポリシー関数
@@ -1141,7 +1202,7 @@ RunPolicy(func() {
 })
 ```
 
-**MaxToolCalls(n)**: 許可するツール呼び出しの最大回数。超過した場合、ランタイムは中断します。
+**MaxToolCalls(n)**: *予算対象のツール* について許可する最大呼び出し回数。超過した場合、ランタイムは中断します。DSL で `Bookkeeping()` として宣言されたツールはこの上限から免除され、`RemainingToolCalls` を消費しません。そのため、構造化されたステータス更新、進捗マーカー、終端コミットツールは常に実行可能です。
 
 **MaxConsecutiveFailedToolCalls(n)**: アボートするまでの最大連続失敗回数。無限の再試行ループを防ぎます。
 

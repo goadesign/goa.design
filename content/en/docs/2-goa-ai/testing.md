@@ -269,7 +269,7 @@ out, err := client.Run(ctx, "session-123", messages)
 error: policy violation: max tool calls exceeded (10/10)
 ```
 
-**Cause:** The agent exceeded the configured `MaxToolCalls` limit.
+**Cause:** The agent exceeded the configured `MaxToolCalls` limit for *budgeted* tools. Tools declared `Bookkeeping()` do not count against this cap.
 
 **Solutions:**
 
@@ -286,6 +286,8 @@ RunPolicy(func() {
    - Improve prompt engineering
 
 3. **Check for infinite loops** in planner logic that repeatedly calls the same tool.
+
+4. **Exempt structured bookkeeping tools from the budget** by declaring them `Bookkeeping()` in the DSL. Status updates, progress markers, and terminal-commit tools typically belong in this category; once exempt, they never consume `RemainingToolCalls` and can always execute. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to finalize even after the retrieval budget is exhausted.
 
 **Symptom:**
 ```

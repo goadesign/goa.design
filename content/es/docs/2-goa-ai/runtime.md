@@ -249,9 +249,10 @@ Agent("chat", "Conversational runner", func() {
 
 Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 
-- **Caps**: `MaxToolCalls` - total de llamadas a la herramienta por ejecución. `MaxConsecutiveFailedToolCalls` - fallos consecutivos antes de abortar.
+- **Caps**: `MaxToolCalls` - total de llamadas a *herramientas con presupuesto* por ejecución. Las herramientas marcadas como `Bookkeeping()` en el DSL están exentas y nunca consumen este límite. `MaxConsecutiveFailedToolCalls` - fallos consecutivos antes de abortar.
 - **Presupuesto de tiempo**: `TimeBudget` - presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (sólo tiempo de ejecución) - ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` - opción para pausar/reanudar.
+- **Finalización atómica del run**: las herramientas declaradas `TerminalRun()` en el DSL cierran el run inmediatamente tras una llamada con éxito, sin requerir un turno de finalización del planificador.
 - **Comportamiento de los campos perdidos**: `OnMissingFields` - rige lo que ocurre cuando la validación indica que faltan campos.
 
 ### Anulaciones de la política de tiempo de ejecución

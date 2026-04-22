@@ -250,9 +250,10 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **Caps**: `MaxToolCalls`（run あたりのツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。
+- **Caps**: `MaxToolCalls`（run あたりの*予算対象*ツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。DSL で `Bookkeeping()` としてマークされたツールはこの上限から免除され、`MaxToolCalls` を消費しません。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
+- **原子的な run 完了**: DSL で `TerminalRun()` として宣言されたツールは、成功した呼び出しの直後に run を終了させ、プランナーによるファイナライズターンを必要としません。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
 
 ### ランタイムポリシーのオーバーライド
@@ -273,7 +274,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 
 | Field | 説明 |
 | --- | --- |
-| `MaxToolCalls` | run あたりのツール呼び出し総数の上限 |
+| `MaxToolCalls` | run あたりの*予算対象*ツール呼び出し総数の上限（`Bookkeeping()` ツールは免除） |
 | `MaxConsecutiveFailedToolCalls` | 連続失敗回数の上限 |
 | `TimeBudget` | run の wall-clock 予算 |
 | `FinalizerGrace` | 最終化のための予約ウィンドウ |

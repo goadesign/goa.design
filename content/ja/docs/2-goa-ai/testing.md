@@ -273,7 +273,7 @@ out, err := client.Run(ctx, "session-123", messages)
 error: policy violation: max tool calls exceeded (10/10)
 ```
 
-**原因:** エージェントが設定された `MaxToolCalls` の上限を超えた。
+**原因:** エージェントが*予算対象*ツールについて設定された `MaxToolCalls` の上限を超えた。DSL で `Bookkeeping()` として宣言されたツールはこの上限を消費しません。
 
 **解決策:**
 
@@ -291,6 +291,8 @@ RunPolicy(func() {
    - プロンプトを改善する
 
 3. 同じツールを繰り返し呼び出す **無限ループ** がないか確認します。
+
+4. **構造化された bookkeeping ツールを予算から免除** するには、DSL で `Bookkeeping()` として宣言します。ステータス更新、進捗マーカー、終端コミットツールは通常このカテゴリに該当し、免除されると `RemainingToolCalls` を消費せず常に実行可能になります。`Bookkeeping()` と `TerminalRun()` を組み合わせると、リトリーバル予算が枯渇していても原子的にファイナライズされる「この run をコミット」ツールを作れます。
 
 **症状:**
 

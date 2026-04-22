@@ -269,7 +269,7 @@ out, err := client.Run(ctx, "session-123", messages)
 error: policy violation: max tool calls exceeded (10/10)
 ```
 
-**Cause:** L'agent a dépassé la limite configurée `MaxToolCalls`.
+**Cause:** L'agent a dépassé la limite configurée `MaxToolCalls` pour les *outils soumis au budget*. Les outils déclarés `Bookkeeping()` ne consomment pas ce plafond.
 
 **Solutions:**
 
@@ -286,6 +286,8 @@ RunPolicy(func() {
    - Améliorer l'ingénierie rapide
 
 3. **Vérifier les boucles infinies** dans la logique du planificateur qui appelle de façon répétée le même outil.
+
+4. **Exempter les outils de bookkeeping structuré du budget** en les déclarant `Bookkeeping()` dans le DSL. Les mises à jour d'état, les marqueurs de progression et les outils de commit terminal appartiennent typiquement à cette catégorie ; une fois exemptés, ils ne consomment jamais `RemainingToolCalls` et peuvent toujours s'exécuter. Combinez `Bookkeeping()` avec `TerminalRun()` pour un outil « commit de ce run » garanti de se finaliser atomiquement même après épuisement du budget de retrieval.
 
 **Symptôme:**
 ```

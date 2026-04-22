@@ -55,6 +55,8 @@ declarado.
 | Herramienta Mostrar plantilla de resultados
 | Herramienta: Recordatorio estático del sistema tras el resultado de la herramienta
 | Herramienta: requiere confirmación explícita fuera de banda antes de la ejecución
+| `TerminalRun` | Herramienta | Marca la herramienta como terminal: la ejecución finaliza inmediatamente después de la herramienta (sin turno de planificador posterior) |
+| `Bookkeeping` | Herramienta | Marca la herramienta como bookkeeping: las llamadas no consumen el presupuesto `MaxToolCalls` del run |
 | Funciones de política
 | Agente: configura las restricciones de ejecución
 | `DefaultCaps` | RunPolicy | Establece límites de recursos |
@@ -1100,6 +1102,65 @@ func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCal
 }
 ```
 
+### TerminalRun
+
+`TerminalRun()` marca la herramienta actual como terminal para el run. Cuando la herramienta se ejecuta con éxito, el runtime finaliza el run inmediatamente después de publicar el resultado de la herramienta, sin requerir un turno adicional de `PlanResume`/finalización.
+
+**Contexto**: Dentro de `Tool`
+
+Usa `TerminalRun()` para herramientas cuyo resultado es la salida terminal orientada al usuario del run, por ejemplo un renderer de informe final o una herramienta de "commit de este run". El resultado de la herramienta es el artefacto terminal del run; no es necesaria una narración adicional del modelo.
+
+```go
+Tool("commit_task", "Hace commit del artefacto terminal de la tarea", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    TerminalRun()
+})
+```
+
+**Comportamiento en runtime:**
+
+- La generación de código registra la bandera en `tools.ToolSpec.TerminalRun`.
+- Tras una llamada terminal con éxito, el runtime finaliza el run sin invocar `PlanResume`.
+- Las herramientas terminales se componen de forma natural con `Bookkeeping()` (ver abajo): la típica herramienta de "commit de este run" es terminal y a la vez bookkeeping, por lo que siempre puede ejecutarse incluso cuando el presupuesto de retrieval se ha agotado y cierra el run de forma atómica.
+
+### Bookkeeping
+
+`Bookkeeping()` marca la herramienta actual como herramienta de bookkeeping que no consume el presupuesto de retrieval del run `MaxToolCalls`. El runtime no decrementa `RemainingToolCalls` para las llamadas de bookkeeping y no las descarta al recortar un lote para encajar en el presupuesto restante.
+
+**Contexto**: Dentro de `Tool`
+
+Usa `Bookkeeping()` para herramientas estructuradas de progreso, estado, findings y commit terminal cuyo coste es de tipo record-keeping, no retrieval ni side-effect. Ejemplos clásicos son actualizaciones de estado, marcadores de progreso y la herramienta atómica de "commit de este run" que escribe el artefacto final.
+
+```go
+Tool("set_step_status", "Actualiza el estado del paso", func() {
+    Args(SetStepStatusArgs)
+    Return(SetStepStatusResult)
+    Bookkeeping()
+})
+```
+
+**Comportamiento en runtime:**
+
+- La generación de código registra la bandera en `tools.ToolSpec.Bookkeeping`.
+- Las llamadas de bookkeeping nunca cuentan contra `MaxToolCalls` y nunca se descartan cuando el runtime recorta un lote para encajar en el presupuesto restante. Las llamadas con presupuesto (no-bookkeeping) se recortan primero; las llamadas de bookkeeping mantienen su posición original.
+- Las herramientas desconocidas se tratan como con presupuesto; solo las herramientas declaradas `Bookkeeping()` en el DSL (o marcadas como bookkeeping en el `ToolSpec` del runtime) están exentas.
+
+**Composición con `TerminalRun()`:**
+
+Una herramienta de commit terminal se declara normalmente tanto bookkeeping como terminal:
+
+```go
+Tool("commit_task", "Hace commit del artefacto terminal de la tarea", func() {
+    Args(TaskCompletionArgs)
+    Return(TaskCompletionResult)
+    Bookkeeping()  // siempre se ejecuta, incluso con el presupuesto agotado
+    TerminalRun()  // cierra el run de forma atómica al tener éxito
+})
+```
+
+Este patrón garantiza que el run siempre pueda finalizar de forma determinista: la herramienta de commit está exenta del presupuesto de retrieval y, tras tener éxito, el run termina sin un turno adicional del planificador.
+
 ---
 
 ## Funciones políticas
@@ -1151,7 +1212,7 @@ RunPolicy(func() {
 })
 ```
 
-**MaxToolCalls(n)**: Establece el número máximo de invocaciones a herramientas permitidas. Si se excede, el tiempo de ejecución aborta.
+**MaxToolCalls(n)**: Establece el número máximo de invocaciones a *herramientas con presupuesto* permitidas. Si se excede, el runtime aborta. Las herramientas declaradas `Bookkeeping()` están exentas de este límite y no decrementan `RemainingToolCalls`, de modo que las actualizaciones de estado estructurado, los marcadores de progreso y las herramientas de commit terminal siempre pueden ejecutarse.
 
 **MaxConsecutiveFailedToolCalls(n)**: Establece el máximo de llamadas a herramientas fallidas consecutivas antes de abortar. Evita bucles de reintento infinitos.
 

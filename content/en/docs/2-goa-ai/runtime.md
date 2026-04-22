@@ -336,10 +336,11 @@ Agent("chat", "Conversational runner", func() {
 
 This becomes a `runtime.RunPolicy` attached to the agent's registration:
 
-- **Caps**: `MaxToolCalls` – total tool calls per run. `MaxConsecutiveFailedToolCalls` – consecutive failures before abort.
+- **Caps**: `MaxToolCalls` – total budgeted tool calls per run. Tools declared `Bookkeeping()` in the DSL are **exempt** from this cap: status updates, progress markers, and terminal-commit tools never consume `RemainingToolCalls` and are never dropped when a batch is trimmed to fit the remaining budget. `MaxConsecutiveFailedToolCalls` – consecutive failures before abort.
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
+- **Terminal tools**: Tools declared `TerminalRun()` complete the run atomically once they succeed—no follow-up `PlanResume` turn is scheduled. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to execute even when the retrieval budget is exhausted.
 
 ### Runtime Policy Overrides
 
