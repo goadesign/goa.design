@@ -51,9 +51,11 @@ Creare un singolo limitatore per processo e avvolgere il client del modello:
 ```go
 import (
     "context"
+    "os"
 
+    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
-    "goa.design/goa-ai/features/model/bedrock"
+    "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
@@ -70,21 +72,23 @@ func main() {
     )
 
     // Create your underlying model client
-    bedrockClient, err := bedrock.NewClient(bedrock.Options{
-        Region: "us-east-1",
-        Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
+    modelClient, err := openai.New(openai.Options{
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+        DefaultModel: "gpt-5-mini",
+        HighModel:    "gpt-5",
+        SmallModel:   "gpt-5-nano",
     })
     if err != nil {
         panic(err)
     }
 
     // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient := limiter.Middleware()(modelClient)
 
-    // Use rateLimitedClient with your runtime or planners
-    rt := runtime.New(
-        runtime.WithModelClient("claude", rateLimitedClient),
-    )
+    rt := runtime.New()
+    if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
+        panic(err)
+    }
 }
 ```
 
@@ -152,11 +156,13 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(
-    runtime.WithEngine(temporalEng),
-    runtime.WithModelClient("claude", claudeClient),
-    runtime.WithModelClient("gpt-4", gptClient),
-)
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("claude", claudeClient); err != nil {
+    panic(err)
+}
+if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+    panic(err)
+}
 ```
 
 ### Cosa succede sotto carico
@@ -340,12 +346,14 @@ import (
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
-temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Richiesto: far rispettare il contratto di confine dei workflow di goa-ai.
-        // I risultati, server-data e artefatti attraversano i confini come JSON canonico (api.ToolEvent/api.ToolArtifact).
+        // I risultati degli strumenti e i server-data attraversano i confini del workflow
+        // come byte JSON canonici (ad esempio payload api.ToolEvent),
+        // non come valori planner.ToolResult decodificati.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
@@ -360,48 +368,54 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
-### Configurazione dei ritiri di attività
+### Timing e retry delle attività
 
-Le chiamate agli strumenti sono attività temporali. Configurare i ritiri per ogni set di strumenti nel DSL:
+Usa il DSL per budget semantici di run: quanto può durare l'intero run, quanto
+può durare un tentativo del planner e quanto può durare un tentativo del tool.
 
 ```go
-Use("external_apis", func() {
-    // Flaky external services: retry aggressively
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 30 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts:        5,
-            InitialInterval:    time.Second,
-            BackoffCoefficient: 2.0,
-        },
+Agent("operator", "Production operations agent", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        Timing(func() {
+            Budget("5m")
+            Plan("45s")
+            Tools("90s")
+        })
     })
-    
-    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
-    Tool("query_database", "Query external DB", func() { /* ... */ })
-})
-
-Use("local_compute", func() {
-    // Fast local tools: minimal retries
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 5 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts: 2,
-        },
-    })
-    
-    Tool("calculate", "Pure computation", func() { /* ... */ })
 })
 ```
 
-Le attività generate di plan/resume ed execute-tool usano ora per impostazione
-predefinita una politica di retry esponenziale di 3 tentativi (intervallo
-iniziale `1s`, coefficiente di backoff `2`), e la stessa politica è usata anche
-dall'attività runtime che pubblica gli hook. Questo è sicuro solo perché i
-tentativi ritentati hanno un'identità logica stabile: gli eventi hook portano
-chiavi evento stabili e le esecuzioni degli strumenti devono persistere/riprodurre
-il risultato canonico tramite `ToolCallID` invece di ripetere effetti collaterali.
-Sovrascrivi la politica di retry solo quando un confine di tool non può
-rispettare questo contratto di replay.
+L'adapter Temporal possiede le meccaniche del workflow engine, come queue-wait
+e timeout di liveness. Configurale sull'engine, non nel DSL:
+
+```go
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "127.0.0.1:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: runtimeTemporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: runtimeTemporal.ActivityDefaults{
+        Planner: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+```
+
+Le attività generate di plan/resume, execute-tool e pubblicazione hook usano
+politiche di retry sicure solo quando i retry sono logicamente idempotenti. Gli
+eventi hook hanno chiavi evento stabili, e le esecuzioni dei tool devono
+persistire o riprodurre i risultati canonici per `ToolCallID` invece di ripetere
+effetti collaterali irreversibili.
 
 ### Configurazione del lavoratore
 

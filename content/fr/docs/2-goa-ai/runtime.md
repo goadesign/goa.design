@@ -7,48 +7,36 @@ llm_optimized: true
 aliases:
 ---
 
-## Aperçu de l'architecture
+## Présentation de l'architecture
 
-Le moteur d'exécution de Goa-AI orchestre la boucle plan/exécution/reprise, applique les politiques, gère l'état et coordonne avec les moteurs, les planificateurs, les outils, la mémoire, les crochets et les modules de fonctionnalités.
-
-En plus des outils, le runtime prend aussi en charge des contrats
-`Completion(...)` types pour les reponses finales directes de l'assistant.
-
-Ces contrats generent des aides unaires et de streaming sous
-`gen/<service>/completions`. Les noms de completion sont valides par
-construction : 1-64 caracteres ASCII, lettres/chiffres/`_`/`-` uniquement, et
-un debut par lettre ou chiffre. En streaming, `completion_delta` sert
-uniquement d'aperçu et un seul chunk final `completion` est canonique ; les
-fournisseurs sans structured output renvoient `model.ErrStructuredOutputUnsupported`.
-Le schema genere reste canonique et neutre vis-a-vis des fournisseurs ; les
-adaptateurs de modele peuvent le normaliser vers un sous-ensemble pris en
-charge, mais doivent echouer explicitement lorsqu'ils ne peuvent pas
-preserver le contrat declare.
+Le runtime Goa-AI orchestre la boucle planifier/exécuter/reprendre, applique les politiques, gère l'état et se coordonne avec les moteurs, les planificateurs, les outils, la mémoire, les hooks et les modules de fonctionnalités.
 
 | Couche | Responsabilité |
 | --- | --- |
-| DSL + Codegen | Produire des registres d'agents, des spécifications/codecs d'outils, des flux de travail, des adaptateurs MCP..
-| L'adaptateur de moteur de flux de travail (Workflow Engine Adapter) produit des registres d'agents, des spécifications/codecs d'outils, des flux de travail, des adaptateurs MCP
-| Adaptateur de moteur de flux de travail - L'adaptateur temporel met en œuvre `engine.Engine` ; d'autres moteurs peuvent s'y greffer
-| Modules de fonctionnalités | Intégrations optionnelles (MCP, Pulse, magasins Mongo, fournisseurs de modèles) |
+| DSL + Codegen | Produire des registres d'agents, des spécifications/codecs d'outils, des spécifications/codecs de complétion, des flux de travail, des adaptateurs MCP |
+| Noyau d'exécution | Orchestre la boucle de planification/démarrage/reprise, l'application des politiques, les hooks, la mémoire, le streaming |
+| Adaptateur de moteur de flux de travail | L'adaptateur Temporal implémente `engine.Engine` ; d'autres moteurs peuvent se brancher |
+| Modules de fonctionnalités | Intégrations facultatives (magasins MCP, Pulse, Mongo, fournisseurs de modèles) |
 
 ---
 
 ## Architecture agentique de haut niveau
 
-Au moment de l'exécution, Goa-AI organise votre système autour d'un petit ensemble de constructions composables :
+Au moment de l'exécution, Goa-AI organise votre système autour d'un petit ensemble de constructions composables :
 
-- **Agents** : Orchestrateurs à longue durée de vie identifiés par `agent.Ident` (par exemple, `service.chat`). Chaque agent possède un planificateur, une politique d'exécution, des flux de travail générés et des enregistrements d'outils.
+- **Agents** : orchestrateurs de longue durée identifiés par `agent.Ident` (par exemple, `service.chat`). Chaque agent possède un planificateur, une politique d'exécution, des flux de travail générés et des enregistrements d'outils.
 
-- **Exécutions** : Une exécution unique d'un agent. Les exécutions sont identifiées par un `RunID` et suivies via `run.Context` et `run.Handle`. Les exécutions sessionnelles sont regroupées par `SessionID` et `TurnID` pour former des conversations ; les exécutions one-shot sont explicitement sans session.
+- **Exécutions** : une seule exécution d'un agent. Les courses sont identifiées par un `RunID` et suivies via `run.Context` et `run.Handle`. Les exécutions de session sont regroupées par `SessionID` et `TurnID` pour former des conversations ; Les exécutions ponctuelles sont explicitement sans session.
 
-- **Toolsets & tools** : Collections nommées de capacités, identifiées par `tools.Ident` (`service.toolset.tool`). Les ensembles d'outils soutenus par un service appellent des API ; les ensembles d'outils soutenus par un agent exécutent d'autres agents en tant qu'outils.
+- **Ensembles d'outils et outils** : collections nommées de fonctionnalités, identifiées par `tools.Ident` (`service.toolset.tool`). Les ensembles d'outils basés sur des services appellent des API ; Les ensembles d'outils soutenus par des agents exécutent d'autres agents en tant qu'outils.
 
-- **Planificateurs** : Votre couche de stratégie basée sur le LLM mettant en œuvre `PlanStart` / `PlanResume`. Les planificateurs décident quand appeler les outils plutôt que de répondre directement ; le moteur d'exécution applique des plafonds et des budgets de temps autour de ces décisions.
+- **Achèvements** : Contrats de sortie d'assistant direct dactylographiés appartenant au service générés sous `gen/<service>/completions`. Les assistants d'achèvement attachent une sortie structurée imposée par le fournisseur aux requêtes de modèle unaire et en streaming direct, puis décodent la charge utile typée canonique via les codecs générés.
 
-- **Arbre d'exécution et agent en tant qu'outil** : Lorsqu'un agent appelle un autre agent en tant qu'outil, le runtime démarre un véritable run enfant avec son propre `RunID`. Le `ToolResult` parent porte un `RunLink` (`*run.Handle`) pointant vers l'enfant, et un événement de streaming `child_run_linked` est émis pour corréler l’appel de l’outil parent avec le `RunID` enfant.
+- **Planificateurs** : votre couche stratégique basée sur LLM mettant en œuvre `PlanStart` / `PlanResume`. Les planificateurs décident quand appeler les outils plutôt que de répondre directement ; le runtime impose des plafonds et des budgets de temps autour de ces décisions.
 
-- **Streams et profils** : Goa-AI publie des valeurs `stream.Event` typées dans un **flux détenu par la session** (`session/<session_id>`). Les événements portent `RunID` et `SessionID` et le runtime émet `run_stream_end` comme marqueur explicite pour fermer SSE/WebSocket sans temporisateurs. `stream.StreamProfile` sélectionne les types d'événements visibles pour un public donné (UI chat, debug, métriques).
+- **Arbre d'exécution et agent en tant qu'outil** : lorsqu'un agent appelle un autre agent en tant qu'outil, le moteur d'exécution démarre une véritable exécution enfant avec son propre `RunID`. Le parent `ToolResult` transporte un `RunLink` (`*run.Handle`) pointant vers l'enfant, et un événement de flux `child_run_linked` correspondant est émis afin que UIs puisse corréler les appels d'outil parent avec les ID d'exécution enfant sans deviner.
+
+- **Flux et profils appartenant à la session** : Goa-AI publie les valeurs `stream.Event` saisies dans un **flux appartenant à la session** (`session/<session_id>`). Les événements transportent à la fois `RunID` et `SessionID` et incluent un marqueur de limite explicite (`run_stream_end`) afin que les consommateurs puissent fermer SSE/WebSocket de manière déterministe sans minuterie. `stream.StreamProfile` sélectionne les types d'événements visibles pour une audience donnée (chat UI, débogage, métriques).
 
 ---
 
@@ -93,14 +81,97 @@ func main() {
 
 ---
 
-## Client-Only vs Worker
+## Complétions directes dactylographiées
 
-Deux rôles utilisent le runtime :
+Toutes les interactions structurées ne doivent pas être modélisées comme un appel d’outil. Quand votre
+Le service a besoin d'une réponse finale de l'assistant tapée, déclarez `Completion(...)` dans le
+DSL et régénérer.
 
-- **Client-only** (submit runs) : Construit un runtime avec un moteur compatible avec le client et n'enregistre pas d'agents. Il utilise le `<agent>.NewClient(rt)` généré qui porte l'itinéraire (flux de travail + file d'attente) enregistré par les travailleurs distants.
-- **Worker** (exécuter des exécutions) : Construit un runtime avec un moteur capable de travailler, enregistre des agents (avec des planificateurs réels), et laisse le moteur interroger et exécuter des workflows/activités.
+`goa gen` émet `gen/<service>/completions` avec :
 
-### Exemple réservé au client
+- schémas de résultats et types de résultats/unions typés
+- codecs JSON générés et aides à la validation
+- valeurs `completion.Spec` saisies
+- assistants `Complete<Name>(ctx, client, req)` générés
+- Assistants `StreamComplete<Name>(ctx, client, req)` et `Decode<Name>Chunk(chunk)` générés
+
+Les services peuvent déclarer des achèvements sans déclarer de `Agent(...)`. Agent
+un échafaudage de démarrage rapide/exemple est émis uniquement pour les services qui possèdent réellement
+agents.
+
+Ces assistants clonent la requête et attachent une sortie structurée indépendante du fournisseur.
+métadonnées, appelez le `model.Client` sous-jacent et décodez le canonique typé
+charge utile via le codec généré :
+
+```go
+resp, err := taskcompletion.CompleteDraftFromTranscript(ctx, modelClient, &model.Request{
+    Messages: []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Create a startup investigation task."}},
+    }},
+})
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(resp.Value.Name)
+```
+
+Les complétions de streaming restent sur la surface brute `model.Streamer` et décodent le
+Morceau canonique final `completion` uniquement :
+
+```go
+stream, err := taskcompletion.StreamCompleteDraftFromTranscript(ctx, modelClient, &model.Request{
+    Messages: []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Create a startup investigation task."}},
+    }},
+})
+if err != nil {
+    panic(err)
+}
+defer stream.Close()
+
+for {
+    chunk, err := stream.Recv()
+    if errors.Is(err, io.EOF) {
+        break
+    }
+    if err != nil {
+        panic(err)
+    }
+    value, ok, err := taskcompletion.DecodeDraftFromTranscriptChunk(chunk)
+    if err != nil {
+        panic(err)
+    }
+    if ok {
+        fmt.Println(value.Name)
+    }
+}
+```
+
+Les aides à la complétion typées sont intentionnellement strictes :
+
+- Les assistants unaires acceptent uniquement les demandes unaires.
+- Les noms de complétion sont validés à la limite DSL : 1 à 64 caractères ASCII,
+lettres/chiffres/`_`/`-` uniquement et doit commencer par une lettre ou un chiffre.
+- Les assistants unaires et en streaming rejettent les requêtes activées par les outils et le `StructuredOutput` fourni par l'appelant.
+- Les fournisseurs de streaming émettent des fragments d'aperçu `completion_delta*` plus exactement un morceau canonique `completion`, ou rejettent explicitement la demande.
+- `Decode<Name>Chunk` ignore les morceaux d’aperçu et décode uniquement le `completion` final.
+- Les flux d'achèvement restent sur le chemin direct `model.Streamer` ; ne les acheminez pas via les assistants de streaming du planificateur, qui sont destinés aux événements d'exécution de texte/outil de transcription de l'assistant.
+- Fournisseurs qui n’implémentent pas la surface de sortie structurée `model.ErrStructuredOutputUnsupported`.
+- Les schémas générés sont canoniques et indépendants du fournisseur ; les adaptateurs de fournisseur peuvent les normaliser sur un sous-ensemble pris en charge, mais doivent échouer explicitement lorsqu'ils ne peuvent pas préserver le contrat déclaré.
+
+---
+
+## Client uniquement vs travailleur
+
+Deux rôles utilisent le runtime :
+
+- **Client uniquement** (soumettre des exécutions) : construit un environnement d'exécution avec un moteur compatible client et n'enregistre pas les agents. Utilisez le `<agent>.NewClient(rt)` généré qui transporte l'itinéraire (workflow + file d'attente) enregistré par les travailleurs distants.
+- **Worker** (exécutions d'exécution) : construit un environnement d'exécution avec un moteur capable de fonctionner, enregistre les ensembles d'outils et les agents, puis scelle l'enregistrement afin que l'interrogation ne démarre qu'une fois le registre d'exécution local terminé.
+
+### Exemple client uniquement
 
 ```go
 rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
@@ -113,13 +184,13 @@ if _, err := rt.CreateSession(ctx, "s1"); err != nil {
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
-### Exécutions one-shot sans session
+### Exécutions ponctuelles sans session
 
-Utilisez `StartOneShot` et `OneShotRun` lorsque vous voulez un travail durable qui n'est pas rattaché à une session existante.
+Utilisez `StartOneShot` et `OneShotRun` lorsque vous souhaitez un travail durable qui n'est pas attaché à une session existante.
 
-- `Start` / `Run` sont sessionnels : ils exigent un `SessionID` concret, participent au cycle de vie de la session et émettent des événements de flux portés par la session.
-- `StartOneShot` / `OneShotRun` sont sans session : ils ne prennent pas de `SessionID`, n'en créent pas, et n'ajoutent que des événements canoniques au journal d'exécution pour l'introspection par `RunID`.
-- `StartOneShot` renvoie immédiatement un `engine.WorkflowHandle`. `OneShotRun` est le wrapper bloquant qui appelle `handle.Wait(ctx)` pour vous.
+- `Start` / `Run` sont de type session : ils nécessitent un `SessionID` concret, participent au cycle de vie de la session et émettent des événements de flux à l'échelle de la session.
+- `StartOneShot` / `OneShotRun` sont sans session : ils ne prennent pas de `SessionID`, n'en créent pas et ajoutent uniquement les événements canoniques du journal d'exécution pour l'introspection par `RunID`.
+- `StartOneShot` renvoie immédiatement un `engine.WorkflowHandle`. `OneShotRun` est le wrapper pratique de blocage qui appelle `handle.Wait(ctx)` pour vous.
 
 ```go
 client := chat.NewClient(rt)
@@ -143,42 +214,58 @@ fmt.Println(out.RunID)
 ### Exemple de travailleur
 
 ```go
-rt := runtime.New(runtime.WithEngine(temporalWorker)) // worker-enabled engine
-err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
-// Start engine worker loop per engine's integration (for example, Temporal worker.Run()).
+eng, err := temporal.NewWorker(temporal.Options{
+    ClientOptions: &client.Options{HostPort: "temporal:7233", Namespace: "default"},
+    WorkerOptions: temporal.WorkerOptions{TaskQueue: "orchestrator.chat"},
+})
+if err != nil {
+    panic(err)
+}
+defer eng.Close()
+
+rt := runtime.New(runtime.WithEngine(eng))
+if err := chat.RegisterUsedToolsets(ctx, rt /* executors... */); err != nil {
+    panic(err)
+}
+if err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner}); err != nil {
+    panic(err)
+}
+if err := rt.Seal(ctx); err != nil {
+    panic(err)
+}
 ```
 
 ---
 
-## Plan → Exécuter → Reprendre la boucle
+## Planifier → Exécuter → Reprendre la boucle
 
-1. Le runtime démarre un workflow pour l'agent (en mémoire ou temporel) et enregistre un nouveau `run.Context` avec `RunID`, `SessionID`, `TurnID`, des labels et des caps de politique.
+1. Le runtime démarre un workflow pour l'agent (en mémoire ou Temporal) et enregistre un nouveau `run.Context` avec `RunID`, `SessionID`, `TurnID`, des étiquettes et des limites de stratégie.
 2. Il appelle le `PlanStart` de votre planificateur avec les messages actuels et le contexte d'exécution.
-3. Il planifie les appels d'outils renvoyés par le planificateur (le planificateur transmet des charges utiles JSON canoniques ; le runtime gère l'encodage/décodage à l'aide des codecs générés).
-4. Il appelle `PlanResume` avec les résultats d'outils encore visibles pour le planificateur ; les outils soumis au budget sont visibles par défaut, tandis que les outils de bookkeeping ne sont rejoués que s'ils déclarent `PlannerVisible()` ou si un échec rejouable doit être réparé. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale ou que les plafonds/les budgets de temps soient atteints. Au fur et à mesure que l'exécution progresse, elle passe par les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
-5. Les crochets et les abonnés au flux émettent des événements (pensées du planificateur, démarrage/mise à jour/fin de l'outil, attentes, utilisation, flux de travail, liens agent-exécution) et, lorsqu'ils sont configurés, conservent les entrées de transcription et les métadonnées d'exécution.
+3. Il planifie les appels d'outils renvoyés par le planificateur (le planificateur transmet les charges utiles canoniques JSON ; le runtime gère l'encodage/décodage à l'aide des codecs générés).
+4. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par le planificateur ; les outils budgétisés sont visibles par défaut, tandis que les outils de comptabilité ne rejouent que lorsqu'ils sont déclarés `PlannerVisible()` ou lorsqu'un échec réessayable doit être réparé. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale ou que les plafonds/budgets de temps soient atteints. Au fur et à mesure que l'exécution progresse, l'exécution avance à travers les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
+5. Les hooks et les abonnés au flux émettent des événements (pensées du planificateur, démarrage/mise à jour/fin de l'outil, attentes, utilisation, flux de travail, liens exécutés par l'agent) et, une fois configurés, conservent les entrées de transcription et exécutent les métadonnées.
 
 ---
 
 ## Phases d'exécution
 
-Au fur et à mesure qu'une exécution progresse dans la boucle planifier/exécuter/reprendre, elle passe par une série de phases du cycle de vie. Ces phases offrent une visibilité fine de l'état d'avancement de l'exécution, ce qui permet aux interfaces utilisateur d'afficher des indicateurs de progression de haut niveau.
+Au fur et à mesure qu’une exécution progresse dans la boucle planifier/exécuter/reprendre, elle passe par une série de phases du cycle de vie. Ces phases offrent une visibilité précise de l'état d'avancement d'une exécution, permettant à UIs d'afficher des indicateurs de progression de haut niveau.
 
-### Valeurs des phases
+### Valeurs de phase
 
 | Phase | Description |
 | --- | --- |
-| Le planificateur est en train de décider comment appeler les outils ou répondre directement
-| `planning` Le planificateur est en train de décider s'il doit appeler des outils ou répondre directement, et comment
-| `executing_tools` Les outils (y compris les agents imbriqués) sont en cours d'exécution
-| `synthesizing` | Le planificateur est en train de synthétiser une réponse finale sans programmer d'outils supplémentaires |
-| `completed` | L'exécution s'est terminée avec succès
-| `failed` | L'exécution a échoué |
-| `canceled` | L'exécution a été annulée | `failed` | L'exécution a échoué
+| `prompted` | Les commentaires ont été reçus et l'exécution est sur le point de commencer la planification |
+| `planning` | Le planificateur décide si et comment appeler les outils ou répondre directement |
+| `executing_tools` | Les outils (y compris les agents imbriqués) sont en cours d'exécution |
+| `synthesizing` | Le planificateur synthétise une réponse finale sans planifier d'outils supplémentaires |
+| `completed` | L'exécution s'est terminée avec succès |
+| `failed` | La course a échoué |
+| `canceled` | La course a été annulée |
 
-### Transitions de phase
+### Transitions de phases
 
-Une exécution réussie typique suit la progression suivante :
+Une exécution réussie typique suit cette progression :
 
 ```
 prompted → planning → executing_tools → planning → synthesizing → completed
@@ -186,28 +273,28 @@ prompted → planning → executing_tools → planning → synthesizing → comp
                           (loop while tools needed)
 ```
 
-Le moteur d'exécution émet des événements `RunPhaseChanged` pour les phases **non terminales** (par exemple `planning`, `executing_tools`, `synthesizing`) afin que les abonnés au flux puissent suivre la progression en temps réel.
+Le runtime émet des événements hook `RunPhaseChanged` pour les phases **non terminales** (par exemple, `planning`, `executing_tools`, `synthesizing`) afin que les abonnés au flux puissent suivre la progression en temps réel.
 
 ### Phase vs Statut
 
-Les phases sont distinctes des `run.Status` :
+Les phases sont distinctes de `run.Status` :
 
-- **Status** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) est l'état du cycle de vie à gros grain stocké dans les métadonnées d'exécution durables
-- **La phase** offre une visibilité plus fine de la boucle d'exécution, destinée aux surfaces de streaming/UX
+- **Le statut** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) correspond à l'état du cycle de vie à granularité grossière stocké dans les métadonnées d'exécution durables.
+- **Phase** offre une visibilité plus fine sur la boucle d'exécution, destinée aux surfaces de streaming/UX
 
-### Événements de cycle de vie : changements de phase vs fin d'exécution
+### Événements du cycle de vie : changements de phase ou achèvement du terminal
 
-Le runtime émet :
+Le runtime émet :
 
 - **`RunPhaseChanged`** pour les transitions de phase non terminales.
-- **`RunCompleted`** une seule fois par run pour l'état terminal (success / failed / canceled).
+- **`RunCompleted`** une fois par exécution pour le cycle de vie du terminal (succès/échec/annulation).
 
-Les abonnés au flux traduisent les deux en événements `workflow` (`stream.WorkflowPayload`) :
+Les abonnés au flux traduisent les deux en événements de flux `workflow` (`stream.WorkflowPayload`) :
 
-- **Mises à jour non terminales** (depuis `RunPhaseChanged`) : `phase` uniquement.
-- **Mise à jour terminale** (depuis `RunCompleted`) : `status` + `phase` terminale, plus des champs d'erreur structurés en cas d'échec.
+- **Mises à jour non terminales** (à partir de `RunPhaseChanged`) : `phase` uniquement.
+- **Mise à jour du terminal** (à partir de `RunCompleted`) : `status` + terminal `phase`, plus champs d'erreur structurés sur les échecs.
 
-**Mapping du status terminal**
+**Mappage de l'état du terminal**
 
 - `status="success"` → `phase="completed"`
 - `status="failed"` → `phase="failed"`
@@ -215,16 +302,16 @@ Les abonnés au flux traduisent les deux en événements `workflow` (`stream.Wor
 
 **L'annulation n'est pas une erreur**
 
-Pour `status="canceled"`, le payload de stream **ne doit pas** inclure de message `error` destiné à l'utilisateur. Les consommateurs doivent traiter l'annulation comme un état terminal non erroné.
+Pour `status="canceled"`, la charge utile du flux **ne doit pas** inclure un `error` destiné à l'utilisateur. Les consommateurs devraient considérer l’annulation comme un état final terminal et sans erreur.
 
 **Les échecs sont structurés**
 
-Pour `status="failed"`, le payload de stream inclut :
+Pour `status="failed"`, la charge utile du flux comprend :
 
-- `error_kind` : classificateur stable pour l'UX/décision (kinds provider comme `rate_limited`, `unavailable`, ou kinds runtime comme `timeout`/`internal`)
-- `retryable` : indique si une nouvelle tentative peut réussir sans modifier l'entrée
-- `error` : message **sûr pour l'utilisateur** (affichage direct)
-- `debug_error` : erreur brute pour logs/diagnostics (pas pour UI)
+- `error_kind` : classificateur stable pour l'UX/la décision (types de fournisseurs comme `rate_limited`, `unavailable` ou types d'exécution comme `timeout`/`internal`)
+- `retryable` : si une nouvelle tentative peut réussir sans modifier l'entrée
+- `error` : message **sécurisé pour l'utilisateur** adapté à l'affichage direct
+- `debug_error` : chaîne d'erreur brute pour les journaux/diagnostics (pas pour UI)
 
 ---
 
@@ -232,7 +319,7 @@ Pour `status="failed"`, le payload de stream inclut :
 
 ### Politique d'exécution au moment de la conception
 
-Au moment de la conception, vous configurez les politiques par agent avec `RunPolicy` :
+Au moment de la conception, vous configurez les stratégies par agent avec `RunPolicy` :
 
 ```go
 Agent("chat", "Conversational runner", func() {
@@ -247,18 +334,18 @@ Agent("chat", "Conversational runner", func() {
 })
 ```
 
-Cela devient un `runtime.RunPolicy` attaché à l'enregistrement de l'agent :
+Celui-ci devient un `runtime.RunPolicy` attaché à l'inscription de l'agent :
 
-- **Caps** : `MaxToolCalls` - nombre total d'appels à des *outils soumis au budget* par exécution. Les outils marqués `Bookkeeping()` dans le DSL sont exemptés et ne consomment jamais ce plafond. Par défaut, les résultats de bookkeeping réussis restent cachés des futurs tours du planificateur, sauf si l'outil déclare aussi `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` - échecs consécutifs avant l'abandon.
-- **Budget temps** : `TimeBudget` - budget temps pour l'exécution. `FinalizerGrace` (temps d'exécution uniquement) - fenêtre réservée facultative pour la finalisation.
-- **Interruptions** : `InterruptsAllowed` - option de pause/reprise.
-- **Fin de run atomique** : les outils déclarés `TerminalRun()` dans le DSL terminent le run immédiatement après un appel réussi, sans nécessiter de tour de finalisation du planificateur.
-- **Bookkeeping planner-visible** : `PlannerVisible()` est le pendant non terminal de `TerminalRun()`. Utilisez-le sur des outils de bookkeeping qui émettent un état canonique du plan de contrôle à rejouer dans le prochain `PlanResume` ; il n'est pas valide sur des outils soumis au budget ou terminaux.
-- **Comportement en cas de champs manquants** : `OnMissingFields` - régit ce qui se passe lorsque la validation indique des champs manquants.
+- **Caps** : `MaxToolCalls` – nombre total d'appels d'outils budgétisés par exécution. Les outils déclarés `Bookkeeping()` dans le DSL sont **exemptés** de ce plafond : les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal ne consomment jamais `RemainingToolCalls` et ne sont jamais supprimés lorsqu'un lot est réduit pour s'adapter au budget restant. Les résultats de comptabilité réussis restent cachés par défaut aux futurs tours du planificateur, à moins que l'outil ne déclare également `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` – échecs consécutifs avant l’abandon.
+- **Budget temps** : `TimeBudget` – budget d'horloge murale pour la course. `FinalizerGrace` (exécution uniquement) – fenêtre réservée en option pour la finalisation.
+- **Interruptions** : `InterruptsAllowed` – option pour la pause/reprise.
+- **Comportement des champs manquants** : `OnMissingFields` – régit ce qui se passe lorsque la validation indique des champs manquants.
+- **Outils de terminal** : les outils déclarés `TerminalRun()` terminent l'exécution de manière atomique une fois qu'ils réussissent ; aucun tour de suivi `PlanResume` n'est planifié. Associez `Bookkeeping()` à `TerminalRun()` pour obtenir un outil « valider cette exécution » dont l'exécution est garantie même lorsque le budget de récupération est épuisé.
+- **Comptabilité visible par le planificateur** : `PlannerVisible()` est le frère non terminal de `TerminalRun()`. Utilisez-le sur les outils de comptabilité qui émettent un état canonique du plan de contrôle qui doit être rejoué dans le prochain `PlanResume` ; il n'est pas valide sur les outils budgétisés ou terminaux.
 
-### Remplacement des politiques d'exécution
+### Remplacements de stratégie d'exécution
 
-Dans certains environnements, vous pouvez souhaiter renforcer ou assouplir les règles sans modifier la conception. L'API `rt.OverridePolicy` permet d'ajuster les politiques au niveau du processus :
+Dans certains environnements, vous souhaiterez peut-être renforcer ou assouplir les politiques sans en modifier la conception. Le `rt.OverridePolicy` API permet des ajustements de politique au niveau du processus :
 
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
@@ -268,57 +355,124 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 })
 ```
 
-**Scope** : Les dérogations sont locales à l'instance d'exécution actuelle et n'affectent que les exécutions suivantes. Elles ne persistent pas lors des redémarrages de processus et ne se propagent pas aux autres travailleurs.
+**Portée** : les remplacements sont locaux à l'instance d'exécution actuelle et affectent uniquement les exécutions ultérieures. Ils ne persistent pas lors des redémarrages de processus et ne se propagent pas aux autres travailleurs.
 
-**Champs de surcharge** :
+**Champs remplaçables** :
 
 | Champ | Description |
 | --- | --- |
-| `MaxToolCalls` | Total maximum d'appels à des *outils soumis au budget* par exécution (les outils `Bookkeeping()` sont exemptés)
-| `MaxConsecutiveFailedToolCalls` | Échecs consécutifs avant l'abandon
-| `TimeBudget` | Budget de l'horloge murale pour l'exécution |
-| `FinalizerGrace` `FinalizerGrace` `FinalizerGrace` Fenêtre réservée pour la finalisation
-| `InterruptsAllowed` | Activation de la capacité de pause/reprise |
+| `MaxToolCalls` | Nombre total maximum d'appels d'outils par exécution |
+| `MaxConsecutiveFailedToolCalls` | Échecs consécutifs avant l'abandon |
+| `TimeBudget` | Budget horloger pour la course |
+| `FinalizerGrace` | Fenêtre réservée à la finalisation |
+| `InterruptsAllowed` | Activer la fonctionnalité pause/reprise |
 
-Seuls les champs non nuls sont appliqués (et `InterruptsAllowed` lorsque `true`). Cela permet d'effectuer des remplacements sélectifs sans affecter les autres paramètres de la politique.
+Seuls les champs non nuls sont appliqués (et `InterruptsAllowed` lorsque `true`). Cela permet des remplacements sélectifs sans affecter les autres paramètres de stratégie.
 
-**Cas d'utilisation** :
-- Remboursements temporaires lors de l'étranglement du fournisseur d'accès
+**Cas d'utilisation** :
+- Interruptions temporaires pendant la limitation du fournisseur
 - Tests A/B de différentes configurations de politiques
-- Développement/débogage avec des contraintes relâchées
-- Personnalisation de la politique par locataire au moment de l'exécution
+- Développement/débogage avec des contraintes assouplies
+- Personnalisation des politiques par locataire au moment de l'exécution
 
-### Étiquettes et moteurs de politique
+### Étiquettes et moteurs de politiques
 
-Goa-AI s'intègre à des moteurs de politiques enfichables via `policy.Engine`. Les politiques reçoivent les métadonnées des outils (ID, tags), le contexte d'exécution (SessionID, TurnID, étiquettes) et les informations `RetryHint` après les échecs des outils.
+Goa-AI s'intègre aux moteurs de politiques enfichables via `policy.Engine`. Les stratégies reçoivent les métadonnées de l'outil (ID, balises), le contexte d'exécution (SessionID, TurnID, étiquettes) et les informations `RetryHint` après les échecs de l'outil.
 
-Les étiquettes sont transférées dans :
-- `run.Context.Labels` - disponibles pour les planificateurs au cours d'une exécution
-- entrée d'activité d'outil (`api.ToolInput.Labels`) - clonée dans les exécutions d'outils dispatchées afin que les activités observent les mêmes métadonnées d'exécution, sauf si le planificateur remplace les labels pour un appel précis
-- journal d'exécution (`runlog.Store`) - persisté avec les événements de cycle de vie pour audit/recherche/tableaux de bord (lorsqu'indexé)
+Les étiquettes arrivent dans :
+- `run.Context.Labels` – disponible pour les planificateurs pendant une exécution
+- entrée d'activité d'outil (`api.ToolInput.Labels`) - clonée dans des exécutions d'outils distribuées afin que les activités d'outils observent les mêmes métadonnées d'exécution, à moins que le planificateur ne remplace les étiquettes pour un appel spécifique
+- exécuter les événements du journal (`runlog.Store`) – conservés avec les événements du cycle de vie pour l'audit/la recherche/les tableaux de bord (là où ils sont indexés)
+
+### Filtrage des outils par exécution
+
+Les balises au moment de la conception et les options d'exécution permettent aux appelants de réduire la surface de l'outil avant
+invite du planificateur et encore avant l'exécution :
+
+```go
+out, err := client.Run(ctx, "session-1", messages,
+    runtime.WithAllowedTags([]string{"read", "safe"}),
+    runtime.WithDeniedTags([]string{"destructive"}),
+    runtime.WithTagPolicyClauses([]runtime.TagPolicyClause{
+        {AllowedAny: []string{"docs", "search"}},
+        {DeniedAny: []string{"external"}},
+    }),
+)
+```
+
+Utilisez `WithRestrictToTool` lorsqu'un flux de réparation doit exposer exactement un outil :
+
+```go
+out, err := client.Run(ctx, "session-1", messages,
+    runtime.WithRestrictToTool(searchspecs.Search),
+)
+```
+
+Le runtime verrouille les tours de réparation des outils restreints lorsqu'un indice de nouvelle tentative est défini
+`RestrictToTool`, de sorte que le planificateur de suivi ne voit que l'outil qui a besoin d'un
+charge utile corrigée. Cela permet de concentrer la réparation de validation et d'empêcher le modèle
+de dériver vers des outils sans rapport.
 
 ---
 
-## Exécution de l'outil
+## Exécution des outils
 
-- **Outils natifs** : Vous écrivez les implémentations ; le runtime gère le décodage des args typés en utilisant les codecs générés
-- **Outil généré en tant qu'outil** : Les outils d'agent générés exécutent les agents fournisseurs en tant qu'exécutions enfant (en ligne du point de vue du planificateur) et adaptent leur `RunOutput` en un `planner.ToolResult` avec une poignée `RunLink` renvoyée à l'exécution enfant
-- **OutilsMCP** : Le moteur d'exécution transmet le JSON canonique aux appelants générés ; les appelants gèrent le transport
+- **Ensembles d'outils natifs** : vous écrivez des implémentations ; le runtime gère le décodage des arguments tapés à l'aide des codecs générés
+- **Agent en tant qu'outil** : les ensembles d'outils d'agent générés exécutent les agents fournisseurs en tant qu'exécutions enfants (en ligne du point de vue du planificateur) et adaptent leur `RunOutput` en un `planner.ToolResult` avec un handle `RunLink` vers l'exécution enfant.
+- **Ensembles d'outils MCP** : le runtime transmet le JSON canonique aux appelants générés ; les appelants gèrent le transport
 
-### Tool payload defaults
+### Valeurs par défaut de la charge utile de l'outil
 
-Tool payload decoding follows Goa’s **decode-body → transform** pattern and applies Goa-style defaults deterministically for tool payloads.
+Le décodage de la charge utile de l'outil suit le modèle **decode-body → transform** de Goa et applique les valeurs par défaut de style Goa de manière déterministe pour les charges utiles de l'outil.
 
-See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
+Voir **[Tool Payload Defaults](tool-payload-defaults/)** pour les invariants de contrat et de codegen.
 
-## Contrats runtime des prompts
+### Résultats d'outils limités
 
-La gestion des prompts est native au runtime et versionnee :
+Les outils qui renvoient des vues partielles d'ensembles de données plus volumineux doivent déclarer `BoundedResult(...)`.
+dans le DSL. Le contrat d'exécution de ces outils est :
 
-- `runtime.PromptRegistry` stocke des enregistrements immuables de prompt specs de base (`prompt.PromptSpec`).
-- `runtime.WithPromptStore(prompt.Store)` active la resolution d'overrides scopes (`session` -> `facility` -> `org` -> global).
-- Les planners appellent `PlannerContext.RenderPrompt(ctx, id, data)` pour resoudre et rendre le contenu.
-- Le contenu rendu inclut des metadonnees `prompt.PromptRef` pour la provenance ; les planners peuvent les attacher a `model.Request.PromptRefs`.
+- généré `tools.ToolSpec.Bounds` déclare le schéma canonique de résultat borné
+- les exécutions réussies doivent remplir `planner.ToolResult.Bounds`
+- le runtime projette ces limites dans les `tool_result` JSON émis, indice de résultat
+données de modèle sous `.Bounds`, charges utiles de hook et événements de flux
+
+Champs projetés canoniques :
+
+- `returned` (obligatoire)
+- `truncated` (obligatoire)
+- `total` (facultatif)
+- `refinement_hint` (facultatif)
+- `next_cursor` (facultatif, lorsqu'il est déclaré via `NextCursor(...)`)
+
+`planner.ToolResult.Bounds` reste le seul contrat d'exécution lisible par machine.
+Les types de résultats Go créés restent sémantiques et spécifiques au domaine ; ils n'ont pas besoin de
+dupliquez les champs délimités canoniques juste pour que les modèles puissent les voir.
+
+Pour les outils `BindTo` basés sur une méthode, le résultat de la méthode de service lié doit toujours
+transporter les champs délimités canoniques afin que l'exécuteur généré puisse construire
+`planner.ToolResult.Bounds` avant projection. `Return(...)` face à l'outil explicite
+les formes ne doivent pas dupliquer ces champs canoniques. Dans la méthode liée
+Par conséquent, seuls `returned` et `truncated` peuvent être requis ; `total`,
+`refinement_hint` et `next_cursor` restent facultatifs et sont omis des émissions
+JSON chaque fois que les limites d’exécution les omettent.
+
+Lorsqu'une limite de service doit assembler le résultat canonique JSON à l'extérieur
+`ExecuteToolActivity`, utilisez `runtime.EncodeCanonicalToolResult(...)` plutôt que
+appeler le codec de résultat généré et les assistants de projection de résultats limités
+séparément.
+
+---
+
+## Contrats d'exécution rapide
+
+La gestion des invites est native du runtime et versionnée :
+
+- `runtime.PromptRegistry` stocke les enregistrements `prompt.PromptSpec` de base immuables.
+- `runtime.WithPromptStore(prompt.Store)` permet une résolution de remplacement étendue (`session` -> `facility` -> `org` -> global).
+- Les planificateurs appellent `PlannerContext.RenderPrompt(ctx, id, data)` pour résoudre et afficher le contenu des invites.
+- Le contenu rendu inclut les métadonnées `prompt.PromptRef` pour la provenance ; les planificateurs peuvent les joindre à
+`model.Request.PromptRefs`.
 
 ```go
 content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
@@ -335,45 +489,68 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 })
 ```
 
-`PromptRefs` sont des metadonnees runtime d'audit/provenance et ne font pas partie des champs wire payload du fournisseur.
+`PromptRefs` sont des métadonnées d'exécution pour l'audit/la provenance et ne sont pas des champs de charge utile de fil de fournisseur.
 
 ---
 
-## Mémoire, flux, télémétrie
+## Mémoire, Streaming, Télémétrie
 
-- **Le bus de crochet** publie des événements de crochet structurés pour le cycle de vie complet de l'agent : démarrage/achèvement de l'exécution, changements de phase, `prompt_rendered`, programmation/résultats/mises à jour de l'outil, notes du planificateur et blocs de réflexion, attentes, indices de réessai et liens entre l'agent et l'outil.
+- **Hook bus** publie des événements de hook structurés pour le cycle de vie complet de l'agent : démarrage/achèvement de l'exécution, changements de phase, `prompt_rendered`, planification/résultats/mises à jour des outils, notes du planificateur et blocs de réflexion, attentes, conseils de nouvelle tentative et liens d'agent en tant qu'outil.
 
-- **Les magasins de mémoire** (`memory.Store`) souscrivent et ajoutent des événements de mémoire durables (messages de l'utilisateur/assistant, appels d'outils, résultats d'outils, notes du planificateur, réflexion) par `(agentID, RunID)`.
+- **Les magasins de mémoire** (`memory.Store`) s'abonnent et ajoutent des événements de mémoire durables (messages utilisateur/assistant, appels d'outils, résultats d'outils, notes de planificateur, réflexion) par `(agentID, RunID)`.
 
-- **Magasins d'événements d'exécution** (`runlog.Store`) ajoutent le journal canonique des événements hook par `RunID` pour UI audit/debug et introspection.
+- **Exécuter les magasins d'événements** (`runlog.Store`) ajoutez le journal des événements de hook canonique par `RunID` pour l'audit/débogage de UIs et exécutez l'introspection.
 
-- **Les puits de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs typées `stream.Event` produites par le `stream.Subscriber`. Une `StreamProfile` contrôle les types d'événements émis.
+- Les **récepteurs de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs `stream.Event` typées produites par le `stream.Subscriber`. Un `StreamProfile` contrôle quels types d'événements sont émis.
 
-- **Télémétrie** : La journalisation, la métrologie et le traçage des flux de travail et des activités de bout en bout sont pris en compte par OTEL.
+- **Télémétrie** : les flux de travail et les activités des instruments de journalisation, de métriques et de traçage compatibles OTEL de bout en bout.
 
-### Indices d'appel d'outil (DisplayHint)
+### Conseils d'affichage des appels d'outils (DisplayHint)
 
-Les appels d'outils peuvent transporter un `DisplayHint` destiné à l'utilisateur (par exemple, pour des UI).
+Les appels d'outils peuvent porter un `DisplayHint` destiné à l'utilisateur (par exemple pour UIs).
 
-Contrat :
+Contracter:
 
-- Les constructeurs d'événements de hooks ne rendent pas les indices. Les événements de planification d'outil ont `DisplayHint==""` par défaut.
-- Le runtime peut enrichir et persister un indice d'appel **durable** au moment de la publication en décodant la charge utile typée et en exécutant le `CallHintTemplate` DSL.
-- Si le décodage typé échoue ou si aucun modèle n'est enregistré, le runtime laisse `DisplayHint` vide. Les indices ne sont jamais rendus à partir de JSON brut.
-- Si un producteur définit explicitement `DisplayHint` (non vide) avant de publier l'événement hook, le runtime le considère comme faisant autorité et ne l'écrase pas.
-- Pour des variations par consommateur (par exemple, une formulation UI différente), configurez `runtime.WithHintOverrides` sur le runtime. Les overrides ont la priorité sur les templates DSL pour les événements `tool_start` streamés.
+- Les constructeurs de hooks ne rendent pas d'indices. Les événements planifiés d’appel d’outil sont par défaut `DisplayHint==""`.
+- Le moteur d'exécution peut enrichir et conserver un indice d'appel par défaut durable au moment de la publication en décodant l'outil saisi.
+charge utile et exécution du DSL `CallHintTemplate`.
+- Lorsque le décodage typé échoue ou qu’aucun modèle n’est enregistré, le runtime laisse `DisplayHint` vide. Les indices sont
+jamais rendu sur les octets bruts JSON.
+- Si un producteur définit explicitement `DisplayHint` (non vide) avant de publier l'événement hook, le runtime traite
+comme faisant autorité et ne l'écrase pas.
+- Pour les modifications de formulation par consommateur, configurez `runtime.WithHintOverrides` au moment de l'exécution. Les remplacements prennent
+priorité sur les modèles créés par DSL pour les événements `tool_start` diffusés en streaming.
 
-### Consommer le flux de session (Pulse)
+### Consommation d'un flux de session (Pulse)
 
-En production, le schéma habituel est :
+En production, le modèle courant est le suivant :
 
-- consommer le flux de session (`session/<session_id>`) depuis un bus partagé (Pulse / Redis Streams)
-- filtrer par `run_id` pour construire des cartes/voies par exécution
-- fermer SSE/WebSocket à l’observation de `run_stream_end` pour le `run_id` actif
+- publier des événements de flux d'exécution sur Pulse (flux Redis) à l'aide d'un `stream.Sink`
+- abonnez-vous au **flux de session** (`session/<session_id>`) depuis votre diffusion UI (SSE/WebSocket)
+- arrêtez de diffuser une analyse lorsque vous observez `type=="run_stream_end"` pour l'ID d'exécution actif
 
 ```go
-import "goa.design/goa-ai/runtime/agent/stream"
+import (
+    pulsestream "goa.design/goa-ai/features/stream/pulse"
+    "goa.design/goa-ai/runtime/agent/runtime"
+    "goa.design/goa-ai/runtime/agent/stream"
+)
 
+streams, err := pulsestream.NewRuntimeStreams(pulsestream.RuntimeStreamsOptions{
+    Client: pulseClient,
+})
+if err != nil {
+    panic(err)
+}
+rt := runtime.New(
+    runtime.WithEngine(eng),
+    runtime.WithStream(streams.Sink()),
+)
+
+sub, err := streams.NewSubscriber(pulsestream.SubscriberOptions{SinkName: "ui"})
+if err != nil {
+    panic(err)
+}
 events, errs, cancel, err := sub.Subscribe(ctx, "session/session-123")
 if err != nil {
     panic(err)
@@ -390,6 +567,7 @@ for {
         if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
             return
         }
+        // evt.SessionID(), evt.RunID(), evt.Type(), evt.Payload()
     case err := <-errs:
         panic(err)
     }
@@ -400,20 +578,19 @@ for {
 
 ## Abstraction du moteur
 
-- **En mémoire** : Boucle de développement rapide, pas de développement externe
-- **Temporel** : Exécution durable, relecture, tentatives, signaux, travailleurs ; les adaptateurs câblent les activités et la propagation du contexte
+- **En mémoire** : boucle de développement rapide, pas de dépôts externes
+- **Temporal** : exécution durable, relecture, tentatives, signaux, travailleurs ; activités de fil d'adaptateurs et propagation de contexte
 
-### Temporisation sémantique vs vivacité Temporal
+### Synchronisation sémantique vs vivacité du Temporal
 
-Goa-AI garde le contrat runtime public agnostique du moteur :
+Goa-AI maintient le contrat d'exécution public indépendant du moteur :
 
-- `RunPolicy.Timing.Plan` et `RunPolicy.Timing.Tools` sont des budgets sémantiques par tentative
-- `runtime.WithTiming(...)` surcharge ces budgets sémantiques pour une exécution
-- `runtime.WithWorker(...)` sert au placement sur file, pas au réglage du moteur de workflow
+- `RunPolicy.Timing.Plan` et `RunPolicy.Timing.Tools` sont des budgets de tentatives sémantiques
+- `runtime.WithTiming(...)` remplace ces budgets sémantiques pour une exécution
+- `runtime.WithWorker(...)` est destiné au placement de file d'attente et non au réglage du moteur de flux de travail
 
-Si vous utilisez l'adaptateur Temporal et que vous devez régler l'attente en
-file ou la vivacité, configurez ces mécanismes sur le moteur Temporal
-lui-même :
+Si vous utilisez l'adaptateur Temporal et avez besoin d'un réglage de l'attente en file d'attente ou de l'activité, configurez
+sur le moteur Temporal lui-même :
 
 ```go
 eng, err := temporal.NewWorker(temporal.Options{
@@ -440,25 +617,24 @@ if err != nil {
 }
 ```
 
-Cette séparation garde la mécanique des workflows derrière la frontière
-Temporal, tandis que le runtime générique reste fidèle à la fois à Temporal et
-au moteur en mémoire.
+Cette division maintient les mécanismes de flux de travail derrière la limite Temporal tandis que le
+le temps d'exécution générique reste honnête à la fois sur Temporal et sur le moteur en mémoire.
 
 ---
 
-## Exécuter les contrats
+## Exécuter des contrats
 
-- `SessionID` est requis pour les démarrages sessionnels. `Start` et `Run` échouent rapidement si `SessionID` est vide ou contient des espaces
-- `StartOneShot` et `OneShotRun` sont explicitement sans session. Ils n'exigent ni ne créent de session et n'émettent pas d'événements de flux portés par la session
-- Les agents doivent être enregistrés avant la première exécution. Le moteur d'exécution rejette l'enregistrement après la soumission de la première exécution avec `ErrRegistrationClosed` afin de maintenir le caractère déterministe des travailleurs du moteur
-- Les exécuteurs d'outils reçoivent des métadonnées explicites par appel (`ToolCallMeta`) plutôt que des valeurs de pêche provenant de `context.Context`
-- Ne pas s'appuyer sur des fallbacks implicites ; tous les identifiants de domaine (run, session, turn, correlation) doivent être transmis explicitement
+- `SessionID` est requis pour les démarrages de session. `Start` et `Run` échouent rapidement lorsque `SessionID` est vide ou un espace
+- `StartOneShot` et `OneShotRun` sont explicitement sans session. Ils ne nécessitent ni ne créent de session et n'émettent pas d'événements de flux à l'échelle de la session.
+- Les agents doivent être enregistrés avant la première exécution. Le moteur d'exécution rejette l'enregistrement après la première soumission d'exécution avec `ErrRegistrationClosed` pour que les opérateurs du moteur restent déterministes.
+- Les exécuteurs d'outils reçoivent des métadonnées explicites par appel (`ToolCallMeta`) plutôt que des valeurs de pêche de `context.Context`
+- Ne comptez pas sur des solutions de repli implicites ; tous les identifiants de domaine (exécution, session, tour, corrélation) doivent être transmis explicitement
 
 ---
 
 ## Pause et reprise
 
-Les flux de travail humains en boucle peuvent suspendre et reprendre leur exécution à l'aide des aides à l'interruption du runtime :
+Les flux de travail Human-in-loop peuvent suspendre et reprendre les exécutions à l'aide des assistants d'interruption du runtime :
 
 ```go
 import "goa.design/goa-ai/runtime/agent/interrupt"
@@ -479,13 +655,13 @@ if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
 }
 ```
 
-En coulisses, les signaux de pause/reprise mettent à jour le magasin d'exécution et émettent des événements de type `run_paused`/`run_resumed` pour que les couches de l'interface utilisateur restent synchronisées.
+En coulisses, les signaux de pause/reprise mettent à jour le magasin d'exécution et émettent des événements de hook `run_paused`/`run_resumed` afin que les couches UI restent synchronisées.
 
-### Fournir des résultats d’outils externes
+### Fournir des résultats d'outils externes
 
-Certaines attentes se reprennent avec des **résultats d’outils fournis par un acteur externe** plutôt que par `ExecuteToolActivity` lui-même. Les cas typiques sont les outils pilotés par l’interface utilisateur, comme les questions structurées, ou les services passerelles qui collectent des résultats depuis un autre système avant de réveiller l’exécution.
+Certaines attentes reprennent avec des **résultats d'outils fournis par un acteur externe** plutôt que par `ExecuteToolActivity` lui-même. Des exemples courants sont les outils appartenant à l'interface utilisateur, tels que les questions structurées ou les services de pont qui collectent les résultats d'un autre système, puis réactivent la sauvegarde.
 
-Utilisez `ProvideToolResults` avec des résultats bruts fournis :
+Utilisez `ProvideToolResults` avec les résultats bruts fournis :
 
 ```go
 err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
@@ -501,36 +677,36 @@ err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
 })
 ```
 
-Contrat :
+Contracter:
 
-- Les appelants fournissent le **JSON de résultat canonique brut** ainsi que `Bounds`, `Error` et `RetryHint` en option.
-- Les appelants ne construisent **pas** `api.ToolEvent` ; c’est l’enveloppe interne de workflow du runtime.
-- Le runtime décode le résultat fourni à l’aide de la spécification d’outil enregistrée, exécute la matérialisation typée du résultat, attache les sidecars purement serveur, ajoute le `tool_result` canonique au transcript/run log, puis reprend seulement ensuite la planification.
+- Les appelants fournissent le **résultat canonique brut JSON** plus les `Bounds`, `Error` et `RetryHint` facultatifs.
+- Les appelants ne construisent **pas** `api.ToolEvent` ; il s’agit de l’enveloppe de flux de travail interne du runtime.
+- Le moteur d'exécution décode le résultat fourni à l'aide de la spécification de l'outil enregistré, exécute la matérialisation des résultats typés, attache tous les side-cars réservés au serveur, ajoute le `tool_result` canonique à la transcription/au journal d'exécution, puis reprend la planification.
 
-Cela maintient le chemin d’attente conceptuellement aligné sur le chemin d’exécution normal : les deux flux convergent vers le même contrat typé `planner.ToolResult` avant publication.
+Cela maintient le chemin d'attente conceptuellement aligné sur le chemin d'exécution normal : les deux flux convergent vers le même contrat `planner.ToolResult` typé avant la publication.
 
 ---
 
 ## Confirmation de l'outil
 
-Goa-AI supporte des portes de confirmation **forcées par le temps d'exécution** pour les outils sensibles (écritures, suppressions, commandes).
+Goa-AI prend en charge les portes de confirmation **appliquées au moment de l'exécution** pour les outils sensibles (écritures, suppressions, commandes).
 
-Vous pouvez activer la confirmation de deux manières :
+Vous pouvez activer la confirmation de deux manières :
 
-- **Temps de conception (cas courant):** déclarer `Confirmation(...)` à l'intérieur du DSL de l'outil. Codegen stocke
-  la politique dans `tools.ToolSpec.Confirmation`.
-- **Runtime (override/dynamique):** passer `runtime.WithToolConfirmation(...)` lors de la construction du runtime
-  pour exiger la confirmation d'outils supplémentaires ou remplacer le comportement du temps de conception.
+- **Au moment de la conception (cas courant) :** déclarez `Confirmation(...)` dans l'outil DSL. Magasins Codegen
+la politique dans `tools.ToolSpec.Confirmation`.
+- **Runtime (remplacement/dynamique) :** passez `runtime.WithToolConfirmation(...)` lors de la construction du runtime
+pour exiger une confirmation pour des outils supplémentaires ou remplacer le comportement au moment de la conception.
 
-Au moment de l'exécution, le flux de travail émet une demande de confirmation hors bande et n'exécute l'outil qu'après avoir reçu une approbation explicite
-qu'après avoir reçu une approbation explicite. En cas de refus, la durée d'exécution synthétise un résultat d'outil conforme au schéma, de manière à ce que la transcription reste valide et que l'outil soit exécuté
-afin que la transcription reste valide et que le planificateur puisse réagir de manière déterministe.
+Au moment de l'exécution, le workflow émet une demande de confirmation hors bande et exécute uniquement l'outil
+après qu’une approbation explicite ait été fournie. En cas de refus, le runtime synthétise un outil conforme au schéma
+résultat afin que la transcription reste valide et que le planificateur puisse réagir de manière déterministe.
 
 ### Protocole de confirmation
 
-Lors de l'exécution, la confirmation est mise en œuvre sous la forme d'un protocole d'attente/décision dédié :
+Au moment de l'exécution, la confirmation est implémentée sous la forme d'un protocole d'attente/décision dédié :
 
-- **Await payload** (streamed as `await_confirmation`) :
+- **Attendre la charge utile** (diffusé sous le nom `await_confirmation`) :
 
   ```json
   {
@@ -543,13 +719,13 @@ Lors de l'exécution, la confirmation est mise en œuvre sous la forme d'un prot
   }
   ```
 
-Contrat :
+Contracter:
 
-- `payload` contient toujours les arguments JSON canoniques de l’appel d’outil en attente. Si l’appel est approuvé, ce sont ces arguments que le runtime exécute.
-- Les surcharges de confirmation peuvent personnaliser le prompt et le rendu du résultat refusé, mais elles n’introduisent pas de canal de payload d’affichage séparé et ne changent pas la signification de `payload`.
-- Les produits qui ont besoin d’une UI de confirmation plus riche doivent la matérialiser dans la couche application à partir du payload canonique et de lectures détenues par l’application.
+- `payload` contient toujours les arguments canoniques de l'outil JSON pour l'appel en attente. S’ils sont approuvés, ce sont les arguments que le runtime exécute.
+- Les remplacements de confirmation peuvent personnaliser le rendu de l'invite et du résultat refusé, mais ils n'introduisent pas de canal de charge utile d'affichage distinct ni ne modifient la signification de `payload`.
+- Les produits qui nécessitent une confirmation plus riche UI doivent la matérialiser dans la couche d'application à partir de la charge utile canonique et des lectures appartenant à l'application.
 
-- **Fournir une décision** (via `ProvideConfirmation` sur le runtime) :
+- **Fournir une décision** (via `ProvideConfirmation` lors de l'exécution) :
 
   ```go
   err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
@@ -564,43 +740,43 @@ Contrat :
 
 ### Événements d’autorisation d’outil
 
-Lorsqu’une décision est fournie, le runtime émet un événement d’autorisation de premier ordre :
+Lorsqu'une décision est fournie, le runtime émet un événement d'autorisation de première classe :
 
-- **Hook event** : `hooks.ToolAuthorization`
-- **Stream event type** : `tool_authorization`
+- **Événement crochet** : `hooks.ToolAuthorization`
+- **Type d'événement de flux** : `tool_authorization`
 
-Cet événement est l’enregistrement canonique “qui/quand/quoi” pour un appel d’outil confirmé :
+Cet événement est l'enregistrement canonique « qui/quand/quoi » pour un appel d'outil confirmé :
 
 - `tool_name`, `tool_call_id`
-- `approved` (true/false)
-- `summary` (résumé déterministe rendu par le runtime)
-- `approved_by` (copié depuis `interrupt.ConfirmationDecision.RequestedBy`, identifiant de principal stable)
+- `approved` (vrai/faux)
+- `summary` (résumé déterministe rendu à l'exécution)
+- `approved_by` (copié à partir de `interrupt.ConfirmationDecision.RequestedBy`, destiné à être un identifiant principal stable)
 
-L’événement est émis immédiatement après réception de la décision (avant l’exécution de l’outil si approuvé, et avant la synthèse du résultat refusé si refusé).
+L'événement est émis immédiatement après la réception de la décision (avant l'exécution de l'outil en cas d'approbation, et avant la synthèse du résultat de l'outil refusé en cas de refus).
 
-Notes :
+Remarques :
 
-- Les consommateurs doivent traiter la confirmation comme un protocole d'exécution :
-  - Utilisez le motif `RunPaused` (`await_confirmation`) qui l'accompagne pour décider quand afficher une interface utilisateur de confirmation.
-  - N'associez pas le comportement de l'interface utilisateur à un nom d'outil de confirmation spécifique ; traitez-le comme un détail de transport interne.
+- Les consommateurs doivent traiter la confirmation comme un protocole d'exécution :
+  - Utilisez le motif `RunPaused` associé (`await_confirmation`) pour décider quand afficher une confirmation UI.
+  - Ne couplez pas le comportement UI à un nom d’outil de confirmation spécifique ; traitez-le comme un détail de transport interne.
 - Les modèles de confirmation (`PromptTemplate` et `DeniedResultTemplate`) sont des chaînes Go `text/template`
-  exécutées avec `missingkey=error`. Outre les fonctions standard des modèles (par exemple, `printf`),
-  Goa-AI fournit :
-  - `json v` → JSON encode `v` (utile pour les champs de pointeurs optionnels ou l'intégration de valeurs structurées).
-  - `quote s` → renvoie une chaîne entre guillemets Go-escapée (comme `fmt.Sprintf("%q", s)`).
+exécuté avec `missingkey=error`. En plus des fonctions de modèle standard (par exemple `printf`),
+  Goa-AI fournit :
+  - `json v` → JSON code `v` (utile pour les champs de pointeur facultatifs ou l'intégration de valeurs structurées).
+  - `quote s` → renvoie une chaîne entre guillemets avec échappement Go (comme `fmt.Sprintf("%q", s)`).
 
-### Validation au moment de l'exécution
+### Validation d'exécution
 
-Le moteur d'exécution valide les interactions de confirmation à la frontière :
+Le runtime valide les interactions de confirmation à la limite :
 
-- La confirmation `ID` correspond à l'identifiant de l'attente en cours lorsqu'il est fourni.
+- La confirmation `ID` correspond à l'identifiant d'attente en attente lorsqu'elle est fournie.
 - L'objet de décision est bien formé (`RunID` non vide, valeur booléenne `Approved`).
 
 ---
 
-## Contrat de planification
+## Contrat de planificateur
 
-Les planificateurs mettent en œuvre :
+Les planificateurs mettent en œuvre :
 
 ```go
 type Planner interface {
@@ -609,37 +785,39 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contient les appels d'outils, la réponse finale, les annotations et `RetryHint` facultatif. Le moteur d'exécution applique les caps, planifie les activités des outils et renvoie les résultats des outils dans `PlanResume` jusqu'à ce qu'une réponse finale soit produite.
+`PlanResult` contient des appels d'outils, une réponse finale, des annotations et un `RetryHint` facultatif. Le moteur d'exécution applique les plafonds, planifie les activités des outils et renvoie les résultats des outils dans `PlanResume` jusqu'à ce qu'une réponse finale soit produite.
 
-Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` qui expose les services d'exécution :
-- `AdvertisedToolDefinitions()` - obtenir les définitions d'outils filtrées par le runtime et visibles par le modèle pour ce tour
-- `ModelClient(id string)` - obtenir un client de modèle brut agnostique par rapport au fournisseur
-- `PlannerModelClient(id string)` - obtenir un client de modèle propre au planner avec émission d'événements gérée par le runtime
-- `RenderPrompt(ctx, id, data)` - resoudre et rendre le contenu de prompt pour le scope de run courant
-- `AddReminder(r reminder.Reminder)` - enregistrer des rappels de système à l'échelle de l'exécution
-- `RemoveReminder(id string)` - effacer les rappels lorsque les conditions préalables ne sont plus remplies
-- `Memory()` - accès à l'historique des conversations
+Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` qui expose les services d'exécution :
+- `AdvertisedToolDefinitions()` - obtient les définitions d'outils filtrées à l'exécution et visibles par le modèle pour ce tour
+- `ModelClient(id string)` - obtenez un client modèle brut indépendant du fournisseur
+- `PlannerModelClient(id string)` - obtenez un client modèle à l'échelle du planificateur avec une émission d'événements appartenant au runtime
+- `RenderPrompt(ctx, id, data)` - résoudre et afficher le contenu de l'invite pour la portée d'exécution en cours
+- `AddReminder(r reminder.Reminder)` - enregistrer les rappels système liés à l'exécution
+- `RemoveReminder(id string)` - effacer les rappels lorsque les conditions préalables ne sont plus valables
+- `Memory()` - accéder à l'historique des conversations
 
 ---
 
 ## Modules de fonctionnalités
 
-- `features/mcp/*` - suite MCP DSL/codegen/appels en temps réel (HTTP/SSE/stdio)
-- `features/memory/mongo` - mémoire durable
-- `features/prompt/mongo` - prompt store Mongo pour les overrides de prompts
-- `features/runlog/mongo` - magasin d'événements d'exécution (append-only, pagination par curseur)
-- `features/session/mongo` - magasin de métadonnées de session
-- `features/stream/pulse` - aides pour les puits d'impulsion et les abonnés
-- `features/model/{anthropic,bedrock,openai}` - adaptateurs de client de modèle pour les planificateurs
-- `features/model/middleware` - middlewares partagés `model.Client` (par exemple, limitation adaptative du débit)
-- `features/policy/basic` - moteur de politique simple avec listes d'autorisation/de blocage et gestion des indices de réessai
+- `runtime/mcp` – Appelants MCP pour les transports HTTP, SSE et stdio
+- `features/memory/mongo` – magasin de mémoire durable
+- `features/prompt/mongo` – Magasin de remplacement d'invite soutenu par Mongo
+- `features/runlog/mongo` – exécuter le magasin de journaux d'événements (ajout uniquement, pagination du curseur)
+- `features/session/mongo` – magasin de métadonnées de session
+- `features/stream/pulse` – Assistants récepteurs/abonnés Pulse
+- `features/model/{anthropic,bedrock,openai}` – modèles d'adaptateurs client pour les planificateurs
+- `features/model/middleware` – middlewares `model.Client` partagés (par exemple, limitation de débit adaptative)
+- `features/policy/basic` – moteur de stratégie simple avec listes d'autorisation/blocage et gestion des astuces de nouvelle tentative
 
-### Modélisation du débit du client et de la limitation du débit
+### Modéliser le débit client et la limitation du débit
 
-Goa-AI fournit un limiteur de débit adaptatif agnostique au fournisseur sous `features/model/middleware`. Il enveloppe tout `model.Client`, estime les jetons par demande, met les appelants en file d'attente en utilisant un seau de jetons, et ajuste son budget effectif de jetons par minute en utilisant une stratégie additive-incrémentale/multiplicative-décrémentale (AIMD) lorsque les fournisseurs signalent un étranglement.
+Goa-AI est livré avec un limiteur de débit adaptatif indépendant du fournisseur sous `features/model/middleware`. Il encapsule n'importe quel `model.Client`, estime les jetons par requête, met les appelants en file d'attente à l'aide d'un compartiment de jetons et ajuste son budget effectif de jetons par minute à l'aide d'une stratégie d'augmentation/diminution additive (AIMD) lorsque les fournisseurs signalent une limitation.
 
 ```go
 import (
+    "github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+    "goa.design/goa-ai/runtime/agent/runtime"
     "goa.design/goa-ai/features/model/bedrock"
     mdlmw "goa.design/goa-ai/features/model/middleware"
 )
@@ -647,7 +825,7 @@ import (
 awsClient := bedrockruntime.NewFromConfig(cfg)
 bed, _ := bedrock.New(awsClient, bedrock.Options{
     DefaultModel: "us.anthropic.claude-4-5-sonnet-20251120-v1:0",
-}, ledger)
+})
 
 rl := mdlmw.NewAdaptiveRateLimiter(
     ctx,
@@ -658,20 +836,21 @@ rl := mdlmw.NewAdaptiveRateLimiter(
 )
 limited := rl.Middleware()(bed)
 
-rt := runtime.New(runtime.Options{
-    // Register limited as the model client exposed to planners.
-})
+rt := runtime.New()
+if err := rt.RegisterModel("bedrock", limited); err != nil {
+    panic(err)
+}
 ```
 
 ---
 
 ## Intégration LLM
 
-Les planificateurs Goa-AI interagissent avec les grands modèles de langage par le biais d'une **interface agnostique au fournisseur**. Cette conception vous permet de changer de fournisseur - AWS Bedrock, OpenAI, ou des points d'extrémité personnalisés - sans modifier le code de votre planificateur.
+Les planificateurs Goa-AI interagissent avec de grands modèles de langage via une **interface indépendante du fournisseur**. Cette conception vous permet d'échanger des fournisseurs (AWS Bedrock, OpenAI ou des points de terminaison personnalisés) sans modifier votre code de planificateur.
 
-### L'interface model.Client
+### L'interface modèle.Client
 
-Toutes les interactions LLM passent par l'interface `model.Client` :
+Toutes les interactions LLM passent par l'interface `model.Client` :
 
 ```go
 type Client interface {
@@ -680,9 +859,9 @@ type Client interface {
 }
 ```
 
-### Adaptateurs de fournisseurs
+### Adaptateurs de fournisseur
 
-Goa-AI est livré avec des adaptateurs pour les fournisseurs LLM les plus courants :
+Le Goa-AI est livré avec des adaptateurs pour les fournisseurs LLM populaires :
 
 **AWS Bedrock**
 
@@ -699,7 +878,7 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
     SmallModel:   "anthropic.claude-3-5-haiku-20241022-v1:0",
     MaxTokens:    4096,
     Temperature:  0.7,
-}, ledger)
+})
 ```
 
 **OpenAI**
@@ -707,23 +886,28 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
 ```go
 import "goa.design/goa-ai/features/model/openai"
 
-modelClient, err := openai.NewFromAPIKey(apiKey, "gpt-4o")
+modelClient, err := openai.New(openai.Options{
+    APIKey:       apiKey,
+    DefaultModel: "gpt-5-mini",
+    HighModel:    "gpt-5",
+    SmallModel:   "gpt-5-nano",
+})
 ```
 
 ### Utilisation de clients modèles dans les planificateurs
 
-Les planificateurs obtiennent des clients de modèle via le `PlannerContext` du
-runtime. Il existe désormais deux styles d'intégration explicites :
+Les planificateurs obtiennent des clients modèles via le `PlannerContext` du runtime. Il y a
+deux styles d'intégration explicites :
 
-- `PlannerModelClient(id)` pour un streaming propre au planner avec émission d'événements gérée par le runtime
-- `ModelClient(id)` lorsque vous avez besoin d'un accès brut au transport et que vous l'associerez à `planner.ConsumeStream` ou que vous émettrez `PlannerEvents` vous-même
+- `PlannerModelClient(id)` pour le streaming à l'échelle du planificateur avec émission d'événements appartenant au runtime
+- `ModelClient(id)` lorsque vous avez besoin d'un accès au transport brut et que vous l'associerez à `planner.ConsumeStream` ou émettrez `PlannerEvents` vous-même
 
-#### PlannerModelClient (Recommandé)
+#### PlannerModelClient (recommandé)
 
-`PlannerContext.PlannerModelClient(id)` renvoie un client propre au planner qui
-prend en charge l'émission de `AssistantChunk`, `PlannerThinkingBlock` et
-`UsageDelta`. Sa méthode `Stream(...)` draine le flux du fournisseur sous-jacent
-et renvoie un `planner.StreamSummary` :
+`PlannerContext.PlannerModelClient(id)` renvoie un client à l'échelle du planificateur qui
+possède les émissions `AssistantChunk`, `PlannerThinkingBlock` et `UsageDelta`. C'est
+La méthode `Stream(...)` draine le flux du fournisseur sous-jacent et renvoie un
+`planner.StreamSummary` :
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
@@ -757,14 +941,14 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
 }
 ```
 
-Il s'agit du style d'intégration le plus sûr, car le client propre au planner
-n'expose pas de `model.Streamer` brut et ne peut donc pas être combiné par
-accident avec `planner.ConsumeStream`.
+Il s'agit du style d'intégration le plus sûr car le client limité au planificateur ne
+exposer un `model.Streamer` brut, afin qu'il ne puisse pas être combiné accidentellement avec
+`planner.ConsumeStream`.
 
 #### Client brut + ConsumeStream
 
-Lorsque vous avez besoin du `model.Client` brut, récupérez-le via
-`PlannerContext.ModelClient` et associez-le à `planner.ConsumeStream` :
+Lorsque vous avez besoin du `model.Client` brut, récupérez-le sur `PlannerContext.ModelClient`
+et associez-le à `planner.ConsumeStream` :
 
 ```go
 mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
@@ -786,24 +970,23 @@ if err != nil {
 }
 ```
 
-Ce helper draine le flux, émet les événements d'assistant/de réflexion/d'usage,
-et renvoie un `StreamSummary` avec le texte accumulé et les appels d'outils.
+Cet assistant draine le flux, émet des événements d'assistant/réflexion/utilisation et
+renvoie un `StreamSummary` avec du texte et des appels d'outils accumulés.
 
-Utilisez la voie du client brut lorsque vous avez besoin d'un contrôle total sur
-la consommation du flux, d'un comportement d'arrêt anticipé personnalisé, ou
-que vous souhaitez gérer explicitement `PlannerEvents`. Ne mélangez pas
-`PlannerModelClient.Stream(...)` avec `planner.ConsumeStream` ; choisissez un
-seul propriétaire du flux par tour de planner.
+Utilisez le chemin client brut lorsque vous avez besoin d'un contrôle total sur la consommation de flux, que vous souhaitez
+comportement d'arrêt anticipé personnalisé ou si vous souhaitez gérer explicitement `PlannerEvents`. Ne
+mélanger `PlannerModelClient.Stream(...)` avec `planner.ConsumeStream` ; choisissez-en un
+propriétaire du flux par tour du planificateur.
 
-### Validation de l'ordre des messages de Bedrock
+### Validation de l'ordre des messages Bedrock
 
-Lors de l'utilisation de AWS Bedrock avec le mode de pensée activé, le runtime valide les contraintes d'ordre des messages avant d'envoyer des requêtes. Bedrock requiert :
+Lors de l'utilisation de AWS Bedrock avec le mode réflexion activé, le moteur d'exécution valide les contraintes d'ordre des messages avant d'envoyer les requêtes. Bedrock nécessite :
 
-1. Tout message d'assistant contenant `tool_use` doit commencer par un bloc de réflexion
-2. Chaque message d'utilisateur contenant `tool_result` doit suivre immédiatement un message d'assistant avec les blocs `tool_use` correspondants
-3. Le nombre de blocs `tool_result` ne peut dépasser le nombre de blocs `tool_use` précédents
+1. Tout message de l'assistant contenant `tool_use` doit commencer par un bloc de réflexion
+2. Chaque message utilisateur contenant `tool_result` doit immédiatement suivre un message d'assistant avec les blocs `tool_use` correspondants.
+3. Le nombre de blocs `tool_result` ne peut pas dépasser le nombre `tool_use` précédent.
 
-Le client Bedrock valide ces contraintes en amont et renvoie une erreur descriptive en cas de violation :
+Le client Bedrock valide ces contraintes plus tôt et renvoie une erreur descriptive en cas de violation :
 
 ```
 bedrock: invalid message ordering with thinking enabled (run=xxx, model=yyy): 
@@ -816,6 +999,6 @@ Cette validation garantit que la reconstruction du grand livre de transcription 
 
 ## Prochaines étapes
 
-- En savoir plus sur [Toolsets](./toolsets/) pour comprendre les modèles d'exécution d'outils
-- Explorer [Composition des agents](./agent-composition/) pour les modèles d'agents en tant qu'outils
-- En savoir plus sur [Memory & Sessions](./memory-sessions/) pour la persistance des transcriptions
+- Découvrez les [Ensembles d'outils](./toolsets/) pour comprendre les modèles d'exécution d'outils.
+- Explorez [Composition d'agent](./agent-composition/) pour les modèles d'agent en tant qu'outil
+- En savoir plus sur [Mémoire et sessions] (./memory-sessions/) pour la persistance des transcriptions

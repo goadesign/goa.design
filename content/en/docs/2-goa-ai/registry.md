@@ -130,7 +130,7 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 When `CallTool` is invoked, the registry performs these steps in sequence:
 
-1. **Schema validation**: The payload is validated against the tool's JSON Schema using a compiled schema validator
+1. **Schema validation**: The payload is validated against the tool's JSON Schema using the runtime toolregistry schema validator
 2. **Health check**: The registry checks if the toolset has responded to recent pings—unhealthy toolsets return `service_unavailable` immediately
 3. **Result stream creation**: A temporary Pulse stream is created with a unique `tool_use_id`, and the mapping is stored in Redis for cross-node result delivery
 4. **Request publishing**: The tool call is published to the toolset's request stream (`toolset:<name>:requests`)
@@ -151,14 +151,15 @@ The generated provider:
 - Decodes the incoming tool payload JSON using the generated payload codec
 - Builds the Goa method payload using generated transforms
 - Calls the bound service method
-- Encodes the tool result JSON together with any declared server-data (optional observer-facing server-data and always-on server-only metadata) using the generated result codec
+- Encodes the tool result JSON together with any declared server-data using the generated result codec
 
-To serve tool calls from the registry gateway, wire the generated provider into the runtime provider loop:
+To serve tool calls from the registry gateway, wire the generated provider into
+the runtime provider loop (`goa.design/goa-ai/runtime/toolregistry/provider`):
 
 ```go
 handler := toolsetpkg.NewProvider(serviceImpl)
 go func() {
-    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
         Pong: func(ctx context.Context, pingID string) error {
             return registryClient.Pong(ctx, &registry.PongPayload{
                 PingID:  pingID,

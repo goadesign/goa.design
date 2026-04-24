@@ -624,7 +624,7 @@ I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che esp
 
 ## Moduli funzionali
 
-- `features/mcp/*` - Chiamate DSL/codegen/runtime della suite MCP (HTTP/SSE/stdio)
+- `runtime/mcp` - chiamanti MCP per trasporti HTTP, SSE e stdio
 - `features/memory/mongo` - archivio di memoria durevole
 - `features/prompt/mongo` - prompt store Mongo per override dei prompt
 - `features/runlog/mongo` - archivio di eventi di esecuzione (append-only, paginazione per cursor)
@@ -640,6 +640,8 @@ Goa-AI fornisce un limitatore di velocità adattivo indipendente dal provider so
 
 ```go
 import (
+    "github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+    "goa.design/goa-ai/runtime/agent/runtime"
     "goa.design/goa-ai/features/model/bedrock"
     mdlmw "goa.design/goa-ai/features/model/middleware"
 )
@@ -647,7 +649,7 @@ import (
 awsClient := bedrockruntime.NewFromConfig(cfg)
 bed, _ := bedrock.New(awsClient, bedrock.Options{
     DefaultModel: "us.anthropic.claude-4-5-sonnet-20251120-v1:0",
-}, ledger)
+})
 
 rl := mdlmw.NewAdaptiveRateLimiter(
     ctx,
@@ -658,9 +660,10 @@ rl := mdlmw.NewAdaptiveRateLimiter(
 )
 limited := rl.Middleware()(bed)
 
-rt := runtime.New(runtime.Options{
-    // Register limited as the model client exposed to planners.
-})
+rt := runtime.New()
+if err := rt.RegisterModel("bedrock", limited); err != nil {
+    panic(err)
+}
 ```
 
 ---
@@ -699,7 +702,7 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
     SmallModel:   "anthropic.claude-3-5-haiku-20241022-v1:0",
     MaxTokens:    4096,
     Temperature:  0.7,
-}, ledger)
+})
 ```
 
 **OpenAI**

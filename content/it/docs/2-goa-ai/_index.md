@@ -10,55 +10,7 @@ aliases:
 
 ## Panoramica
 
-Goa-AI estende la filosofia design-first di Goa ai sistemi agenziali. Definisce agenti, set di strumenti, completions di proprieta del servizio e politiche in un DSL; genera codice pronto per la produzione con contratti tipizzati, flussi di lavoro durevoli ed eventi in streaming.
-
----
-
-### Completion Dirette Tipizzate {#typed-direct-completions}
-
-**Non tutte le interazioni strutturate devono essere chiamate di strumento.**
-
-A volte il contratto giusto e una risposta finale tipizzata dell'assistente:
-nessuna invocazione di strumenti, nessun JSON analizzato a mano, nessuna
-definizione di schema parallela nascosta nel testo del prompt.
-
-Goa-AI modella questa esigenza esplicitamente con `Completion(...)` su un
-servizio:
-
-```go
-var TaskDraft = Type("TaskDraft", func() {
-    Attribute("name", String, "Task name")
-    Attribute("goal", String, "Outcome-style goal")
-    Required("name", "goal")
-})
-
-var _ = Service("tasks", func() {
-    Completion("draft_from_transcript", "Produce a task draft directly", func() {
-        Return(TaskDraft)
-    })
-})
-```
-
-I nomi delle completion fanno parte del contratto di structured output. Devono
-avere da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-`,
-e devono iniziare con una lettera o una cifra.
-
-Il codegen produce `gen/<service>/completions/` con lo schema JSON, codec
-tipizzati e helper generati che richiedono structured output imposto dal
-provider e decodificano la risposta finale dell'assistente tramite il codec
-generato. Gli helper di streaming restano sulla superficie grezza di
-`model.Streamer`: i chunk `completion_delta` sono solo anteprime, esattamente
-un chunk finale `completion` e canonico e gli helper generati
-`Decode<Name>Chunk(...)` decodificano solo quel payload finale. I provider che
-non implementano structured output falliscono esplicitamente con
-`model.ErrStructuredOutputUnsupported`.
-
-**Vantaggi:**
-- **Un'unica superficie di contratto** — Riutilizza tipi Goa, validazioni e `OneOf` per l'output diretto dell'assistente
-- **Nessun JSON analizzato a mano** — I codec generati gestiscono codifica, decodifica e validazione
-- **Structured output neutrale rispetto al provider** — L'helper nasconde l'integrazione specifica del provider dietro un'API tipizzata
-
-→ Approfondisci con [DSL Reference](dsl-reference/) e [Runtime](runtime/)
+Goa-AI estende la filosofia di Goa, incentrata sul design, ai sistemi ad agenti. Definire agenti, set di strumenti, completamenti di proprietà del servizio e policy in una DSL; generare codice pronto per la produzione con contratti digitati, flussi di lavoro durevoli ed eventi in streaming.
 
 ---
 
@@ -66,11 +18,11 @@ non implementano structured output falliscono esplicitamente con
 
 ### Agenti Design-First {#design-first-agents}
 
-**Smettere di scrivere codice fragile per gli agenti. Iniziare con i contratti.**
+**Smettere di scrivere codice agente fragile. Inizia con i contratti.**
 
-La maggior parte dei framework per agenti prevede il cablaggio di prompt, strumenti e chiamate API in modo imperativo. Quando le cose si rompono - e succederà - ci si ritrova a fare il debug di codice sparso senza una chiara fonte di verità.
+La maggior parte dei framework di agenti prevede il collegamento obbligatorio di prompt, strumenti e chiamate API. Quando le cose si interrompono, e lo faranno, stai eseguendo il debug di codice sparso senza una chiara fonte di verità.
 
-Goa-AI ribalta questa situazione: **definire le capacità dell'agente in un DSL tipizzato**, quindi generare l'implementazione. Il vostro progetto *è* la vostra documentazione. I vostri contratti *sono* la vostra convalida. Le modifiche si propagano automaticamente.
+Goa-AI capovolge questo: **definisci le capacità del tuo agente in una DSL digitata**, quindi genera l'implementazione. Il tuo design *è* la tua documentazione. I tuoi contratti *sono* la tua convalida. Le modifiche si propagano automaticamente.
 
 ```go
 Agent("assistant", "A helpful coding assistant", func() {
@@ -92,71 +44,121 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-Quando l'LLM chiama questo strumento con argomenti non validi, ad esempio una stringa `code` vuota o `language: "cobol"`, Goa-AI **ritenta automaticamente** con un messaggio di errore di validazione. L'LLM vede esattamente cosa è andato storto e si corregge. Non è necessario alcun codice di gestione manuale degli errori.
+Quando un pianificatore chiama questo strumento con argomenti non validi, ad esempio un `code` vuoto
+stringa o `language: "cobol"` - Goa-AI rifiuta la chiamata al limite digitato e
+restituisce un suggerimento strutturato per il nuovo tentativo. Il tuo pianificatore può utilizzare questo suggerimento per chiedere una risposta precisa
+domanda successiva o riprovare con gli argomenti corretti. Nessuna analisi delle stringhe ad hoc
+o è richiesto uno schema JSON gestito manualmente.
 
 **Vantaggi:**
-- **Un'unica fonte di verità** - Il DSL definisce il comportamento, i tipi e la documentazione
-- **Sicurezza in fase di compilazione** - Cattura i payload non corrispondenti prima del runtime
-- **Client autogenerati** - Invocazioni di strumenti sicure per i tipi senza cablaggio manuale
-- **Modelli coerenti** - Ogni agente segue la stessa struttura
-- **Agenti auto-riparativi** - Gli errori di convalida attivano tentativi automatici con feedback
+- **Fonte unica della verità**: il DSL definisce comportamento, tipologie e documentazione
+- **Sicurezza in fase di compilazione**: rileva i payload non corrispondenti prima del runtime
+- **Client generati automaticamente**: invocazioni di strumenti indipendenti dai tipi senza cablaggio manuale
+- **Modelli coerenti**: ogni agente segue la stessa struttura
+- **Chiamate di strumenti riparabili**: gli errori di convalida producono suggerimenti strutturati per nuovi tentativi con feedback
 
-→ Per saperne di più, consultare [Riferimento DSL](dsl-reference/) e [Avvio rapido](quickstart/)
+→ Scopri di più nelle sezioni [DSL Reference](dsl-reference/) e [Quickstart](quickstart/)
 
 ---
 
-### Eseguire gli alberi {#run-trees-composition}
+### Completamenti diretti digitati {#typed-direct-completations}
 
-**Costruire sistemi complessi a partire da pezzi semplici e osservabili.**
+**Non tutte le interazioni strutturate dovrebbero essere una chiamata a uno strumento.**
 
-Le applicazioni di intelligenza artificiale del mondo reale non sono agenti singoli, ma flussi di lavoro orchestrati in cui gli agenti delegano ad altri agenti, gli strumenti generano sottoattività e occorre tracciare tutto.
+A volte il contratto giusto è una risposta finale digitata dall'assistente: nessuno strumento
+invocazione, nessuna analisi JSON scritta a mano, nessuna definizione di schema parallelo nascosta
+testo immediato.
 
-Il **modello ad albero di esecuzione** di Goa-AI offre un'esecuzione gerarchica con piena osservabilità. Ogni esecuzione dell'agente ha un ID univoco. Le esecuzioni figlio si collegano ai genitori. Il flusso di eventi è in tempo reale. È possibile eseguire il debug di qualsiasi errore percorrendo l'albero.
+Modelli Goa-AI che esplicitamente con `Completion(...)` su un servizio:
+
+```go
+var TaskDraft = Type("TaskDraft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
+
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(TaskDraft)
+    })
+})
+```
+
+I nomi di completamento fanno parte del contratto di output strutturato. Devono esserlo
+Da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-` e devono
+iniziare con una lettera o una cifra.
+
+Codegen emette `gen/<service>/completions/` con lo schema JSON, codec digitati,
+e generato aiutanti che richiedono output strutturato imposto dal provider e
+decodificare la risposta finale dell'assistente attraverso il codec generato. Streaming
+gli aiutanti rimangono sulla superficie grezza `model.Streamer`: i pezzi `completion_delta` sono
+solo in anteprima, esattamente un blocco finale `completion` è canonico e generato
+Gli helper `Decode<Name>Chunk(...)` decodificano solo il payload finale. Fornitori che
+non implementare l'output strutturato in modo esplicito con
+`model.ErrStructuredOutputUnsupported`.
+
+**Vantaggi:**
+- **Una superficie contrattuale**: riutilizza tipi Goa, convalide e `OneOf` per l'output dell'assistente diretto
+- **Nessun JSON analizzato manualmente**: codifica, decodifica e convalida dei codec generati
+- **Output strutturato indipendente dal provider**: l'helper nasconde il cablaggio del provider dietro un'API digitata
+
+→ Scopri di più nelle sezioni [DSL Reference](dsl-reference/) e [Runtime](runtime/)
+
+---
+
+### Run Trees {#run-trees-composition}
+
+**Costruisci sistemi complessi partendo da elementi semplici e osservabili.**
+
+Le applicazioni IA del mondo reale non sono singoli agenti: sono flussi di lavoro orchestrati in cui gli agenti delegano ad altri agenti, gli strumenti generano attività secondarie ed è necessario tenere traccia di tutto.
+
+Il **modello run tree** di Goa-AI ti offre un'esecuzione gerarchica con piena osservabilità. Ogni esecuzione dell'agente ha un ID univoco. Il bambino esegue il collegamento ai genitori. Gli eventi vengono trasmessi in tempo reale. Eseguire il debug di eventuali errori camminando sull'albero.
 
 {{< figure src="/images/diagrams/RunTree.svg" alt="Hierarchical agent execution with run trees showing parent-child relationships" class="img-fluid" >}}
 
-**Benefici:**
-- **Agent-as-tool** - Qualsiasi agente può essere invocato come strumento da un altro agente
-- **Tracciamento gerarchico** - Segue l'esecuzione attraverso i confini degli agenti
-- **Fallimenti isolati** - Le esecuzioni dei figli falliscono in modo indipendente; i genitori possono riprovare o recuperare
-- **Topologia di streaming** - Gli eventi scorrono lungo l'albero per le interfacce utente in tempo reale
+**Vantaggi:**
+- **Agent-as-tool**: qualsiasi agente può essere richiamato come strumento da un altro agente
+- **Tracciamento gerarchico**: segui l'esecuzione oltre i confini dell'agente
+- **Errori isolati**: le esecuzioni secondarie falliscono in modo indipendente; i genitori possono riprovare o recuperare
+- **Topologia streaming**: gli eventi scorrono lungo l'albero per interfacce utente in tempo reale
 
-→ Approfondimento in [Agent Composition](agent-composition/) e [Runtime](runtime/)
+→ Approfondimento su [Agent Composition](agent-composition/) e [Runtime](runtime/)
 
 ---
 
-### Flusso strutturato {#structured-streaming}
+### Streaming strutturato {#streaming-strutturato}
 
-**Visibilità in tempo reale di ogni decisione presa dai vostri agenti.**
+**Visibilità in tempo reale su ogni decisione presa dai tuoi agenti.**
 
-Gli agenti black-box sono un problema. Quando il vostro agente chiama uno strumento, inizia a pensare o incontra un errore, dovete saperlo *immediatamente*, non dopo il timeout della richiesta.
+Gli agenti black-box sono una responsabilità. Quando il tuo agente chiama uno strumento, inizia a pensare o riscontra un errore, devi saperlo *immediatamente*, non dopo che la richiesta è scaduta.
 
-Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per lo streaming del testo, `tool_start`/`tool_end` per il ciclo di vita dello strumento, `planner_thought` per la visibilità del ragionamento, `usage` per il tracciamento dei token. Gli eventi fluiscono attraverso una semplice interfaccia **Sink** verso qualsiasi trasporto e, in produzione, le UI consumano un unico stream **di proprietà della sessione** (`session/<session_id>`) e chiudono quando osservano `run_stream_end` per la run attiva.
+Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per il testo in streaming, `tool_start`/`tool_end` per il ciclo di vita dello strumento, `planner_thought` per la visibilità del ragionamento, `usage` per il tracciamento dei token. Gli eventi fluiscono attraverso una semplice interfaccia **Sink** verso qualsiasi trasporto e le UI di produzione consumano un singolo **flusso di proprietà della sessione** (`session/<session_id>`) e si chiudono quando osservano `run_stream_end` per l'esecuzione attiva.
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
 rt := runtime.New(runtime.WithStream(mySink))
 ```
 
-**I profili di stream** filtrano gli eventi per i diversi consumatori: `UserChatProfile()` per le interfacce utente, `AgentDebugProfile()` per le viste degli sviluppatori, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra i servizi.
+**Profili di flusso** filtrano gli eventi per diversi consumatori: `UserChatProfile()` per le interfacce utente degli utenti finali, `AgentDebugProfile()` per le visualizzazioni sviluppatore, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra servizi.
 
-**Benefici:**
-- **Agnostico al trasporto** - Gli stessi eventi funzionano su WebSocket, SSE, Pulse o backend personalizzati
-- **Contratti tipizzati** - Nessun parsing di stringhe; gli eventi sono fortemente tipizzati con payload documentati
-- **Consegna selettiva** - I profili di flusso filtrano gli eventi per ogni consumatore
-- **Pronto per più tenant** - Gli eventi riportano `RunID` e `SessionID` per l'instradamento e il filtraggio
+**Vantaggi:**
+- **Indipendente dal trasporto**: gli stessi eventi funzionano su WebSocket, SSE, Pulse o backend personalizzati
+- **Contratti digitati** — Nessuna analisi delle stringhe; gli eventi sono fortemente tipizzati con payload documentati
+- **Consegna selettiva**: i profili di streaming filtrano gli eventi per consumatore
+- **Predisposizione multi-tenant**: gli eventi trasportano `RunID` e `SessionID` per il routing e il filtraggio
 
-→ Dettagli di implementazione in [streaming di produzione](production/#streaming-ui)
+→ Dettagli di implementazione in [Production Streaming](production/#streaming-ui)
 
 ---
 
 ### Durabilità temporale {#temporal-durability}
 
-**Esecuzioni dell'agente che sopravvivono a crash, riavvii e guasti di rete
+**Esecuzioni dell'agente che sopravvivono a arresti anomali, riavvii ed errori di rete.**
 
-Senza durabilità, un processo che si blocca perde tutti i progressi. Una chiamata API a velocità limitata fa fallire l'intera esecuzione. Un errore di rete durante l'esecuzione di uno strumento comporta la ripetizione di un'inferenza costosa.
+Senza durabilità, un processo bloccato perde tutti i progressi. Una chiamata API a velocità limitata non riesce l'intera esecuzione. Un errore di rete durante l'esecuzione dello strumento significa rieseguire un'inferenza costosa.
 
-Goa-AI utilizza **Temporal** per l'esecuzione durevole. Le esecuzioni degli agenti diventano flussi di lavoro; le chiamate agli strumenti diventano attività con tentativi configurabili. Ogni transizione di stato viene conservata. Uno strumento che si blocca viene riproposto automaticamente, senza eseguire nuovamente la chiamata LLM che lo ha prodotto.
+Goa-AI utilizza **Temporal** per un'esecuzione duratura. Le esecuzioni dell'agente diventano flussi di lavoro; le chiamate allo strumento diventano attività con tentativi configurabili. Ogni transizione di stato è persistente. Uno strumento bloccato riprova automaticamente, *senza* rieseguire la chiamata LLM che lo ha prodotto.
 
 ```go
 // Development: in-memory (no dependencies)
@@ -170,23 +172,23 @@ eng, _ := temporal.NewWorker(temporal.Options{
 rt := runtime.New(runtime.WithEngine(eng))
 ```
 
-**Benefici:**
-- **Nessuno spreco di inferenza** - Gli strumenti falliti si riprovano senza richiamare l'LLM
-- **Recupero in caso di crash** - Riavvio dei lavoratori in qualsiasi momento; le esecuzioni riprendono dall'ultimo checkpoint
-- **Gestione dei limiti di velocità** - Il backoff esponenziale assorbe il throttling delle API
-- **Sicuro per i deploy** - I deploy in rotazione non perdono il lavoro svolto in volo
+**Vantaggi:**
+- **Nessuna inferenza sprecata**: gli strumenti non riusciti riprovano senza richiamare LLM
+- **Recupero da crash**: riavvia i lavoratori in qualsiasi momento; le corse riprendono dall'ultimo checkpoint
+- **Gestione dei limiti di velocità**: il backoff esponenziale assorbe la limitazione delle API
+- **Distribuzione sicura**: le distribuzioni ripetute non perdono il lavoro in volo
 
-→ Guida all'installazione e configurazione dei tentativi in [Produzione](production/#temporal-setup)
+→ Guida all'installazione e riprovare la configurazione in [Production](production/#temporal-setup)
 
 ---
 
 ### Registri degli strumenti {#tool-registries}
 
-**Scoprire e consumare strumenti da qualsiasi luogo, dal proprio cluster o dal cloud pubblico
+**Scopri e utilizza strumenti ovunque: dal tuo cluster o dal cloud pubblico.**
 
-Con la crescita degli ecosistemi AI, gli strumenti sono ovunque: servizi interni, API di terze parti, registri MCP pubblici. La codifica rigida delle definizioni degli strumenti non è scalabile. È necessario un rilevamento dinamico.
+Man mano che gli ecosistemi AI crescono, gli strumenti sono ovunque: servizi interni, API di terze parti, registri MCP pubblici. Le definizioni degli strumenti di hardcoding non sono scalabili. Hai bisogno di una scoperta dinamica.
 
-Goa-AI fornisce un **registro interno raggruppato** per i vostri set di strumenti e una **federazione** con registri esterni come il catalogo MCP di Anthropic. Definite una volta, scoprite ovunque.
+Goa-AI fornisce un **registro interno in cluster** per i tuoi set di strumenti e una **federazione** con registri esterni come il catalogo MCP di Anthropic. Definisci una volta, scopri ovunque.
 
 ```go
 // Connect to public registries
@@ -211,92 +213,70 @@ var CorpRegistry = Registry("corp", func() {
 })
 ```
 
-**Clusterizzazione del registro interno:**
+**Clustering del registro interno:**
 
 Più nodi del registro con lo stesso nome formano automaticamente un cluster tramite Redis. Stato condiviso, controlli sanitari coordinati, scalabilità orizzontale: tutto automatico.
 
 {{< figure src="/images/diagrams/RegistryCluster.svg" alt="Agent-registry-provider topology showing gRPC and Pulse Streams connections" class="img-fluid" >}}
 
-**Benefici:**
-- **Rilevamento dinamico** - Gli agenti trovano gli strumenti in fase di esecuzione, non in fase di compilazione
-- **Scala multi-cluster** - I nodi del registro si coordinano automaticamente tramite Redis
-- **Federazione di registri pubblici** - Importazione di strumenti da Anthropic, OpenAI o qualsiasi registro MCP
-- **Monitoraggio dello stato di salute** - Controlli automatici di ping/pong con soglie configurabili
-- **Importazione selettiva** - Includi/escludi modelli per un controllo granulare
+**Vantaggi:**
+- **Individuazione dinamica**: gli agenti trovano gli strumenti in fase di esecuzione, non in fase di compilazione
+- **Ridimensionamento multi-cluster**: coordinazione automatica dei nodi del registro tramite Redis
+- **Federazione di registri pubblici**: importa strumenti da Anthropic, OpenAI o qualsiasi registro MCP
+- **Monitoraggio dello stato**: controlli ping/pong automatici con soglie configurabili
+- **Importazione selettiva**: includi/escludi modelli per un controllo granulare
 
-→ Maggiori informazioni in [Integrazione MCP](mcp-integration/) e [Produzione](production/)
+→ Ulteriori informazioni in [MCP Integration](mcp-integration/) e [Production](production/)
 
 ---
 
 ## Riepilogo delle caratteristiche principali
 
-| Caratteristiche | Cosa si ottiene |
-|---------|--------------|
-| [Agenti Design-First](#design-first-agents) | Definizione degli agenti in DSL, generazione di codice type-safe |
-| [Integrazione MCP](mcp-integration/) | Supporto nativo del Model Context Protocol |
-| [Registri degli strumenti](#tool-registries) | Rilevamento in cluster + federazione di registri pubblici |
-| [Alberi di esecuzione](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa |
-| [Streaming strutturato](#structured-streaming) | Eventi tipizzati in tempo reale per interfacce utente e osservabilità |
-| [Durabilità con Temporal](#temporal-durability) | Esecuzione tollerante ai guasti che sopravvive ai fallimenti |
-| [Contratti tipizzati](dsl-reference/) | Sicurezza di tipo end-to-end per tutte le operazioni dello strumento |
-| [Completion Dirette Tipizzate](#typed-direct-completions) | Risposte finali strutturate dell'assistente con codec e helper generati |
+| Caratteristica | Cosa ottieni ||---------|--------------|
+| [Design-First Agents](#design-first-agents) | Definire agenti in DSL, generare codice indipendente dai tipi || [MCP Integration](mcp-integration/) | Supporto del protocollo di contesto del modello nativo || [Tool Registries](#tool-registries) | Discovery in cluster + federazione del registro pubblico || [Run Trees](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa || [Structured Streaming](#structured-streaming) | Eventi tipizzati in tempo reale per interfaccia utente e osservabilità || [Temporal Durability](#temporal-durability) | Esecuzione con tolleranza agli errori che sopravvive ai guasti || [Typed Contracts](dsl-reference/) | Sicurezza di tipo end-to-end per tutte le operazioni dell'utensile || [Typed Direct Completions](#typed-direct-completions) | Risposte finali strutturate dell'assistente con codec e aiutanti generati || [Bounded Results & Server Data](toolset/#server-data) | Risultati del modello efficiente in termini di token più dati solo server per interfacce utente e audit || [Human-in-the-Loop](runtime/#pause--resume) | Pausa, ripresa, risultati di strumenti esterni e conferma applicata dal runtime || [Bookkeeping & Terminal Tools](dsl-reference/#bookkeeping) | Strumenti di avanzamento/stato che non consumano il budget di recupero e possono terminare le esecuzioni in modo atomico || [Prompt Overrides](production/#prompt-overrides-with-mongo-store) | Specifiche del prompt di base più sostituzioni e provenienza supportate da Mongo |
 
 ## Guide alla documentazione
 
-| Guida | Descrizione | ~Tokens |
-|-------|-------------|---------|
-| [Avvio rapido](quickstart/) | Installazione e primo agente | ~2,700 |
-| [Riferimento DSL](dsl-reference/) | DSL completo: agenti, toolset, policy, MCP | ~3.600 |
-| [Runtime](runtime/) | Architettura del runtime, ciclo di pianificazione/esecuzione, motori | ~2,400 |
-| [Toolsets](toolsets/) | Tipi di toolset, modelli di esecuzione, trasformazioni | ~2,300 |
-| [Composizione degli agenti](agent-composition/) | Agent-as-tool, alberi di esecuzione, topologia di streaming | ~1.400 |
-| [Integrazione MCP](mcp-integration/) | Server MCP, trasporti, wrapper generati | ~1.200 |
-| [Memoria e sessioni](memory-sessions/) | Trascrizioni, archivi di memoria, sessioni, esecuzioni | ~1.600 |
-| [Produzione](production/) | Impostazione temporale, UI in streaming, integrazione del modello | ~2.200 |
-| [Test e risoluzione dei problemi](testing/) | Agenti di test, pianificatori, strumenti, errori comuni | ~2.000 |
+| Guida | Descrizione | ~Gettoni ||-------|-------------|---------|
+| [Quickstart](quickstart/) | Installazione e primo agente | ~2.700 || [DSL Reference](dsl-reference/) | DSL completo: agenti, set di strumenti, policy, MCP | ~3.600 || [Runtime](runtime/) | Architettura runtime, ciclo di pianificazione/esecuzione, motori | ~2.400 || [Toolsets](toolset/) | Tipi di set di strumenti, modelli di esecuzione, trasformazioni | ~2.300 || [Agent Composition](agent-composition/) | Agente come strumento, alberi di esecuzione, topologia di streaming | ~1.400 || [MCP Integration](mcp-integration/) | Server MCP, trasporti, wrapper generati | ~1.200 || [Memory & Sessions](memory-sessions/) | Trascrizioni, archivi di memoria, sessioni, corse | ~1.600 || [Production](production/) | Configurazione temporale, interfaccia utente in streaming, integrazione del modello | ~2.200 || [Testing & Troubleshooting](testing/) | Agenti di test, pianificatori, strumenti, errori comuni | ~2.000 |
 
-**Sezione totale:** ~21.400 gettoni
+**Sezione totale:** ~21.400 token
 
 ## Architettura
 
-Goa-AI segue una pipeline **define → generate → execute** che trasforma i progetti dichiarativi in sistemi di agenti pronti per la produzione.
+Goa-AI segue una pipeline **definisci → genera → esegui** che trasforma i progetti dichiarativi in ​​sistemi di agenti pronti per la produzione.
 
 {{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI Architecture" class="img-fluid" >}}
 
 **Panoramica dei livelli:**
 
-| Strato | Scopo |
-|-------|---------|
-| **DSL** | Dichiarare agenti, strumenti, politiche e integrazioni esterne in codice Go controllato dalla versione |
-| **Codegen** | Generare specifiche, codec, definizioni di workflow e client di registro sicuri per il tipo, senza mai modificare `gen/` |
-| **Runtime** | Eseguire il ciclo di pianificazione/esecuzione con l'applicazione dei criteri, la persistenza della memoria e lo streaming degli eventi |
-| **Engine** | Scambia i backend di esecuzione: in-memory per lo sviluppo, Temporal per la durabilità in produzione |
-| **Features** | Plug in model provider (OpenAI, Anthropic, AWS Bedrock), persistenza (Mongo), streaming (Pulse) e registri |
+| Strato | Scopo ||-------|---------|
+| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegui il ciclo di pianificazione/esecuzione con applicazione delle policy, persistenza della memoria e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega fornitori di modelli (OpenAI, Anthropic, AWS Bedrock), persistenza (Mongo), streaming (Pulse) e registri |
 
 **Punti chiave di integrazione:**
 
-- **Clienti di modello** - Astraggono i provider LLM dietro un'interfaccia unificata; passano da OpenAI, Anthropic o Bedrock senza modificare il codice dell'agente
-- **Registro** - Scoprire e invocare set di strumenti attraverso i confini dei processi; clusterizzato tramite Redis per una scalabilità orizzontale
-- **Pulse Streaming** - Bus di eventi in tempo reale per aggiornamenti dell'interfaccia utente, pipeline di osservabilità e comunicazione tra servizi
-- **Motore temporale** - Esecuzione durevole del flusso di lavoro con tentativi automatici, replay e recupero degli arresti anomali
+- **Clienti modello**: fornitori LLM astratti dietro un'interfaccia unificata; passare da OpenAI, Anthropic o Bedrock senza modificare il codice agente
+- **Registro**: scopri e richiama set di strumenti oltre i confini del processo; raggruppati tramite Redis per il ridimensionamento orizzontale
+- **Pulse Streaming**: bus di eventi in tempo reale per aggiornamenti dell'interfaccia utente, pipeline di osservabilità e comunicazione tra servizi
+- **Temporal Engine**: esecuzione duratura del flusso di lavoro con tentativi automatici, riproduzione e ripristino da arresto anomalo
 
-### Fornitori di modelli ed estensibilità {#model-providers}
+### Provider di modelli ed estensibilità {#model-providers}
 
-Goa-AI fornisce adattatori di prima classe per tre provider LLM:
+Goa-AI fornisce adattatori di prima classe per tre fornitori LLM:
 
 - **OpenAI** (`features/model/openai`)
-- **Anthropic Claude** (`features/model/anthropic`)
+- **Claude antropico** (`features/model/anthropic`)
 - **AWS Bedrock** (`features/model/bedrock`)
 
-Tutti e tre implementano la stessa interfaccia `model.Client` utilizzata dai pianificatori. Le applicazioni registrano i client del modello con il runtime usando `rt.RegisterModel("provider-id", client)` e si riferiscono a loro tramite l'ID dai pianificatori e dalle configurazioni degli agenti generati, quindi il cambio di provider è una modifica della configurazione piuttosto che una riprogettazione.
+Tutti e tre implementano la stessa interfaccia `model.Client` utilizzata dai pianificatori. Le applicazioni registrano i client modello con il runtime utilizzando `rt.RegisterModel("provider-id", client)` e fanno riferimento ad essi tramite l'ID dei pianificatori e le configurazioni degli agenti generate, quindi lo scambio di provider è una modifica della configurazione anziché una riprogettazione.
 
-L'aggiunta di un nuovo fornitore segue lo stesso schema:
+L'aggiunta di un nuovo provider segue lo stesso schema:
 
-1. Implementare `model.Client` per il proprio provider, mappando i suoi tipi SDK su `model.Request`, `model.Response` e streaming `model.Chunk`.
-2. Opzionalmente, avvolgere il client con un middleware condiviso (ad esempio, `features/model/middleware.NewAdaptiveRateLimiter`) per la limitazione adattiva della velocità e le metriche.
-3. Richiamare `rt.RegisterModel("my-provider", client)` prima di registrare gli agenti, quindi fare riferimento a `"my-provider"` dai pianificatori o dalle configurazioni degli agenti.
+1. Implementa `model.Client` per il tuo provider mappando i suoi tipi SDK su `model.Request`, `model.Response` e trasmettendo in streaming `model.Chunk`.
+2. Facoltativamente, avvolgere il client con middleware condiviso (ad esempio, `features/model/middleware.NewAdaptiveRateLimiter`) per la limitazione della velocità e le metriche adattive.
+3. Chiama `rt.RegisterModel("my-provider", client)` prima di registrare gli agenti, quindi fai riferimento a `"my-provider"` dai tuoi pianificatori o dalle configurazioni degli agenti.
 
-Poiché i pianificatori e il runtime dipendono solo da `model.Client`, i nuovi provider si inseriscono senza modificare i progetti di Goa o il codice degli agenti generati.
+Poiché i pianificatori e il runtime dipendono solo da `model.Client`, i nuovi fornitori si collegano senza modifiche ai progetti Goa o al codice agente generato.
 
 ## Esempio rapido
 
@@ -348,8 +328,8 @@ var _ = Service("calculator", func() {
 
 ## Iniziare
 
-Iniziare con la guida [Avvio rapido](quickstart/) per installare Goa-AI e creare il primo agente.
+Inizia con la guida [Quickstart](quickstart/) per installare Goa-AI e creare il tuo primo agente.
 
-Per una copertura completa del DSL, vedere il [Riferimento DSL](dsl-reference/).
+Per una copertura DSL completa, vedere [DSL Reference](dsl-reference/).
 
-Per comprendere l'architettura del runtime, consultare la guida [Runtime](runtime/).
+Per comprendere l'architettura di runtime, vedere la guida [Runtime](runtime/).

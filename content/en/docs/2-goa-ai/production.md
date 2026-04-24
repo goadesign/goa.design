@@ -51,9 +51,11 @@ Create a single limiter per process and wrap your model client:
 ```go
 import (
     "context"
+    "os"
 
+    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
-    "goa.design/goa-ai/features/model/bedrock"
+    "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
@@ -70,21 +72,23 @@ func main() {
     )
 
     // Create your underlying model client
-    bedrockClient, err := bedrock.NewClient(bedrock.Options{
-        Region: "us-east-1",
-        Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
+    modelClient, err := openai.New(openai.Options{
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+        DefaultModel: "gpt-5-mini",
+        HighModel:    "gpt-5",
+        SmallModel:   "gpt-5-nano",
     })
     if err != nil {
         panic(err)
     }
 
     // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient := limiter.Middleware()(modelClient)
 
-    // Use rateLimitedClient with your runtime or planners
-    rt := runtime.New(
-        runtime.WithModelClient("claude", rateLimitedClient),
-    )
+    rt := runtime.New()
+    if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
+        panic(err)
+    }
 }
 ```
 
@@ -152,11 +156,13 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(
-    runtime.WithEngine(temporalEng),
-    runtime.WithModelClient("claude", claudeClient),
-    runtime.WithModelClient("gpt-4", gptClient),
-)
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("claude", claudeClient); err != nil {
+    panic(err)
+}
+if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+    panic(err)
+}
 ```
 
 ### What Happens Under Load
@@ -340,13 +346,13 @@ import (
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
-temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Required: enforce goa-ai's workflow boundary contract.
-        // Tool results, server-data, and UI artifacts cross boundaries as canonical JSON bytes
-        // (api.ToolEvent/api.ToolArtifact).
+        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
+        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
@@ -361,46 +367,53 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
-### Configuring Activity Retries
+### Timing and Activity Retries
 
-Tool calls are Temporal activities. Configure retries per toolset in the DSL:
+Use the DSL for semantic run budgets: how long the whole run may take, how long a
+planner attempt may run, and how long a tool attempt may run.
 
 ```go
-Use("external_apis", func() {
-    // Flaky external services: retry aggressively
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 30 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts:        5,
-            InitialInterval:    time.Second,
-            BackoffCoefficient: 2.0,
-        },
+Agent("operator", "Production operations agent", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        Timing(func() {
+            Budget("5m")
+            Plan("45s")
+            Tools("90s")
+        })
     })
-    
-    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
-    Tool("query_database", "Query external DB", func() { /* ... */ })
-})
-
-Use("local_compute", func() {
-    // Fast local tools: minimal retries
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 5 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts: 2,
-        },
-    })
-    
-    Tool("calculate", "Pure computation", func() { /* ... */ })
 })
 ```
 
-Generated plan/resume and execute-tool activities now default to a 3-attempt
-exponential retry policy (`1s` initial interval, backoff coefficient `2`), and
-the runtime's hook-publishing activity uses the same policy. That is safe only
-because retried attempts are identified logically: hook events carry stable
-event keys, and tool executions are expected to persist/replay canonical
-results by `ToolCallID` instead of repeating side effects. Override the retry
-policy only when a tool boundary cannot honor that replay contract.
+The Temporal adapter owns workflow-engine mechanics such as queue-wait and
+liveness timeouts. Configure those on the engine, not in the DSL:
+
+```go
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "127.0.0.1:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: runtimeTemporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: runtimeTemporal.ActivityDefaults{
+        Planner: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+```
+
+Generated plan/resume, execute-tool, and hook-publishing activities use retry
+policies that are safe only when retries are logically idempotent. Hook events
+carry stable event keys, and tool executions should persist or replay canonical
+results by `ToolCallID` rather than repeating irreversible side effects.
 
 ### Worker Setup
 

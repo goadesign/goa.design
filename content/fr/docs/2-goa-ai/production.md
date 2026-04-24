@@ -7,53 +7,55 @@ llm_optimized: true
 aliases:
 ---
 
-## Limitation du taux de modélisation
+## Limitation du débit du modèle
 
-Tous les fournisseurs de modèles imposent des limites de débit. Si vous les dépassez, vos demandes échouent avec 429 erreurs. Pire : dans un déploiement multiréplique, chaque réplique martèle indépendamment l'API, provoquant un étranglement *global* invisible pour les processus individuels.
+Chaque fournisseur de modèles applique des limites de débit. Dépassez-les et vos requêtes échouent avec 429 erreurs. Pire encore : dans un déploiement multi-réplicas, chaque réplique martèle indépendamment le API, provoquant une limitation *agrégée* invisible pour les processus individuels.
 
 ### Le problème
 
-**Scénario : vous déployez 10 répliques de votre service d'agent. Chaque réplique pense qu'elle a 100K tokens/minute disponibles. Ensemble, ils envoient 1M de jetons/minute, soit 10 fois votre quota réel. Le fournisseur d'accès à Internet a mis en place un système d'étranglement agressif. Les demandes échouent de manière aléatoire sur toutes les répliques.
+**Scénario :** Vous déployez 10 réplicas de votre service d'agent. Chaque réplique pense disposer de 100 000 jetons/minute. Ensemble, ils envoient 1 million de jetons/minute, soit 10 fois votre quota réel. Le fournisseur limite agressivement. Les requêtes échouent de manière aléatoire sur toutes les répliques.
 
-**Sans limitation de débit:**
-- Les demandes échouent de manière imprévisible avec 429s
+**Sans limitation de tarif :**
+- Les requêtes échouent de manière imprévisible avec les 429
 - Aucune visibilité sur la capacité restante
-- Les nouvelles tentatives aggravent la congestion
-- L'expérience de l'utilisateur se dégrade sous la charge
+- Les tentatives aggravent la congestion
+- L'expérience utilisateur se dégrade sous charge
 
-**Avec la limitation adaptative du débit:**
+**Avec limitation de débit adaptative :**
 - Chaque réplique partage un budget coordonné
-- Les demandes sont mises en attente jusqu'à ce que la capacité soit disponible
+- Les demandes sont en file d'attente jusqu'à ce que la capacité soit disponible
 - Le backoff se propage à travers le cluster
-- Dégradation progressive au lieu de défaillances
+- Une dégradation gracieuse au lieu d’échecs
 
-### Vue d'ensemble
+### Aperçu
 
-Le paquet `features/model/middleware` fournit un **limiteur de débit adaptatif de type AIMD** qui se trouve à la limite du client modèle. Il estime le coût des jetons, bloque les appelants jusqu'à ce que la capacité soit disponible et ajuste automatiquement son budget de jetons par minute en réponse aux signaux de limitation de débit des fournisseurs.
+Le package `features/model/middleware` fournit un **limiteur de débit adaptatif de type AIMD** qui se situe à la limite du client modèle. Il estime les coûts des jetons, bloque les appelants jusqu'à ce que la capacité soit disponible et ajuste automatiquement son budget de jetons par minute en réponse aux signaux de limitation de débit des fournisseurs.
 
 ### Stratégie AIMD
 
-Le limiteur utilise une stratégie **Additive Increase / Multiplicative Decrease (AIMD)** :
+Le limiteur utilise une stratégie **Augmentation Additive / Diminution Multiplicative (AIMD)** :
 
-| Le limiteur utilise une stratégie **d'augmentation additive / de diminution multiplicative (AIMD)** : événement, action, formule
+| Événement | Action | Formule |
 |-------|--------|---------|
-| Succès | Sonde (augmentation additive) | `TPM += recoveryRate` (5% de la valeur initiale) | `ErrRateLimited` (5% de la valeur initiale)
+| Succès | Sonde (augmentation additive) | `TPM += recoveryRate` (5 % de la valeur initiale) |
 | `ErrRateLimited` | Backoff (diminution multiplicative) | `TPM *= 0.5` |
 
-Le nombre effectif de jetons par minute (TPM) est limité par :
-- **Minimum** : 10% du TPM initial (plancher pour éviter la famine)
-- **Maximum** : Le plafond configuré `maxTPM`
+Le nombre effectif de jetons par minute (TPM) est limité par :
+- **Minimum** : 10 % du TPM initial (plancher pour éviter la famine)
+- **Maximum** : Le plafond `maxTPM` configuré
 
 ### Utilisation de base
 
-Créez un seul limiteur par processus et enveloppez votre modèle de client :
+Créez un seul limiteur par processus et enveloppez votre client modèle :
 
 ```go
 import (
     "context"
+    "os"
 
+    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
-    "goa.design/goa-ai/features/model/bedrock"
+    "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
@@ -70,27 +72,29 @@ func main() {
     )
 
     // Create your underlying model client
-    bedrockClient, err := bedrock.NewClient(bedrock.Options{
-        Region: "us-east-1",
-        Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
+    modelClient, err := openai.New(openai.Options{
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+        DefaultModel: "gpt-5-mini",
+        HighModel:    "gpt-5",
+        SmallModel:   "gpt-5-nano",
     })
     if err != nil {
         panic(err)
     }
 
     // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient := limiter.Middleware()(modelClient)
 
-    // Use rateLimitedClient with your runtime or planners
-    rt := runtime.New(
-        runtime.WithModelClient("claude", rateLimitedClient),
-    )
+    rt := runtime.New()
+    if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
+        panic(err)
+    }
 }
 ```
 
-### Limitation du débit en fonction des clusters
+### Limitation du débit en fonction du cluster
 
-Pour les déploiements multiprocessus, coordonnez la limitation de débit entre les instances à l'aide d'une carte répliquée par Pulse :
+Pour les déploiements multi-processus, coordonnez la limitation du débit entre les instances à l'aide d'une carte répliquée Pulse :
 
 ```go
 import (
@@ -124,23 +128,23 @@ func main() {
 }
 ```
 
-Lors de l'utilisation d'une limitation tenant compte des clusters :
-- **Backoff se propage globalement** : Lorsqu'un processus reçoit `ErrRateLimited`, tous les processus réduisent leur budget
-- **La prospection est coordonnée** : Les requêtes réussies augmentent le budget partagé
-- **Réconciliation automatique** : Les processus surveillent les changements externes et mettent à jour leurs limiteurs locaux
+Lors de l'utilisation de la limitation tenant compte du cluster :
+- **Le backoff se propage à l'échelle mondiale** : lorsqu'un processus reçoit `ErrRateLimited`, tous les processus réduisent leur budget
+- **Le sondage est coordonné** : les demandes réussies augmentent le budget partagé
+- **Réconciliation automatique** : les processus surveillent les changements externes et mettent à jour leurs limiteurs locaux
 
 ### Estimation des jetons
 
-Le limiteur estime le coût de la demande à l'aide d'une simple heuristique :
-- Compte les caractères dans les parties de texte et les résultats de l'outil d'analyse des chaînes de caractères
-- Convertit les jetons en utilisant ~3 caractères par jeton
-- Ajoute une mémoire tampon de 500 jetons pour les invites du système et les frais généraux du fournisseur
+Le limiteur estime le coût de la demande à l’aide d’une heuristique simple :
+- Compte les caractères dans les parties de texte et les résultats de l'outil de chaîne
+- Convertit en jetons en utilisant environ 3 caractères par jeton
+- Ajoute un tampon de 500 jetons pour les invites système et la surcharge du fournisseur
 
-Cette estimation est volontairement conservatrice afin d'éviter toute sous-estimation.
+Cette estimation est intentionnellement conservatrice pour éviter un sous-dénombrement.
 
-### Intégration avec le Runtime
+### Intégration avec le runtime
 
-Connecter les clients à débit limité au moteur d'exécution de Goa-AI :
+Câblez des clients à débit limité dans le runtime Goa-AI :
 
 ```go
 // Create limiters for each model you use
@@ -152,40 +156,42 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(
-    runtime.WithEngine(temporalEng),
-    runtime.WithModelClient("claude", claudeClient),
-    runtime.WithModelClient("gpt-4", gptClient),
-)
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("claude", claudeClient); err != nil {
+    panic(err)
+}
+if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+    panic(err)
+}
 ```
 
-### Ce qui se passe sous charge
+### Que se passe-t-il sous charge
 
-| Niveau de trafic - Sans limiteur - Avec limiteur - Sans limiteur - Avec limiteur - Sans limiteur - Sans limiteur - Avec limiteur
+| Niveau de trafic | Sans limiteur | Avec limiteur |
 |---------------|-----------------|--------------|
-| Le niveau de trafic est inférieur au quota, les requêtes aboutissent, les requêtes aboutissent
-| Les requêtes se mettent en file d'attente, puis réussissent
-| Cascade d'échecs, le fournisseur se bloque | Backoff absorbe la rafale, récupération progressive |
-| Surcharge prolongée | Toutes les demandes échouent | Demandes en file d'attente avec latence limitée |
+| En dessous du quota | Les demandes réussissent | Les demandes réussissent |
+| Au quota | 429 échecs aléatoires | File d'attente des requêtes, puis réussite |
+| Dépassement du quota | Cascade d'échecs, blocages du fournisseur | Le recul absorbe l'éclatement, récupération progressive |
+| Surcharge soutenue | Toutes les demandes échouent | File d'attente de requêtes avec une latence limitée |
 
 ### Paramètres de réglage
 
-| Paramètres de réglage
+| Paramètre | Défaut | Description |
 |-----------|---------|-------------|
-`initialTPM` | (obligatoire) | Budget de départ en jetons par minute |
-| `maxTPM` | (obligatoire) | Plafond pour le sondage |
-| 10% du budget initial | Budget minimum (pour éviter la famine) |
-| Taux de récupération | 5% de l'initial | Augmentation additive par succès |
-| Facteur de recul | 0,5 | Diminution multiplicative sur 429 |
+| `initialTPM` | (requis) | Budget de départ en jetons par minute |
+| `maxTPM` | (requis) | Plafond pour sondage |
+| Sol | 10% du montant initial | Budget minimum (évite la famine) |
+| Taux de récupération | 5% du montant initial | Augmentation additive par réussite |
+| Facteur de recul | 0.5 | Diminution multiplicative sur 429 |
 
-**Exemple:** Avec `initialTPM=60000, maxTPM=120000` :
+**Exemple :** Avec `initialTPM=60000, maxTPM=120000` :
 - Plancher : 6 000 TPM
-- Récupération : +3 000 TPM par lot réussi
-- Backoff : diviser par deux les MPT actuels sur 429
+- Récupération : +3 000 TPM par lot réussi
+- Backoff : réduire de moitié le TPM actuel sur 429
 
 ### Surveillance
 
-Suivre le comportement du limiteur de débit à l'aide de mesures et de journaux :
+Suivez le comportement du limiteur de débit avec des métriques et des journaux :
 
 ```go
 // The limiter logs backoff events at WARN level
@@ -200,22 +206,22 @@ currentTPM := limiter.CurrentTPM()
 
 ### Meilleures pratiques
 
-- **Un limiteur par modèle/fournisseur** : Créez des limiteurs distincts pour les différents modèles afin d'isoler leurs budgets
-- **Fixer une MPT initiale réaliste** : Commencez par la limite de taux documentée de votre fournisseur ou une estimation conservatrice
-- **Utilisez la limitation en cluster en production** : Coordonnez entre les répliques pour éviter l'étranglement global
-- **Surveillez les événements de backoff** : Surveillez les événements de backoff** : enregistrez ou émettez des métriques lorsque des backoffs se produisent afin de détecter un étranglement soutenu
-- **Définir le maxTPM au-dessus de l'initial** : Laisser une marge de manœuvre pour le sondage lorsque le trafic est inférieur au quota
+- **Un limiteur par modèle/fournisseur** : créez des limiteurs distincts pour différents modèles afin d'isoler leurs budgets
+- **Définissez un TPM initial réaliste** : commencez par la limite de débit documentée par votre fournisseur ou une estimation prudente
+- **Utilisez la limitation adaptée aux clusters en production** : coordonnez les réplicas pour éviter la limitation globale
+- ** Surveiller les événements d'interruption ** : enregistrez ou émettez des métriques lorsque des interruptions se produisent pour détecter une limitation soutenue.
+- **Définissez maxTPM au-dessus de la valeur initiale** : laissez une marge pour sonder lorsque le trafic est inférieur au quota
 
 ---
 
-## Overrides de prompts avec Mongo Store
+## Remplacements d'invite avec le magasin Mongo
 
-En production, la gestion des prompts utilise generalement :
+La gestion des invites de production utilise généralement :
 
-- des prompt specs de base enregistrees dans `runtime.PromptRegistry`, et
-- des enregistrements d'override scopes persistes dans Mongo via `features/prompt/mongo`.
+- spécifications d'invite de base enregistrées dans `runtime.PromptRegistry`, et
+- les enregistrements de remplacement limités ont persisté dans Mongo via `features/prompt/mongo`.
 
-### Branchement
+### Câblage
 
 ```go
 import (
@@ -227,7 +233,7 @@ import (
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
     Database:   "aura",
-    Collection: "prompt_overrides", // optionnel (defaut: prompt_overrides)
+    Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
     panic(err)
@@ -244,108 +250,109 @@ rt := runtime.New(
 )
 ```
 
-### Resolution des overrides et deploiement progressif
+### Remplacer la résolution et le déploiement
 
-La priorite des overrides est deterministe :
+La priorité de remplacement est déterministe :
 
-1. scope `session`
-2. scope `facility`
-3. scope `org`
-4. scope global
-5. prompt spec de base (quand aucun override n'existe)
+1. Portée `session`
+2. Portée `facility`
+3. Portée `org`
+4. portée mondiale
+5. spécification de base (quand aucun remplacement n'existe)
 
-Strategie de rollout recommandee :
+Stratégie de déploiement recommandée :
 
-- Enregistrer d'abord les nouvelles prompt specs de base.
-- Deployer les overrides d'abord sur un scope large (`org`), puis reduire vers `facility`/`session` pour les canaris.
-- Suivre les versions effectives via les evenements `prompt_rendered` et `model.Request.PromptRefs`.
-- Revenir en arriere en ecrivant un override plus recent au meme scope (ou en supprimant des overrides scopes pour revenir au fallback).
+- Enregistrez d’abord les nouvelles spécifications de base.
+- Déployez les remplacements à grande échelle (`org`), puis limitez-les à `facility`/`session` pour les Canaries.
+- Suivez les versions efficaces via les événements `prompt_rendered` et `model.Request.PromptRefs`.
+- Revenez en arrière en écrivant un remplacement plus récent dans la même portée (ou en supprimant les remplacements spécifiques à la portée pour revenir en arrière).
 
 ---
 
-## Configuration temporelle
+## Configuration Temporal
 
-Cette section couvre la configuration de Temporal pour les flux de travail d'agents durables dans les environnements de production.
+Cette section couvre la configuration de Temporal pour des flux de travail d'agent durables dans les environnements de production.
 
-### Vue d'ensemble
+### Aperçu
 
-Temporal fournit une exécution durable pour vos agents Goa-AI. Les exécutions d'agents deviennent des workflows Temporal avec un historique basé sur les événements. Les appels d'outils deviennent des activités avec des tentatives configurables. Chaque transition d'état est conservée. Un travailleur redémarré rejoue l'historique et reprend exactement là où il s'est arrêté.
+Temporal offre une exécution durable pour vos agents Goa-AI. Les exécutions d'agents deviennent des workflows Temporal avec un historique basé sur les événements. Les appels d'outils deviennent des activités avec des tentatives configurables. Chaque transition d'état est persistante. Un travailleur redémarré relit l'historique et reprend exactement là où il s'était arrêté.
 
 ### Comment fonctionne la durabilité
 
-| Le système de gestion de l'information de l'entreprise est un système de gestion de l'information de l'entreprise
+| Composant | Rôle | Durabilité |
 |-----------|------|------------|
-| Le processus d'exécution de l'agent d'orchestration est basé sur les événements ; il survit aux redémarrages
-| L'agent exécute l'orchestration en fonction des événements ; survit aux redémarrages
-| L'activité de l'outil d'exécution **L'activité de l'outil d'exécution** L'invocation de l'outil
-| L'activité de l'outil ne peut être exécutée qu'en cas d'échec transitoire de l'activité de l'outil
+| **Flux de travail** | Orchestration exécutée par les agents | Provenant d'événements ; survit aux redémarrages |
+| **Activité planifiée** | Appel d'inférence LLM | Nouvelles tentatives sur des échecs transitoires |
+| **Exécuter l'activité de l'outil** | Appel d'outil | Politiques de nouvelle tentative par outil |
+| **État** | Historique des virages, résultats de l'outil | Persistance dans l'historique du flux de travail |
 
-**Exemple concret:** Votre agent appelle un LLM, qui renvoie 3 appels d'outils. Deux outils aboutissent. Le service du troisième outil tombe en panne.
+**Exemple concret :** Votre agent appelle un LLM, qui renvoie 3 appels d'outil. Deux outils complets. Le service du troisième outil plante.
 
-- ❌ **Sans Temporal:** L'exécution entière échoue. Vous réexécutez l'inférence ($$$) et ré-exécutez les deux outils réussis.
-- ✅ **Avec Temporal:** Seul l'outil qui a échoué réessaie. Le flux de travail reprend à partir de l'historique - pas de nouvel appel LLM, pas de ré-exécution d'outils terminés. Coût : un essai, pas un redémarrage complet.
+- ❌ **Sans Temporal :** L'exécution entière échoue. Vous réexécutez l'inférence ($$$) et réexécutez les deux outils réussis.
+- ✅ **Avec Temporal :** Seul l'outil en panne réessaye. Le flux de travail est relu à partir de l'historique : pas de nouvel appel LLM, pas de réexécution des outils terminés. Coût : une nouvelle tentative, pas un redémarrage complet.
 
-### Ce qui survit aux défaillances
+### Ce qui survit aux échecs
 
-| Scénario d'échec sans temporisation avec temporisation
+| Scénario d'échec | Sans Temporal | Avec Temporal |
 |------------------|------------------|---------------|
-| Le processus de travailleur se bloque | L'exécution est perdue, redémarrage à zéro | Reprise de l'historique, poursuite de l'exécution
-| L'appel à l'outil se termine | L'exécution échoue (ou traitement manuel) | Réessai automatique avec délai d'attente
-| L'appel de l'outil échoue (ou traitement manuel)
-| L'exécution échoue, l'exécution est interrompue, les tentatives sont automatiques
-| Les travailleurs s'épuisent, les nouveaux travailleurs reprennent le travail
+| Le processus de travail plante | Courez perdu, redémarrez à zéro | Les rediffusions de l'histoire, continue |
+| L’appel de l’outil expire | Échec de l'exécution (ou manipulation manuelle) | Nouvelle tentative automatique avec interruption |
+| Limite de taux (429) | L'exécution échoue | Recule, réessaye automatiquement |
+| Partition réseau | Progrès partiel perdu | Reprise après reconnexion |
+| Déployer pendant l'exécution | Les courses en vol échouent | Les travailleurs s'épuisent, de nouveaux travailleurs reprennent |
 
 ### Installation
 
-**Option 1 : Docker (Développement)**
+**Option 1 : Docker (développement)**
 
-One-liner pour le développement local :
+Un mot d’ordre pour le développement local :
 ```bash
 docker run --rm -d --name temporal-dev -p 7233:7233 temporalio/auto-setup:latest
 ```
 
-**Option 2 : Temporalite (Développement)**
+**Option 2 : Temporalite (Développement)**
 
 ```bash
 go install go.temporal.io/server/cmd/temporalite@latest
 temporalite start
 ```
 
-**Option 3 : Nuage temporel (Production)**
+**Option 3 : Cloud Temporal (Production)**
 
-Inscrivez-vous sur [temporal.io](https://temporal.io) et configurez votre client avec des identifiants cloud.
+Inscrivez-vous sur [temporal.io](https://temporal.io) et configurez votre client avec des informations d'identification cloud.
 
-**Option 4 : auto-hébergement (production)**
+**Option 4 : auto-hébergé (production)**
 
-Déployez Temporal en utilisant Docker Compose ou Kubernetes. Voir la [documentation Temporal](https://docs.temporal.io) pour les guides de déploiement.
+Déployez Temporal à l'aide de Docker Compose ou Kubernetes. Consultez la [documentation Temporal](https://docs.temporal.io) pour les guides de déploiement.
 
-### Configuration de l'exécution
+### Configuration d'exécution
 
-Goa-AI abstrait le backend d'exécution derrière l'interface `Engine`. Changez de moteur sans modifier le code de l'agent :
+Goa-AI résume le backend d'exécution derrière l'interface `Engine`. Échangez les moteurs sans changer le code de l'agent :
 
-**Moteur en mémoire** (développement) :
+**Moteur en mémoire** (développement) :
 ```go
 // Default: no external dependencies
 rt := runtime.New()
 ```
 
-**Moteur temporel** (production) :
+**Moteur Temporal** (production) :
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
     "go.temporal.io/sdk/client"
 
-    // Agrégat de spécifications généré pour vos outils.
-    // Le package généré expose : func Spec(tools.Ident) (*tools.ToolSpec, bool)
+    // Your generated tool specs aggregate.
+    // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
-temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // Requis : faire respecter le contrat de limites de workflow de goa-ai.
-        // Les résultats, server-data, et artefacts traversent les frontières sous forme de JSON canonique (api.ToolEvent/api.ToolArtifact).
+        // Required: enforce goa-ai's workflow boundary contract.
+        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
+        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
@@ -360,79 +367,84 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
-### Configuration des tentatives d'activité
+### Synchronisation et tentatives d'activité
 
-Les appels d'outils sont des activités temporelles. Configurez les tentatives par jeu d'outils dans le DSL :
+Utilisez le DSL pour les budgets d'exécution sémantiques : combien de temps l'exécution entière peut prendre, combien de temps un
+la tentative du planificateur peut s'exécuter et la durée pendant laquelle une tentative d'outil peut s'exécuter.
 
 ```go
-Use("external_apis", func() {
-    // Flaky external services: retry aggressively
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 30 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts:        5,
-            InitialInterval:    time.Second,
-            BackoffCoefficient: 2.0,
-        },
+Agent("operator", "Production operations agent", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        Timing(func() {
+            Budget("5m")
+            Plan("45s")
+            Tools("90s")
+        })
     })
-    
-    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
-    Tool("query_database", "Query external DB", func() { /* ... */ })
-})
-
-Use("local_compute", func() {
-    // Fast local tools: minimal retries
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 5 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts: 2,
-        },
-    })
-    
-    Tool("calculate", "Pure computation", func() { /* ... */ })
 })
 ```
 
-Les activités générées de plan/resume et d'execute-tool utilisent désormais par
-défaut une politique de réessai exponentiel sur 3 tentatives (intervalle
-initial `1s`, coefficient de backoff `2`), et l'activité du runtime qui publie
-les hooks utilise la même politique. Cela n'est sûr que parce que les tentatives
-relancées possèdent une identité logique stable : les événements de hook portent
-des clés d'événement stables et les exécutions d'outils doivent persister/rejouer
-le résultat canonique par `ToolCallID` au lieu de répéter des effets de bord.
-Ne remplacez la politique de réessai que lorsqu'une frontière d'outil ne peut
-pas respecter ce contrat de rejeu.
+L'adaptateur Temporal possède des mécanismes de moteur de flux de travail tels que l'attente en file d'attente et
+délais d'attente de vivacité. Configurez-les sur le moteur, pas dans le DSL :
+
+```go
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "127.0.0.1:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: runtimeTemporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: runtimeTemporal.ActivityDefaults{
+        Planner: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+```
+
+Les activités de plan/CV généré, d'exécution d'outil et de publication de hook utilisent une nouvelle tentative
+des politiques qui ne sont sûres que lorsque les tentatives sont logiquement idempotentes. Événements de crochet
+transporter des clés d'événement stables et les exécutions d'outils doivent persister ou rejouer canoniquement
+résultats par `ToolCallID` plutôt que de répéter des effets secondaires irréversibles.
 
 ### Configuration du travailleur
 
-Les travailleurs interrogent les files d'attente de tâches et exécutent les flux de travail/activités. Les travailleurs sont automatiquement démarrés pour chaque agent enregistré - aucune configuration manuelle des travailleurs n'est nécessaire dans la plupart des cas.
+Les travailleurs interrogent les files d’attente de tâches et exécutent des flux de travail/activités. Les travailleurs sont automatiquement démarrés pour chaque agent enregistré : aucune configuration manuelle n'est nécessaire dans la plupart des cas.
 
 ### Meilleures pratiques
 
-- **Utilisez des espaces de noms distincts** pour les différents environnements (dev, staging, prod)
-- **Configurer des politiques de réessai** par ensemble d'outils en fonction des caractéristiques de fiabilité
-- **Surveiller l'exécution du flux de travail** en utilisant l'interface utilisateur de Temporal et les outils d'observabilité
-- **Définir des délais d'attente appropriés** pour les activités - équilibrer la fiabilité par rapport à la détection des pannes
-- **Utiliser Temporal Cloud** pour la production afin d'éviter la charge opérationnelle
+- **Utilisez des espaces de noms distincts** pour différents environnements (dev, staging, prod)
+- **Configurer les politiques de nouvelle tentative** par ensemble d'outils en fonction des caractéristiques de fiabilité
+- **Surveiller l'exécution du flux de travail** à l'aide du UI et des outils d'observabilité de Temporal
+- **Définissez des délais d'attente appropriés** pour les activités : équilibrez la fiabilité et la détection des blocages
+- **Utilisez Temporal Cloud** pour la production afin d'éviter la charge opérationnelle
 
 ---
 
 ## Streaming UI
 
-Cette section montre comment diffuser en temps réel les événements de l'agent vers les interfaces utilisateur en utilisant l'infrastructure de diffusion en continu de Goa-AI.
+Cette section montre comment diffuser les événements d'agent sur UIs en temps réel à l'aide de l'infrastructure de streaming de Goa-AI.
 
-### Vue d'ensemble
+### Aperçu
 
-Goa-AI publie un flux **détenu par la session** d'événements typés qui peut être fourni aux interfaces utilisateur via :
+Goa-AI publie des **flux appartenant à la session** d'événements typés qui peuvent être transmis à UIs via :
 - Événements envoyés par le serveur (SSE)
 - WebSockets
 - Bus de messages (Pulse, Redis Streams, etc.)
 
-Tous les événements visibles pour une session sont ajoutés à un seul flux : `session/<session_id>`. Chaque événement porte `run_id` et `session_id`, et le runtime émet `child_run_linked` pour relier un appel d’outil parent à une exécution enfant, ainsi que `run_stream_end` comme marqueur explicite pour fermer SSE/WebSocket sans temporisateurs.
+Tous les événements visibles dans le flux pour une session sont ajoutés à un seul flux : `session/<session_id>`. Chaque événement comporte à la fois `run_id` et `session_id` afin que UIs puisse regrouper les événements en couloirs/cartes par course. Les exécutions d'agents imbriquées sont liées via des événements `child_run_linked`. UIs ferme SSE/WebSocket de manière déterministe lorsqu'il observe `run_stream_end` pour l'exécution active.
 
-### Interface Stream Sink
+### Interface du récepteur de flux
 
-Implémentez l'interface `stream.Sink` :
+Implémentez l'interface `stream.Sink` :
 
 ```go
 type Sink interface {
@@ -443,22 +455,23 @@ type Sink interface {
 
 ### Types d'événements
 
-Le paquet `stream` définit des types d'événements concrets qui mettent en œuvre `stream.Event`. Les types d'événements les plus courants pour les interfaces utilisateur sont les suivants :
+Le package `stream` définit des types d'événements concrets qui implémentent `stream.Event`. Les plus courants pour UIs sont :
 
-| Type d'événement Description
+| Type d'événement | Description |
 |------------|-------------|
-
-| `PlannerThought` Blocs de réflexion du planificateur (notes et raisonnement structuré) | `ToolStart` Blocs de réflexion du planificateur (notes et raisonnement structuré)
-| `ToolStart` | Exécution de l'outil démarrée |
+| `AssistantReply` | Morceaux de messages de l'Assistant (texte diffusé en continu) |
+| `PlannerThought` | Blocs de réflexion du planificateur (notes et raisonnement structuré) |
+| `ToolStart` | L'exécution de l'outil a démarré |
 | `ToolUpdate` | Progression de l'exécution de l'outil (mises à jour attendues du nombre d'enfants) |
-| `ToolEnd` | Exécution de l'outil terminée (résultat, erreur, télémétrie) | `AwaitClarification` | Exécution de l'outil terminée (résultat, erreur, télémétrie)
-| `AwaitClarification` Le planificateur attend une clarification humaine
-| `AwaitExternalTools` Le planificateur attend les résultats de l'outil externe
-| `Usage` | Utilisation de jetons par invocation de modèle | `Workflow` | Utilisation de jetons par invocation de modèle
-| `Workflow` | Exécuter les mises à jour du cycle de vie et des phases
-| `ChildRunLinked` | Lien d'un appel d'outil parent vers une exécution d'agent enfant |
+| `ToolEnd` | Exécution de l'outil terminée (résultat, erreur, télémétrie) |
+| `AwaitClarification` | Le planificateur attend des éclaircissements humains |
+| `AwaitExternalTools` | Le planificateur attend les résultats d'un outil externe |
+| `Usage` | Utilisation du jeton par appel de modèle |
+| `Workflow` | Exécuter des mises à jour du cycle de vie et des phases |
+| `ChildRunLinked` | Lien entre un appel d'outil parent et une exécution d'agent enfant |
+| `RunStreamEnd` | Marqueur de limite de flux explicite pour une exécution (plus aucun événement visible dans le flux n'apparaîtra pour cette exécution) |
 
-Les transports commutent généralement le type sur `stream.Event` pour des raisons de sécurité à la compilation :
+Les transports utilisent généralement un commutateur de type sur `stream.Event` pour la sécurité au moment de la compilation :
 
 ```go
 switch e := evt.(type) {
@@ -477,7 +490,7 @@ case stream.RunStreamEnd:
 }
 ```
 
-### Exemple : SSE Sink
+### Exemple : Évier SSE
 
 ```go
 type SSESink struct {
@@ -514,11 +527,11 @@ func (s *SSESink) Close(ctx context.Context) error {
 
 ### Abonnement au flux de session (Pulse)
 
-En production, les UIs consomment le flux de session (`session/<session_id>`) depuis un bus partagé et filtrent par `run_id`. Fermez SSE/WebSocket lorsque vous observez `run_stream_end` pour l’exécution active.
+En production, UIs consomme le flux de session (`session/<session_id>`) à partir d'un bus partagé (Pulse / Redis Streams) et filtre par `run_id`. Fermez SSE/WebSocket lorsque vous observez `run_stream_end` pour l'analyse active.
 
-### Couche d'eau globale
+### Puits de flux global
 
-Pour diffuser toutes les exécutions par l'intermédiaire d'un flux global (par exemple, Pulse), configurez le moteur d'exécution avec un flux de diffusion :
+Pour diffuser toutes les exécutions via un récepteur global (par exemple, Pulse), configurez le runtime avec un récepteur de flux :
 
 ```go
 rt := runtime.New(
@@ -526,21 +539,21 @@ rt := runtime.New(
 )
 ```
 
-Le moteur d'exécution installe un `stream.Subscriber` par défaut qui :
-- fait correspondre les événements du crochet à des valeurs `stream.Event`
-- utilise la `StreamProfile`** par défaut, qui émet les réponses de l'assistant, les pensées du planificateur, le démarrage/la mise à jour/la fin de l'outil, les attentes, l'utilisation, le flux de travail, les liens `child_run_linked` et le marqueur terminal `run_stream_end`
+Le runtime installe un `stream.Subscriber` par défaut qui :
+- mappe les événements de hook aux valeurs `stream.Event`
+- utilise le **`StreamProfile`** par défaut, qui émet les réponses de l'assistant, les réflexions du planificateur, le démarrage/la mise à jour/la fin de l'outil, les attentes, l'utilisation, le flux de travail, les liens `child_run_linked` et le marqueur du terminal `run_stream_end`.
 
 ### Profils de flux
 
-Tous les consommateurs n'ont pas besoin de tous les événements. **Les profils de flux** filtrent les événements pour différents publics, en réduisant le bruit et la bande passante pour des cas d'utilisation spécifiques.
+Tous les consommateurs n’ont pas besoin de chaque événement. Les **profils de diffusion** filtrent les événements pour différents publics, réduisant ainsi le bruit et la bande passante pour des cas d'utilisation spécifiques.
 
-| Profil de flux - Cas d'utilisation - Événements inclus - Profil de flux - Cas d'utilisation - Événements inclus - Profil de flux - Cas d'utilisation - Événements inclus
+| Profil | Cas d'utilisation | Événements inclus |
 |---------|----------|-----------------|
-| Réponse de l'assistant, démarrage/fin de l'outil, achèvement du flux de travail
-`AgentDebugProfile()` Débogage du développeur | Tout, y compris les pensées du planificateur |
-| | Utilisation et événements de flux de travail uniquement | `MetricsProfile()` | Pipelines d'observabilité
+| `UserChatProfile()` | Chat avec l'utilisateur final UI | Réponses de l'assistant, démarrage/fin de l'outil, achèvement du flux de travail |
+| `AgentDebugProfile()` | Débogage du développeur | Tout, y compris les réflexions du planificateur |
+| `MetricsProfile()` | Pipelines d’observabilité | Événements d'utilisation et de flux de travail uniquement |
 
-**Utilisation de profils intégrés:**
+**Utilisation des profils intégrés :**
 
 ```go
 // User-facing chat: replies, tool status, completion
@@ -555,7 +568,7 @@ profile := stream.MetricsProfile()
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 ```
 
-**Profils personnalisés:**
+**Profils personnalisés :**
 
 ```go
 // Fine-grained control over which events to emit
@@ -573,22 +586,22 @@ profile := stream.StreamProfile{
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 ```
 
-Les profils personnalisés sont utiles dans les cas suivants
+Les profils personnalisés sont utiles lorsque :
 - Vous avez besoin d'événements spécifiques pour un consommateur spécialisé (par exemple, suivi des progrès)
 - Vous souhaitez réduire la taille de la charge utile pour les clients mobiles
-- Vous construisez des pipelines d'analyse qui n'ont besoin que de certains événements
+- Vous créez des pipelines d'analyse qui n'ont besoin que de certains événements
 
-### Avancé : Passerelles Pulse et Stream
+### Avancé : Pulse et ponts de flux
 
-Pour les installations de production, vous souhaitez souvent :
+Pour les configurations de production, vous souhaitez souvent :
 - publier des événements sur un bus partagé (par exemple, Pulse)
-- utiliser un flux **détenu par la session** sur ce bus (`session/<session_id>`)
+- utiliser un **flux appartenant à la session** sur ce bus (`session/<session_id>`)
 
-Goa-AI fournit :
-- `features/stream/pulse` - une implémentation `stream.Sink` soutenue par Pulse
-- `runtime/agent/stream/bridge` - des aides pour connecter le bus de crochet à n'importe quel puits
+Goa-AI fournit :
+- `features/stream/pulse` – une implémentation `stream.Sink` soutenue par Pulse
+- `runtime/agent/stream/bridge` – aides pour câbler le bus à crochet à n’importe quel évier
 
-Câblage typique :
+Câblage typique :
 
 ```go
 pulseClient := pulse.NewClient(redisClient)
@@ -612,39 +625,39 @@ rt := runtime.New(
 
 ---
 
-## Rappels du système
+## Rappels système
 
-Les modèles dérivent. Ils oublient les instructions. Ils ignorent le contexte qui était clair il y a 10 tours. Lorsque votre agent exécute des tâches de longue durée, vous avez besoin d'un moyen d'injecter des *conseils dynamiques et contextuels* sans polluer la conversation de l'utilisateur.
+Les modèles dérivent. Ils oublient les instructions. Ils ignorent le contexte qui était clair il y a 10 tours. Lorsque votre agent exécute des tâches de longue durée, vous avez besoin d'un moyen d'injecter des *guides dynamiques et contextuels* sans polluer la conversation de l'utilisateur.
 
 ### Le problème
 
-**Scénario:** Votre agent gère une liste de choses à faire. Après 20 tours, l'utilisateur demande "qu'est-ce qu'il y a ensuite ?" mais le modèle a dérivé - il ne se souvient pas qu'il y a une tâche en cours. Vous devez lui donner un coup de pouce *sans que l'utilisateur ne voie un message gênant "RAPPEL : vous avez une tâche en cours".
+**Scénario :** Votre agent gère une liste de tâches. Après 20 tours, l'utilisateur demande « quelle est la prochaine étape ? » mais le modèle a dérivé : il ne se souvient pas qu'il y a une tâche en attente en cours. Vous devez le pousser *sans* que l'utilisateur voie un message gênant "RAPPEL : vous avez une tâche en cours".
 
-**Sans système de rappel:**
+**Sans rappels système :**
 - Vous gonflez l'invite du système avec tous les scénarios possibles
-- Les conseils se perdent dans les longues conversations
-- Aucun moyen d'injecter un contexte basé sur les résultats de l'outil
-- Les utilisateurs voient l'échafaudage interne de l'agent
+- Les conseils se perdent dans de longues conversations
+- Aucun moyen d'injecter du contexte en fonction des résultats de l'outil
+- Les utilisateurs voient l’échafaudage des agents internes
 
-**Avec des rappels du système:**
-- Injecter des conseils de manière dynamique en fonction de l'état de l'exécution
-- Limiter la fréquence des conseils répétitifs afin d'éviter le gonflement des messages
-- Les niveaux de priorité garantissent que les conseils de sécurité ne sont jamais supprimés
-- Invisibles pour les utilisateurs - injectés sous forme de blocs `<system-reminder>`
+**Avec rappels système :**
+- Injecter des conseils de manière dynamique en fonction de l'état d'exécution
+- Conseils répétitifs de limite de débit pour éviter les ballonnements rapides
+- Les niveaux de priorité garantissent que les directives de sécurité ne sont jamais supprimées
+- Invisible pour les utilisateurs – injecté sous forme de blocs `<system-reminder>`
 
-### Vue d'ensemble
+### Aperçu
 
-Le paquet `runtime/agent/reminder` fournit :
-- **Des rappels structurés** avec des niveaux de priorité, des points d'attachement et des politiques de limitation de taux
-- **Un stockage à l'échelle de l'exécution** qui nettoie automatiquement après chaque exécution
-- **L'injection automatique** dans les transcriptions de modèles sous forme de blocs `<system-reminder>`
-- **API de contexte de planificateur** pour l'enregistrement et la suppression des rappels des planificateurs et des outils
+Le package `runtime/agent/reminder` fournit :
+- **Rappels structurés** avec niveaux de priorité, points d'attache et politiques de limitation de débit
+- **Stockage limité à l'exécution** qui nettoie automatiquement une fois chaque exécution terminée
+- **Injection automatique** dans les transcriptions du modèle sous forme de blocs `<system-reminder>`
+- **PlannerContext API** pour enregistrer et supprimer des rappels des planificateurs et des outils
 
 ### Concepts de base
 
-**Structure des rappels**
+**Structure de rappel**
 
-Un `reminder.Reminder` a :
+Un `reminder.Reminder` possède :
 
 ```go
 type Reminder struct {
@@ -657,41 +670,41 @@ type Reminder struct {
 }
 ```
 
-**Tiers de priorité**
+**Niveaux prioritaires**
 
-Les rappels sont classés par ordre de priorité afin de gérer des budgets rapides et de s'assurer que les conseils essentiels ne sont jamais supprimés :
+Les rappels sont classés par priorité pour gérer des budgets rapides et garantir que les conseils critiques ne soient jamais supprimés :
 
-| Les rappels sont classés par ordre de priorité afin de gérer des budgets rapides et de s'assurer que les conseils essentiels ne sont jamais supprimés
+| Étage | Nom | Description | Suppression |
 |------|------|-------------|-------------|
-| P0 | Guidance critique pour la sécurité (ne jamais laisser tomber) | Jamais supprimée
-| P1 | Correctness and data-state hints | Peut être supprimé après P0 |
-| `TierGuidance` | P2 | Suggestions de flux de travail et incitations douces | Premier à être supprimé |
+| `TierSafety` | P0 | Conseils critiques pour la sécurité (ne jamais laisser tomber) | Jamais supprimé |
+| `TierCorrect` | P1 | Conseils sur l’exactitude et l’état des données | Peut être supprimé après P0 |
+| `TierGuidance` | P2 | Suggestions de flux de travail et petits coups de pouce | Premier à être supprimé |
 
-Exemples de cas d'utilisation :
-- `TierSafety` : "Ne pas exécuter ce logiciel malveillant ; analyser uniquement", "Ne pas divulguer les informations d'identification"
-- `TierCorrect` : "Les résultats sont tronqués ; restreignez votre recherche", "Les données sont peut-être périmées"
-- `TierGuidance` : "Aucune tâche n'est en cours ; choisissez-en une et commencez"
+Exemples de cas d'utilisation :
+- `TierSafety` : "Ne pas exécuter ce malware ; analyser uniquement", "Ne pas divulguer les informations d'identification"
+- `TierCorrect` : "Les résultats sont tronqués ; affinez votre requête", "Les données peuvent être obsolètes"
+- `TierGuidance` : "Aucune tâche n'est en cours ; choisissez-en une et commencez"
 
-**Points d'attachement**
+**Points d'attache**
 
-Les rappels sont injectés à des moments précis de la conversation :
+Des rappels sont injectés à des moments précis de la conversation :
 
-| Type de message - Description - Point d'attache
+| Gentil | Description |
 |------|-------------|
-`AttachmentRunStart` | Regroupés dans un seul message système au début de la conversation | `AttachmentUserTurn` | Regroupés dans un seul message système inséré immédiatement avant le début de la conversation
-| `AttachmentUserTurn` | Regroupés dans un seul message système inséré immédiatement avant le dernier message de l'utilisateur
+| `AttachmentRunStart` | Regroupé en un seul message système au début de la conversation |
+| `AttachmentUserTurn` | Regroupé en un seul message système inséré immédiatement avant le dernier message utilisateur |
 
-**Limitation du débit**
+**Limitation de taux**
 
-Deux mécanismes permettent d'éviter les spams de rappel :
-- **`MaxPerRun`** : Limitation des émissions totales par cycle (0 = illimité)
-- **`MinTurnsBetween`** : Imposer un nombre minimum de tours de planificateur entre les émissions (0 = aucune limite)
+Deux mécanismes empêchent le spam de rappel :
+- **`MaxPerRun`** : plafonner les émissions totales par cycle (0 = illimité)
+- **`MinTurnsBetween`** : imposer un nombre minimum de tours de planification entre les émissions (0 = aucune limite)
 
 ### Modèle d'utilisation
 
 **Rappels statiques via DSL**
 
-Pour les rappels qui doivent toujours apparaître après un résultat d'outil spécifique, utilisez la fonction DSL `ResultReminder` dans votre définition d'outil :
+Pour les rappels qui doivent toujours apparaître après un résultat d'outil spécifique, utilisez la fonction `ResultReminder` DSL dans la définition de votre outil :
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -701,11 +714,11 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Cette fonction est idéale lorsque le rappel s'applique à chaque invocation de l'outil. Voir la [Référence DSL](./dsl-reference.md#resultreminder) pour plus de détails.
+C’est idéal lorsque le rappel s’applique à chaque invocation de l’outil. Voir la [Référence DSL] (./dsl-reference.md#resultreminder) pour plus de détails.
 
 **Rappels dynamiques des planificateurs**
 
-Pour les rappels qui dépendent de l'état d'exécution ou du contenu des résultats de l'outil, utilisez `PlannerContext.AddReminder()` :
+Pour les rappels qui dépendent de l'état d'exécution ou du contenu des résultats de l'outil, utilisez `PlannerContext.AddReminder()` :
 
 ```go
 func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
@@ -735,7 +748,7 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
 
 **Suppression des rappels**
 
-Utilisez `RemoveReminder()` lorsqu'une condition préalable n'est plus valable :
+Utilisez `RemoveReminder()` lorsqu'une condition préalable n'est plus remplie :
 
 ```go
 if allTodosCompleted {
@@ -743,9 +756,9 @@ if allTodosCompleted {
 }
 ```
 
-**Préservation des compteurs de limite de taux**
+**Préservation des compteurs de limite de débit**
 
-`AddReminder()` préserve les compteurs d'émissions lors de la mise à jour d'un rappel existant par ID. Si vous devez modifier le contenu d'un rappel tout en conservant les limites de taux :
+`AddReminder()` préserve les compteurs d'émissions lors de la mise à jour d'un rappel existant par ID. Si vous devez modifier le contenu du rappel tout en conservant les limites de débit :
 
 ```go
 in.Agent.AddReminder(reminder.Reminder{
@@ -757,13 +770,13 @@ in.Agent.AddReminder(reminder.Reminder{
 })
 ```
 
-**Anti-modèle** : N'appelez pas `RemoveReminder()` suivi de `AddReminder()` pour le même ID - cela remet les compteurs à zéro et contourne `MinTurnsBetween`.
+**Anti-modèle** : n'appelez pas `RemoveReminder()` suivi de `AddReminder()` pour le même ID : cela réinitialise les compteurs et contourne `MinTurnsBetween`.
 
 ### Injection et formatage
 
-**Balisage automatique**
+**Marquage automatique**
 
-Le moteur d'exécution enveloppe automatiquement le texte de rappel dans des balises `<system-reminder>` lors de l'injection dans les transcriptions :
+Le moteur d'exécution encapsule automatiquement le texte de rappel dans les balises `<system-reminder>` lors de l'injection dans les transcriptions :
 
 ```go
 // You provide plain text:
@@ -773,9 +786,9 @@ Text: "Results are truncated. Narrow your query."
 <system-reminder>Results are truncated. Narrow your query.</system-reminder>
 ```
 
-**Explication des rappels aux modèles**
+**Expliquer les rappels aux modèles**
 
-Incluez `reminder.DefaultExplanation` dans l'invite de votre système afin que les modèles sachent comment interpréter les blocs `<system-reminder>` :
+Incluez `reminder.DefaultExplanation` dans l'invite de votre système afin que les modèles sachent comment interpréter les blocs `<system-reminder>` :
 
 ```go
 const systemPrompt = `
@@ -841,19 +854,19 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
 
 ### Principes de conception
 
-**Minimal et sans opinion** : Le sous-système de rappel fournit juste assez de structure pour les modèles courants sans trop d'ingénierie.
+**Minimal et opiniâtre** : le sous-système de rappel fournit juste assez de structure pour les modèles courants sans ingénierie excessive.
 
-**Limitation du taux en premier lieu** : Le spam des rappels dégrade les performances du modèle. Le moteur impose les majuscules et l'espacement de manière déclarative.
+**Limitation du débit d'abord** : le spam de rappel dégrade les performances du modèle. Le moteur applique les capuchons et l'espacement de manière déclarative.
 
-**Provider-Agnostic** : Les rappels fonctionnent avec n'importe quel backend de modèle (Bedrock, OpenAI, etc.).
+**Agnostique du fournisseur** : les rappels fonctionnent avec n'importe quel backend de modèle (Bedrock, OpenAI, etc.).
 
-**Prêt pour la télémétrie** : Les ID structurés et les priorités rendent les rappels observables.
+**Prêt pour la télémétrie** : les identifiants et les priorités structurés rendent les rappels observables.
 
 ### Modèles avancés
 
-**Rappels de sécurité
+**Rappels de sécurité**
 
-Utilisez `TierSafety` pour les conseils à ne jamais supprimer :
+Utilisez `TierSafety` pour obtenir des conseils sur la nécessité de ne jamais supprimer :
 
 ```go
 in.Agent.AddReminder(reminder.Reminder{
@@ -867,21 +880,21 @@ in.Agent.AddReminder(reminder.Reminder{
 })
 ```
 
-**Rappels inter-agents**
+**Rappels multi-agents**
 
-Les rappels sont liés à l'exécution. Si un agent-as-tool émet un rappel de sécurité, il n'affecte que l'exécution enfant. Pour propager les rappels à travers les frontières des agents, le planificateur parent doit explicitement les réenregistrer sur la base des résultats de l'enfant ou utiliser l'état de session partagé.
+Les rappels sont limités à l'exécution. Si un agent en tant qu'outil émet un rappel de sécurité, cela n'affecte que cette exécution enfant. Pour propager les rappels au-delà des limites des agents, le planificateur parent doit les réenregistrer explicitement en fonction des résultats des enfants ou utiliser l'état de session partagée.
 
 ### Quand utiliser les rappels
 
-| Scénario | Priorité | Exemple
+| Scénario | Priorité | Exemple |
 |----------|----------|---------|
-| Contraintes de sécurité | `TierSafety` | "Ce fichier est réservé à l'analyse des logiciels malveillants, ne jamais l'exécuter" |
-| `TierCorrect` | "Les résultats datent de 24 heures ; relancez la requête si la fraîcheur est importante" |
-| `TierCorrect` | "Seuls les 100 premiers résultats sont affichés ; affinez votre recherche" |
-| `TierGuidance` | "Aucune tâche n'est en cours ; choisissez-en une et commencez" | `TierGuidance` `TierGuidance` | "Aucune tâche n'est en cours ; choisissez-en une et commencez" |
-| `TierGuidance` | "Toutes les tâches sont terminées ; donnez votre réponse finale" |
+| Contraintes de sécurité | `TierSafety` | "Ce fichier est un malware : analysez-le uniquement, ne l'exécutez jamais" |
+| Obsolescence des données | `TierCorrect` | "Les résultats datent de 24 heures ; réinterrogez si la fraîcheur est importante" |
+| Résultats tronqués | `TierCorrect` | "Affichage uniquement des 100 premiers résultats ; affinez votre recherche" |
+| Coups de pouce au flux de travail | `TierGuidance` | "Aucune tâche n'est en cours ; choisissez-en une et commencez" |
+| Conseils d'achèvement | `TierGuidance` | "Toutes les tâches sont terminées ; fournissez votre réponse finale" |
 
-### A quoi ressemblent les rappels dans la transcription
+### À quoi ressemblent les rappels dans la transcription
 
 ```
 User: What should I do next?
@@ -892,12 +905,12 @@ Focus on completing the current todo before starting new work.</system-reminder>
 User: What should I do next?
 ```
 
-Le modèle voit le rappel ; l'utilisateur ne voit que son message et la réponse. Les rappels sont injectés de manière transparente par le runtime.
+Le modèle voit le rappel ; l'utilisateur ne voit que son message et la réponse. Les rappels sont injectés de manière transparente par le runtime.
 
 ---
 
 ## Prochaines étapes
 
-- En savoir plus sur [Memory & Sessions](./memory-sessions/) pour la persistance des transcriptions
-- Explorer [Agent Composition](./agent-composition/) pour les modèles d'agents en tant qu'outils
-- En savoir plus sur [Toolsets](./toolsets/) pour les modèles d'exécution d'outils
+- En savoir plus sur [Mémoire et sessions](./memory-sessions/) pour la persistance des transcriptions
+- Explorez [Composition d'agent](./agent-composition/) pour les modèles d'agent en tant qu'outil
+- En savoir plus sur les [Toolsets](./toolsets/) pour les modèles d'exécution d'outils

@@ -2,44 +2,43 @@
 title: "内部ツールレジストリ"
 linkTitle: "レジストリ"
 weight: 9
-description: "プロセス境界をまたぐツールセットの発見と実行のために、クラスタ化されたゲートウェイをデプロイします。"
+description: "プロセス境界をまたぐツールセットの発見と呼び出しのために、クラスタ化されたゲートウェイをデプロイします。"
 llm_optimized: true
 ---
 
-**内部ツールレジストリ (Internal Tool Registry)** は、プロセス境界をまたいでツールセットの発見と呼び出しを可能にする、クラスタ化されたゲートウェイサービスです。ツールセットが別サービスとして提供され、エージェント（コンシューマ）とは独立してスケールさせたい場合に向いています。
+**内部ツールレジストリ (Internal Tool Registry)** は、プロセス境界をまたいでツールセットの発見と呼び出しを可能にするクラスタ化されたゲートウェイサービスです。ツールセットを別サービスで提供し、消費側エージェントとは独立してスケールさせたい場面向けに設計されています。
 
 ## 概要
 
-レジストリは、**カタログ** と **ゲートウェイ** の両方として機能します：
+レジストリは **catalog** と **gateway** の両方として動作します:
 
-- **カタログ**: エージェントは、利用可能なツールセット、そのスキーマ、およびヘルス状態を発見できます
-- **ゲートウェイ**: ツール呼び出しは、Pulse ストリームを介してレジストリからプロバイダーへルーティングされます
+- **Catalog**: エージェントは利用可能なツールセット、スキーマ、ヘルス状態を発見できます
+- **Gateway**: ツール呼び出しはレジストリから Pulse streams 経由で provider へルーティングされます
 
-これにより、エージェントとツールセットプロバイダーが疎結合になり、スケール、デプロイ、ライフサイクル管理をそれぞれ独立して行えます。
+これにより、エージェントとツールセット provider が疎結合になり、スケール、デプロイ、ライフサイクル管理を独立して行えます。
 
-### Tool Registry と Prompt Registry の違い
+### Tool Registry と Prompt Registry
 
-両者は別システムであり、責務も異なります。
+両者は責務の異なる別システムです:
 
-- **内部 Tool Registry**（本ページ）: プロセス境界をまたぐ toolset / tool call の発見と呼び出し。
-- **Runtime Prompt Registry**（`runtime.PromptRegistry`）: プロセス内での prompt spec 登録とレンダリング（必要に応じて `runtime.WithPromptStore` による prompt store を利用）。
+- **Internal Tool Registry** (このページ): プロセス境界をまたぐ toolset と tool call の発見/呼び出し。
+- **Runtime Prompt Registry** (`runtime.PromptRegistry`): プロセス内での prompt spec 登録とレンダリング。任意で prompt override store (`runtime.WithPromptStore`) を使えます。
 
-Tool Registry は prompt template を保存せず、prompt override の解決もしません。
-prompt の解決・レンダリングは runtime/planner 層で行われ、`prompt_rendered` 観測イベントを発行します。
+tool registry は prompt template を保存せず、prompt override も解決しません。prompt rendering は runtime/planner 層に残り、`prompt_rendered` 観測イベントを発行します。
 
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
-## マルチノード・クラスタリング
+## マルチノードクラスタリング
 
-複数のレジストリノードは、設定で同じ `Name` を使用し、同じ Redis インスタンスに接続することで、同一の論理レジストリとして動作できます。
+複数の registry node は、設定で同じ `Name` を使い、同じ Redis インスタンスへ接続することで、同じ論理 registry に参加できます。
 
-同じ名前のノードは自動的に次を行います：
+同じ名前の node は自動的に次を行います:
 
-- **ツールセット登録の共有**: Pulse のレプリケートされたマップを通じて共有
-- **ヘルスチェック ping の協調**: 分散ティッカーにより協調（同時刻に ping するのは常に 1 ノードのみ）
-- **プロバイダーヘルス状態の共有**: すべてのノードで同一のビューを保持
+- **ツールセット登録を共有**: Pulse replicated maps 経由で共有
+- **ヘルスチェック ping を協調**: distributed tickers により、常に 1 node だけが ping します
+- **provider health state を共有**: すべての node でヘルス状態を共有
 
-これにより水平スケールと高可用性が実現されます。クライアントはどのノードに接続しても、同一のレジストリ状態を参照できます。
+これにより水平スケールと高可用性を実現できます。クライアントは任意の node に接続でき、同じ registry state を参照できます。
 
 {{< figure src="/images/diagrams/RegistryCluster.svg" alt="Registry Cluster Architecture" >}}
 
@@ -47,7 +46,7 @@ prompt の解決・レンダリングは runtime/planner 層で行われ、`prom
 
 ### ライブラリとして使う
 
-レジストリノードをプログラムから作成して起動します。`New()` の呼び出しで、レジストリは Redis に接続し、複数の Pulse コンポーネントを初期化します（分散協調のためのプールノード、ヘルス状態とツールセット追跡のための 2 つのレプリケートマップ、ツール呼び出しルーティングのためのストリームマネージャなど）。`Run()` は gRPC サーバーを起動し、シャットダウンまでブロックしつつ、グレースフルな終了処理を自動的に行います。
+registry node をプログラムから作成して実行します。`New()` が呼ばれると、registry は Redis に接続し、分散協調用の pool node、health state と toolset tracking 用の 2 つの replicated map、tool call routing 用の stream manager など、複数の Pulse component を初期化します。`Run()` は gRPC server を起動し、shutdown まで block し、graceful termination を自動的に処理します。
 
 ```go
 package main
@@ -63,22 +62,22 @@ import (
 func main() {
     ctx := context.Background()
 
-    // Redis に接続
+    // Connect to Redis
     rdb := redis.NewClient(&redis.Options{
         Addr: "localhost:6379",
     })
     defer rdb.Close()
 
-    // レジストリを作成
+    // Create the registry
     reg, err := registry.New(ctx, registry.Config{
         Redis: rdb,
-        Name:  "my-registry",  // 同じ Name のノードはクラスタを形成する
+        Name:  "my-registry",  // Nodes with same name form a cluster
     })
     if err != nil {
         log.Fatal(err)
     }
 
-    // gRPC サーバーを起動（シャットダウンまでブロック）
+    // Run the gRPC server (blocks until shutdown)
     log.Println("starting registry on :9090")
     if err := reg.Run(ctx, ":9090"); err != nil {
         log.Fatal(err)
@@ -88,13 +87,13 @@ func main() {
 
 ### サンプルバイナリ
 
-`registry` パッケージには、すぐに試せるサンプルバイナリが含まれます。同じ Redis を指し、同じ `REGISTRY_NAME` を持つノードは自動的にクラスタを形成し、追加設定なしでツールセット登録を共有し、ヘルスチェックも協調されます。
+registry package には、素早くデプロイするための example binary が含まれます。同じ Redis instance を指し、同じ `REGISTRY_NAME` を持つ node は自動的に cluster を形成します。追加設定なしで toolset registrations を共有し、health checks を協調します。
 
 ```bash
-# シングルノード（開発）
+# Single node (development)
 REDIS_URL=localhost:6379 go run ./registry/cmd/registry
 
-# マルチノードクラスタ（本番）
+# Multi-node cluster (production)
 REGISTRY_NAME=prod REGISTRY_ADDR=:9090 REDIS_URL=redis:6379 ./registry
 REGISTRY_NAME=prod REGISTRY_ADDR=:9091 REDIS_URL=redis:6379 ./registry
 REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
@@ -104,12 +103,12 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 | 変数 | 説明 | デフォルト |
 |----------|-------------|---------|
-| `REGISTRY_ADDR` | gRPC リッスンアドレス | `:9090` |
-| `REGISTRY_NAME` | レジストリクラスタ名 | `registry` |
-| `REDIS_URL` | Redis 接続 URL | `localhost:6379` |
-| `REDIS_PASSWORD` | Redis パスワード | (なし) |
-| `PING_INTERVAL` | ヘルスチェック ping 間隔 | `10s` |
-| `MISSED_PING_THRESHOLD` | 非健全とみなすまでの連続 ping 欠損数 | `3` |
+| `REGISTRY_ADDR` | gRPC listen address | `:9090` |
+| `REGISTRY_NAME` | Registry cluster name | `registry` |
+| `REDIS_URL` | Redis connection URL | `localhost:6379` |
+| `REDIS_PASSWORD` | Redis password | (なし) |
+| `PING_INTERVAL` | Health check ping interval | `10s` |
+| `MISSED_PING_THRESHOLD` | unhealthy とみなすまでの missed ping 数 | `3` |
 
 ## アーキテクチャ
 
@@ -119,45 +118,45 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 | コンポーネント | 説明 |
 |-----------|-------------|
-| **Service** | ディスカバリと呼び出しのための gRPC ハンドラ |
-| **Store** | ツールセットメタデータの永続化層（メモリまたは MongoDB） |
-| **Health Tracker** | ping/pong によりプロバイダーの生存性を監視 |
-| **Stream Manager** | ツール呼び出しルーティングのための Pulse ストリームを管理 |
-| **Result Stream Manager** | ツール結果の配信を担当 |
+| **Service** | discovery と invocation のための gRPC handler |
+| **Store** | toolset metadata の persistence layer (memory または MongoDB) |
+| **Health Tracker** | ping/pong による provider liveness の監視 |
+| **Stream Manager** | tool call routing 用 Pulse streams の管理 |
+| **Result Stream Manager** | tool result delivery の処理 |
 
 ### ツール呼び出しフロー
 
-`CallTool` が呼ばれると、レジストリは次の手順を順に実行します：
+`CallTool` が呼ばれると、registry は次を順番に実行します:
 
-1. **スキーマ検証**: コンパイル済みスキーマバリデータを使い、ペイロードをツールの JSON Schema に対して検証
-2. **ヘルスチェック**: 直近の ping への応答状況を確認し、非健全なツールセットは即座に `service_unavailable` を返す
-3. **結果ストリームの作成**: 一意な `tool_use_id` を持つ一時的な Pulse ストリームを作成し、クロスノード配信のために `tool_use_id → stream_id` の対応を Redis に保存
-4. **リクエストの発行**: ツール呼び出しをツールセットのリクエストストリーム（`toolset:<name>:requests`）へ publish
-5. **結果待ち**: ゲートウェイは結果ストリームに subscribe し、プロバイダーからの応答か 30 秒タイムアウトまでブロック
+1. **Schema validation**: runtime toolregistry schema validator を使い、payload を tool の JSON Schema に対して検証します
+2. **Health check**: toolset が最近の ping に応答したか確認します。unhealthy な toolset は即座に `service_unavailable` を返します
+3. **Result stream creation**: 一意な `tool_use_id` を持つ一時的な Pulse stream を作成し、cross-node result delivery のために mapping を Redis に保存します
+4. **Request publishing**: tool call を toolset request stream (`toolset:<name>:requests`) に publish します
+5. **Wait for result**: gateway は result stream を subscribe し、provider 応答または 30 秒 timeout まで block します
 
-この設計により、プロバイダーが非健全な場合はタイムアウト待ちではなく、呼び出しが即時に失敗します。
+この設計により、provider が unhealthy な場合は timeout を待つのではなく fail fast します。
 
-## プロバイダー統合（サービス側）
+## Provider 統合 (サービス側)
 
-レジストリによるルーティングは半分に過ぎません。**ツールセットの所有サービス側プロセスで、ツール実行ループ（プロバイダーループ）を動かす必要があります**。
+registry routing は半分にすぎません。**provider は toolset 所有サービスプロセス内で tool execution loop を実行する必要があります**。
 
-サービス所有でメソッド連携のツールセット（`BindTo(...)` で宣言されたツール）の場合、コード生成は次の provider アダプタを出力します：
+service-owned で method-backed な toolset (`BindTo(...)` で宣言された tool) の場合、code generation は次の provider adapter を出力します:
 
 - `gen/<service>/toolsets/<toolset>/provider.go`
 
-生成された provider は次を行います：
+生成された provider は次を行います:
 
-- 生成済み payload codec を使って、受信した payload JSON をデコード
-- 生成済み transforms を使って、Goa メソッド用の payload を構築
-- 連携先のサービスメソッドを呼び出し
-- 生成済み result codec を使って、結果 JSON を宣言済み server-data（観測者向け任意 server-data とサーバー専用 always-on メタデータを含む）とともにエンコード
+- 受信した tool payload JSON を生成 payload codec でデコード
+- 生成 transform を使って Goa method payload を構築
+- bound service method を呼び出し
+- 生成 result codec を使って、tool result JSON と宣言済み server-data をエンコード
 
-レジストリのゲートウェイからの呼び出しを処理するには、生成された provider をランタイムの provider ループに接続します：
+registry gateway からの tool call を処理するには、生成 provider を runtime provider loop (`goa.design/goa-ai/runtime/toolregistry/provider`) に配線します:
 
 ```go
 handler := toolsetpkg.NewProvider(serviceImpl)
 go func() {
-    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
         Pong: func(ctx context.Context, pingID string) error {
             return registryClient.Pong(ctx, &registry.PongPayload{
                 PingID:  pingID,
@@ -171,16 +170,16 @@ go func() {
 }()
 ```
 
-ストリーム ID は決定的です：
+stream ID は決定的です:
 
-- 呼び出し: `toolset:<toolsetID>:requests`
-- 結果: `result:<toolUseID>`
+- Tool calls: `toolset:<toolsetID>:requests`
+- Results: `result:<toolUseID>`
 
 ## 設定
 
 ### Config 構造体
 
-`Name` は特に重要です。協調に使われる Pulse リソース名を決めます。プールは `<name>`、ヘルスマップは `<name>:health`、レジストリマップは `<name>:toolsets` です。`Name` と Redis 接続が一致するノードは自動的に相互発見します。
+`Name` field は特に重要です。協調に使う Pulse resource name を決めます。pool は `<name>`、health map は `<name>:health`、registry map は `<name>:toolsets` です。Name と Redis connection が一致する node は自動的に互いを発見します。
 
 ```go
 type Config struct {
@@ -216,7 +215,7 @@ type Config struct {
 
 ### Store 実装
 
-レジストリは、ストレージバックエンドを差し替えできます。ストアはツールセットメタデータ（名前、説明、バージョン、タグ、ツールスキーマ）を永続化します。なお、ヘルス状態とストリーム協調は、選択したストアに関係なく常に Redis/Pulse 経由で処理されます（ストアはメタデータ永続化にのみ影響します）。
+registry は差し替え可能な storage backend をサポートします。store は toolset metadata (name, description, version, tags, tool schemas) を永続化します。health state と stream coordination は、どの store を選んでも常に Redis/Pulse 経由で処理されます。store は toolset metadata persistence だけに影響します。
 
 ```go
 import (
@@ -224,13 +223,13 @@ import (
     "goa.design/goa-ai/registry/store/mongo"
 )
 
-// インメモリストア（デフォルト、開発向け）
+// In-memory store (default, for development)
 reg, _ := registry.New(ctx, registry.Config{
     Redis: rdb,
     // Store defaults to memory.New()
 })
 
-// MongoDB ストア（本番の永続化向け）
+// MongoDB store (for production persistence)
 mongoStore, _ := mongo.New(mongoClient, "registry", "toolsets")
 reg, _ := registry.New(ctx, registry.Config{
     Redis: rdb,
@@ -240,26 +239,26 @@ reg, _ := registry.New(ctx, registry.Config{
 
 ## ヘルス監視
 
-レジストリは、Pulse ストリーム上の ping/pong メッセージを使って、プロバイダーのヘルスを自動監視します。
+registry は Pulse streams 上の ping/pong message を使って provider health を自動的に監視します。
 
 ### 仕組み
 
-1. レジストリは各登録ツールセットのストリームへ周期的に `ping` を送る
-2. プロバイダーは `Pong` gRPC メソッドを通じて `pong` で応答する
-3. `MissedPingThreshold` 回連続で ping が欠損すると、非健全としてマークされる
-4. 非健全なツールセットは `CallTool` のルーティング対象から除外される
+1. Registry は登録済み toolset の stream へ定期的に `ping` message を送ります
+2. Provider は `Pong` gRPC method 経由で `pong` message を返します
+3. provider が `MissedPingThreshold` 回連続で ping を逃すと unhealthy に mark されます
+4. unhealthy な toolset は `CallTool` routing から除外されます
 
-ヘルストラッカーは、`(MissedPingThreshold + 1) × PingInterval` で計算される staleness しきい値を使用します。デフォルト（欠損 3 回、間隔 10 秒）では、40 秒 pong がないと非健全になります。応答猶予を確保しつつ、合理的な速度で障害を検知できます。
+health tracker は `(MissedPingThreshold + 1) × PingInterval` として計算される staleness threshold を使います。default (3 missed pings, 10s interval) では、40 秒 pong がないと toolset は unhealthy になります。provider に応答時間を与えつつ、合理的に素早く failure を検出できます。
 
 ### 分散協調
 
-マルチノードクラスタでは、ヘルスチェック ping は Pulse の分散ティッカーで協調されます。任意の時刻に ping を送るのは常に 1 ノードで、当該ノードが落ちれば、別ノードが 1 ping 間隔以内に自動的に引き継ぎます。
+multi-node cluster では、health check pings は Pulse distributed tickers で協調されます。ticker により、任意の時点で ping を送る node は正確に 1 つになります。その node が crash した場合、別の node が 1 ping interval 以内に自動的に引き継ぎます。
 
-すべてのノードは、Pulse のレプリケートマップでヘルス状態を共有します。どのノードで pong を受けても、共有マップに最新のタイムスタンプを書き込みます。どのノードがヘルスを判定する場合でもこの共有マップを読むため、クラスタ全体で一貫したヘルスビューが保たれます。
+すべての node は Pulse replicated map で health state を共有します。どの node が pong を受け取っても、共有 map に現在 timestamp を更新します。どの node が health を check してもこの共有 map を読むため、すべての node は一貫した provider health view を持ちます。
 
 ## クライアント統合
 
-エージェントは、生成された gRPC クライアントを使ってレジストリに接続します。`GRPCClientAdapter` は生の gRPC クライアントをラップし、ディスカバリと呼び出しのための扱いやすいインターフェイスを提供します。すべてのレジストリノードが状態を共有するため、クライアントはどのノードへ接続しても構いません。本番ではロードバランサ配下に配置すると、フェイルオーバが容易です。
+エージェントは生成 gRPC client を使って registry に接続します。`GRPCClientAdapter` は raw gRPC client を wrap し、discovery と invocation に使いやすい interface を提供します。すべての registry node は state を共有するため、client は任意の node に接続できます。本番では automatic failover のため load balancer を使ってください。
 
 ```go
 import (
@@ -270,80 +269,82 @@ import (
     runtimeregistry "goa.design/goa-ai/runtime/registry"
 )
 
-// レジストリへ接続
+// Connect to the registry
 conn, _ := grpc.NewClient("localhost:9090",
     grpc.WithTransportCredentials(insecure.NewCredentials()),
 )
 defer conn.Close()
 
-// クライアントアダプタを作成
+// Create the client adapter
 client := runtimeregistry.NewGRPCClientAdapter(
     registrypb.NewRegistryClient(conn),
 )
 
-// ツールセット一覧を取得
+// Discover toolsets
 toolsets, _ := client.ListToolsets(ctx)
 for _, ts := range toolsets {
-    fmt.Printf("Toolset: %s (%d tools)\n", ts.Name, ts.ToolCount)
+    fmt.Printf("Toolset: %s (%d tools)
+", ts.Name, ts.ToolCount)
 }
 
-// ツールセットの完全なスキーマを取得
+// Get full schema for a toolset
 schema, _ := client.GetToolset(ctx, "data-tools")
 for _, tool := range schema.Tools {
-    fmt.Printf("  Tool: %s - %s\n", tool.Name, tool.Description)
+    fmt.Printf("  Tool: %s - %s
+", tool.Name, tool.Description)
 }
 ```
 
 ## gRPC API
 
-レジストリは次の gRPC メソッドを提供します：
+registry は次の gRPC method を公開します:
 
-### プロバイダー操作
+### Provider Operations
 
-| メソッド | 説明 |
+| Method | 説明 |
 |--------|-------------|
-| `Register` | ツールセットをレジストリへ登録します。ツールスキーマを検証し、リクエストストリームを作成し、ヘルス監視を開始します。プロバイダーが subscribe するためのストリーム ID を返します。 |
-| `Unregister` | ツールセットをレジストリから削除します。ヘルス ping を止め、メタデータを削除しますが、基盤となるストリーム自体は破棄しません。 |
-| `EmitToolResult` | ツール実行結果を emit します。Redis から結果ストリームを引いて（クロスノード配信を可能にし）、結果を publish します。 |
-| `Pong` | ヘルスチェック ping へ応答します。共有ヘルスマップの「最終 pong タイムスタンプ」を更新します。 |
+| `Register` | toolset を registry に登録します。tool schema を検証し、request stream を作成し、health tracking を開始します。provider が subscribe する stream ID を返します。 |
+| `Unregister` | toolset を registry から削除します。health ping を停止し metadata を削除しますが、基盤 stream は破棄しません。 |
+| `EmitToolResult` | tool execution result を emit します。Redis から result stream を lookup し (cross-node delivery を可能にする)、result を publish します。 |
+| `Pong` | health check ping に応答します。共有 health map の last-pong timestamp を更新します。 |
 
-### ディスカバリ操作
+### Discovery Operations
 
-| メソッド | 説明 |
+| Method | 説明 |
 |--------|-------------|
-| `ListToolsets` | 登録済みツールセットの一覧を返します（任意でタグフィルタ）。メタデータのみで、完全スキーマは返しません。 |
-| `GetToolset` | 特定ツールセットの完全なスキーマ（全ツールの入出力スキーマを含む）を返します。 |
-| `Search` | 名前、説明、タグへのキーワードマッチでツールセットを検索します。 |
+| `ListToolsets` | 登録済み toolset を一覧します (任意で tag filtering)。metadata のみを返し、full schema は返しません。 |
+| `GetToolset` | 指定 toolset の full schema を取得します。すべての tool input/output schema を含みます。 |
+| `Search` | name、description、tags に対する keyword match で toolset を検索します。 |
 
-### 呼び出し操作
+### Invocation Operations
 
-| メソッド | 説明 |
+| Method | 説明 |
 |--------|-------------|
-| `CallTool` | レジストリゲートウェイ経由でツールを呼び出します。ペイロードを検証し、ヘルスを確認し、プロバイダーへルーティングし、結果を待ちます（タイムアウト 30 秒）。 |
+| `CallTool` | registry gateway 経由で tool を invoke します。payload を検証し、health を check し、provider へ route し、result を待ちます (30s timeout)。 |
 
 ## ベストプラクティス
 
 ### デプロイ
 
-- **クラスタ内の全ノードで同じ `Name` を使う**: 共有される Pulse リソース名を決めます
-- **同じ Redis を指す**: 状態協調のため
-- **ロードバランサ配下に配置する**: どのノードも同一状態を提供するため、クライアント側のフェイルオーバが容易です
-- **本番は MongoDB ストアを使う**: 再起動をまたいで登録を保持します（インメモリストアは再起動で登録が失われます）
+- **すべての node で同じ `Name` を使う**: これが共有 Pulse resource name を決めます
+- **同じ Redis instance を指す**: state coordination のため
+- **load balancer の背後にデプロイする**: すべての node が同一 state を返します
+- **本番では MongoDB store を使う**: restart をまたいで metadata を保持します (in-memory store は restart で registration を失います)
 
 ### ヘルス監視
 
-- **`PingInterval` を要件に合わせて設定する**: デフォルトは 10 秒。短くすると検知は速くなりますが、Redis トラフィックが増えます
-- **`MissedPingThreshold` を調整する**: 誤検知と検知速度のトレードオフ（デフォルト 3）。staleness は `(threshold + 1) × interval`
-- **ヘルス状態を監視する**: 非健全なツールセットはタイムアウトではなく即座に `service_unavailable` になります
+- **適切な `PingInterval` を設定する**: latency 要件に合わせます (default: 10s)。小さくすると failure 検出は速くなりますが Redis traffic が増えます。
+- **`MissedPingThreshold` を調整する**: false positive と検出速度の balance を取ります (default: 3)。staleness threshold は `(threshold + 1) × interval` です。
+- **health state を監視する**: unhealthy toolset は timeout ではなく即座に `service_unavailable` error を起こします
 
 ### スケーリング
 
-- **ノードを追加して gRPC 接続数を捌く**: どのノードでもあらゆるリクエストを処理可能
-- **分散ティッカーで作業を共有する**: 各ツールセットに ping するのは常に 1 ノードのみ
-- **スティッキーセッションは不要**: 結果ストリームは Redis によりクロスノード配信されるため、あるノードで開始されたツール呼び出しが別ノードで完了しても問題ありません
+- **node を追加する**: gRPC connection を増やしても、各 node は任意の request を処理できます
+- **node は Pulse distributed tickers で作業を共有する**: toolset ごとの ping は一度に 1 node だけが行います
+- **sticky session は不要**: result stream は Redis により cross-node delivery されるため、ある node で開始した tool call が別 node で完了できます
 
 ## 次のステップ
 
-- [Toolsets](./toolsets/) を読んでツールの定義方法を学ぶ
-- [Production](./production/) でデプロイパターンを確認する
-- [Agent Composition](./agent-composition/) でエージェント間のツール共有を理解する
+- [Toolsets](./toolsets/) で tool の定義方法を学ぶ
+- [Production](./production/) で deployment pattern を確認する
+- [Agent Composition](./agent-composition/) で cross-agent tool sharing を理解する

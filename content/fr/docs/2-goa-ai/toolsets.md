@@ -6,45 +6,47 @@ llm_optimized: true
 aliases:
 ---
 
-Les ensembles d'outils sont des collections d'outils que les agents peuvent utiliser. Goa-AI prend en charge plusieurs types d'ensembles d'outils, chacun ayant des modèles d'exécution et des cas d'utilisation différents.
+Les ensembles d'outils sont des ensembles d'outils que les agents peuvent utiliser. Goa-AI prend en charge plusieurs types d'ensembles d'outils, chacun avec des modèles d'exécution et des cas d'utilisation différents.
 
 ## Types d'ensembles d'outils
 
-### Ensembles d'outils appartenant à un service (soutenus par une méthode)
+### Ensembles d'outils appartenant au service (basés sur une méthode)
 
-Déclarés via `Toolset("name", func() { ... })` ; les outils peuvent `BindTo` être des méthodes de service Goa ou être mis en œuvre par des exécuteurs personnalisés.
+Déclaré via `Toolset("name", func() { ... })` ; les outils peuvent être des méthodes de service `BindTo` Goa ou être implémentés par des exécuteurs personnalisés.
 
-- Codegen émet des spécifications/types/codecs par outil sous `gen/<service>/toolsets/<toolset>/`
-- Lorsqu'on utilise le registre d'outils interne, codegen émet aussi `gen/<service>/toolsets/<toolset>/provider.go` pour l'exécution côté service routée par le registre
-- Les agents qui `Use` ces ensembles d'outils importent les spécifications du fournisseur et obtiennent des constructeurs d'appels typés et des usines d'exécution
-- Les applications enregistrent des exécuteurs qui décodent les arguments typés (via des codecs fournis par le moteur d'exécution), utilisent éventuellement des transformations, appellent des clients de service et renvoient des `ToolResult`
+- Codegen émet des spécifications/types/codecs/transformations par ensemble d'outils sous `gen/<service>/toolsets/<toolset>/`
+- Lors de l'utilisation du registre d'outils interne, codegen émet également `gen/<service>/toolsets/<toolset>/provider.go` pour une exécution côté service acheminée par le registre.
+- Agents qui `Use` ces ensembles d'outils importent les spécifications du fournisseur et obtiennent des générateurs d'appels tapés et des usines d'exécution
+- Les applications enregistrent les exécuteurs qui décodent les arguments saisis (via les codecs fournis au moment de l'exécution), utilisent éventuellement des transformations, appellent les clients de service et renvoient `ToolResult`.
 
-Si vous déployez le registre d'outils interne pour l'invocation inter-processus, le service propriétaire exécute une boucle fournisseur qui s'abonne à `toolset:<toolsetID>:requests` et publie les résultats sur `result:<toolUseID>`. Voir la documentation du [Registre]({{< ref "/docs/2-goa-ai/registry.md" >}}) pour l'extrait de câblage du fournisseur.
+Si vous déployez le registre d'outils interne pour un appel inter-processus, le service propriétaire exécute une boucle de fournisseur qui s'abonne à `toolset:<toolsetID>:requests` et publie les résultats sur `result:<toolUseID>`. Consultez la [documentation du registre]({{< ref "/docs/2-goa-ai/registry.md" >}}) pour obtenir l'extrait de câblage du fournisseur.
 
-### Ensembles d'outils mis en œuvre par l'agent (Agent-as-Tool)
+### Ensembles d'outils implémentés par l'agent (agent en tant qu'outil)
 
-Définis dans un bloc `Export` de l'agent et éventuellement `Use` mis en œuvre par d'autres agents.
+Défini dans un bloc d'agent `Export`, et éventuellement `Use`d par d'autres agents.
 
-- Le service reste propriétaire ; l'agent est l'implémentation
-- Codegen émet des paquets d'export côté fournisseur sous `gen/<service>/agents/<agent>/exports/<export>` avec `NewRegistration` et des constructeurs d'appels typés
-- Les aides côté consommateur dans les agents qui `Use` l'ensemble d'outils exportés délèguent aux aides côté fournisseur tout en gardant les métadonnées de routage centralisées
-- L'exécution se fait en ligne ; les charges utiles sont transmises sous forme de JSON canonique et décodées uniquement à la frontière si cela est nécessaire pour les invites
+- La propriété vit toujours avec le service ; l'agent est la mise en œuvre
+- Codegen émet des packages d'exportation côté fournisseur sous `gen/<service>/agents/<agent>/exports/<export>` avec `NewRegistration` et des générateurs d'appels tapés
+- Assistants côté consommateur dans les agents que `Use`, l'ensemble d'outils exportés, délègue aux assistants fournisseurs tout en conservant la centralisation des métadonnées de routage
+- L'exécution s'effectue en ligne ; les charges utiles sont transmises sous forme canonique JSON et décodées uniquement à la limite si nécessaire pour les invites
 
-### Jeux d'outils MCP
+### Ensembles d'outils MCP
 
-Déclarés via `Toolset(FromMCP(service, suite))` et référencés via `Use(AssistantSuite)`.
+Déclaré via `Toolset(FromMCP(service, suite))` pour les suites MCP soutenues par Goa, ou
+`Toolset("name", FromExternalMCP(service, suite), func() { ... })` pour externe
+Serveurs MCP avec schémas d'outils en ligne.
 
-- Les ensembles d'enregistrement générés `DecodeInExecutor=true` de sorte que le JSON brut est transmis à l'exécuteur MCP
+- L'enregistrement généré définit `DecodeInExecutor=true` afin que le JSON brut soit transmis à l'exécuteur MCP.
 - L'exécuteur MCP décode en utilisant ses propres codecs
-- Les wrappers générés gèrent les schémas/encodeurs JSON et les transports (HTTP/SSE/stdio) avec les tentatives et le traçage
+- Les wrappers générés gèrent les schémas/encodeurs et transports JSON (HTTP/SSE/stdio) avec tentatives et traçage
 
-### Quand utiliser les implémentations BindTo ou Inline ?
+### Quand utiliser les implémentations BindTo vs Inline
 
-**Utilisez `BindTo` quand:**
+**Utilisez `BindTo` lorsque :**
 - L'outil doit appeler une méthode de service Goa existante
-- Vous souhaitez générer des transformations entre les types d'outils et de méthodes
+- Vous souhaitez des transformations générées entre les types d'outils et de méthodes
 - La méthode de service possède déjà la logique métier dont vous avez besoin
-- Vous souhaitez réutiliser la validation et la gestion des erreurs de la couche de service
+- Vous souhaitez réutiliser la validation et la gestion des erreurs de la couche service
 
 ```go
 // Tool bound to existing service method
@@ -55,11 +57,11 @@ Tool("search", "Search documents", func() {
 })
 ```
 
-**Utilisez les implémentations en ligne lorsque :**
-- L'outil a une logique personnalisée qui n'est pas liée à une méthode de service
+**Utilisez les implémentations en ligne lorsque :**
+- L'outil a une logique personnalisée non liée à une méthode de service
 - Vous devez orchestrer plusieurs appels de service
 - L'outil est purement informatique (pas d'appels externes)
-- Vous voulez un contrôle total sur le flux d'exécution
+- Vous souhaitez un contrôle total sur le flux d'exécution
 
 ```go
 // Tool with custom executor implementation
@@ -76,237 +78,235 @@ Tool("summarize", "Summarize multiple documents", func() {
 })
 ```
 
-Pour les implémentations en ligne, vous écrivez directement la logique de l'exécuteur :
+Pour les implémentations en ligne, vous écrivez directement la logique de l'exécuteur :
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
         args, _ := specs.UnmarshalSummarizePayload(call.Payload)
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: &specs.SummarizeResult{Summary: summary},
-        }, nil
+        }), nil
     }
-    return nil, fmt.Errorf("unknown tool: %s", call.Name)
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
+        Error: planner.NewToolError("unknown tool"),
+    }), nil
 }
 
-### Bounded Tool Results
+```
 
-Some tools naturally return large lists, graphs, or time-series windows. You can mark these as **bounded views** so that services remain responsible for trimming while the runtime enforces and surfaces the contract.
+### Résultats des outils limités
 
-#### The agent.Bounds Contract
+Certains outils renvoient naturellement de grandes listes, graphiques ou fenêtres de séries chronologiques. Vous pouvez les marquer comme **vues limitées** afin que les services restent responsables du découpage pendant que le runtime applique et fait apparaître le contrat.
 
-The `agent.Bounds` type is a small, provider-agnostic contract that describes how a tool result has been bounded relative to the full underlying data set:
+#### L'agent.Contrat de limites
+
+Le type `agent.Bounds` est un petit contrat indépendant du fournisseur qui décrit comment le résultat d'un outil a été limité par rapport à l'ensemble de données sous-jacent complet :
 
 ```go
 type Bounds struct {
-    Returned int // Nombre d'éléments dans la vue délimitée
-    Total *int // Total du meilleur effort avant la troncature (facultatif)
-    Truncated bool // Si des caps ont été appliqués (longueur, fenêtre, profondeur)
-    RefinementHint string // Conseils sur la manière de restreindre la requête lorsqu'elle est tronquée
+    Returned       int    // Number of items in the bounded view
+    Total          *int   // Best-effort total before truncation (optional)
+    Truncated      bool   // Whether any caps were applied (length, window, depth)
+    RefinementHint string // Guidance on how to narrow the query when truncated
 }
 ```
 
-| Field | Description |
+| Champ | Description |
 |-------|-------------|
-| `Returned` | Count of items actually present in the result |
-| `Total` | Best-effort count of total items before truncation (nil if unknown) |
-| `Truncated` | True if any caps were applied (pagination, depth limits, size limits) |
-| `RefinementHint` | Human-readable guidance for narrowing the query (e.g., "Add a date filter to reduce results") |
+| `Returned` | Nombre d'éléments réellement présents dans le résultat |
+| `Total` | Nombre total d'éléments au mieux avant troncature (nul si inconnu) |
+| `Truncated` | Vrai si des majuscules ont été appliquées (pagination, limites de profondeur, limites de taille) |
+| `RefinementHint` | Conseils lisibles par l'homme pour affiner la requête (par exemple, "Ajouter un filtre de date pour réduire les résultats") |
 
-#### Service Responsibility for Trimming
+#### Responsabilité du service pour le parage
 
-The runtime does not compute subsets or truncation itself—**services are responsible for**:
+Le moteur d'exécution ne calcule pas lui-même les sous-ensembles ni la troncature ; **les services sont responsables de** :
 
-1. **Applying truncation logic**: Pagination, result limits, depth caps, time windows
-2. **Populating bounds metadata**: Setting `Returned`, `Total`, `Truncated` accurately
-3. **Providing refinement hints**: Guiding users/models on how to narrow queries when results are truncated
+1. **Application de la logique de troncature** : pagination, limites de résultats, limites de profondeur, fenêtres horaires
+2. **Remplir les métadonnées des limites d'exécution** : paramètre de `planner.ToolResult.Bounds`
+3. **Fournir des conseils d'affinement** : guider les utilisateurs/modèles sur la manière de restreindre les requêtes lorsque les résultats sont tronqués
 
-This design keeps truncation logic where domain knowledge lives (in services) while providing a uniform contract for the runtime, planners, and UIs to consume.
+Cette conception conserve la logique de troncature là où réside la connaissance du domaine (dans les services) tout en fournissant un contrat uniforme pour le temps d'exécution, les planificateurs et UIs à consommer.
 
-#### Declaring Bounded Tools
+#### Déclaration d'outils limités
 
-Use the DSL helper `BoundedResult()` inside a `Tool` definition:
+Utilisez l'assistant DSL `BoundedResult()` dans une définition `Tool` :
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
-        Attribut("site_id", String, "Identifiant du site")
-        Attribut("status", String, "Filtrer par statut", func() {
-            Enum("online", "offline", "unknown")
-        })
-        Attribut("limit", Int, "Maximum results", func() {
-            Par défaut(50)
-            Maximum(500)
-        })
+        Attribute("site_id", String, "Site identifier")
+        Attribute("cursor", String, "Opaque pagination cursor")
         Required("site_id")
     })
     Return(func() {
-        Attribut("devices", ArrayOf(Device), "Appareils correspondants")
-        Attribut("returned", Int, "Nombre d'appareils renvoyés")
-        Attribut("total", Int, "Nombre total de dispositifs correspondants")
-        Attribut("truncated", Boolean, "Résultats plafonnés")
-        Attribut("refinement_hint", String, "Comment réduire les résultats")
-        Required("devices", "returned", "truncated")
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
     BindTo("DeviceService", "ListDevices")
 })
 ```
 
-#### Code Generation
+#### Génération de code
 
-When a tool is marked with `BoundedResult()`:
+Lorsqu'un outil est marqué de `BoundedResult()` :
 
-- The generated tool spec includes `BoundedResult: true`
-- Generated result types implement the `agent.BoundedResult` interface via `ResultBounds()`:
+- La spécification d'outil générée inclut `tools.ToolSpec.Bounds`
+- Le schéma de résultat JSON généré inclut les champs délimités canoniques (`returned`, `total`,
+`truncated`, `refinement_hint` et `next_cursor` en option)
+- Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
+
+Pour les outils `BindTo` basés sur une méthode, le résultat de la méthode de service lié doit toujours
+transporter les champs délimités canoniques afin que l'exécuteur généré puisse construire
+`planner.ToolResult.Bounds` avant la projection d’exécution.
 
 ```go
-// Mise en œuvre de l'interface générée
-type ListDevicesResult struct {
-    Dispositifs []*Device
-    Returned int
-    Total *int
-    Tronqué bool
-    RefinementHint string
-}
-
-func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
-    return &agent.Bounds{
-        Returned : r.Returned,
-        Total : r.Total,
-        Truncated : r.Truncated,
-        RefinementHint : r.RefinementHint,
-    }
+spec.Bounds = &tools.BoundsSpec{
+    Paging: &tools.PagingSpec{
+        CursorField:     "cursor",
+        NextCursorField: "next_cursor",
+    },
 }
 ```
 
-#### Implementing Bounded Tools
+#### Implémentation d'outils limités
 
-Bounded tools are a hard contract: services implement truncation and populate bounds metadata on every successful code path.
+Les outils limités sont un contrat dur : les services implémentent la troncature et remplissent les métadonnées des limites sur chaque chemin de code réussi.
 
-**Contract:**
+**Contracter:**
 
-- `Returned` and `Truncated` must always be set.
-- `Returned == 0` means “empty result” → `Total == 0` and `Truncated == false`.
+- `Bounds.Returned` et `Bounds.Truncated` doivent toujours être définis sur des résultats d'outil limités réussis.
+- `Bounds.Total`, `Bounds.NextCursor` et `Bounds.RefinementHint` sont facultatifs et ne doivent être définis que lorsqu'ils sont connus.
 
-Services implement truncation and populate bounds metadata:
+Les exécuteurs implémentent la troncature et remplissent les métadonnées des limites :
 
 ```go
-func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) (*ListDevicesResult, error) {
-    // Interrogation avec limite + 1 pour détecter la troncature
-    devices, err := s.repo.QueryDevices(ctx, p.SiteID, p.Status, p.Limit+1)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+    if err != nil {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("invalid payload"),
+        }), nil
+    }
+
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
     if err != nil {
         return nil, err
     }
-    
-    // Déterminer si les résultats ont été tronqués
-    tronqué := len(devices) > p.Limit
-    if truncated {
-        devices = devices[:p.Limit] // Ajuster à la limite demandée
-    }
-    
-    // Obtenir le décompte total (optionnel, peut être coûteux)
-    total, _ := s.repo.CountDevices(ctx, p.SiteID, p.Status)
-    
-    // Construction d'un indice de raffinement en cas de troncature
-    var hint string
-    si tronqué {
-        hint = "Ajouter un filtre d'état ou réduire l'étendue du site pour voir moins de résultats"
-    }
-    
-    return &ListDevicesResult{
-        Appareils : appareils,
-        Returned : len(devices),
-        Total : &total,
-        Truncated : tronqué,
-        RefinementHint : hint,
-    }, nil
+
+    return runtime.Executed(&planner.ToolResult{
+        Name: call.Name,
+        Result: &ListDevicesResult{
+            Devices: devices,
+        },
+        Bounds: &agent.Bounds{
+            Returned:       len(devices),
+            Total:          ptr(total),
+            Truncated:      truncated,
+            NextCursor:     nextCursor,
+            RefinementHint: "Add a status filter or reduce the site scope to see fewer results",
+        },
+    }), nil
 }
 ```
 
-#### Runtime Behavior
+#### Comportement d'exécution
 
-When a bounded tool executes:
+Lorsqu'un outil limité s'exécute :
 
-1. The runtime decodes the result and checks for `agent.BoundedResult` implementation
-2. If the result implements the interface, `ResultBounds()` extracts bounds metadata
-3. Bounds are attached to `planner.ToolResult.Bounds`
-4. Stream subscribers and finalizers can access bounds for UI display, logging, or policy decisions
+1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
+2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
+3. Les limites restent attachées à `planner.ToolResult.Bounds`
+4. Les abonnés au flux et les finaliseurs peuvent accéder aux limites de l'affichage, de la journalisation ou des décisions politiques de UI.
 
 ```go
-// Dans un abonné au flux
-func handleToolEnd(event *stream.ToolEnd) {
+// In a stream subscriber
+func handleToolEnd(event *stream.ToolEndEvent) {
     if event.Bounds != nil && event.Bounds.Truncated {
         log.Printf("Tool %s returned %d of %d results (truncated)",
             event.ToolName, event.Bounds.Returned, *event.Bounds.Total)
         if event.Bounds.RefinementHint != "" {
-            log.Printf("Indice : %s", event.Bounds.RefinementHint)
+            log.Printf("Hint: %s", event.Bounds.RefinementHint)
         }
     }
 }
 ```
 
-#### When to Use BoundedResult
+#### Quand utiliser BoundedResult
 
-Use `BoundedResult()` for tools that:
-- Return paginated lists (devices, users, records, logs)
-- Query large datasets with result limits
-- Apply depth or size caps to nested structures (graphs, trees)
-- Return time-windowed data (metrics, events)
+Utilisez `BoundedResult()` pour les outils qui :
+- Renvoie des listes paginées (appareils, utilisateurs, enregistrements, journaux)
+- Interroger de grands ensembles de données avec des limites de résultats
+- Appliquer des limites de profondeur ou de taille aux structures imbriquées (graphiques, arbres)
+- Renvoie des données échelonnées dans le temps (métriques, événements)
 
-The bounded contract helps:
-- **Models** understand that results may be incomplete and can request refinement
-- **UIs** display truncation indicators and pagination controls
-- **Policies** enforce size limits and detect runaway queries
+Le contrat limité permet :
+- **Les modèles** comprennent que les résultats peuvent être incomplets et peuvent demander des améliorations.
+- **UIs** affiche les indicateurs de troncature et les commandes de pagination
+- **Les règles** imposent des limites de taille et détectent les requêtes incontrôlées
 
-### Injected Fields
+### Champs injectés
 
-The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but required by the service method. This is useful for session IDs, user context, authentication tokens, and other runtime-provided values.
+La fonction `Inject` DSL marque des champs de charge utile spécifiques comme « injectés » : des valeurs d'infrastructure côté serveur qui sont masquées pour le LLM mais requises par la méthode de service. Ceci est utile pour les ID de session, le contexte utilisateur, les jetons d'authentification et d'autres valeurs fournies par l'exécution.
 
-#### How Inject Works
+#### Comment fonctionne l'injection
 
-When you mark a field with `Inject`:
+Lorsque vous marquez un champ avec `Inject` :
 
-1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
-2. **Validated at design time**: Le champ doit exister comme `String` obligatoire dans la charge utile de la méthode liée
-3. **Executor population**: Les exécuteurs générés recopient les valeurs depuis `runtime.ToolCallMeta` avant d’exécuter des hooks optionnels
+1. **Masqué de LLM** : Le champ est exclu du schéma JSON envoyé au fournisseur de modèles
+2. **Validé au moment de la conception** : la charge utile de la méthode liée doit exposer le champ en tant que `String` requis
+3. **Population d'exécuteurs** : les exécuteurs de service générés copient les valeurs prises en charge à partir de `runtime.ToolCallMeta` avant l'exécution des hooks d'intercepteur facultatifs.
 
-#### DSL Declaration
+#### Déclaration DSL
 
 ```go
 Tool("get_user_data", "Get data for current user", func() {
     Args(func() {
-        Attribut("session_id", String, "Current session ID")
-        Attribut("query", Chaîne, "Requête de données")
+        Attribute("session_id", String, "Current session ID")
+        Attribute("query", String, "Data query")
         Required("session_id", "query")
     })
     Return(func() {
-        Attribut("data", ArrayOf(String), "Résultats de la requête")
-        Requis("data")
+        Attribute("data", ArrayOf(String), "Query results")
+        Required("data")
     })
     BindTo("UserService", "GetData")
-    Inject("session_id") // Caché dans le LLM, rempli au moment de l'exécution
+    Inject("session_id")  // Hidden from LLM, populated at runtime
 })
 ```
 
-#### Generated Code
+#### Code généré
 
-Les exécuteurs générés pour les outils liés à des méthodes recopient les champs injectés depuis `runtime.ToolCallMeta` sur la charge utile typée de la méthode avant d’appeler le client de service :
+Les exécuteurs générés basés sur la méthode copient les champs injectés à partir de `runtime.ToolCallMeta`
+sur la charge utile de la méthode typée avant d'appeler le client de service :
 
 ```go
 p := specs.InitGetUserDataMethodPayload(toolArgs)
 p.SessionID = meta.SessionID
 ```
 
-Les noms de champs injectés pris en charge sont fixes : `run_id`, `session_id`, `turn_id`, `tool_call_id` et `parent_tool_call_id`.
+Les noms de champs injectés pris en charge sont fixes : `run_id`, `session_id`, `turn_id`,
+`tool_call_id` et `parent_tool_call_id`.
 
-#### Runtime Population via Generated Interceptors
+#### Population d'exécution via des intercepteurs générés
 
-Les exécuteurs de service générés exposent aussi des hooks typés. Utilisez-les pour dériver des champs de la charge utile de méthode à partir du contexte de requête ou d’un autre état d’exécution :
+Les exécuteurs de service générés exposent également les hooks d’intercepteur typés. Utilisez-les pour
+dériver les champs de charge utile de la méthode à partir du contexte de la demande ou d'un autre état d'exécution :
 
 ```go
 type SessionInterceptor struct{}
@@ -330,323 +330,346 @@ exec := usertools.NewChatUserToolsExec(
 )
 ```
 
-#### When to Use Inject
+#### Quand utiliser l’injection
 
-Use `Inject` for fields that:
-- Are required by the service but shouldn't be chosen by the LLM
-- Come from runtime context (session, user, tenant, request ID)
-- Contain sensitive values (auth tokens, API keys)
-- Are infrastructure concerns (tracing IDs, correlation IDs)
+Utilisez `Inject` pour les champs qui :
+- Sont requis par le service mais ne doivent pas être choisis par le LLM
+- Proviennent du contexte d'exécution (session, utilisateur, locataire, ID de demande)
+- Contenir des valeurs sensibles (jetons d'authentification, clés API)
+- Y a-t-il des problèmes d'infrastructure (ID de traçage, ID de corrélation)
 
 ---
 
-## Execution Models
+## Modèles d'exécution
 
-### Activity-Based Execution (Default)
+### Exécution basée sur les activités (par défaut)
 
-Service-backed toolsets execute via Temporal activities (or equivalent in other engines):
+Les ensembles d'outils basés sur des services s'exécutent via des activités Temporal (ou équivalentes dans d'autres moteurs) :
 
-1. Planner returns tool calls in `PlanResult` (payload is `json.RawMessage`)
-2. Runtime schedules `ExecuteToolActivity` for each tool call
-3. Activity decodes payload via generated codec for validation/hints
-4. Calls the toolset registration's `Execute(ctx, planner.ToolRequest)` with canonical JSON
-5. Re-encodes the result with the generated result codec
+1. Le planificateur renvoie les appels d'outil dans `PlanResult` (la charge utile est `json.RawMessage`)
+2. Le temps d'exécution planifie `ExecuteToolActivity` pour chaque appel d'outil
+3. L'activité décode la charge utile via le codec généré pour la validation/indices
+4. Appelle le `Execute(ctx, planner.ToolRequest)` de l'enregistrement du jeu d'outils avec le JSON canonique
+5. Réencode le résultat avec le codec de résultat généré
 
-### Inline Execution (Agent-as-Tool)
+### Exécution en ligne (agent en tant qu'outil)
 
-Agent-as-tool toolsets execute inline from the planner's perspective while the runtime runs the provider agent as a real child run:
+Les ensembles d'outils Agent en tant qu'outil s'exécutent en ligne du point de vue du planificateur tandis que le moteur d'exécution exécute l'agent fournisseur en tant qu'exécution enfant réelle :
 
-1. The runtime detects `Inline=true` on the toolset registration
-2. It injects the `engine.WorkflowContext` into `ctx` so the toolset's `Execute` function can start the provider agent as a child workflow with its own `RunID`
-3. It calls the toolset's `Execute(ctx, call)` with canonical JSON payload and tool metadata (including parent `RunID` and `ToolCallID`)
-4. The generated agent-tool executor builds nested agent messages (system + user) from the tool payload and runs the provider agent as a child run
-5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
-6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
+1. Le moteur d'exécution détecte `Inline=true` lors de l'enregistrement du jeu d'outils
+2. Il injecte le `engine.WorkflowContext` dans `ctx` afin que la fonction `Execute` de l'ensemble d'outils puisse démarrer l'agent fournisseur en tant que workflow enfant avec son propre `RunID`.
+3. Il appelle le jeu d'outils `Execute(ctx, call)` avec la charge utile canonique JSON et les métadonnées de l'outil (y compris les parents `RunID` et `ToolCallID`).
+4. L'exécuteur agent-outil généré crée des messages d'agent imbriqués (système + utilisateur) à partir de la charge utile de l'outil et exécute l'agent fournisseur en tant qu'exécution enfant.
+5. L'agent imbriqué exécute une boucle complète de planification/exécution/reprise lors de sa propre exécution ; ses événements `RunOutput` et d'outil sont regroupés dans un `planner.ToolResult` parent qui transporte la charge utile du résultat, la télémétrie agrégée, l'enfant `ChildrenCount` et un `RunLink` pointant vers l'exécution enfant
+6. Les abonnés au flux émettent à la fois `tool_start` / `tool_end` pour l'appel de l'outil parent et un événement de lien `child_run_linked` afin que UIs puisse créer des cartes d'agent imbriquées tout en consommant un seul flux de session.
 
 ### Matérialisateurs de résultats
 
-Les toolsets peuvent enregistrer un matérialiseur de résultat typé :
+Les ensembles d'outils peuvent enregistrer un matérialiseur de résultat typé :
 
 ```go
 reg := runtime.ToolsetRegistration{
     Name: "chat.ask_question",
-    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
-        return nil, fmt.Errorf("externally provided")
-    },
+    Execute: runtime.ToolCallExecutorFunc(func(
+        ctx context.Context,
+        meta *runtime.ToolCallMeta,
+        call *planner.ToolRequest,
+    ) (*runtime.ToolExecutionResult, error) {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("externally provided"),
+        }), nil
+    }),
     Specs: []tools.ToolSpec{specs.SpecAskQuestion},
     ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
-        // Attachez ici les sidecars déterministes côté serveur.
+        // Attach deterministic, server-only sidecars here.
         result.ServerData = buildServerData(call, result)
         return nil
     },
 }
 ```
 
-Contrat :
+Contracter:
 
-- `ResultMaterializer` s’exécute à la fois sur le **chemin d’exécution normal** et sur le **chemin d’attente avec résultats fournis de l’extérieur**.
-- Il reçoit le `planner.ToolRequest` typé d’origine ainsi que le `planner.ToolResult` typé, avant que le runtime n’encode le JSON pour les hooks, les frontières de workflow ou les appelants.
-- Utilisez-le pour attacher `result.ServerData` ou pour normaliser de manière déterministe la forme sémantique du résultat.
-- Il doit rester pur et déterministe ; lorsqu’il s’exécute dans du code de workflow, il ne doit pas effectuer d’E/S.
+- `ResultMaterializer` s'exécute à la fois sur le **chemin d'exécution normal** et sur le **chemin d'attente de résultat fourni en externe**.
+- Il reçoit le `planner.ToolRequest` typé d'origine plus le `planner.ToolResult` typé, avant que le runtime ne code JSON pour les hooks, les limites de flux de travail ou les appelants.
+- Utilisez-le pour attacher `result.ServerData` ou pour normaliser la forme du résultat sémantique de manière déterministe.
+- Gardez-le pur et déterministe ; lorsqu'il s'exécute dans le code du workflow, il ne doit pas effectuer d'E/S.
 
-C’est l’endroit canonique pour dériver des sidecars réservés aux observateurs à partir du payload d’outil d’origine et du résultat typé, tout en gardant ces sidecars invisibles pour les fournisseurs de modèles.
+Il s'agit de l'endroit canonique pour dériver des side-cars réservés aux observateurs à partir de la charge utile de l'outil d'origine et du résultat typé tout en gardant ces side-cars invisibles pour les fournisseurs de modèles.
 
 ---
 
-## Executor-First Model
+## Modèle exécuteur-premier
 
-Generated service toolsets expose a single, generic constructor:
+Les ensembles d'outils de service générés exposent les aides à l'enregistrement qui acceptent
+Implémentations `runtime.ToolCallExecutor` pour les ensembles d'outils qu'un agent utilise.
 
 ```go
-New<Agent><Toolset>ToolsetRegistration(exec runtime.ToolCallExecutor)
+if err := chat.RegisterUsedToolsets(ctx, rt,
+    chat.WithSearchExecutor(searchExec),
+    chat.WithProfilesExecutor(profileExec),
+); err != nil {
+    return err
+}
 ```
 
-Applications register an executor implementation for each consumed toolset. The executor decides how to run the tool (service client, MCP, nested agent, etc.) and receives explicit per-call metadata via `ToolCallMeta`.
+Les applications enregistrent une implémentation d'exécuteur pour chaque local consommé
+ensemble d'outils. L'exécuteur décide comment exécuter l'outil (client de service, personnalisé
+fonction, appelant de registre, etc.) et reçoit des métadonnées explicites par appel via
+`ToolCallMeta`.
 
-**Executor Example:**
+**Exemple d'exécuteur testamentaire :**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
-    case "orchestrator.profiles.upsert" :
+    case "orchestrator.profiles.upsert":
         args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
         if err != nil {
-            return planner.ToolResult{
-                Error : planner.NewToolError("invalid payload"),
-            }, nil
+            return runtime.Executed(&planner.ToolResult{
+                Name: call.Name,
+                Error: planner.NewToolError("invalid payload"),
+            }), nil
         }
         
-        // Transformations optionnelles si elles sont émises par codegen
+        // Optional transforms if emitted by codegen
         mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
-            return planner.ToolResult{
-                Error : planner.ToolErrorFromError(err),
-            }, nil
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
+                Error: planner.ToolErrorFromError(err),
+            }), nil
         }
         tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
-        return planner.ToolResult{Payload : tr}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:   call.Name,
+            Result: tr,
+        }), nil
         
-    par défaut :
-        return planner.ToolResult{
-            Error : planner.NewToolError("outil inconnu"),
-        }, nil
+    default:
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("unknown tool"),
+        }), nil
     }
 }
 ```
 
 ---
 
-## Tool Call Metadata
+## Métadonnées d'appel d'outil
 
-Tool executors receive explicit per-call metadata via `ToolCallMeta` rather than fishing values from `context.Context`. This provides direct access to run-scoped identifiers for correlation, telemetry, and parent/child relationships.
+Les exécuteurs d'outils reçoivent des métadonnées explicites par appel via `ToolCallMeta` plutôt que de pêcher les valeurs de `context.Context`. Cela fournit un accès direct aux identifiants d’exécution pour la corrélation, la télémétrie et les relations parent/enfant.
 
-### ToolCallMeta Fields
+### Champs ToolCallMeta
 
-| Field | Description |
+| Champ | Description |
 |-------|-------------|
-| `RunID` | Durable workflow execution identifier of the run that owns this tool call. Stable across retries; used to correlate runtime records and telemetry. |
-| `SessionID` | Logically groups related runs (e.g., a chat conversation). Services typically index memory and search attributes by session. |
-| `TurnID` | Identifies the conversational turn that produced this tool call. Event streams use it to order and group events. |
-| `ToolCallID` | Uniquely identifies this tool invocation. Used to correlate start/update/end events and parent/child relationships. |
-| `ParentToolCallID` | Identifier of the parent tool call when this invocation is a child (e.g., a tool launched by an agent-tool). UIs and subscribers use it to reconstruct the call tree. |
+| `RunID` | Identificateur d'exécution de workflow durable de l'exécution propriétaire de cet appel d'outil. Stable au fil des tentatives ; utilisé pour corréler les enregistrements d'exécution et la télémétrie. |
+| `SessionID` | Regroupe logiquement les exécutions liées (par exemple, une conversation par chat). Les services indexent généralement la mémoire et recherchent les attributs par session. |
+| `TurnID` | Identifie le tournant conversationnel qui a produit cet appel d'outil. Les flux d'événements l'utilisent pour ordonner et regrouper des événements. |
+| `ToolCallID` | Identifie de manière unique cet appel d’outil. Utilisé pour corréler les événements de début/mise à jour/fin et les relations parent/enfant. |
+| `ParentToolCallID` | Identifiant de l'appel de l'outil parent lorsque cet invocation est un enfant (par exemple, un outil lancé par un agent-outil). UIs et les abonnés l'utilisent pour reconstruire l'arborescence des appels. |
 
-### Executor Signature
+### Signature de l'exécuteur testamentaire
 
-All tool executors receive `ToolCallMeta` as an explicit parameter:
+Tous les exécuteurs d'outils reçoivent `ToolCallMeta` comme paramètre explicite :
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
-    // Accède au contexte d'exécution directement à partir de meta
-    log.Printf("Executing tool in run %s, session %s, turn %s",
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+    // Access run context directly from meta
+    log.Printf("Executing tool in run %s, session %s, turn %s", 
         meta.RunID, meta.SessionID, meta.TurnID)
     
-    // Utiliser ToolCallID pour la corrélation
+    // Use ToolCallID for correlation
     span := tracer.StartSpan("tool.execute", trace.WithAttributes(
         attribute.String("tool.call_id", meta.ToolCallID),
         attribute.String("tool.parent_call_id", meta.ParentToolCallID),
     ))
     defer span.End()
     
-    // ... implémentation de l'outil
+    typedResult := buildTypedResult()
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: typedResult}), nil
 }
 ```
 
-### Why Explicit Metadata?
+### Pourquoi des métadonnées explicites ?
 
-The explicit metadata pattern provides several benefits:
+Le modèle de métadonnées explicite offre plusieurs avantages :
 
-- **Type safety**: Compile-time guarantees that required identifiers are available
-- **Testability**: Easy to construct test metadata without mocking context
-- **Clarity**: No hidden dependencies on context keys or middleware ordering
-- **Correlation**: Direct access to parent/child relationships for nested agent-tool calls
-- **Traceability**: Complete causal chain from user input to tool execution to final response
+- **Sécurité des types** : garantit au moment de la compilation que les identifiants requis sont disponibles
+- **Testabilité** : facilité de construction de métadonnées de test sans contexte moqueur
+- **Clarté** : aucune dépendance cachée sur les clés contextuelles ou l'ordre des middlewares
+- **Corrélation** : accès direct aux relations parent/enfant pour les appels agent-outil imbriqués
+- **Traçabilité** : chaîne causale complète depuis la saisie de l'utilisateur jusqu'à l'exécution de l'outil jusqu'à la réponse finale
 
 ---
 
-## Async & Durable Execution
+## Exécution asynchrone et durable
  
-Goa-AI uses **Temporal Activities** for all service-backed tool executions. This "async-first" architecture is implicit and requires no special DSL.
+Goa-AI utilise **Activités Temporal** pour toutes les exécutions d'outils basés sur des services. Cette architecture « asynchrone d'abord » est implicite et ne nécessite aucun DSL spécial.
  
-### Implicit Async
+### Asynchrone implicite
  
-When a planner decides to call a tool, the runtime does not block the OS thread. Instead:
+Lorsqu'un planificateur décide d'appeler un outil, le runtime ne bloque pas le thread du système d'exploitation. Plutôt:
  
-1. The runtime schedules a **Temporal Activity** for the tool call.
-2. The agent workflow suspends execution (saving state).
-3. The activity executes (on a local worker, remote worker, or even a different cluster).
-4. When the activity completes, the workflow wakes up, restores state, and resumes with the result.
+1. Le runtime planifie une **activité Temporal** pour l'appel de l'outil.
+2. Le workflow de l'agent suspend l'exécution (état d'enregistrement).
+3. L'activité s'exécute (sur un travailleur local, un travailleur distant ou même un autre cluster).
+4. Une fois l'activité terminée, le flux de travail se réveille, restaure son état et reprend avec le résultat.
  
-This means **every tool call** is automatically parallelizable, durable, and long-running. You do **not** need to configure `InterruptsAllowed` for this standard async behavior.
+Cela signifie que **chaque appel d'outil** est automatiquement parallélisable, durable et de longue durée. Vous n'avez **pas** besoin de configurer `InterruptsAllowed` pour ce comportement asynchrone standard.
  
-### Pause & Resume (Agent-Level)
+### Pause et reprise (niveau agent)
  
-`InterruptsAllowed(true)` is distinct: it allows the **Agent itself** to pause and wait for an arbitrary external signal (like a user's clarification) that is *not* tied to a currently running tool activity.
+`InterruptsAllowed(true)` est distinct : il permet à **l'agent lui-même** de faire une pause et d'attendre un signal externe arbitraire (comme une clarification d'un utilisateur) qui n'est *pas* lié à une activité d'outil en cours d'exécution.
  
-| Feature | Implicit Async | Pause & Resume |
+| Fonctionnalité | Asynchrone implicite | Pause et reprise |
 | :--- | :--- | :--- |
-| **Scope** | Single Tool Execution | Entire Agent Workflow |
-| **Trigger** | Calling any service-backed tool | Missing arguments or Planner request |
-| **Policy Required** | None (Default) | `InterruptsAllowed(true)` |
-| **Use Case** | Slow API, Batch Job, processing | Human-in-the-loop, Clarification |
+| **Portée** | Exécution avec un seul outil | Flux de travail complet de l'agent |
+| **Déclenchement** | Appel de n’importe quel outil basé sur un service | Arguments manquants ou demande du planificateur |
+| **Politique requise** | Aucun (par défaut) | `InterruptsAllowed(true)` |
+| **Cas d'utilisation** | API lent, travail par lots, traitement | Humain dans le circuit, Clarification |
  
-Ensure you verify that your use case requires *agent-level* pausing before enabling the policy; often, standard tool async is sufficient.
+Assurez-vous de vérifier que votre cas d'utilisation nécessite une pause *au niveau de l'agent* avant d'activer la stratégie ; souvent, l’outil standard async est suffisant.
  
-### Non-Blocking Planners
+### Planificateurs non bloquants
  
-From the perspective of the **planner (LLM)**, the interaction feels synchronous: the model requests a tool, "pauses", and then "sees" the result in the next turn.
+Du point de vue du **planificateur (LLM)**, l'interaction semble synchrone : le modèle demande un outil, "fait une pause", puis "voit" le résultat au tour suivant.
  
-From the perspective of the **infrastructure**, it is fully asynchronous and non-blocking. This allows a single small agent worker to manage thousands of concurrent long-running agent executions without running out of threads or memory.
+Du point de vue de l'**infrastructure**, elle est entièrement asynchrone et non bloquante. Cela permet à un seul petit agent de gérer des milliers d'exécutions simultanées d'agents de longue durée sans manquer de threads ou de mémoire.
  
-### Survival Across Restarts
+### Survie lors des redémarrages
  
-Because execution is durable, you can restart your entire backend—including the agent workers—while tools are mid-execution. When the systems come back up:
+L'exécution étant durable, vous pouvez redémarrer l'intégralité de votre backend, y compris les agents agents, pendant que les outils sont en cours d'exécution. Lorsque les systèmes reviennent :
  
-- Pending tool activities will be picked up by workers.
-- Completed tools will report results to their parent workflows.
-- Agents will resume exactly where they left off.
+- Les activités d'outils en attente seront récupérées par les travailleurs.
+- Les outils terminés rapporteront les résultats à leurs flux de travail parents.
+- Les agents reprendront exactement là où ils s'étaient arrêtés.
  
-This capability is essential for building robust, production-grade agentic systems that operate reliably in dynamic environments.
+Cette capacité est essentielle pour créer des systèmes agentiques robustes de niveau production qui fonctionnent de manière fiable dans des environnements dynamiques.
 
 ---
 
-## Transforms
+## Transformations
 
-When a tool is bound to a Goa method via `BindTo`, code generation analyzes the tool Arg/Return and the method Payload/Result. If the shapes are compatible, Goa emits type-safe transform helpers:
+Lorsqu'un outil est lié à une méthode Goa via `BindTo`, la génération de code analyse l'outil Arg/Return et la méthode Payload/Result. Si les formes sont compatibles, Goa émet des assistants de transformation de type sécurisé :
 
 - `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
 - `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
 
-Transforms are emitted under the toolset owner package (for example `gen/<service>/toolsets/<toolset>/transforms.go`) and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
+Les transformations sont émises sous le package propriétaire de l'ensemble d'outils (par exemple `gen/<service>/toolsets/<toolset>/transforms.go`) et utilisent GoTransform de Goa pour mapper les champs en toute sécurité. Si aucune transformation n'est émise, écrivez un mappeur explicite dans l'exécuteur.
 
 ---
 
-## Tool Identity
+## Identité de l'outil
 
-Each toolset defines typed tool identifiers (`tools.Ident`) for all generated tools—including non-exported toolsets. Prefer these constants over ad-hoc strings:
+Chaque jeu d'outils définit des identifiants d'outils typés (`tools.Ident`) pour tous les outils générés, y compris les jeux d'outils non exportés. Préférez ces constantes aux chaînes ad hoc :
 
 ```go
 import searchspecs "example.com/assistant/gen/orchestrator/toolsets/search"
 
-// Utilisation d'une constante générée au lieu de chaînes/cast ad-hoc
+// Use a generated constant instead of ad-hoc strings/casts
 spec, _ := rt.ToolSpec(searchspecs.Search)
 schemas, _ := rt.ToolSchema(searchspecs.Search)
 ```
 
-For exported toolsets (agent-as-tool), Goa-AI generates export packages under `gen/<service>/agents/<agent>/exports/<export>` with:
-- Typed tool IDs
-- Alias payload/result types
+Pour les ensembles d'outils exportés (agent-as-tool), Goa-AI génère des packages d'exportation sous `gen/<service>/agents/<agent>/exports/<export>` avec :
+- ID d'outil saisis
+- Types de charge utile/résultat d'alias
 - Codecs
-- Helper builders (e.g., `New<Search>Call`)
+- Constructeurs auxiliaires (par exemple, `New<Search>Call`)
 
 ---
 
-## Tool Validation and Retry Hints
+## Conseils pour la validation des outils et les nouvelles tentatives
 
-Goa-AI combines **Goa's design-time validations** with a **structured tool error model** to give LLM planners a powerful way to **repair invalid tool calls automatically**.
+Goa-AI combine **les validations au moment de la conception de Goa** avec un **modèle d'erreur d'outil structuré** pour offrir aux planificateurs de LLM un moyen puissant de **réparer automatiquement les appels d'outils non valides**.
 
-### Core Types: ToolError and RetryHint
+### Types de base : ToolError et RetryHint
 
-**ToolError** (alias to `runtime/agent/toolerrors.ToolError`):
-- `Message string` – human-readable summary
-- `Cause *ToolError` – optional nested cause (preserves chains across retries and agent-as-tool hops)
-- Constructors: `planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
+**ToolError** (alias de `runtime/agent/toolerrors.ToolError`) :
+- `Message string` – résumé lisible par l’homme
+- `Cause *ToolError` – cause imbriquée facultative (préserve les chaînes entre les tentatives et les sauts d'agent en tant qu'outil)
+- Constructeurs : `planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
 
-**RetryHint** – planner-side hint used by the runtime and policy engine:
+**RetryHint** – indice côté planificateur utilisé par le moteur d'exécution et de stratégie :
 
 ```go
 type RetryHint struct {
-    Raison RetryReason
-    Outil tools.Ident
-    RestrictToTool bool
-    MissingFields []string
-    ExampleInput map[string]any
-    PriorInput map[string]any
+    Reason             RetryReason
+    Tool               tools.Ident
+    RestrictToTool     bool
+    MissingFields      []string
+    ExampleInput       map[string]any
+    PriorInput         map[string]any
     ClarifyingQuestion string
-    Message string
+    Message            string
 }
 ```
 
-Common `RetryReason` values:
-- `invalid_arguments` – payload failed validation (schema/type)
-- `missing_fields` – required fields are missing
-- `malformed_response` – tool returned data that could not be decoded
-- `timeout`, `rate_limited`, `tool_unavailable` – execution/infra issues
+Valeurs `RetryReason` courantes :
+- `invalid_arguments` – échec de la validation de la charge utile (schéma/type)
+- `missing_fields` – les champs obligatoires sont manquants
+- `malformed_response` – l'outil a renvoyé des données qui n'ont pas pu être décodées
+- `timeout`, `rate_limited`, `tool_unavailable` – problèmes d’exécution/infra
 
-**ToolResult** carries errors and hints:
+**ToolResult** contient des erreurs et des astuces :
 
 ```go
 type ToolResult struct {
-    Nom tools.Ident
-    Result any
-    Erreur *ToolError
-    RetryHint *RetryHint
-    Telemetry *telemetry.ToolTelemetry
-    ToolCallID string
+    Name          tools.Ident
+    Result        any
+    Error         *ToolError
+    RetryHint     *RetryHint
+    Telemetry     *telemetry.ToolTelemetry
+    ToolCallID    string
     ChildrenCount int
-    RunLink *run.Handle
+    RunLink       *run.Handle
 }
 ```
 
-### Auto-Repairing Invalid Tool Calls
+### Réparation automatique des appels d'outils invalides
 
-The recommended pattern:
+Le modèle recommandé :
 
-1. **Design tools with strong payload schemas** (Goa design)
-2. **Let executors/tools surface validation failures** as `ToolError` + `RetryHint` instead of panicking or hiding errors
-3. **Teach your planner** to inspect `ToolResult.Error` and `ToolResult.RetryHint`, repair the payload when possible, and retry the tool call if appropriate
+1. **Outils de conception avec des schémas de charge utile solides** (conception Goa)
+2. **Laissez les exécuteurs/outils faire apparaître les échecs de validation** sous la forme `ToolError` + `RetryHint` au lieu de paniquer ou de cacher les erreurs
+3. **Apprenez à votre planificateur** à inspecter `ToolResult.Error` et `ToolResult.RetryHint`, à réparer la charge utile lorsque cela est possible et à réessayer l'appel à l'outil si nécessaire.
 
-**Example Executor:**
+**Exemple d'exécuteur testamentaire :**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     args, err := spec.UnmarshalUpsertPayload(call.Payload)
     if err != nil {
-        return &planner.ToolResult{
-            Name : call.Name,
-            Error : planner.NewToolError("invalid payload"),
-            RetryHint : &planner.RetryHint{
-                Reason : planner.RetryReasonInvalidArguments,
-                Tool : call.Name,
-                RestrictToTool : true,
-                Message :       "La charge utile ne correspond pas au schéma attendu",
+        return runtime.Executed(&planner.ToolResult{
+            Name: call.Name,
+            Error: planner.NewToolError("invalid payload"),
+            RetryHint: &planner.RetryHint{
+                Reason:        planner.RetryReasonInvalidArguments,
+                Tool:          call.Name,
+                RestrictToTool: true,
+                Message:       "Payload did not match the expected schema.",
             },
-        }, nil
+        }), nil
     }
 
     res, err := client.Upsert(ctx, args)
     if err != nil {
-        return &planner.ToolResult{
-            Name : call.Name,
-            Error : planner.ToolErrorFromError(err),
-        }, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
 
-    return &planner.ToolResult{Name : call.Name, Result : res}, nil
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: res}), nil
 }
 ```
 
-**Example Planner Logic:**
+**Exemple de logique de planificateur :**
 
 ```go
 func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
@@ -659,16 +682,16 @@ func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
         hint := last.RetryHint
 
         switch hint.Reason {
-        case planner.RetryReasonMissingFields, planner.RetryReasonInvalidArguments :
+        case planner.RetryReasonMissingFields, planner.RetryReasonInvalidArguments:
             return &planner.PlanResult{
-                Attente : &planner.Await{
-                    Clarification : &planner.AwaitClarification{
-                        ID :               "fix-" + string(hint.Tool),
-                        Question : hint.ClarifyingQuestion,
-                        MissingFields : hint.MissingFields,
-                        RestrictToTool : hint.Tool,
-                        ExampleInput : hint.ExampleInput,
-                        ClarifyingPrompt : hint.Message,
+                Await: &planner.Await{
+                    Clarification: &planner.AwaitClarification{
+                        ID:               "fix-" + string(hint.Tool),
+                        Question:         hint.ClarifyingQuestion,
+                        MissingFields:    hint.MissingFields,
+                        RestrictToTool:   hint.Tool,
+                        ExampleInput:     hint.ExampleInput,
+                        ClarifyingPrompt: hint.Message,
                     },
                 },
             }, nil
@@ -681,71 +704,75 @@ func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
 
 ---
 
-## Tool Catalogs and Schemas
+## Catalogues et schémas d'outils
 
-Goa-AI agents generate a **single, authoritative catalog of tools** from your Goa designs. This catalog powers:
-- Planner tool advertisement (which tools the model can call)
-- UI discovery (tool lists, categories, schemas)
-- External orchestrators (MCP, custom frontends) that need machine-readable specs
+Les agents Goa-AI génèrent un **catalogue d'outils unique et faisant autorité** à partir de vos conceptions Goa. Ce catalogue alimente :
+- Publicité sur l'outil de planification (quels outils le modèle peut appeler)
+- Découverte UI (listes d'outils, catégories, schémas)
+- Orchestrateurs externes (MCP, frontends personnalisés) nécessitant des spécifications lisibles par machine
 
-### Generated Specs and tool_schemas.json
+### Spécifications générées et tool_schemas.json
 
-For each agent, Goa-AI emits a **specs package** and a **JSON catalog**:
+Pour chaque agent, Goa-AI émet un **package de spécifications** et un **catalogue JSON** :
 
-**Specs packages (`gen/<service>/agents/<agent>/specs/...`):**
-- `types.go` – payload/result Go structs
-- `codecs.go` – JSON codecs (encode/decode typed payloads/results)
-- `specs.go` – `[]tools.ToolSpec` entries with canonical tool ID, payload/result schemas, hints
+**Packages de spécifications (`gen/<service>/agents/<agent>/specs/...`) :**
+- `types.go` – charge utile/résultat des structures Go
+- Codecs `codecs.go` – JSON (encodage/décodage des charges utiles/résultats typés)
+- `specs.go` – Entrées `[]tools.ToolSpec` avec ID d'outil canonique, schémas de charge utile/résultat, astuces
 
-**JSON catalog (`tool_schemas.json`):**
+**Catalogue JSON (`tool_schemas.json`) :**
 
-Location: `gen/<service>/agents/<agent>/specs/tool_schemas.json`
+Emplacement : `gen/<service>/agents/<agent>/specs/tool_schemas.json`
 
-Contains one entry per tool with:
-- `id` – canonical tool ID (`"<service>.<toolset>.<tool>"`)
+Contient une entrée par outil avec :
+- `id` – ID d'outil canonique (`"<service>.<toolset>.<tool>"`)
 - `service`, `toolset`, `title`, `description`, `tags`
-- `payload.schema` and `result.schema` (JSON Schema)
+- `payload.schema` et `result.schema` (schéma JSON)
 
-This JSON file is ideal for feeding schemas to LLM providers, building UI forms/editors, and offline documentation tooling.
+Ce fichier JSON est idéal pour alimenter en schémas les fournisseurs LLM, créer des formulaires/éditeurs UI et des outils de documentation hors ligne.
 
-### Runtime Introspection APIs
+### API d'introspection d'exécution
 
-At runtime, you do not need to read `tool_schemas.json` from disk. The runtime exposes an introspection API:
+Au moment de l'exécution, vous n'avez pas besoin de lire `tool_schemas.json` à partir du disque. Le runtime expose une introspection API :
 
 ```go
-agents := rt.ListAgents() // []agent.Ident
-toolsets := rt.ListToolsets() // []string
+agents   := rt.ListAgents()     // []agent.Ident
+toolsets := rt.ListToolsets()   // []string
 
-spec, ok := rt.ToolSpec(toolID) // single ToolSpec
-schemas, ok := rt.ToolSchema(toolID) // schémas de charge utile/résultat
-specs := rt.ToolSpecsForAgent(chat.AgentID) // []ToolSpec pour un agent
+spec,   ok := rt.ToolSpec(toolID)              // single ToolSpec
+schemas, ok := rt.ToolSchema(toolID)           // payload/result schemas
+specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 ```
 
-Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
+Où `toolID` est une constante `tools.Ident` typée à partir d'un package de spécifications ou d'agenttools généré.
 
-### Server Data et artefacts UI
+### Données du serveur
 
-Certain outils doivent renvoyer une **sortie riche orientee observateur** (series temporelles completes, graphes de topologie, grands ensembles de resultats) utile pour les UI et l'audit, mais trop lourde pour les fournisseurs de modele. Goa-AI modele toute sortie non orientee modele comme **server-data**. Les server-data optionnelles peuvent etre projetees en **artefacts UI**.
+Certains outils doivent renvoyer des résultats riches destinés à l'observateur - des séries chronologiques complètes,
+graphiques de topologie, grands ensembles de résultats, références de preuves – ce qui est utile pour UIs
+et des systèmes d'audit mais trop lourds pour les fournisseurs de modèles. Modèles Goa-AI qui
+sortie non-modèle en tant que **données du serveur**.
 
-#### Resultat modele vs server-data
+#### Données orientées modèle et données serveur
 
-La distinction cle est le cheminement des donnees :
+La distinction clé est de savoir quelles données circulent où :
 
-| Type de donnees | Envoye au modele | Stocke/streame | Objectif |
+| Type de données | Envoyé au modèle | Stocké/Diffusé | But |
 |-----------|---------------|-----------------|---------|
-| **Resultat orienté modele** | ✓ | ✓ | Resume borne sur lequel le LLM raisonne |
-| **Server-data optionnelle (artefacts UI)** | ✗ | ✓ | Donnees haute fidelite pour UI, audit, consommateurs en aval |
-| **Server-data always-on** | ✗ | ✓ | Metadonnees serveur pour persistence/telemetrie (jamais traitees comme sortie UI optionnelle) |
+| **Résultat face au modèle** | ✓ | ✓ | Résumé limité des raisons de LLM concernant |
+| **Données du serveur Timeline** | ✗ | ✓ | Données destinées à l'observateur pour UIs, chronologies, graphiques, cartes et tableaux |
+| **Données du serveur de preuves** | ✗ | ✓ | Références de provenance ou éléments probants |
+| **Données internes du serveur** | ✗ | Cela dépend du consommateur | Pièces jointes à la composition d'outils ou métadonnées du serveur uniquement |
 
-Cette separation permet de :
-- Garder la fenetre de contexte du modele borne et focalisee
-- Fournir des visualisations riches (graphiques, graphes, tableaux) sans gonfler les prompts LLM
-- Joindre des donnees de provenance et d'audit inutiles au modele
-- Streamer de grands jeux de donnees vers les UI pendant que le modele travaille sur des resumes
+Cette séparation vous permet :
+- Gardez les fenêtres de contexte du modèle délimitées et ciblées
+- Fournissez des visualisations riches (graphiques, graphiques, tableaux) sans invites LLM gonflées
+- Joignez des données de provenance et d'audit que les modèles n'ont pas besoin de voir
+- Diffusez de grands ensembles de données sur UIs pendant que le modèle fonctionne avec des résumés
 
-#### Declarer ServerData en DSL
+#### Déclaration de ServerData dans DSL
 
-Utilisez `ServerData(kind, schema)` dans une definition `Tool` :
+Utilisez la fonction `ServerData(kind, schema)` dans une définition `Tool` :
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -768,35 +795,51 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
+    }, func() {
+        AudienceTimeline()
     })
-    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
-Le parametre `kind` (par exemple `"atlas.time_series"`) identifie le type de server-data pour que l'UI puisse choisir le bon renderer.
+Le paramètre `kind` (par exemple, `"atlas.time_series"`) identifie le type de données du serveur afin que UIs puisse distribuer les moteurs de rendu appropriés.
+Le public déclare son intention de routage :
 
-#### Specs et helpers generes
+- `AudienceTimeline()` pour la chronologie face à l'observateur/les charges utiles UI.
+- `AudienceEvidence()` pour la provenance ou les éléments probants d’audit.
+- `AudienceInternal()` pour les charges utiles de composition serveur uniquement.
 
-Dans les packages specs, chaque entree `tools.ToolSpec` inclut :
-- `Payload tools.TypeSpec` – schema d'entree de l'outil
-- `Result tools.TypeSpec` – schema de sortie orientee modele
-- `ServerData []*tools.ServerDataSpec` – payloads server-only emis avec le resultat
-- `ServerDataDefault string` – mode d'emission par defaut des server-data optionnelles (`"on"`/`"off"`)
+Utilisez `FromMethodResultField("field_name")` avec les outils `BindTo(...)` lorsque le
+La charge utile des données du serveur est projetée à partir d'un champ sur le résultat de la méthode de service liée.
 
-Les server-data optionnelles incluent un codec JSON dans le tool spec et peuvent etre projetees en artefacts UI par les consommateurs.
+#### Spécifications et aides générées
 
-#### Patterns d'usage runtime
+Dans les packages de spécifications, chaque entrée `tools.ToolSpec` comprend :
+- `Payload tools.TypeSpec` – schéma de saisie de l'outil
+- `Result tools.TypeSpec` – schéma de sortie orienté modèle
+- `ServerData []*tools.ServerDataSpec` – charges utiles réservées au serveur émises avec le résultat
 
-**Dans les executeurs d'outils**, attachez les artefacts UI (projetes depuis des server-data optionnelles) au resultat :
+Les entrées de données du serveur incluent des schémas et des codecs générés afin que les abonnés puissent
+décoder les octets canoniques JSON sans envoyer ces octets aux fournisseurs de modèles.
+
+#### Modèles d'utilisation du runtime
+
+**Dans les exécuteurs d'outils**, attachez les données canoniques du serveur JSON au résultat de l'outil :
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
     
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
-        return &planner.ToolResult{Error: planner.ToolErrorFromError(err)}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
     
     // Build bounded model-facing result
@@ -807,81 +850,84 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
         MaxValue: fullData.Max,
     }
     
-    // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesServerData{
-        DataPoints: fullData.Points,
-        Metadata:   fullData.Metadata,
+    // Build full-fidelity server-data for UIs
+    // Generated server-data codecs are named from the tool and kind, for example:
+    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    if err != nil {
+        return nil, err
     }
 
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
         Name:   call.Name,
         Result: result,
-        Artifacts: []*planner.Artifact{
-            {
-                Kind:       "atlas.time_series",
-                Data:       artifact,
-                SourceTool: call.Name,
-            },
-        },
-    }, nil
+        ServerData: serverData,
+    }), nil
 }
 ```
 
-**Dans les abonnes de stream ou handlers UI**, accedez aux artefacts :
+Les outils basés sur des méthodes peuvent également attacher des données de serveur via des fournisseurs générés et
+matérialisateurs de résultats. Un matérialiseur est déterministe et fonctionne à la fois normalement
+chemins d’exécution et d’attente de résultats fournis en externe :
 
 ```go
-func handleToolEnd(event *stream.ToolEnd) {
-    for _, artifact := range event.Artifacts {
-        switch artifact.Kind {
-        case "atlas.time_series":
-            renderTimeSeriesChart(artifact.Data)
-        case "atlas.topology":
-            renderTopologyGraph(artifact.Data)
+reg := runtime.ToolsetRegistration{
+    Name:  "orchestrator.metrics",
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        if len(result.ServerData) != 0 {
+            return nil
         }
-    }
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
 }
 ```
 
-#### Structure d'artefact
-
-Le type `planner.Artifact` transporte :
+**Dans les abonnés au flux ou les gestionnaires UI**, lisez `ServerData` à partir des événements de fin d'outil
+ou exécutez les journaux et décodez-les avec les codecs générés pour les types déclarés :
 
 ```go
-type Artifact struct {
-    Kind       string      // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
-    Data       any         // JSON-serializable payload
-    SourceTool tools.Ident // Tool that produced this artifact
-    RunLink    *run.Handle // Link to nested agent run (for agent-as-tool)
+func handleToolEnd(event stream.ToolEnd) {
+    if len(event.Data.ServerData) == 0 {
+        return
+    }
+    data, err := decodeTimeSeriesServerData(event.Data.ServerData)
+    if err != nil {
+        log.Printf("invalid server-data: %v", err)
+        return
+    }
+    renderTimeSeriesChart(data.DataPoints)
 }
 ```
 
-#### Quand utiliser les artefacts
+#### Quand utiliser ServerData
 
-Utilisez les artefacts dans les cas suivants
-- Les résultats de l'outil comprennent des données trop volumineuses pour le contexte du modèle (séries temporelles, journaux, grands tableaux)
-- Les interfaces utilisateur ont besoin de données structurées pour la visualisation (diagrammes, graphiques, cartes)
-- Vous souhaitez séparer ce que le modèle explique de ce que les utilisateurs voient
-- Les systèmes en aval ont besoin de données complètes alors que le modèle fonctionne avec des résumés
+Utilisez les données du serveur lorsque :
+- Les résultats de l'outil incluent des données trop volumineuses pour le contexte du modèle (séries chronologiques, journaux, grandes tables)
+- UIs a besoin de données structurées pour la visualisation (graphiques, graphiques, cartes)
+- Vous souhaitez séparer les raisons du modèle de ce que voient les utilisateurs.
+- Les systèmes en aval ont besoin de données pleine fidélité tandis que le modèle fonctionne avec des résumés
 
-Évitez les artefacts lorsque :
-- Le résultat complet s'intègre aisément dans le contexte du modèle
-- Il n'y a pas d'interface utilisateur ou de consommateur en aval qui ait besoin des données complètes
-- Le résultat délimité contient déjà tout ce qui est nécessaire
+Évitez les données du serveur lorsque :
+- Le résultat complet s'intègre confortablement dans le contexte du modèle
+- Aucun consommateur UI ou en aval n'a besoin de l'intégralité des données.
+- Le résultat borné contient déjà tout le nécessaire
 
 ---
 
 ## Meilleures pratiques
 
-- **Placez les validations dans la conception, pas dans les planificateurs** - Utilisez le DSL d'attributs de Goa (`Required`, `MinLength`, `Enum`, etc.)
-- **Renvoyez ToolError + RetryHint aux exécuteurs** - Préférez les erreurs structurées aux paniques ou aux simples retours `error`
-- **Gardez les indications concises mais exploitables** - Concentrez-vous sur les champs manquants/invalides, une courte question de clarification et une petite carte `ExampleInput`
-- **Apprenez aux planificateurs à lire les indices** - Faites de la gestion des `RetryHint` un élément de premier ordre de votre planificateur
-- **Évitez la revalidation à l'intérieur des services** - Goa-AI suppose que la validation a lieu à la frontière de l'outil
+- **Mettez les validations dans la conception, pas dans les planificateurs** – Utilisez l'attribut DSL de Goa (`Required`, `MinLength`, `Enum`, etc.)
+- **Retour ToolError + RetryHint des exécuteurs** – Préférez les erreurs structurées aux paniques ou aux retours `error` simples
+- **Gardez des conseils concis mais exploitables** – Concentrez-vous sur les champs manquants/invalides, une courte question de clarification et une petite carte `ExampleInput`
+- **Apprenez aux planificateurs à lire les astuces** – Faites de la gestion du `RetryHint` une partie de première classe de votre planificateur
+- **Évitez de revalider les services internes** – Goa-AI suppose que la validation se produit à la limite de l'outil
 
 ---
 
 ## Prochaines étapes
 
-- **[Composition d'agents](./agent-composition.md)** - Construire des systèmes complexes avec des modèles d'agents en tant qu'outils
-- **[Intégration MCP](./mcp-integration.md)** - Se connecter à des serveurs d'outils externes
-- **[Runtime](./runtime.md)** - Comprendre le flux d'exécution de l'outil
+- **[Composition de l'agent](./agent-composition.md)** – Créez des systèmes complexes avec des modèles d'agent en tant qu'outil
+- **[Intégration MCP](./mcp-integration.md)** - Connectez-vous à des serveurs d'outils externes
+- **[Runtime](./runtime.md)** - Comprendre le flux d'exécution des outils

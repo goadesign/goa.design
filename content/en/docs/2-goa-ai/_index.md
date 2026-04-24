@@ -44,14 +44,18 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-When the LLM calls this tool with invalid arguments—say, an empty `code` string or `language: "cobol"`—Goa-AI **automatically retries** with a validation error message. The LLM sees exactly what went wrong and corrects itself. No manual error handling code required.
+When a planner calls this tool with invalid arguments - say, an empty `code`
+string or `language: "cobol"` - Goa-AI rejects the call at the typed boundary and
+returns a structured retry hint. Your planner can use that hint to ask a precise
+follow-up question or retry with corrected arguments. No ad-hoc string parsing
+or hand-maintained JSON schema required.
 
 **Benefits:**
 - **Single source of truth** — The DSL defines behavior, types, and documentation
 - **Compile-time safety** — Catch mismatched payloads before runtime
 - **Auto-generated clients** — Type-safe tool invocations without manual wiring
 - **Consistent patterns** — Every agent follows the same structure
-- **Self-healing agents** — Validation errors trigger automatic retries with feedback
+- **Repairable tool calls** — Validation errors produce structured retry hints with feedback
 
 → Learn more in the [DSL Reference](dsl-reference/) and [Quickstart](quickstart/)
 
@@ -238,6 +242,10 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | [Temporal Durability](#temporal-durability) | Fault-tolerant execution that survives failures |
 | [Typed Contracts](dsl-reference/) | End-to-end type safety for all tool operations |
 | [Typed Direct Completions](#typed-direct-completions) | Structured final assistant answers with generated codecs and helpers |
+| [Bounded Results & Server Data](toolsets/#server-data) | Token-efficient model results plus server-only data for UIs and audit |
+| [Human-in-the-Loop](runtime/#pause--resume) | Pause, resume, external tool results, and runtime-enforced confirmation |
+| [Bookkeeping & Terminal Tools](dsl-reference/#bookkeeping) | Progress/status tools that do not consume retrieval budget and can end runs atomically |
+| [Prompt Overrides](production/#prompt-overrides-with-mongo-store) | Baseline prompt specs plus scoped Mongo-backed overrides and provenance |
 
 ## Documentation Guides
 

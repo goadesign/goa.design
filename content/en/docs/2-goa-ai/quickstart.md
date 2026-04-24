@@ -7,776 +7,378 @@ llm_optimized: true
 aliases:
 ---
 
-{{< alert title="Tested Example" color="info" >}}
-This code is tested in CI. If something doesn't work, [file an issue](https://github.com/goadesign/goa-ai/issues).
-{{< /alert >}}
+This guide takes you from an empty module to a generated, runnable Goa-AI agent.
+The generated example uses the in-memory engine, so you do not need Temporal,
+MongoDB, Redis, or a model API key for the first run.
 
-In the next 10 minutes, you'll build a production-ready agentic system from scratch. Type-safe tools, real-time streaming, automatic validation with self-healing retries, LLM integration, and agent composition—all from a declarative DSL. Pretty cool stuff.
+You will build:
 
-**What you'll build:**
-
-1. **Stub agent** — understand the plan/execute loop (3 min)
-2. **Streaming** — see events as they happen
-3. **Validation** — automatic retry on bad input
-4. **Real LLM** — connect OpenAI or Claude
-5. **Agent composition** — agents calling agents
-
-By the end, you'll have a type-safe agent with validated tools, real-time streaming, and the foundation for production deployment.
+1. A Goa design with one agent, one typed tool, and one typed direct completion.
+2. Generated agent, toolset, completion, and runtime wiring code.
+3. A runnable example scaffold with a stub planner you can replace with a model-backed planner.
+4. The first production hooks: explicit sessions, generated tool executors, streaming, and model registration.
 
 ---
 
-## Prerequisites
+## 1. Create a Module
 
 ```bash
-# Go 1.24+
-go version
-
-# Install Goa CLI
 go install goa.design/goa/v3/cmd/goa@latest
+
+mkdir quickstart && cd quickstart
+go mod init example.com/quickstart
+go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+mkdir design
 ```
+
+Goa-AI currently targets modern Go. Use the Go version declared by the
+`goa.design/goa-ai` module or newer.
 
 ---
 
-## Step 1: Project Setup
+## 2. Define the Agent
 
-```bash
-mkdir quickstart && cd quickstart
-go mod init quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
-```
-
-Create `design/design.go`. This file defines your agent and its tools using Goa's DSL. Think of it as a contract: what the agent can do, what inputs it accepts, and what outputs it returns.
+Create `design/design.go`:
 
 ```go
 package design
 
 import (
-    . "goa.design/goa/v3/dsl"
-    . "goa.design/goa-ai/dsl"
+	. "goa.design/goa/v3/dsl"
+	. "goa.design/goa-ai/dsl"
 )
 
-// Service groups related agents and methods
-var _ = Service("demo", func() {
-    // Agent defines an AI agent with a name and description
-    Agent("assistant", "A helpful assistant", func() {
-        // Use declares a toolset the agent can access
-        Use("weather", func() {
-            // Tool defines a capability the LLM can invoke
-            Tool("get_weather", "Get current weather", func() {
-                // Args defines the input schema (what the LLM sends)
-                Args(func() {
-                    Attribute("city", String, "City name")
-                    Required("city")
-                })
-                // Return defines the output schema (what the tool returns)
-                Return(func() {
-                    Attribute("temperature", Int, "Temperature in Celsius")
-                    Attribute("conditions", String, "Weather conditions")
-                    Required("temperature", "conditions")
-                })
-            })
-        })
-    })
+var _ = API("orchestrator", func() {})
+
+var AskPayload = Type("AskPayload", func() {
+	Attribute("question", String, "User question to answer")
+	Example(map[string]any{"question": "What is the capital of Japan?"})
+	Required("question")
 })
-```
 
-Generate code:
+var Answer = Type("Answer", func() {
+	Attribute("text", String, "Answer text")
+	Example(map[string]any{"text": "Tokyo is the capital of Japan."})
+	Required("text")
+})
 
-```bash
-goa gen quickstart/design
-```
-
-This creates a `gen/` directory with:
-- **Agent registration helpers** — wire your agent to the runtime
-- **Tool specs and codecs** — type-safe payload/result handling
-- **JSON schemas** — for LLM tool definitions
-- **`gen/<service>/completions/`** — typed direct-completion helpers when your service declares `Completion(...)`
-
-Never edit files in `gen/`—they're regenerated on every `goa gen` run.
-
-### Optional: Add a Typed Direct Completion
-
-Tool calls are great for callable capabilities. When you want the assistant to
-return a typed structured answer directly, declare a service-owned completion:
-
-```go
 var TaskDraft = Type("TaskDraft", func() {
-    Attribute("name", String, "Task name")
-    Attribute("goal", String, "Outcome-style goal")
-    Required("name", "goal")
+	Attribute("name", String, "Task name")
+	Attribute("goal", String, "Outcome-style goal")
+	Required("name", "goal")
 })
 
-var _ = Service("demo", func() {
-    Completion("draft_task", "Produce a task draft directly", func() {
-        Return(TaskDraft)
-    })
+var _ = Service("orchestrator", func() {
+	Completion("draft_task", "Produce a task draft directly", func() {
+		Return(TaskDraft)
+	})
+
+	Agent("chat", "Friendly Q&A assistant", func() {
+		Use("helpers", func() {
+			Tool("answer", "Answer a simple question", func() {
+				Args(AskPayload)
+				Return(Answer)
+			})
+		})
+		RunPolicy(func() {
+			DefaultCaps(MaxToolCalls(2), MaxConsecutiveFailedToolCalls(1))
+			TimeBudget("15s")
+		})
+	})
 })
 ```
 
-Completion names are part of the structured-output contract. They must be
-1-64 ASCII characters, may contain letters, digits, `_`, and `-`, and must
-start with a letter or digit.
-
-Regeneration emits `gen/demo/completions/` with the result schema, typed codecs,
-and generated helpers such as `CompleteDraftTask(...)`,
-`StreamCompleteDraftTask(...)`, and `DecodeDraftTaskChunk(...)`.
-
-The unary helper issues a unary model request with provider-enforced structured
-output and decodes the assistant response through the generated codec. The
-streaming helper stays on the raw `model.Streamer` surface: `completion_delta`
-chunks are preview-only, exactly one final `completion` chunk is canonical, and
-`DecodeDraftTaskChunk(...)` decodes only that final payload. Generated
-completion helpers reject tool-enabled requests and caller-supplied
-`StructuredOutput`. Providers that do not implement structured output return
-`model.ErrStructuredOutputUnsupported`.
+This is the source of truth. Tools and completions reuse normal Goa types,
+descriptions, examples, and validations. The model-facing schemas, typed codecs,
+and runtime contracts are generated from this design.
 
 ---
 
-## Step 2: Run with a Stub Planner
+## 3. Generate Code and Example
 
-Before connecting a real LLM, let's understand how Goa-AI agents work using a stub planner. This makes the flow explicit and helps you debug issues later.
+```bash
+goa gen example.com/quickstart/design
+goa example example.com/quickstart/design
+go run ./cmd/orchestrator
+```
+
+Expected shape:
+
+```text
+RunID: orchestrator-chat-...
+Assistant: Hello from example planner.
+Completion draft_task: ...
+Completion stream draft_task: ...
+```
+
+`goa gen` creates generated contracts. `goa example` creates application-owned
+scaffold:
+
+- `gen/`: generated code. Do not edit this directory by hand.
+- `cmd/orchestrator/main.go`: runnable example entry point.
+- `internal/agents/bootstrap/bootstrap.go`: runtime construction and agent registration.
+- `internal/agents/chat/planner/planner.go`: stub planner to replace.
+- `gen/orchestrator/completions/`: typed direct-completion helpers.
+
+Regenerate after DSL changes. Re-run `goa example` when you want scaffold
+updates, then keep application edits in `cmd/` and `internal/`.
+
+---
+
+## 4. Understand the Runtime Loop
 
 **The plan/execute loop:**
-1. Runtime calls `PlanStart` with the user's message
-2. Planner returns either a final response or tool calls
-3. If tools were called, runtime executes them and calls `PlanResume` with results
-4. Loop continues until planner returns a final response
 
-Create `main.go`:
+1. `PlanStart` receives the initial user messages.
+2. The planner returns a `FinalResponse`, tool calls, or an await request.
+3. The runtime validates and executes admitted tool calls using generated specs and registered executors.
+4. `PlanResume` receives planner-visible tool outputs.
+5. The loop repeats until the planner returns a final response, a terminal tool result, or the runtime enforces caps/time budgets.
 
-```go
-package main
-
-import (
-    "context"
-    "fmt"
-
-    // Generated package for our assistant agent
-    assistant "quickstart/gen/demo/agents/assistant"
-    "goa.design/goa-ai/runtime/agent/model"
-    "goa.design/goa-ai/runtime/agent/planner"
-    "goa.design/goa-ai/runtime/agent/runtime"
-)
-
-// StubPlanner implements the planner.Planner interface.
-// A real planner would call an LLM; this one hardcodes the flow.
-type StubPlanner struct{}
-
-// PlanStart is called with the initial user message.
-// Return ToolCalls to invoke tools, or FinalResponse to end the run.
-func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
-    // Request a tool call: "toolset.tool_name" format
-    return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{{
-            Name:    "weather.get_weather",        // toolset.tool format
-            Payload: []byte(`{"city": "Tokyo"}`),  // JSON matching Args schema
-        }},
-    }, nil
-}
-
-// PlanResume is called after tools execute, with their results in in.Messages.
-// Decide: call more tools, or return a final response.
-func (p *StubPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    // We have tool results; return final answer
-    return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: "Tokyo is 22°C and sunny!"}},
-            },
-        },
-    }, nil
-}
-
-// StubExecutor implements runtime.Executor.
-// Called when the planner requests a tool. Returns the tool's result.
-type StubExecutor struct{}
-
-func (e *StubExecutor) Execute(ctx context.Context, meta runtime.ToolCallMeta, req *planner.ToolRequest) (*planner.ToolResult, error) {
-    // Return data matching the Return schema defined in the DSL
-    return &planner.ToolResult{
-        Name:   req.Name,
-        Result: map[string]any{"temperature": 22, "conditions": "Sunny"},
-    }, nil
-}
-
-func main() {
-    ctx := context.Background()
-
-    // Create runtime with in-memory engine (no external dependencies)
-    rt := runtime.New()
-    sessionID := "demo-session"
-    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
-        panic(err)
-    }
-
-    // Register the agent with its planner and executor
-    err := assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
-        Planner:  &StubPlanner{},
-        Executor: &StubExecutor{},
-    })
-    if err != nil {
-        panic(err)
-    }
-
-    // Create a typed client for the agent
-    client := assistant.NewClient(rt)
-
-    // Start a run with a user message
-    out, err := client.Run(ctx, sessionID, []*model.Message{{
-        Role:  model.ConversationRoleUser,
-        Parts: []model.Part{model.TextPart{Text: "What's the weather?"}},
-    }})
-    if err != nil {
-        panic(err)
-    }
-
-    // Print the result
-    fmt.Println("RunID:", out.RunID)
-    if out.Final != nil {
-        for _, p := range out.Final.Parts {
-            if tp, ok := p.(model.TextPart); ok {
-                fmt.Println("Assistant:", tp.Text)
-            }
-        }
-    }
-}
-```
-
-Run:
-
-```bash
-go mod tidy && go run main.go
-```
-
-Output:
-```
-RunID: demo.assistant-abc123
-Assistant: Tokyo is 22°C and sunny!
-```
-
-**What happened:**
-1. Runtime called `PlanStart` → planner requested `get_weather` tool
-2. Runtime executed the tool via `StubExecutor`
-3. Runtime called `PlanResume` with tool results → planner returned final response
-
-The stub planner hardcodes this flow, but a real LLM planner follows the same pattern—it just decides dynamically based on the conversation.
-
-### Optional: Add Prompt Override Store
-
-If you want runtime-managed prompt overrides from day one, wire a prompt store when creating the runtime:
-
-```go
-import (
-    promptmongo "goa.design/goa-ai/features/prompt/mongo"
-    clientmongo "goa.design/goa-ai/features/prompt/mongo/clients/mongo"
-)
-
-promptClient, _ := clientmongo.New(clientmongo.Options{
-    Client:   mongoClient,
-    Database: "quickstart",
-})
-promptStore, _ := promptmongo.NewStore(promptClient)
-
-rt := runtime.New(
-    runtime.WithPromptStore(promptStore),
-)
-```
-
-You can still run without a prompt store; the runtime then uses only baseline prompt specs.
+The generated example starts with a stub planner so this flow is visible before
+you connect a model. A real planner follows the same contract; it just delegates
+the decision to a model client.
 
 ---
 
-## Step 3: Add Streaming
+## 5. Call the Agent from Code
 
-Agents can be opaque. Streaming events let you see exactly what's happening—useful for debugging and building real-time UIs.
-
-Goa-AI emits typed events throughout execution: `ToolStart`, `ToolEnd`, `Workflow` phase changes, `AssistantReply` chunks, and more. You consume them via a `Sink` interface.
-
-See events as they happen:
+Generated agent packages expose typed clients. Sessionful runs require an
+explicit session; one-shot runs are intentionally sessionless.
 
 ```go
-package main
+rt, cleanup, err := bootstrap.New(ctx)
+if err != nil {
+	log.Fatal(err)
+}
+defer cleanup()
 
-import (
-    "context"
-    "fmt"
-
-    assistant "quickstart/gen/demo/agents/assistant"
-    "goa.design/goa-ai/runtime/agent/model"
-    "goa.design/goa-ai/runtime/agent/planner"
-    "goa.design/goa-ai/runtime/agent/runtime"
-    "goa.design/goa-ai/runtime/agent/stream"
-)
-
-// Same stub planner as before
-type StubPlanner struct{}
-
-func (p *StubPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
-    return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{{Name: "weather.get_weather", Payload: []byte(`{"city":"Tokyo"}`)}},
-    }, nil
+if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
+	log.Fatal(err)
 }
 
-func (p *StubPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: "Tokyo is 22°C and sunny!"}},
-            },
-        },
-    }, nil
+client := chat.NewClient(rt)
+out, err := client.Run(ctx, "session-1", []*model.Message{{
+	Role:  model.ConversationRoleUser,
+	Parts: []model.Part{model.TextPart{Text: "Hello"}},
+}})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(out.RunID)
+
+out, err = client.OneShotRun(ctx, []*model.Message{{
+	Role:  model.ConversationRoleUser,
+	Parts: []model.Part{model.TextPart{Text: "Summarize this document"}},
+}})
+```
+
+Use `Run` or `Start` for conversational/sessionful work. Use `OneShotRun` or
+`StartOneShot` for request/response jobs that should be observable by `RunID`
+but should not belong to a session.
+
+---
+
+## 6. Implement a Tool Executor
+
+Generated agent packages include a `RegisterUsedToolsets` helper for local
+toolsets. Executors receive explicit run metadata and return a runtime-owned
+execution result:
+
+```go
+type HelpersExecutor struct{}
+
+func (e *HelpersExecutor) Execute(
+	ctx context.Context,
+	meta *runtime.ToolCallMeta,
+	call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
+	switch call.Name {
+	case helpers.Answer:
+		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		if err != nil {
+			return runtime.Executed(&planner.ToolResult{
+				Name:  call.Name,
+				Error: planner.NewToolError("invalid answer payload"),
+			}), nil
+		}
+		return runtime.Executed(&planner.ToolResult{
+			Name:   call.Name,
+			Result: &helpers.AnswerResult{Text: "Answer: " + args.Question},
+		}), nil
+	default:
+		return runtime.Executed(&planner.ToolResult{
+			Name:  call.Name,
+			Error: planner.NewToolError("unknown tool"),
+		}), nil
+	}
 }
 
-type StubExecutor struct{}
-
-func (e *StubExecutor) Execute(ctx context.Context, meta runtime.ToolCallMeta, req *planner.ToolRequest) (*planner.ToolResult, error) {
-    return &planner.ToolResult{Name: req.Name, Result: map[string]any{"temperature": 22, "conditions": "Sunny"}}, nil
+if err := chat.RegisterUsedToolsets(ctx, rt, chat.WithHelpersExecutor(&HelpersExecutor{})); err != nil {
+	log.Fatal(err)
 }
+```
 
-// ConsoleSink implements stream.Sink to receive events.
-// Events are typed—switch on the concrete type to handle each kind.
+The runtime validates payload JSON with generated codecs before execution,
+encodes successful results with generated result codecs, records canonical run
+events, and passes planner-visible outputs to `PlanResume`.
+
+---
+
+## 7. Connect a Model
+
+Register provider clients with the runtime, then access them from planners by ID.
+For streaming planners, prefer `PlannerModelClient`; it owns assistant/thinking
+and usage event emission.
+
+```go
+modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
+	APIKey:       os.Getenv("OPENAI_API_KEY"),
+	DefaultModel: "gpt-5-mini",
+	HighModel:    "gpt-5",
+	SmallModel:   "gpt-5-nano",
+})
+if err != nil {
+	log.Fatal(err)
+}
+if err := rt.RegisterModel("default", modelClient); err != nil {
+	log.Fatal(err)
+}
+```
+
+Planner sketch:
+
+```go
+func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+	mc, ok := in.Agent.PlannerModelClient("default")
+	if !ok {
+		return nil, errors.New("model client default is not registered")
+	}
+
+	summary, err := mc.Stream(ctx, &model.Request{
+		Messages: in.Messages,
+		Tools:    in.Agent.AdvertisedToolDefinitions(),
+		Stream:   true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(summary.ToolCalls) > 0 {
+		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
+	}
+	return &planner.PlanResult{
+		FinalResponse: &planner.FinalResponse{
+			Message: &model.Message{
+				Role:  model.ConversationRoleAssistant,
+				Parts: []model.Part{model.TextPart{Text: summary.Text}},
+			},
+		},
+		Streamed: true,
+	}, nil
+}
+```
+
+Use `in.Agent.ModelClient("default")` when you need raw stream control and pair
+it with `planner.ConsumeStream`. Choose one stream owner per planner turn.
+
+---
+
+## 8. Add Streaming
+
+Goa-AI emits typed stream events for assistant text, tool starts/ends, workflow
+status, awaits, usage, and child run links. Wire any `stream.Sink`:
+
+```go
 type ConsoleSink struct{}
 
 func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
-    // Type switch on event to handle different event kinds
-    switch e := event.(type) {
-    case stream.ToolStart:
-        fmt.Printf("🔧 Tool: %s\n", e.Data.ToolName)
-    case stream.ToolEnd:
-        fmt.Printf("✅ Done: %s\n", e.Data.ToolName)
-    case stream.Workflow:
-        fmt.Printf("📋 %s\n", e.Data.Phase)
-    // Other events: AssistantReply, PlannerThought, UsageDelta, etc.
-    }
-    return nil
+	switch e := event.(type) {
+	case stream.AssistantReply:
+		fmt.Print(e.Data.Text)
+	case stream.ToolStart:
+		fmt.Printf("tool_start: %s\n", e.Data.ToolName)
+	case stream.ToolEnd:
+		fmt.Printf("tool_end: %s\n", e.Data.ToolName)
+	case stream.Workflow:
+		fmt.Printf("workflow: %s\n", e.Data.Phase)
+	}
+	return nil
 }
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-func main() {
-    ctx := context.Background()
-
-    // Pass the sink to the runtime—all events flow through it
-    rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
-    sessionID := "demo-session"
-    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
-        panic(err)
-    }
-
-    _ = assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
-        Planner:  &StubPlanner{},
-        Executor: &StubExecutor{},
-    })
-
-    client := assistant.NewClient(rt)
-    out, _ := client.Run(ctx, sessionID, []*model.Message{{
-        Role:  model.ConversationRoleUser,
-        Parts: []model.Part{model.TextPart{Text: "What's the weather?"}},
-    }})
-
-    fmt.Println("\nRunID:", out.RunID)
-}
+rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
 ```
 
-Output:
-```
-📋 started
-🔧 Tool: weather.get_weather
-✅ Done: weather.get_weather
-📋 completed
-
-RunID: demo.assistant-abc123
-```
+For production UIs, publish to Pulse and subscribe to the session stream
+(`session/<session_id>`). Close the user connection when you observe
+`run_stream_end` for the active run.
 
 ---
 
-## Step 4: Add Validation
+## 9. Use Typed Direct Completions
 
-LLMs make mistakes. They'll send empty strings, invalid enum values, or malformed JSON. Without validation, these errors crash your tools or produce garbage results.
-
-Goa-AI validates tool payloads at the boundary—before your executor runs. Invalid calls return a `RetryHint` that the planner can use to self-correct. This happens automatically; you just define the constraints.
-
-Update `design/design.go` with constraints:
+`Completion(...)` is for structured assistant output that is not a tool call.
+Generated helpers request provider-enforced structured output and decode through
+generated codecs:
 
 ```go
-package design
-
-import (
-    . "goa.design/goa/v3/dsl"
-    . "goa.design/goa-ai/dsl"
-)
-
-var _ = Service("demo", func() {
-    Agent("assistant", "A helpful assistant", func() {
-        Use("weather", func() {
-            Tool("get_weather", "Get current weather", func() {
-                Args(func() {
-                    // MinLength/MaxLength: string length constraints
-                    Attribute("city", String, "City name", func() {
-                        MinLength(2)   // Rejects "" or "X"
-                        MaxLength(100) // Rejects very long strings
-                    })
-                    // Enum: only these values are valid
-                    Attribute("units", String, "Temperature units", func() {
-                        Enum("celsius", "fahrenheit") // Rejects "kelvin"
-                    })
-                    Required("city") // city must be present
-                })
-                Return(func() {
-                    Attribute("temperature", Int, "Temperature")
-                    Attribute("conditions", String, "Weather conditions")
-                    Required("temperature", "conditions")
-                })
-            })
-        })
-    })
+resp, err := completions.CompleteDraftTask(ctx, modelClient, &model.Request{
+	Messages: []*model.Message{{
+		Role:  model.ConversationRoleUser,
+		Parts: []model.Part{model.TextPart{Text: "Draft a task for launch readiness."}},
+	}},
 })
-```
-
-Regenerate:
-
-```bash
-goa gen quickstart/design
-```
-
-Now if a planner sends `{"city": ""}` or `{"units": "kelvin"}`:
-
-1. **Rejected** at the boundary (before executor runs)
-2. **RetryHint** returned with validation error
-3. Planner can **auto-correct** and retry
-
-Here's what the runtime returns when validation fails:
-
-```go
-// When the LLM sends invalid input like {"city": "", "units": "kelvin"}
-// the runtime returns a ToolResult with RetryHint instead of calling your executor:
-&planner.ToolResult{
-    Name: "weather.get_weather",
-    RetryHint: &planner.RetryHint{
-        Message: `validation failed: city length must be >= 2; units must be one of ["celsius", "fahrenheit"]`,
-    },
+if err != nil {
+	log.Fatal(err)
 }
-
-// The planner sees this error and can retry with corrected input.
-// With real LLMs, this self-correction happens automatically—
-// the model reads the error, understands what went wrong, and fixes it.
+fmt.Println(resp.Value.Name)
 ```
 
-No crashes. No manual parsing. The LLM sees a clear error message and fixes it on the next attempt.
+Completion names are part of the structured-output contract: 1-64 ASCII
+characters, letters/digits/`_`/`-`, starting with a letter or digit. Streaming
+completion helpers expose preview `completion_delta` chunks and decode only the
+final canonical `completion` chunk.
 
 ---
 
-## Step 5: Real LLM
+## 10. Compose Agents
 
-Now let's replace the stub with a real LLM. The planner's job is to:
-1. Build a request with the conversation history and available tools
-2. Send it to the model
-3. Interpret the response—either tool calls or a final answer
-
-The runtime handles everything else: tool execution, validation, retries, and streaming.
-
-Connect to OpenAI or Claude. First, create a real planner that uses the model client:
+Agents can export toolsets that other agents use. Nested agents run as child
+workflows with their own `RunID`, and streams emit `child_run_linked` so UIs can
+render run trees.
 
 ```go
-package main
-
-import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "os"
-
-    assistant "quickstart/gen/demo/agents/assistant"
-    "goa.design/goa-ai/features/model/openai"
-    "goa.design/goa-ai/runtime/agent/model"
-    "goa.design/goa-ai/runtime/agent/planner"
-    "goa.design/goa-ai/runtime/agent/runtime"
-    "goa.design/goa-ai/runtime/agent/stream"
-)
-
-// RealPlanner calls an actual LLM instead of hardcoding responses.
-// It retrieves the model client from the runtime by ID.
-type RealPlanner struct {
-    systemPrompt string
-}
-
-func (p *RealPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
-    // Get the raw model client by the ID we registered it with.
-    // Use PlannerModelClient instead when you want runtime-owned streaming events.
-    client, ok := in.Agent.ModelClient("openai")
-    if !ok {
-        return nil, fmt.Errorf("no model client")
-    }
-
-    // Build messages: system prompt first, then user messages
-    msgs := append([]*model.Message{{
-        Role:  model.ConversationRoleSystem,
-        Parts: []model.Part{model.TextPart{Text: p.systemPrompt}},
-    }}, in.Messages...)
-
-    // Call the LLM with messages and available tools.
-    // AdvertisedToolDefinitions returns the JSON schemas generated from your DSL
-    // after runtime filtering for the current turn.
-    resp, err := client.Complete(ctx, &model.Request{
-        Messages: msgs,
-        Tools:    in.Agent.AdvertisedToolDefinitions(),
-    })
-    if err != nil {
-        return nil, err
-    }
-
-    return interpretResponse(resp)
-}
-
-func (p *RealPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    client, ok := in.Agent.ModelClient("openai")
-    if !ok {
-        return nil, fmt.Errorf("no model client")
-    }
-
-    // in.Messages now includes tool results from the previous turn
-    msgs := append([]*model.Message{{
-        Role:  model.ConversationRoleSystem,
-        Parts: []model.Part{model.TextPart{Text: p.systemPrompt}},
-    }}, in.Messages...)
-
-    resp, err := client.Complete(ctx, &model.Request{
-        Messages: msgs,
-        Tools:    in.Agent.AdvertisedToolDefinitions(),
-    })
-    if err != nil {
-        return nil, err
-    }
-
-    return interpretResponse(resp)
-}
-
-// interpretResponse converts the LLM response to a PlanResult.
-// If the LLM requested tools, return ToolCalls. Otherwise, return FinalResponse.
-func interpretResponse(resp *model.Response) (*planner.PlanResult, error) {
-    if len(resp.Content) == 0 {
-        return nil, fmt.Errorf("empty response")
-    }
-
-    msg := resp.Content[len(resp.Content)-1]
-    var toolCalls []planner.ToolRequest
-
-    // Check each part of the response for tool calls or text
-    for _, part := range msg.Parts {
-        switch p := part.(type) {
-        case model.ToolUsePart:
-            // LLM wants to call a tool—convert to ToolRequest
-            payload, _ := json.Marshal(p.Input)
-            toolCalls = append(toolCalls, planner.ToolRequest{
-                Name:       p.Name,
-                Payload:    payload,
-                ToolCallID: p.ID,
-            })
-        case model.TextPart:
-            // Text response (used if no tool calls)
-        }
-    }
-
-    // If tools were requested, return them for execution
-    if len(toolCalls) > 0 {
-        return &planner.PlanResult{ToolCalls: toolCalls}, nil
-    }
-
-    // No tools—this is the final answer
-    return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{Message: &msg},
-    }, nil
-}
-
-type WeatherExecutor struct{}
-
-func (e *WeatherExecutor) Execute(ctx context.Context, meta runtime.ToolCallMeta, req *planner.ToolRequest) (*planner.ToolResult, error) {
-    // Real implementation would call a weather API here
-    return &planner.ToolResult{
-        Name:   req.Name,
-        Result: map[string]any{"temperature": 22, "conditions": "Sunny"},
-    }, nil
-}
-
-// ConsoleSink streams assistant text to the console in real-time
-type ConsoleSink struct{}
-
-func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
-    switch e := event.(type) {
-    case *stream.ToolStart:
-        fmt.Printf("🔧 Tool: %s\n", e.Data.ToolName)
-    case *stream.AssistantReply:
-        // Print text chunks as they arrive (streaming output)
-        fmt.Print(e.Data.Text)
-    }
-    return nil
-}
-func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
-
-func main() {
-    ctx := context.Background()
-
-    // --- OpenAI ---
-    modelClient, err := openai.NewFromAPIKey(os.Getenv("OPENAI_API_KEY"), "gpt-4o")
-    if err != nil {
-        panic(err)
-    }
-
-    // --- Claude via Bedrock (uncomment to use instead) ---
-    // import "goa.design/goa-ai/features/model/bedrock"
-    //
-    // bedrockClient, err := bedrock.New(bedrock.Options{
-    //     Region: "us-east-1",
-    //     Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
-    // })
-    // if err != nil {
-    //     panic(err)
-    // }
-    // // Then use: runtime.WithModelClient("claude", bedrockClient)
-    // // And in planners for raw access: in.Agent.ModelClient("claude")
-    // // Or for runtime-owned streaming: in.Agent.PlannerModelClient("claude")
-
-    // Create runtime with streaming and model client
-    // The ID ("openai") is how the planner retrieves it
-    rt := runtime.New(
-        runtime.WithStream(&ConsoleSink{}),
-        runtime.WithModelClient("openai", modelClient),
-    )
-    sessionID := "demo-session"
-    if _, err := rt.CreateSession(ctx, sessionID); err != nil {
-        panic(err)
-    }
-
-    // Register the agent with the real planner
-    err = assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
-        Planner:  &RealPlanner{systemPrompt: "You are a helpful weather assistant."},
-        Executor: &WeatherExecutor{},
-    })
-    if err != nil {
-        panic(err)
-    }
-
-    // Run the agent
-    client := assistant.NewClient(rt)
-    out, err := client.Run(ctx, sessionID, []*model.Message{{
-        Role:  model.ConversationRoleUser,
-        Parts: []model.Part{model.TextPart{Text: "What's the weather in Paris?"}},
-    }})
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Println("\n\nRunID:", out.RunID)
-}
-```
-
-Run with your API key:
-
-```bash
-export OPENAI_API_KEY="sk-..."
-go run main.go
-```
-
-All model adapters implement the same `model.Client` interface, so switching between OpenAI, Claude, or other providers is just a configuration change—your planner code stays the same.
-
----
-
-## Step 6: Agent Composition
-
-Real-world AI systems aren't single agents—they're specialists working together. A research agent gathers data, an analyst interprets it, a writer formats the output.
-
-Goa-AI supports this natively with **agent-as-tool**. Any agent can expose capabilities that other agents invoke as tools. The nested agent runs with its own planner and tools, but within the parent's workflow—single transaction, unified history, full traceability.
-
-Agents can call other agents as tools. Add to `design/design.go`:
-
-```go
-package design
-
-import (
-    . "goa.design/goa/v3/dsl"
-    . "goa.design/goa-ai/dsl"
-)
-
-// Weather specialist agent—has its own tools and planner
-var _ = Service("weather", func() {
-    Agent("forecaster", "Weather specialist", func() {
-        // Internal tools only this agent can use
-        Use("weather_tools", func() {
-            Tool("get_forecast", "Get forecast", func() {
-                Args(func() {
-                    Attribute("city", String, "City")
-                    Required("city")
-                })
-                Return(func() {
-                    Attribute("forecast", String, "Forecast")
-                    Required("forecast")
-                })
-            })
-        })
-
-        // Export makes this agent callable as a tool by other agents.
-        // The exported toolset defines the interface other agents see.
-        Export("ask_weather", func() {
-            Tool("ask", "Ask weather specialist", func() {
-                Args(func() {
-                    Attribute("question", String, "Question")
-                    Required("question")
-                })
-                Return(func() {
-                    Attribute("answer", String, "Answer")
-                    Required("answer")
-                })
-            })
-        })
-    })
+Agent("researcher", "Research specialist", func() {
+	Export("research", func() {
+		Tool("deep_search", "Perform deep research", func() {
+			Args(ResearchRequest)
+			Return(ResearchReport)
+		})
+	})
 })
 
-// Main assistant uses the weather agent as a tool
-var _ = Service("demo", func() {
-    Agent("assistant", "A helpful assistant", func() {
-        // UseAgentToolset imports an exported toolset from another agent.
-        // Args: service name, agent name, exported toolset name
-        UseAgentToolset("weather", "forecaster", "ask_weather")
-    })
+Agent("coordinator", "Delegates specialist work", func() {
+	Use(AgentToolset("orchestrator", "researcher", "research"))
 })
 ```
 
-Regenerate:
-
-```bash
-goa gen quickstart/design
-```
-
-Now when the assistant needs weather info:
-1. Assistant's planner decides to call `ask_weather`
-2. Runtime invokes the weather agent as a child run
-3. Weather agent runs its own plan/execute loop with its own tools
-4. Weather agent returns its answer to the parent
-5. Assistant's planner receives the result and continues
-
-**Each agent has its own planner, tools, and context.** The runtime handles orchestration, and you get full visibility into both runs via streaming events.
+Each agent keeps its own planner, tools, policy, and run log. The parent sees a
+normal tool result with a `RunLink` to the child run.
 
 ---
 
 ## What You Built
 
-✅ **Typed agent** with schema-validated tools  
-✅ **Streaming events** for real-time visibility  
-✅ **Validation** with automatic retry hints  
-✅ **Real LLM** integration  
-✅ **Agent composition** with run trees  
+- A design-first agent with schema-validated tools.
+- Generated payload/result codecs and model-facing JSON schemas.
+- A typed direct completion contract.
+- A generated runtime client with sessionful and one-shot execution.
+- A path to model-backed planning, streaming UIs, and agent composition.
 
-All from a declarative DSL. The design is your source of truth—change it, regenerate, and your types, schemas, and validation stay in sync automatically.
-
-**What's running under the hood:**
-- Generated codecs handle JSON serialization with proper types
-- Validation runs at the boundary before your code executes
-- The plan/execute loop manages state and retries
-- Events stream to any sink you configure
-
-This is the foundation. For production, you'll add Temporal for durability, Mongo for persistence, and Pulse for distributed streaming—but the agent code stays the same.
+For production, add the Temporal engine for durability, Mongo-backed stores for
+memory/session/run logs, Pulse for distributed streaming, and model middleware
+for provider rate limits. The Goa design remains the source of truth.
 
 ---
 

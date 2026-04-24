@@ -27,6 +27,9 @@ func TestChatAgent(t *testing.T) {
         Planner: &TestPlanner{},
     })
     require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
+    require.NoError(t, err)
     
     // Run agent
     client := chat.NewClient(rt)
@@ -52,16 +55,16 @@ Isolate planner logic by mocking the model client:
 
 ```go
 type MockModelClient struct {
-    responses []*model.Message
+    responses []model.Message
     callCount int
 }
 
-func (m *MockModelClient) Generate(ctx context.Context, req *model.Request) (*model.Response, error) {
+func (m *MockModelClient) Complete(ctx context.Context, req *model.Request) (*model.Response, error) {
     if m.callCount >= len(m.responses) {
         return nil, fmt.Errorf("no more mock responses")
     }
     resp := &model.Response{
-        Message: m.responses[m.callCount],
+        Content: []model.Message{m.responses[m.callCount]},
     }
     m.callCount++
     return resp, nil
@@ -74,7 +77,7 @@ func (m *MockModelClient) Stream(ctx context.Context, req *model.Request) (model
 
 func TestPlannerWithMockClient(t *testing.T) {
     mockClient := &MockModelClient{
-        responses: []*model.Message{
+        responses: []model.Message{
             {
                 Role: model.ConversationRoleAssistant,
                 Parts: []model.Part{
@@ -96,7 +99,6 @@ func TestPlannerWithMockClient(t *testing.T) {
             Role:  model.ConversationRoleUser,
             Parts: []model.Part{model.TextPart{Text: "Search for test"}},
         }},
-        Tools: []tools.ToolSpec{/* ... */},
     }
     
     result, err := planner.PlanStart(context.Background(), input)
@@ -137,13 +139,14 @@ func TestSearchToolExecutor(t *testing.T) {
     // Execute tool
     result, err := executor.Execute(context.Background(), meta, call)
     require.NoError(t, err)
+    require.NotNil(t, result.ToolResult)
     
     // Assert on result
-    assert.Nil(t, result.Error)
-    assert.NotNil(t, result.Result)
+    assert.Nil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.Result)
     
     // Unmarshal and verify typed result
-    searchResult, ok := result.Result.(*specs.SearchResult)
+    searchResult, ok := result.ToolResult.Result.(*specs.SearchResult)
     require.True(t, ok)
     assert.Len(t, searchResult.Documents, 3)
 }
@@ -165,12 +168,13 @@ func TestToolValidationReturnsHint(t *testing.T) {
     
     result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
     require.NoError(t, err) // Executor should not return error
+    require.NotNil(t, result.ToolResult)
     
     // Should return ToolError with RetryHint
-    assert.NotNil(t, result.Error)
-    assert.NotNil(t, result.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.RetryHint.Reason)
-    assert.Contains(t, result.RetryHint.MissingFields, "query")
+    assert.NotNil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.RetryHint)
+    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
+    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
 }
 ```
 
@@ -193,6 +197,9 @@ func TestAgentComposition(t *testing.T) {
     err = orchestrator.RegisterOrchestratorAgent(ctx, rt, orchestrator.OrchestratorAgentConfig{
         Planner: &OrchestratorPlanner{},
     })
+    require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
     require.NoError(t, err)
     
     // Run orchestrator - it should invoke planner agent as a tool
@@ -236,9 +243,12 @@ rt := runtime.New()
 chat.RegisterChatAgent(ctx, rt, chatConfig)
 planner.RegisterPlannerAgent(ctx, rt, plannerConfig)
 
-// ✓ Then start runs
+// ✓ Then create a session and start runs
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, messages, opts...)
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
+out, err := client.Run(ctx, "session-123", messages, opts...)
 ```
 
 #### "missing session ID" Error
@@ -257,6 +267,9 @@ error: missing session ID: session ID is required for run
 out, err := client.Run(ctx, "", messages)
 
 // ✓ Correct - session ID provided
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "session-123", messages)
 ```
 
@@ -389,7 +402,8 @@ error: invalid payload: json: cannot unmarshal string into Go struct field Searc
 1. **Return a RetryHint** from the executor so the planner can self-correct:
 ```go
 if err != nil {
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
         Error: planner.NewToolError("invalid payload"),
         RetryHint: &planner.RetryHint{
             Reason:       planner.RetryReasonInvalidArguments,
@@ -397,7 +411,7 @@ if err != nil {
             ExampleInput: map[string]any{"query": "example", "limit": 10},
             Message:      "limit must be an integer",
         },
-    }, nil
+    }), nil
 }
 ```
 

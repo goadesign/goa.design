@@ -2,95 +2,99 @@
 title: "Producción"
 linkTitle: "Producción"
 weight: 8
-description: "Set up Temporal for durable workflows, stream events to UIs, apply adaptive rate limiting, and use system reminders."
+description: "Configura Temporal para workflows duraderos, transmite eventos a las UIs, aplica limitación de tasa adaptativa y utiliza recordatorios del sistema."
 llm_optimized: true
 aliases:
 ---
 
-## Model Rate Limiting
+## Limitación de tasa de modelos
 
-Todos los proveedores de modelos aplican límites de velocidad. Sobrepásalos y tus peticiones fallarán con 429 errores. Peor aún: en un despliegue de múltiples réplicas, cada réplica martillea la API de forma independiente, causando una limitación *agregada* que es invisible para los procesos individuales.
+Todos los proveedores de modelos aplican límites de tasa. Supéralos y tus peticiones fallarán con errores 429. Peor aún: en un despliegue multi-réplica, cada réplica martillea la API de forma independiente, provocando una limitación *agregada* que es invisible para los procesos individuales.
 
 ### El problema
 
-**Escenario:** Despliegas 10 réplicas de tu servicio de agente. Cada réplica piensa que tiene 100K tokens/minuto disponibles. Combinadas, envían 1M de tokens/minuto - 10 veces su cuota real. El proveedor estrangula agresivamente. Las solicitudes fallan aleatoriamente en todas las réplicas.
+**Escenario:** Despliegas 10 réplicas de tu servicio de agente. Cada réplica cree disponer de 100K tokens/minuto. Combinadas, envían 1M de tokens/minuto —10 veces tu cuota real—. El proveedor estrangula de forma agresiva. Las peticiones fallan aleatoriamente en todas las réplicas.
 
-**Sin limitación de velocidad:**
-- Las solicitudes fallan de forma impredecible con 429s
-- No hay visibilidad de la capacidad restante
+**Sin limitación de tasa:**
+- Las peticiones fallan de forma impredecible con 429
+- No hay visibilidad sobre la capacidad restante
 - Los reintentos empeoran la congestión
-- La experiencia del usuario se degrada bajo carga
+- La experiencia de usuario se degrada bajo carga
 
-**Con limitación adaptativa de velocidad:**
+**Con limitación de tasa adaptativa:**
 - Cada réplica comparte un presupuesto coordinado
-- Las solicitudes se ponen en cola hasta que hay capacidad disponible
+- Las peticiones se encolan hasta que hay capacidad disponible
 - El backoff se propaga por todo el clúster
-- Degradación gradual en lugar de fallos
+- Degradación elegante en lugar de fallos
 
 ### Visión general
 
-El paquete `features/model/middleware` proporciona un **limitador de tasa adaptativo estilo AIMD** que se sitúa en el límite del cliente modelo. Estima el coste de los tokens, bloquea las llamadas hasta que hay capacidad disponible y ajusta automáticamente su presupuesto de tokens por minuto en respuesta a las señales de limitación de velocidad de los proveedores.
+El paquete `features/model/middleware` proporciona un **limitador de tasa adaptativo estilo AIMD** que se sitúa en la frontera del cliente de modelo. Estima el coste en tokens, bloquea a los llamadores hasta que hay capacidad disponible y ajusta automáticamente su presupuesto de tokens por minuto en respuesta a las señales de limitación de tasa de los proveedores.
 
 ### Estrategia AIMD
 
-El limitador utiliza una estrategia **Aumento Aditivo/Disminución Multiplicativa (AIMD)**:
+El limitador utiliza una estrategia de **Incremento Aditivo / Decremento Multiplicativo (AIMD)**:
 
 | Evento | Acción | Fórmula |
 |-------|--------|---------|
-| Éxito | Sonda (incremento aditivo) | `TPM += recoveryRate` (5% del inicial) |
-| `ErrRateLimited` | Backoff (disminución multiplicativa) | `TPM *= 0.5` |
+| Éxito | Sondeo (incremento aditivo) | `TPM += recoveryRate` (5 % del inicial) |
+| `ErrRateLimited` | Backoff (decremento multiplicativo) | `TPM *= 0.5` |
 
-El número efectivo de tokens por minuto (TPM) está limitado por:
-- **Mínimo**: 10% del TPM inicial (mínimo para evitar la inanición)
-- **Máximo**: El límite máximo configurado `maxTPM`
+El valor efectivo de tokens por minuto (TPM) está acotado por:
+- **Mínimo**: 10 % del TPM inicial (suelo para evitar la inanición)
+- **Máximo**: el techo configurado mediante `maxTPM`
 
-### Uso Básico
+### Uso básico
 
-Crear un único limitador por proceso y envolver su cliente modelo:
+Crea un único limitador por proceso y envuelve tu cliente de modelo:
 
 ```go
 import (
     "context"
+    "os"
 
+    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
-    "goa.design/goa-ai/features/model/bedrock"
+    "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
 
-    // Create the adaptive rate limiter
-    // Parameters: context, rmap (nil for local), key, initialTPM, maxTPM
+    // Crea el limitador de tasa adaptativo
+    // Parámetros: context, rmap (nil para local), key, initialTPM, maxTPM
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
-        nil,     // nil = process-local limiter
-        "",      // key (unused when rmap is nil)
-        60000,   // initial tokens per minute
-        120000,  // maximum tokens per minute
+        nil,     // nil = limitador local al proceso
+        "",      // clave (no utilizada cuando rmap es nil)
+        60000,   // tokens por minuto iniciales
+        120000,  // máximo de tokens por minuto
     )
 
-    // Create your underlying model client
-    bedrockClient, err := bedrock.NewClient(bedrock.Options{
-        Region: "us-east-1",
-        Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
+    // Crea tu cliente de modelo subyacente
+    modelClient, err := openai.New(openai.Options{
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+        DefaultModel: "gpt-5-mini",
+        HighModel:    "gpt-5",
+        SmallModel:   "gpt-5-nano",
     })
     if err != nil {
         panic(err)
     }
 
-    // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    // Envuelve con el middleware de limitación de tasa
+    rateLimitedClient := limiter.Middleware()(modelClient)
 
-    // Use rateLimitedClient with your runtime or planners
-    rt := runtime.New(
-        runtime.WithModelClient("claude", rateLimitedClient),
-    )
+    rt := runtime.New()
+    if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
+        panic(err)
+    }
 }
 ```
 
-### Cluster-Aware Rate Limiting
+### Limitación de tasa consciente del clúster
 
-Para despliegues multiproceso, coordine la limitación de velocidad entre instancias utilizando un mapa replicado Pulse:
+Para despliegues multiproceso, coordina la limitación de tasa entre instancias usando un mapa replicado de Pulse:
 
 ```go
 import (
@@ -103,114 +107,116 @@ import (
 func main() {
     ctx := context.Background()
 
-    // Create a Pulse replicated map backed by Redis
+    // Crea un mapa replicado de Pulse respaldado por Redis
     rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
     if err != nil {
         panic(err)
     }
 
-    // Create cluster-aware limiter
-    // All processes sharing this map and key coordinate their budgets
+    // Crea un limitador consciente del clúster
+    // Todos los procesos que compartan este mapa y clave coordinan sus presupuestos
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // shared key for this model
-        60000,            // initial TPM
-        120000,           // max TPM
+        "claude-sonnet",  // clave compartida para este modelo
+        60000,            // TPM inicial
+        120000,           // TPM máximo
     )
 
-    // Wrap your client as before
+    // Envuelve tu cliente como antes
     rateLimitedClient := limiter.Middleware()(bedrockClient)
 }
 ```
 
-Cuando se utiliza la limitación basada en clústeres:
-- **Backoff se propaga globalmente**: Cuando cualquier proceso recibe `ErrRateLimited`, todos los procesos reducen su presupuesto
-- **Las solicitudes se coordinan**: Las peticiones exitosas incrementan el presupuesto compartido
-- **Conciliación automática: Los procesos vigilan los cambios externos y actualizan sus limitadores locales
+Cuando se utiliza limitación consciente del clúster:
+- **El backoff se propaga globalmente**: cuando cualquier proceso recibe `ErrRateLimited`, todos los procesos reducen su presupuesto
+- **El sondeo se coordina**: las peticiones exitosas incrementan el presupuesto compartido
+- **Reconciliación automática**: los procesos vigilan los cambios externos y actualizan sus limitadores locales
 
-### Estimación de fichas
+### Estimación de tokens
 
-El limitador estima el coste de la petición utilizando una heurística simple:
-- Cuenta los caracteres de las partes de texto y los resultados de la herramienta de cadenas
-- Convierte a tokens utilizando ~3 caracteres por token
-- Añade un búfer de 500 tokens para los avisos del sistema y los gastos generales del proveedor
+El limitador estima el coste de la petición mediante una heurística simple:
+- Cuenta los caracteres en las partes de texto y en los resultados de herramientas de tipo cadena
+- Convierte a tokens usando ~3 caracteres por token
+- Añade un búfer de 500 tokens para prompts de sistema y sobrecostes del proveedor
 
-Esta estimación es intencionadamente conservadora para evitar una infravaloración.
+Esta estimación es intencionadamente conservadora para evitar subestimar.
 
-### Integración con el tiempo de ejecución
+### Integración con el runtime
 
-Cablear clientes con velocidad limitada en el tiempo de ejecución de Goa-AI:
+Conecta los clientes con tasa limitada al runtime de Goa-AI:
 
 ```go
-// Create limiters for each model you use
+// Crea limitadores para cada modelo que utilices
 claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
 gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
 
-// Wrap underlying clients
+// Envuelve los clientes subyacentes
 claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
-// Configure runtime with rate-limited clients
-rt := runtime.New(
-    runtime.WithEngine(temporalEng),
-    runtime.WithModelClient("claude", claudeClient),
-    runtime.WithModelClient("gpt-4", gptClient),
-)
+// Configura el runtime con clientes con tasa limitada
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("claude", claudeClient); err != nil {
+    panic(err)
+}
+if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+    panic(err)
+}
 ```
 
 ### Qué ocurre bajo carga
 
-| Nivel de Tráfico | Sin Limitador | Con Limitador | Con Limitador
+| Nivel de tráfico | Sin limitador | Con limitador |
 |---------------|-----------------|--------------|
-| Por debajo de la cuota, las solicitudes tienen éxito
-| Por encima de la cuota: 429 fallos aleatorios
-| Ráfaga por encima de la cuota Cascada de fallos, bloqueos del proveedor Backoff absorbe la ráfaga, recuperación gradual
-| Sobrecarga sostenida Todas las peticiones fallan Cola de peticiones con latencia limitada
+| Por debajo de la cuota | Las peticiones tienen éxito | Las peticiones tienen éxito |
+| En la cuota | Fallos 429 aleatorios | Las peticiones se encolan y luego tienen éxito |
+| Ráfaga por encima de la cuota | Cascada de fallos, el proveedor bloquea | El backoff absorbe la ráfaga, recuperación gradual |
+| Sobrecarga sostenida | Todas las peticiones fallan | Las peticiones se encolan con latencia acotada |
 
 ### Parámetros de ajuste
 
-| Parámetro por defecto Descripción
+| Parámetro | Valor por defecto | Descripción |
 |-----------|---------|-------------|
-| `initialTPM` | (requerido) | Presupuesto inicial de tokens-por-minuto |
-| `maxTPM` | (requerido) | Techo para sondeo |
-| Suelo | 10% del inicial | Presupuesto mínimo (evita la inanición) | Tasa de recuperación | 5% del inicial
-| Tasa de recuperación: 5% de la inicial. Incremento aditivo por éxito
-| Factor de retroceso 0,5 Disminución multiplicativa en 429
+| `initialTPM` | (obligatorio) | Presupuesto inicial de tokens por minuto |
+| `maxTPM` | (obligatorio) | Techo para sondeo |
+| Suelo | 10 % del inicial | Presupuesto mínimo (evita la inanición) |
+| Tasa de recuperación | 5 % del inicial | Incremento aditivo por éxito |
+| Factor de backoff | 0.5 | Decremento multiplicativo ante 429 |
 
-**Ejemplo:** Con `initialTPM=60000, maxTPM=120000`:
+**Ejemplo:** con `initialTPM=60000, maxTPM=120000`:
 - Suelo: 6.000 TPM
-- Recuperación: +3,000 TPM por lote exitoso
-- Backoff: reducir a la mitad el TPM actual en 429
+- Recuperación: +3.000 TPM por lote exitoso
+- Backoff: dividir a la mitad el TPM actual ante un 429
 
 ### Monitorización
 
-Seguimiento del comportamiento del limitador de velocidad con métricas y registros:
+Sigue el comportamiento del limitador de tasa con métricas y logs:
 
 ```go
-// The limiter logs backoff events at WARN level
-// Monitor for sustained throttling by tracking:
-// - Wait time distribution (how long requests queue)
-// - Backoff frequency (how often 429s occur)
-// - Current TPM vs. initial TPM
+// El limitador registra los eventos de backoff en nivel WARN
+// Monitoriza el estrangulamiento sostenido siguiendo:
+// - Distribución del tiempo de espera (cuánto se encolan las peticiones)
+// - Frecuencia de backoff (con qué frecuencia ocurren los 429)
+// - TPM actual vs. TPM inicial
 
-// Example: export current capacity to Prometheus
+// Ejemplo: exporta la capacidad actual a Prometheus
 currentTPM := limiter.CurrentTPM()
 ```
 
-### Mejores prácticas
+### Buenas prácticas
 
-- **Un limitador por modelo/proveedor**: Crear limitadores separados para diferentes modelos para aislar sus presupuestos
-- **Fije un TPM inicial realista**: Comience con el límite de tarifa documentado de su proveedor o con una estimación conservadora
-- **Utilizar la limitación en función del clúster en producción**: Coordine las réplicas para evitar la limitación agregada
-- **Monitorizar los eventos de backoff**: Registre o emita métricas cuando se produzcan backoffs para detectar un estrangulamiento sostenido
-- **Establecer maxTPM por encima del inicial**: Dejar margen para sondear cuando el tráfico esté por debajo de la cuota
+- **Un limitador por modelo/proveedor**: crea limitadores separados para modelos distintos y aísla sus presupuestos
+- **Fija un TPM inicial realista**: comienza con el límite de tasa documentado por tu proveedor o con una estimación conservadora
+- **Usa limitación consciente del clúster en producción**: coordina las réplicas para evitar el estrangulamiento agregado
+- **Monitoriza los eventos de backoff**: registra o emite métricas cuando se produzcan backoffs para detectar un estrangulamiento sostenido
+- **Fija `maxTPM` por encima del inicial**: deja margen para sondear cuando el tráfico esté por debajo de la cuota
 
 ---
 
-## Overrides de prompts con Mongo Store
+## Overrides de prompts con almacén Mongo
 
-La gestion de prompts en produccion suele usar:
+La gestión de prompts en producción suele utilizar:
 
 - prompt specs base registradas en `runtime.PromptRegistry`, y
 - registros de override con scope persistidos en Mongo mediante `features/prompt/mongo`.
@@ -244,88 +250,88 @@ rt := runtime.New(
 )
 ```
 
-### Resolucion de overrides y despliegue progresivo
+### Resolución de overrides y despliegue progresivo
 
 La precedencia de overrides es determinista:
 
-1. alcance `session`
-2. alcance `facility`
-3. alcance `org`
-4. alcance global
+1. scope `session`
+2. scope `facility`
+3. scope `org`
+4. scope global
 5. prompt spec base (cuando no existe override)
 
-Estrategia recomendada de rollout:
+Estrategia de rollout recomendada:
 
 - Registra primero las nuevas prompt specs base.
-- Aplica overrides primero en alcance amplio (`org`) y luego reduce a `facility`/`session` para canarios.
-- Rastrea versiones efectivas con eventos `prompt_rendered` y `model.Request.PromptRefs`.
-- Haz rollback escribiendo un override mas nuevo en el mismo scope (o eliminando overrides especificos para volver al fallback).
+- Despliega los overrides primero con un scope amplio (`org`) y luego restríngelos a `facility`/`session` para canarios.
+- Rastrea las versiones efectivas mediante los eventos `prompt_rendered` y `model.Request.PromptRefs`.
+- Haz rollback escribiendo un override más reciente en el mismo scope (o eliminando overrides específicos de scope para volver al valor por defecto).
 
 ---
 
-## Configuración temporal
+## Configuración de Temporal
 
-Esta sección cubre la configuración de Temporal para flujos de trabajo de agentes duraderos en entornos de producción.
+Esta sección cubre la configuración de Temporal para workflows de agente duraderos en entornos de producción.
 
 ### Visión general
 
-Temporal proporciona una ejecución duradera para sus agentes Goa-AI. Las ejecuciones de agentes se convierten en flujos de trabajo Temporal con historial de eventos. Las llamadas a las herramientas se convierten en actividades con reintentos configurables. Cada transición de estado se mantiene. Un trabajador reiniciado reproduce la historia y se reanuda exactamente donde lo dejó.
+Temporal proporciona ejecución duradera para tus agentes Goa-AI. Las ejecuciones de agente se convierten en workflows de Temporal con historial basado en eventos. Las llamadas a herramientas se convierten en actividades con reintentos configurables. Cada transición de estado se persiste. Un worker reiniciado reproduce el historial y continúa exactamente donde se quedó.
 
 ### Cómo funciona la durabilidad
 
 | Componente | Rol | Durabilidad |
 |-----------|------|------------|
-| Flujo de trabajo: orquestación de la ejecución del agente: fuente de eventos; sobrevive a reinicios
-| Actividad de planificación. Llamada de inferencia LLM. Reintentos en fallos transitorios
-| Ejecutar actividad de herramienta: invocación de herramienta; políticas de reintento por herramienta
-| **Estado** | Historial de giros, resultados de herramientas | Persistido en historial de flujo de trabajo |
+| **Workflow** | Orquestación de la ejecución del agente | Basado en eventos; sobrevive a reinicios |
+| **Actividad de planificación** | Llamada de inferencia al LLM | Reintentos ante fallos transitorios |
+| **Actividad de ejecución de herramienta** | Invocación de herramienta | Políticas de reintento por herramienta |
+| **Estado** | Historial de turnos, resultados de herramientas | Persistido en el historial del workflow |
 
-**Ejemplo concreto:** Su agente llama a un LLM, que devuelve 3 llamadas a herramientas. Dos herramientas se completan. El servicio de la tercera herramienta se bloquea.
+**Ejemplo concreto:** tu agente llama a un LLM, que devuelve 3 llamadas a herramientas. Dos herramientas se completan. El servicio de la tercera herramienta falla.
 
-- ❌ **Sin Temporal:** La ejecución completa falla. Se vuelve a ejecutar la inferencia ($$$) y se vuelven a ejecutar las dos herramientas que han tenido éxito.
-- ✅ **Con Temporal:** Sólo se reintenta la herramienta bloqueada. El flujo de trabajo se repite desde el historial: no hay nueva llamada LLM, no se vuelven a ejecutar las herramientas completadas. Coste: un reintento, no un reinicio completo.
+- ❌ **Sin Temporal:** toda la ejecución falla. Vuelves a ejecutar la inferencia ($$$) y a reejecutar las dos herramientas que ya habían tenido éxito.
+- ✅ **Con Temporal:** solo se reintenta la herramienta caída. El workflow se reproduce desde el historial —sin nueva llamada al LLM, sin reejecutar las herramientas ya completadas—. Coste: un reintento, no un reinicio completo.
 
-### Lo que sobrevive a los fallos
+### Qué sobrevive a los fallos
 
-| Sin Temporal Con Temporal
+| Escenario de fallo | Sin Temporal | Con Temporal |
 |------------------|------------------|---------------|
-| El proceso de trabajo se bloquea, se pierde la ejecución y se reinicia desde cero
-| La llamada a la herramienta se agota. La ejecución falla (o se maneja manualmente)
-| Límite de velocidad (429) Falla la ejecución
-| Partición de red Pérdida parcial de progreso Reanudación tras reconexión
-| Despliegue durante la ejecución. Fallan las ejecuciones en vuelo. Se agotan los trabajadores, se reanudan los nuevos
+| Crash del proceso worker | Ejecución perdida, reinicio desde cero | Se reproduce desde el historial y continúa |
+| Timeout de llamada a herramienta | La ejecución falla (o requiere manejo manual) | Reintento automático con backoff |
+| Límite de tasa (429) | La ejecución falla | Hace backoff, reintenta automáticamente |
+| Partición de red | Progreso parcial perdido | Se reanuda tras la reconexión |
+| Despliegue durante una ejecución | Las ejecuciones en curso fallan | Los workers drenan y los nuevos reanudan |
 
 ### Instalación
 
-**Opción 1: Docker (Desarrollo)**
+**Opción 1: Docker (desarrollo)**
 
-One-liner para desarrollo local:
+Una sola línea para desarrollo local:
 ```bash
 docker run --rm -d --name temporal-dev -p 7233:7233 temporalio/auto-setup:latest
 ```
 
-**Opción 2: Temporalite (Desarrollo)**
+**Opción 2: Temporalite (desarrollo)**
 
 ```bash
 go install go.temporal.io/server/cmd/temporalite@latest
 temporalite start
 ```
 
-**Opción 3: Nube Temporal (Producción)**
+**Opción 3: Temporal Cloud (producción)**
 
 Regístrate en [temporal.io](https://temporal.io) y configura tu cliente con las credenciales de la nube.
 
-**Opción 4: Autoalojado (Producción)**
+**Opción 4: Autohospedado (producción)**
 
-Despliega Temporal usando Docker Compose o Kubernetes. Consulte la [Documentación de Temporal](https://docs.temporal.io) para obtener guías de implementación.
+Despliega Temporal usando Docker Compose o Kubernetes. Consulta la [documentación de Temporal](https://docs.temporal.io) para guías de despliegue.
 
-### Configuración del tiempo de ejecución
+### Configuración del runtime
 
 Goa-AI abstrae el backend de ejecución detrás de la interfaz `Engine`. Intercambia motores sin cambiar el código del agente:
 
 **Motor en memoria** (desarrollo):
 ```go
-// Default: no external dependencies
+// Por defecto: sin dependencias externas
 rt := runtime.New()
 ```
 
@@ -335,17 +341,18 @@ import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
     "go.temporal.io/sdk/client"
 
-    // Agregado de especificaciones generado para tus herramientas.
+    // Agregado generado de especificaciones de tus herramientas.
     // El paquete generado expone: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
-temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // Requerido: hacer cumplir el contrato de límites de workflow de goa-ai.
-        // Los resultados, server-data y artefactos cruzan límites como bytes JSON canónicos (api.ToolEvent/api.ToolArtifact).
+        // Obligatorio: hace cumplir el contrato de frontera de workflow de goa-ai.
+        // Los resultados de herramientas y server-data atraviesan las fronteras del workflow como bytes JSON canónicos
+        // (por ejemplo, payloads api.ToolEvent), no como valores planner.ToolResult decodificados.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
@@ -360,75 +367,83 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
-### Configuración de los reintentos de actividad
+### Tiempos y reintentos de actividad
 
-Las llamadas a herramientas son actividades Temporal. Configure los reintentos por conjunto de herramientas en el DSL:
+Usa el DSL para presupuestos semánticos de ejecución: cuánto puede durar toda la
+ejecución, cuánto puede durar un intento de planificación y cuánto puede durar
+un intento de herramienta.
 
 ```go
-Use("external_apis", func() {
-    // Flaky external services: retry aggressively
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 30 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts:        5,
-            InitialInterval:    time.Second,
-            BackoffCoefficient: 2.0,
-        },
+Agent("operator", "Production operations agent", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        Timing(func() {
+            Budget("5m")
+            Plan("45s")
+            Tools("90s")
+        })
     })
-    
-    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
-    Tool("query_database", "Query external DB", func() { /* ... */ })
-})
-
-Use("local_compute", func() {
-    // Fast local tools: minimal retries
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 5 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts: 2,
-        },
-    })
-    
-    Tool("calculate", "Pure computation", func() { /* ... */ })
 })
 ```
 
-Las actividades generadas de plan/resume y execute-tool usan ahora por defecto
-una política de reintento exponencial de 3 intentos (`1s` inicial, coeficiente
-de retroceso `2`), y la actividad del runtime que publica hooks usa la misma
-política. Esto solo es seguro porque los intentos reintentados tienen una
-identidad lógica estable: los eventos de hook llevan claves de evento estables
-y las ejecuciones de herramientas deben persistir/reproducir el resultado
-canónico por `ToolCallID` en lugar de repetir efectos laterales. Cambie la
-política de reintento solo cuando un límite de herramienta no pueda respetar
-ese contrato de reproducción.
+El adaptador de Temporal es el propietario de los aspectos mecánicos del motor
+de workflows, como la espera en cola y los timeouts de liveness. Configúralos
+en el motor, no en el DSL:
 
-### Configuración del trabajador
+```go
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "127.0.0.1:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: runtimeTemporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: runtimeTemporal.ActivityDefaults{
+        Planner: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+```
 
-Los trabajadores sondean colas de tareas y ejecutan flujos de trabajo/actividades. Los trabajadores se inician automáticamente para cada agente registrado, sin necesidad de configuración manual en la mayoría de los casos.
+Las actividades generadas de plan/resume, execute-tool y publicación de hooks
+utilizan políticas de reintento que solo son seguras cuando los reintentos son
+lógicamente idempotentes. Los eventos de hook llevan claves de evento estables
+y las ejecuciones de herramientas deben persistir o reproducir los resultados
+canónicos por `ToolCallID` en lugar de repetir efectos laterales irreversibles.
 
-### Mejores prácticas
+### Configuración de workers
 
-- **Utilizar espacios de nombres separados** para diferentes entornos (dev, staging, prod)
-- **Configurar políticas de reintento** por conjunto de herramientas basadas en características de fiabilidad
-- **Monitorear la ejecución del flujo de trabajo** usando la UI de Temporal y herramientas de observabilidad
-- **Establezca tiempos de espera adecuados** para las actividades: equilibre la fiabilidad frente a la detección de cuelgues
-- **Utilizar Temporal Cloud** para la producción a fin de evitar la carga operativa
+Los workers sondean colas de tareas y ejecutan workflows/actividades. Los workers se inician automáticamente para cada agente registrado —en la mayoría de los casos no se necesita configuración manual de workers—.
+
+### Buenas prácticas
+
+- **Utiliza namespaces separados** para entornos distintos (dev, staging, prod)
+- **Configura políticas de reintento** por toolset basadas en las características de fiabilidad
+- **Monitoriza la ejecución de workflows** usando la UI y las herramientas de observabilidad de Temporal
+- **Fija timeouts adecuados** para las actividades: equilibra fiabilidad frente a detección de cuelgues
+- **Usa Temporal Cloud** en producción para evitar la carga operativa
 
 ---
 
-## Streaming UI
+## UI de streaming
 
-Esta sección muestra cómo transmitir eventos de agente a UIs en tiempo real usando la infraestructura de streaming de Goa-AI.
+Esta sección muestra cómo transmitir eventos del agente a UIs en tiempo real utilizando la infraestructura de streaming de Goa-AI.
 
-### Visión General
+### Visión general
 
-Goa-AI publica un **flujo propiedad de la sesión** de eventos tipificados que puede entregarse a las UIs vía:
-- Eventos enviados por el servidor (SSE)
+Goa-AI publica **streams propiedad de la sesión** de eventos tipados que pueden entregarse a las UIs a través de:
+- Server-Sent Events (SSE)
 - WebSockets
 - Buses de mensajes (Pulse, Redis Streams, etc.)
 
-Todos los eventos visibles para una sesión se anexan a un único flujo: `session/<session_id>`. Cada evento lleva `run_id` y `session_id`, y el runtime emite `child_run_linked` para vincular llamadas de herramienta padre con ejecuciones hijas, además de `run_stream_end` como marcador explícito para cerrar SSE/WebSocket sin temporizadores.
+Todos los eventos visibles en el stream para una sesión se añaden a un único stream: `session/<session_id>`. Cada evento lleva tanto `run_id` como `session_id` para que las UIs puedan agrupar eventos en carriles/tarjetas por ejecución. Las ejecuciones anidadas de agentes se enlazan mediante eventos `child_run_linked`. Las UIs cierran SSE/WebSocket de forma determinista cuando observan `run_stream_end` para la ejecución activa.
 
 ### Interfaz Stream Sink
 
@@ -441,32 +456,32 @@ type Sink interface {
 }
 ```
 
-### Tipos de eventos
+### Tipos de evento
 
-El paquete `stream` define tipos de eventos concretos que implementan `stream.Event`. Los más comunes para UIs son:
+El paquete `stream` define tipos de evento concretos que implementan `stream.Event`. Los más comunes para las UIs son:
 
 | Tipo de evento | Descripción |
 |------------|-------------|
-| `AssistantReply` | Asistente de trozos de mensajes (streaming de texto) |
-`PlannerThought` Bloques de pensamiento del planificador (notas y razonamiento estructurado)
-| `ToolStart` | Ejecución de la herramienta iniciada | `ToolUpdate` | Ejecución de la herramienta iniciada
-| `ToolUpdate` | Progreso de la ejecución de la herramienta (actualizaciones esperadas del recuento de hijos) | | `ToolEnd`
-| `ToolEnd` | Ejecución de la herramienta finalizada (resultado, error, telemetría) | `AwaitClarification` | Ejecución de la herramienta finalizada (resultado, error, telemetría)
-| `AwaitClarification` | El planificador está esperando una aclaración humana | `AwaitExternalTools` | El planificador está esperando una aclaración humana
-| `AwaitExternalTools` | El planificador está esperando los resultados de la herramienta externa | `Usage` | El planificador está esperando los resultados de la herramienta externa | `Usage` | `Usage` | El planificador está esperando los resultados de la herramienta externa
-| `Usage` | Uso de tokens por invocación del modelo | | `Workflow` | El planificador está esperando una aclaración humana
-| `Workflow` | Ejecutar actualizaciones de ciclo de vida y fase |
-| `ChildRunLinked` | Enlace desde una llamada a una herramienta padre a la ejecución de un agente hijo |
-| `RunStreamEnd` | Marcador explícito: no se esperan más eventos visibles para esa ejecución |
+| `AssistantReply` | Fragmentos de mensaje del asistente (texto en streaming) |
+| `PlannerThought` | Bloques de pensamiento del planner (notas y razonamiento estructurado) |
+| `ToolStart` | Ejecución de herramienta iniciada |
+| `ToolUpdate` | Progreso de ejecución de herramienta (actualizaciones del número esperado de hijos) |
+| `ToolEnd` | Ejecución de herramienta completada (resultado, error, telemetría) |
+| `AwaitClarification` | El planner espera una aclaración humana |
+| `AwaitExternalTools` | El planner espera resultados de herramientas externas |
+| `Usage` | Uso de tokens por invocación de modelo |
+| `Workflow` | Actualizaciones de ciclo de vida y fase de la ejecución |
+| `ChildRunLinked` | Enlace desde la llamada a una herramienta padre a la ejecución de un agente hijo |
+| `RunStreamEnd` | Marcador de frontera explícito del stream para una ejecución (no aparecerán más eventos visibles en el stream para esa ejecución) |
 
-Los transportes suelen cambiar de tipo en `stream.Event` por seguridad en tiempo de compilación:
+Los transportes suelen hacer type-switch sobre `stream.Event` para obtener seguridad en tiempo de compilación:
 
 ```go
 switch e := evt.(type) {
 case stream.AssistantReply:
     // e.Data.Text
 case stream.PlannerThought:
-    // e.Data.Note or structured thinking fields
+    // e.Data.Note o campos de razonamiento estructurado
 case stream.ToolStart:
     // e.Data.ToolCallID, e.Data.ToolName, e.Data.Payload
 case stream.ToolEnd:
@@ -474,11 +489,11 @@ case stream.ToolEnd:
 case stream.ChildRunLinked:
     // e.Data.ToolName, e.Data.ToolCallID, e.Data.ChildRunID, e.Data.ChildAgentID
 case stream.RunStreamEnd:
-    // run has no more stream-visible events
+    // la ejecución ya no tiene más eventos visibles en el stream
 }
 ```
 
-### Ejemplo: Sumidero SSE
+### Ejemplo: sumidero SSE
 
 ```go
 type SSESink struct {
@@ -513,44 +528,44 @@ func (s *SSESink) Close(ctx context.Context) error {
 }
 ```
 
-### Suscripción al flujo de sesión (Pulse)
+### Suscripción al stream de sesión (Pulse)
 
-En producción, las UIs consumen el flujo de sesión (`session/<session_id>`) desde un bus compartido y filtran por `run_id`. Cierra SSE/WebSocket cuando observes `run_stream_end` para la ejecución activa.
+En producción, las UIs consumen el stream de sesión (`session/<session_id>`) desde un bus compartido (Pulse / Redis Streams) y filtran por `run_id`. Cierra SSE/WebSocket cuando observes `run_stream_end` para la ejecución activa.
 
-### Sumidero Global de Corridas
+### Sumidero global de stream
 
-Para transmitir todas las ejecuciones a través de un sumidero global (por ejemplo, Pulse), configure el tiempo de ejecución con un sumidero de flujo:
+Para transmitir todas las ejecuciones a través de un sumidero global (por ejemplo, Pulse), configura el runtime con un sumidero de stream:
 
 ```go
 rt := runtime.New(
-    runtime.WithStream(pulseSink), // or your custom sink
+    runtime.WithStream(pulseSink), // o tu sumidero personalizado
 )
 ```
 
-El tiempo de ejecución instala un `stream.Subscriber` por defecto que:
-- asigna eventos de gancho a valores `stream.Event`
-- utiliza el **default `StreamProfile`**, que emite respuestas del asistente, pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, flujo de trabajo, enlaces `child_run_linked` y el marcador terminal `run_stream_end`
+El runtime instala por defecto un `stream.Subscriber` que:
+- mapea eventos de hook a valores `stream.Event`
+- usa el **`StreamProfile` por defecto**, que emite respuestas del asistente, pensamientos del planner, start/update/end de herramientas, esperas, uso, workflow, enlaces `child_run_linked` y el marcador terminal `run_stream_end`
 
-### Stream Profiles
+### Perfiles de stream
 
-No todos los consumidores necesitan todos los eventos. **Los perfiles de flujo filtran los eventos para diferentes audiencias, reduciendo el ruido y el ancho de banda para casos de uso específicos.
+No todos los consumidores necesitan todos los eventos. Los **perfiles de stream** filtran eventos para distintas audiencias, reduciendo el ruido y el ancho de banda para casos de uso específicos.
 
-| Perfil | Caso de Uso | Eventos Incluidos |
+| Perfil | Caso de uso | Eventos incluidos |
 |---------|----------|-----------------|
-`UserChatProfile()` Interfaz de usuario del chat del usuario final: respuestas del asistente, inicio/finalización de la herramienta, finalización del flujo de trabajo
-| `AgentDebugProfile()` | Depuración del desarrollador | Todo, incluidos los pensamientos del planificador |
-| `MetricsProfile()` | Canalizaciones de observabilidad | Sólo eventos de uso y flujo de trabajo |
+| `UserChatProfile()` | UI de chat de usuario final | Respuestas del asistente, start/end de herramientas, finalización del workflow |
+| `AgentDebugProfile()` | Depuración del desarrollador | Todo, incluidos los pensamientos del planner |
+| `MetricsProfile()` | Pipelines de observabilidad | Solo eventos de uso y de workflow |
 
-**Utilizando perfiles incorporados:**
+**Uso de perfiles incorporados:**
 
 ```go
-// User-facing chat: replies, tool status, completion
+// Chat para el usuario: respuestas, estado de herramienta, finalización
 profile := stream.UserChatProfile()
 
-// Debug view: everything including planner thoughts
+// Vista de depuración: todo incluyendo pensamientos del planner
 profile := stream.AgentDebugProfile()
 
-// Metrics pipeline: just usage and workflow events
+// Pipeline de métricas: solo eventos de uso y workflow
 profile := stream.MetricsProfile()
 
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
@@ -559,16 +574,16 @@ sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 **Perfiles personalizados:**
 
 ```go
-// Fine-grained control over which events to emit
+// Control granular sobre qué eventos emitir
 profile := stream.StreamProfile{
     Assistant:  true,
-    Thoughts:   false,  // Skip planner thinking
+    Thoughts:   false,  // Omitir pensamientos del planner
     ToolStart:  true,
     ToolUpdate: true,
     ToolEnd:    true,
-    Usage:      false,  // Skip usage events
+    Usage:      false,  // Omitir eventos de uso
     Workflow:   true,
-    ChildRuns:  true,   // Include parent tool → child run links
+    ChildRuns:  true,   // Incluir enlaces herramienta padre → ejecución hija
 }
 
 sub, _ := stream.NewSubscriberWithProfile(sink, profile)
@@ -576,18 +591,18 @@ sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 
 Los perfiles personalizados son útiles cuando:
 - Necesitas eventos específicos para un consumidor especializado (por ejemplo, seguimiento del progreso)
-- Desea reducir el tamaño de la carga útil para clientes móviles
-- Estás construyendo pipelines de análisis que sólo necesitan ciertos eventos
+- Quieres reducir el tamaño de la carga útil para clientes móviles
+- Estás construyendo pipelines de analítica que solo necesitan ciertos eventos
 
-### Avanzado: Pulse & Stream Bridges
+### Avanzado: Pulse y puentes de stream
 
-En las configuraciones de producción, a menudo se desea
+En configuraciones de producción, a menudo querrás:
 - publicar eventos en un bus compartido (por ejemplo, Pulse)
-- utilizar un **flujo propiedad de la sesión** en ese bus (`session/<session_id>`)
+- usar un **stream propiedad de la sesión** en ese bus (`session/<session_id>`)
 
 Goa-AI proporciona:
-- `features/stream/pulse` - una implementación `stream.Sink` respaldada por Pulse
-- `runtime/agent/stream/bridge` - helpers para cablear el hook bus a cualquier sink
+- `features/stream/pulse` – una implementación de `stream.Sink` respaldada por Pulse
+- `runtime/agent/stream/bridge` – helpers para cablear el bus de hooks a cualquier sumidero
 
 Cableado típico:
 
@@ -595,7 +610,7 @@ Cableado típico:
 pulseClient := pulse.NewClient(redisClient)
 s, err := pulseSink.NewSink(pulseSink.Options{
     Client: pulseClient,
-    // Optional: override stream naming (defaults to `session/<SessionID>`).
+    // Opcional: sobrescribe la nomenclatura del stream (por defecto, `session/<SessionID>`).
     StreamID: func(ev stream.Event) (string, error) {
         if ev.SessionID() == "" {
             return "", errors.New("missing session id")
@@ -615,84 +630,84 @@ rt := runtime.New(
 
 ## Recordatorios del sistema
 
-Los modelos van a la deriva. Olvidan las instrucciones. Ignoran el contexto que estaba claro hace 10 turnos. Cuando su agente ejecuta tareas de larga duración, necesita una forma de inyectar *orientación dinámica y contextual* sin contaminar la conversación con el usuario.
+Los modelos derivan. Olvidan instrucciones. Ignoran contexto que estaba claro hace 10 turnos. Cuando tu agente ejecuta tareas de larga duración, necesitas una forma de inyectar *orientación dinámica y contextual* sin contaminar la conversación con el usuario.
 
 ### El problema
 
-**Escenario:** Su agente gestiona una lista de tareas. Después de 20 turnos, el usuario pregunta "¿qué es lo siguiente?" pero el modelo se ha desviado-no recuerda que hay una tarea pendiente en progreso. Necesitas darle un empujón *sin* que el usuario vea un incómodo mensaje de "RECORDATORIO: tienes una tarea pendiente".
+**Escenario:** tu agente gestiona una lista de tareas. Tras 20 turnos, el usuario pregunta "¿qué hago ahora?" pero el modelo ha derivado —no recuerda que hay una tarea pendiente en progreso—. Necesitas darle un empujón *sin* que el usuario vea un incómodo mensaje "RECORDATORIO: tienes una tarea en progreso".
 
 **Sin recordatorios del sistema:**
-- Se sobrecarga el sistema de avisos con todas las situaciones posibles
-- La orientación se pierde en largas conversaciones
-- No hay forma de inyectar contexto basado en los resultados de la herramienta
+- Saturas el system prompt con todos los escenarios posibles
+- La orientación se pierde en conversaciones largas
+- No hay forma de inyectar contexto basado en los resultados de herramientas
 - Los usuarios ven el andamiaje interno del agente
 
 **Con recordatorios del sistema:**
-- Inyección dinámica de orientación basada en el estado de ejecución
-- Limitación de las sugerencias repetitivas para evitar la saturación de los avisos
+- Inyectas orientación dinámicamente en función del estado en ejecución
+- Limitas la tasa de pistas repetitivas para evitar saturar el prompt
 - Los niveles de prioridad garantizan que la orientación de seguridad nunca se suprima
 - Invisibles para los usuarios: se inyectan como bloques `<system-reminder>`
 
 ### Visión general
 
 El paquete `runtime/agent/reminder` proporciona:
-- **Recordatorios estructurados** con niveles de prioridad, puntos de conexión y políticas de limitación de velocidad
-- **Almacenamiento de ámbito de ejecución** que se limpia automáticamente después de que finalice cada ejecución
-- **Inyección automática** en transcripciones de modelos como bloques `<system-reminder>`
-- **API PlannerContext** para registrar y eliminar recordatorios de planificadores y herramientas
+- **Recordatorios estructurados** con niveles de prioridad, puntos de adjunción y políticas de limitación de tasa
+- **Almacenamiento con alcance de ejecución** que se limpia automáticamente tras finalizar cada ejecución
+- **Inyección automática** en las transcripciones de modelo como bloques `<system-reminder>`
+- **API PlannerContext** para registrar y eliminar recordatorios desde planners y herramientas
 
 ### Conceptos básicos
 
-**Estructura de los recordatorios
+**Estructura de un recordatorio**
 
 Un `reminder.Reminder` tiene:
 
 ```go
 type Reminder struct {
-    ID              string      // Stable identifier (e.g., "todos.pending")
-    Text            string      // Plain-text guidance (tags are added automatically)
-    Priority        Tier        // TierSafety, TierCorrect, or TierGuidance
-    Attachment      Attachment  // Where to inject (run start or user turn)
-    MaxPerRun       int         // Cap total emissions per run (0 = unlimited)
-    MinTurnsBetween int         // Enforce spacing between emissions (0 = no limit)
+    ID              string      // Identificador estable (por ejemplo, "todos.pending")
+    Text            string      // Orientación en texto plano (las etiquetas se añaden automáticamente)
+    Priority        Tier        // TierSafety, TierCorrect o TierGuidance
+    Attachment      Attachment  // Dónde inyectar (inicio de la ejecución o turno del usuario)
+    MaxPerRun       int         // Límite total de emisiones por ejecución (0 = sin límite)
+    MinTurnsBetween int         // Espaciado mínimo entre emisiones (0 = sin límite)
 }
 ```
 
-**Niveles de prioridad
+**Niveles de prioridad**
 
-Los recordatorios se ordenan por prioridad para gestionar presupuestos puntuales y garantizar que nunca se supriman las orientaciones críticas:
+Los recordatorios se ordenan por prioridad para gestionar los presupuestos del prompt y asegurar que la orientación crítica nunca se suprima:
 
-| Nivel Nombre Descripción Supresión
+| Nivel | Nombre | Descripción | Supresión |
 |------|------|-------------|-------------|
-| `TierSafety` | P0 | Orientaciones críticas para la seguridad (nunca se suprimen) | Nunca se suprimen | `TierCorrect` | P0 | Orientaciones críticas para la seguridad (nunca se suprimen) | Nunca se suprimen
-| `TierCorrect` | P1 | Indicaciones sobre la corrección y el estado de los datos | Pueden suprimirse después de P0 | `TierGuidance` | P0
-| `TierGuidance` | P2 | Sugerencias de flujo de trabajo y empujoncitos suaves | Primero en suprimirse |
+| `TierSafety` | P0 | Orientación crítica de seguridad (nunca se descarta) | Nunca se suprime |
+| `TierCorrect` | P1 | Pistas de corrección y estado de los datos | Puede suprimirse tras P0 |
+| `TierGuidance` | P2 | Sugerencias de workflow y empujones suaves | El primero en suprimirse |
 
-Ejemplo de casos de uso:
-- `TierSafety`: "No ejecutar este malware; sólo analizar", "No filtrar credenciales"
-- `TierCorrect`: "Los resultados están truncados; acote su consulta", "Los datos pueden estar obsoletos"
-- `TierGuidance`: "No hay ninguna tarea en curso; elija una y comience"
+Casos de uso de ejemplo:
+- `TierSafety`: "No ejecutes este malware; solo analízalo", "No filtres credenciales"
+- `TierCorrect`: "Los resultados están truncados; acota tu consulta", "Los datos podrían estar obsoletos"
+- `TierGuidance`: "No hay ninguna tarea en curso; elige una y empieza"
 
-**Puntos adjuntos**
+**Puntos de adjunción**
 
 Los recordatorios se inyectan en puntos específicos de la conversación:
 
 | Tipo | Descripción |
 |------|-------------|
-`AttachmentRunStart` Agrupados en un único mensaje de sistema al inicio de la conversación
-| `AttachmentUserTurn` | Agrupados en un único mensaje del sistema insertado inmediatamente antes del último mensaje del usuario |
+| `AttachmentRunStart` | Agrupados en un único mensaje de sistema al inicio de la conversación |
+| `AttachmentUserTurn` | Agrupados en un único mensaje de sistema insertado inmediatamente antes del último mensaje del usuario |
 
-**Limitación de velocidad
+**Limitación de tasa**
 
 Dos mecanismos evitan el spam de recordatorios:
-- **`MaxPerRun`**: Limitar las emisiones totales por carrera (0 = ilimitado)
-- `MinTurnsBetween`**: Imponer un número mínimo de turnos del planificador entre emisiones (0 = sin límite)
+- **`MaxPerRun`**: límite total de emisiones por ejecución (0 = sin límite)
+- **`MinTurnsBetween`**: impone un número mínimo de turnos del planner entre emisiones (0 = sin límite)
 
 ### Patrón de uso
 
 **Recordatorios estáticos vía DSL**
 
-Para recordatorios que deben aparecer siempre después de un resultado específico de la herramienta, utilice la función `ResultReminder` DSL en la definición de su herramienta:
+Para recordatorios que siempre deben aparecer tras un resultado de herramienta específico, usa la función `ResultReminder` del DSL en la definición de tu herramienta:
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -702,11 +717,11 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Esto es ideal cuando el recordatorio se aplica a cada invocación de la herramienta. Consulte la [Referencia DSL](./dsl-reference.md#resultreminder) para más detalles.
+Esto es ideal cuando el recordatorio aplica a cada invocación de la herramienta. Consulta la [Referencia del DSL](./dsl-reference.md#resultreminder) para más detalles.
 
-**Recordatorios dinámicos de los planificadores**
+**Recordatorios dinámicos desde los planners**
 
-Para recordatorios que dependen del estado de ejecución o del contenido de los resultados de la herramienta, utilice `PlannerContext.AddReminder()`:
+Para recordatorios que dependan del estado en ejecución o del contenido de los resultados de herramientas, usa `PlannerContext.AddReminder()`:
 
 ```go
 func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
@@ -730,13 +745,13 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
             }
         }
     }
-    // Continue with planning...
+    // Continuar con la planificación...
 }
 ```
 
-**Eliminación de recordatorios
+**Eliminación de recordatorios**
 
-Utilice `RemoveReminder()` cuando una condición previa ya no se cumpla:
+Usa `RemoveReminder()` cuando una precondición ya no se cumpla:
 
 ```go
 if allTodosCompleted {
@@ -744,9 +759,9 @@ if allTodosCompleted {
 }
 ```
 
-**Contadores de límite de velocidad de conservación**
+**Preservación de los contadores de limitación de tasa**
 
-`AddReminder()` conserva los contadores de emisión al actualizar un recordatorio existente por ID. Si necesita cambiar el contenido del recordatorio pero mantener los límites de tarifa:
+`AddReminder()` preserva los contadores de emisión al actualizar un recordatorio existente por ID. Si necesitas cambiar el contenido del recordatorio pero mantener los límites de tasa:
 
 ```go
 in.Agent.AddReminder(reminder.Reminder{
@@ -758,25 +773,25 @@ in.Agent.AddReminder(reminder.Reminder{
 })
 ```
 
-**Anti-patrón**: No llame a `RemoveReminder()` seguido de `AddReminder()` para el mismo ID-esto reinicia los contadores y pasa por alto `MinTurnsBetween`.
+**Antipatrón**: no llames a `RemoveReminder()` seguido de `AddReminder()` para el mismo ID —esto reinicia los contadores y salta `MinTurnsBetween`—.
 
 ### Inyección y formato
 
-**Etiquetado automático
+**Etiquetado automático**
 
-El tiempo de ejecución envuelve automáticamente el texto recordatorio en etiquetas `<system-reminder>` cuando se inyecta en transcripciones:
+El runtime envuelve automáticamente el texto del recordatorio con etiquetas `<system-reminder>` al inyectarlo en las transcripciones:
 
 ```go
-// You provide plain text:
+// Tú proporcionas texto plano:
 Text: "Results are truncated. Narrow your query."
 
-// Runtime injects:
+// El runtime inyecta:
 <system-reminder>Results are truncated. Narrow your query.</system-reminder>
 ```
 
-**Explicación de los recordatorios a los modelos**
+**Explicar los recordatorios a los modelos**
 
-Incluya `reminder.DefaultExplanation` en el aviso de su sistema para que los modelos sepan cómo interpretar los bloques `<system-reminder>`:
+Incluye `reminder.DefaultExplanation` en el system prompt para que los modelos sepan cómo interpretar los bloques `<system-reminder>`:
 
 ```go
 const systemPrompt = `
@@ -842,19 +857,19 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
 
 ### Principios de diseño
 
-**Mínimo y opinable**: El subsistema de recordatorios proporciona la estructura justa para los patrones comunes sin exceso de ingeniería.
+**Mínimo y opinado**: el subsistema de recordatorios proporciona la estructura justa para los patrones habituales, sin sobreingeniería.
 
-**Primero limitar la tasa**: El spam de recordatorios degrada el rendimiento del modelo. El motor impone las mayúsculas y el espaciado de forma declarativa.
+**La limitación de tasa primero**: el spam de recordatorios degrada el rendimiento del modelo. El motor impone límites y espaciado de forma declarativa.
 
-**Provider-Agnostic**: Los recordatorios funcionan con cualquier backend de modelo (Bedrock, OpenAI, etc.).
+**Agnóstico al proveedor**: los recordatorios funcionan con cualquier backend de modelo (Bedrock, OpenAI, etc.).
 
-**Preparado para telemetría**: Los ID estructurados y las prioridades hacen que los recordatorios sean observables.
+**Listo para telemetría**: los identificadores y prioridades estructurados hacen que los recordatorios sean observables.
 
 ### Patrones avanzados
 
-**Recordatorios de seguridad
+**Recordatorios de seguridad**
 
-Utilice `TierSafety` para la orientación "no debe suprimirse nunca":
+Usa `TierSafety` para orientaciones que nunca deben suprimirse:
 
 ```go
 in.Agent.AddReminder(reminder.Reminder{
@@ -864,23 +879,23 @@ in.Agent.AddReminder(reminder.Reminder{
     Attachment: reminder.Attachment{
         Kind: reminder.AttachmentUserTurn,
     },
-    // No MaxPerRun or MinTurnsBetween: always emit
+    // Sin MaxPerRun ni MinTurnsBetween: emitir siempre
 })
 ```
 
 **Recordatorios entre agentes**
 
-Los recordatorios son run-scoped. Si un agente como herramienta emite un recordatorio de seguridad, sólo afecta a esa ejecución hija. Para propagar los recordatorios a través de los límites de los agentes, el planificador padre debe volver a registrarlos explícitamente basándose en los resultados hijos o utilizar el estado de sesión compartido.
+Los recordatorios tienen alcance de ejecución. Si un agente usado como herramienta emite un recordatorio de seguridad, solo afecta a esa ejecución hija. Para propagar los recordatorios a través de las fronteras entre agentes, el planner padre debe re-registrarlos explícitamente en función de los resultados del hijo o utilizar estado de sesión compartido.
 
 ### Cuándo utilizar recordatorios
 
-| Escenario Prioridad Ejemplo
+| Escenario | Prioridad | Ejemplo |
 |----------|----------|---------|
-| Restricciones de seguridad | `TierSafety` | "Este archivo es sólo para análisis de malware, nunca se debe ejecutar" | | "Este archivo es sólo para análisis de malware, nunca se debe ejecutar
-| Caducidad de los datos | `TierCorrect` | "Los resultados son de hace 24 horas; vuelva a consultarlos si la frescura es importante" | Resultados truncados
-| Resultados truncados | `TierCorrect` | "Sólo se muestran los 100 primeros resultados; acote su búsqueda" | `TierCorrect` | "Sólo se muestran los 100 primeros resultados; acorte su búsqueda
-| Sugerencias para el flujo de trabajo `TierGuidance` "No hay ninguna tarea en curso; elija una y empiece"
-| Sugerencias de finalización | `TierGuidance` | "Todas las tareas terminadas; proporcione su respuesta final" | `TierGuidance`
+| Restricciones de seguridad | `TierSafety` | "Este archivo es malware —solo analízalo, nunca lo ejecutes" |
+| Datos obsoletos | `TierCorrect` | "Los resultados tienen 24 h; vuelve a consultar si la frescura importa" |
+| Resultados truncados | `TierCorrect` | "Solo se muestran los 100 primeros resultados; acota tu búsqueda" |
+| Empujones de workflow | `TierGuidance` | "No hay ninguna tarea en curso; elige una y empieza" |
+| Pistas de finalización | `TierGuidance` | "Todas las tareas terminadas; proporciona tu respuesta final" |
 
 ### Qué aspecto tienen los recordatorios en la transcripción
 
@@ -893,12 +908,12 @@ Focus on completing the current todo before starting new work.</system-reminder>
 User: What should I do next?
 ```
 
-El modelo ve el recordatorio; el usuario sólo ve su mensaje y la respuesta. Los recordatorios son inyectados de forma transparente por el tiempo de ejecución.
+El modelo ve el recordatorio; el usuario solo ve su mensaje y la respuesta. Los recordatorios los inyecta el runtime de forma transparente.
 
 ---
 
 ## Próximos pasos
 
 - Aprende sobre [Memoria y Sesiones](./memory-sessions/) para la persistencia de transcripciones
-- Explore [Agent Composition](./agent-composition/) para patrones de agente como herramienta
-- Lee sobre [Toolsets](./toolsets/) para modelos de ejecución de herramientas
+- Explora [Composición de agentes](./agent-composition/) para patrones de agente como herramienta
+- Lee sobre [Toolsets](./toolsets/) para los modelos de ejecución de herramientas

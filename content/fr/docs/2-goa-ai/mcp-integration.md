@@ -6,25 +6,25 @@ llm_optimized: true
 aliases:
 ---
 
-Goa-AI fournit un support de premier ordre pour l'intégration de serveurs MCP (Model Context Protocol) dans vos agents. Les ensembles d'outils MCP permettent aux agents de consommer des outils provenant de serveurs MCP externes par le biais de wrappers et d'appelants générés.
+Goa-AI offre une prise en charge de premier ordre pour l'intégration des serveurs MCP (Model Context Protocol) dans vos agents. Les ensembles d'outils MCP permettent aux agents d'utiliser des outils provenant de serveurs MCP externes via des wrappers et des appelants générés.
 
 ## Aperçu
 
-L'intégration MCP suit ce flux de travail :
+L'intégration MCP suit ce flux de travail :
 
-1. **Conception du service** : Déclarer le serveur MCP via le DSL MCP de Goa
-2. **Conception de l'agent** : Référencez cette suite avec `Use(AssistantSuite)`
-3. **Génération de code** : Produit le serveur MCP JSON-RPC (lorsqu'il est généré par Goa), ainsi que des aides d'enregistrement runtime et des specs/codecs propriétaires du toolset (suite)
-4. **Câblage d'exécution** : Instanciation d'un transport `mcpruntime.Caller` (HTTP/SSE/stdio). Les aides générées enregistrent l'ensemble d'outils et adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint`
-5. **Exécution du planificateur** : Les planificateurs lancent simplement des appels d'outils avec des charges utiles JSON canoniques ; le moteur d'exécution les transmet à l'appelant MCP, conserve les résultats par l'intermédiaire de crochets et présente des données télémétriques structurées
+1. **Conception de services** : Déclarez le serveur MCP via MCP DSL de Goa
+2. **Conception d'agent** : référencez cette suite via un ensemble d'outils déclaré avec `FromMCP(...)` ou `FromExternalMCP(...)`.
+3. **Génération de code** : produit le serveur MCP JSON-RPC (lorsqu'il est soutenu par Goa), ainsi que des aides à l'enregistrement d'exécution et des spécifications/codecs appartenant à l'ensemble d'outils pour la suite.
+4. **Câblage d'exécution** : instanciez un transport `mcpruntime.Caller` (HTTP/SSE/stdio). Les assistants générés enregistrent l'ensemble d'outils et adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint`.
+5. **Exécution du planificateur** : les planificateurs mettent simplement en file d'attente les appels d'outils avec les charges utiles canoniques JSON ; le moteur d'exécution les transmet à l'appelant MCP, conserve les résultats via des hooks et exécute une télémétrie structurée
 
 ---
 
-## Déclaration des ensembles d'outils MCP
+## Déclaration des jeux d'outils MCP
 
-### Dans la conception des services
+### Dans la conception de services
 
-Tout d'abord, déclarez le serveur MCP dans votre conception de service Goa :
+Tout d’abord, déclarez le serveur MCP dans la conception de votre service Goa :
 
 ```go
 package design
@@ -37,7 +37,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -53,9 +53,9 @@ var _ = Service("assistant", func() {
 })
 ```
 
-### Dans la conception de l'agent
+### Dans la conception d'agents
 
-Faites ensuite référence à la suite MCP dans votre agent :
+Référencez ensuite la suite MCP dans votre agent :
 
 ```go
 var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
@@ -71,9 +71,9 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
-### Serveurs MCP externes avec schémas en ligne
+### Serveurs externes MCP avec schémas en ligne
 
-Pour les serveurs MCP externes (non soutenus par Goa), déclarer les outils avec des schémas en ligne :
+Pour les serveurs MCP externes (non basés sur Goa), déclarez les outils avec des schémas en ligne :
 
 ```go
 var RemoteSearch = Toolset("remote-search", FromExternalMCP("remote", "search"), func() {
@@ -92,7 +92,7 @@ Agent("helper", "", func() {
 
 ## Câblage d'exécution
 
-Au moment de l'exécution, instanciez un appelant MCP et enregistrez l'ensemble d'outils :
+Au moment de l'exécution, instanciez un appelant MCP et enregistrez l'ensemble d'outils :
 
 ```go
 import (
@@ -118,7 +118,7 @@ if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); er
 
 ## Types d'appelants MCP
 
-Goa-AI prend en charge plusieurs types de transport MCP par le biais du paquet `runtime/mcp`. Tous les appelants mettent en œuvre l'interface `Caller` :
+Goa-AI prend en charge plusieurs types de transport MCP via le package `runtime/mcp`. Tous les appelants implémentent l'interface `Caller` :
 
 ```go
 type Caller interface {
@@ -128,7 +128,7 @@ type Caller interface {
 
 ### Appelant HTTP
 
-Pour les serveurs MCP accessibles via HTTP JSON-RPC :
+Pour les serveurs MCP accessibles via HTTP JSON-RPC :
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -149,11 +149,11 @@ caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-L'appelant HTTP effectue l'initialisation MCP lors de la création et utilise JSON-RPC synchrone sur HTTP POST pour les appels d'outils.
+L'appelant HTTP effectue la négociation d'initialisation MCP lors de la création et utilise JSON-RPC synchrone sur HTTP POST pour les appels d'outils.
 
 ### Appelant SSE
 
-Pour les serveurs MCP utilisant le flux d'événements envoyés par le serveur :
+Pour les serveurs MCP utilisant le streaming d'événements envoyés par le serveur :
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -174,11 +174,11 @@ caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-L'appelant SSE utilise HTTP pour la poignée de main d'initialisation mais demande des réponses `text/event-stream` pour les appels d'outils, ce qui permet aux serveurs de diffuser des événements de progression avant la réponse finale.
+L'appelant SSE utilise HTTP pour la négociation d'initialisation mais demande des réponses `text/event-stream` pour les appels d'outils, permettant aux serveurs de diffuser les événements de progression avant la réponse finale.
 
 ### Appelant Stdio
 
-Pour les serveurs MCP fonctionnant en tant que sous-processus et communiquant via stdin/stdout :
+Pour les serveurs MCP exécutés en tant que sous-processus communiquant via stdin/stdout :
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -202,11 +202,11 @@ caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
 defer caller.Close() // Clean up subprocess
 ```
 
-L'appelant stdio lance la commande en tant que sous-processus, exécute l'accord d'initialisation MCP et maintient la session à travers les invocations de l'outil. Appelez `Close()` pour mettre fin au sous-processus lorsque vous avez terminé.
+L'appelant stdio lance la commande en tant que sous-processus, effectue la négociation d'initialisation MCP et maintient la session lors des appels d'outils. Appelez `Close()` pour terminer le sous-processus une fois terminé.
 
-### CallerFunc Adapter
+### Adaptateur CallerFunc
 
-Pour les implémentations d'appelants personnalisés ou les tests :
+Pour les implémentations ou les tests d'appelants personnalisés :
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -224,7 +224,7 @@ caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallReq
 
 ### Appelant JSON-RPC généré par Goa
 
-Pour les clients MCP générés par Goa qui enveloppent les méthodes de service :
+Pour les clients MCP générés par Goa qui encapsulent les méthodes de service :
 
 ```go
 caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
@@ -232,27 +232,27 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 
 ---
 
-## Flux d'exécution de l'outil
+## Flux d'exécution des outils
 
-1. Le planificateur renvoie les appels d'outils faisant référence aux outils MCP (la charge utile est `json.RawMessage`)
-2. Le moteur d'exécution détecte l'enregistrement de l'ensemble d'outils MCP
-3. Transmet la charge utile JSON canonique à l'appelant MCP
-4. Invite l'appelant MCP avec le nom de l'outil et la charge utile
+1. Le planificateur renvoie des appels d'outils faisant référence aux outils MCP (la charge utile est `json.RawMessage`)
+2. Le moteur d'exécution détecte l'enregistrement du jeu d'outils MCP
+3. Transfère la charge utile canonique JSON à l’appelant MCP
+4. Appelle l'appelant MCP avec le nom de l'outil et la charge utile
 5. L'appelant MCP gère le transport (HTTP/SSE/stdio) et le protocole JSON-RPC
 6. Décode le résultat à l'aide du codec généré
-7. Retourne `ToolResult` au planificateur
+7. Renvoie `ToolResult` au planificateur
 
 ---
 
 ## Gestion des erreurs
 
-Les aides générées adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint` :
+Les assistants générés adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint` :
 
-- **Erreurs de validation** → `RetryHint` avec des conseils pour les planificateurs
-- **Erreurs de réseau** → Indications de réessai avec des recommandations de recul
+- **Erreurs de validation** → `RetryHint` avec conseils pour les planificateurs
+- **Erreurs réseau** → Réessayez les astuces avec les recommandations d'attente
 - **Erreurs de serveur** → Détails de l'erreur conservés dans les résultats de l'outil
 
-Cela permet aux planificateurs de récupérer les erreurs MCP en utilisant les mêmes schémas de réessai que les outils natifs.
+Cela permet aux planificateurs de récupérer des erreurs MCP en utilisant les mêmes modèles de tentatives que les ensembles d'outils natifs.
 
 ---
 
@@ -272,7 +272,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -301,7 +301,7 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
-### Exécution
+### Durée d'exécution
 
 ```go
 package main
@@ -346,7 +346,7 @@ func main() {
 
 ### Planificateur
 
-Votre planificateur peut faire référence à des outils MCP tout comme à des ensembles d'outils natifs :
+Votre planificateur peut référencer les outils MCP tout comme les ensembles d'outils natifs :
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
@@ -365,16 +365,16 @@ func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*plan
 
 ## Meilleures pratiques
 
-- **Laissez codegen gérer l'enregistrement** : Utilisez l'aide générée pour enregistrer les ensembles d'outils MCP ; évitez la colle écrite à la main pour que les codecs et les indices de réessai restent cohérents
-- **Utilisez des appelants typés** : Préférez les appelants JSON-RPC générés par Goa lorsqu'ils sont disponibles pour la sécurité des types
-- **Gérer les erreurs avec élégance** : Tracer les erreurs MCP aux valeurs `RetryHint` pour aider les planificateurs à récupérer
-- **Surveiller la télémétrie** : Les appels MCP émettent des événements de télémétrie structurés ; utilisez-les pour l'observabilité
-- **Choisir le bon transport** : Choisissez le bon transport** : utilisez HTTP pour les requêtes/réponses simples, SSE pour les flux, stdio pour les serveurs basés sur des sous-processus
+- **Laissez codegen gérer l'enregistrement** : utilisez l'assistant généré pour enregistrer les ensembles d'outils MCP ; évitez la colle manuscrite afin que les codecs et les conseils de nouvelle tentative restent cohérents
+- **Utilisez des appelants tapés** : préférez les appelants JSON-RPC générés par Goa lorsqu'ils sont disponibles pour la sécurité du type
+- **Gérez les erreurs avec élégance** : mappez les erreurs MCP aux valeurs `RetryHint` pour aider les planificateurs à récupérer
+- **Surveiller la télémétrie** : les appels MCP émettent des événements de télémétrie structurés ; utilisez-les pour l'observabilité
+- **Choisissez le bon transport** : utilisez HTTP pour une requête/réponse simple, SSE pour le streaming, stdio pour les serveurs basés sur des sous-processus.
 
 ---
 
 ## Prochaines étapes
 
-- **[Outils](./toolsets.md)** - Comprendre les modèles d'exécution des outils
-- **[Mémoire et sessions](./memory-sessions.md)** - Gérer l'état avec les transcriptions et les mémoires
-- **[Production](./production.md)** - Déployer avec l'interface temporelle et le streaming
+- **[Ensembles d'outils](./toolsets.md)** - Comprendre les modèles d'exécution d'outils
+- **[Mémoire et sessions](./memory-sessions.md)** - Gérer l'état avec les transcriptions et les magasins de mémoire
+- **[Production](./production.md)** - Déployer avec Temporal et diffuser UI

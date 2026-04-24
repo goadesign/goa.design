@@ -7,14 +7,14 @@ llm_optimized: true
 
 Esta guía cubre estrategias de prueba para agentes Goa-AI y soluciones a problemas comunes.
 
-## Agentes de pruebas
+## Pruebas de agentes
 
 ### Pruebas con el motor en memoria
 
-El motor en memoria es ideal para pruebas porque
-- No requiere dependencias externas (no Temporal)
-- Se ejecuta de forma sincrónica para que el comportamiento de las pruebas sea predecible
-- Proporciona información rápida durante el desarrollo
+El motor en memoria es ideal para pruebas porque:
+- No requiere dependencias externas (sin Temporal)
+- Se ejecuta de forma síncrona para un comportamiento predecible en las pruebas
+- Proporciona retroalimentación rápida durante el desarrollo
 
 ```go
 func TestChatAgent(t *testing.T) {
@@ -26,6 +26,9 @@ func TestChatAgent(t *testing.T) {
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{
         Planner: &TestPlanner{},
     })
+    require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
     require.NoError(t, err)
     
     // Run agent
@@ -46,22 +49,22 @@ func TestChatAgent(t *testing.T) {
 }
 ```
 
-### Planificadores de pruebas con clientes modelo simulados
+### Pruebas de planificadores con clientes de modelo simulados
 
-Aísla la lógica del planificador simulando el cliente modelo:
+Aísla la lógica del planificador simulando el cliente del modelo:
 
 ```go
 type MockModelClient struct {
-    responses []*model.Message
+    responses []model.Message
     callCount int
 }
 
-func (m *MockModelClient) Generate(ctx context.Context, req *model.Request) (*model.Response, error) {
+func (m *MockModelClient) Complete(ctx context.Context, req *model.Request) (*model.Response, error) {
     if m.callCount >= len(m.responses) {
         return nil, fmt.Errorf("no more mock responses")
     }
     resp := &model.Response{
-        Message: m.responses[m.callCount],
+        Content: []model.Message{m.responses[m.callCount]},
     }
     m.callCount++
     return resp, nil
@@ -74,7 +77,7 @@ func (m *MockModelClient) Stream(ctx context.Context, req *model.Request) (model
 
 func TestPlannerWithMockClient(t *testing.T) {
     mockClient := &MockModelClient{
-        responses: []*model.Message{
+        responses: []model.Message{
             {
                 Role: model.ConversationRoleAssistant,
                 Parts: []model.Part{
@@ -96,7 +99,6 @@ func TestPlannerWithMockClient(t *testing.T) {
             Role:  model.ConversationRoleUser,
             Parts: []model.Part{model.TextPart{Text: "Search for test"}},
         }},
-        Tools: []tools.ToolSpec{/* ... */},
     }
     
     result, err := planner.PlanStart(context.Background(), input)
@@ -109,9 +111,9 @@ func TestPlannerWithMockClient(t *testing.T) {
 }
 ```
 
-### Herramientas de prueba en aislamiento
+### Pruebas de herramientas de forma aislada
 
-Pruebe los ejecutores de herramientas independientemente del agente:
+Prueba los ejecutores de herramientas de forma independiente del agente:
 
 ```go
 func TestSearchToolExecutor(t *testing.T) {
@@ -137,21 +139,22 @@ func TestSearchToolExecutor(t *testing.T) {
     // Execute tool
     result, err := executor.Execute(context.Background(), meta, call)
     require.NoError(t, err)
+    require.NotNil(t, result.ToolResult)
     
     // Assert on result
-    assert.Nil(t, result.Error)
-    assert.NotNil(t, result.Result)
+    assert.Nil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.Result)
     
     // Unmarshal and verify typed result
-    searchResult, ok := result.Result.(*specs.SearchResult)
+    searchResult, ok := result.ToolResult.Result.(*specs.SearchResult)
     require.True(t, ok)
     assert.Len(t, searchResult.Documents, 3)
 }
 ```
 
-### Pistas de validación y reintento de la herramienta de pruebas
+### Pruebas de validación y sugerencias de reintento de herramientas
 
-Compruebe que las herramientas devuelven los errores y sugerencias adecuados en caso de entrada no válida:
+Verifica que las herramientas devuelven los errores y sugerencias adecuados ante una entrada no válida:
 
 ```go
 func TestToolValidationReturnsHint(t *testing.T) {
@@ -165,18 +168,19 @@ func TestToolValidationReturnsHint(t *testing.T) {
     
     result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
     require.NoError(t, err) // Executor should not return error
+    require.NotNil(t, result.ToolResult)
     
     // Should return ToolError with RetryHint
-    assert.NotNil(t, result.Error)
-    assert.NotNil(t, result.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.RetryHint.Reason)
-    assert.Contains(t, result.RetryHint.MissingFields, "query")
+    assert.NotNil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.RetryHint)
+    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
+    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
 }
 ```
 
-### Comprobación de la composición del agente
+### Pruebas de composición de agentes
 
-Probar escenarios de agente como herramienta:
+Prueba escenarios de agente-como-herramienta:
 
 ```go
 func TestAgentComposition(t *testing.T) {
@@ -193,6 +197,9 @@ func TestAgentComposition(t *testing.T) {
     err = orchestrator.RegisterOrchestratorAgent(ctx, rt, orchestrator.OrchestratorAgentConfig{
         Planner: &OrchestratorPlanner{},
     })
+    require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
     require.NoError(t, err)
     
     // Run orchestrator - it should invoke planner agent as a tool
@@ -214,20 +221,20 @@ func TestAgentComposition(t *testing.T) {
 
 ---
 
-## Solución de problemas
+## Resolución de problemas
 
 ### Errores comunes
 
-#### Error "registro cerrado
+#### Error "registration closed"
 
 **Síntoma:**
 ```
 error: registration closed: cannot register agent after runtime start
 ```
 
-**Causa:** Intentando registrar un agente después de que el runtime haya empezado a procesar ejecuciones.
+**Causa:** Intentar registrar un agente después de que el runtime haya comenzado a procesar ejecuciones.
 
-**Solución:** Registrar todos los agentes antes de iniciar cualquier ejecución:
+**Solución:** Registra todos los agentes antes de iniciar cualquier ejecución:
 
 ```go
 rt := runtime.New()
@@ -236,12 +243,15 @@ rt := runtime.New()
 chat.RegisterChatAgent(ctx, rt, chatConfig)
 planner.RegisterPlannerAgent(ctx, rt, plannerConfig)
 
-// ✓ Then start runs
+// ✓ Then create a session and start runs
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, messages, opts...)
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
+out, err := client.Run(ctx, "session-123", messages, opts...)
 ```
 
-#### Error "Falta ID de sesión
+#### Error "missing session ID"
 
 **Síntoma:**
 ```
@@ -250,17 +260,20 @@ error: missing session ID: session ID is required for run
 
 **Causa:** Iniciar una ejecución sin proporcionar un ID de sesión.
 
-**Solución:** Proporcionar siempre un ID de sesión como argumento posicional requerido:
+**Solución:** Proporciona siempre un ID de sesión como argumento posicional requerido:
 
 ```go
 // ✗ Wrong - no session ID
 out, err := client.Run(ctx, "", messages)
 
 // ✓ Correct - session ID provided
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "session-123", messages)
 ```
 
-**Consejo:** Para pruebas, utilice un ID de sesión fijo. Para producción, genere IDs de sesión únicos por conversación.
+**Consejo:** Para pruebas, utiliza un ID de sesión fijo. En producción, genera IDs de sesión únicos por conversación.
 
 #### Errores de violación de políticas
 
@@ -269,38 +282,38 @@ out, err := client.Run(ctx, "session-123", messages)
 error: policy violation: max tool calls exceeded (10/10)
 ```
 
-**Causa:** El agente excedió el límite configurado `MaxToolCalls` para *herramientas con presupuesto*. Las herramientas declaradas `Bookkeeping()` no consumen este límite.
+**Causa:** El agente superó el límite `MaxToolCalls` configurado para las herramientas *con presupuesto*. Las herramientas declaradas `Bookkeeping()` no consumen este límite.
 
 **Soluciones:**
 
-1. **Aumentar el límite** si el caso de uso requiere legítimamente más llamadas a la herramienta:
+1. **Aumenta el límite** si el caso de uso requiere legítimamente más llamadas a herramientas:
 ```go
 RunPolicy(func() {
     DefaultCaps(MaxToolCalls(20)) // Increase from default
 })
 ```
 
-2. **Mejorar la eficiencia del planificador** para utilizar menos llamadas a herramientas:
-   - Operaciones por lotes siempre que sea posible
-   - Utilizar llamadas a herramientas más específicas
-   - Mejorar la ingeniería rápida
+2. **Mejora la eficiencia del planificador** para usar menos llamadas a herramientas:
+   - Agrupa operaciones por lotes cuando sea posible
+   - Utiliza llamadas a herramientas más específicas
+   - Mejora la ingeniería de prompts
 
-3. **Comprobar la existencia de bucles infinitos** en la lógica del planificador que llama repetidamente a la misma herramienta.
+3. **Comprueba si hay bucles infinitos** en la lógica del planificador que llamen repetidamente a la misma herramienta.
 
-4. **Eximir las herramientas estructuradas de bookkeeping del presupuesto** declarándolas `Bookkeeping()` en el DSL. Las actualizaciones de estado, marcadores de progreso y herramientas de commit terminal entran normalmente en esta categoría; una vez exentas, nunca consumen `RemainingToolCalls` y siempre pueden ejecutarse. Combina `Bookkeeping()` con `TerminalRun()` para una herramienta de "commit de este run" que se garantiza que finalizará de forma atómica incluso después de agotar el presupuesto de retrieval.
+4. **Exime del presupuesto las herramientas estructuradas de bookkeeping** declarándolas `Bookkeeping()` en el DSL. Las actualizaciones de estado, marcadores de progreso y herramientas de commit terminal suelen pertenecer a esta categoría; una vez exentas, nunca consumen `RemainingToolCalls` y siempre pueden ejecutarse. Combina `Bookkeeping()` con `TerminalRun()` para crear una herramienta de tipo "commit this run" con garantía de finalización incluso después de agotar el presupuesto de recuperación.
 
 **Síntoma:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Causa:** El planificador emitió solo herramientas de bookkeeping, pero ninguno de esos resultados podía impulsar otro turno del planificador. Por defecto, los resultados correctos de bookkeeping permanecen ocultos de futuros turnos `PlanResume`, así que el mismo turno debe resolverse de forma terminal / en espera o producir un resultado de bookkeeping planner-visible.
+**Causa:** El planificador emitió únicamente herramientas de bookkeeping, pero ninguno de esos resultados era apto para impulsar otro turno del planificador. Por defecto, los resultados satisfactorios de bookkeeping permanecen ocultos a futuros turnos `PlanResume`, por lo que el mismo turno debe resolverse de forma terminal / quedar a la espera de entrada, o producir un resultado de bookkeeping visible para el planificador.
 
 **Soluciones:**
 
 1. **Termina en el mismo turno** con `TerminalRun()`, `FinalResponse` o `FinalToolResult` cuando el lote de bookkeeping ya sea terminal.
-2. **Pausa explícitamente** con una negociación de espera/pausa si la ejecución está esperando entrada humana o externa.
-3. **Marca el resultado de bookkeeping con `PlannerVisible()`** cuando transporte un estado canónico sobre el que deba razonar el siguiente turno del planificador, por ejemplo un snapshot estructurado de progreso.
+2. **Pausa explícitamente** con un handshake de espera/pausa si la ejecución está aguardando entrada humana o externa.
+3. **Marca el resultado de bookkeeping como `PlannerVisible()`** cuando contenga un estado canónico sobre el que el siguiente turno del planificador deba razonar, por ejemplo, una instantánea estructurada de progreso.
 4. **No combines `PlannerVisible()` con `TerminalRun()`**. Usa `TerminalRun()` para una finalización atómica y `PlannerVisible()` para bookkeeping no terminal que deba reanudar la planificación.
 
 **Síntoma:**
@@ -308,13 +321,13 @@ error: bookkeeping-only tool batch requires a terminal tool or terminal planner 
 error: policy violation: max consecutive failed tool calls exceeded (3/3)
 ```
 
-**Causa:** Múltiples llamadas consecutivas a herramientas fallidas.
+**Causa:** Fallaron múltiples llamadas consecutivas a herramientas.
 
 **Soluciones:**
 
-1. **Corregir los errores de la herramienta subyacente** - comprobar los registros del ejecutor de la herramienta
-2. **Mejorar las sugerencias de reintento** para que el planificador pueda autocorregirse
-3. **Aumentar el límite** si se esperan fallos transitorios:
+1. **Corrige los errores subyacentes de la herramienta** - revisa los logs del ejecutor de la herramienta
+2. **Mejora las sugerencias de reintento** para que el planificador pueda autocorregirse
+3. **Aumenta el límite** si se esperan fallos transitorios:
 ```go
 RunPolicy(func() {
     DefaultCaps(MaxConsecutiveFailedToolCalls(5))
@@ -330,14 +343,14 @@ error: policy violation: time budget exceeded (2m0s)
 
 **Soluciones:**
 
-1. **Aumentar el presupuesto** para operaciones de larga ejecución:
+1. **Aumenta el presupuesto** para operaciones de larga duración:
 ```go
 RunPolicy(func() {
     TimeBudget("10m")
 })
 ```
 
-2. **Utilice `Timing` para un control más preciso**:
+2. **Usa `Timing` para un control más preciso**:
 ```go
 RunPolicy(func() {
     Timing(func() {
@@ -348,9 +361,9 @@ RunPolicy(func() {
 })
 ```
 
-3. **Optimizar la ejecución de herramientas** para completar más rápido.
+3. **Optimiza la ejecución de herramientas** para que finalicen más rápido.
 
-#### Error "herramienta desconocida
+#### Error "unknown tool"
 
 **Síntoma:**
 ```
@@ -361,21 +374,21 @@ error: unknown tool: orchestrator.helpers.search
 
 **Soluciones:**
 
-1. **Verificar el registro del conjunto de herramientas** - asegúrese de que el conjunto de herramientas está registrado en el agente:
+1. **Verifica el registro del toolset** - asegúrate de que el toolset esté registrado en el agente:
 ```go
 Agent("chat", "Chat agent", func() {
     Use(HelpersToolset) // Make sure this is included
 })
 ```
 
-2. **Comprobar la ortografía del nombre de la herramienta** - los nombres de las herramientas distinguen entre mayúsculas y minúsculas y utilizan nombres cualificados.
+2. **Comprueba la ortografía del nombre de la herramienta** - los nombres de herramientas distinguen mayúsculas/minúsculas y utilizan nombres cualificados.
 
-3. **Regenerar código** tras cambios en DSL:
+3. **Regenera el código** tras cambios en el DSL:
 ```bash
 goa gen example.com/project/design
 ```
 
-#### Error "carga no válida
+#### Error "invalid payload"
 
 **Síntoma:**
 ```
@@ -384,12 +397,13 @@ error: invalid payload: json: cannot unmarshal string into Go struct field Searc
 
 **Causa:** El LLM proporcionó una carga útil que no coincide con el esquema de la herramienta.
 
-**Soluciones
+**Soluciones:**
 
-1. **Devuelve una RetryHint** desde el ejecutor para que el planificador pueda autocorregirse:
+1. **Devuelve un RetryHint** desde el ejecutor para que el planificador pueda autocorregirse:
 ```go
 if err != nil {
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
         Error: planner.NewToolError("invalid payload"),
         RetryHint: &planner.RetryHint{
             Reason:       planner.RetryReasonInvalidArguments,
@@ -397,13 +411,13 @@ if err != nil {
             ExampleInput: map[string]any{"query": "example", "limit": 10},
             Message:      "limit must be an integer",
         },
-    }, nil
+    }), nil
 }
 ```
 
-2. **Mejorar las descripciones de las herramientas** para aclarar los tipos esperados.
+2. **Mejora las descripciones de las herramientas** para aclarar los tipos esperados.
 
-3. **Añadir ejemplos** al DSL:
+3. **Añade ejemplos** al DSL:
 ```go
 Args(func() {
     Attribute("limit", Int, "Maximum results", func() {
@@ -416,7 +430,7 @@ Args(func() {
 
 ### Consejos de depuración
 
-#### Habilitar registro de depuración
+#### Habilitar el registro de depuración
 
 ```go
 import "goa.design/goa-ai/runtime/agent/runtime"
@@ -428,7 +442,7 @@ rt := runtime.New(
 )
 ```
 
-#### Suscribirse a eventos para depuración
+#### Suscribirse a eventos para depurar
 
 ```go
 type DebugSink struct{}
@@ -463,8 +477,8 @@ for _, spec := range rt.ToolSpecsForAgent(chat.AgentID) {
 
 ---
 
-## Próximos Pasos
+## Próximos pasos
 
-- **[Referencia DSL](./dsl-reference/)** - Referencia completa de funciones DSL
-- **[Tiempo de ejecución](./runtime/)** - Comprender la arquitectura del tiempo de ejecución
-- **[Producción](./production/)** - Despliegue con Temporal y streaming UI
+- **[Referencia del DSL](./dsl-reference/)** - Referencia completa de las funciones del DSL
+- **[Runtime](./runtime/)** - Comprende la arquitectura del runtime
+- **[Producción](./production/)** - Despliega con Temporal y UI en streaming

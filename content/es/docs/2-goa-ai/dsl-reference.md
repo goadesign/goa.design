@@ -46,7 +46,6 @@ declarado.
 | `Args` | Herramienta | Define un esquema de parámetros de entrada |
 | `Return` | Herramienta | Define el esquema de resultados de salida | `Return` | Herramienta | Define el esquema de resultados de salida
 | `ServerData` | Herramienta | Define esquema de datos del servidor (nunca enviados al proveedor del modelo) |
-| `ServerDataDefault` | Herramienta | Emisión por defecto para server-data opcional cuando `server_data` se omite o es `"auto"` |
 | `BoundedResult` | Herramienta | Marca resultado como vista acotada |
 | `Tags` | Herramienta, conjunto de herramientas | Adjunta etiquetas de metadatos |
 | `BindTo` | Herramienta | Une herramienta a método de servicio |
@@ -588,7 +587,6 @@ ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
 
 ServerData("aura.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
-    ModeAlways()
     FromMethodResultField("evidence")
 })
 ```
@@ -618,14 +616,13 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
-    ServerDataDefault("off")
 })
 ```
 
-**Usando un tipo Goa para el esquema del artefacto:**
+**Usando un tipo Goa para el esquema de server-data:**
 
 ```go
-var TimeSeriesArtifact = Type("TimeSeriesArtifact", func() {
+var TimeSeriesServerData = Type("TimeSeriesServerData", func() {
     Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
     Attribute("unit", String, "Measurement unit")
     Attribute("resolution", String, "Data resolution (e.g., '1m', '5m', '1h')")
@@ -642,21 +639,21 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    ServerData("atlas.metrics", TimeSeriesArtifact)
+    ServerData("atlas.metrics", TimeSeriesServerData)
 })
 ```
 
 **Acceso en tiempo de ejecución:**
 
-En tiempo de ejecución, los artefactos (proyectados desde server-data opcional) están disponibles en `planner.ToolResult.ServerData`:
+En tiempo de ejecución, los server-data emitidos por las herramientas viajan en
+`planner.ToolResult.ServerData`. Decodifica esos bytes JSON canónicos con los
+codecs server-data generados para los kinds declarados por la herramienta:
 
 ```go
 // In a stream subscriber or result handler
 func handleToolResult(result *planner.ToolResult) {
-    for _, art := range result.Artifacts {
-        if art.Kind == "atlas.time_series" {
-            // art.Data contains the full time series for UI rendering
-        }
+    if len(result.ServerData) > 0 {
+        // Decode with the generated server-data codecs for this tool.
     }
 }
 ```

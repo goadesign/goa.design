@@ -5,16 +5,16 @@ description: "Learn how to test agents, planners, and tools, and troubleshoot co
 llm_optimized: true
 ---
 
-Ce guide présente des stratégies de test pour les agents Goa-AI et des solutions aux problèmes les plus courants.
+Ce guide couvre les stratégies de test pour les agents Goa-AI et les solutions aux problèmes courants.
 
-## Tester les agents
+## Agents de test
 
-### Test avec le moteur In-Memory
+### Tests avec le moteur en mémoire
 
-Le moteur en mémoire est idéal pour les tests car il
-- Ne nécessite pas de dépendances externes (pas de temporalité)
-- Il s'exécute de manière synchrone pour un comportement de test prévisible
-- Fournit un retour d'information rapide pendant le développement
+Le moteur en mémoire est idéal pour les tests car il :
+- Ne nécessite aucune dépendance externe (pas de Temporal)
+- S'exécute de manière synchrone pour un comportement de test prévisible
+- Fournit un retour rapide pendant le développement
 
 ```go
 func TestChatAgent(t *testing.T) {
@@ -26,6 +26,9 @@ func TestChatAgent(t *testing.T) {
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{
         Planner: &TestPlanner{},
     })
+    require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
     require.NoError(t, err)
     
     // Run agent
@@ -46,22 +49,22 @@ func TestChatAgent(t *testing.T) {
 }
 ```
 
-### Test des planificateurs avec des clients modèles fictifs
+### Planificateurs de tests avec des clients modèles simulés
 
-Isolez la logique du planificateur en simulant le client du modèle :
+Isolez la logique du planificateur en vous moquant du client modèle :
 
 ```go
 type MockModelClient struct {
-    responses []*model.Message
+    responses []model.Message
     callCount int
 }
 
-func (m *MockModelClient) Generate(ctx context.Context, req *model.Request) (*model.Response, error) {
+func (m *MockModelClient) Complete(ctx context.Context, req *model.Request) (*model.Response, error) {
     if m.callCount >= len(m.responses) {
         return nil, fmt.Errorf("no more mock responses")
     }
     resp := &model.Response{
-        Message: m.responses[m.callCount],
+        Content: []model.Message{m.responses[m.callCount]},
     }
     m.callCount++
     return resp, nil
@@ -74,7 +77,7 @@ func (m *MockModelClient) Stream(ctx context.Context, req *model.Request) (model
 
 func TestPlannerWithMockClient(t *testing.T) {
     mockClient := &MockModelClient{
-        responses: []*model.Message{
+        responses: []model.Message{
             {
                 Role: model.ConversationRoleAssistant,
                 Parts: []model.Part{
@@ -96,7 +99,6 @@ func TestPlannerWithMockClient(t *testing.T) {
             Role:  model.ConversationRoleUser,
             Parts: []model.Part{model.TextPart{Text: "Search for test"}},
         }},
-        Tools: []tools.ToolSpec{/* ... */},
     }
     
     result, err := planner.PlanStart(context.Background(), input)
@@ -111,7 +113,7 @@ func TestPlannerWithMockClient(t *testing.T) {
 
 ### Outils de test isolés
 
-Tester les exécuteurs d'outils indépendamment de l'agent :
+Testez les exécuteurs de l’outil indépendamment de l’agent :
 
 ```go
 func TestSearchToolExecutor(t *testing.T) {
@@ -137,21 +139,22 @@ func TestSearchToolExecutor(t *testing.T) {
     // Execute tool
     result, err := executor.Execute(context.Background(), meta, call)
     require.NoError(t, err)
+    require.NotNil(t, result.ToolResult)
     
     // Assert on result
-    assert.Nil(t, result.Error)
-    assert.NotNil(t, result.Result)
+    assert.Nil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.Result)
     
     // Unmarshal and verify typed result
-    searchResult, ok := result.Result.(*specs.SearchResult)
+    searchResult, ok := result.ToolResult.Result.(*specs.SearchResult)
     require.True(t, ok)
     assert.Len(t, searchResult.Documents, 3)
 }
 ```
 
-### Validation de l'outil de test et conseils de réessai
+### Conseils de validation et de nouvelle tentative de l'outil de test
 
-Vérifiez que les outils renvoient des erreurs et des conseils appropriés en cas d'entrée non valide :
+Vérifiez que les outils renvoient des erreurs et des conseils appropriés en cas de saisie non valide :
 
 ```go
 func TestToolValidationReturnsHint(t *testing.T) {
@@ -165,18 +168,19 @@ func TestToolValidationReturnsHint(t *testing.T) {
     
     result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
     require.NoError(t, err) // Executor should not return error
+    require.NotNil(t, result.ToolResult)
     
     // Should return ToolError with RetryHint
-    assert.NotNil(t, result.Error)
-    assert.NotNil(t, result.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.RetryHint.Reason)
-    assert.Contains(t, result.RetryHint.MissingFields, "query")
+    assert.NotNil(t, result.ToolResult.Error)
+    assert.NotNil(t, result.ToolResult.RetryHint)
+    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
+    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
 }
 ```
 
-### Test de la composition de l'agent
+### Composition de l'agent de test
 
-Tester les scénarios de l'agent en tant qu'outil :
+Scénarios de test d'agent en tant qu'outil :
 
 ```go
 func TestAgentComposition(t *testing.T) {
@@ -193,6 +197,9 @@ func TestAgentComposition(t *testing.T) {
     err = orchestrator.RegisterOrchestratorAgent(ctx, rt, orchestrator.OrchestratorAgentConfig{
         Planner: &OrchestratorPlanner{},
     })
+    require.NoError(t, err)
+
+    _, err = rt.CreateSession(ctx, "test-session")
     require.NoError(t, err)
     
     // Run orchestrator - it should invoke planner agent as a tool
@@ -218,16 +225,16 @@ func TestAgentComposition(t *testing.T) {
 
 ### Erreurs courantes
 
-#### "registration closed" Erreur
+#### Erreur "inscription fermée"
 
 **Symptôme:**
 ```
 error: registration closed: cannot register agent after runtime start
 ```
 
-**Cause:** Tentative d'enregistrement d'un agent après que le runtime a commencé à traiter les exécutions.
+**Cause :** Tentative d'enregistrement d'un agent après que le runtime a commencé à traiter les exécutions.
 
-**Solution:** Enregistrez tous les agents avant de commencer les exécutions :
+**Solution :** Enregistrez tous les agents avant de démarrer une exécution :
 
 ```go
 rt := runtime.New()
@@ -236,85 +243,91 @@ rt := runtime.New()
 chat.RegisterChatAgent(ctx, rt, chatConfig)
 planner.RegisterPlannerAgent(ctx, rt, plannerConfig)
 
-// ✓ Then start runs
+// ✓ Then create a session and start runs
 client := chat.NewClient(rt)
-out, err := client.Run(ctx, messages, opts...)
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
+out, err := client.Run(ctx, "session-123", messages, opts...)
 ```
 
-#### Erreur "ID de session manquant
+#### Erreur "ID de session manquant"
 
 **Symptôme:**
 ```
 error: missing session ID: session ID is required for run
 ```
 
-**Cause:** Démarrage d'une exécution sans fournir d'identifiant de session.
+**Cause :** Démarrage d'une exécution sans fournir d'ID de session.
 
-**Solution:** Fournissez toujours un identifiant de session en tant qu'argument de position requis :
+**Solution :** Fournissez toujours un ID de session comme argument de position requis :
 
 ```go
 // ✗ Wrong - no session ID
 out, err := client.Run(ctx, "", messages)
 
 // ✓ Correct - session ID provided
+if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+    panic(err)
+}
 out, err := client.Run(ctx, "session-123", messages)
 ```
 
-**Astuce:** Pour les tests, utilisez un identifiant de session fixe. Pour la production, générez des identifiants de session uniques par conversation.
+**Conseil :** Pour les tests, utilisez un ID de session fixe. Pour la production, générez des identifiants de session uniques par conversation.
 
-#### Erreurs de violation de politique
+#### Erreurs de violation des règles
 
 **Symptôme:**
 ```
 error: policy violation: max tool calls exceeded (10/10)
 ```
 
-**Cause:** L'agent a dépassé la limite configurée `MaxToolCalls` pour les *outils soumis au budget*. Les outils déclarés `Bookkeeping()` ne consomment pas ce plafond.
+**Cause :** L'agent a dépassé la limite `MaxToolCalls` configurée pour les outils *budgétisés*. Les outils déclarés `Bookkeeping()` ne comptent pas dans ce plafond.
 
-**Solutions:**
+**Solutions :**
 
-1. **Augmentez la limite** si le cas d'utilisation nécessite légitimement plus d'appels à l'outil :
+1. **Augmentez la limite** si le cas d'utilisation nécessite légitimement davantage d'appels d'outils :
 ```go
 RunPolicy(func() {
     DefaultCaps(MaxToolCalls(20)) // Increase from default
 })
 ```
 
-2. **Améliorer l'efficacité du planificateur** pour utiliser moins d'appels d'outils :
-   - Effectuer des opérations par lots dans la mesure du possible
+2. **Améliorez l'efficacité du planificateur** pour utiliser moins d'appels d'outils :
+   - Opérations par lots lorsque cela est possible
    - Utiliser des appels d'outils plus spécifiques
-   - Améliorer l'ingénierie rapide
+   - Améliorer l’ingénierie rapide
 
-3. **Vérifier les boucles infinies** dans la logique du planificateur qui appelle de façon répétée le même outil.
+3. **Vérifiez les boucles infinies** dans la logique du planificateur qui appelle à plusieurs reprises le même outil.
 
-4. **Exempter les outils de bookkeeping structuré du budget** en les déclarant `Bookkeeping()` dans le DSL. Les mises à jour d'état, les marqueurs de progression et les outils de commit terminal appartiennent typiquement à cette catégorie ; une fois exemptés, ils ne consomment jamais `RemainingToolCalls` et peuvent toujours s'exécuter. Combinez `Bookkeeping()` avec `TerminalRun()` pour un outil « commit de ce run » garanti de se finaliser atomiquement même après épuisement du budget de retrieval.
+4. **Exempter du budget les outils de comptabilité structurée** en les déclarant `Bookkeeping()` dans le DSL. Les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal appartiennent généralement à cette catégorie ; une fois exonérés, ils ne consomment jamais `RemainingToolCalls` et peuvent toujours s'exécuter. Associez `Bookkeeping()` à `TerminalRun()` pour obtenir un outil de « validation de cette exécution » dont la finalisation est garantie même une fois le budget de récupération épuisé.
 
 **Symptôme:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Cause:** Le planificateur n'a émis que des outils de bookkeeping, mais aucun de ces résultats ne pouvait piloter un nouveau tour du planificateur. Par défaut, les résultats de bookkeeping réussis restent cachés aux futurs tours `PlanResume`, donc le même tour doit soit se résoudre de façon terminale / en attente, soit produire un résultat de bookkeeping planner-visible.
+**Cause :** Le planificateur n'a émis que des outils de comptabilité, mais aucun de ces résultats n'était éligible pour déclencher un autre tour de planificateur. Par défaut, les résultats de comptabilité réussis restent cachés des futurs tours `PlanResume`, donc le même tour doit soit être résolu de manière terminale/attendre une entrée, soit produire un résultat de comptabilité visible par le planificateur.
 
-**Solutions:**
+**Solutions :**
 
-1. **Terminer dans le même tour** avec `TerminalRun()`, `FinalResponse` ou `FinalToolResult` lorsque le batch de bookkeeping est déjà terminal.
-2. **Mettre explicitement en pause** avec une poignée de main attente/pause si l'exécution attend une entrée humaine ou externe.
-3. **Marquer le résultat de bookkeeping avec `PlannerVisible()`** lorsqu'il transporte un état canonique sur lequel le prochain tour du planificateur doit raisonner, par exemple un snapshot de progression structuré.
-4. **Ne combinez pas `PlannerVisible()` avec `TerminalRun()`**. Utilisez `TerminalRun()` pour une finalisation atomique et `PlannerVisible()` pour un bookkeeping non terminal qui doit reprendre la planification.
+1. **Terminez dans le même tour** avec `TerminalRun()`, `FinalResponse` ou `FinalToolResult` lorsque le lot de comptabilité est déjà terminal.
+2. **Pause explicitement** avec une poignée de main d'attente/pause si l'exécution attend une entrée humaine ou externe.
+3. **Marquez le résultat de la comptabilité `PlannerVisible()`** lorsqu'il contient un état canonique sur lequel le prochain tour du planificateur doit raisonner, comme un instantané de progression structuré.
+4. **Ne combinez pas `PlannerVisible()` avec `TerminalRun()`**. Utilisez `TerminalRun()` pour l'achèvement atomique et `PlannerVisible()` pour la comptabilité non terminale qui devrait reprendre la planification.
 
 **Symptôme:**
 ```
 error: policy violation: max consecutive failed tool calls exceeded (3/3)
 ```
 
-**Cause:** Plusieurs appels d'outils consécutifs ont échoué.
+**Cause :** Plusieurs appels d'outils consécutifs ont échoué.
 
-**Solutions:**
+**Solutions :**
 
-1. **Corriger les erreurs sous-jacentes de l'outil** - vérifier les journaux de l'exécuteur de l'outil
-2. **Améliorer les conseils de relance** pour que le planificateur puisse s'auto-corriger
-3. **Augmenter la limite** si des défaillances transitoires sont attendues :
+1. **Corrigez les erreurs sous-jacentes de l'outil** - vérifiez les journaux de l'exécuteur de l'outil
+2. **Améliorez les conseils de nouvelle tentative** afin que le planificateur puisse s'auto-corriger
+3. **Augmentez la limite** si des pannes transitoires sont attendues :
 ```go
 RunPolicy(func() {
     DefaultCaps(MaxConsecutiveFailedToolCalls(5))
@@ -326,18 +339,18 @@ RunPolicy(func() {
 error: policy violation: time budget exceeded (2m0s)
 ```
 
-**Cause:** L'exécution de l'agent a dépassé la `TimeBudget` configurée.
+**Cause :** L'exécution de l'agent a dépassé le `TimeBudget` configuré.
 
-**Solutions:**
+**Solutions :**
 
-1. **Augmentez le budget** pour les opérations de longue durée :
+1. **Augmenter le budget** pour les opérations de longue durée :
 ```go
 RunPolicy(func() {
     TimeBudget("10m")
 })
 ```
 
-2. **Utilisez `Timing` pour un contrôle plus fin** :
+2. **Utilisez `Timing` pour un contrôle précis** :
 ```go
 RunPolicy(func() {
     Timing(func() {
@@ -348,48 +361,49 @@ RunPolicy(func() {
 })
 ```
 
-3. **Optimiser l'exécution de l'outil** pour qu'elle soit plus rapide.
+3. **Optimisez l'exécution des outils** pour terminer plus rapidement.
 
-#### Erreur "outil inconnu
+#### Erreur "outil inconnu"
 
 **Symptôme:**
 ```
 error: unknown tool: orchestrator.helpers.search
 ```
 
-**Cause:** Le planificateur a demandé un outil qui n'est pas enregistré.
+**Cause :** Le planificateur a demandé un outil qui n'est pas enregistré.
 
-**Solutions:**
+**Solutions :**
 
-1. **Vérifier l'enregistrement de l'ensemble d'outils** - s'assurer que l'ensemble d'outils est enregistré auprès de l'agent :
+1. **Vérifiez l'enregistrement de l'ensemble d'outils** : assurez-vous que l'ensemble d'outils est enregistré auprès de l'agent :
 ```go
 Agent("chat", "Chat agent", func() {
     Use(HelpersToolset) // Make sure this is included
 })
 ```
 
-2. **Vérifier l'orthographe des noms d'outils** - les noms d'outils sont sensibles à la casse et utilisent des noms qualifiés.
+2. **Vérifiez l'orthographe du nom de l'outil** : les noms d'outils sont sensibles à la casse et utilisent des noms qualifiés.
 
-3. **Regénérer le code** après les modifications du DSL :
+3. **Régénérer le code** après les modifications de DSL :
 ```bash
 goa gen example.com/project/design
 ```
 
-#### Erreur "invalid payload" (charge utile non valide)
+#### Erreur "charge utile invalide"
 
 **Symptôme:**
 ```
 error: invalid payload: json: cannot unmarshal string into Go struct field SearchPayload.limit of type int
 ```
 
-**Cause:** Le LLM a fourni une charge utile qui ne correspond pas au schéma de l'outil.
+**Cause :** Le LLM a fourni une charge utile qui ne correspond pas au schéma de l'outil.
 
-**Solutions:**
+**Solutions :**
 
-1. **Retourner un RetryHint** de l'exécuteur pour que le planificateur puisse s'auto-corriger :
+1. **Renvoie un RetryHint** de l'exécuteur afin que le planificateur puisse s'auto-corriger :
 ```go
 if err != nil {
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
         Error: planner.NewToolError("invalid payload"),
         RetryHint: &planner.RetryHint{
             Reason:       planner.RetryReasonInvalidArguments,
@@ -397,13 +411,13 @@ if err != nil {
             ExampleInput: map[string]any{"query": "example", "limit": 10},
             Message:      "limit must be an integer",
         },
-    }, nil
+    }), nil
 }
 ```
 
 2. **Améliorer les descriptions des outils** pour clarifier les types attendus.
 
-3. **Ajouter des exemples** au DSL :
+3. **Ajoutez des exemples** au DSL :
 ```go
 Args(func() {
     Attribute("limit", Int, "Maximum results", func() {
@@ -428,7 +442,7 @@ rt := runtime.New(
 )
 ```
 
-#### S'abonner aux événements pour le débogage
+#### Abonnez-vous aux événements pour le débogage
 
 ```go
 type DebugSink struct{}
@@ -450,7 +464,7 @@ func (s *DebugSink) Close(ctx context.Context) error { return nil }
 rt := runtime.New(runtime.WithStream(&DebugSink{}))
 ```
 
-#### Inspecter les spécifications des outils au moment de l'exécution
+#### Inspecter les spécifications de l'outil au moment de l'exécution
 
 ```go
 // List all registered tools
@@ -465,6 +479,6 @@ for _, spec := range rt.ToolSpecsForAgent(chat.AgentID) {
 
 ## Prochaines étapes
 
-- **[Référence DSL](./dsl-reference/)** - Référence complète des fonctions DSL
-- **[Runtime](./runtime/)** - Comprendre l'architecture du runtime
-- **[Production](./production/)** - Déploiement avec Temporal et streaming UI
+- **[Référence DSL](./dsl-reference/)** - Référence complète de la fonction DSL
+- **[Runtime](./runtime/)** – Comprendre l'architecture d'exécution
+- **[Production](./production/)** - Déployer avec Temporal et diffuser UI

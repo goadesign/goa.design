@@ -6,40 +6,41 @@ description: "Deploy a clustered gateway for cross-process toolset discovery and
 llm_optimized: true
 ---
 
-Le **registre d'outils interne** est un service de passerelle en cluster qui permet la découverte et l'invocation d'ensembles d'outils à travers les frontières des processus. Il est conçu pour les scénarios dans lesquels les ensembles d'outils sont fournis par des services distincts qui peuvent évoluer indépendamment des agents qui les consomment.
+Le **Internal Tool Registry** est un service de passerelle en cluster qui permet la découverte et l'appel d'un ensemble d'outils au-delà des limites des processus. Il est conçu pour les scénarios dans lesquels les ensembles d'outils sont fournis par des services distincts qui peuvent évoluer indépendamment des agents qui les utilisent.
 
-## Vue d'ensemble
+## Aperçu
 
-Le registre agit à la fois comme un **catalogue** et une **passerelle** :
+Le registre fait office à la fois de **catalogue** et de **passerelle** :
 
-- **Catalogue** : Les agents découvrent les ensembles d'outils disponibles, leurs schémas et leur état de santé
-- **Passerelle** : Les appels d'outils sont acheminés par le registre vers les fournisseurs via les flux Pulse
+- **Catalogue** : les agents découvrent les ensembles d'outils disponibles, leurs schémas et leur état de santé
+- **Passerelle** : les appels d'outils sont acheminés via le registre vers les fournisseurs via les flux Pulse.
 
-Les agents sont ainsi dissociés des fournisseurs d'outils, ce qui permet une mise à l'échelle, un déploiement et une gestion du cycle de vie indépendants.
+Cela dissocie les agents des fournisseurs d'outils, permettant une mise à l'échelle, un déploiement et une gestion du cycle de vie indépendants.
 
-### Registre d'outils vs registre de prompts
+### Registre d'outils vs registre d'invites
 
-Ce sont deux systemes differents avec des responsabilites differentes :
+Il s’agit de différents systèmes avec des responsabilités différentes :
 
-- **Registre interne d'outils** (cette page) : decouverte/invocation inter-processus des toolsets et tool calls.
-- **Registre de prompts du runtime** (`runtime.PromptRegistry`) : enregistrement et rendu in-process des prompt specs, avec support optionnel d'un prompt store (`runtime.WithPromptStore`).
+- **Registre d'outils interne** (cette page) : découverte/invocation inter-processus d'ensembles d'outils et d'appels d'outils.
+- **Runtime Prompt Registry** (`runtime.PromptRegistry`) : enregistrement et rendu des spécifications d'invite en cours,
+éventuellement soutenu par un magasin de remplacement d'invite (`runtime.WithPromptStore`).
 
-Le registre d'outils ne stocke pas de templates de prompts et ne resout pas les overrides de prompts.
-Le rendu des prompts reste dans la couche runtime/planner et emet des evenements d'observabilite `prompt_rendered`.
+Le registre d'outils ne stocke pas les modèles d'invite et ne résout pas les remplacements d'invite. Le rendu rapide reste activé
+la couche d'exécution/planificateur et émet des événements d'observabilité `prompt_rendered`.
 
 {{< figure src="/images/diagrams/RegistryTopology.svg" alt="Agent-Registry-Provider Topology" >}}
 
-## Mise en grappe de plusieurs nœuds
+## Clustering multi-nœuds
 
 Plusieurs nœuds de registre peuvent participer au même registre logique en utilisant le même `Name` dans leur configuration et en se connectant à la même instance Redis.
 
-Les nœuds portant le même nom se connectent automatiquement :
+Nœuds portant le même nom automatiquement :
 
-- **partagent les enregistrements de jeux d'outils** via les cartes répliquées Pulse
-- **Coordonner les pings de contrôle de santé** via des tickers distribués (un seul nœud ping à la fois)
-- **Partage de l'état de santé du fournisseur** entre tous les nœuds
+- **Partager les enregistrements des jeux d'outils** via les cartes répliquées Pulse
+- **Coordonner les pings de vérification de l'état** via des tickers distribués (un seul ping de nœud à la fois)
+- **Partager l'état de santé du fournisseur** sur tous les nœuds
 
-Cela permet une mise à l'échelle horizontale et une haute disponibilité. Les clients peuvent se connecter à n'importe quel nœud et voir le même état du registre.
+Cela permet une mise à l’échelle horizontale et une haute disponibilité. Les clients peuvent se connecter à n'importe quel nœud et voir le même état du registre.
 
 {{< figure src="/images/diagrams/RegistryCluster.svg" alt="Registry Cluster Architecture" >}}
 
@@ -47,7 +48,7 @@ Cela permet une mise à l'échelle horizontale et une haute disponibilité. Les 
 
 ### Utilisation de la bibliothèque
 
-Créez et exécutez un nœud de registre par programme. Lorsque `New()` est appelé, le registre se connecte à Redis et initialise plusieurs composants Pulse : un nœud de pool pour la coordination distribuée, deux cartes répliquées pour l'état de santé et le suivi de l'ensemble d'outils, et des gestionnaires de flux pour l'acheminement des appels d'outils. La méthode `Run()` démarre le serveur gRPC et se bloque jusqu'à l'arrêt, en gérant automatiquement la terminaison gracieuse.
+Créez et exécutez un nœud de registre par programme. Lorsque `New()` est appelé, le registre se connecte à Redis et initialise plusieurs composants Pulse : un nœud de pool pour la coordination distribuée, deux cartes répliquées pour le suivi de l'état d'intégrité et de l'ensemble d'outils, et des gestionnaires de flux pour le routage des appels d'outils. La méthode `Run()` démarre le serveur gRPC et le bloque jusqu'à l'arrêt, gérant automatiquement la terminaison en douceur.
 
 ```go
 package main
@@ -86,9 +87,9 @@ func main() {
 }
 ```
 
-### Exemple Binaire
+### Exemple binaire
 
-Le paquetage du registre comprend un binaire d'exemple pour un déploiement rapide. Tous les nœuds ayant le même `REGISTRY_NAME` pointant vers la même instance Redis forment automatiquement un cluster - ils partagent les enregistrements de jeux d'outils et coordonnent les contrôles de santé sans configuration supplémentaire.
+Le package de registre comprend un exemple de binaire pour un déploiement rapide. Tous les nœuds avec le même `REGISTRY_NAME` pointant vers la même instance Redis forment automatiquement un cluster : ils partagent les enregistrements d'ensemble d'outils et coordonnent les contrôles d'état sans configuration supplémentaire.
 
 ```bash
 # Single node (development)
@@ -102,14 +103,14 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 ### Variables d'environnement
 
-| Variable | Description | Valeur par défaut
+| Variable | Description | Défaut |
 |----------|-------------|---------|
-| `REGISTRY_ADDR` | Adresse d'écoute gRPC | `:9090` | `REGISTRY_NAME` Nom de la grappe d'enregistrement
-| `REGISTRY_NAME` Nom du cluster du registre | `registry` | `registry` | Nom du cluster du registre
-| `REDIS_URL` | URL de connexion Redis | `localhost:6379` | `REDIS_PASSWORD` `REDIS_PASSWORD` `REDIS_PASSWORD` | URL de connexion Redis
-| `REDIS_PASSWORD` | Mot de passe Redis | (none) |
-| `PING_INTERVAL` | Intervalle de ping de vérification de l'état de santé
-
+| `REGISTRY_ADDR` | Adresse d'écoute gRPC | `:9090` |
+| `REGISTRY_NAME` | Nom du cluster de registre | `registry` |
+| `REDIS_URL` | URL de connexion Redis | `localhost:6379` |
+| `REDIS_PASSWORD` | Mot de passe Redis | (aucun) |
+| `PING_INTERVAL` | Intervalle de ping du contrôle de santé | `10s` |
+| `MISSED_PING_THRESHOLD` | Pings manqués avant un mauvais fonctionnement | `3` |
 
 ## Architecture
 
@@ -119,45 +120,46 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 
 | Composant | Description |
 |-----------|-------------|
-| Service** - Gestionnaire gRPC pour la découverte et l'invocation des outils
-| Le service de gestion de l'accès à l'information et de l'invocation (gRPC)
-| Le gestionnaire de flux de données est un gestionnaire de flux de données qui permet de gérer les flux de données
-| Gestionnaire de flux de résultats **Gestionnaire de flux de résultats **Gestionnaire de flux de résultats **Gestionnaire de flux de résultats **Gestionnaire de flux de résultats **Gestionnaire de flux de résultats
+| **Service** | Gestionnaires gRPC pour la découverte et l’invocation |
+| **Magasin** | Couche de persistance pour les métadonnées du jeu d'outils (mémoire ou MongoDB) |
+| ** Suivi de la santé ** | Surveille la vivacité du fournisseur via ping/pong |
+| **Gestionnaire de flux** | Gère les flux Pulse pour le routage des appels d'outils |
+| **Gestionnaire de flux de résultats** | Gère la livraison des résultats de l’outil |
 
+### Flux d'appels d'outils
 
-### Flux d'appel d'outil
+Lorsque `CallTool` est appelé, le registre effectue ces étapes dans l'ordre :
 
-Lorsque `CallTool` est invoqué, le registre effectue les étapes suivantes dans l'ordre :
+1. **Validation du schéma** : la charge utile est validée par rapport au schéma JSON de l'outil à l'aide du validateur de schéma de registre d'outils d'exécution.
+2. **Bilan de santé** : le registre vérifie si l'ensemble d'outils a répondu aux pings récents. Les ensembles d'outils défectueux renvoient immédiatement `service_unavailable`.
+3. **Création de flux de résultats** : un flux Pulse temporaire est créé avec un `tool_use_id` unique et le mappage est stocké dans Redis pour la livraison des résultats entre nœuds.
+4. **Publication de demande** : l'appel d'outil est publié dans le flux de demande de l'ensemble d'outils (`toolset:<name>:requests`).
+5. **Attendez le résultat** : la passerelle s'abonne au flux de résultats et bloque jusqu'à ce que le fournisseur réponde ou que le délai d'attente de 30 secondes expire.
 
-1. **Validation du schéma** : La charge utile est validée par rapport au schéma JSON de l'outil à l'aide d'un validateur de schéma compilé
-2. **Vérification de l'état de santé** : Le registre vérifie si l'ensemble d'outils a répondu à des pings récents - les ensembles d'outils en mauvaise santé renvoient immédiatement `service_unavailable`
-3. **Création d'un flux de résultats** : Un flux Pulse temporaire est créé avec un `tool_use_id` unique, et le mappage est stocké dans Redis pour la livraison des résultats entre les nœuds
-4. **Publication de la demande** : L'appel d'outil est publié dans le flux de demandes de l'ensemble d'outils (`toolset:<name>:requests`)
-5. **Attente du résultat** : La passerelle s'abonne au flux de résultats et se bloque jusqu'à ce que le fournisseur réponde ou que le délai de 30 secondes expire
-
-Cette conception garantit que les appels d'outils échouent rapidement lorsque les fournisseurs ne sont pas en bonne santé, plutôt que d'attendre des délais d'attente.
+Cette conception garantit que les appels d’outils échouent rapidement lorsque les fournisseurs ne sont pas opérationnels, plutôt que d’attendre des délais d’attente.
 
 ## Intégration du fournisseur (côté service)
 
-Le routage via le registre n'est que la moitié de l'histoire : les **fournisseurs doivent exécuter une boucle d'exécution des outils** dans le processus du service propriétaire du toolset.
+Le routage du registre ne représente que la moitié du problème : **les fournisseurs doivent exécuter une boucle d'exécution d'outils** dans le processus de service propriétaire de l'ensemble d'outils.
 
-Pour les toolsets appartenant à un service et soutenus par une méthode (outils déclarés avec `BindTo(...)`), la génération de code émet un adaptateur de fournisseur à l'emplacement :
+Pour les ensembles d'outils appartenant au service et basés sur des méthodes (outils déclarés avec `BindTo(...)`), la génération de code émet un adaptateur de fournisseur à l'adresse :
 
 - `gen/<service>/toolsets/<toolset>/provider.go`
 
-Le fournisseur généré :
+Le fournisseur généré :
 
-- Décode le JSON du payload entrant à l'aide du codec de payload généré
-- Construit le payload de la méthode Goa à l'aide des transformations générées
+- Décode la charge utile de l'outil entrant JSON à l'aide du codec de charge utile généré
+- Construit la charge utile de la méthode Goa à l'aide des transformations générées
 - Appelle la méthode de service liée
-- Encode le JSON du résultat ainsi que toute server-data déclarée (server-data optionnelles pour les observateurs et server-data always-on côté serveur) à l'aide du codec de résultat généré
+- Encode le résultat de l'outil JSON avec toutes les données de serveur déclarées à l'aide du codec de résultat généré
 
-Pour servir les appels depuis la passerelle du registre, connectez le fournisseur généré à la boucle fournisseur du runtime :
+Pour servir les appels d'outils depuis la passerelle de registre, connectez le fournisseur généré à
+la boucle du fournisseur d'exécution (`goa.design/goa-ai/runtime/toolregistry/provider`) :
 
 ```go
 handler := toolsetpkg.NewProvider(serviceImpl)
 go func() {
-    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
         Pong: func(ctx context.Context, pingID string) error {
             return registryClient.Pong(ctx, &registry.PongPayload{
                 PingID:  pingID,
@@ -171,16 +173,16 @@ go func() {
 }()
 ```
 
-Les IDs de stream sont déterministes :
+Les ID de flux sont déterministes :
 
-- Appels : `toolset:<toolsetID>:requests`
-- Résultats : `result:<toolUseID>`
+- Appels d'outil : `toolset:<toolsetID>:requests`
+- Résultats : `result:<toolUseID>`
 
 ## Configuration
 
-### Config
+### Structure de configuration
 
-Le champ `Name` est particulièrement important : il détermine les noms des ressources Pulse utilisées pour la coordination. Le pool est nommé `<name>`, la carte de santé `<name>:health` et la carte de registre `<name>:toolsets`. Les nœuds dont les noms et les connexions Redis correspondent se découvrent automatiquement.
+Le champ `Name` est particulièrement important : il détermine les noms de ressources Pulse utilisés pour la coordination. Le pool est nommé `<name>`, la carte de santé `<name>:health` et la carte de registre `<name>:toolsets`. Les nœuds dont les noms correspondent et les connexions Redis se découvrent automatiquement.
 
 ```go
 type Config struct {
@@ -214,9 +216,9 @@ type Config struct {
 }
 ```
 
-### Implémentations de magasins
+### Implémentations de magasin
 
-Le registre prend en charge les backends de stockage enfichables. Le magasin conserve les métadonnées des jeux d'outils (nom, description, version, balises et schémas d'outils). Notez que l'état de santé et la coordination des flux sont toujours gérés par Redis/Pulse, quel que soit le magasin choisi - le magasin n'affecte que la persistance des métadonnées de l'ensemble d'outils.
+Le registre prend en charge les backends de stockage enfichables. Le magasin conserve les métadonnées de l'ensemble d'outils (nom, description, version, balises et schémas d'outils). Notez que l'état d'intégrité et la coordination des flux sont toujours gérés via Redis/Pulse, quel que soit le magasin que vous choisissez : le magasin n'affecte que la persistance des métadonnées de l'ensemble d'outils.
 
 ```go
 import (
@@ -240,26 +242,26 @@ reg, _ := registry.New(ctx, registry.Config{
 
 ## Surveillance de la santé
 
-Le registre surveille automatiquement l'état de santé du fournisseur à l'aide de messages ping/pong sur les flux Pulse.
+Le registre surveille automatiquement l'état du fournisseur à l'aide de messages ping/pong sur les flux Pulse.
 
 ### Comment ça marche
 
-1. Le registre envoie des messages périodiques `ping` au flux de chaque ensemble d'outils enregistré
-2. Les fournisseurs répondent par des messages `pong` via la méthode `Pong` gRPC
-3. Si un fournisseur manque `MissedPingThreshold` pings consécutifs, il est marqué comme étant en mauvaise santé
-4. Les ensembles d'outils malsains sont exclus du routage `CallTool`
+1. Le registre envoie des messages `ping` périodiques au flux de chaque ensemble d'outils enregistré.
+2. Les fournisseurs répondent avec des messages `pong` via la méthode `Pong` gRPC
+3. Si un fournisseur manque des pings consécutifs `MissedPingThreshold`, il est marqué comme étant défectueux.
+4. Les ensembles d'outils défectueux sont exclus du routage `CallTool`
 
-Le tracker de santé utilise un seuil de staleness calculé comme `(MissedPingThreshold + 1) × PingInterval`. Avec les valeurs par défaut (3 pings manqués, intervalle de 10s), un toolset devient malsain après 40 secondes sans pong. Cela donne aux fournisseurs suffisamment de temps pour réagir tout en détectant les défaillances assez rapidement.
+Le tracker de santé utilise un seuil d’obsolescence calculé comme `(MissedPingThreshold + 1) × PingInterval`. Avec les valeurs par défaut (3 pings manqués, intervalle de 10 secondes), un ensemble d'outils devient malsain après 40 secondes sans pong. Cela donne aux fournisseurs suffisamment de temps pour réagir tout en détectant les pannes assez rapidement.
 
 ### Coordination distribuée
 
-Dans un cluster à plusieurs nœuds, les pings de contrôle de santé sont coordonnés par l'intermédiaire des tickers distribués par Pulse. Si ce nœud tombe en panne, un autre nœud prend automatiquement le relais dans un intervalle de ping.
+Dans un cluster multi-nœuds, les pings de vérification de l'état sont coordonnés via des tickers distribués Pulse. Le ticker garantit qu'exactement un nœud envoie des pings à un moment donné : si ce nœud tombe en panne, un autre nœud prend automatiquement le relais dans un intervalle de ping.
 
-Tous les nœuds partagent l'état de santé via une carte répliquée par Pulse. Lorsqu'un nœud reçoit un ping, il met à jour la carte partagée avec l'horodatage actuel. Lorsqu'un nœud vérifie l'état de santé, il lit cette carte partagée, de sorte que tous les nœuds disposent d'une vue cohérente de l'état de santé du fournisseur.
+Tous les nœuds partagent l’état d’intégrité via une carte répliquée Pulse. Lorsqu'un pong est reçu sur n'importe quel nœud, il met à jour la carte partagée avec l'horodatage actuel. Lorsqu'un nœud vérifie l'état de santé, il lit cette carte partagée afin que tous les nœuds aient une vue cohérente de l'état du fournisseur.
 
-## Intégration du client
+## Intégration client
 
-Les agents se connectent au registre à l'aide du client gRPC généré. Le `GRPCClientAdapter` enveloppe le client gRPC brut et fournit une interface plus propre pour la découverte et l'invocation. Comme tous les nœuds du registre partagent l'état, les clients peuvent se connecter à n'importe quel nœud - utilisez un équilibreur de charge en production pour un basculement automatique.
+Les agents se connectent au registre à l'aide du client gRPC généré. Le `GRPCClientAdapter` enveloppe le client gRPC brut et fournit une interface plus propre pour la découverte et l'invocation. Étant donné que tous les nœuds de registre partagent l'état, les clients peuvent se connecter à n'importe quel nœud : utilisez un équilibreur de charge en production pour le basculement automatique.
 
 ```go
 import (
@@ -294,56 +296,56 @@ for _, tool := range schema.Tools {
 }
 ```
 
-## API gRPC
+## gRPC API
 
-Le registre expose les méthodes gRPC suivantes :
+Le registre expose les méthodes gRPC suivantes :
 
 ### Opérations du fournisseur
 
 | Méthode | Description |
 |--------|-------------|
-| `Register` | Enregistrer un jeu d'outils dans le registre. Valide les schémas d'outils, crée le flux de requêtes et démarre le suivi de la santé. Renvoie l'identifiant du flux auquel le fournisseur doit s'abonner. |
-| `Unregister` | Supprimer un jeu d'outils du registre. Arrête les pings de santé et supprime les métadonnées, mais ne détruit pas le flux sous-jacent. |
-| `EmitToolResult` | Émettre le résultat de l'exécution d'un outil. Recherche le flux de résultats dans Redis (permettant la livraison entre nœuds) et publie le résultat. |
-| `Pong` | Répond à un ping de contrôle de santé. Met à jour l'horodatage du dernier ping dans la carte de santé partagée. |
+| `Register` | Enregistrez un ensemble d'outils auprès du registre. Valide les schémas d'outils, crée le flux de requêtes et démarre le suivi de l'état. Renvoie l'ID de flux auquel le fournisseur doit s'abonner. |
+| `Unregister` | Supprimez un ensemble d'outils du registre. Arrête les pings de santé et supprime les métadonnées, mais ne détruit pas le flux sous-jacent. |
+| `EmitToolResult` | Émettre un résultat d’exécution d’outil. Recherche le flux de résultats de Redis (permettant la livraison entre nœuds) et publie le résultat. |
+| `Pong` | Répondez à un ping de contrôle de santé. Met à jour l’horodatage du dernier pong dans la carte de santé partagée. |
 
 ### Opérations de découverte
 
 | Méthode | Description |
 |--------|-------------|
-`ListToolsets` | Liste de tous les ensembles d'outils enregistrés (avec filtrage optionnel des balises). Retourne uniquement les métadonnées, pas les schémas complets. |
-`GetToolset` | Obtenir le schéma complet d'un jeu d'outils spécifique, y compris tous les schémas d'entrée/sortie des outils. |
-`Search` | Recherche de jeux d'outils par mot-clé correspondant au nom, à la description ou aux balises. |
+| `ListToolsets` | Répertoriez tous les ensembles d’outils enregistrés (avec filtrage de balises facultatif). Renvoie uniquement les métadonnées, pas les schémas complets. |
+| `GetToolset` | Obtenez le schéma complet pour un ensemble d'outils spécifique, y compris tous les schémas d'entrée/sortie des outils. |
+| `Search` | Recherchez des ensembles d’outils par mot-clé correspondant au nom, à la description ou aux balises. |
 
-### Opérations d'invocation
+### Opérations d'appel
 
 | Méthode | Description |
 |--------|-------------|
-| `CallTool` | Invocation d'un outil par le biais de la passerelle de registre. Valide la charge utile, vérifie l'état de santé de l'outil, l'achemine vers le fournisseur et attend le résultat (délai de 30 secondes). 
+| `CallTool` | Appelez un outil via la passerelle de registre. Valide la charge utile, vérifie l’état, achemine vers le fournisseur et attend le résultat (délai d’expiration de 30 s). |
 
 ## Meilleures pratiques
 
 ### Déploiement
 
-- **Utilisez le même `Name`** pour tous les nœuds d'un cluster - cela détermine les noms des ressources Pulse partagées
-- **Utilisez la même instance Redis** pour la coordination de l'état
-- **Déployer derrière un équilibreur de charge** pour les connexions des clients - tous les nœuds servent un état identique
-- **Utiliser le magasin MongoDB** en production pour la persistance à travers les redémarrages (le magasin en mémoire perd les enregistrements au redémarrage)
+- **Utilisez le même `Name`** pour tous les nœuds d'un cluster : cela détermine les noms de ressources Pulse partagées.
+- **Pointez vers la même instance Redis** pour la coordination de l'État
+- **Déployer derrière un équilibreur de charge** pour les connexions client : tous les nœuds servent un état identique
+- **Utilisez le magasin MongoDB** en production pour la persistance après les redémarrages (le magasin en mémoire perd les enregistrements au redémarrage)
 
 ### Surveillance de la santé
 
-- **Définissez un `PingInterval`** approprié en fonction de vos exigences en matière de latence (par défaut : 10s). Des valeurs plus faibles détectent les défaillances plus rapidement mais augmentent le trafic Redis.
-- **Ajustez `MissedPingThreshold`** pour équilibrer les faux positifs et la vitesse de détection (par défaut : 3). Le seuil de staleness est `(threshold + 1) × interval`.
-- **Surveillez l'état de santé** via les métriques ou les journaux - les ensembles d'outils en mauvaise santé provoquent des erreurs immédiates `service_unavailable` plutôt que des dépassements de délai
+- **Définissez le `PingInterval`** approprié en fonction de vos exigences de latence (par défaut : 10 s). Les valeurs inférieures détectent les pannes plus rapidement mais augmentent le trafic Redis.
+- **Réglez `MissedPingThreshold`** pour équilibrer entre les faux positifs et la vitesse de détection (par défaut : 3). Le seuil d'obsolescence est `(threshold + 1) × interval`.
+- **Surveillez l'état de santé** via des métriques ou des journaux : des ensembles d'outils malsains provoquent des erreurs `service_unavailable` immédiates plutôt que des délais d'attente.
 
 ### Mise à l'échelle
 
-- **Ajouter des nœuds** pour gérer plus de connexions gRPC - chaque nœud peut répondre à n'importe quelle demande
-- **Les nœuds partagent le travail** via les téléscripteurs distribués par Pulse - un seul nœud interroge chaque ensemble d'outils à la fois
-- **Pas de sessions collantes** requises - les flux de résultats utilisent Redis pour la livraison entre nœuds, de sorte qu'un appel d'outil peut être initié sur un nœud et achevé sur un autre
+- **Ajoutez des nœuds** pour gérer davantage de connexions gRPC : chaque nœud peut répondre à n'importe quelle requête.
+- **Les nœuds partagent le travail** via les tickers distribués Pulse : un seul nœud envoie une requête ping à chaque ensemble d'outils à la fois.
+- **Aucune session persistante** n'est requise : les flux de résultats utilisent Redis pour la livraison entre nœuds, de sorte qu'un appel d'outil peut être lancé sur un nœud et terminé sur un autre.
 
 ## Prochaines étapes
 
-- Découvrez les [Toolsets](./toolsets/) pour définir les outils
-- Explorer [Production](./production/) pour les modèles de déploiement
-- Découvrez [Composition de l'agent](./agent-composition/) pour le partage d'outils entre agents
+- En savoir plus sur les [Ensembles d'outils](./toolsets/) pour définir des outils
+- Explorez [Production](./production/) pour les modèles de déploiement
+- En savoir plus sur la [Composition d'agent](./agent-composition/) pour le partage d'outils entre agents

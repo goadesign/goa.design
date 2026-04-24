@@ -32,7 +32,7 @@ aliases:
 
 ### MCP ツールセット
 
-`Toolset(FromMCP(service, suite))` で宣言し、`Use(AssistantSuite)` で参照します。
+`Toolset(FromMCP(service, suite))` は Goa-backed MCP suite 用、`Toolset("name", FromExternalMCP(service, suite), func() { ... })` はインライン tool schema を持つ外部 MCP server 用です。
 
 - 生成される登録は `DecodeInExecutor=true` を設定し、生の JSON が MCP エクゼキュータへそのまま渡されます
 - MCP エクゼキュータは自身のコーデックでデコードします
@@ -81,28 +81,35 @@ Tool("summarize", "Summarize multiple documents", func() {
 インライン実装の場合は、エクゼキュータのロジックを直接記述します：
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
         args, _ := specs.UnmarshalSummarizePayload(call.Payload)
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: &specs.SummarizeResult{Summary: summary},
-        }, nil
+        }), nil
     }
-    return nil, fmt.Errorf("unknown tool: %s", call.Name)
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
+        Error: planner.NewToolError("unknown tool"),
+    }), nil
 }
 ```
 
 ### バウンデッドなツール結果
 
-一部のツールは、巨大なリスト・グラフ・時系列ウィンドウなどを返すのが自然です。これらを **bounded view（バウンデッド・ビュー）** としてマークすると、トリミングはサービス側が責任を持ちつつ、ランタイムがそのコントラクトを強制し可視化できます。
+一部の tool は、大きな list、graph、time-series window を返すのが自然です。これらを **bounded view** としてマークすると、trim は service が責任を持ったまま、runtime が contract を強制し表面化できます。
 
-#### agent.Bounds のコントラクト
+#### agent.Bounds contract
 
-`agent.Bounds` は、ツール結果が元のデータセットに対してどのように「境界付け（bounded）」されたかを記述する、小さな（プロバイダ非依存の）コントラクトです：
+`agent.Bounds` は、tool result が underlying data set 全体に対してどのように bounded されたかを表す、小さな provider-agnostic contract です:
 
 ```go
 type Bounds struct {
@@ -114,128 +121,118 @@ type Bounds struct {
 ```
 
 | フィールド | 説明 |
-|-----------|------|
-| `Returned` | 結果に実際に含まれている項目数 |
-| `Total` | 切り詰め前の総数（ベストエフォート、未知なら nil） |
-| `Truncated` | 何らかの上限（ページング、深さ制限、サイズ制限など）が適用された場合に true |
-| `RefinementHint` | 結果が切り詰められたときに、クエリを絞り込むための人間可読なガイダンス（例：「結果を減らすために日付フィルタを追加する」） |
+|-------|-------------|
+| `Returned` | result に実際に含まれる item 数 |
+| `Total` | truncation 前の total item 数の best-effort 値 (不明なら nil) |
+| `Truncated` | pagination、depth limit、size limit など何らかの cap が適用された場合 true |
+| `RefinementHint` | result が truncated のとき、query を絞るための人間可読な案内 |
 
-#### トリミングはサービスの責務
+#### trim は service の責務
 
-ランタイムはサブセット作成や切り詰めを自動で行いません。**サービス側が以下を責任として担います：**
+runtime は subset や truncation を自分では計算しません。**service は次を担います**:
 
-1. **切り詰めロジックの適用**：ページネーション、件数上限、深さ上限、時間窓
-2. **bounds メタデータの設定**：`Returned` / `Total` / `Truncated` を正確に設定する
-3. **refinement hints の提供**：結果が切り詰められたときに、ユーザ / モデルがクエリを狭める方法を案内する
+1. **truncation logic の適用**: pagination、result limit、depth cap、time window
+2. **runtime bounds metadata の populate**: `planner.ToolResult.Bounds` を設定する
+3. **refinement hint の提供**: result が truncated のとき、user/model に query の絞り方を案内する
 
-この設計により、切り詰めロジックをドメイン知識のある場所（サービス）に置きつつ、ランタイム・プランナー・UI が共通で扱える統一コントラクトが得られます。
+この設計により、truncation logic を domain knowledge がある service に置いたまま、runtime、planner、UI が消費できる統一 contract を提供できます。
 
-#### バウンデッドツールの宣言
+#### bounded tool を宣言する
 
-`Tool` 定義内で DSL ヘルパ `BoundedResult()` を使います：
+`Tool` 定義内で DSL helper `BoundedResult()` を使います:
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("status", String, "Filter by status", func() {
-            Enum("online", "offline", "unknown")
-        })
-        Attribute("limit", Int, "Maximum results", func() {
-            Default(50)
-            Maximum(500)
-        })
+        Attribute("cursor", String, "Opaque pagination cursor")
         Required("site_id")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "Matching devices")
-        Attribute("returned", Int, "Count of returned devices")
-        Attribute("total", Int, "Total matching devices")
-        Attribute("truncated", Boolean, "Results were capped")
-        Attribute("refinement_hint", String, "How to narrow results")
-        Required("devices", "returned", "truncated")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
     BindTo("DeviceService", "ListDevices")
 })
 ```
 
 #### コード生成
 
-ツールを `BoundedResult()` でマークすると：
+tool が `BoundedResult()` でマークされると:
 
-- 生成されるツール仕様に `BoundedResult: true` が含まれます
-- 生成された結果型が `ResultBounds()` を通じて `agent.BoundedResult` インタフェースを実装します：
+- 生成 tool spec に `tools.ToolSpec.Bounds` が含まれます
+- 生成 JSON result schema には正規 bounded field (`returned`, `total`, `truncated`, `refinement_hint`, optional `next_cursor`) が含まれます
+- semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
+
+method-backed `BindTo` tool では、生成 executor が runtime projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。
 
 ```go
-// Generated interface implementation
-type ListDevicesResult struct {
-    Devices        []*Device
-    Returned       int
-    Total          *int
-    Truncated      bool
-    RefinementHint string
-}
-
-func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
-    return &agent.Bounds{
-        Returned:       r.Returned,
-        Total:          r.Total,
-        Truncated:      r.Truncated,
-        RefinementHint: r.RefinementHint,
-    }
+spec.Bounds = &tools.BoundsSpec{
+    Paging: &tools.PagingSpec{
+        CursorField:     "cursor",
+        NextCursorField: "next_cursor",
+    },
 }
 ```
 
-#### バウンデッドツールの実装
+#### bounded tool を実装する
 
-サービスが切り詰めを実装し、bounds メタデータを設定します：
+bounded tool は強い contract です。service は truncation を実装し、すべての successful path で bounds metadata を populate します。
+
+**Contract:**
+
+- `Bounds.Returned` と `Bounds.Truncated` は successful bounded tool result で常に設定する必要があります。
+- `Bounds.Total`、`Bounds.NextCursor`、`Bounds.RefinementHint` は optional で、分かる場合だけ設定します。
+
+executor は truncation を実装し、bounds metadata を populate します:
 
 ```go
-func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) (*ListDevicesResult, error) {
-    // Query with limit + 1 to detect truncation
-    devices, err := s.repo.QueryDevices(ctx, p.SiteID, p.Status, p.Limit+1)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+    if err != nil {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("invalid payload"),
+        }), nil
+    }
+
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
     if err != nil {
         return nil, err
     }
-    
-    // Determine if results were truncated
-    truncated := len(devices) > p.Limit
-    if truncated {
-        devices = devices[:p.Limit] // Trim to requested limit
-    }
-    
-    // Get total count (optional, may be expensive)
-    total, _ := s.repo.CountDevices(ctx, p.SiteID, p.Status)
-    
-    // Build refinement hint when truncated
-    var hint string
-    if truncated {
-        hint = "Add a status filter or reduce the site scope to see fewer results"
-    }
-    
-    return &ListDevicesResult{
-        Devices:        devices,
-        Returned:       len(devices),
-        Total:          &total,
-        Truncated:      truncated,
-        RefinementHint: hint,
-    }, nil
+
+    return runtime.Executed(&planner.ToolResult{
+        Name: call.Name,
+        Result: &ListDevicesResult{
+            Devices: devices,
+        },
+        Bounds: &agent.Bounds{
+            Returned:       len(devices),
+            Total:          ptr(total),
+            Truncated:      truncated,
+            NextCursor:     nextCursor,
+            RefinementHint: "Add a status filter or reduce the site scope to see fewer results",
+        },
+    }), nil
 }
 ```
 
-#### ランタイムの動作
+#### Runtime behavior
 
-バウンデッドツールが実行されると：
+bounded tool が実行されると:
 
-1. ランタイムが結果をデコードし、`agent.BoundedResult` を実装しているか確認します
-2. 実装していれば `ResultBounds()` で bounds メタデータを抽出します
-3. bounds は `planner.ToolResult.Bounds` に付与されます
-4. ストリーム購読者やファイナライザは、UI 表示・ログ・ポリシー判断などに bounds を利用できます
+1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
+2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
+3. bounds は `planner.ToolResult.Bounds` に付いたままです
+4. stream subscriber と finalizer は UI display、logging、policy decision に bounds を使えます
 
 ```go
 // In a stream subscriber
-func handleToolEnd(event *stream.ToolEnd) {
+func handleToolEnd(event *stream.ToolEndEvent) {
     if event.Bounds != nil && event.Bounds.Truncated {
         log.Printf("Tool %s returned %d of %d results (truncated)",
             event.ToolName, event.Bounds.Returned, *event.Bounds.Total)
@@ -246,20 +243,20 @@ func handleToolEnd(event *stream.ToolEnd) {
 }
 ```
 
-#### BoundedResult を使うべきとき
+#### BoundedResult を使う場面
 
-`BoundedResult()` は次のようなツールに適しています：
+`BoundedResult()` は次のような tool に使います:
 
-- ページングされたリストを返す（デバイス、ユーザ、レコード、ログ）
-- 件数上限付きで巨大なデータセットを検索する
-- 入れ子構造（グラフ、木）に深さ / サイズ上限を適用する
-- 時間窓のデータを返す（メトリクス、イベント）
+- paginated list を返す (device、user、record、log)
+- result limit 付きで大きな dataset を query する
+- nested structure (graph/tree) に depth/size cap を適用する
+- time-windowed data (metric/event) を返す
 
-この bounded コントラクトは次を助けます：
+bounded contract は次を助けます:
 
-- **モデル**：結果が不完全である可能性を理解し、絞り込み要求ができる
-- **UI**：切り詰めインジケータやページング操作を表示できる
-- **ポリシー**：サイズ上限を強制し、暴走クエリを検出できる
+- **Model** は result が不完全かもしれないことを理解し、refinement を要求できます
+- **UI** は truncation indicator や pagination control を表示できます
+- **Policy** は size limit を強制し、runaway query を検出できます
 
 ### 注入フィールド（Injected Fields）
 
@@ -369,9 +366,16 @@ toolset には、型付きの結果マテリアライザを登録できます。
 ```go
 reg := runtime.ToolsetRegistration{
     Name: "chat.ask_question",
-    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
-        return nil, fmt.Errorf("externally provided")
-    },
+    Execute: runtime.ToolCallExecutorFunc(func(
+        ctx context.Context,
+        meta *runtime.ToolCallMeta,
+        call *planner.ToolRequest,
+    ) (*runtime.ToolExecutionResult, error) {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("externally provided"),
+        }), nil
+    }),
     Specs: []tools.ToolSpec{specs.SpecAskQuestion},
     ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
         // 決定論的な server-only sidecar をここで付与します。
@@ -394,42 +398,53 @@ reg := runtime.ToolsetRegistration{
 
 ## エクゼキュータ・ファースト（Executor-First）モデル
 
-生成されるサービスツールセットは、単一の汎用コンストラクタを公開します：
+生成された service toolset は、エージェントが使う toolset ごとに `runtime.ToolCallExecutor` 実装を受け取る registration helper を公開します:
 
 ```go
-New<Agent><Toolset>ToolsetRegistration(exec runtime.ToolCallExecutor)
+if err := chat.RegisterUsedToolsets(ctx, rt,
+    chat.WithSearchExecutor(searchExec),
+    chat.WithProfilesExecutor(profileExec),
+); err != nil {
+    return err
+}
 ```
 
-アプリケーションは、消費するツールセットごとにエクゼキュータ実装を登録します。エクゼキュータは、ツールの実行方法（サービスクライアント、MCP、ネストしたエージェントなど）を決め、`ToolCallMeta` で呼び出し単位の明示的なメタデータを受け取ります。
+アプリケーションは、消費する local toolset ごとに executor 実装を登録します。executor は tool の実行方法 (service client、custom function、registry caller など) を決め、`ToolCallMeta` で呼び出し単位の明示的な metadata を受け取ります。
 
 **エクゼキュータ例：**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
         args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
         if err != nil {
-            return planner.ToolResult{
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
                 Error: planner.NewToolError("invalid payload"),
-            }, nil
+            }), nil
         }
-        
+
         // Optional transforms if emitted by codegen
         mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
-            return planner.ToolResult{
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
                 Error: planner.ToolErrorFromError(err),
-            }, nil
+            }), nil
         }
         tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
-        return planner.ToolResult{Payload: tr}, nil
-        
+        return runtime.Executed(&planner.ToolResult{
+            Name:   call.Name,
+            Result: tr,
+        }), nil
+
     default:
-        return planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
             Error: planner.NewToolError("unknown tool"),
-        }, nil
+        }), nil
     }
 }
 ```
@@ -455,18 +470,18 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
 すべてのツールエクゼキュータは、`ToolCallMeta` を明示パラメータとして受け取ります：
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     // Access run context directly from meta
-    log.Printf("Executing tool in run %s, session %s, turn %s", 
+    log.Printf("Executing tool in run %s, session %s, turn %s",
         meta.RunID, meta.SessionID, meta.TurnID)
-    
+
     // Use ToolCallID for correlation
     span := tracer.StartSpan("tool.execute", trace.WithAttributes(
         attribute.String("tool.call_id", meta.ToolCallID),
         attribute.String("tool.parent_call_id", meta.ParentToolCallID),
     ))
     defer span.End()
-    
+
     // ... tool implementation
 }
 ```
@@ -621,10 +636,10 @@ type ToolResult struct {
 **エクゼキュータ例：**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     args, err := spec.UnmarshalUpsertPayload(call.Payload)
     if err != nil {
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name: call.Name,
             Error: planner.NewToolError("invalid payload"),
             RetryHint: &planner.RetryHint{
@@ -633,18 +648,18 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
                 RestrictToTool: true,
                 Message:       "Payload did not match the expected schema.",
             },
-        }, nil
+        }), nil
     }
 
     res, err := client.Upsert(ctx, args)
     if err != nil {
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:  call.Name,
             Error: planner.ToolErrorFromError(err),
-        }, nil
+        }), nil
     }
 
-    return &planner.ToolResult{Name: call.Name, Result: res}, nil
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: res}), nil
 }
 ```
 
@@ -728,30 +743,31 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 ここで `toolID` は、生成された specs もしくは agenttools パッケージの型付き `tools.Ident` 定数です。
 
-### Server Data と UI アーティファクト
+### Server Data
 
-ツールによっては、UI や監査では有用でもモデルプロバイダへ渡すには重すぎる **リッチな観測者向け出力**（完全な時系列、トポロジーグラフ、大規模な結果セットなど）を返したい場合があります。Goa-AI はモデル向けでない出力を **server-data** としてモデル化し、任意の server-data は **UI アーティファクト**に投影できます。
+一部の tool は、UI や audit system には有用でも model provider には重すぎる rich observer-facing output (完全な time series、topology graph、大きな result set、evidence reference など) を返す必要があります。Goa-AI は、その model 向けではない出力を **server-data** としてモデル化します。
 
-#### モデル向け結果と server-data
+#### Model-facing result と Server Data
 
-重要なのは「どのデータがどこへ流れるか」です：
+重要なのは、どの data がどこへ流れるかです:
 
-| データ種別 | モデルへ送る | 保存/ストリーム | 目的 |
-|----------|-------------|----------------|------|
-| **モデル向け結果** | ✓ | ✓ | LLM が推論するための bounded な要約 |
-| **任意 server-data（UI アーティファクト）** | ✗ | ✓ | UI、監査、下流コンシューマのための完全忠実度データ |
-| **always-on server-data** | ✗ | ✓ | 永続化/テレメトリのためのサーバー専用メタデータ（任意 UI 出力として扱わない） |
+| Data Type | Model へ送る | 保存/stream | 目的 |
+|-----------|---------------|-----------------|---------|
+| **Model-facing result** | ✓ | ✓ | LLM が推論する bounded summary |
+| **Timeline server-data** | ✗ | ✓ | UI、timeline、chart、map、table 向け observer-facing data |
+| **Evidence server-data** | ✗ | ✓ | provenance reference または audit evidence |
+| **Internal server-data** | ✗ | consumer に依存 | tool-composition attachment または server-only metadata |
 
-この分離により：
+この分離により:
 
-- モデルのコンテキストを bounded に保てる
-- LLM プロンプトを肥大化させずにリッチな可視化（チャート、グラフ、表）を提供できる
-- モデルが見る必要のない provenance / 監査データを付けられる
-- モデルは要約で作業しながら、大きなデータセットを UI へストリームできる
+- model context window を bounded で focused に保てます
+- LLM prompt を肥大化させずに rich visualization (chart、graph、table) を提供できます
+- model が見る必要のない provenance/audit data を付けられます
+- model は summary で作業しつつ、large dataset を UI へ stream できます
 
-#### DSL での ServerData 宣言
+#### DSL で ServerData を宣言する
 
-`Tool` 定義内で `ServerData(kind, schema)` を使います：
+`Tool` 定義内で `ServerData(kind, schema)` を使います:
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -774,38 +790,51 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
+    }, func() {
+        AudienceTimeline()
     })
-    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
-`kind`（例：`"atlas.time_series"`）は server-data の種類を識別し、UI が適切なレンダラへディスパッチするために使います。
+`kind` parameter (例: `"atlas.time_series"`) は server-data kind を識別し、UI が適切な renderer に dispatch できるようにします。audience は routing intent を宣言します:
 
-#### 生成される specs とヘルパ
+- `AudienceTimeline()` は observer-facing timeline/UI payload 用です。
+- `AudienceEvidence()` は provenance または audit evidence 用です。
+- `AudienceInternal()` は server-only composition payload 用です。
 
-specs パッケージでは、各 `tools.ToolSpec` が次を含みます：
+`BindTo(...)` tool で server-data payload を bound service method result の field から project する場合は `FromMethodResultField("field_name")` を使います。
 
-- `Payload tools.TypeSpec`：入力スキーマ
-- `Result tools.TypeSpec`：モデル向け出力スキーマ
-- `ServerData []*tools.ServerDataSpec`：結果に付随して発行される server-only ペイロード
-- `ServerDataDefault string`：任意 server-data の既定発行モード（`"on"`/`"off"`）
+#### 生成 spec と helper
 
-任意 server-data のエントリはツール spec に JSON codec を含み、コンシューマが UI アーティファクトへ投影できます。
+specs package では、各 `tools.ToolSpec` entry に次が含まれます:
 
-#### ランタイムでの利用パターン
+- `Payload tools.TypeSpec` – tool input schema
+- `Result tools.TypeSpec` – model-facing output schema
+- `ServerData []*tools.ServerDataSpec` – result に付随して emitted される server-only payload
 
-**ツールエクゼキュータ側**では、任意 server-data から投影された UI アーティファクトを結果に付与します：
+server-data entry には生成 schema と codec が含まれるため、subscriber はそれらの canonical JSON bytes を model provider へ送らずに decode できます。
+
+#### Runtime usage patterns
+
+**tool executor 側**では、canonical server-data JSON を tool result に attach します:
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
-    
+
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
-        return &planner.ToolResult{Error: planner.ToolErrorFromError(err)}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
-    
+
     // Build bounded model-facing result
     result := &specs.GetTimeSeriesResult{
         Summary:  fmt.Sprintf("Retrieved %d data points from %s to %s", len(fullData.Points), args.StartTime, args.EndTime),
@@ -813,71 +842,69 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
         MinValue: fullData.Min,
         MaxValue: fullData.Max,
     }
-    
-    // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesServerData{
-        DataPoints: fullData.Points,
-        Metadata:   fullData.Metadata,
+
+    // Build full-fidelity server-data for UIs
+    // Generated server-data codecs are named from the tool and kind, for example:
+    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    if err != nil {
+        return nil, err
     }
 
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
         Name:   call.Name,
         Result: result,
-        Artifacts: []*planner.Artifact{
-            {
-                Kind:       "atlas.time_series",
-                Data:       artifact,
-                SourceTool: call.Name,
-            },
-        },
-    }, nil
+        ServerData: serverData,
+    }), nil
 }
 ```
 
-**ストリーム購読者や UI ハンドラ側**では、artifacts にアクセスします：
+method-backed tool は、生成 provider と result materializer を通じて server-data を attach することもできます。materializer は deterministic で、normal execution と externally provided-result await path の両方で実行されます:
 
 ```go
-func handleToolEnd(event *stream.ToolEnd) {
-    for _, artifact := range event.Artifacts {
-        switch artifact.Kind {
-        case "atlas.time_series":
-            renderTimeSeriesChart(artifact.Data)
-        case "atlas.topology":
-            renderTopologyGraph(artifact.Data)
+reg := runtime.ToolsetRegistration{
+    Name:  "orchestrator.metrics",
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        if len(result.ServerData) != 0 {
+            return nil
         }
-    }
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
 }
 ```
 
-#### Artifact の構造
-
-`planner.Artifact` は次を運びます：
+**stream subscriber や UI handler 側**では、tool end event または run log から `ServerData` を読み、宣言 kind 用の生成 codec で decode します:
 
 ```go
-type Artifact struct {
-    Kind       string       // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
-    Data       any          // JSON-serializable payload
-    SourceTool tools.Ident  // Tool that produced this artifact
-    RunLink    *run.Handle  // Link to nested agent run (for agent-as-tool)
+func handleToolEnd(event stream.ToolEnd) {
+    if len(event.Data.ServerData) == 0 {
+        return
+    }
+    data, err := decodeTimeSeriesServerData(event.Data.ServerData)
+    if err != nil {
+        log.Printf("invalid server-data: %v", err)
+        return
+    }
+    renderTimeSeriesChart(data.DataPoints)
 }
 ```
 
-#### ServerData / artifacts を使うべきとき
+#### ServerData を使う場面
 
-次の場合に server-data を使います：
+server-data は次の場合に使います:
 
-- モデルのコンテキストには大きすぎるデータ（時系列、ログ、大きな表）を結果として扱いたい
-- UI が可視化のために構造化データ（チャート、グラフ、地図）を必要とする
-- モデルが推論するデータと、ユーザが見るデータを分離したい
-- モデルは要約で作業しつつ、下流システムには完全忠実度が必要
+- tool result に model context には大きすぎる data (time series、log、大きな table) が含まれる
+- UI が visualization (chart、graph、map) のために structured data を必要とする
+- model が推論する data と user が見る data を分けたい
+- downstream system が full-fidelity data を必要とし、model は summary で十分な場合
 
-永続化専用のメタデータを UI/観測者のトグルに関係なく必ず発行したい場合は **always-on server-data** を使います。
+次の場合は server-data を避けます:
 
-次の場合は server-data を避けます：
-
-- 完全な結果がモデルコンテキストに収まる
-- 完全データを必要とする UI / 下流コンシューマが存在しない
-- bounded な結果だけで必要十分
+- 完全な result が model context に無理なく収まる
+- 完全 data を必要とする UI/downstream consumer がない
+- bounded result だけで必要な情報をすでに含んでいる
 
 ---
 

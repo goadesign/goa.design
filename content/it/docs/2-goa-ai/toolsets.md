@@ -79,19 +79,27 @@ Tool("summarize", "Summarize multiple documents", func() {
 Per le implementazioni inline, si scrive direttamente la logica dell'esecutore:
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
         args, _ := specs.UnmarshalSummarizePayload(call.Payload)
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: &specs.SummarizeResult{Summary: summary},
-        }, nil
+        }), nil
     }
-    return nil, fmt.Errorf("unknown tool: %s", call.Name)
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
+        Error: planner.NewToolError("unknown tool"),
+    }), nil
 }
+```
 
 ### Bounded Tool Results
 
@@ -370,9 +378,16 @@ I toolset possono registrare un materializzatore di risultati tipizzato:
 ```go
 reg := runtime.ToolsetRegistration{
     Name: "chat.ask_question",
-    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
-        return nil, fmt.Errorf("externally provided")
-    },
+    Execute: runtime.ToolCallExecutorFunc(func(
+        ctx context.Context,
+        meta *runtime.ToolCallMeta,
+        call *planner.ToolRequest,
+    ) (*runtime.ToolExecutionResult, error) {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("externally provided"),
+        }), nil
+    }),
     Specs: []tools.ToolSpec{specs.SpecAskQuestion},
     ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
         // Allegare qui sidecar deterministici solo lato server.
@@ -406,31 +421,37 @@ Applications register an executor implementation for each consumed toolset. The 
 **Executor Example:**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
         args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
-        if err := nil {
-            return planner.ToolResult{
-                Errore: planner.NewToolError("payload non valido"),
-            }, nil
+        if err != nil {
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
+                Error: planner.NewToolError("invalid payload"),
+            }), nil
         }
         
         // Trasformazioni opzionali se emesse da codegen
         mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
         methodRes, err := client.Upsert(ctx, mp)
-        se err != nil {
-            return planner.ToolResult{
-                Errore: planner.ToolErrorFromError(err),
-            }, nil
+        if err != nil {
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
+                Error: planner.ToolErrorFromError(err),
+            }), nil
         }
         tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
-        return planner.ToolResult{Payload: tr}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:   call.Name,
+            Result: tr,
+        }), nil
         
-    predefinito:
-        return planner.ToolResult{
-            Errore: planner.NewToolError("strumento sconosciuto"),
-        }, nil
+    default:
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("unknown tool"),
+        }), nil
     }
 }
 ```
@@ -456,7 +477,7 @@ Tool executors receive explicit per-call metadata via `ToolCallMeta` rather than
 All tool executors receive `ToolCallMeta` as an explicit parameter:
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     // Accedere al contesto di esecuzione direttamente da meta
     log.Printf("Esecuzione dello strumento nella corsa %s, sessione %s, turno %s",
         meta.RunID, meta.SessionID, meta.TurnID)
@@ -619,30 +640,30 @@ The recommended pattern:
 **Example Executor:**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     args, err := spec.UnmarshalUpsertPayload(call.Payload)
-    se err := nil {
-        return &planner.ToolResult{
-            Nome: call.Name,
-            Errore: planner.NewToolError("payload non valido"),
+    if err != nil {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("invalid payload"),
             RetryHint: &planner.RetryHint{
-                Motivo: planner.RetryReasonInvalidArguments,
-                Strumento: call.Name,
+                Reason:         planner.RetryReasonInvalidArguments,
+                Tool:           call.Name,
                 RestrictToTool: true,
-                Messaggio:       "Il payload non corrisponde allo schema previsto",
+                Message:        "Payload did not match the expected schema.",
             },
-        }, nil
+        }), nil
     }
 
     res, err := client.Upsert(ctx, args)
-    se err != nil {
-        restituisce &planner.ToolResult{
-            Nome: call.Name,
-            Errore: planner.ToolErrorFromError(err),
-        }, nil
+    if err != nil {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
 
-    return &planner.ToolResult{Name: call.Name, Result: res}, nil
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: res}), nil
 }
 ```
 
@@ -768,12 +789,22 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
+    }, func() {
+        AudienceTimeline()
     })
-    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
 Il parametro `kind` (ad esempio `"atlas.time_series"`) identifica il tipo di server-data cosi le UI possono instradare il renderer corretto.
+L'audience dichiara l'intento di routing:
+
+- `AudienceTimeline()` per payload orientati a osservatori in timeline/UI.
+- `AudienceEvidence()` per provenienza o evidenza di audit.
+- `AudienceInternal()` per payload di composizione solo lato server.
+
+Usa `FromMethodResultField("field_name")` con strumenti `BindTo(...)` quando
+il payload server-data viene proiettato da un campo del risultato del metodo di
+servizio collegato.
 
 #### Specs e helper generati
 
@@ -781,22 +812,29 @@ Nei package specs, ogni entry `tools.ToolSpec` include:
 - `Payload tools.TypeSpec` – schema di input del tool
 - `Result tools.TypeSpec` – schema di output orientato al modello
 - `ServerData []*tools.ServerDataSpec` – payload solo-server emessi insieme al risultato
-- `ServerDataDefault string` – modalita di emissione predefinita per server-data opzionale (`"on"`/`"off"`)
 
-Le entry di server-data opzionale includono un codec JSON nel tool spec e possono essere proiettate in artefatti UI dai consumer.
+Le entry server-data includono schemi e codec generati, cosi i subscriber
+possono decodificare byte JSON canonici senza inviarli ai provider di modelli.
 
 #### Pattern d'uso runtime
 
-**Negli esecutori dei tool**, allega artefatti UI (proiettati da server-data opzionale) ai risultati:
+**Negli esecutori dei tool**, allega JSON canonico server-data al risultato:
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
 
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
-        return &planner.ToolResult{Error: planner.ToolErrorFromError(err)}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
 
     // Build bounded model-facing result
@@ -807,57 +845,61 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
         MaxValue: fullData.Max,
     }
 
-    // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesServerData{
-        DataPoints: fullData.Points,
-        Metadata:   fullData.Metadata,
+    // Build full-fidelity server-data for UIs
+    // Generated server-data codecs are named from the tool and kind, for example:
+    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    if err != nil {
+        return nil, err
     }
 
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
         Name:   call.Name,
         Result: result,
-        Artifacts: []*planner.Artifact{
-            {
-                Kind:       "atlas.time_series",
-                Data:       artifact,
-                SourceTool: call.Name,
-            },
-        },
-    }, nil
+        ServerData: serverData,
+    }), nil
 }
 ```
 
-**Nei subscriber stream o handler UI**, accedi agli artefatti:
+I tool basati su metodi possono anche allegare server-data tramite provider
+generati e result materializer. Un materializer e deterministico e viene
+eseguito sia nel percorso normale sia nel percorso await con risultato fornito
+dall'esterno:
 
 ```go
-func handleToolEnd(event *stream.ToolEnd) {
-    for _, artifact := range event.Artifacts {
-        switch artifact.Kind {
-        case "atlas.time_series":
-            renderTimeSeriesChart(artifact.Data)
-        case "atlas.topology":
-            renderTopologyGraph(artifact.Data)
+reg := runtime.ToolsetRegistration{
+    Name:  "orchestrator.metrics",
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        if len(result.ServerData) != 0 {
+            return nil
         }
-    }
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
 }
 ```
 
-#### Struttura dell'artefatto
-
-Il tipo `planner.Artifact` contiene:
+**Nei subscriber stream o handler UI**, leggi `ServerData` dagli eventi tool end
+o dai run log e decodificalo con i codec generati per i kind dichiarati:
 
 ```go
-type Artifact struct {
-    Kind       string      // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
-    Data       any         // JSON-serializable payload
-    SourceTool tools.Ident // Tool that produced this artifact
-    RunLink    *run.Handle // Link to nested agent run (for agent-as-tool)
+func handleToolEnd(event stream.ToolEnd) {
+    if len(event.Data.ServerData) == 0 {
+        return
+    }
+    data, err := decodeTimeSeriesServerData(event.Data.ServerData)
+    if err != nil {
+        log.Printf("invalid server-data: %v", err)
+        return
+    }
+    renderTimeSeriesChart(data.DataPoints)
 }
 ```
 
-#### Quando usare ServerData / artefatti
+#### Quando usare ServerData
 
-Utilizzare server-data/artefatti quando:
+Utilizzare server-data quando:
 - I risultati dello strumento includono dati troppo grandi per il contesto del modello (serie temporali, log, tabelle di grandi dimensioni)
 - Le interfacce utente hanno bisogno di dati strutturati per la visualizzazione (grafici, diagrammi, mappe)
 - Si vuole separare ciò che il modello ragiona da ciò che gli utenti vedono

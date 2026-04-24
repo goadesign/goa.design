@@ -81,18 +81,25 @@ Tool("summarize", "Summarize multiple documents", func() {
 For inline implementations, you write the executor logic directly:
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
         args, _ := specs.UnmarshalSummarizePayload(call.Payload)
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: &specs.SummarizeResult{Summary: summary},
-        }, nil
+        }), nil
     }
-    return nil, fmt.Errorf("unknown tool: %s", call.Name)
+    return runtime.Executed(&planner.ToolResult{
+        Name:  call.Name,
+        Error: planner.NewToolError("unknown tool"),
+    }), nil
 }
 
 ```
@@ -185,16 +192,25 @@ Bounded tools are a hard contract: services implement truncation and populate bo
 - `Bounds.Returned` and `Bounds.Truncated` must always be set on successful bounded tool results.
 - `Bounds.Total`, `Bounds.NextCursor`, and `Bounds.RefinementHint` are optional and should only be set when known.
 
-Services implement truncation and populate bounds metadata:
+Executors implement truncation and populate bounds metadata:
 
 ```go
-func (s *DeviceToolset) ListDevices(ctx context.Context, p *ListDevicesPayload) (*planner.ToolResult, error) {
-    devices, total, nextCursor, truncated, err := s.repo.QueryDevices(ctx, p.SiteID, p.Cursor)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+    if err != nil {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("invalid payload"),
+        }), nil
+    }
+
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
     if err != nil {
         return nil, err
     }
 
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
+        Name: call.Name,
         Result: &ListDevicesResult{
             Devices: devices,
         },
@@ -205,7 +221,7 @@ func (s *DeviceToolset) ListDevices(ctx context.Context, p *ListDevicesPayload) 
             NextCursor:     nextCursor,
             RefinementHint: "Add a status filter or reduce the site scope to see fewer results",
         },
-    }, nil
+    }), nil
 }
 ```
 
@@ -354,9 +370,16 @@ Toolsets may register a typed result materializer:
 ```go
 reg := runtime.ToolsetRegistration{
     Name: "chat.ask_question",
-    Execute: func(context.Context, *planner.ToolRequest) (*planner.ToolResult, error) {
-        return nil, fmt.Errorf("externally provided")
-    },
+    Execute: runtime.ToolCallExecutorFunc(func(
+        ctx context.Context,
+        meta *runtime.ToolCallMeta,
+        call *planner.ToolRequest,
+    ) (*runtime.ToolExecutionResult, error) {
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.NewToolError("externally provided"),
+        }), nil
+    }),
     Specs: []tools.ToolSpec{specs.SpecAskQuestion},
     ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
         // Attach deterministic, server-only sidecars here.
@@ -379,42 +402,57 @@ This is the canonical place to derive observer-only sidecars from the original t
 
 ## Executor-First Model
 
-Generated service toolsets expose a single, generic constructor:
+Generated service toolsets expose registration helpers that accept
+`runtime.ToolCallExecutor` implementations for the toolsets an agent uses.
 
 ```go
-New<Agent><Toolset>ToolsetRegistration(exec runtime.ToolCallExecutor)
+if err := chat.RegisterUsedToolsets(ctx, rt,
+    chat.WithSearchExecutor(searchExec),
+    chat.WithProfilesExecutor(profileExec),
+); err != nil {
+    return err
+}
 ```
 
-Applications register an executor implementation for each consumed toolset. The executor decides how to run the tool (service client, MCP, nested agent, etc.) and receives explicit per-call metadata via `ToolCallMeta`.
+Applications register an executor implementation for each consumed local
+toolset. The executor decides how to run the tool (service client, custom
+function, registry caller, etc.) and receives explicit per-call metadata via
+`ToolCallMeta`.
 
 **Executor Example:**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
         args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
         if err != nil {
-            return planner.ToolResult{
+            return runtime.Executed(&planner.ToolResult{
+                Name: call.Name,
                 Error: planner.NewToolError("invalid payload"),
-            }, nil
+            }), nil
         }
         
         // Optional transforms if emitted by codegen
         mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
-            return planner.ToolResult{
+            return runtime.Executed(&planner.ToolResult{
+                Name:  call.Name,
                 Error: planner.ToolErrorFromError(err),
-            }, nil
+            }), nil
         }
         tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
-        return planner.ToolResult{Payload: tr}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:   call.Name,
+            Result: tr,
+        }), nil
         
     default:
-        return planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
             Error: planner.NewToolError("unknown tool"),
-        }, nil
+        }), nil
     }
 }
 ```
@@ -440,7 +478,7 @@ Tool executors receive explicit per-call metadata via `ToolCallMeta` rather than
 All tool executors receive `ToolCallMeta` as an explicit parameter:
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     // Access run context directly from meta
     log.Printf("Executing tool in run %s, session %s, turn %s", 
         meta.RunID, meta.SessionID, meta.TurnID)
@@ -452,7 +490,8 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
     ))
     defer span.End()
     
-    // ... tool implementation
+    typedResult := buildTypedResult()
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: typedResult}), nil
 }
 ```
 
@@ -603,10 +642,10 @@ The recommended pattern:
 **Example Executor:**
 
 ```go
-func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRequest) (*planner.ToolResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
     args, err := spec.UnmarshalUpsertPayload(call.Payload)
     if err != nil {
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name: call.Name,
             Error: planner.NewToolError("invalid payload"),
             RetryHint: &planner.RetryHint{
@@ -615,18 +654,18 @@ func Execute(ctx context.Context, meta runtime.ToolCallMeta, call planner.ToolRe
                 RestrictToTool: true,
                 Message:       "Payload did not match the expected schema.",
             },
-        }, nil
+        }), nil
     }
 
     res, err := client.Upsert(ctx, args)
     if err != nil {
-        return &planner.ToolResult{
+        return runtime.Executed(&planner.ToolResult{
             Name:  call.Name,
             Error: planner.ToolErrorFromError(err),
-        }, nil
+        }), nil
     }
 
-    return &planner.ToolResult{Name: call.Name, Result: res}, nil
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: res}), nil
 }
 ```
 
@@ -707,9 +746,12 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
 
-### Server Data and UI Artifacts
+### Server Data
 
-Some tools need to return **rich observer-facing output** (full time series, topology graphs, large result sets) that is useful for UIs and audits but too heavy for model providers. Goa-AI models all non-model output as **server-data**. Optional server-data may be projected into **UI artifacts**.
+Some tools need to return rich observer-facing output - full time series,
+topology graphs, large result sets, evidence references - that is useful for UIs
+and audit systems but too heavy for model providers. Goa-AI models that
+non-model output as **server-data**.
 
 #### Model-Facing vs Server Data
 
@@ -718,8 +760,9 @@ The key distinction is what data flows where:
 | Data Type | Sent to Model | Stored/Streamed | Purpose |
 |-----------|---------------|-----------------|---------|
 | **Model-facing result** | ✓ | ✓ | Bounded summary the LLM reasons about |
-| **Optional server-data (UI artifacts)** | ✗ | ✓ | Full-fidelity data for UIs, audits, downstream consumers |
-| **Always server-data** | ✗ | ✓ | Server-only metadata for persistence/telemetry (never treated as optional UI output) |
+| **Timeline server-data** | ✗ | ✓ | Observer-facing data for UIs, timelines, charts, maps, and tables |
+| **Evidence server-data** | ✗ | ✓ | Provenance references or audit evidence |
+| **Internal server-data** | ✗ | Depends on consumer | Tool-composition attachments or server-only metadata |
 
 This separation lets you:
 - Keep model context windows bounded and focused
@@ -752,12 +795,21 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
+    }, func() {
+        AudienceTimeline()
     })
-    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
 The `kind` parameter (e.g., `"atlas.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
+The audience declares routing intent:
+
+- `AudienceTimeline()` for observer-facing timeline/UI payloads.
+- `AudienceEvidence()` for provenance or audit evidence.
+- `AudienceInternal()` for server-only composition payloads.
+
+Use `FromMethodResultField("field_name")` with `BindTo(...)` tools when the
+server-data payload is projected from a field on the bound service method result.
 
 #### Generated Specs and Helpers
 
@@ -765,22 +817,29 @@ In the specs packages, each `tools.ToolSpec` entry includes:
 - `Payload tools.TypeSpec` – tool input schema
 - `Result tools.TypeSpec` – model-facing output schema
 - `ServerData []*tools.ServerDataSpec` – server-only payloads emitted alongside the result
-- `ServerDataDefault string` – default emission mode for optional server-data ("on"/"off")
 
-Optional server-data entries include a JSON codec in the tool spec and are eligible for projection into UI artifacts by consumers.
+Server-data entries include generated schemas and codecs so subscribers can
+decode canonical JSON bytes without sending those bytes to model providers.
 
 #### Runtime Usage Patterns
 
-**In tool executors**, attach UI artifacts (projected from optional server-data) to results:
+**In tool executors**, attach canonical server-data JSON to the tool result:
 
 ```go
-func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*planner.ToolResult, error) {
+func (e *Executor) Execute(
+    ctx context.Context,
+    meta *runtime.ToolCallMeta,
+    call *planner.ToolRequest,
+) (*runtime.ToolExecutionResult, error) {
     args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
     
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
-        return &planner.ToolResult{Error: planner.ToolErrorFromError(err)}, nil
+        return runtime.Executed(&planner.ToolResult{
+            Name:  call.Name,
+            Error: planner.ToolErrorFromError(err),
+        }), nil
     }
     
     // Build bounded model-facing result
@@ -791,63 +850,64 @@ func (e *Executor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call
         MaxValue: fullData.Max,
     }
     
-    // Build full-fidelity artifact for UIs
-    artifact := &specs.GetTimeSeriesServerData{
-        DataPoints: fullData.Points,
-        Metadata:   fullData.Metadata,
+    // Build full-fidelity server-data for UIs
+    // Generated server-data codecs are named from the tool and kind, for example:
+    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    if err != nil {
+        return nil, err
     }
 
-    return &planner.ToolResult{
+    return runtime.Executed(&planner.ToolResult{
         Name:   call.Name,
         Result: result,
-        Artifacts: []*planner.Artifact{
-            {
-                Kind:       "atlas.time_series",
-                Data:       artifact,
-                SourceTool: call.Name,
-            },
-        },
-    }, nil
+        ServerData: serverData,
+    }), nil
 }
 ```
 
-**In stream subscribers or UI handlers**, access artifacts:
+Method-backed tools can also attach server-data through generated providers and
+result materializers. A materializer is deterministic and runs on both normal
+execution and externally provided-result await paths:
 
 ```go
-func handleToolEnd(event *stream.ToolEnd) {
-    for _, artifact := range event.Artifacts {
-        switch artifact.Kind {
-        case "atlas.time_series":
-            renderTimeSeriesChart(artifact.Data)
-        case "atlas.topology":
-            renderTopologyGraph(artifact.Data)
+reg := runtime.ToolsetRegistration{
+    Name:  "orchestrator.metrics",
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+        if len(result.ServerData) != 0 {
+            return nil
         }
-    }
+        result.ServerData = buildServerData(call, result)
+        return nil
+    },
 }
 ```
 
-#### Artifact Structure
-
-The `planner.Artifact` type carries:
+**In stream subscribers or UI handlers**, read `ServerData` from tool end events
+or run logs and decode it with the generated codecs for the declared kinds:
 
 ```go
-type Artifact struct {
-    Kind       string       // Logical kind (e.g., "atlas.time_series", "atlas.control_narrative")
-    Data       any          // JSON-serializable payload
-    SourceTool tools.Ident  // Tool that produced this artifact
-    RunLink    *run.Handle  // Link to nested agent run (for agent-as-tool)
+func handleToolEnd(event stream.ToolEnd) {
+    if len(event.Data.ServerData) == 0 {
+        return
+    }
+    data, err := decodeTimeSeriesServerData(event.Data.ServerData)
+    if err != nil {
+        log.Printf("invalid server-data: %v", err)
+        return
+    }
+    renderTimeSeriesChart(data.DataPoints)
 }
 ```
 
-#### When to Use ServerData / Artifacts
+#### When to Use ServerData
 
 Use server-data when:
 - Tool results include data too large for model context (time series, logs, large tables)
 - UIs need structured data for visualization (charts, graphs, maps)
 - You want to separate what the model reasons about from what users see
 - Downstream systems need full-fidelity data while the model works with summaries
-
-Use **always server-data** when you need persistence-only metadata that must be emitted regardless of UI/observer toggles.
 
 Avoid server-data when:
 - The full result fits comfortably in model context

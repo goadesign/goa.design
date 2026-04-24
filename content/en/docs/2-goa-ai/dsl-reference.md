@@ -32,7 +32,10 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Args`                                                  | Tool                     | Defines input parameter schema                                                                                     |
 | `Return`                                                | Tool, Completion         | Defines the model-visible result schema                                                                            |
 | `ServerData`                                            | Tool                     | Defines server-only data schema (never sent to model providers)                                                    |
-| `ServerDataDefault`                                     | Tool                     | Default emission for optional server-data when `server_data` is omitted or `"auto"`                                |
+| `FromMethodResultField`                                 | ServerData               | Projects server-data from a bound service method result field                                                     |
+| `AudienceTimeline`                                      | ServerData               | Marks server-data as timeline/UI eligible (default)                                                               |
+| `AudienceInternal`                                      | ServerData               | Marks server-data as an internal composition attachment                                                           |
+| `AudienceEvidence`                                      | ServerData               | Marks server-data as provenance or audit evidence                                                                 |
 | `BoundedResult`                                         | Tool                     | Declares a runtime-owned bounded-result contract; optional sub-DSL can declare paging cursor fields                |
 | `Cursor`                                                | BoundedResult            | Declares which payload field carries the paging cursor (optional)                                                  |
 | `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page cursor (optional)                                       |
@@ -605,7 +608,7 @@ Tool("search", "Search documents", func() {
 ### ServerData
 
 `ServerData(kind, val, args...)` defines typed server-only output emitted alongside a tool result. Server-data is never sent to model providers.
-Optional server-data is typically projected into observer-facing artifacts (for example, UI cards/charts) while keeping the model-facing result bounded and token-efficient. Always-on server-data is emitted/persisted server-side and must not be treated as optional observer output.
+Timeline server-data is typically projected into observer-facing UI cards, charts, tables, or maps while keeping the model-facing result bounded and token-efficient. Evidence and internal audiences let downstream consumers route provenance or composition-only data without relying on kind naming conventions.
 
 **Context**: Inside `Tool`
 
@@ -632,7 +635,6 @@ ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
 
 ServerData("aura.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
-    ModeAlways()
     FromMethodResultField("evidence")
 })
 ```
@@ -663,7 +665,6 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
     })
-    ServerDataDefault("off") // Opt-in by default (callers can set `server_data:"on"`)
 })
 ```
 
@@ -693,7 +694,7 @@ Tool("get_metrics", "Get device metrics", func() {
 
 **Runtime access:**
 
-At runtime, observer-facing projections from optional server-data are carried on
+At runtime, server-data emitted by tools is carried on
 `planner.ToolResult.ServerData`. Decode those canonical JSON bytes with the
 generated server-data codecs for the tool's declared kinds:
 
@@ -1741,7 +1742,7 @@ Method("system_status", func() {
 
 ```go
 Service("assistant", func() {
-    MCP("assistant", "1.0")
+    MCP("assistant-mcp", "1.0")
     
     // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
@@ -1818,7 +1819,7 @@ Method("watch_subscriptions", func() {
 var _ = Service("assistant", func() {
     Description("Full-featured MCP server example")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",

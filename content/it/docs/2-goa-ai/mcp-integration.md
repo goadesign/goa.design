@@ -37,7 +37,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {
@@ -272,7 +272,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("search", func() {
         Payload(func() {

@@ -1,30 +1,30 @@
 ---
 title: MCP 統合
 weight: 6
-description: "Integrate external MCP servers into your agents with generated wrappers and callers."
+description: "生成されたラッパーと caller を使って、外部 MCP サーバーをエージェントへ統合します。"
 llm_optimized: true
 aliases:
 ---
 
-Goa-AI は、MCP (Model Context Protocol) サーバーをエージェントに統合するためのファーストクラスのサポートを提供します。MCP ツールセットにより、エージェントは外部の MCP サーバーのツールを、生成されたラッパーと caller（呼び出し元）を通じて利用できます。
+Goa-AI は、MCP (Model Context Protocol) サーバーをエージェントへ統合するためのファーストクラスのサポートを提供します。MCP ツールセットにより、エージェントは外部 MCP サーバーのツールを、生成されたラッパーと caller 経由で利用できます。
 
 ## 概要
 
-MCP 統合は、次のワークフローに従います：
+MCP 統合は次の流れです:
 
 1. **サービス設計**: Goa の MCP DSL で MCP サーバーを宣言する
-2. **エージェント設計**: `Use(AssistantSuite)` でそのスイートを参照する
-3. **コード生成**: MCP JSON-RPC サーバー（Goa 生成の場合）に加え、ランタイム登録ヘルパーと、スイート（ツールセット所有）の specs/codecs を生成する
-4. **ランタイム配線**: `mcpruntime.Caller` トランスポート（HTTP/SSE/stdio）を作成する。生成ヘルパーがツールセットを登録し、JSON-RPC エラーを `planner.RetryHint` に変換する
-5. **プランナー実行**: プランナーは canonical（正規）な JSON ペイロードでツール呼び出しをキューに積むだけでよい。ランタイムが MCP caller へ転送し、フックで結果を永続化し、構造化テレメトリを出力する
+2. **エージェント設計**: `FromMCP(...)` または `FromExternalMCP(...)` で宣言したツールセットとして、その suite を参照する
+3. **コード生成**: Goa-backed の場合は MCP JSON-RPC サーバーを生成し、suite 用のランタイム登録 helper とツールセット所有の specs/codecs も生成する
+4. **ランタイム配線**: `mcpruntime.Caller` トランスポート (HTTP/SSE/stdio) を作成する。生成 helper がツールセットを登録し、JSON-RPC エラーを `planner.RetryHint` に変換する
+5. **プランナー実行**: プランナーは正規 JSON payload のツール呼び出しを enqueue するだけでよい。ランタイムが MCP caller へ転送し、hook で結果を永続化し、構造化 telemetry を表面化する
 
 ---
 
-## MCP ツールセットの宣言
+## MCP ツールセットを宣言する
 
-### サービス設計
+### サービス設計内
 
-まず、Goa のサービス設計で MCP サーバーを宣言します：
+まず、Goa サービス設計で MCP サーバーを宣言します:
 
 ```go
 package design
@@ -36,9 +36,9 @@ import (
 
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
-    
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
-    
+
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+
     Method("search", func() {
         Payload(func() {
             Attribute("query", String, "Search query")
@@ -53,9 +53,9 @@ var _ = Service("assistant", func() {
 })
 ```
 
-### エージェント設計
+### エージェント設計内
 
-次に、エージェントで MCP スイートを参照します：
+次に、エージェントから MCP suite を参照します:
 
 ```go
 var AssistantSuite = Toolset(FromMCP("assistant", "assistant-mcp"))
@@ -71,9 +71,9 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
-### インラインスキーマを持つ外部 MCP サーバ
+### インラインスキーマを持つ外部 MCP サーバー
 
-外部 MCP サーバー（Goa で実装されていない MCP サーバー）の場合は、インラインスキーマでツールを宣言します：
+外部 MCP サーバー (Goa-backed ではないもの) では、インラインスキーマでツールを宣言します:
 
 ```go
 var RemoteSearch = Toolset("remote-search", FromExternalMCP("remote", "search"), func() {
@@ -92,7 +92,7 @@ Agent("helper", "", func() {
 
 ## ランタイム配線
 
-実行時に、MCP caller を作成してツールセットを登録します：
+実行時には MCP caller を作成し、ツールセットを登録します:
 
 ```go
 import (
@@ -118,7 +118,7 @@ if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); er
 
 ## MCP Caller の種類
 
-Goa-AI は `runtime/mcp` パッケージを通じて、複数の MCP トランスポートをサポートします。すべての caller は `Caller` インターフェイスを実装します：
+Goa-AI は `runtime/mcp` パッケージを通じて複数の MCP トランスポートをサポートします。すべての caller は `Caller` インターフェースを実装します:
 
 ```go
 type Caller interface {
@@ -128,7 +128,7 @@ type Caller interface {
 
 ### HTTP Caller
 
-HTTP JSON-RPC でアクセスできる MCP サーバー向けです：
+HTTP JSON-RPC で到達できる MCP サーバー向けです:
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -149,11 +149,11 @@ caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-HTTP caller は作成時に MCP の初期化ハンドシェイクを実行し、ツール呼び出しには HTTP POST 上の同期 JSON-RPC を使用します。
+HTTP caller は作成時に MCP initialize handshake を行い、ツール呼び出しには HTTP POST 上の同期 JSON-RPC を使います。
 
 ### SSE Caller
 
-Server-Sent Events（SSE）によるストリーミングを使う MCP サーバー向けです：
+Server-Sent Events streaming を使う MCP サーバー向けです:
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -174,11 +174,11 @@ caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-SSE caller は初期化ハンドシェイクに HTTP を使用しますが、ツール呼び出しでは `text/event-stream` 応答を要求するため、サーバーは最終応答の前に進捗イベントをストリーミングできます。
+SSE caller は initialize handshake に HTTP を使いますが、ツール呼び出しでは `text/event-stream` 応答を要求します。そのため、サーバーは最終応答の前に進捗イベントをストリーミングできます。
 
 ### Stdio Caller
 
-stdin/stdout で通信するサブプロセスとして実行する MCP サーバー向けです：
+stdin/stdout で通信するサブプロセスとして MCP サーバーを起動する場合に使います:
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -202,11 +202,11 @@ caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
 defer caller.Close() // Clean up subprocess
 ```
 
-stdio caller はコマンドをサブプロセスとして起動し、MCP の初期化ハンドシェイクを実行して、ツール呼び出しをまたいでセッションを維持します。終了時は `Close()` を呼び出してサブプロセスを終了します。
+stdio caller はコマンドをサブプロセスとして起動し、MCP initialize handshake を実行し、ツール呼び出しをまたいでセッションを維持します。終了時は `Close()` を呼んでサブプロセスを終了します。
 
-### CallerFunc アダプタ
+### CallerFunc アダプター
 
-独自の caller 実装やテスト用途向けです：
+独自 caller 実装やテスト用です:
 
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
@@ -222,9 +222,9 @@ caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallReq
 })
 ```
 
-### Goa が生成する JSON-RPC コーラー
+### Goa 生成 JSON-RPC Caller
 
-サービスメソッドをラップする Goa 生成 MCP クライアント向けです：
+サービスメソッドをラップする Goa 生成 MCP クライアント向けです:
 
 ```go
 caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
@@ -232,27 +232,27 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 
 ---
 
-## ツール実行の流れ
+## ツール実行フロー
 
-1. プランナーが MCP ツールを参照するツール呼び出しを返す（ペイロードは `json.RawMessage`）
-2. ランタイムが MCP ツールセットの登録を検出する
-3. canonical JSON ペイロードを MCP caller に転送する
-4. ツール名とペイロードで MCP caller を呼び出す
-5. MCP caller がトランスポート（HTTP/SSE/stdio）と JSON-RPC プロトコルを処理する
-6. 生成された codec で結果をデコードする
-7. プランナーへ `ToolResult` を返す
+1. プランナーが MCP ツールを参照するツール呼び出しを返します (payload は `json.RawMessage`)
+2. ランタイムが MCP ツールセット登録を検出します
+3. 正規 JSON payload を MCP caller へ転送します
+4. ツール名と payload で MCP caller を呼び出します
+5. MCP caller がトランスポート (HTTP/SSE/stdio) と JSON-RPC プロトコルを扱います
+6. 生成 codec で結果をデコードします
+7. `ToolResult` をプランナーへ返します
 
 ---
 
 ## エラー処理
 
-生成されたヘルパーは JSON-RPC エラーを `planner.RetryHint` に変換します：
+生成 helper は JSON-RPC エラーを `planner.RetryHint` 値へ変換します:
 
 - **バリデーションエラー** → プランナー向けのガイダンス付き `RetryHint`
-- **ネットワークエラー** → バックオフ推奨の `RetryHint`
+- **ネットワークエラー** → バックオフ推奨を含む retry hint
 - **サーバーエラー** → エラー詳細をツール結果に保持
 
-これにより、プランナーはネイティブツールセットと同じリトライパターンで MCP エラーから回復できます。
+これにより、プランナーはネイティブツールセットと同じ retry パターンで MCP エラーから回復できます。
 
 ---
 
@@ -271,9 +271,9 @@ import (
 // MCP server service
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
-    
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
-    
+
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+
     Method("search", func() {
         Payload(func() {
             Attribute("query", String, "Search query")
@@ -309,7 +309,7 @@ package main
 import (
     "context"
     "log"
-    
+
     mcpruntime "goa.design/goa-ai/runtime/mcp"
     chat "example.com/assistant/gen/orchestrator/agents/chat"
     mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
@@ -319,7 +319,7 @@ import (
 func main() {
     rt := runtime.New()
     ctx := context.Background()
-    
+
     // Wire MCP caller
     caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
         Endpoint: "https://assistant.example.com/mcp",
@@ -330,14 +330,14 @@ func main() {
     if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); err != nil {
         log.Fatal(err)
     }
-    
+
     // Register agent
     if err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{
         Planner: &MyPlanner{},
     }); err != nil {
         log.Fatal(err)
     }
-    
+
     // Run agent
     client := chat.NewClient(rt)
     // ... use client ...
@@ -346,7 +346,7 @@ func main() {
 
 ### プランナー
 
-プランナーは、ネイティブツールセットと同様に MCP ツールを参照できます：
+プランナーは MCP ツールをネイティブツールセットと同じように参照できます:
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
@@ -365,16 +365,16 @@ func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*plan
 
 ## ベストプラクティス
 
-- **コード生成に登録を任せる**: MCP ツールセットの登録は生成ヘルパーを使い、手書きのグルーを避けて codec と retry hint の一貫性を保つ
-- **型付き caller を使う**: 利用できる場合は、型安全のため Goa 生成 JSON-RPC caller を優先する
-- **エラーを適切に扱う**: MCP エラーを `RetryHint` にマップし、プランナーが回復できるようにする
-- **テレメトリを監視する**: MCP 呼び出しは構造化テレメトリイベントを発行するため、可観測性に活用する
-- **用途に合ったトランスポートを選ぶ**: 単純な request/response には HTTP、ストリーミングには SSE、サブプロセス型サーバーには stdio を使う
+- **登録は codegen に任せる**: MCP ツールセット登録には生成 helper を使い、codec と retry hint の一貫性を保つ
+- **型付き caller を使う**: 利用できる場合は型安全のため Goa 生成 JSON-RPC caller を優先する
+- **エラーを穏当に扱う**: MCP エラーを `RetryHint` 値へ map し、プランナーが回復できるようにする
+- **telemetry を監視する**: MCP 呼び出しは構造化 telemetry イベントを発行するため、可観測性に活用する
+- **適切な transport を選ぶ**: 単純な request/response には HTTP、streaming には SSE、サブプロセス型サーバーには stdio を使う
 
 ---
 
 ## 次のステップ
 
-- **[Toolsets](./toolsets.md)** - ツールの実行モデルを理解する
-- **[Memory & Sessions](./memory-sessions.md)** - トランスクリプトとメモリストアで状態を管理する
-- **[Production](./production.md)** - Temporal とストリーミング UI でデプロイする
+- **[Toolsets](./toolsets.md)** - ツール実行モデルを理解する
+- **[Memory & Sessions](./memory-sessions.md)** - transcript と memory store で状態を管理する
+- **[Production](./production.md)** - Temporal と streaming UI でデプロイする

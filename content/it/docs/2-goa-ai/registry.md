@@ -157,7 +157,7 @@ Per servire le chiamate dal gateway del registro, collega il provider generato a
 ```go
 handler := toolsetpkg.NewProvider(serviceImpl)
 go func() {
-    err := toolprovider.Serve(ctx, pulseClient, toolsetID, handler, toolprovider.Options{
+    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
         Pong: func(ctx context.Context, pingID string) error {
             return registryClient.Pong(ctx, &registry.PongPayload{
                 PingID:  pingID,

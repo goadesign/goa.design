@@ -384,6 +384,35 @@ Labels flow into:
 - tool activity input (`api.ToolInput.Labels`) – cloned into dispatched tool executions so tool activities observe the same run-scoped metadata unless the planner overrides labels for one specific call
 - run log events (`runlog.Store`) – persisted alongside lifecycle events for audit/search/dashboards (where indexed)
 
+### Per-Run Tool Filtering
+
+Design-time tags and runtime options let callers narrow the tool surface before
+planner prompting and again before execution:
+
+```go
+out, err := client.Run(ctx, "session-1", messages,
+    runtime.WithAllowedTags([]string{"read", "safe"}),
+    runtime.WithDeniedTags([]string{"destructive"}),
+    runtime.WithTagPolicyClauses([]runtime.TagPolicyClause{
+        {AllowedAny: []string{"docs", "search"}},
+        {DeniedAny: []string{"external"}},
+    }),
+)
+```
+
+Use `WithRestrictToTool` when a repair flow should expose exactly one tool:
+
+```go
+out, err := client.Run(ctx, "session-1", messages,
+    runtime.WithRestrictToTool(searchspecs.Search),
+)
+```
+
+The runtime latches restricted-tool repair turns when a retry hint sets
+`RestrictToTool`, so the follow-up planner turn sees only the tool that needs a
+corrected payload. This keeps validation repair focused and prevents the model
+from drifting into unrelated tools.
+
 ---
 
 ## Tool Execution
@@ -771,7 +800,7 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 
 ## Feature Modules
 
-- `features/mcp/*` – MCP suite DSL/codegen/runtime callers (HTTP/SSE/stdio)
+- `runtime/mcp` – MCP callers for HTTP, SSE, and stdio transports
 - `features/memory/mongo` – durable memory store
 - `features/prompt/mongo` – Mongo-backed prompt override store
 - `features/runlog/mongo` – run event log store (append-only, cursor-paginated)
@@ -787,6 +816,8 @@ Goa-AI ships a provider-agnostic adaptive rate limiter under `features/model/mid
 
 ```go
 import (
+    "github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+    "goa.design/goa-ai/runtime/agent/runtime"
     "goa.design/goa-ai/features/model/bedrock"
     mdlmw "goa.design/goa-ai/features/model/middleware"
 )
@@ -794,7 +825,7 @@ import (
 awsClient := bedrockruntime.NewFromConfig(cfg)
 bed, _ := bedrock.New(awsClient, bedrock.Options{
     DefaultModel: "us.anthropic.claude-4-5-sonnet-20251120-v1:0",
-}, ledger)
+})
 
 rl := mdlmw.NewAdaptiveRateLimiter(
     ctx,
@@ -805,9 +836,10 @@ rl := mdlmw.NewAdaptiveRateLimiter(
 )
 limited := rl.Middleware()(bed)
 
-rt := runtime.New(runtime.Options{
-    // Register limited as the model client exposed to planners.
-})
+rt := runtime.New()
+if err := rt.RegisterModel("bedrock", limited); err != nil {
+    panic(err)
+}
 ```
 
 ---
@@ -846,7 +878,7 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
     SmallModel:   "anthropic.claude-3-5-haiku-20241022-v1:0",
     MaxTokens:    4096,
     Temperature:  0.7,
-}, ledger)
+})
 ```
 
 **OpenAI**
@@ -854,7 +886,12 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
 ```go
 import "goa.design/goa-ai/features/model/openai"
 
-modelClient, err := openai.NewFromAPIKey(apiKey, "gpt-4o")
+modelClient, err := openai.New(openai.Options{
+    APIKey:       apiKey,
+    DefaultModel: "gpt-5-mini",
+    HighModel:    "gpt-5",
+    SmallModel:   "gpt-5-nano",
+})
 ```
 
 ### Using Model Clients in Planners

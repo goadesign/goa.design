@@ -46,14 +46,16 @@ aliases:
 
 ### 基本的な使い方
 
-プロセスごとに 1 つのリミッターを作成して、モデルクライアントをラップします。
+プロセスごとに 1 つの limiter を作成し、model client を wrap します:
 
 ```go
 import (
     "context"
+    "os"
 
+    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
-    "goa.design/goa-ai/features/model/bedrock"
+    "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
@@ -70,21 +72,23 @@ func main() {
     )
 
     // Create your underlying model client
-    bedrockClient, err := bedrock.NewClient(bedrock.Options{
-        Region: "us-east-1",
-        Model:  "anthropic.claude-sonnet-4-20250514-v1:0",
+    modelClient, err := openai.New(openai.Options{
+        APIKey:       os.Getenv("OPENAI_API_KEY"),
+        DefaultModel: "gpt-5-mini",
+        HighModel:    "gpt-5",
+        SmallModel:   "gpt-5-nano",
     })
     if err != nil {
         panic(err)
     }
 
     // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient := limiter.Middleware()(modelClient)
 
-    // Use rateLimitedClient with your runtime or planners
-    rt := runtime.New(
-        runtime.WithModelClient("claude", rateLimitedClient),
-    )
+    rt := runtime.New()
+    if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
+        panic(err)
+    }
 }
 ```
 
@@ -152,11 +156,13 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(
-    runtime.WithEngine(temporalEng),
-    runtime.WithModelClient("claude", claudeClient),
-    runtime.WithModelClient("gpt-4", gptClient),
-)
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("claude", claudeClient); err != nil {
+    panic(err)
+}
+if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+    panic(err)
+}
 ```
 
 ### 負荷時に何が起きるか
@@ -343,12 +349,13 @@ import (
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
-temporalEng, err := runtimeTemporal.New(runtimeTemporal.Options{
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &client.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // 必須: goa-ai の workflow 境界コントラクトを強制します。
-        // ツール結果/サーバーデータ/アーティファクトは境界を canonical JSON bytes (api.ToolEvent/api.ToolArtifact) として横断します。
+        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
+        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
@@ -363,47 +370,48 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
-### Activity のリトライ設定
+### Timing と Activity Retry
 
-ツール呼び出しは Temporal activity です。DSL の toolset ごとにリトライを設定できます。
+DSL は semantic run budget、つまり run 全体にどれだけ時間を使えるか、planner attempt と tool attempt がどれだけ実行できるかを表します。
 
 ```go
-Use("external_apis", func() {
-    // Flaky external services: retry aggressively
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 30 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts:        5,
-            InitialInterval:    time.Second,
-            BackoffCoefficient: 2.0,
-        },
+Agent("operator", "Production operations agent", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        Timing(func() {
+            Budget("5m")
+            Plan("45s")
+            Tools("90s")
+        })
     })
-    
-    Tool("fetch_weather", "Get weather data", func() { /* ... */ })
-    Tool("query_database", "Query external DB", func() { /* ... */ })
-})
-
-Use("local_compute", func() {
-    // Fast local tools: minimal retries
-    ActivityOptions(engine.ActivityOptions{
-        Timeout: 5 * time.Second,
-        RetryPolicy: engine.RetryPolicy{
-            MaxAttempts: 2,
-        },
-    })
-    
-    Tool("calculate", "Pure computation", func() { /* ... */ })
 })
 ```
 
-生成される plan/resume activity と execute-tool activity は、いまでは
-既定で 3 回の指数バックオフ付きリトライ（初期待機 `1s`、係数 `2`）を
-使います。runtime の hook 公開 activity も同じポリシーです。これは
-再試行される試行が論理的に同一視できる場合にだけ安全です。hook event
-は安定した event key を持ち、tool 実行は副作用を再実行するのではなく
-`ToolCallID` 単位で canonical な結果を永続化・再生する必要があります。
-この replay 契約を満たせない tool 境界でだけ、リトライポリシーを個別に
-上書きしてください。
+Temporal adapter は queue-wait や liveness timeout などの workflow-engine mechanics を所有します。DSL ではなく engine 側で設定してください:
+
+```go
+temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
+    ClientOptions: &client.Options{
+        HostPort:  "127.0.0.1:7233",
+        Namespace: "default",
+    },
+    WorkerOptions: runtimeTemporal.WorkerOptions{
+        TaskQueue: "orchestrator.chat",
+    },
+    ActivityDefaults: runtimeTemporal.ActivityDefaults{
+        Planner: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 30 * time.Second,
+            LivenessTimeout:  20 * time.Second,
+        },
+        Tool: runtimeTemporal.ActivityTimeoutDefaults{
+            QueueWaitTimeout: 2 * time.Minute,
+            LivenessTimeout:  20 * time.Second,
+        },
+    },
+})
+```
+
+生成される plan/resume、execute-tool、hook-publishing activity の retry policy は、retry が論理的に idempotent な場合にだけ安全です。hook event は安定した event key を持ち、tool execution は不可逆な副作用を繰り返すのではなく、`ToolCallID` 単位で canonical result を永続化または replay するべきです。
 
 ### ワーカーのセットアップ
 
@@ -459,6 +467,7 @@ type Sink interface {
 | `Usage` | モデル呼び出しごとのトークン使用量 |
 | `Workflow` | run のライフサイクルとフェーズ更新 |
 | `ChildRunLinked` | 親ツール呼び出しから子エージェント run へのリンク |
+| `RunStreamEnd` | run の明示的な stream boundary marker (その run について stream-visible event がこれ以上出ないことを示す) |
 
 トランスポート層は通常、コンパイル時の安全性のために `stream.Event` に対して type switch します。
 
@@ -584,7 +593,7 @@ sub, _ := stream.NewSubscriberWithProfile(sink, profile)
 
 本番ではよく次が必要になります:
 - イベントを共有バス（例: Pulse）へ publish する
-- そのバス上で **run ごとのストリーム**（run ごとに topic/key）を保つ
+- そのバス上で **session-owned stream** (`session/<session_id>`) を使う
 
 Goa-AI は次を提供します:
 - `features/stream/pulse` – Pulse backed な `stream.Sink`
@@ -799,7 +808,7 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
             if err != nil {
                 return nil, err
             }
-            
+
             var rem *reminder.Reminder
             if len(snap.Items) == 0 {
                 in.Agent.RemoveReminder("todos.no_active")
@@ -825,7 +834,7 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
                     MinTurnsBetween: 3,
                 }
             }
-            
+
             if rem != nil {
                 in.Agent.AddReminder(*rem)
                 if rem.ID == "todos.all_completed" {
@@ -836,7 +845,7 @@ func (p *myPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
             }
         }
     }
-    
+
     return p.streamMessages(ctx, in)
 }
 ```
@@ -888,7 +897,7 @@ in.Agent.AddReminder(reminder.Reminder{
 ```
 User: What should I do next?
 
-<system-reminder>You have 3 pending todos. Currently working on: "Review PR #42". 
+<system-reminder>You have 3 pending todos. Currently working on: "Review PR #42".
 Focus on completing the current todo before starting new work.</system-reminder>
 
 User: What should I do next?
