@@ -1001,4 +1001,4 @@ Cette validation garantit que la reconstruction du grand livre de transcription 
 
 - Découvrez les [Ensembles d'outils](./toolsets/) pour comprendre les modèles d'exécution d'outils.
 - Explorez [Composition d'agent](./agent-composition/) pour les modèles d'agent en tant qu'outil
-- En savoir plus sur [Mémoire et sessions] (./memory-sessions/) pour la persistance des transcriptions
+- En savoir plus sur [Mémoire et sessions](./memory-sessions/) pour la persistance des transcriptions

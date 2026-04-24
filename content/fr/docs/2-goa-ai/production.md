@@ -209,7 +209,7 @@ currentTPM := limiter.CurrentTPM()
 - **Un limiteur par modèle/fournisseur** : créez des limiteurs distincts pour différents modèles afin d'isoler leurs budgets
 - **Définissez un TPM initial réaliste** : commencez par la limite de débit documentée par votre fournisseur ou une estimation prudente
 - **Utilisez la limitation adaptée aux clusters en production** : coordonnez les réplicas pour éviter la limitation globale
-- ** Surveiller les événements d'interruption ** : enregistrez ou émettez des métriques lorsque des interruptions se produisent pour détecter une limitation soutenue.
+- **Surveillez les événements de backoff** : enregistrez ou émettez des métriques lorsque des backoffs se produisent pour détecter une limitation soutenue.
 - **Définissez maxTPM au-dessus de la valeur initiale** : laissez une marge pour sonder lorsque le trafic est inférieur au quota
 
 ---
@@ -714,7 +714,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-C’est idéal lorsque le rappel s’applique à chaque invocation de l’outil. Voir la [Référence DSL] (./dsl-reference.md#resultreminder) pour plus de détails.
+C’est idéal lorsque le rappel s’applique à chaque invocation de l’outil. Voir la [Référence DSL](./dsl-reference.md#resultreminder) pour plus de détails.
 
 **Rappels dynamiques des planificateurs**
 

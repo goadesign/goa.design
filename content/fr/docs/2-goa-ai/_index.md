@@ -18,7 +18,7 @@ Goa-AI étend la philosophie de conception de Goa aux systèmes agentiques. Déf
 
 ### Agents axés sur la conception {#design-first-agents}
 
-** Arrêtez d'écrire du code d'agent fragile. Commencez par les contrats.**
+**Arrêtez d'écrire du code d'agent fragile. Commencez par les contrats.**
 
 La plupart des frameworks d'agents vous obligent à câbler ensemble les invites, les outils et les appels API. Lorsque les choses se cassent (et ce sera le cas), vous déboguez du code dispersé sans source de vérité claire.
 
@@ -123,7 +123,7 @@ Le **modèle d'arbre d'exécution** de Goa-AI vous offre une exécution hiérarc
 - **Échecs isolés** : les exécutions enfants échouent indépendamment ; les parents peuvent réessayer ou récupérer
 - **Topologie de streaming** — Les événements remontent l'arborescence pour UIs en temps réel
 
-→ Plongée en profondeur dans [Composition de l'agent] (agent-composition/) et [Exécution] (runtime/)
+→ Plongée en profondeur dans [Composition de l'agent](agent-composition/) et [Exécution](runtime/)
 
 ---
 
@@ -178,7 +178,7 @@ rt := runtime.New(runtime.WithEngine(eng))
 - **Gestion des limites de débit** — L'intervalle exponentiel absorbe la limitation de API
 - **Déploiement sécurisé** : les déploiements continus ne perdent pas le travail en vol
 
-→ Guide d'installation et réessayez la configuration dans [Production] (production/#temporal-setup)
+→ Guide d'installation et réessayez la configuration dans [Production](production/#temporal-setup)
 
 ---
 
@@ -243,7 +243,7 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 | [Contrats tapés](dsl-reference/) | Sécurité de type de bout en bout pour toutes les opérations sur les outils |
 | [Remplissions directes saisies](#typed-direct-completions) | Réponses structurées de l'assistant final avec codecs et assistants générés |
 | [Résultats limités et données du serveur](toolsets/#server-data) | Résultats de modèles efficaces en jetons ainsi que données serveur uniquement pour UIs et audit |
-| [L'humain dans la boucle] (runtime/#pause--resume) | Pause, reprise, résultats d'outils externes et confirmation forcée par l'exécution |
+| [L'humain dans la boucle](runtime/#pause--resume) | Pause, reprise, résultats d'outils externes et confirmation forcée par l'exécution |
 | [Outils de comptabilité et de terminal](dsl-reference/#bookkeeping) | Outils de progression/statut qui ne consomment pas de budget de récupération et peuvent mettre fin aux exécutions de manière atomique |
 | [Remplacements d'invite](production/#prompt-overrides-with-mongo-store) | Spécifications d'invite de base, ainsi que remplacements et provenance soutenus par Mongo |
 
@@ -356,6 +356,6 @@ var _ = Service("calculator", func() {
 
 Commencez par le guide [Quickstart](quickstart/) pour installer Goa-AI et créer votre premier agent.
 
-Pour une couverture complète du DSL, consultez la [Référence DSL] (dsl-reference/).
+Pour une couverture complète du DSL, consultez la [Référence DSL](dsl-reference/).
 
 Pour comprendre l'architecture d'exécution, consultez le guide [Runtime](runtime/).
