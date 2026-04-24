@@ -242,7 +242,7 @@ if err := rt.Seal(ctx); err != nil {
 1. The runtime starts a workflow for the agent (in-memory or Temporal) and records a new `run.Context` with `RunID`, `SessionID`, `TurnID`, labels, and policy caps.
 2. It calls your planner's `PlanStart` with the current messages and run context.
 3. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs).
-4. It calls `PlanResume` with tool results; the loop repeats until the planner returns a final response or caps/time budgets are hit. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
+4. It calls `PlanResume` with the surviving planner-visible tool results; budgeted tools are visible by default, while bookkeeping tools replay only when declared `PlannerVisible()` or when a retryable failure must be repaired. The loop repeats until the planner returns a final response or caps/time budgets are hit. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
 5. Hooks and stream subscribers emit events (planner thoughts, tool start/update/end, awaits, usage, workflow, agent-run links) and, when configured, persist transcript entries and run metadata.
 
 ---
@@ -336,11 +336,12 @@ Agent("chat", "Conversational runner", func() {
 
 This becomes a `runtime.RunPolicy` attached to the agent's registration:
 
-- **Caps**: `MaxToolCalls` – total budgeted tool calls per run. Tools declared `Bookkeeping()` in the DSL are **exempt** from this cap: status updates, progress markers, and terminal-commit tools never consume `RemainingToolCalls` and are never dropped when a batch is trimmed to fit the remaining budget. `MaxConsecutiveFailedToolCalls` – consecutive failures before abort.
+- **Caps**: `MaxToolCalls` – total budgeted tool calls per run. Tools declared `Bookkeeping()` in the DSL are **exempt** from this cap: status updates, progress markers, and terminal-commit tools never consume `RemainingToolCalls` and are never dropped when a batch is trimmed to fit the remaining budget. Successful bookkeeping results stay hidden from future planner turns by default unless the tool also declares `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` – consecutive failures before abort.
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
 - **Terminal tools**: Tools declared `TerminalRun()` complete the run atomically once they succeed—no follow-up `PlanResume` turn is scheduled. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to execute even when the retrieval budget is exhausted.
+- **Planner-visible bookkeeping**: `PlannerVisible()` is the non-terminal sibling of `TerminalRun()`. Use it on bookkeeping tools that emit canonical control-plane state which should be replayed into the next `PlanResume`; it is invalid on budgeted or terminal tools.
 
 ### Runtime Policy Overrides
 

@@ -156,7 +156,7 @@ err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
 1. ランタイムはエージェントのワークフロー（インメモリまたは Temporal）を開始し、`RunID`、`SessionID`、`TurnID`、ラベル、ポリシー上限を含む新しい `run.Context` を記録します。
 2. 現在のメッセージと run コンテキストを渡して、プランナーの `PlanStart` を呼び出します。
 3. プランナーが返したツール呼び出しをスケジュールします（プランナーは「正規（canonical）JSON」のペイロードを渡し、エンコード/デコードはランタイムが生成済みコーデックで処理します）。
-4. ツール結果を添えて `PlanResume` を呼び出します。プランナーが最終応答を返すか、上限/時間予算に達するまでループします。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
+4. プランナーから見えるまま残ったツール結果を添えて `PlanResume` を呼び出します。予算対象ツールは既定で可視ですが、bookkeeping ツールは `PlannerVisible()` を宣言した場合か、リトライ可能な失敗を修復する必要がある場合にのみ再生されます。プランナーが最終応答を返すか、上限/時間予算に達するまでループします。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
 5. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 
 ---
@@ -250,10 +250,11 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **Caps**: `MaxToolCalls`（run あたりの*予算対象*ツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。DSL で `Bookkeeping()` としてマークされたツールはこの上限から免除され、`MaxToolCalls` を消費しません。
+- **Caps**: `MaxToolCalls`（run あたりの*予算対象*ツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。DSL で `Bookkeeping()` としてマークされたツールはこの上限から免除され、`MaxToolCalls` を消費しません。成功した bookkeeping 結果は、ツールが `PlannerVisible()` も宣言していない限り、既定では将来のプランナーターンから隠されたままです。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
 - **原子的な run 完了**: DSL で `TerminalRun()` として宣言されたツールは、成功した呼び出しの直後に run を終了させ、プランナーによるファイナライズターンを必要としません。
+- **planner-visible bookkeeping**: `PlannerVisible()` は `TerminalRun()` の非終端版です。次の `PlanResume` に再生したい正規のコントロールプレーン状態を返す bookkeeping ツールに使います。予算対象ツールや終端ツールには指定できません。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
 
 ### ランタイムポリシーのオーバーライド

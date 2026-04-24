@@ -56,7 +56,8 @@ declarado.
 | Herramienta: Recordatorio estático del sistema tras el resultado de la herramienta
 | Herramienta: requiere confirmación explícita fuera de banda antes de la ejecución
 | `TerminalRun` | Herramienta | Marca la herramienta como terminal: la ejecución finaliza inmediatamente después de la herramienta (sin turno de planificador posterior) |
-| `Bookkeeping` | Herramienta | Marca la herramienta como bookkeeping: las llamadas no consumen el presupuesto `MaxToolCalls` del run |
+| `Bookkeeping` | Herramienta | Marca la herramienta como bookkeeping: las llamadas no consumen el presupuesto `MaxToolCalls` del run y permanecen ocultas de los futuros turnos del planificador por defecto |
+| `PlannerVisible` | Herramienta | Mantiene visible para el siguiente turno del planificador un resultado de bookkeeping no terminal |
 | Funciones de política
 | Agente: configura las restricciones de ejecución
 | `DefaultCaps` | RunPolicy | Establece límites de recursos |
@@ -1144,7 +1145,9 @@ Tool("set_step_status", "Actualiza el estado del paso", func() {
 
 - La generación de código registra la bandera en `tools.ToolSpec.Bookkeeping`.
 - Las llamadas de bookkeeping nunca cuentan contra `MaxToolCalls` y nunca se descartan cuando el runtime recorta un lote para encajar en el presupuesto restante. Las llamadas con presupuesto (no-bookkeeping) se recortan primero; las llamadas de bookkeeping mantienen su posición original.
+- Por defecto, los resultados correctos de bookkeeping permanecen ocultos para los futuros turnos del planificador. Añade `PlannerVisible()` cuando una herramienta de bookkeeping emite un estado canónico sobre el que debe razonar el siguiente turno.
 - Las herramientas desconocidas se tratan como con presupuesto; solo las herramientas declaradas `Bookkeeping()` en el DSL (o marcadas como bookkeeping en el `ToolSpec` del runtime) están exentas.
+- Un turno compuesto solo por bookkeeping debe resolverse en el mismo turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, espera/pausa) o producir al menos un resultado de bookkeeping planner-visible que justifique la siguiente reanudación.
 
 **Composición con `TerminalRun()`:**
 
@@ -1160,6 +1163,28 @@ Tool("commit_task", "Hace commit del artefacto terminal de la tarea", func() {
 ```
 
 Este patrón garantiza que el run siempre pueda finalizar de forma determinista: la herramienta de commit está exenta del presupuesto de retrieval y, tras tener éxito, el run termina sin un turno adicional del planificador.
+
+### PlannerVisible
+
+`PlannerVisible()` mantiene visible para futuros turnos del planificador el resultado de una herramienta de bookkeeping. Úsalo para herramientas del plano de control que emiten estado canónico, por ejemplo un snapshot estructurado de progreso que deba impulsar el siguiente `PlanResume`.
+
+**Contexto**: Dentro de `Tool`
+
+```go
+Tool("set_step_status", "Actualiza el estado del paso", func() {
+    Args(SetStepStatusArgs)
+    Return(TaskProgressSnapshot)
+    Bookkeeping()
+    PlannerVisible()
+})
+```
+
+**Comportamiento en runtime:**
+
+- `PlannerVisible()` solo es válido en herramientas de bookkeeping no terminales.
+- Las ejecuciones correctas se reinyectan en la transcripción visible por el modelo y en futuros `PlanResumeInput.ToolOutputs`.
+- Los fallos de bookkeeping reintentables siguen siendo planner-visible incluso sin `PlannerVisible()`.
+- Las herramientas con presupuesto no necesitan `PlannerVisible()` porque ya son planner-visible por defecto.
 
 ---
 

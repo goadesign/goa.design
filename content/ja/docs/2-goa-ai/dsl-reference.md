@@ -57,7 +57,8 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `ResultReminder` | Tool | ツール結果後の静的なシステムリマインダ |
 | `Confirmation` | Tool | 実行前に明示的な帯域外確認を要求する |
 | `TerminalRun` | Tool | ツールを run の終端としてマーク: ツール成功直後にランが終了し、後続プランナーターンは行われない |
-| `Bookkeeping` | Tool | ツールを bookkeeping としてマーク: 呼び出しは run レベルの `MaxToolCalls` バジェットを消費しない |
+| `Bookkeeping` | Tool | ツールを bookkeeping としてマーク: 呼び出しは run レベルの `MaxToolCalls` バジェットを消費せず、既定では将来のプランナーターンから隠される |
+| `PlannerVisible` | Tool | 非終端 bookkeeping 結果を次のプランナーターンに可視化したままにする |
 | **ポリシー関数** | | |
 | `RunPolicy` | Agent | 実行制約を設定する |
 | `DefaultCaps` | RunPolicy | リソース制限を設定する |
@@ -1134,7 +1135,9 @@ Tool("set_step_status", "ステップのステータスを更新", func() {
 
 - コード生成はこのフラグを `tools.ToolSpec.Bookkeeping` に記録します。
 - bookkeeping 呼び出しは `MaxToolCalls` に計上されず、ランタイムがバッチを残り予算に合わせて切り詰める際にも破棄されません。予算対象（非 bookkeeping）の呼び出しが先に切り詰められ、bookkeeping 呼び出しは元の位置を維持します。
+- 既定では、成功した bookkeeping 結果は将来のプランナーターンから隠されたままです。次のターンが推論すべき正規状態を bookkeeping ツールが返す場合は `PlannerVisible()` を追加します。
 - 未知のツールは予算対象として扱われます。DSL で `Bookkeeping()` として宣言された（またはランタイムの `ToolSpec` で bookkeeping としてマークされた）ツールのみが免除されます。
+- bookkeeping だけのターンは、同一ターン内で解決する（`TerminalRun()`、`FinalResponse`、`FinalToolResult`、await/pause）か、次の resume を正当化する planner-visible な bookkeeping 結果を少なくとも 1 つ生成する必要があります。
 
 **`TerminalRun()` との合成:**
 
@@ -1150,6 +1153,28 @@ Tool("commit_task", "タスクの終端アーティファクトをコミット",
 ```
 
 このパターンにより、ランは常に決定的にファイナライズできます。コミットツールはリトリーバル予算から免除され、成功するとその後のプランナーターンなしで run が終了します。
+
+### PlannerVisible
+
+`PlannerVisible()` は bookkeeping ツールの結果を将来のプランナーターンから見えるままにします。次の `PlanResume` を駆動すべき構造化された進捗スナップショットのように、コントロールプレーンの正規状態を返すツールで使います。
+
+**コンテキスト**: `Tool` の内部
+
+```go
+Tool("set_step_status", "ステップのステータスを更新", func() {
+    Args(SetStepStatusArgs)
+    Return(TaskProgressSnapshot)
+    Bookkeeping()
+    PlannerVisible()
+})
+```
+
+**ランタイム動作:**
+
+- `PlannerVisible()` は非終端 bookkeeping ツールでのみ有効です。
+- 成功した実行結果は、モデル可視の transcript と将来の `PlanResumeInput.ToolOutputs` に再注入されます。
+- リトライ可能な bookkeeping 失敗は、`PlannerVisible()` がなくても planner-visible のままです。
+- 予算対象ツールは既定で planner-visible なので `PlannerVisible()` は不要です。
 
 ---
 

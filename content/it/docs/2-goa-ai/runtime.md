@@ -155,7 +155,7 @@ err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
 1. Il runtime avvia un flusso di lavoro per l'agente (in-memory o temporale) e registra un nuovo `run.Context` con `RunID`, `SessionID`, `TurnID`, etichette e cappucci di politica.
 2. Richiama il `PlanStart` del pianificatore con i messaggi e il contesto di esecuzione correnti.
 3. Pianifica le chiamate agli strumenti restituite dal pianificatore (il pianificatore passa payload JSON canonici; il runtime gestisce la codifica/decodifica utilizzando i codec generati).
-4. Chiama `PlanResume` con i risultati dello strumento; il ciclo si ripete finché il pianificatore non restituisce una risposta finale o finché non vengono raggiunti i limiti di tempo. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
+4. Chiama `PlanResume` con i risultati degli strumenti che restano visibili al planner; gli strumenti con budget sono visibili per impostazione predefinita, mentre gli strumenti di bookkeeping vengono riprodotti solo se dichiarano `PlannerVisible()` o se deve essere riparato un fallimento ritentabile. Il ciclo si ripete finché il pianificatore non restituisce una risposta finale o finché non vengono raggiunti i limiti di tempo. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
 5. I ganci e i sottoscrittori del flusso emettono eventi (pensieri del pianificatore, avvio/aggiornamento/fine dello strumento, attese, utilizzo, flusso di lavoro, collegamenti tra agenti e corse) e, se configurati, persistono le voci di trascrizione e i metadati della corsa.
 
 ---
@@ -249,10 +249,11 @@ Agent("chat", "Conversational runner", func() {
 
 Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 
-- **Caps**: `MaxToolCalls` - chiamate totali allo strumento *con budget* per esecuzione. Gli strumenti marcati `Bookkeeping()` nel DSL sono esenti e non consumano mai questo cap. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
+- **Caps**: `MaxToolCalls` - chiamate totali allo strumento *con budget* per esecuzione. Gli strumenti marcati `Bookkeeping()` nel DSL sono esenti e non consumano mai questo cap. Per impostazione predefinita, i risultati bookkeeping riusciti restano nascosti ai futuri turni del planner salvo che lo strumento dichiari anche `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
 - **Completamento atomico del run**: gli strumenti dichiarati `TerminalRun()` nel DSL chiudono il run immediatamente dopo una chiamata riuscita, senza richiedere un turno di finalizzazione del planner.
+- **Bookkeeping planner-visible**: `PlannerVisible()` è il corrispettivo non terminale di `TerminalRun()`. Usalo su strumenti di bookkeeping che emettono stato canonico del control plane da riprodurre nel prossimo `PlanResume`; non è valido su strumenti con budget o terminali.
 - **Comportamento dei campi mancanti**: `OnMissingFields` - regola cosa succede quando la validazione indica campi mancanti.
 
 ### Sovrascritture dei criteri di runtime

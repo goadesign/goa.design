@@ -291,6 +291,20 @@ RunPolicy(func() {
 
 **Sintomo:**
 ```
+error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
+```
+
+**Causa:** Il planner ha emesso solo strumenti di bookkeeping, ma nessuno di quei risultati poteva guidare un nuovo turno del planner. Per impostazione predefinita, i risultati bookkeeping riusciti restano nascosti ai futuri turni `PlanResume`, quindi lo stesso turno deve risolversi in modo terminale / in attesa oppure produrre un risultato bookkeeping planner-visible.
+
+**Soluzioni:**
+
+1. **Concludi nello stesso turno** con `TerminalRun()`, `FinalResponse` o `FinalToolResult` quando il batch bookkeeping è già terminale.
+2. **Metti esplicitamente in pausa** con una handshake di attesa/pausa se il run sta aspettando input umano o esterno.
+3. **Marca il risultato bookkeeping con `PlannerVisible()`** quando trasporta stato canonico su cui il turno successivo del planner deve ragionare, ad esempio uno snapshot strutturato di avanzamento.
+4. **Non combinare `PlannerVisible()` con `TerminalRun()`**. Usa `TerminalRun()` per la finalizzazione atomica e `PlannerVisible()` per bookkeeping non terminale che deve riprendere la pianificazione.
+
+**Sintomo:**
+```
 error: policy violation: max consecutive failed tool calls exceeded (3/3)
 ```
 

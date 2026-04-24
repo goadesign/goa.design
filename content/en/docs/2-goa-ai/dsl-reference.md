@@ -45,7 +45,8 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `ResultReminder`                                        | Tool                     | Static system reminder after tool result                                                                           |
 | `Confirmation`                                          | Tool                     | Requires explicit out-of-band confirmation before execution                                                        |
 | `TerminalRun`                                           | Tool                     | Marks the tool terminal: the run completes immediately after it executes (no follow-up planner turn)               |
-| `Bookkeeping`                                           | Tool                     | Marks the tool as bookkeeping: calls do not consume the run-level `MaxToolCalls` retrieval budget                  |
+| `Bookkeeping`                                           | Tool                     | Marks the tool as bookkeeping: calls do not consume the run-level `MaxToolCalls` retrieval budget and stay hidden from future planner turns by default |
+| `PlannerVisible`                                        | Tool                     | Keeps a non-terminal bookkeeping result visible to the next planner turn                                           |
 | **Policy Functions**                                    |                          |                                                                                                                    |
 | `RunPolicy`                                             | Agent                    | Configures execution constraints                                                                                   |
 | `DefaultCaps`                                           | RunPolicy                | Sets resource limits                                                                                               |
@@ -1221,7 +1222,9 @@ Tool("set_step_status", "Update step status", func() {
 
 - Codegen records the flag on `tools.ToolSpec.Bookkeeping`.
 - Bookkeeping calls never count against `MaxToolCalls` and are never discarded when the runtime trims a batch to fit the remaining budget. Budgeted (non-bookkeeping) calls are trimmed first; bookkeeping calls retain their original position.
+- Successful bookkeeping results stay hidden from future planner turns by default. Add `PlannerVisible()` when a bookkeeping tool emits canonical state that the next turn must reason over.
 - Unknown tools are treated as budgeted; only tools declared `Bookkeeping()` in the DSL (or marked bookkeeping on the runtime `ToolSpec`) are exempt.
+- A bookkeeping-only turn must either resolve in the same turn (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, or await/pause) or produce at least one successful planner-visible bookkeeping result that justifies the next resume.
 
 **Composition with `TerminalRun()`:**
 
@@ -1237,6 +1240,28 @@ Tool("commit_task", "Commit the terminal task artifact", func() {
 ```
 
 This pattern guarantees that the run can always finalize deterministically: the commit tool is exempt from the retrieval budget, and once it succeeds the run is done without a follow-up planner turn.
+
+### PlannerVisible
+
+`PlannerVisible()` keeps a bookkeeping tool result visible to future planner turns. Use it for control-plane tools that emit canonical state, such as a structured progress snapshot that should drive the next `PlanResume`.
+
+**Context**: Inside `Tool`
+
+```go
+Tool("set_step_status", "Update task step status", func() {
+    Args(SetStepStatusArgs)
+    Return(TaskProgressSnapshot)
+    Bookkeeping()
+    PlannerVisible()
+})
+```
+
+**Runtime behavior:**
+
+- `PlannerVisible()` is only valid on non-terminal bookkeeping tools.
+- Successful executions are appended back into the model-visible transcript and future `PlanResumeInput.ToolOutputs`.
+- Retryable bookkeeping failures remain planner-visible even without `PlannerVisible()`.
+- Budgeted tools do not need `PlannerVisible()` because they are already planner-visible by default.
 
 ---
 
