@@ -1,5 +1,5 @@
 ---
-title: Herramientas
+title: Conjuntos de herramientas
 weight: 4
 description: "Aprende sobre los tipos de conjuntos de herramientas, modelos de ejecución, validación, sugerencias de reintento y catálogos de herramientas en Goa-AI."
 llm_optimized: true

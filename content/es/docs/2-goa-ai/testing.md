@@ -1,7 +1,7 @@
 ---
 title: Pruebas y resolución de problemas
 weight: 9
-description: "Learn how to test agents, planners, and tools, and troubleshoot common issues."
+description: "Aprende a probar agentes, planners y herramientas, y a resolver problemas comunes."
 llm_optimized: true
 ---
 
@@ -307,14 +307,13 @@ RunPolicy(func() {
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Causa:** El planificador emitió únicamente herramientas de bookkeeping, pero ninguno de esos resultados era apto para impulsar otro turno del planificador. Por defecto, los resultados satisfactorios de bookkeeping permanecen ocultos a futuros turnos `PlanResume`, por lo que el mismo turno debe resolverse de forma terminal / quedar a la espera de entrada, o producir un resultado de bookkeeping visible para el planificador.
+**Causa:** El planificador emitió únicamente herramientas de bookkeeping. Los resultados satisfactorios de bookkeeping permanecen ocultos a futuros turnos `PlanResume`, por lo que el mismo turno debe resolverse de forma terminal o quedar a la espera de entrada.
 
 **Soluciones:**
 
 1. **Termina en el mismo turno** con `TerminalRun()`, `FinalResponse` o `FinalToolResult` cuando el lote de bookkeeping ya sea terminal.
 2. **Pausa explícitamente** con un handshake de espera/pausa si la ejecución está aguardando entrada humana o externa.
-3. **Marca el resultado de bookkeeping como `PlannerVisible()`** cuando contenga un estado canónico sobre el que el siguiente turno del planificador deba razonar, por ejemplo, una instantánea estructurada de progreso.
-4. **No combines `PlannerVisible()` con `TerminalRun()`**. Usa `TerminalRun()` para una finalización atómica y `PlannerVisible()` para bookkeeping no terminal que deba reanudar la planificación.
+3. **Mueve el estado del siguiente turno a una entrada explícita del planificador** en lugar de depender de un resultado satisfactorio de bookkeeping para reanudar la planificación.
 
 **Síntoma:**
 ```

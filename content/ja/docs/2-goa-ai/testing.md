@@ -313,14 +313,13 @@ RunPolicy(func() {
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**原因:** プランナーが bookkeeping tool だけを出しましたが、その結果のどれも次の planner turn を駆動できません。成功した bookkeeping result は既定では将来の `PlanResume` turn から隠されるため、同じ turn で terminal に解決するか、planner-visible bookkeeping result を生成する必要があります。
+**原因:** プランナーが bookkeeping tool だけを出しました。成功した bookkeeping result は将来の `PlanResume` turn から隠されるため、同じ turn で terminal に解決するか、入力待ちにする必要があります。
 
 **解決策:**
 
 1. bookkeeping batch がすでに terminal なら、`TerminalRun()`、`FinalResponse`、`FinalToolResult` で **同じ turn 内に完了**します。
 2. run が人間または外部入力を待つ場合は、await/pause handshake で **明示的に pause** します。
-3. 次の planner turn が推論すべき正規 state (構造化 progress snapshot など) を bookkeeping result が持つ場合は、**`PlannerVisible()` を付けます**。
-4. **`PlannerVisible()` と `TerminalRun()` は組み合わせません**。原子的な完了には `TerminalRun()`、planning を再開する非 terminal bookkeeping には `PlannerVisible()` を使います。
+3. 成功した bookkeeping result に依存して planning を再開するのではなく、次の turn の state は **明示的な planner 入力** に移します。
 
 **症状:**
 

@@ -307,14 +307,13 @@ RunPolicy(func() {
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Cause :** Le planificateur n'a émis que des outils de comptabilité, mais aucun de ces résultats n'était éligible pour déclencher un autre tour de planificateur. Par défaut, les résultats de comptabilité réussis restent cachés des futurs tours `PlanResume`, donc le même tour doit soit être résolu de manière terminale/attendre une entrée, soit produire un résultat de comptabilité visible par le planificateur.
+**Cause :** Le planificateur n'a émis que des outils de comptabilité. Les résultats de comptabilité réussis restent cachés des futurs tours `PlanResume`, donc le même tour doit être résolu de manière terminale ou attendre une entrée.
 
 **Solutions :**
 
 1. **Terminez dans le même tour** avec `TerminalRun()`, `FinalResponse` ou `FinalToolResult` lorsque le lot de comptabilité est déjà terminal.
 2. **Pause explicitement** avec une poignée de main d'attente/pause si l'exécution attend une entrée humaine ou externe.
-3. **Marquez le résultat de la comptabilité `PlannerVisible()`** lorsqu'il contient un état canonique sur lequel le prochain tour du planificateur doit raisonner, comme un instantané de progression structuré.
-4. **Ne combinez pas `PlannerVisible()` avec `TerminalRun()`**. Utilisez `TerminalRun()` pour l'achèvement atomique et `PlannerVisible()` pour la comptabilité non terminale qui devrait reprendre la planification.
+3. **Déplacez l'état du prochain tour dans une entrée explicite du planificateur** au lieu de dépendre d'un résultat de comptabilité réussi pour reprendre la planification.
 
 **Symptôme:**
 ```

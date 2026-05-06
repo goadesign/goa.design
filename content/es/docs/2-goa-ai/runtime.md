@@ -2,7 +2,7 @@
 title: "Tiempo de ejecución"
 linkTitle: "Tiempo de ejecución"
 weight: 3
-description: "Understand how the Goa-AI runtime orchestrates agents, enforces policies, and manages state."
+description: "Entiende cómo el runtime de Goa-AI orquesta agentes, aplica políticas y gestiona el estado."
 llm_optimized: true
 aliases:
 ---
@@ -234,7 +234,7 @@ if err := rt.Seal(ctx); err != nil {
 1. El runtime inicia un workflow para el agente (en memoria o Temporal) y registra un nuevo `run.Context` con `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
 2. Llama al `PlanStart` de tu planificador con los mensajes actuales y el contexto de ejecución.
 3. Programa las llamadas a herramientas devueltas por el planificador (el planificador pasa payloads JSON canónicos; el runtime se encarga de la codificación/decodificación mediante los codecs generados).
-4. Llama a `PlanResume` con los resultados de herramienta que siguen siendo visibles para el planificador; las herramientas con presupuesto son visibles por defecto, mientras que las herramientas de bookkeeping solo se reproducen cuando declaran `PlannerVisible()` o cuando hay que reparar un fallo reintentable. El bucle se repite hasta que el planificador devuelve una respuesta final o se alcanzan los límites/presupuestos de tiempo. A medida que avanza la ejecución, se pasa por los valores de `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fases terminales).
+4. Llama a `PlanResume` con los resultados de herramienta que siguen siendo visibles para el planificador; las herramientas con presupuesto son visibles por defecto, mientras que las herramientas de bookkeeping solo se reproducen cuando hay que reparar un fallo reintentable. El bucle se repite hasta que el planificador devuelve una respuesta final o se alcanzan los límites/presupuestos de tiempo. A medida que avanza la ejecución, se pasa por los valores de `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fases terminales).
 5. Los hooks y los suscriptores de stream emiten eventos (pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, workflow, enlaces agente-ejecución) y, cuando están configurados, persisten entradas de transcripción y metadatos de ejecución.
 
 ---
@@ -328,12 +328,11 @@ Agent("chat", "Conversational runner", func() {
 
 Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 
-- **Límites**: `MaxToolCalls` – total de llamadas a herramientas con presupuesto por ejecución. Las herramientas declaradas `Bookkeeping()` en el DSL están **exentas** de este límite: las actualizaciones de estado, marcadores de progreso y herramientas de commit terminal nunca consumen `RemainingToolCalls` y nunca se descartan cuando un lote se recorta para encajar en el presupuesto restante. Por defecto, los resultados correctos de bookkeeping permanecen ocultos para futuros turnos del planificador salvo que la herramienta también declare `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` – fallos consecutivos antes de abortar.
+- **Límites**: `MaxToolCalls` – total de llamadas a herramientas con presupuesto por ejecución. Las herramientas declaradas `Bookkeeping()` en el DSL están **exentas** de este límite: las actualizaciones de estado, marcadores de progreso y herramientas de commit terminal nunca consumen `RemainingToolCalls` y nunca se descartan cuando un lote se recorta para encajar en el presupuesto restante. Por defecto, los resultados correctos de bookkeeping permanecen ocultos para futuros turnos del planificador. `MaxConsecutiveFailedToolCalls` – fallos consecutivos antes de abortar.
 - **Presupuesto de tiempo**: `TimeBudget` – presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (solo runtime) – ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` – opt-in para pausa/reanudación.
 - **Comportamiento ante campos faltantes**: `OnMissingFields` – rige lo que ocurre cuando la validación indica que faltan campos.
 - **Herramientas terminales**: Las herramientas declaradas `TerminalRun()` cierran la ejecución atómicamente en cuanto tienen éxito: no se programa un turno `PlanResume` de seguimiento. Combina `Bookkeeping()` con `TerminalRun()` para una herramienta de "hacer commit de esta ejecución" que tiene garantizada su ejecución incluso cuando el presupuesto de recuperación está agotado.
-- **Bookkeeping visible al planificador**: `PlannerVisible()` es el equivalente no terminal de `TerminalRun()`. Úsalo en herramientas de bookkeeping que emiten estado canónico del plano de control que debe reproducirse en el siguiente `PlanResume`; no es válido en herramientas con presupuesto ni en herramientas terminales.
 
 ### Overrides de política en runtime
 

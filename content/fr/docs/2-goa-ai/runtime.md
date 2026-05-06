@@ -242,7 +242,7 @@ if err := rt.Seal(ctx); err != nil {
 1. Le runtime démarre un workflow pour l'agent (en mémoire ou Temporal) et enregistre un nouveau `run.Context` avec `RunID`, `SessionID`, `TurnID`, des étiquettes et des limites de stratégie.
 2. Il appelle le `PlanStart` de votre planificateur avec les messages actuels et le contexte d'exécution.
 3. Il planifie les appels d'outils renvoyés par le planificateur (le planificateur transmet les charges utiles canoniques JSON ; le runtime gère l'encodage/décodage à l'aide des codecs générés).
-4. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par le planificateur ; les outils budgétisés sont visibles par défaut, tandis que les outils de comptabilité ne rejouent que lorsqu'ils sont déclarés `PlannerVisible()` ou lorsqu'un échec réessayable doit être réparé. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale ou que les plafonds/budgets de temps soient atteints. Au fur et à mesure que l'exécution progresse, l'exécution avance à travers les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
+4. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par le planificateur ; les outils budgétisés sont visibles par défaut, tandis que les outils de comptabilité ne rejouent que lorsqu'un échec réessayable doit être réparé. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale ou que les plafonds/budgets de temps soient atteints. Au fur et à mesure que l'exécution progresse, l'exécution avance à travers les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
 5. Les hooks et les abonnés au flux émettent des événements (pensées du planificateur, démarrage/mise à jour/fin de l'outil, attentes, utilisation, flux de travail, liens exécutés par l'agent) et, une fois configurés, conservent les entrées de transcription et exécutent les métadonnées.
 
 ---
@@ -336,12 +336,11 @@ Agent("chat", "Conversational runner", func() {
 
 Celui-ci devient un `runtime.RunPolicy` attaché à l'inscription de l'agent :
 
-- **Caps** : `MaxToolCalls` – nombre total d'appels d'outils budgétisés par exécution. Les outils déclarés `Bookkeeping()` dans le DSL sont **exemptés** de ce plafond : les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal ne consomment jamais `RemainingToolCalls` et ne sont jamais supprimés lorsqu'un lot est réduit pour s'adapter au budget restant. Les résultats de comptabilité réussis restent cachés par défaut aux futurs tours du planificateur, à moins que l'outil ne déclare également `PlannerVisible()`. `MaxConsecutiveFailedToolCalls` – échecs consécutifs avant l’abandon.
+- **Caps** : `MaxToolCalls` – nombre total d'appels d'outils budgétisés par exécution. Les outils déclarés `Bookkeeping()` dans le DSL sont **exemptés** de ce plafond : les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal ne consomment jamais `RemainingToolCalls` et ne sont jamais supprimés lorsqu'un lot est réduit pour s'adapter au budget restant. Les résultats de comptabilité réussis restent cachés aux futurs tours du planificateur. `MaxConsecutiveFailedToolCalls` – échecs consécutifs avant l’abandon.
 - **Budget temps** : `TimeBudget` – budget d'horloge murale pour la course. `FinalizerGrace` (exécution uniquement) – fenêtre réservée en option pour la finalisation.
 - **Interruptions** : `InterruptsAllowed` – option pour la pause/reprise.
 - **Comportement des champs manquants** : `OnMissingFields` – régit ce qui se passe lorsque la validation indique des champs manquants.
 - **Outils de terminal** : les outils déclarés `TerminalRun()` terminent l'exécution de manière atomique une fois qu'ils réussissent ; aucun tour de suivi `PlanResume` n'est planifié. Associez `Bookkeeping()` à `TerminalRun()` pour obtenir un outil « valider cette exécution » dont l'exécution est garantie même lorsque le budget de récupération est épuisé.
-- **Comptabilité visible par le planificateur** : `PlannerVisible()` est le frère non terminal de `TerminalRun()`. Utilisez-le sur les outils de comptabilité qui émettent un état canonique du plan de contrôle qui doit être rejoué dans le prochain `PlanResume` ; il n'est pas valide sur les outils budgétisés ou terminaux.
 
 ### Remplacements de stratégie d'exécution
 

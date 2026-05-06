@@ -49,7 +49,6 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Confirmation`                                          | Outil                     | Nécessite une confirmation hors bande explicite avant l'exécution                                                        |
 | `TerminalRun`                                           | Outil                     | Marque le terminal de l'outil : l'exécution se termine immédiatement après son exécution (pas de tour de suivi du planificateur)               |
 | `Bookkeeping`                                           | Outil                     | Marque l'outil comme comptabilité : les appels ne consomment pas le budget de récupération `MaxToolCalls` au niveau de l'exécution et restent cachés par défaut aux futurs tours du planificateur. |
-| `PlannerVisible`                                        | Outil                     | Conserve un résultat de comptabilité non terminal visible jusqu'au prochain tour du planificateur                                           |
 | **Fonctions de stratégie**                                    |                          |                                                                                                                    |
 | `RunPolicy`                                             | Agent                    | Configure les contraintes d'exécution                                                                                   |
 | `DefaultCaps`                                           | Exécuter la politique                | Fixe les limites des ressources                                                                                               |
@@ -1223,9 +1222,9 @@ Tool("set_step_status", "Update step status", func() {
 
 - Codegen enregistre le drapeau sur `tools.ToolSpec.Bookkeeping`.
 - Les appels de comptabilité ne sont jamais pris en compte dans `MaxToolCalls` et ne sont jamais ignorés lorsque le runtime réduit un lot pour l'adapter au budget restant. Les appels budgétisés (hors comptabilité) sont coupés en premier ; les appels comptables conservent leur position d'origine.
-- Les résultats de comptabilité réussis restent cachés par défaut aux futurs tours de planification. Ajoutez `PlannerVisible()` lorsqu'un outil de comptabilité émet un état canonique sur lequel le prochain tour doit raisonner.
+- Les résultats de comptabilité réussis restent cachés aux futurs tours de planification. Placez l'état canonique nécessaire au prochain tour dans une entrée explicite du planificateur plutôt que dans le résultat d'un outil de comptabilité.
 - Les outils inconnus sont traités comme budgétisés ; seuls les outils déclarés `Bookkeeping()` dans le DSL (ou la comptabilité marquée sur le runtime `ToolSpec`) sont exonérés.
-- Un tour de comptabilité uniquement doit soit être résolu au cours du même tour (`TerminalRun()`, `FinalResponse`, `FinalToolResult` ou attente/pause), soit produire au moins un résultat de comptabilité réussi, visible par le planificateur, qui justifie la reprise suivante.
+- Un tour de comptabilité uniquement doit être résolu au cours du même tour (`TerminalRun()`, `FinalResponse`, `FinalToolResult` ou attente/pause).
 
 **Composition avec `TerminalRun()` :**
 
@@ -1241,30 +1240,6 @@ Tool("commit_task", "Commit the terminal task artifact", func() {
 ```
 
 Ce modèle garantit que l'exécution peut toujours se finaliser de manière déterministe : l'outil de validation est exempté du budget de récupération, et une fois qu'il réussit, l'exécution est effectuée sans un tour de suivi du planificateur.
-
-### PlanificateurVisible
-
-`PlannerVisible()` conserve le résultat d'un outil de comptabilité visible pour les futurs tours de planificateur. Utilisez-le pour les outils de plan de contrôle qui émettent un état canonique, comme un instantané de progression structuré qui devrait piloter le prochain `PlanResume`.
-
-**Contexte** : À l'intérieur de `Tool`
-
-```go
-Tool("set_step_status", "Update task step status", func() {
-    Args(SetStepStatusArgs)
-    Return(TaskProgressSnapshot)
-    Bookkeeping()
-    PlannerVisible()
-})
-```
-
-**Comportement d'exécution :**
-
-- `PlannerVisible()` n'est valable que sur les outils de comptabilité non terminaux.
-- Les exécutions réussies sont annexées à la transcription visible par le modèle et au futur `PlanResumeInput.ToolOutputs`.
-- Les échecs de comptabilité réessayables restent visibles par le planificateur même sans `PlannerVisible()`.
-- Les outils budgétisés n'ont pas besoin de `PlannerVisible()` car ils sont déjà visibles par défaut par le planificateur.
-
----
 
 ## Fonctions de politique
 

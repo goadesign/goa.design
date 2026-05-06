@@ -2,7 +2,7 @@
 title: "Registro interno de herramientas"
 linkTitle: "Registro"
 weight: 9
-description: "Deploy a clustered gateway for cross-process toolset discovery and invocation."
+description: "Despliega una pasarela en clúster para descubrir e invocar toolsets entre procesos."
 llm_optimized: true
 ---
 

@@ -1,136 +1,130 @@
 ---
 title: Referencia DSL
 weight: 2
-description: "Complete reference for Goa-AI's DSL functions - agents, toolsets, policies, and MCP integration."
+description: "Referencia completa de las funciones DSL de Goa-AI: agentes, toolsets, políticas e integración MCP."
 llm_optimized: true
 aliases:
 ---
 
 Este documento proporciona una referencia completa de las funciones DSL de Goa-AI. Utilízalo junto con la guía [Runtime](./runtime.md) para entender cómo los diseños se traducen en comportamiento en tiempo de ejecución.
 
-Goa-AI también admite contratos `Completion(...)` propiedad del servicio para
-salidas directas y tipadas del asistente. Al ejecutar `goa gen`, esos contratos
-generan código bajo `gen/<service>/completions`.
+## Referencia rápida del DSL
 
-Los nombres de completion forman parte del contrato: 1-64 caracteres ASCII,
-solo letras/digitos/`_`/`-`, y deben empezar por una letra o un digito. El
-código generado incluye helpers unarios (`Complete<Name>(...)`) y de streaming
-(`StreamComplete<Name>(...)`, `Decode<Name>Chunk(...)`). Los fragmentos
-`completion_delta` son solo vistas previas; un unico chunk final `completion`
-es canonico.
-El esquema generado sigue siendo el contrato canonico del servicio; los
-adaptadores de modelo pueden normalizarlo a un subconjunto especifico del
-proveedor para el decodificado restringido, pero deben rechazar
-explicitamente a los proveedores que no puedan representar el contrato
-declarado.
 
-## Referencia Rápida DSL
+| Función                                                 | Contexto                 | Descripción                                                                                                        |
+| ------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Funciones de agente**                                 |                          |                                                                                                                    |
+| `Agent`                                                 | Service                  | Define un agente basado en LLM                                                                                     |
+| `Completion`                                            | Service                  | Declara un contrato tipado de salida directa del asistente, propiedad del servicio                                 |
+| `Use`                                                   | Agent                    | Declara el consumo de un toolset                                                                                   |
+| `Export`                                                | Agent, Service           | Expone toolsets a otros agentes                                                                                    |
+| `AgentToolset`                                          | Argumento de Use         | Referencia a un toolset de otro agente                                                                             |
+| `UseAgentToolset`                                       | Agent                    | Alias de AgentToolset + Use                                                                                        |
+| `Passthrough`                                           | Tool (dentro de Export)  | Reenvío determinista al método del servicio                                                                        |
+| `DisableAgentDocs`                                      | API                      | Desactiva la generación de AGENTS_QUICKSTART.md                                                                    |
+| **Funciones de Toolset**                                |                          |                                                                                                                    |
+| `Toolset`                                               | Top-level                | Declara un toolset propiedad del proveedor                                                                         |
+| `FromMCP`                                               | Argumento de Toolset     | Configura un toolset respaldado por MCP                                                                            |
+| `FromRegistry`                                          | Argumento de Toolset     | Configura un toolset respaldado por un registry                                                                    |
+| `Description`                                           | Toolset                  | Establece la descripción del toolset                                                                               |
+| **Funciones de Tool**                                   |                          |                                                                                                                    |
+| `Tool`                                                  | Toolset, Method          | Define una herramienta invocable                                                                                   |
+| `Args`                                                  | Tool                     | Define el esquema de parámetros de entrada                                                                         |
+| `Return`                                                | Tool, Completion         | Define el esquema de resultado visible para el modelo                                                              |
+| `ServerData`                                            | Tool                     | Define el esquema de datos exclusivos del servidor (nunca se envían a los proveedores de modelo)                   |
+| `FromMethodResultField`                                 | ServerData               | Proyecta datos de servidor desde un campo del resultado del método vinculado                                       |
+| `AudienceTimeline`                                      | ServerData               | Marca los datos de servidor como aptos para timeline/UI (por defecto)                                              |
+| `AudienceInternal`                                      | ServerData               | Marca los datos de servidor como adjunto de composición interna                                                    |
+| `AudienceEvidence`                                      | ServerData               | Marca los datos de servidor como procedencia o evidencia de auditoría                                              |
+| `BoundedResult`                                         | Tool                     | Declara un contrato de resultado acotado propiedad del runtime; un sub-DSL opcional puede declarar los campos de cursor de paginación |
+| `Cursor`                                                | BoundedResult            | Declara qué campo del payload lleva el cursor de paginación (opcional)                                             |
+| `NextCursor`                                            | BoundedResult            | Declara el nombre del campo de resultado proyectado para el cursor de la siguiente página (opcional)               |
+| `Idempotent`                                            | Tool                     | Marca la herramienta como idempotente dentro de una transcripción de ejecución; habilita la de-duplicación segura entre transcripciones para llamadas idénticas |
+| `Tags`                                                  | Tool, Toolset            | Adjunta etiquetas de metadatos                                                                                     |
+| `BindTo`                                                | Tool                     | Vincula la herramienta a un método del servicio                                                                    |
+| `Inject`                                                | Tool                     | Marca campos como inyectados por el runtime                                                                        |
+| `CallHintTemplate`                                      | Tool                     | Plantilla de visualización para las invocaciones                                                                   |
+| `ResultHintTemplate`                                    | Tool                     | Plantilla de visualización para los resultados                                                                     |
+| `ResultReminder`                                        | Tool                     | Recordatorio de sistema estático tras el resultado de la herramienta                                               |
+| `Confirmation`                                          | Tool                     | Requiere confirmación explícita fuera de banda antes de ejecutarse                                                 |
+| `TerminalRun`                                           | Tool                     | Marca la herramienta como terminal: la ejecución finaliza inmediatamente tras ejecutarla (sin un turno de planner de seguimiento) |
+| `Bookkeeping`                                           | Tool                     | Marca la herramienta como bookkeeping: las llamadas no consumen el presupuesto de recuperación `MaxToolCalls` a nivel de ejecución y permanecen ocultas para los turnos futuros del planner por defecto |
+| **Funciones de política**                               |                          |                                                                                                                    |
+| `RunPolicy`                                             | Agent                    | Configura las restricciones de ejecución                                                                           |
+| `DefaultCaps`                                           | RunPolicy                | Establece los límites de recursos                                                                                  |
+| `MaxToolCalls`                                          | DefaultCaps              | Número máximo de invocaciones de herramienta                                                                       |
+| `MaxConsecutiveFailedToolCalls`                         | DefaultCaps              | Número máximo de fallos consecutivos                                                                               |
+| `TimeBudget`                                            | RunPolicy                | Límite simple de tiempo real                                                                                       |
+| `Timing`                                                | RunPolicy                | Configuración fina de timeouts                                                                                     |
+| `Budget`                                                | Timing                   | Presupuesto global de la ejecución                                                                                 |
+| `Plan`                                                  | Timing                   | Timeout de la actividad del planner                                                                                |
+| `Tools`                                                 | Timing                   | Timeout de la actividad de herramientas                                                                            |
+| `History`                                               | RunPolicy                | Gestión del historial de conversación                                                                              |
+| `KeepRecentTurns`                                       | History                  | Política de ventana deslizante                                                                                     |
+| `Compress`                                              | History                  | Resumen asistido por modelo                                                                                        |
+| `Cache`                                                 | RunPolicy                | Configuración del caché de prompts                                                                                 |
+| `AfterSystem`                                           | Cache                    | Punto de control tras los mensajes de sistema                                                                      |
+| `AfterTools`                                            | Cache                    | Punto de control tras las definiciones de herramientas                                                             |
+| `InterruptsAllowed`                                     | RunPolicy                | Habilita pausar/reanudar                                                                                           |
+| `OnMissingFields`                                       | RunPolicy                | Comportamiento de validación                                                                                       |
+| **Funciones MCP**                                       |                          |                                                                                                                    |
+| `MCP`                                                   | Service                  | Habilita el soporte MCP                                                                                            |
+| `ProtocolVersion`                                       | Opción de MCP            | Establece la versión del protocolo MCP                                                                             |
+| `Tool`                                                  | Method                   | Marca un método como herramienta MCP en un servicio con MCP habilitado                                             |
+| `Toolset(FromMCP(...))`                                 | Top-level                | Declara un toolset derivado de MCP respaldado por Goa                                                              |
+| `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level                | Declara un toolset MCP externo con esquemas en línea                                                               |
+| `Resource`                                              | Method                   | Marca el método como recurso MCP                                                                                   |
+| `WatchableResource`                                     | Method                   | Marca el método como recurso suscribible                                                                           |
+| `StaticPrompt`                                          | Service                  | Añade una plantilla de prompt estática                                                                             |
+| `DynamicPrompt`                                         | Method                   | Marca el método como generador de prompts                                                                          |
+| `Notification`                                          | Method                   | Marca el método como emisor de notificaciones                                                                      |
+| `Subscription`                                          | Method                   | Marca el método como manejador de suscripciones                                                                    |
+| `SubscriptionMonitor`                                   | Method                   | Monitor SSE para suscripciones                                                                                     |
+| **Funciones de Registry**                               |                          |                                                                                                                    |
+| `Registry`                                              | Top-level                | Declara una fuente de registry                                                                                     |
+| `URL`                                                   | Registry                 | Establece el endpoint del registry                                                                                 |
+| `APIVersion`                                            | Registry                 | Establece la versión de la API                                                                                     |
+| `Timeout`                                               | Registry                 | Establece el timeout HTTP                                                                                          |
+| `Retry`                                                 | Registry                 | Configura la política de reintentos                                                                                |
+| `SyncInterval`                                          | Registry                 | Establece el intervalo de refresco del catálogo                                                                    |
+| `CacheTTL`                                              | Registry                 | Establece la duración del caché local                                                                              |
+| `Federation`                                            | Registry                 | Configura la importación de registries externos                                                                    |
+| `Include`                                               | Federation               | Patrones glob para importar                                                                                        |
+| `Exclude`                                               | Federation               | Patrones glob a omitir                                                                                             |
+| `PublishTo`                                             | Export                   | Configura la publicación en el registry                                                                            |
+| `Version`                                               | Toolset                  | Fija la versión del toolset del registry                                                                           |
+| **Funciones de esquema**                                |                          |                                                                                                                    |
+| `Attribute`                                             | Args, Return, ServerData | Define un campo del esquema (uso general)                                                                          |
+| `Field`                                                 | Args, Return, ServerData | Define un campo proto numerado (gRPC)                                                                              |
+| `Required`                                              | Esquema                  | Marca los campos como obligatorios                                                                                 |
+| `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos de payload de herramienta de nivel superior se preservan en las specs generadas y en las pistas de reintento |
 
-| Función Contexto Descripción
-|----------|---------|-------------|
-| **Funciones de Agente** | | | |
-| Servicio: Define un agente basado en LLM
-| `Use` | Agente | Declara el consumo del conjunto de herramientas |
-| `Export` | Agente, Servicio | Expone toolsets a otros agentes |
-| `AgentToolset` | Argumento de uso | Hace referencia al conjunto de herramientas de otro agente | `Export` | Agente, servicio | Declara el consumo del conjunto de herramientas a otros agentes
-| Agente: Alias para AgentToolset + Use
-| `Passthrough` | Herramienta (en Exportación) | Reenvío determinista a método de servicio |
-`DisableAgentDocs` API: Desactiva la generación de AGENTS_QUICKSTART.md
-| Funciones del conjunto de herramientas
-| `Toolset` | De nivel superior | Declara un conjunto de herramientas propiedad del proveedor |
-| `FromMCP` | Argumento del conjunto de herramientas | Configura el conjunto de herramientas respaldado por MCP |
-| `FromRegistry` | Argumento Toolset | Configura el conjunto de herramientas respaldado por el registro |
-| `Description` | Configura la descripción de las herramientas | | **Funciones de las herramientas** | `FromRegistry` | Configura la descripción de las herramientas
-| **Funciones de la herramienta** | | | |
-| `Tool` | Conjunto de herramientas, método | Define una herramienta invocable |
-| `Args` | Herramienta | Define un esquema de parámetros de entrada |
-| `Return` | Herramienta | Define el esquema de resultados de salida | `Return` | Herramienta | Define el esquema de resultados de salida
-| `ServerData` | Herramienta | Define esquema de datos del servidor (nunca enviados al proveedor del modelo) |
-| `BoundedResult` | Herramienta | Marca resultado como vista acotada |
-| `Tags` | Herramienta, conjunto de herramientas | Adjunta etiquetas de metadatos |
-| `BindTo` | Herramienta | Une herramienta a método de servicio |
-| Herramienta: marca los campos como inyectados en tiempo de ejecución
-| `CallHintTemplate` | Herramienta | Muestra plantilla para invocaciones |
-| Herramienta Mostrar plantilla de resultados
-| Herramienta: Recordatorio estático del sistema tras el resultado de la herramienta
-| Herramienta: requiere confirmación explícita fuera de banda antes de la ejecución
-| `TerminalRun` | Herramienta | Marca la herramienta como terminal: la ejecución finaliza inmediatamente después de la herramienta (sin turno de planificador posterior) |
-| `Bookkeeping` | Herramienta | Marca la herramienta como bookkeeping: las llamadas no consumen el presupuesto `MaxToolCalls` del run y permanecen ocultas de los futuros turnos del planificador por defecto |
-| `PlannerVisible` | Herramienta | Mantiene visible para el siguiente turno del planificador un resultado de bookkeeping no terminal |
-| Funciones de política
-| Agente: configura las restricciones de ejecución
-| `DefaultCaps` | RunPolicy | Establece límites de recursos |
-| `MaxToolCalls` | DefaultCaps | Máximo de invocaciones a herramientas |
-| Máximo de fallos consecutivos
-`TimeBudget` | RunPolicy | Límite de reloj de pared simple
-| `Timing` | RunPolicy | Configuración detallada del tiempo de espera | `Timing` | RunPolicy | Configuración detallada del tiempo de espera
-
-| Tiempo de espera de la actividad del planificador
-| Tiempo de espera de la actividad de la herramienta
-| Política de ejecución Gestión del historial de conversaciones
-| `KeepRecentTurns` | Historial | Política de ventana deslizante | `History` | Gestión del historial de conversación
-| `Compress` | Historial | Resumen asistido por modelos |
-| `Cache` | Política de ejecución | Configuración de caché de avisos | `Cache` | Política de ejecución | Configuración de caché de avisos
-| `AfterSystem` | Caché | Punto de comprobación después de mensajes del sistema | `AfterTools` | Caché de mensajes del sistema
-| `AfterTools` | Caché | Punto de control después de definiciones de herramientas | `InterruptsAllowed` | Caché | Punto de control después de definiciones de herramientas | `InterruptsAllowed` | Caché | Punto de control después de definiciones de herramientas
-| `InterruptsAllowed` | RunPolicy | Habilitar pausar/reanudar | `OnMissingFields` | Activar pausa/reanudar
-| Política de ejecución: Comportamiento de validación
-| **MCP Functions** | | |
-| `MCP` | Service | Habilita soporte MCP |
-| `ProtocolVersion` | MCP option | Establece la versión del protocolo MCP |
-| `Tool` | Method | Marca un método como herramienta MCP en un servicio con MCP habilitado |
-| `Toolset(FromMCP(...))` | Top-level | Declara un conjunto de herramientas MCP derivado de un servicio Goa |
-| `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level | Declara un conjunto de herramientas MCP externo con esquemas inline |
-| `Resource` | Método | Marca el método como recurso MCP | `Resource` | Método | Marca el método como recurso MCP
-| `WatchableResource` | Método | Marca método como recurso subscribible |
-
-| `DynamicPrompt` | Método | Marca el método como generador de avisos | `Notification` | Método | Marca el método como generador de avisos
-| `Notification` | Método | Marca el método como emisor de notificaciones | `Notification` | Servicio
-| `Subscription` | Método | Marca método como gestor de suscripción |
-| `SubscriptionMonitor` | Método | Monitor SSE para suscripciones | `SubscriptionMonitor` | Método | Monitor SSE para suscripciones
-| **Funciones de registro** | | | | Funciones de registro
-| `Registry` | Nivel superior | Declara una fuente de registro |
-| `URL` | Registro | Establece un punto final de registro |
-| `APIVersion` | Registro | Establece la versión de API | `APIVersion` | Registro | Establece la versión de API
-| Establece el tiempo de espera HTTP
-| `Retry` | Registro | Configura la política de reintentos | `SyncInterval` | Registro | Configura la política de reintentos
-| `SyncInterval` | Registro | Configura el intervalo de actualización del catálogo | `Required` | Registro | Configura la política de reintentos
-| `CacheTTL` | Registro | Configura la duración de la caché local | `CacheTTL` | Registro | Configura la duración de la caché local
-| `Federation` | Registro | Configura las importaciones externas del registro | `Federation` | Registro | Configura la duración de la caché local
-| `Include` | Federación | Patrones globales a importar | `Federation` | Federación | Patrones globales a importar
-| `Exclude` | Federación | Patrones Glob para saltar | `Exclude` | Federación | Patrones Glob para saltar
-| `PublishTo` | Exportar | Configura la publicación del registro |
-| `Version` | Conjunto de herramientas | Configura la versión del conjunto de herramientas del registro | `Version` | Conjunto de herramientas | Configura la versión del conjunto de herramientas del registro
-| **Funciones de Esquema** | | | |
-| `Attribute` | Args, Return, ServerData | Define el campo de esquema (uso general) | | `Version` | Funciones de esquema
-| `Field` | Args, Return, ServerData | Define campo de proto numerado (gRPC) |
-| `Required` | Esquema | Marca campos como obligatorios |
 
 ## Gestión de prompts (ruta de integración v1)
 
-Goa-AI v1 **no** requiere una DSL dedicada de prompts (`Prompt(...)`, `Prompts(...)`).
-La gestión de prompts es actualmente runtime-driven:
+Goa-AI v1 **no** requiere un DSL dedicado para prompts (`Prompt(...)`, `Prompts(...)`).
+La gestión de prompts se impulsa actualmente desde el runtime:
 
-- Registra los prompt specs base en `runtime.PromptRegistry`.
-- Configura overrides por alcance con `runtime.WithPromptStore(...)`.
-- Renderiza prompts desde planners con `PlannerContext.RenderPrompt(...)`.
-- Adjunta la procedencia de prompts renderizados en `model.Request.PromptRefs`.
+- Registra las specs de prompt base en `runtime.PromptRegistry`.
+- Configura sobrescrituras con alcance mediante `runtime.WithPromptStore(...)`.
+- Renderiza prompts desde los planners usando `PlannerContext.RenderPrompt(...)`.
+- Adjunta la procedencia del prompt renderizado a las llamadas al modelo con `model.Request.PromptRefs`.
 
-Para flujos de agent-as-tool, mapea IDs de herramienta a IDs de prompt con opciones
-de runtime como `runtime.WithPromptSpec(...)` en los registros de agent-tools.
-Esto es opcional: cuando no se configura contenido de prompt del lado consumidor,
-el runtime usa el payload JSON canónico de la herramienta como mensaje de usuario
-del run hijo, y los planners del proveedor pueden renderizar sus propios prompts
-con contexto inyectado del lado servidor.
+Para los flujos agent-as-tool, mapea los IDs de herramientas a IDs de prompt usando opciones del runtime como
+`runtime.WithPromptSpec(...)` en los registros agent-tool.
+Esto es opcional: cuando no hay contenido de prompt configurado en el consumidor, el runtime
+utiliza el payload JSON canónico de la herramienta como mensaje de usuario anidado y los
+planners del proveedor pueden renderizar sus propios prompts con contexto del lado del servidor inyectado.
 
-### Campo vs Atributo
+### Field vs Attribute
 
-Tanto `Field` como `Attribute` definen campos de esquema, pero tienen propósitos diferentes:
+Tanto `Field` como `Attribute` definen campos del esquema, pero cumplen propósitos distintos:
 
-**`Attribute(name, type, description, dsl)`** - Definición de esquema de propósito general:
-- Se utiliza para esquemas sólo JSON
+`**Attribute(name, type, description, dsl)`** - Definición de esquema de propósito general:
+
+- Se utiliza para esquemas solo JSON
 - No requiere numeración de campos
-- Sintaxis más sencilla para la mayoría de los casos
+- Sintaxis más simple para la mayoría de casos de uso
 
 ```go
 Args(func() {
@@ -142,10 +136,11 @@ Args(func() {
 })
 ```
 
-**`Field(number, name, type, description, dsl)`** - Campos numerados para gRPC/protobuf:
+`**Field(number, name, type, description, dsl)**` - Campos numerados para gRPC/protobuf:
+
 - Obligatorio al generar servicios gRPC
 - Los números de campo deben ser únicos y estables
-- Utilícelo cuando su servicio exponga tanto transportes HTTP como gRPC
+- Úsalos cuando tu servicio expone transportes HTTP y gRPC
 
 ```go
 Args(func() {
@@ -157,19 +152,19 @@ Args(func() {
 })
 ```
 
-**Cuándo usar cuál:**
-- Utilizar `Attribute` para herramientas de agente que sólo utilizan JSON (caso más común)
-- Utilice `Field` cuando su servicio Goa tiene transporte gRPC y las herramientas se unen a esos métodos
-- La mezcla está permitida pero no se recomienda dentro del mismo esquema
+**Cuándo usar cada uno:**
 
-## Resumen
+- Usa `Attribute` para las herramientas de agente que solo usan JSON (el caso más común)
+- Usa `Field` cuando tu servicio Goa tenga transporte gRPC y las herramientas se vinculen a esos métodos
+- Mezclarlos está permitido pero no se recomienda dentro del mismo esquema
 
-Goa-AI extiende el DSL de Goa con funciones para declarar agentes, conjuntos de herramientas y políticas de tiempo de ejecución. El DSL es evaluado por el motor `eval` de Goa, por lo que se aplican las mismas reglas que con el DSL estándar de servicio/transporte: las expresiones deben ser invocadas en el contexto apropiado, y las definiciones de atributos reutilizan el sistema de tipos de Goa (`Attribute`, `Field`, validaciones, ejemplos, etc.).
+## Visión general
 
+Goa-AI amplía el DSL de Goa con funciones para declarar agentes, toolsets y políticas de runtime. El DSL es evaluado por el motor `eval` de Goa, por lo que se aplican las mismas reglas que con el DSL estándar de servicio/transporte: las expresiones deben invocarse en el contexto apropiado y las definiciones de atributos reutilizan el sistema de tipos de Goa (`Attribute`, `Field`, validaciones, ejemplos, etc.).
 
 ### Ruta de importación
 
-Añade los agentes DSL a tus paquetes de diseño Goa:
+Añade el DSL de agents a tus paquetes de diseño Goa:
 
 ```go
 import (
@@ -180,18 +175,19 @@ import (
 
 ### Punto de entrada
 
-Declara agentes dentro de una definición normal de Goa `Service`. El DSL aumenta el árbol de diseño de Goa y se procesa durante `goa gen`.
+Declara los agentes dentro de una definición normal de `Service` de Goa. El DSL enriquece el árbol de diseño de Goa y se procesa durante `goa gen`.
 
 ### Resultado
 
-La ejecución de `goa gen` produce:
+Ejecutar `goa gen` produce:
 
-- Paquetes de agente (`gen/<service>/agents/<agent>`) con definiciones de flujo de trabajo, actividades del planificador y ayudantes de registro
-- Paquetes propietarios del toolset (`gen/<service>/toolsets/<toolset>`) con structs tipados de payload/result, specs, codecs y (cuando corresponda) transforms
-- Manejadores de actividad para bucles plan/ejecutar/reanudar
-- Ayudantes de registro que conectan el diseño con el tiempo de ejecución
+- Paquetes de agente (`gen/<service>/agents/<agent>`) con definiciones de workflow, actividades del planner y helpers de registro
+- Paquetes de completion propiedad del servicio (`gen/<service>/completions`) cuando el servicio declara `Completion(...)`
+- Paquetes propietarios del toolset (`gen/<service>/toolsets/<toolset>`) con structs tipados de payload/result, specs, codecs y (cuando aplica) transforms
+- Manejadores de actividad para los bucles plan/execute/resume
+- Helpers de registro que integran el diseño con el runtime
 
-Se escribe un `AGENTS_QUICKSTART.md` contextual en la raíz del módulo a menos que se desactive mediante `DisableAgentDocs()`.
+Se escribe un `AGENTS_QUICKSTART.md` contextual en la raíz del módulo, a menos que se deshabilite mediante `DisableAgentDocs()`.
 
 ### Ejemplo de inicio rápido
 
@@ -252,15 +248,15 @@ var _ = Service("orchestrator", func() {
 
 Ejecutar `goa gen example.com/assistant/design` produce:
 
-- `gen/orchestrator/agents/chat`: flujo de trabajo + actividades del planificador + registro de agentes
-- `gen/orchestrator/agents/chat/specs`: catálogo de herramientas del agente (agregado de `ToolSpec`s + `tool_schemas.json`)
-- `gen/orchestrator/toolsets/<toolset>`: tipos/specs/codecs/transforms del toolset (propiedad del servicio)
+- `gen/orchestrator/agents/chat`: workflow + actividades del planner + registro de agentes
+- `gen/orchestrator/agents/chat/specs`: catálogo de herramientas del agente (`ToolSpec`s agregados + `tool_schemas.json`)
+- `gen/orchestrator/toolsets/<toolset>`: tipos/specs/codecs/transforms propiedad del toolset para los toolsets propiedad del servicio
 - `gen/orchestrator/agents/chat/exports/<export>`: paquetes de toolsets exportados (agent-as-tool)
-- Ayudantes de registro compatibles con MCP cuando se hace referencia a un `Toolset(FromMCP(...))` a través de `Use`
+- Helpers de registro con soporte MCP cuando se referencia un toolset respaldado por MCP mediante `Use`
 
-### Identificadores de herramientas tipificados
+### Identificadores tipados de herramientas
 
-Cada paquete de especificaciones por conjunto de herramientas define identificadores de herramientas tipadas (`tools.Ident`) para cada herramienta generada:
+Cada paquete specs por toolset define identificadores tipados de herramientas (`tools.Ident`) para cada herramienta generada:
 
 ```go
 const (
@@ -272,32 +268,78 @@ var Specs = []tools.ToolSpec{
 }
 ```
 
-Utilice estas constantes en cualquier lugar donde necesite hacer referencia a herramientas.
+Usa estas constantes en cualquier lugar donde necesites referenciar herramientas.
 
-### Composición en línea entre procesos
+### Completions tipadas propiedad del servicio
 
-Cuando el agente A declara que "usa" un conjunto de herramientas exportado por el agente B, Goa-AI cablea la composición automáticamente:
+Las herramientas no son el único contrato estructurado del que Goa-AI puede ser propietario. Usa
+`Completion(...)` cuando el asistente deba devolver directamente una respuesta final tipada
+en lugar de emitir una llamada a herramienta:
 
-- El paquete exportador (agente B) incluye helpers `agenttools` generados
-- El registro del agente consumidor (agente A) utiliza esos helpers cuando `Use(AgentToolset("service", "agent", "toolset"))`
-- La función `Execute` generada construye mensajes de planificador anidados, ejecuta el agente proveedor como un flujo de trabajo hijo y adapta el `RunOutput` del agente anidado en un `planner.ToolResult`
+```go
+var Draft = Type("Draft", func() {
+    Attribute("name", String, "Task name")
+    Attribute("goal", String, "Outcome-style goal")
+    Required("name", "goal")
+})
 
-Esto produce un único flujo de trabajo determinista por agente ejecutado y un árbol de ejecución vinculado para la composición.
+var _ = Service("tasks", func() {
+    Completion("draft_from_transcript", "Produce a task draft directly", func() {
+        Return(Draft)
+    })
+})
+```
+
+Los nombres de completion forman parte del contrato de salida estructurada. Deben tener
+entre 1 y 64 caracteres ASCII, pueden contener letras, dígitos, `_` y `-`, y deben
+comenzar con una letra o un dígito.
+
+`goa gen` emite un paquete en `gen/<service>/completions` con:
+
+- esquemas de resultado generados y tipos Go tipados
+- codecs JSON generados y helpers de validación
+- valores tipados `completion.Spec`
+- helpers `Complete<Name>(ctx, client, req)` generados
+- helpers `StreamComplete<Name>(ctx, client, req)` y `Decode<Name>Chunk(...)`
+generados
+
+Los helpers unary decodifican la respuesta final del asistente directamente. Los helpers
+de streaming se mantienen sobre la superficie cruda `model.Streamer`: los chunks
+`completion_delta` son solo vista previa, exactamente un chunk final `completion` es
+canónico, y `Decode<Name>Chunk(...)` decodifica solo ese payload final.
+
+Los helpers de completion generados rechazan las solicitudes con herramientas habilitadas y
+las `StructuredOutput` suministradas por el llamador. Los proveedores que no implementan
+salida estructurada fallan explícitamente con `model.ErrStructuredOutputUnsupported`.
+El esquema generado sigue siendo el contrato de servicio canónico; los adaptadores de modelo
+pueden normalizarlo para la decodificación restringida específica del proveedor, pero deben rechazar
+los proveedores que no puedan representar el contrato declarado.
+
+### Composición inline entre procesos
+
+Cuando el agente A declara que "usa" un toolset exportado por el agente B, Goa-AI cablea la composición automáticamente:
+
+- El paquete del exportador (agente B) incluye los helpers generados `agenttools`
+- El registro del agente consumidor (agente A) usa esos helpers cuando haces `Use(AgentToolset("service", "agent", "toolset"))`
+- La función `Execute` generada construye los mensajes anidados del planner, ejecuta el agente proveedor como un workflow hijo y adapta el `RunOutput` del agente anidado a un `planner.ToolResult`
+
+Esto produce un único workflow determinista por ejecución de agente y un árbol de ejecuciones enlazado para la composición.
 
 ---
 
-## Funciones del agente
+## Funciones de agente
 
-### Agente
+### Agent
 
-`Agent(name, description, dsl)` declara un agente dentro de un `Service`. Registra los metadatos del agente de ámbito de servicio y adjunta conjuntos de herramientas a través de `Use` y `Export`.
+`Agent(name, description, dsl)` declara un agente dentro de un `Service`. Registra los metadatos del agente con alcance de servicio y adjunta toolsets mediante `Use` y `Export`.
 
 **Contexto**: Dentro de `Service`
 
-Cada agente se convierte en un registro en tiempo de ejecución con:
-- Una definición de flujo de trabajo y manejadores de actividad Temporal
-- Actividades PlanStart/PlanResume con opciones de reintento/tiempo de espera derivadas de DSL
-- Un ayudante `Register<Agent>` que registra flujos de trabajo, actividades y conjuntos de herramientas
+Cada agente se convierte en un registro de runtime con:
+
+- Una definición de workflow y manejadores de actividad de Temporal
+- Actividades PlanStart/PlanResume con opciones de reintento/timeout derivadas del DSL
+- Un helper `Register<Agent>` que registra workflows, actividades y toolsets
 
 ```go
 var _ = Service("orchestrator", func() {
@@ -314,14 +356,14 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
-### Uso
+### Use
 
-`Use(value, dsl)` declara que un agente consume un conjunto de herramientas. El conjunto de herramientas puede ser:
+`Use(value, dsl)` declara que un agente consume un toolset. El toolset puede ser:
 
-- Una variable de nivel superior `Toolset`
-- Una referencia `Toolset(FromMCP(...))`
-- Una definición de conjunto de herramientas en línea (nombre de cadena + DSL)
-- Una referencia `AgentToolset` para la composición de agentes como herramientas
+- Una variable `Toolset` de nivel superior
+- Un toolset declarado con `FromMCP(...)` o `FromExternalMCP(...)`
+- Una definición de toolset en línea (nombre como cadena + DSL)
+- Una referencia `AgentToolset` para composición agent-as-tool
 
 **Contexto**: Dentro de `Agent`
 
@@ -335,7 +377,7 @@ Agent("chat", "Conversational runner", func() {
         Tool("notify") // consume only this tool from CommonTools
     })
     
-    // Reference an MCP toolset
+    // Reference an MCP toolset declared at top level
     Use(AssistantSuite)
     
     // Inline agent-local toolset definition
@@ -350,9 +392,9 @@ Agent("chat", "Conversational runner", func() {
 })
 ```
 
-### Exportar
+### Export
 
-`Export(value, dsl)` declara conjuntos de herramientas expuestos a otros agentes o servicios. Los conjuntos de herramientas exportados pueden ser consumidos por otros agentes a través de `Use(AgentToolset(...))`.
+`Export(value, dsl)` declara los toolsets expuestos a otros agentes o servicios. Los toolsets exportados pueden ser consumidos por otros agentes mediante `Use(AgentToolset(...))`.
 
 **Contexto**: Dentro de `Agent` o `Service`
 
@@ -375,14 +417,15 @@ Agent("planner", "Planning agent", func() {
 
 ### AgentToolset
 
-`AgentToolset(service, agent, toolset)` hace referencia a un conjunto de herramientas exportado por otro agente. Esto permite la composición agente-como-herramienta.
+`AgentToolset(service, agent, toolset)` referencia un toolset exportado por otro agente. Esto habilita la composición agent-as-tool.
 
-**Contexto**: Argumento para `Use`
+**Contexto**: Argumento de `Use`
 
-Utilice `AgentToolset` cuando:
-- No tienes un manejador de expresión para el conjunto de herramientas exportado
-- Varios agentes exportan conjuntos de herramientas con el mismo nombre
-- Quieres ser explícito en el diseño para mayor claridad
+Usa `AgentToolset` cuando:
+
+- No dispongas de un handle de expresión al toolset exportado
+- Varios agentes exporten toolsets con el mismo nombre
+- Desees ser explícito en el diseño por claridad
 
 ```go
 // Agent A exports tools
@@ -396,7 +439,7 @@ Agent("orchestrator", func() {
 })
 ```
 
-**Alias**: `UseAgentToolset(service, agent, toolset)` es un alias que combina `AgentToolset` con `Use` en una sola llamada. Prefiera `AgentToolset` en nuevos diseños; el alias existe para facilitar la lectura en algunas bases de código.
+**Alias**: `UseAgentToolset(service, agent, toolset)` es un alias que combina `AgentToolset` con `Use` en una sola llamada. Prefiere `AgentToolset` en diseños nuevos; el alias existe para mejorar la legibilidad en algunas bases de código.
 
 ```go
 // Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
@@ -407,7 +450,7 @@ Agent("orchestrator", func() {
 
 ### Passthrough
 
-`Passthrough(toolName, target, methodName)` define el reenvío determinista para una herramienta exportada a un método de servicio Goa. Esto evita por completo el planificador.
+`Passthrough(toolName, target, methodName)` define un reenvío determinista de una herramienta exportada a un método de servicio Goa. Esto omite por completo al planner.
 
 **Contexto**: Dentro de `Tool` anidado bajo `Export`
 
@@ -430,7 +473,7 @@ Export("logging-tools", func() {
 
 `DisableAgentDocs()` desactiva la generación de `AGENTS_QUICKSTART.md` en la raíz del módulo.
 
-**Context**: Dentro de `API`
+**Contexto**: Dentro de `API`
 
 ```go
 var _ = API("orchestrator", func() {
@@ -440,13 +483,13 @@ var _ = API("orchestrator", func() {
 
 ---
 
-## Funciones del conjunto de herramientas
+## Funciones de Toolset
 
-### Herramientas
+### Toolset
 
-`Toolset(name, dsl)` declara un conjunto de herramientas propiedad del proveedor en el nivel superior. Cuando se declara en el nivel superior, el conjunto de herramientas se vuelve globalmente reutilizable; los agentes hacen referencia a él a través de `Use`.
+`Toolset(name, dsl)` declara un toolset propiedad del proveedor en el nivel superior. Cuando se declara en el nivel superior, el toolset se vuelve reutilizable globalmente; los agentes lo referencian mediante `Use`.
 
-**Contexto**: Nivel superior
+**Contexto**: Top-level
 
 ```go
 var DocsToolset = Toolset("docs.search", func() {
@@ -464,7 +507,7 @@ var DocsToolset = Toolset("docs.search", func() {
 })
 ```
 
-Los conjuntos de herramientas pueden incluir una descripción utilizando la función DSL estándar `Description()`:
+Los toolsets pueden incluir una descripción usando la función estándar del DSL `Description()`:
 
 ```go
 var DataToolset = Toolset("data-tools", func() {
@@ -482,17 +525,18 @@ var DataToolset = Toolset("data-tools", func() {
 })
 ```
 
-### Herramienta
+### Tool
 
-`Tool(name, description, dsl)` define una capacidad invocable dentro de un conjunto de herramientas.
+`Tool(name, description, dsl)` define una capacidad invocable dentro de un toolset.
 
 **Contexto**: Dentro de `Toolset` o `Method`
 
-Generación de código emite:
-- Carga útil/resultado Go structs en `tool_specs/types.go`
-- Códecs JSON (`tool_specs/codecs.go`)
-- Definiciones de esquema JSON consumidas por los planificadores
-- Entradas en el registro de herramientas con mensajes de ayuda y metadatos
+La generación de código emite:
+
+- Structs Go de payload/result en `tool_specs/types.go`
+- Codecs JSON (`tool_specs/codecs.go`)
+- Definiciones JSON Schema consumidas por los planners
+- Entradas del registry de herramientas con prompts auxiliares y metadatos
 
 ```go
 Tool("search", "Search indexed documentation", func() {
@@ -507,20 +551,21 @@ Tool("search", "Search indexed documentation", func() {
         Required("documents")
     })
     CallHintTemplate("Searching for: {{ .Query }}")
-    ResultHintTemplate("Found {{ len .Documents }} documents")
+    ResultHintTemplate("Found {{ len .Result.Documents }} documents")
     Tags("docs", "search")
 })
 ```
 
-### Args y retorno
+### Args y Return
 
-`Args(...)` y `Return(...)` definen los tipos de carga útil/resultado utilizando el DSL estándar de atributos de Goa.
+`Args(...)` y `Return(...)` definen los tipos de payload/result utilizando el DSL estándar de atributos de Goa.
 
 **Contexto**: Dentro de `Tool`
 
-Se puede utilizar:
-- Una función para definir un esquema de objetos en línea con llamadas `Attribute()`
-- Un tipo de usuario Goa (Type, ResultType, etc.) para reutilizar definiciones de tipos existentes
+Puedes usar:
+
+- Una función para definir un esquema de objeto en línea con llamadas `Attribute()`
+- Un tipo de usuario de Goa (Type, ResultType, etc.) para reutilizar definiciones de tipos existentes
 - Un tipo primitivo (String, Int, etc.) para entradas/salidas simples de un solo valor
 
 ```go
@@ -542,7 +587,7 @@ Tool("search", "Search documentation", func() {
 })
 ```
 
-**Reutilización de tipos:**
+**Reutilizar tipos:**
 
 ```go
 var SearchParams = Type("SearchParams", func() {
@@ -561,23 +606,25 @@ Tool("search", "Search documents", func() {
 
 ### ServerData
 
-`ServerData(kind, val, args...)` define datos del servidor tipados emitidos junto a un resultado de herramienta. Los datos del servidor nunca se envían al proveedor del modelo.
+`ServerData(kind, val, args...)` define una salida tipada exclusiva del servidor emitida junto con el resultado de la herramienta. Los server-data nunca se envían a los proveedores de modelo.
+Los server-data tipo timeline suelen proyectarse en tarjetas, gráficos, tablas o mapas de UI orientados a observadores, mientras mantienen el resultado orientado al modelo acotado y eficiente en tokens. Las audiencias evidence e internal permiten a los consumidores posteriores enrutar procedencia o datos de solo composición sin depender de convenciones de nombres de kind.
 
 **Contexto**: Dentro de `Tool`
 
-**Parámetros
-- `kind`: Un identificador de cadena para el tipo de artefacto (por ejemplo, `"time_series"`, `"chart_data"`, `"full_results"`). Esto permite a los consumidores identificar y manejar adecuadamente los diferentes tipos de artefactos.
-- `val`: La definición del esquema, siguiendo los mismos patrones que `Args` y `Return`-ya sea una función con llamadas `Attribute()`, un tipo de usuario Goa o un tipo primitivo.
+**Parámetros:**
 
-**Enrutamiento por audiencia (`Audience*`):**
+- `kind`: Un identificador de cadena para el tipo de server-data (p. ej., `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`). Esto permite a los consumidores identificar y manejar distintas proyecciones de server-data apropiadamente.
+- `val`: La definición del esquema, siguiendo los mismos patrones que `Args` y `Return`: una función con llamadas `Attribute()`, un tipo de usuario de Goa o un tipo primitivo.
 
-Cada entrada `ServerData` declara una audiencia para enrutar el payload sin depender de convenciones de nombres en `kind`:
+**Enrutamiento por audiencia (`Audience`*):**
 
-- `"timeline"`: se persiste y es elegible para proyección hacia observadores (p. ej., tarjetas en la UI/timeline)
-- `"internal"`: adjunto para composición entre herramientas; no se persiste ni se renderiza
-- `"evidence"`: referencias de procedencia; se persiste por separado de las tarjetas del timeline
+Cada entrada `ServerData` declara una audiencia que los consumidores posteriores utilizan para enrutar el payload sin depender de convenciones de nombre de kind:
 
-Establece la audiencia dentro del bloque DSL de `ServerData`:
+- `"timeline"`: persistido y apto para proyección orientada al observador (p. ej., tarjetas UI/timeline)
+- `"internal"`: adjunto de composición de herramientas; no se persiste ni se renderiza
+- `"evidence"`: referencias de procedencia; se persisten por separado de las tarjetas de timeline
+
+Configura la audiencia dentro del bloque DSL `ServerData`:
 
 ```go
 ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
@@ -591,10 +638,11 @@ ServerData("aura.evidence", ArrayOf(Evidence), func() {
 })
 ```
 
-**Cuándo utilizar ServerData:**
-- Cuando los resultados de la herramienta necesitan incluir datos de fidelidad completa para UIs (cuadros, gráficos, tablas) mientras se mantienen las cargas útiles del modelo acotadas
-- Cuando se desea adjuntar grandes conjuntos de resultados que excederían los límites del contexto del modelo
-- Cuando los consumidores posteriores necesitan datos estructurados que el modelo no necesita ver
+**Cuándo usar ServerData:**
+
+- Cuando los resultados de la herramienta deban incluir datos de alta fidelidad para las UIs (gráficos, tablas) manteniendo acotados los payloads para el modelo
+- Cuando quieras adjuntar grandes conjuntos de resultados que superarían los límites de contexto del modelo
+- Cuando los consumidores posteriores necesiten datos estructurados que el modelo no necesita ver
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -619,7 +667,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-**Usando un tipo Goa para el esquema de server-data:**
+**Usar un tipo Goa para el esquema de server-data:**
 
 ```go
 var TimeSeriesServerData = Type("TimeSeriesServerData", func() {
@@ -645,9 +693,9 @@ Tool("get_metrics", "Get device metrics", func() {
 
 **Acceso en tiempo de ejecución:**
 
-En tiempo de ejecución, los server-data emitidos por las herramientas viajan en
+En tiempo de ejecución, los server-data emitidos por las herramientas se transportan en
 `planner.ToolResult.ServerData`. Decodifica esos bytes JSON canónicos con los
-codecs server-data generados para los kinds declarados por la herramienta:
+codecs de server-data generados para los kinds declarados por la herramienta:
 
 ```go
 // In a stream subscriber or result handler
@@ -660,115 +708,97 @@ func handleToolResult(result *planner.ToolResult) {
 
 ### BoundedResult
 
-`BoundedResult()` marca el resultado de la herramienta actual como una vista acotada sobre un conjunto de datos potencialmente mayor. Es un contrato ligero que indica al tiempo de ejecución y a los servicios que esta herramienta:
-
-1. Puede devolver un subconjunto de datos disponibles
-2. Debe mostrar metadatos de truncamiento (`agent.Bounds`) junto con su resultado
+`BoundedResult()` marca el resultado de la herramienta actual como una vista acotada sobre un conjunto de datos potencialmente mayor.
+Declara un contrato de bounds propiedad del runtime manteniendo el tipo de resultado autorizado con significado semántico y
+específico del dominio.
 
 **Contexto**: Dentro de `Tool`
 
-`BoundedResult` aplica una forma canónica para resultados acotados. Las herramientas o bien declaran
-el conjunto completo de campos estándar (`returned`, `total`, `truncated`, `refinement_hint`), o no
-declaran ninguno y dejan que `BoundedResult()` los agregue. Las declaraciones parciales se rechazan.
+Campos canónicos visibles para el modelo:
+
+- `returned` (obligatorio, `Int`)
+- `truncated` (obligatorio, `Boolean`)
+- `total` (opcional, `Int`)
+- `refinement_hint` (opcional, `String`)
+- `next_cursor` (opcional, `String`) cuando se declara mediante `NextCursor(...)`
+
+`BoundedResult` es la única fuente de verdad para ese contrato:
+
+- codegen lo registra en `tools.ToolSpec.Bounds` generado
+- codegen proyecta los campos acotados canónicos en el esquema JSON de resultado generado
+- las ejecuciones acotadas exitosas deben establecer `planner.ToolResult.Bounds`
+- el runtime proyecta esos bounds en el JSON `tool_result` codificado, los datos de plantilla de result-hint,
+los hooks y los eventos de stream
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
-        Attribute("filter", String, "Optional filter expression")
-        Attribute("limit", Int, "Maximum devices to return", func() {
-            Default(100)
-            Maximum(1000)
-        })
-        Attribute("offset", Int, "Pagination offset", func() {
-            Default(0)
-        })
+        Attribute("site_id", String, "Site identifier")
+        Attribute("cursor", String, "Opaque pagination cursor")
+        Required("site_id")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "List of devices")
-        Attribute("returned", Int, "Number of devices returned")
-        Attribute("total", Int, "Total devices matching filter")
-        Attribute("truncated", Boolean, "Whether results were truncated")
-        Required("devices", "returned", "truncated")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
 })
 ```
 
-**El contrato agent.Bounds:**
-
-Cuando una herramienta está marcada con `BoundedResult()`, los tipos de resultado generados implementan
-`agent.BoundedResult` mediante `ResultBounds()`, y el runtime deriva `planner.ToolResult.Bounds` a partir de ese método:
-
-```go
-// agent.Bounds describes how a tool result has been bounded
-type Bounds struct {
-    Returned       int    // Number of items in the bounded view
-    Total          *int   // Best-effort total before truncation (optional)
-    Truncated      bool   // Whether any caps were applied
-    RefinementHint string // Guidance on how to narrow the query
-}
-
-// agent.BoundedResult interface for typed results
-type BoundedResult interface {
-    ResultBounds() *Bounds
-}
-```
+Los tipos de retorno orientados a la herramienta no deben declarar `returned`, `total`, `truncated`,
+`refinement_hint` ni `next_cursor` simplemente para que el modelo los vea. Mantén el resultado semántico centrado
+en los datos del dominio. Las herramientas respaldadas por método pueden usar internamente tipos de resultado de método de servicio más ricos, pero
+el contrato de herramienta de Goa-AI proviene de `BoundedResult(...)`, no de campos duplicados en el retorno de la herramienta. Dentro de
+esos resultados de método acotado, solo `returned` y `truncated` pueden ser obligatorios; `total`,
+`refinement_hint` y `next_cursor` siguen siendo partes opcionales del contrato de bounds.
 
 **Responsabilidad del servicio:**
 
 Los servicios son responsables de:
-1. Aplicar su propia lógica de truncamiento (paginación, límites, topes de profundidad)
-2. Rellenar los metadatos de límites en el resultado
-3. Proporcionar opcionalmente un `RefinementHint` cuando se truncan los resultados
 
-El tiempo de ejecución no calcula los subconjuntos o el truncamiento por sí mismo, sólo obliga a que las herramientas limitadas ofrezcan un contrato `Bounds` coherente en sus resultados.
+1. Aplicar su propia lógica de truncamiento (paginación, límites, tope de profundidad)
+2. Poblar `planner.ToolResult.Bounds`
+3. Establecer `Bounds.NextCursor` cuando existe otra página
+4. Proveer opcionalmente un `RefinementHint` cuando los resultados se truncan
 
-**Cuándo utilizar BoundedResult:**
+El runtime no calcula por sí mismo subconjuntos ni truncamientos. Solo valida y proyecta los metadatos de bounds
+que las herramientas reportan.
+
+**Cuándo usar BoundedResult:**
 
 - Herramientas que devuelven listas paginadas (dispositivos, usuarios, registros)
-- Herramientas que consultan grandes conjuntos de datos con límites de resultados
-- Herramientas que aplican límites de profundidad o tamaño a estructuras anidadas
-- Cualquier herramienta en la que el modelo deba entender que los resultados pueden estar incompletos
-
-**Ejemplo completo con límites:**
-
-```go
-var DeviceToolset = Toolset("devices", func() {
-    Tool("list_devices", "List IoT devices", func() {
-        Args(func() {
-            Attribute("site_id", String, "Site identifier")
-            Attribute("status", String, "Filter by status", func() {
-                Enum("online", "offline", "unknown")
-            })
-            Attribute("limit", Int, "Maximum results", func() {
-                Default(50)
-                Maximum(500)
-            })
-            Required("site_id")
-        })
-        Return(func() {
-            Attribute("devices", ArrayOf(Device), "Matching devices")
-            Attribute("returned", Int, "Count of returned devices")
-            Attribute("total", Int, "Total matching devices")
-            Attribute("truncated", Boolean, "Results were capped")
-            Attribute("refinement_hint", String, "How to narrow results")
-            Required("devices", "returned", "truncated")
-        })
-        BoundedResult()
-        BindTo("DeviceService", "ListDevices")
-    })
-})
-```
+- Herramientas que consultan grandes conjuntos de datos con límites de resultado
+- Herramientas que aplican topes de profundidad o tamaño a estructuras anidadas
+- Cualquier herramienta en la que el modelo necesite entender que los resultados pueden ser incompletos
 
 **Comportamiento en tiempo de ejecución:**
 
-Cuando se ejecuta una herramienta acotada:
-1. El tiempo de ejecución decodifica el resultado y comprueba la implementación de `agent.BoundedResult`
-2. Si el resultado implementa la interfaz, se llama a `ResultBounds()` para extraer los límites
-3. Los metadatos de los límites se adjuntan a `planner.ToolResult.Bounds`
-4. Los suscriptores y finalizadores del flujo pueden acceder a los límites para la visualización de la interfaz de usuario o el registro
+```go
+result := &planner.ToolResult{
+    Result: &ListDevicesResult{
+        Devices: devices,
+    },
+    Bounds: &agent.Bounds{
+        Returned:       len(devices),
+        Total:          ptr(total),
+        Truncated:      truncated,
+        NextCursor:     nextCursor,
+        RefinementHint: refinementHint,
+    },
+}
+```
 
-Las herramientas pueden incluir un título de visualización utilizando la función DSL estándar `Title()`:
+Cuando se ejecuta una herramienta acotada:
+
+1. El runtime valida que una herramienta acotada exitosa devolvió `planner.ToolResult.Bounds`.
+2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres de campo de `BoundedResult(...)`.
+3. El mismo struct `planner.ToolResult.Bounds` sigue siendo el contrato canónico de runtime para planners,
+  hooks y UIs.
+
+Las herramientas pueden incluir un título de visualización usando la función estándar del DSL `Title()`:
 
 ```go
 Tool("web_search", "Search the web", func() {
@@ -777,16 +807,43 @@ Tool("web_search", "Search the web", func() {
 })
 ```
 
-### Confirmación
+### Idempotent
 
-`Confirmation(dsl)` declara que una herramienta debe ser explícitamente aprobada fuera de banda antes de que se
-ejecutarse. Esto está pensado para herramientas **sensibles al operador** (escrituras, eliminaciones, comandos).
+`Idempotent()` marca la herramienta actual como idempotente *dentro de una transcripción de ejecución*.
+Cuando se establece, los runtimes/planners pueden tratar las llamadas repetidas a la herramienta con argumentos idénticos
+como redundantes y evitar ejecutarlas una vez que ya exista un resultado exitoso en
+la transcripción.
 
-**Contexto Dentro de `Tool`
+**Contexto**: Dentro de `Tool`
 
-En tiempo de generación, Goa-AI registra la política de confirmación en la especificación de la herramienta generada. En tiempo de ejecución, el
-flujo de trabajo emite una solicitud de confirmación utilizando `AwaitConfirmation` y ejecuta la herramienta sólo después de que se proporcione una
-aprobación explícita.
+**Cuándo usar**
+
+Usa `Idempotent()` solo cuando el resultado de la herramienta sea una función pura de sus argumentos
+durante el tiempo de vida de una transcripción de ejecución (por ejemplo, recuperar una sección de documentación
+por identificador estable).
+
+**Cuándo no usar**
+
+No marques herramientas como idempotentes cuando su resultado dependa de un estado externo cambiante
+pero el payload de la herramienta no lleve un parámetro de tiempo/versión (por ejemplo,
+"obtener modo actual" u "obtener estado actual" sin una entrada `as_of`).
+
+**Generación de código**
+
+Cuando una herramienta se marca como `Idempotent()`, codegen emite la etiqueta
+`goa-ai.idempotency=transcript` en las `tools.ToolSpec.Tags` generadas. Esta
+etiqueta es consumida por los runtimes/planners que implementan de-duplicación consciente de la transcripción.
+
+### Confirmation
+
+`Confirmation(dsl)` declara que una herramienta debe ser aprobada explícitamente fuera de banda antes de
+ejecutarse. Está destinada a herramientas **sensibles para el operador** (escrituras, eliminaciones, comandos).
+
+**Contexto**: Dentro de `Tool`
+
+En tiempo de generación, Goa-AI registra la política de confirmación en la tool spec generada. En tiempo de ejecución, el
+workflow emite una solicitud de confirmación usando `AwaitConfirmation` y ejecuta la herramienta solo después de que se
+proporcione una aprobación explícita.
 
 Ejemplo mínimo:
 
@@ -804,37 +861,43 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Notas:
 
-- El tiempo de ejecución es dueño de cómo se solicita la confirmación. El protocolo de confirmación incorporado utiliza un
-  `AwaitConfirmation` await y una llamada de decisión `ProvideConfirmation`. Consulte la guía de tiempo de ejecución para conocer las
-  cargas útiles esperadas y el flujo de ejecución.
-- Las plantillas de confirmación (`PromptTemplate` y `DeniedResultTemplate`) son cadenas Go `text/template`
-  que se ejecutan con `missingkey=error`. Además de las funciones de plantilla estándar (por ejemplo, `printf`),
-  Goa-AI proporciona:
-  - `json v` → JSON codifica `v` (útil para campos de puntero opcionales o incrustar valores estructurados).
-  - `quote s` → devuelve una cadena entrecomillada Go-escaped (como `fmt.Sprintf("%q", s)`).
-- La confirmación también se puede habilitar dinámicamente en tiempo de ejecución mediante `runtime.WithToolConfirmation(...)`
-  (útil para políticas basadas en el entorno o anulaciones por despliegue).
+- El runtime posee cómo se solicita la confirmación. El protocolo de confirmación integrado utiliza un
+`AwaitConfirmation` dedicado y una llamada de decisión `ProvideConfirmation`. Consulta la guía de Runtime para los
+payloads esperados y el flujo de ejecución.
+- Las plantillas de confirmación (`PromptTemplate` y `DeniedResultTemplate`) son cadenas de `text/template` de Go
+ejecutadas con `missingkey=error`. Además de las funciones de plantilla estándar (p. ej., `printf`),
+Goa-AI provee:
+  - `json v` → codifica `v` como JSON (útil para campos puntero opcionales o para incrustar valores estructurados).
+  - `quote s` → devuelve una cadena entrecomillada al estilo Go (como `fmt.Sprintf("%q", s)`).
+- La confirmación también puede habilitarse dinámicamente en tiempo de ejecución mediante `runtime.WithToolConfirmation(...)`
+(útil para políticas basadas en entorno o sobrescrituras por despliegue).
 
 ### CallHintTemplate y ResultHintTemplate
 
-`CallHintTemplate(template)` y `ResultHintTemplate(template)` configuran plantillas de visualización para invocaciones de herramientas y resultados. Las plantillas son cadenas de texto/plantillas Go que se renderizan con la carga útil o la estructura de resultados de la herramienta para producir sugerencias concisas que se muestran durante y después de la ejecución.
+`CallHintTemplate(template)` y `ResultHintTemplate(template)` configuran plantillas de visualización para las invocaciones y resultados de las herramientas. Las plantillas son cadenas de Go text/template renderizadas con valores Go tipados para producir pistas concisas mostradas durante y tras la ejecución.
 
 **Contexto**: Dentro de `Tool`
 
 **Puntos clave:**
 
-- Las plantillas reciben structs Go tipificados, no JSON en bruto-utiliza nombres de campo Go (por ejemplo, `.Query`, `.DeviceID`) no claves JSON (por ejemplo, `.query`, `.device_id`)
-- Mantenga las pistas concisas: se recomiendan ≤140 caracteres para una visualización limpia de la interfaz de usuario
-- Las plantillas se compilan con `missingkey=error`-todos los campos referenciados deben existir
-- Utilice los bloques `{{ if .Field }}` o `{{ with .Field }}` para los campos opcionales
+- Las plantillas de llamada reciben el payload tipado como raíz de la plantilla (por ejemplo, `.Query`, `.DeviceID`)
+- Las plantillas de resultado reciben un envoltorio explícito donde los campos semánticos viven bajo `.Result` y los metadatos acotados viven bajo `.Bounds`
+- Mantén las pistas concisas: ≤140 caracteres recomendados para una visualización limpia en UI
+- Las plantillas se compilan con `missingkey=error`: todos los campos referenciados deben existir
+- Usa nombres de campo Go, no claves JSON
+- Usa bloques `{{ if .Field }}` o `{{ with .Field }}` para los campos opcionales
 
-**Contrato de runtime:**
+**Contrato en tiempo de ejecución:**
 
-- Los constructores de hooks no renderizan pistas. Los eventos de planificación de herramientas tienen `DisplayHint==""` por defecto.
-- El runtime puede enriquecer y persistir una pista de llamada **duradera** en el momento de publicación decodificando la carga útil tipificada y ejecutando `CallHintTemplate`.
-- Si falla la decodificación tipificada o no hay plantilla registrada, el runtime deja `DisplayHint` vacío. Las pistas nunca se renderizan contra JSON en bruto.
-- Si un productor establece explícitamente `DisplayHint` (no vacío) antes de publicar el evento de hook, el runtime lo trata como autoritativo y no lo sobrescribe.
-- Para cambios por consumidor (por ejemplo, texto UI), configure `runtime.WithHintOverrides` en el runtime. Los overrides tienen precedencia sobre las plantillas DSL para eventos `tool_start` streameados.
+- Los constructores de hooks no renderizan pistas. Los eventos tool call scheduled tienen por defecto `DisplayHint==""`.
+- El runtime puede enriquecer y persistir una pista de llamada por defecto duradera en el momento de publicación decodificando el payload tipado de
+la herramienta y ejecutando el `CallHintTemplate`.
+- Cuando la decodificación tipada falla o no hay plantilla registrada, el runtime deja `DisplayHint` vacío. Las pistas
+nunca se renderizan sobre bytes JSON crudos.
+- Si un productor establece explícitamente `DisplayHint` (no vacío) antes de publicar el evento del hook, el runtime lo trata
+como autoritativo y no lo sobrescribe.
+- Para cambios de redacción por consumidor, configura `runtime.WithHintOverrides` en el runtime. Las sobrescrituras toman
+precedencia sobre las plantillas autoradas en DSL para los eventos `tool_start` streameados.
 
 **Ejemplo básico:**
 
@@ -851,13 +914,16 @@ Tool("search", "Search documents", func() {
         Required("count", "results")
     })
     CallHintTemplate("Searching for: {{ .Query }}")
-    ResultHintTemplate("Found {{ .Count }} results")
+    ResultHintTemplate("Found {{ .Result.Count }} results")
 })
 ```
 
-**Campos Struct Tipificados:**
+**Campos de struct tipado:**
 
-Las plantillas reciben los structs de carga útil/resultado generados en Go. Los nombres de campo siguen las convenciones de nomenclatura Go (PascalCase), no las convenciones JSON (snake_case o camelCase):
+Las plantillas de llamada reciben el struct de payload Go generado como raíz de la plantilla.
+Las plantillas de resultado reciben el envoltorio de preview del runtime, por lo que los campos semánticos viven
+bajo `.Result` y los metadatos acotados viven bajo `.Bounds`. Los nombres de campo siguen las
+convenciones de nombres de Go (PascalCase), no las convenciones JSON (snake_case o camelCase):
 
 ```go
 // DSL definition
@@ -875,13 +941,13 @@ Tool("get_device_status", "Get device status", func() {
     })
     // Use Go field names (PascalCase), not JSON keys
     CallHintTemplate("Checking status of {{ .DeviceID }}")
-    ResultHintTemplate("{{ .DeviceName }}: {{ if .IsOnline }}online{{ else }}offline{{ end }}")
+    ResultHintTemplate("{{ .Result.DeviceName }}: {{ if .Result.IsOnline }}online{{ else }}offline{{ end }}")
 })
 ```
 
-**Manejo de campos opcionales
+**Manejo de campos opcionales:**
 
-Utilice bloques condicionales para los campos opcionales para evitar errores de plantilla:
+Usa bloques condicionales para los campos opcionales para evitar errores de plantilla:
 
 ```go
 Tool("list_items", "List items with optional filter", func() {
@@ -896,21 +962,23 @@ Tool("list_items", "List items with optional filter", func() {
         Required("items", "total")
     })
     CallHintTemplate("Listing items{{ with .Category }} in {{ . }}{{ end }}")
-    ResultHintTemplate("{{ .Total }} items{{ if .Truncated }} (truncated){{ end }}")
+    ResultHintTemplate("{{ .Result.Total }} items{{ if .Result.Truncated }} (truncated){{ end }}")
 })
 ```
 
-**Funciones de plantilla incorporadas:**
+**Funciones de plantilla integradas:**
 
-El tiempo de ejecución proporciona estas funciones de ayuda para las plantillas de sugerencias:
+El runtime provee estas funciones auxiliares para las plantillas de pistas:
 
-| Función Descripción Ejemplo
-|----------|-------------|---------|
-| Unir cadena con separador
-| `count` | Contar elementos en una rebanada | `{{ count .Results }} items` |
-| `truncate` | Truncar cadena a N caracteres | `{{ truncate .Query 20 }}` |
 
-**Ejemplo completo con todas las funciones:**
+| Función    | Descripción                           | Ejemplo                      |
+| ---------- | ------------------------------------- | ---------------------------- |
+| `join`     | Une un slice de cadenas con separador | `{{ join .Tags ", " }}`      |
+| `count`    | Cuenta los elementos de un slice      | `{{ count .Results }} items` |
+| `truncate` | Trunca una cadena a N caracteres      | `{{ truncate .Query 20 }}`   |
+
+
+**Ejemplo completo con todas las funcionalidades:**
 
 ```go
 Tool("analyze_data", "Analyze dataset", func() {
@@ -929,27 +997,28 @@ Tool("analyze_data", "Analyze dataset", func() {
         Required("insights", "processing_time_ms")
     })
     CallHintTemplate("Analyzing {{ .DatasetID }} ({{ .AnalysisType }})")
-    ResultHintTemplate("{{ count .Insights }} insights in {{ .ProcessingTimeMs }}ms")
+    ResultHintTemplate("{{ count .Result.Insights }} insights in {{ .Result.ProcessingTimeMs }}ms")
 })
 ```
 
 ### ResultReminder
 
-`ResultReminder(text)` configura un recordatorio estático del sistema que se inyecta en la conversación después de que se devuelva el resultado de la herramienta. Utilícelo para proporcionar orientación entre bastidores al modelo sobre cómo interpretar o presentar el resultado al usuario.
+`ResultReminder(text)` configura un recordatorio de sistema estático que se inyecta en la conversación después de que se devuelve el resultado de la herramienta. Úsalo para proporcionar una guía entre bastidores al modelo sobre cómo interpretar o presentar el resultado al usuario.
 
 **Contexto**: Dentro de `Tool`
 
-El tiempo de ejecución envuelve automáticamente el texto recordatorio en etiquetas `<system-reminder>`. No incluya las etiquetas en el texto.
+El texto del recordatorio se envuelve automáticamente en etiquetas `<system-reminder>` por el runtime. No incluyas las etiquetas en el texto.
 
-**Recordatorios estáticos o dinámicos
+**Recordatorios estáticos vs dinámicos:**
 
-`ResultReminder` es para recordatorios estáticos, en tiempo de diseño, que se aplican cada vez que se llama a la herramienta. Para los recordatorios dinámicos que dependen del estado en tiempo de ejecución o del contenido de los resultados de la herramienta, utilice `PlannerContext.AddReminder()` en la implementación del planificador. Los recordatorios dinámicos son compatibles:
-- Limitación de velocidad (turnos mínimos entre emisiones)
-- Límites por ejecución (emisiones máximas por ejecución)
-- Adición/eliminación de tiempo de ejecución basado en condiciones
-- Niveles de prioridad (seguridad vs orientación)
+`ResultReminder` es para recordatorios estáticos, en tiempo de diseño, que aplican cada vez que se llama la herramienta. Para recordatorios dinámicos que dependen del estado en tiempo de ejecución o del contenido del resultado de la herramienta, usa `PlannerContext.AddReminder()` en tu implementación de planner. Los recordatorios dinámicos soportan:
 
-**Ejemplo básico
+- Limitación de frecuencia (turnos mínimos entre emisiones)
+- Topes por ejecución (número máximo de emisiones por ejecución)
+- Adición/eliminación en tiempo de ejecución según condiciones
+- Niveles de prioridad (seguridad vs guía)
+
+**Ejemplo básico:**
 
 ```go
 Tool("get_time_series", "Get time series data", func() {
@@ -968,16 +1037,16 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-**Cuándo utilizar ResultReminder:**
+**Cuándo usar ResultReminder:**
 
-- Cuando la interfaz de usuario muestra los resultados de la herramienta de una manera especial (tablas, gráficos, tablas) que el modelo debe conocer
-- Cuando el modelo debe evitar repetir información que ya es visible para el usuario
-- Cuando hay un contexto importante sobre cómo se presentan los resultados que afecta a cómo debe responder el modelo
-- Cuando se desea una orientación coherente que se aplique a cada invocación de la herramienta
+- Cuando la UI renderiza los resultados de la herramienta de una manera especial (gráficos, tablas) sobre la que el modelo debería saber
+- Cuando el modelo debería evitar repetir información que ya es visible al usuario
+- Cuando hay contexto importante sobre cómo se presentan los resultados que afecta cómo debería responder el modelo
+- Cuando quieres una guía consistente que aplique a cada invocación de la herramienta
 
 **Múltiples herramientas con recordatorios:**
 
-Cuando varias herramientas de un mismo turno tienen recordatorios de resultados, se combinan en un único mensaje del sistema:
+Cuando varias herramientas en un mismo turno tienen recordatorios de resultado, se combinan en un solo mensaje de sistema:
 
 ```go
 Tool("get_metrics", "Get device metrics", func() {
@@ -993,16 +1062,23 @@ Tool("get_alerts", "Get active alerts", func() {
 })
 ```
 
-**Recordatorios dinámicos a través de PlannerContext:**
+**Recordatorios dinámicos mediante PlannerContext:**
 
-Para los recordatorios que dependen de las condiciones de tiempo de ejecución, utilice la API del planificador en su lugar:
+Para recordatorios que dependen de condiciones en tiempo de ejecución, usa la API del planner en su lugar:
 
 ```go
 // In your planner implementation
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name == "get_time_series" && hasAnomalies(tr.Result) {
+        if tr.Name != "get_time_series" || tr.Error != nil {
+            continue
+        }
+        result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
+        if err != nil {
+            return nil, err
+        }
+        if hasAnomalies(result) {
             input.Agent.AddReminder(reminder.Reminder{
                 ID:   "anomaly_detected",
                 Text: "Anomalies were detected in the time series. Highlight these to the user.",
@@ -1014,13 +1090,14 @@ func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInp
 }
 ```
 
-### Etiquetas
+### Tags
 
-`Tags(values...)` anota herramientas o conjuntos de herramientas con etiquetas de metadatos. Las etiquetas se muestran a los motores de políticas y telemetría.
+`Tags(values...)` anota herramientas o toolsets con etiquetas de metadatos. Las etiquetas se exponen a los motores de políticas y a la telemetría.
 
 **Contexto**: Dentro de `Tool` o `Toolset`
 
-Patrones de etiquetas comunes:
+Patrones de etiquetas habituales:
+
 - Categorías de dominio: `"nlp"`, `"database"`, `"api"`, `"filesystem"`
 - Tipos de capacidad: `"read"`, `"write"`, `"search"`, `"transform"`
 - Niveles de riesgo: `"safe"`, `"destructive"`, `"external"`
@@ -1036,12 +1113,13 @@ Tool("delete_file", "Delete a file", func() {
 
 `BindTo("Method")` o `BindTo("Service", "Method")` asocia una herramienta con un método de servicio Goa.
 
-**Context**: Dentro de `Tool`
+**Contexto**: Dentro de `Tool`
 
-Cuando una herramienta está asociada a un método:
-- El esquema `Args` de la herramienta puede diferir del esquema `Payload` del método
-- El esquema de la herramienta `Return` puede diferir del esquema del método `Result`
-- Los adaptadores generados transforman entre tipos de herramientas y métodos
+Cuando una herramienta se vincula a un método:
+
+- El esquema `Args` de la herramienta puede diferir del `Payload` del método
+- El esquema `Return` de la herramienta puede diferir del `Result` del método
+- Los adaptadores generados transforman entre los tipos de herramienta y de método
 
 ```go
 var _ = Service("orchestrator", func() {
@@ -1062,12 +1140,12 @@ var _ = Service("orchestrator", func() {
 })
 ```
 
-### Inyectar
+### Inject
 
-`Inject(fields...)` marca campos específicos de la carga útil como "inyectados" (infraestructura del lado del servidor). Los campos inyectados son:
+`Inject(fields...)` marca determinados campos del payload como "inyectados" (infraestructura del lado del servidor). Los campos inyectados son:
 
-1. Ocultos del LLM (excluidos del esquema JSON enviado al modelo)
-2. Validados como campos `String` obligatorios en la carga útil del método enlazado
+1. Ocultos al LLM (excluidos del esquema JSON enviado al modelo)
+2. Validados como campos `String` obligatorios en el payload del método vinculado
 3. Poblados desde `runtime.ToolCallMeta` por los ejecutores generados, con hooks opcionales `ToolInterceptor.Inject`
 
 **Contexto**: Dentro de `Tool`
@@ -1087,9 +1165,11 @@ Tool("get_data", "Get data for current session", func() {
 })
 ```
 
-Los nombres admitidos para campos inyectados son fijos: `run_id`, `session_id`, `turn_id`, `tool_call_id` y `parent_tool_call_id`.
+Los nombres de campo inyectados soportados son fijos: `run_id`, `session_id`, `turn_id`,
+`tool_call_id` y `parent_tool_call_id`.
 
-En tiempo de ejecución, los ejecutores de servicio generados copian los valores correspondientes desde `runtime.ToolCallMeta` antes de ejecutar interceptores tipados opcionales:
+En tiempo de ejecución, los ejecutores de servicio generados copian los valores coincidentes desde
+`runtime.ToolCallMeta` antes de que se ejecuten los interceptores tipados opcionales:
 
 ```go
 func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
@@ -1102,104 +1182,81 @@ func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCal
 
 ### TerminalRun
 
-`TerminalRun()` marca la herramienta actual como terminal para el run. Cuando la herramienta se ejecuta con éxito, el runtime finaliza el run inmediatamente después de publicar el resultado de la herramienta, sin requerir un turno adicional de `PlanResume`/finalización.
+`TerminalRun()` marca la herramienta actual como terminal para la ejecución. Una vez que la herramienta se ejecuta con éxito, el runtime finaliza la ejecución inmediatamente después de publicar el resultado de la herramienta sin solicitar un turno de seguimiento `PlanResume`/finalización.
 
 **Contexto**: Dentro de `Tool`
 
-Usa `TerminalRun()` para herramientas cuyo resultado es la salida terminal orientada al usuario del run, por ejemplo un renderer de informe final o una herramienta de "commit de este run". El resultado de la herramienta es el artefacto terminal del run; no es necesaria una narración adicional del modelo.
+Usa `TerminalRun()` para herramientas cuyo resultado es la salida terminal, orientada al usuario, de la ejecución: por ejemplo, un renderizador de informe final o una herramienta "commit this run". El resultado de la herramienta es el artefacto terminal de la ejecución; una narración adicional del modelo no es necesaria ni deseable.
 
 ```go
-Tool("commit_task", "Hace commit del artefacto terminal de la tarea", func() {
+Tool("commit_task", "Commit the terminal task artifact", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
     TerminalRun()
 })
 ```
 
-**Comportamiento en runtime:**
+**Comportamiento en tiempo de ejecución:**
 
-- La generación de código registra la bandera en `tools.ToolSpec.TerminalRun`.
-- Tras una llamada terminal con éxito, el runtime finaliza el run sin invocar `PlanResume`.
-- Las herramientas terminales se componen de forma natural con `Bookkeeping()` (ver abajo): la típica herramienta de "commit de este run" es terminal y a la vez bookkeeping, por lo que siempre puede ejecutarse incluso cuando el presupuesto de retrieval se ha agotado y cierra el run de forma atómica.
+- Codegen registra la bandera en `tools.ToolSpec.TerminalRun`.
+- Tras una llamada exitosa a una herramienta terminal, el runtime finaliza la ejecución sin llamar a `PlanResume`.
+- Las herramientas terminales componen de forma natural con `Bookkeeping()` (ver abajo): la típica herramienta "commit this run" es a la vez terminal y bookkeeping, por lo que siempre se ejecuta incluso cuando el presupuesto de recuperación está agotado y finaliza la ejecución de forma atómica.
 
 ### Bookkeeping
 
-`Bookkeeping()` marca la herramienta actual como herramienta de bookkeeping que no consume el presupuesto de retrieval del run `MaxToolCalls`. El runtime no decrementa `RemainingToolCalls` para las llamadas de bookkeeping y no las descarta al recortar un lote para encajar en el presupuesto restante.
+`Bookkeeping()` marca la herramienta actual como una herramienta de bookkeeping que no consume el presupuesto de recuperación `MaxToolCalls` a nivel de ejecución. El runtime no decrementa `RemainingToolCalls` para las llamadas de bookkeeping y nunca las descarta al recortar un batch para ajustarlo al presupuesto restante.
 
 **Contexto**: Dentro de `Tool`
 
-Usa `Bookkeeping()` para herramientas estructuradas de progreso, estado, findings y commit terminal cuyo coste es de tipo record-keeping, no retrieval ni side-effect. Ejemplos clásicos son actualizaciones de estado, marcadores de progreso y la herramienta atómica de "commit de este run" que escribe el artefacto final.
+Usa `Bookkeeping()` para herramientas estructuradas de progreso, estado, hallazgos y commit terminal, cuyo coste es de registro en lugar de recuperación o trabajo con efectos secundarios. Ejemplos clásicos son las actualizaciones de estado, los marcadores de progreso y la herramienta atómica "commit this run" que escribe el artefacto final.
 
 ```go
-Tool("set_step_status", "Actualiza el estado del paso", func() {
+Tool("set_step_status", "Update step status", func() {
     Args(SetStepStatusArgs)
     Return(SetStepStatusResult)
     Bookkeeping()
 })
 ```
 
-**Comportamiento en runtime:**
+**Comportamiento en tiempo de ejecución:**
 
-- La generación de código registra la bandera en `tools.ToolSpec.Bookkeeping`.
-- Las llamadas de bookkeeping nunca cuentan contra `MaxToolCalls` y nunca se descartan cuando el runtime recorta un lote para encajar en el presupuesto restante. Las llamadas con presupuesto (no-bookkeeping) se recortan primero; las llamadas de bookkeeping mantienen su posición original.
-- Por defecto, los resultados correctos de bookkeeping permanecen ocultos para los futuros turnos del planificador. Añade `PlannerVisible()` cuando una herramienta de bookkeeping emite un estado canónico sobre el que debe razonar el siguiente turno.
-- Las herramientas desconocidas se tratan como con presupuesto; solo las herramientas declaradas `Bookkeeping()` en el DSL (o marcadas como bookkeeping en el `ToolSpec` del runtime) están exentas.
-- Un turno compuesto solo por bookkeeping debe resolverse en el mismo turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, espera/pausa) o producir al menos un resultado de bookkeeping planner-visible que justifique la siguiente reanudación.
+- Codegen registra la bandera en `tools.ToolSpec.Bookkeeping`.
+- Las llamadas de bookkeeping nunca cuentan contra `MaxToolCalls` y nunca se descartan cuando el runtime recorta un batch para ajustarlo al presupuesto restante. Las llamadas presupuestadas (no bookkeeping) se recortan primero; las llamadas de bookkeeping conservan su posición original.
+- Los resultados exitosos de bookkeeping permanecen ocultos para los futuros turnos del planner. Coloca el estado canónico sobre el que deba razonar el siguiente turno en una entrada explícita del planner, no en el resultado de una herramienta de bookkeeping.
+- Las herramientas desconocidas se tratan como presupuestadas; solo las herramientas declaradas `Bookkeeping()` en el DSL (o marcadas como bookkeeping en la `ToolSpec` del runtime) quedan exentas.
+- Un turno solo de bookkeeping debe resolverse en el mismo turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, o await/pausa).
 
 **Composición con `TerminalRun()`:**
 
-Una herramienta de commit terminal se declara normalmente tanto bookkeeping como terminal:
+Una herramienta de commit terminal suele ser a la vez bookkeeping y terminal:
 
 ```go
-Tool("commit_task", "Hace commit del artefacto terminal de la tarea", func() {
+Tool("commit_task", "Commit the terminal task artifact", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
-    Bookkeeping()  // siempre se ejecuta, incluso con el presupuesto agotado
-    TerminalRun()  // cierra el run de forma atómica al tener éxito
+    Bookkeeping()  // always executes, even when the budget is exhausted
+    TerminalRun()  // ends the run atomically once it succeeds
 })
 ```
 
-Este patrón garantiza que el run siempre pueda finalizar de forma determinista: la herramienta de commit está exenta del presupuesto de retrieval y, tras tener éxito, el run termina sin un turno adicional del planificador.
+Este patrón garantiza que la ejecución siempre pueda finalizar de forma determinista: la herramienta de commit está exenta del presupuesto de recuperación, y una vez que tiene éxito la ejecución queda concluida sin un turno de planner de seguimiento.
 
-### PlannerVisible
-
-`PlannerVisible()` mantiene visible para futuros turnos del planificador el resultado de una herramienta de bookkeeping. Úsalo para herramientas del plano de control que emiten estado canónico, por ejemplo un snapshot estructurado de progreso que deba impulsar el siguiente `PlanResume`.
-
-**Contexto**: Dentro de `Tool`
-
-```go
-Tool("set_step_status", "Actualiza el estado del paso", func() {
-    Args(SetStepStatusArgs)
-    Return(TaskProgressSnapshot)
-    Bookkeeping()
-    PlannerVisible()
-})
-```
-
-**Comportamiento en runtime:**
-
-- `PlannerVisible()` solo es válido en herramientas de bookkeeping no terminales.
-- Las ejecuciones correctas se reinyectan en la transcripción visible por el modelo y en futuros `PlanResumeInput.ToolOutputs`.
-- Los fallos de bookkeeping reintentables siguen siendo planner-visible incluso sin `PlannerVisible()`.
-- Las herramientas con presupuesto no necesitan `PlannerVisible()` porque ya son planner-visible por defecto.
-
----
-
-## Funciones políticas
+## Funciones de política
 
 ### RunPolicy
 
-`RunPolicy(dsl)` configura los límites de ejecución aplicados en tiempo de ejecución. Se declara dentro de `Agent` y contiene ajustes de política como límites, presupuestos de tiempo, gestión del historial y gestión de interrupciones.
+`RunPolicy(dsl)` configura los límites de ejecución aplicados en tiempo de ejecución. Se declara dentro de un `Agent` y contiene ajustes de política como caps, presupuestos de tiempo, gestión del historial y manejo de interrupciones.
 
 **Contexto**: Dentro de `Agent`
 
-**Funciones de política disponibles
-- `DefaultCaps` - límites de recursos (llamadas a herramientas, fallos consecutivos)
-- `TimeBudget` - límite de reloj de pared simple para toda la ejecución
-- `Timing` - límites de tiempo detallados para actividades de presupuesto, planificación y herramientas (avanzado)
-- `History` - gestión del historial de conversaciones (ventana deslizante o compresión)
-- `InterruptsAllowed` - habilitar pausa/reanudar para humano-en-el-bucle
-- `OnMissingFields` - comportamiento de validación para campos obligatorios que faltan
+**Funciones de política disponibles:**
+
+- `DefaultCaps` – límites de recursos (llamadas a herramientas, fallos consecutivos)
+- `TimeBudget` – límite simple de tiempo real para toda la ejecución
+- `Timing` – timeouts finos para budget, planificación y actividades de herramientas (avanzado)
+- `History` – gestión del historial de conversación (ventana deslizante o compresión)
+- `InterruptsAllowed` – habilita pausar/reanudar para human-in-the-loop
+- `OnMissingFields` – comportamiento de validación ante campos obligatorios faltantes
 
 ```go
 Agent("chat", "Conversational runner", func() {
@@ -1221,9 +1278,9 @@ Agent("chat", "Conversational runner", func() {
 
 ### DefaultCaps
 
-`DefaultCaps(opts...)` aplica topes de capacidad para evitar bucles fuera de control y hacer cumplir los límites de ejecución.
+`DefaultCaps(opts...)` aplica topes de capacidad para evitar bucles descontrolados y aplicar límites de ejecución.
 
-**Context**: Dentro de `RunPolicy`
+**Contexto**: Dentro de `RunPolicy`
 
 ```go
 RunPolicy(func() {
@@ -1234,13 +1291,13 @@ RunPolicy(func() {
 })
 ```
 
-**MaxToolCalls(n)**: Establece el número máximo de invocaciones a *herramientas con presupuesto* permitidas. Si se excede, el runtime aborta. Las herramientas declaradas `Bookkeeping()` están exentas de este límite y no decrementan `RemainingToolCalls`, de modo que las actualizaciones de estado estructurado, los marcadores de progreso y las herramientas de commit terminal siempre pueden ejecutarse.
+**MaxToolCalls(n)**: Establece el número máximo de invocaciones de herramientas presupuestadas permitidas por ejecución. Las herramientas declaradas `Bookkeeping()` están exentas de este tope y no cuentan contra `n`. Cuando el presupuesto se agota, el runtime deja de programar llamadas presupuestadas y finaliza la ejecución a través del planner con motivo de terminación `tool_cap`.
 
-**MaxConsecutiveFailedToolCalls(n)**: Establece el máximo de llamadas a herramientas fallidas consecutivas antes de abortar. Evita bucles de reintento infinitos.
+**MaxConsecutiveFailedToolCalls(n)**: Establece el número máximo de llamadas a herramienta fallidas consecutivas antes de abortar. Previene bucles infinitos de reintento.
 
 ### TimeBudget
 
-`TimeBudget(duration)` impone un límite de reloj de pared en la ejecución del agente. La duración se especifica como una cadena (por ejemplo, `"2m"`, `"30s"`).
+`TimeBudget(duration)` aplica un límite de tiempo real a la ejecución del agente. La duración se especifica como cadena (p. ej., `"2m"`, `"30s"`).
 
 **Contexto**: Dentro de `RunPolicy`
 
@@ -1250,17 +1307,18 @@ RunPolicy(func() {
 })
 ```
 
-Para un control preciso de los tiempos de espera de las actividades individuales, utilice `Timing` en su lugar.
+Para control fino sobre los timeouts de actividades individuales, usa `Timing` en su lugar.
 
-### Temporización
+### Timing
 
-`Timing(dsl)` proporciona una configuración detallada de los tiempos de espera como alternativa a `TimeBudget`. Mientras que `TimeBudget` establece un único límite global, `Timing` permite controlar los tiempos de espera en tres niveles: el presupuesto global de ejecución, las actividades del planificador (inferencia LLM) y las actividades de ejecución de herramientas.
+`Timing(dsl)` provee configuración fina de timeouts como alternativa a `TimeBudget`. Mientras que `TimeBudget` establece un único límite global, `Timing` te permite controlar timeouts en tres niveles: el presupuesto global de la ejecución, las actividades del planner (inferencia del LLM) y las actividades de ejecución de herramientas.
 
 **Contexto**: Dentro de `RunPolicy`
 
-**Cuándo utilizar Timing vs TimeBudget:**
-- Utilice `TimeBudget` para casos sencillos en los que un único límite de reloj de pared es suficiente
-- Utilice `Timing` cuando necesite diferentes tiempos de espera para la planificación frente a la ejecución de la herramienta-por ejemplo, cuando las herramientas realizan llamadas a API externas lentas pero desea respuestas LLM rápidas
+**Cuándo usar Timing vs TimeBudget:**
+
+- Usa `TimeBudget` para casos simples donde un único límite de tiempo real es suficiente
+- Usa `Timing` cuando necesites timeouts distintos para planificación vs ejecución de herramientas: por ejemplo, cuando las herramientas hagan llamadas lentas a APIs externas pero quieras respuestas LLM rápidas
 
 ```go
 RunPolicy(func() {
@@ -1272,37 +1330,35 @@ RunPolicy(func() {
 })
 ```
 
-`Timing` se mantiene en la capa semántica del runtime. `Plan(...)` y
-`Tools(...)` delimitan cuánto puede ejecutarse un intento sano del planificador
-o de una herramienta una vez que empieza. No configuran mecánicas del motor de
-workflow como los tiempos de espera en cola o la vivacidad por heartbeat. Si
-usa el adaptador Temporal, configure esas mecánicas con
-`temporal.Options.ActivityDefaults`.
+`Timing` se mantiene en la capa semántica del runtime. `Plan(...)` y `Tools(...)`
+acotan cuánto tiempo puede ejecutar un intento sano de planner o herramienta una vez iniciado.
+No configuran mecánicas del motor de workflows como timeouts de espera en cola o
+liveness por heartbeat. Si usas el adaptador Temporal, configura esas mecánicas
+con `temporal.Options.ActivityDefaults`.
 
-**Funciones de temporización
+**Funciones de Timing:**
 
-| Función | Descripción | Afecta |
-|----------|-------------|---------|
-| `Budget(duration)` | Presupuesto total de reloj de pared para la ejecución | Todo el ciclo de vida de la ejecución |
-| `Plan(duration)` | Tiempo de espera para las actividades Planificar y Reanudar | Llamadas de inferencia LLM a través del planificador |
-| `Tools(duration)` | Tiempo de espera por defecto para actividades ExecuteTool | Ejecución de herramientas (llamadas de servicio, MCP, agent-as-tool) |
 
-**Cómo afecta la temporización al comportamiento en tiempo de ejecución:**
+| Función            | Descripción                                        | Afecta a                                              |
+| ------------------ | -------------------------------------------------- | ----------------------------------------------------- |
+| `Budget(duration)` | Presupuesto total de tiempo real para la ejecución | Todo el ciclo de vida de la ejecución                 |
+| `Plan(duration)`   | Timeout para las actividades Plan y Resume         | Llamadas de inferencia del LLM vía planner            |
+| `Tools(duration)`  | Timeout por defecto para las actividades ExecuteTool | Ejecución de herramientas (servicios, MCP, agent-as-tool) |
 
-El runtime traduce estos valores DSL en presupuestos por intento agnósticos del
-motor:
-- `Budget` establece el presupuesto semántico de reloj de pared para la
-  ejecución. El runtime aplica ese presupuesto al trabajo del planificador y de
-  las herramientas, y deriva el tiempo de espera del motor como
-  `Budget + FinalizerGrace + holgura del motor` para que el turno final de
-  `PlanResume` y la limpieza terminal todavía tengan margen para terminar.
-- `Plan` se convierte en el presupuesto por intento de `PlanStart` y
-  `PlanResume`
-- `Tools` se convierte en el presupuesto por intento predeterminado de
-  `ExecuteTool`
 
-El comportamiento específico de Temporal para espera en cola y vivacidad se
-superpone por separado en el adaptador Temporal.
+**Cómo afecta Timing al comportamiento en tiempo de ejecución:**
+
+El runtime traduce estos valores DSL en presupuestos de intento agnósticos del motor:
+
+- `Budget` establece el presupuesto semántico de tiempo real para la ejecución. El runtime aplica
+ese presupuesto al trabajo del planner/herramientas y deriva el timeout de ejecución del motor como
+`Budget + FinalizerGrace + margen del motor` para que el turno final de resume del planner
+y la limpieza terminal aún tengan espacio para finalizar.
+- `Plan` se convierte en el presupuesto de intento para `PlanStart` y `PlanResume`
+- `Tools` se convierte en el presupuesto de intento por defecto para `ExecuteTool`
+
+El comportamiento específico de Temporal de espera en cola y liveness se superpone por separado mediante
+el adaptador Temporal.
 
 **Ejemplo completo:**
 
@@ -1320,13 +1376,13 @@ Agent("data-processor", "Processes large datasets", func() {
 })
 ```
 
-### Caché
+### Cache
 
-`Cache(dsl)` configura el comportamiento de caché de avisos para el agente. Especifica dónde debe colocar el tiempo de ejecución los puntos de control de la caché en relación con los avisos del sistema y las definiciones de herramientas para los proveedores que admiten el almacenamiento en caché.
+`Cache(dsl)` configura el comportamiento de caché de prompts para el agente. Especifica dónde debe colocar el runtime los puntos de control de caché relativos a los prompts de sistema y las definiciones de herramientas para los proveedores que soportan caché.
 
 **Contexto**: Dentro de `RunPolicy`
 
-El almacenamiento en caché de avisos puede reducir significativamente los costes de inferencia y la latencia al permitir a los proveedores reutilizar el contenido procesado previamente. La función Caché permite definir los límites de los puntos de comprobación que los proveedores utilizan para determinar qué contenido se puede almacenar en caché.
+El caché de prompts puede reducir significativamente los costes de inferencia y la latencia al permitir a los proveedores reutilizar contenido previamente procesado. La función Cache te permite definir los límites de checkpoint que los proveedores utilizan para determinar qué contenido puede cachearse.
 
 ```go
 RunPolicy(func() {
@@ -1337,29 +1393,33 @@ RunPolicy(func() {
 })
 ```
 
-**Funciones de punto de control de caché:**
+**Funciones de checkpoint de caché:**
 
-| Función Descripción
-|----------|-------------|
-| `AfterSystem()` | Coloca un punto de control de caché después de todos los mensajes del sistema. Los proveedores interpretan esto como un límite de caché inmediatamente después del preámbulo del sistema. |
-| `AfterTools()` | Coloca un punto de control de caché después de las definiciones de herramientas. Los proveedores interpretan esto como un límite de caché inmediatamente después de la sección de configuración de la herramienta. |
 
-**Soporte de proveedores:**
+| Función         | Descripción                                                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AfterSystem()` | Coloca un checkpoint de caché tras todos los mensajes de sistema. Los proveedores lo interpretan como un límite de caché inmediatamente tras el preámbulo del sistema. |
+| `AfterTools()`  | Coloca un checkpoint de caché tras las definiciones de herramientas. Los proveedores lo interpretan como un límite de caché inmediatamente tras la sección de configuración de herramientas. |
 
-No todos los proveedores soportan prompt caching, y el soporte varía según el tipo de checkpoint:
 
-| Proveedor | AfterSystem | AfterTools |
-|----------|-------------|------------|
-| Bedrock (modelos Claude)
-| Bedrock (modelos Nova)
+**Soporte del proveedor:**
 
-Los proveedores que no admiten el almacenamiento en caché ignoran estas opciones. El tiempo de ejecución valida las restricciones específicas del proveedor-por ejemplo, solicitar `AfterTools` con un modelo Nova devuelve un error.
+No todos los proveedores soportan caché de prompts, y el soporte varía por tipo de checkpoint:
 
-**Cuándo utilizar la caché:**
 
-- Utilice `AfterSystem()` cuando la solicitud de su sistema sea estable a lo largo de los turnos y desee evitar volver a procesarla
-- Utilice `AfterTools()` cuando sus definiciones de herramienta sean estables y desee almacenar en caché la configuración de la herramienta
-- Combine ambos para obtener el máximo beneficio de la caché con los proveedores compatibles
+| Proveedor               | AfterSystem | AfterTools |
+| ----------------------- | ----------- | ---------- |
+| Bedrock (modelos Claude) | ✓           | ✓          |
+| Bedrock (modelos Nova)   | ✓           | ✗          |
+
+
+Los proveedores que no soportan caché ignoran estas opciones. El runtime valida las restricciones específicas del proveedor: por ejemplo, solicitar `AfterTools` con un modelo Nova devuelve un error.
+
+**Cuándo usar Cache:**
+
+- Usa `AfterSystem()` cuando tu prompt de sistema sea estable entre turnos y quieras evitar reprocesarlo
+- Usa `AfterTools()` cuando tus definiciones de herramientas sean estables y quieras cachear la configuración de herramientas
+- Combina ambos para obtener el máximo beneficio de caché con los proveedores compatibles
 
 **Ejemplo completo:**
 
@@ -1378,12 +1438,12 @@ Agent("assistant", "Conversational assistant", func() {
 })
 ```
 
-### Historia
+### History
 
-`History(dsl)` define cómo el tiempo de ejecución gestiona la historia de la conversación antes de cada invocación del planificador. Las políticas de historial transforman el historial de mensajes preservando:
+`History(dsl)` define cómo el runtime gestiona el historial de conversación antes de cada invocación al planner. Las políticas de historial transforman el historial de mensajes preservando:
 
-- Las indicaciones del sistema al inicio de la conversación
-- Límites lógicos de turno (usuario + asistente + llamadas/resultados de la herramienta como unidades atómicas)
+- Los prompts de sistema al inicio de la conversación
+- Los límites lógicos de turno (usuario + asistente + llamadas/resultados de herramientas como unidades atómicas)
 
 Se puede configurar como máximo una política de historial por agente.
 
@@ -1393,7 +1453,7 @@ Hay dos políticas estándar disponibles:
 
 **KeepRecentTurns (Ventana deslizante):**
 
-`KeepRecentTurns(n)` retiene sólo los N turnos usuario/asistente más recientes mientras preserva los avisos del sistema y los intercambios de herramientas. Este es el enfoque más simple para limitar el tamaño del contexto.
+`KeepRecentTurns(n)` retiene solo los N turnos de usuario/asistente más recientes mientras preserva los prompts de sistema y los intercambios de herramientas. Es el enfoque más simple para acotar el tamaño del contexto.
 
 ```go
 RunPolicy(func() {
@@ -1404,11 +1464,12 @@ RunPolicy(func() {
 ```
 
 **Parámetros:**
+
 - `n`: Número de turnos recientes a mantener (debe ser > 0)
 
-**Comprimir (Resumen asistido por modelos):**
+**Compress (Resumen asistido por modelo):**
 
-`Compress(triggerAt, keepRecent)` resume los turnos más antiguos usando un modelo mientras mantiene los turnos recientes con total fidelidad. Esto preserva más contexto que una simple ventana deslizante al condensar la conversación más antigua en un resumen.
+`Compress(triggerAt, keepRecent)` resume los turnos antiguos usando un modelo mientras mantiene los turnos recientes con fidelidad completa. Esto preserva más contexto que una ventana deslizante simple al condensar la conversación antigua en un resumen.
 
 ```go
 RunPolicy(func() {
@@ -1421,12 +1482,13 @@ RunPolicy(func() {
 ```
 
 **Parámetros:**
-- `triggerAt`: Recuento total mínimo de giros antes de que se ejecute la compresión (debe ser > 0)
-- `keepRecent`: Número de turnos más recientes a retener con total fidelidad (debe ser >= 0 y < triggerAt)
 
-**HistoryModel Requirement:**
+- `triggerAt`: Conteo total mínimo de turnos antes de que se ejecute la compresión (debe ser > 0)
+- `keepRecent`: Número de turnos más recientes a retener con fidelidad completa (debe ser >= 0 y < triggerAt)
 
-When using `Compress`, debe suministrar un `model.Client` a través del campo `HistoryModel` generado en la configuración del agente. El tiempo de ejecución utiliza este cliente con `ModelClassSmall` para resumir los turnos más antiguos:
+**Requisito HistoryModel:**
+
+Al usar `Compress`, debes suministrar un `model.Client` mediante el campo generado `HistoryModel` en la configuración del agente. El runtime usa este cliente con `ModelClassSmall` para resumir los turnos antiguos:
 
 ```go
 // Generated agent config includes HistoryModel field when Compress is used
@@ -1439,28 +1501,30 @@ if err := chat.RegisterChatAgent(ctx, rt, cfg); err != nil {
 }
 ```
 
-Si no se proporciona `HistoryModel` cuando se configura `Compress`, el registro fallará.
+Si no se provee `HistoryModel` cuando `Compress` está configurado, el registro fallará.
 
-**Preservación de los límites de giro:**
+**Preservación de límites de turno:**
 
-Ambas políticas preservan los límites lógicos de giro como unidades atómicas. Un "giro" consiste en:
-1. Un mensaje de usuario
-2. La respuesta del asistente (texto y/o llamadas a la herramienta)
-3. Cualquier resultado de esa respuesta
+Ambas políticas preservan los límites lógicos de turno como unidades atómicas. Un "turno" consiste en:
 
-Esto garantiza que el modelo siempre vea secuencias de interacción completas, nunca giros parciales que podrían confundir el contexto.
+1. Un mensaje del usuario
+2. La respuesta del asistente (texto y/o llamadas a herramientas)
+3. Cualquier resultado de herramienta de esa respuesta
+
+Esto garantiza que el modelo siempre vea secuencias de interacción completas, nunca turnos parciales que podrían confundir el contexto.
 
 ### InterruptsAllowed
- 
-`InterruptsAllowed(bool)` señala que las interrupciones humanas en el bucle deben ser honradas. Cuando está habilitado, el tiempo de ejecución admite operaciones de pausa/reanudación, que son esenciales para los bucles de aclaración y los estados de espera duraderos.
- 
+
+`InterruptsAllowed(bool)` señala que las interrupciones human-in-the-loop deben ser respetadas. Cuando está habilitado, el runtime soporta operaciones de pausa/reanudación, que son esenciales para los bucles de clarificación y los estados de await durables.
+
 **Contexto**: Dentro de `RunPolicy`
- 
-**Principales ventajas
-- Permite al agente **pausar** la ejecución cuando falta información requerida (ver `OnMissingFields`).
-- Permite al planificador **esperar** la entrada del usuario a través de herramientas de clarificación.
-- Garantiza que el estado del agente se preserve exclusivamente durante la pausa, sin consumir recursos de computación hasta que se reanude.
- 
+
+**Beneficios clave:**
+
+- Permite al agente **pausar** la ejecución cuando falte información obligatoria (ver `OnMissingFields`).
+- Permite al planner **esperar** entrada del usuario mediante herramientas de clarificación.
+- Asegura que el estado del agente se preserva exclusivamente durante la pausa, sin consumir recursos de cómputo hasta reanudarse.
+
 ```go
 RunPolicy(func() {
     // Enable pause/resume capability
@@ -1473,15 +1537,16 @@ RunPolicy(func() {
 
 ### OnMissingFields
 
-`OnMissingFields(action)` configura cómo responde el agente cuando la validación de la invocación de la herramienta detecta que faltan campos obligatorios.
+`OnMissingFields(action)` configura cómo responde el agente cuando la validación de invocación de herramientas detecta campos obligatorios faltantes.
 
-**Context**: Dentro de `RunPolicy`
+**Contexto**: Dentro de `RunPolicy`
 
 Valores válidos:
-- `"finalize"`: Detener la ejecución cuando falten campos obligatorios
-- `"await_clarification"`: Hacer una pausa y esperar a que el usuario proporcione la información que falta
-- `"resume"`: Continuar la ejecución a pesar de que falten campos
-- `""` (vacío): Dejar que el planificador decida en función del contexto
+
+- `"finalize"`: Detiene la ejecución cuando faltan campos obligatorios
+- `"await_clarification"`: Pausa y espera a que el usuario proporcione la información faltante
+- `"resume"`: Continúa la ejecución a pesar de los campos faltantes
+- `""` (vacío): Deja que el planner decida según el contexto
 
 ```go
 RunPolicy(func() {
@@ -1489,7 +1554,7 @@ RunPolicy(func() {
 })
 ```
 
-### Ejemplo de política completa
+### Ejemplo completo de política
 
 ```go
 Agent("chat", "Conversational runner", func() {
@@ -1516,12 +1581,11 @@ Agent("chat", "Conversational runner", func() {
 
 ## Funciones MCP
 
-Goa-AI proporciona funciones DSL para declarar servidores de Protocolo de Contexto de Modelo (MCP) dentro de los servicios Goa.
+Goa-AI provee funciones DSL para declarar servidores Model Context Protocol (MCP) dentro de los servicios Goa.
 
-### Servidor MCPS
+### MCP
 
-`MCP(name, version, opts...)` habilita el soporte MCP para el servicio actual. Configura el servicio para exponer herramientas, recursos y avisos a través del protocolo MCP.
-
+`MCP(name, version, opts...)` habilita el soporte MCP para el servicio actual. Configura el servicio para exponer herramientas, recursos y prompts mediante el protocolo MCP.
 
 **Contexto**: Dentro de `Service`
 
@@ -1529,7 +1593,6 @@ Goa-AI proporciona funciones DSL para declarar servidores de Protocolo de Contex
 Service("calculator", func() {
     Description("Calculator MCP server")
     
-    // Uso de MCP
     MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
     
     Method("add", func() {
@@ -1549,9 +1612,9 @@ Service("calculator", func() {
 
 ### ProtocolVersion
 
-`ProtocolVersion(version)` configura la versión del protocolo MCP soportada por el servidor. Devuelve una función de configuración para su uso con `MCP`.
+`ProtocolVersion(version)` configura la versión del protocolo MCP soportada por el servidor. Devuelve una función de configuración para usar con `MCP`.
 
-**Context**: Argumento opcional de `MCP`
+**Contexto**: Argumento de opción a `MCP`
 
 ```go
 Service("calculator", func() {
@@ -1560,11 +1623,11 @@ Service("calculator", func() {
 })
 ```
 
-### Tool (in Method Context)
+### Tool (en contexto de Method)
 
-`Tool(name, description)` marca el método actual como una herramienta MCP. La carga útil del método se convierte en el esquema de entrada de la herramienta y el resultado se convierte en el esquema de salida.
+Dentro de un `Method` en un servicio con MCP habilitado, `Tool(name, description)` marca el método actual como una herramienta MCP. El payload del método se convierte en el esquema de entrada de la herramienta y el result en el esquema de salida.
 
-**Contexto**: Dentro de `Method` (el servicio debe tener MCP activado)
+**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
 
 ```go
 Method("search", func() {
@@ -1581,13 +1644,11 @@ Method("search", func() {
 })
 ```
 
-### Toolset(FromMCP(...))
+### Toolset con `FromMCP` / `FromExternalMCP`
 
-`Toolset(FromMCP(service, toolset))` declara un conjunto de herramientas definido por MCP derivado de un servidor Goa MCP.
+Usa `Toolset(FromMCP(service, toolset))` para servidores MCP definidos en Goa en el mismo diseño, o `Toolset("name", FromExternalMCP(service, toolset), func() { ... })` para servidores MCP externos con esquemas en línea.
 
-**Context**: Nivel superior
-
-Existen dos patrones de uso:
+**Contexto**: Top-level
 
 **Servidor MCP respaldado por Goa:**
 
@@ -1600,6 +1661,9 @@ var _ = Service("orchestrator", func() {
     })
 })
 ```
+
+`FromMCP` debe apuntar a un servicio Goa en el mismo diseño que declare `MCP(...)`.
+El generador eleva los esquemas de herramientas desde los métodos MCP de ese servicio.
 
 **Servidor MCP externo con esquemas en línea:**
 
@@ -1616,13 +1680,16 @@ Agent("helper", "", func() {
 })
 ```
 
+`FromExternalMCP` requiere declaraciones `Tool(...)` en línea porque los esquemas del servidor
+externo no provienen del diseño local de Goa.
+
 ### Resource y WatchableResource
 
-`Resource(name, uri, mimeType)` marca un método como proveedor de recursos MCP.
+`Resource(name, uri, mimeType)` marca un método como proveedor de recurso MCP.
 
 `WatchableResource(name, uri, mimeType)` marca un método como recurso suscribible.
 
-**Contexto**: Dentro de `Method` (el servicio debe tener habilitado MCP)
+**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
 
 ```go
 Method("readme", func() {
@@ -1642,15 +1709,15 @@ Method("system_status", func() {
 
 ### StaticPrompt y DynamicPrompt
 
-`StaticPrompt(name, description, messages...)` añade una plantilla de aviso estática.
+`StaticPrompt(name, description, messages...)` añade una plantilla de prompt estática.
 
-`DynamicPrompt(name, description)` marca un método como generador de avisos dinámico.
+`DynamicPrompt(name, description)` marca un método como generador de prompts dinámicos.
 
 **Contexto**: Dentro de `Service` (estático) o `Method` (dinámico)
 
 ```go
 Service("assistant", func() {
-    MCP("assistant", "1.0")
+    MCP("assistant-mcp", "1.0")
     
     // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
@@ -1670,13 +1737,13 @@ Service("assistant", func() {
 })
 ```
 
-### Notificación y suscripción
+### Notification y Subscription
 
 `Notification(name, description)` marca un método como emisor de notificaciones MCP.
 
-`Subscription(resourceName)` marca un método como gestor de suscripciones para un recurso vigilable.
+`Subscription(resourceName)` marca un método como manejador de suscripciones para un recurso watchable.
 
-**Contexto**: Dentro de `Method` (el servicio debe tener habilitado MCP)
+**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
 
 ```go
 Method("progress_update", func() {
@@ -1700,9 +1767,9 @@ Method("subscribe_status", func() {
 
 ### SubscriptionMonitor
 
-`SubscriptionMonitor(name)` marca el método actual como un monitor de eventos enviados por servidor (SSE) para actualizaciones de suscripción. El método transmite eventos de cambio de suscripción a los clientes conectados.
+`SubscriptionMonitor(name)` marca el método actual como monitor de server-sent events (SSE) para las actualizaciones de suscripción. El método transmite eventos de cambio de suscripción a los clientes conectados.
 
-**Contexto**: Dentro de `Method` (el servicio debe tener habilitado MCP)
+**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
 
 ```go
 Method("watch_subscriptions", func() {
@@ -1715,10 +1782,11 @@ Method("watch_subscriptions", func() {
 })
 ```
 
-**Cuándo utilizar SubscriptionMonitor:**
-- Cuando los clientes necesitan actualizaciones en tiempo real sobre los cambios de suscripción
-- Para implementar endpoints SSE que empujan eventos de suscripción
-- Cuando se construyen UIs reactivas que responden a cambios en los recursos
+**Cuándo usar SubscriptionMonitor:**
+
+- Cuando los clientes necesiten actualizaciones en tiempo real sobre los cambios de suscripción
+- Para implementar endpoints SSE que empujen eventos de suscripción
+- Al construir UIs reactivas que respondan a los cambios de recursos
 
 ### Ejemplo completo de servidor MCP
 
@@ -1726,7 +1794,7 @@ Method("watch_subscriptions", func() {
 var _ = Service("assistant", func() {
     Description("Full-featured MCP server example")
     
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
@@ -1787,26 +1855,27 @@ var _ = Service("assistant", func() {
 
 ---
 
-## Funciones de registro
+## Funciones de Registry
 
-Goa-AI proporciona funciones DSL para declarar y consumir registros de herramientas - catálogos centralizados de servidores MCP, conjuntos de herramientas y agentes que pueden ser descubiertos y consumidos por los agentes.
+Goa-AI provee funciones DSL para declarar y consumir registries de herramientas: catálogos centralizados de servidores MCP, toolsets y agentes que pueden ser descubiertos y consumidos por los agentes.
 
-### Registro
+### Registry
 
-`Registry(name, dsl)` declara una fuente de registro para el descubrimiento de herramientas. Los registros son catálogos centralizados que pueden ser descubiertos y consumidos por agentes goa-ai.
+`Registry(name, dsl)` declara una fuente de registry para el descubrimiento de herramientas. Los registries son catálogos centralizados que pueden ser descubiertos y consumidos por los agentes goa-ai.
 
-**Contexto**: Nivel superior
+**Contexto**: Top-level
 
-Dentro de la función DSL, utiliza:
-- `URL`: establece la URL del punto final del registro (obligatorio)
+Dentro de la función DSL, usa:
+
+- `URL`: establece la URL del endpoint del registry (obligatorio)
 - `Description`: establece una descripción legible por humanos
-- `APIVersion`: establece la versión de la API del registro (por defecto es "v1")
-- `Security`: hace referencia a los esquemas de seguridad Goa para la autenticación
-- `Timeout`: establece el tiempo de espera de las peticiones HTTP
-- `Retry`: configura la política de reintentos para peticiones fallidas
-- `SyncInterval`: establece la frecuencia de actualización del catálogo
-- `CacheTTL`: establece la duración de la caché local
-- `Federation`: configura los ajustes de importación del registro externo
+- `APIVersion`: establece la versión de la API del registry (por defecto "v1")
+- `Security`: referencia esquemas de seguridad de Goa para autenticación
+- `Timeout`: establece el timeout de las solicitudes HTTP
+- `Retry`: configura la política de reintentos para las solicitudes fallidas
+- `SyncInterval`: establece cada cuánto refrescar el catálogo
+- `CacheTTL`: establece la duración del caché local
+- `Federation`: configura los ajustes de importación de registry externo
 
 ```go
 var CorpRegistry = Registry("corp-registry", func() {
@@ -1823,24 +1892,27 @@ var CorpRegistry = Registry("corp-registry", func() {
 
 **Opciones de configuración:**
 
-| Función | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `URL(endpoint)` | URL del punto final del registro (obligatorio) | `URL("https://registry.corp.internal")` | | `APIVersion(version)` | Segmento de ruta de la versión de la API
-| `APIVersion(version)` | Segmento de ruta de la versión de la API | `APIVersion("v1")` |
-| `Timeout(duration)` | Tiempo de espera de solicitud HTTP | `Timeout("30s")` |
-| `Retry(maxRetries, backoff)` | Política de reintentos para peticiones fallidas | `Retry(3, "1s")` |
-| `SyncInterval(duration)` | Intervalo de actualización del catálogo | `SyncInterval("5m")` |
-| `CacheTTL(duration)` | Duración de caché local | `CacheTTL("1h")` |
 
-### Federación
+| Función                      | Descripción                            | Ejemplo                                 |
+| ---------------------------- | -------------------------------------- | --------------------------------------- |
+| `URL(endpoint)`              | URL del endpoint del registry (obligatoria) | `URL("https://registry.corp.internal")` |
+| `APIVersion(version)`        | Segmento de ruta de la versión de la API | `APIVersion("v1")`                      |
+| `Timeout(duration)`          | Timeout de la solicitud HTTP           | `Timeout("30s")`                        |
+| `Retry(maxRetries, backoff)` | Política de reintentos para solicitudes fallidas | `Retry(3, "1s")`                        |
+| `SyncInterval(duration)`     | Intervalo de refresco del catálogo     | `SyncInterval("5m")`                    |
+| `CacheTTL(duration)`         | Duración del caché local               | `CacheTTL("1h")`                        |
 
-`Federation(dsl)` configura las opciones de importación del registro externo. Utilice Federation dentro de una declaración de Registro para especificar qué espacios de nombres importar desde una fuente federada.
+
+### Federation
+
+`Federation(dsl)` configura los ajustes de importación de registries externos. Usa Federation dentro de una declaración Registry para especificar qué namespaces importar desde una fuente federada.
 
 **Contexto**: Dentro de `Registry`
 
-Dentro de la función DSL de Federación, utilice:
-- `Include`: especifica patrones glob para espacios de nombres a importar
-- `Exclude`: especifica patrones glob para los espacios de nombres a omitir
+Dentro de la función DSL de Federation, usa:
+
+- `Include`: especifica los patrones glob para los namespaces a importar
+- `Exclude`: especifica los patrones glob para los namespaces a omitir
 
 ```go
 var AnthropicRegistry = Registry("anthropic", func() {
@@ -1856,16 +1928,16 @@ var AnthropicRegistry = Registry("anthropic", func() {
 })
 ```
 
-**Incluir y excluir:**
+**Include y Exclude:**
 
-- `Include(patterns...)`: Especifica patrones glob para los espacios de nombres a importar. Si no se especifican patrones Include, todos los espacios de nombres se incluyen por defecto.
-- `Exclude(patterns...)`: Especifica patrones glob para espacios de nombres a omitir. Los patrones de exclusión se aplican después de los patrones de inclusión.
+- `Include(patterns...)`: Especifica patrones glob para los namespaces a importar. Si no se especifican patrones Include, se incluyen por defecto todos los namespaces.
+- `Exclude(patterns...)`: Especifica patrones glob para los namespaces a omitir. Los patrones Exclude se aplican después de los Include.
 
 ### FromRegistry
 
-`FromRegistry(registry, toolset)`: configura un conjunto de herramientas para que se obtenga de un registro. Utilice FromRegistry como opción de proveedor al declarar un conjunto de herramientas.
+`FromRegistry(registry, toolset)` configura un toolset para que sea suministrado desde un registry. Usa FromRegistry como opción de proveedor al declarar un Toolset.
 
-**Context**: Argumento para `Toolset`
+**Contexto**: Argumento de `Toolset`
 
 ```go
 var CorpRegistry = Registry("corp", func() {
@@ -1885,7 +1957,7 @@ var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
 })
 ```
 
-Los conjuntos de herramientas respaldados por el registro pueden fijarse a una versión específica utilizando la función DSL estándar `Version()`:
+Los toolsets respaldados por registry pueden fijarse a una versión específica usando la función estándar del DSL `Version()`:
 
 ```go
 var CorpRegistry = Registry("corp", func() {
@@ -1899,7 +1971,7 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 
 ### PublishTo
 
-`PublishTo(registry)` configura la publicación en registros para un conjunto de herramientas exportado. Utilice PublishTo dentro de un DSL de exportación para especificar en qué registros debe publicarse el conjunto de herramientas.
+`PublishTo(registry)` configura la publicación en el registry para un toolset exportado. Usa PublishTo dentro de un DSL Export para especificar a qué registries debe publicarse el toolset.
 
 **Contexto**: Dentro de `Toolset` (cuando se exporta)
 
@@ -1924,7 +1996,7 @@ Agent("data-agent", "Data processing agent", func() {
 })
 ```
 
-### Ejemplo de registro completo
+### Ejemplo completo de Registry
 
 ```go
 package design
@@ -2000,8 +2072,8 @@ var _ = Service("orchestrator", func() {
 
 ---
 
-## Próximos Pasos
+## Siguientes pasos
 
-- **[Tiempo de ejecución](./runtime.md)** - Entender cómo los diseños se traducen en comportamiento en tiempo de ejecución
-- **[Conjuntos de herramientas](./toolsets.md)** - Profundizar en los modelos de ejecución de conjuntos de herramientas
-- **[Integración MCP](./mcp-integration.md)** - Cableado en tiempo de ejecución para servidores MCP
+- **[Runtime](./runtime.md)** - Entiende cómo los diseños se traducen en comportamiento en tiempo de ejecución
+- **[Toolsets](./toolsets.md)** - Análisis en profundidad de los modelos de ejecución de toolsets
+- **[Integración MCP](./mcp-integration.md)** - Cableado en runtime para servidores MCP
