@@ -1,8 +1,8 @@
 {{- $.Scratch.Add "offline-search-index" slice -}}
 {{- /* Filter pages to only include current language */ -}}
-{{- $currentLang := .Site.Language.Lang -}}
-{{- range where .Site.AllPages ".Params.exclude_search" "!=" true -}}
-{{- if eq .Language.Lang $currentLang -}}
+{{- $currentLang := .Site.Language.Name -}}
+{{- range where .Site.Pages ".Params.exclude_search" "!=" true -}}
+{{- if eq .Language.Name $currentLang -}}
 {{- /* We have to apply `htmlUnescape` again after `truncate` because `truncate` applies `html.EscapeString` if the argument is not HTML. */ -}}
 {{- /* Individual taxonomies can be added in the next line by add '"taxonomy-name" (.Params.taxonomy-name | default "")' to the dict (as seen for categories and tags). */ -}}
 {{- $.Scratch.Add
@@ -20,5 +20,4 @@
 {{- end -}}
 {{- end -}}
 {{- $.Scratch.Get "offline-search-index" | jsonify -}}
-
 

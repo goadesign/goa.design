@@ -20,7 +20,7 @@ defaultContentLanguageInSubdir = false
 # Configure languages
 [languages]
   [languages.en]
-    languageName = "English"
+    label = "English"
     contentDir = "content/en"
     weight = 1
     [[languages.en.menu.main]]
@@ -32,7 +32,7 @@ defaultContentLanguageInSubdir = false
       weight = 2
       url = "/docs/2-goa-ai/"
   [languages.it]
-    languageName = "Italiano"
+    label = "Italiano"
     contentDir = "content/it"
     weight = 2
     [[languages.it.menu.main]]
@@ -44,7 +44,7 @@ defaultContentLanguageInSubdir = false
       weight = 2
       url = "/docs/2-goa-ai/"
   [languages.ja]
-    languageName = "日本語"
+    label = "日本語"
     contentDir = "content/ja"
     weight = 3
     [[languages.ja.menu.main]]
@@ -56,7 +56,7 @@ defaultContentLanguageInSubdir = false
       weight = 2
       url = "/docs/2-goa-ai/"
   [languages.fr]
-    languageName = "Français"
+    label = "Français"
     contentDir = "content/fr"
     weight = 4
     [[languages.fr.menu.main]]
@@ -68,7 +68,7 @@ defaultContentLanguageInSubdir = false
       weight = 2
       url = "/docs/2-goa-ai/"
   [languages.es]
-    languageName = "Español"
+    label = "Español"
     contentDir = "content/es"
     weight = 5
     [[languages.es.menu.main]]
