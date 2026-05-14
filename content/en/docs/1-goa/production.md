@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Bearer Token Authentication
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### JWT Authentication
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` and `JWTSecurity` both default to the standard
+`Authorization: Bearer <token>` wire format. Use `BearerSecurity` for generic or
+opaque bearer tokens, and `JWTSecurity` when the generated API should be
+explicitly JWT-oriented. Use `BearerFormat` only when OpenAPI v3 documentation
+should advertise a specific bearer token format; `JWTSecurity` emits
+`bearerFormat: JWT` by default.
 
 #### OAuth2 Authentication
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -286,7 +303,7 @@ var _ = Service("users", func() {
 2. **Define security at API level** for consistent defaults
 3. **Use `NoSecurity()` explicitly** for public endpoints
 4. **Implement rate limiting** for API key authentication
-5. **Use appropriate token expiration** for JWT tokens
+5. **Use appropriate token expiration** for bearer and JWT tokens
 6. **Regularly rotate secrets and keys**
 7. **Log and monitor authentication failures**
 8. **Validate all input** even for authenticated requests

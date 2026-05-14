@@ -659,7 +659,26 @@ Goaは認証と認可のためのDSL構造を提供します。
 
 ### セキュリティスキーム
 
+#### Bearer トークン
+
+トークン形式をサービス契約の一部にせず、標準の
+`Authorization: Bearer <token>` ヘッダーでトークンを受け取る API には
+`BearerSecurity` を使用します。これは、不透明なアクセストークン、セッション
+トークン、または複数の bearer トークン形式を受け入れる API に適しています。
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Bearer token authentication")
+    Scope("api:read", "Read-only access")
+    Scope("api:write", "Read and write access")
+})
+```
+
 #### JWT (JSON ウェブトークン)
+
+トークンが特に JWT であり、生成されるサービス API に JWT 向けの名前を使わせたい
+場合は `JWTSecurity` を使用します。HTTP のデフォルトのワイヤ形式は
+`BearerSecurity` と同じです。
 
 ```go
 var JWTAuth = JWTSecurity("jwt", func() {
@@ -667,7 +686,11 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:read", "Read-only access")
     Scope("api:write", "Read and write access")
 })
-``` JWT
+```
+
+OpenAPI v3 ドキュメントで特定の bearer トークン形式を示す必要がある場合にのみ
+`BearerFormat` を使用します。`JWTSecurity` はデフォルトで
+`bearerFormat: JWT` を出力します。
 
 #### API キー
 
@@ -684,7 +707,7 @@ var BasicAuth = BasicAuthSecurity("basic", func() {
     Description("Username/password authentication")
     Scope("api:read", "Read-only access")
 })
-``` ##基本認証
+```
 
 #### OAuth2
 
@@ -706,12 +729,12 @@ var OAuth2Auth = OAuth2Security("oauth2", func() {
 
 ```go
 Method("secure_endpoint", func() {
-    Security(JWTAuth, func() {
+    Security(BearerAuth, func() {
         Scope("api:read")
     })
     
     Payload(func() {
-        TokenField(1, "token", String)
+        BearerTokenField(1, "token", String)
         Required("token")
     })
     
@@ -741,7 +764,7 @@ Method("doubly_secure", func() {
         Param("key:k")
     })
 })
-``` ##複数のスキーム
+```
 
 ### セキュリティの実装
 
@@ -750,11 +773,27 @@ Goaは、サービスが実装しなければならない`Auther`インターフ
 ```go
 type Auther interface {
     BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error)
+    BearerAuth(ctx context.Context, token string, scheme *security.BearerScheme) (context.Context, error)
     JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error)
     APIKeyAuth(ctx context.Context, key string, scheme *security.APIKeyScheme) (context.Context, error)
     OAuth2Auth(ctx context.Context, token string, scheme *security.OAuth2Scheme) (context.Context, error)
 }
-``` インターフェイスを生成します。
+```
+
+bearer の実装例:
+
+```go
+func (s *svc) BearerAuth(ctx context.Context, token string, scheme *security.BearerScheme) (context.Context, error) {
+    scopes, err := s.validateAccessToken(ctx, token)
+    if err != nil {
+        return ctx, ErrInvalidToken
+    }
+    if err := scheme.Validate(scopes); err != nil {
+        return ctx, ErrInvalidScopes
+    }
+    return contextWithAuthInfo(ctx, authInfo{token: token}), nil
+}
+```
 
 JWTの実装例：
 

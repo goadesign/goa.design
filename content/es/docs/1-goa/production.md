@@ -1,7 +1,7 @@
 ---
 title: Producción
 weight: 8
-description: "Production-ready patterns for Goa services - observability, security, and common deployment patterns."
+description: "Patrones listos para producción para servicios Goa: observabilidad, seguridad y patrones comunes de despliegue."
 llm_optimized: true
 aliases:
 ---
@@ -14,9 +14,9 @@ Los sistemas distribuidos modernos requieren una observabilidad completa. Goa re
 
 ### Los tres pilares
 
-1. **Rastreo Distribuido**: Siga las peticiones a través de su sistema
+1. **Rastreo distribuido**: Siga las peticiones a través de su sistema
 2. **Métricas**: Mida el comportamiento y el rendimiento del sistema
-3. **Registros**: Registrar eventos y errores específicos
+3. **Registros**: Registre eventos y errores específicos
 
 ### Configuración de Clue
 
@@ -63,7 +63,7 @@ func main() {
 }
 ```
 
-### Rastreo Distribuido
+### Rastreo distribuido
 
 ```go
 import (
@@ -162,7 +162,7 @@ func main() {
 }
 ```
 
-### Servicio Observable Completo
+### Servicio observable completo
 
 ```go
 func main() {
@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Autenticación con token bearer
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### Autenticación JWT
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` y `JWTSecurity` usan de forma predeterminada el formato de
+transporte estándar `Authorization: Bearer <token>`. Utilice `BearerSecurity` para tokens
+bearer genéricos u opacos, y `JWTSecurity` cuando la API generada deba estar
+orientada explícitamente a JWT. Utilice `BearerFormat` solo cuando la documentación
+OpenAPI v3 deba anunciar un formato específico de token bearer; `JWTSecurity`
+emite `bearerFormat: JWT` de forma predeterminada.
 
 #### Autenticación OAuth2
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -283,19 +300,19 @@ var _ = Service("users", func() {
 ### Mejores prácticas de seguridad
 
 1. **Utilice siempre HTTPS en producción**
-2. **Defina la seguridad a nivel de API** para que los valores predeterminados sean coherentes
+2. **Defina la seguridad a nivel de API** para obtener valores predeterminados coherentes
 3. **Utilice `NoSecurity()` explícitamente** para los puntos finales públicos
-4. **Implementar la limitación de velocidad** para la autenticación de claves API
-5. **Utilizar una caducidad de token adecuada** para tokens JWT
-6. **Rotación periódica de secretos y claves
-7. **Registrar y supervisar los fallos de autenticación
-8. **Validación de todas las entradas**, incluso para solicitudes autenticadas
+4. **Implemente limitación de velocidad** para la autenticación con claves API
+5. **Utilice una caducidad de token adecuada** para tokens bearer y JWT
+6. **Rote secretos y claves periódicamente**
+7. **Registre y supervise los fallos de autenticación**
+8. **Valide todas las entradas**, incluso en solicitudes autenticadas
 
 ---
 
-## Common Patterns
+## Patrones comunes
 
-### Graceful Shutdown
+### Apagado gradual
 
 ```go
 func main() {
@@ -383,7 +400,7 @@ server := &http.Server{
 Los servicios Goa listos para la producción deben incluir:
 
 1. **Observabilidad**: Rastreo, métricas, registro y comprobaciones de estado
-2. **Seguridad Autenticación y autorización adecuadas
+2. **Seguridad**: Autenticación y autorización adecuadas
 3. **Resiliencia**: Apagado gradual, tiempos de espera y gestión de errores
 4. **Configuración**: Gestión de la configuración basada en el entorno
 5. **Supervisión**: Puntos finales de depuración y capacidades de creación de perfiles
@@ -394,7 +411,7 @@ Estos patrones garantizan que sus servicios sean fiables, seguros y mantenibles 
 
 ## Ver también
 
-- [Clue Documentation](../3-ecosystem/clue/) - Completo conjunto de herramientas de observabilidad con referencia detallada de la API
-- [DSL Reference: Security](dsl-reference/#security) - Definiciones de esquemas de seguridad
+- [Documentación de Clue](../3-ecosystem/clue/) - Conjunto completo de herramientas de observabilidad con referencia detallada de la API
+- [Referencia DSL: Seguridad](dsl-reference/#security) - Definiciones de esquemas de seguridad
 - [Guía de manejo de errores](error-handling/) - Patrones de manejo de errores y mejores prácticas
 - [Interceptores](interceptors/) - Patrones de middleware e interceptores

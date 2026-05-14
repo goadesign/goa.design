@@ -15,7 +15,7 @@ El soporte gRPC de Goa incluye:
 - **Generación automática de búferes de protocolo**: archivos `.proto` generados a partir de su diseño
 - **Seguridad de tipos**: Seguridad de tipos de extremo a extremo desde la definición hasta la implementación
 - **Generación de código**: Código de servidor y cliente generado automáticamente
-- **Validación incorporada**: Solicitud de validación basada en su diseño
+- **Validación incorporada**: Validación de solicitudes basada en su diseño
 - **Soporte de streaming**: Soporte de todos los patrones gRPC
 - **Gestión de errores**: Gestión integral de errores con asignación de códigos de estado
 
@@ -24,18 +24,18 @@ El soporte gRPC de Goa incluye:
 | Tipo de Goa | Tipo de Buffer de Protocolo |
 |-----------|---------------------|
 | Int | int32 |
-| Int32 | int32 | Int64 | int64
-| Int64 Int64
-| UInt Uint32
-| UInt32 Uint32
-| UInt64 Uint64
-| Float32 Float
-| Float64 Double
-| String String
-| Boolean Bool
-| Bytes Bytes
-| ArrayOf repetido
-| MapOf Map
+| Int32 | int32 |
+| Int64 | int64 |
+| UInt | uint32 |
+| UInt32 | uint32 |
+| UInt64 | uint64 |
+| Float32 | float |
+| Float64 | double |
+| String | string |
+| Boolean | bool |
+| Bytes | bytes |
+| ArrayOf | repeated |
+| MapOf | map |
 
 ---
 
@@ -173,9 +173,9 @@ Method("create", func() {
 
 ---
 
-## Streaming Patterns
+## Patrones de streaming
 
-> **Recapitulación del diseño**: El streaming se define a nivel de diseño usando `StreamingPayload` y `StreamingResult`. El DSL es agnóstico al transporte - el mismo diseño funciona tanto para HTTP como para gRPC. Ver [DSL Reference: Streaming](dsl-reference/#streaming) para patrones de diseño. Esta sección cubre la implementación de streaming específica de gRPC.
+> **Recapitulación del diseño**: El streaming se define a nivel de diseño usando `StreamingPayload` y `StreamingResult`. El DSL es agnóstico al transporte - el mismo diseño funciona tanto para HTTP como para gRPC. Ver [Referencia DSL: Streaming](dsl-reference/#streaming) para patrones de diseño. Esta sección cubre la implementación de streaming específica de gRPC.
 
 gRPC soporta tres patrones de streaming.
 
@@ -342,7 +342,7 @@ func (s *chatService) Connect(ctx context.Context, stream chat.ConnectServerStre
 
 ## Tratamiento de errores
 
-**Recapitulación del diseño**: Los errores se definen a nivel de diseño utilizando el DSL `Error` en el ámbito de la API, servicio o método. Ver [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) para patrones de diseño. Esta sección cubre el mapeo de códigos de estado específico de gRPC.
+**Recapitulación del diseño**: Los errores se definen a nivel de diseño utilizando el DSL `Error` en el ámbito de la API, servicio o método. Ver [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) para patrones de diseño. Esta sección cubre el mapeo de códigos de estado específico de gRPC.
 
 ### Códigos de Estado
 
@@ -365,11 +365,11 @@ Mapeos de códigos de estado comunes:
 
 | Error de Goa | Código de estado gRPC | Caso de uso |
 |-----------|-----------------|-----------|
-`not_found` `CodeNotFound` El recurso no existe
-`invalid_argument` `CodeInvalidArgument` `CodeInvalidArgument` Entrada no válida
+| `not_found` | `CodeNotFound` | El recurso no existe |
+| `invalid_argument` | `CodeInvalidArgument` | Entrada no válida |
 | `internal_error` | `CodeInternal` | Error del servidor |
-| Faltan credenciales o no son válidas
-`permission_denied` `CodePermissionDenied` `CodePermissionDenied` Permisos insuficientes
+| `unauthenticated` | `CodeUnauthenticated` | Faltan credenciales o no son válidas |
+| `permission_denied` | `CodePermissionDenied` | Permisos insuficientes |
 
 ### Definiciones de error
 
@@ -539,10 +539,10 @@ var _ = Service("calculator", func() {
 
 ---
 
-## See Also
+## Ver también
 
-- [DSL Reference: Streaming](dsl-reference/#streaming) - Patrones de streaming a nivel de diseño
-- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
+- [Referencia DSL: Streaming](dsl-reference/#streaming) - Patrones de streaming a nivel de diseño
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
 - [Guía HTTP](http-guide/) - Características del transporte HTTP
 - [Guía de manejo de errores](error-handling/) - Patrones completos de manejo de errores
 - [Documentación de Clue](../3-ecosystem/clue/) - Interceptores gRPC para observabilidad

@@ -1,7 +1,7 @@
 ---
 title: Tratamiento de errores
 weight: 6
-description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
+description: "Guía completa para el tratamiento de errores en Goa: definición de errores, asignación de transporte, tipos personalizados y buenas prácticas."
 llm_optimized: true
 aliases:
 ---
@@ -87,7 +87,7 @@ var _ = Service("calc", func() {
 
 ## Tipos de error
 
-### Default ErrorResult
+### ErrorResult predeterminado
 
 El tipo por defecto `ErrorResult` incluye campos estándar:
 
@@ -326,7 +326,7 @@ if err != nil {
 
 ---
 
-## Error Serialization
+## Serialización de errores
 
 Personaliza la serialización de errores proporcionando un formateador personalizado:
 
@@ -490,7 +490,7 @@ func secureErrorFormatter(ctx context.Context, err error) goahttp.Statuser {
 
 ## Ver también
 
-- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) - Definiciones de error a nivel de diseño
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de error a nivel de diseño
 - [Guía HTTP](http-guide/) - Asignación de códigos de estado HTTP y respuestas de error
 - [Guía gRPC](grpc-guide/#error-handling) - Mapeo de códigos de estado gRPC
 - [Documentación de Clue](../3-ecosystem/clue/) - Registro de errores y observabilidad

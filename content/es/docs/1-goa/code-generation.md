@@ -149,7 +149,7 @@ const ServiceName = "calc"
 var MethodNames = [2]string{"add", "multiply"}
 ```
 
-### Endpoint Layer
+### Capa de endpoints
 
 Generada en `gen/<service>/endpoints.go`:
 
@@ -305,7 +305,7 @@ func main() {
 
 ## Generación de código gRPC
 
-### Protobuf Definition
+### Definición Protobuf
 
 Generado en `gen/grpc/<service>/pb/`:
 
@@ -492,14 +492,14 @@ var User = Type("User", func() {
 Goa valida los datos en los límites del sistema:
 - **Lado del servidor**: Valida las peticiones entrantes
 - **Del lado del cliente**: Valida las respuestas entrantes
-- **Código interno De confianza para mantener invariantes
+- **Código interno**: Se asume que preserva las invariantes
 
 ### Reglas de puntero para campos Struct
 
 | Propiedades | Carga útil/Resultado | Cuerpo de la solicitud (servidor) | Cuerpo de la respuesta (servidor) |
 |------------|---------------|----------------------|---------------------|
-| Requerido O Por Defecto | Directo (-) | Puntero (*) | Directo (-) | No Requerido, Sin Defecto
-| No requerido, sin valor por defecto Puntero (*) Puntero (*) Puntero (*)
+| Requerido o con valor por defecto | Directo (-) | Puntero (*) | Directo (-) |
+| No requerido, sin valor por defecto | Puntero (*) | Puntero (*) | Puntero (*) |
 
 Tipos especiales:
 - **Objetos (structs)**: Utilice siempre punteros
@@ -517,8 +517,8 @@ type Person struct {
 
 ### Manejo de valores por defecto
 
-- **Marshaling**: Los valores por defecto inicializan arrays/maps nulos
-- **Desmarcado**: Los valores por defecto se aplican a los campos opcionales que faltan (no a los campos obligatorios que faltan)
+- **Serialización**: Los valores por defecto inicializan arrays/maps nulos
+- **Deserialización**: Los valores por defecto se aplican a los campos opcionales que faltan (no a los campos obligatorios que faltan)
 
 ---
 
