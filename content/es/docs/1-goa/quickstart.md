@@ -13,7 +13,7 @@ Esta guía te guía a través de la instalación de Goa y la creación de tu pri
 Antes de comenzar, asegúrate de que tu entorno cumple estos requisitos:
 
 - **Go 1.18 o posterior** - Goa aprovecha las características modernas de Go
-- **Go Modules enabled** - Esto es por defecto en Go 1.16+, pero verifícalo con `GO111MODULE=on` si es necesario
+- **Go Modules activado** - Esto es lo predeterminado en Go 1.16+, pero verifícalo con `GO111MODULE=on` si es necesario
 - **curl o cualquier cliente HTTP** - Para probar su servicio
 
 ## Instalación
@@ -90,8 +90,8 @@ Vamos a desglosar lo que hace este diseño:
 - **`Service("hello", ...)`** - Define un nuevo servicio llamado "hola"
 - **`Method("sayHello", ...)`** - Define un método dentro del servicio
 - **`Payload(String, ...)`** - Especifica la entrada: una cadena que representa el nombre a saludar
-- `Result(String, ...)`** - Especifica la salida: un mensaje de saludo
-- `HTTP(func() { GET("/hello/{name}") })`** - Asigna el método a un punto final HTTP GET en el que `{name}` se vincula automáticamente a la carga útil
+- **`Result(String, ...)`** - Especifica la salida: un mensaje de saludo
+- **`HTTP(func() { GET("/hello/{name}") })`** - Asigna el método a un punto final HTTP GET en el que `{name}` se vincula automáticamente a la carga útil
 
 Este enfoque declarativo significa que usted describe *lo* que hace su API, y Goa se encarga de los detalles de implementación: vinculación de parámetros, enrutamiento, validación y documentación OpenAPI.
 
@@ -221,8 +221,8 @@ Puntos clave:
 
 Ya has aprendido los fundamentos del enfoque "design-first" de Goa. Continúe su viaje:
 
-- **[DSL Reference](./dsl-reference.md)** - Guía completa del lenguaje de diseño de Goa
-- **[Guía HTTP](./http-guide.md)** - Profunda inmersión en las características de transporte HTTP
-- **[Guía gRPC](./grpc-guide.md)** - Construir servicios gRPC con Goa
-- **[Manejo de errores](./error-handling.md)** - Defina y maneje los errores adecuadamente
+- **[Referencia DSL](./dsl-reference.md)** - Guía completa del lenguaje de diseño de Goa
+- **[Guía HTTP](./http-guide.md)** - Guía detallada de las características de transporte HTTP
+- **[Guía gRPC](./grpc-guide.md)** - Construya servicios gRPC con Goa
+- **[Tratamiento de errores](./error-handling.md)** - Defina y gestione los errores adecuadamente
 - **[Generación de código](./code-generation.md)** - Entender qué genera Goa y cómo personalizarlo

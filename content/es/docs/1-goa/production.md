@@ -1,7 +1,7 @@
 ---
 title: Producción
 weight: 8
-description: "Production-ready patterns for Goa services - observability, security, and common deployment patterns."
+description: "Patrones listos para producción para servicios Goa: observabilidad, seguridad y patrones comunes de despliegue."
 llm_optimized: true
 aliases:
 ---
@@ -14,9 +14,9 @@ Los sistemas distribuidos modernos requieren una observabilidad completa. Goa re
 
 ### Los tres pilares
 
-1. **Rastreo Distribuido**: Siga las peticiones a través de su sistema
+1. **Rastreo distribuido**: Siga las peticiones a través de su sistema
 2. **Métricas**: Mida el comportamiento y el rendimiento del sistema
-3. **Registros**: Registrar eventos y errores específicos
+3. **Registros**: Registre eventos y errores específicos
 
 ### Configuración de Clue
 
@@ -63,7 +63,7 @@ func main() {
 }
 ```
 
-### Rastreo Distribuido
+### Rastreo distribuido
 
 ```go
 import (
@@ -162,7 +162,7 @@ func main() {
 }
 ```
 
-### Servicio Observable Completo
+### Servicio observable completo
 
 ```go
 func main() {
@@ -310,9 +310,9 @@ var _ = Service("users", func() {
 
 ---
 
-## Common Patterns
+## Patrones comunes
 
-### Graceful Shutdown
+### Apagado gradual
 
 ```go
 func main() {
@@ -400,7 +400,7 @@ server := &http.Server{
 Los servicios Goa listos para la producción deben incluir:
 
 1. **Observabilidad**: Rastreo, métricas, registro y comprobaciones de estado
-2. **Seguridad Autenticación y autorización adecuadas
+2. **Seguridad**: Autenticación y autorización adecuadas
 3. **Resiliencia**: Apagado gradual, tiempos de espera y gestión de errores
 4. **Configuración**: Gestión de la configuración basada en el entorno
 5. **Supervisión**: Puntos finales de depuración y capacidades de creación de perfiles
@@ -411,7 +411,7 @@ Estos patrones garantizan que sus servicios sean fiables, seguros y mantenibles 
 
 ## Ver también
 
-- [Clue Documentation](../3-ecosystem/clue/) - Completo conjunto de herramientas de observabilidad con referencia detallada de la API
-- [DSL Reference: Security](dsl-reference/#security) - Definiciones de esquemas de seguridad
+- [Documentación de Clue](../3-ecosystem/clue/) - Conjunto completo de herramientas de observabilidad con referencia detallada de la API
+- [Referencia DSL: Seguridad](dsl-reference/#security) - Definiciones de esquemas de seguridad
 - [Guía de manejo de errores](error-handling/) - Patrones de manejo de errores y mejores prácticas
 - [Interceptores](interceptors/) - Patrones de middleware e interceptores

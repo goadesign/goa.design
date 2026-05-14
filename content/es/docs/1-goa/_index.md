@@ -84,16 +84,16 @@ func (s *helloService) SayHello(ctx context.Context, p *hello.SayHelloPayload) (
 
 | Guía | Descripción | ~Tokens |
 |-------|-------------|---------|
-| Instalación de Goa y creación de su primer servicio
-| [DSL Reference](dsl-reference/) | Referencia completa del lenguaje de diseño de Goa | ~2,900 | [Generación de código](quickstart/)
-| [Generación de Código](code-generation/) | Entendiendo el proceso de generación de código de Goa | ~2,100 | [Guía HTTP](dsl-reference/) | Guía HTTP](dsl-reference/)
-| [Guía HTTP](http-guide/) | Características del transporte HTTP, enrutamiento y patrones | ~1,700 | [Guía gRPC](code-generation/) | Entender el proceso de generación de código de Goa | ~2,100
-| [Guía gRPC](grpc-guide/) | Características del transporte gRPC y streaming | ~1.800 | | [Gestión de errores](grpc-guide/)
-
-| Interceptores](interceptors/) Interceptores y patrones de middleware | ~1.400
+| [Inicio rápido](quickstart/) | Instalación de Goa y creación de su primer servicio | ~1.100 |
+| [Referencia DSL](dsl-reference/) | Referencia completa del lenguaje de diseño de Goa | ~2.900 |
+| [Generación de código](code-generation/) | Entender el proceso de generación de código de Goa | ~2.100 |
+| [Guía HTTP](http-guide/) | Características del transporte HTTP, enrutamiento y patrones | ~1.700 |
+| [Guía gRPC](grpc-guide/) | Características del transporte gRPC y streaming | ~1.800 |
+| [Tratamiento de errores](error-handling/) | Definir y gestionar errores | ~1.800 |
+| [Interceptores](interceptors/) | Interceptores y patrones de middleware | ~1.400 |
 | [Producción](production/) | Observabilidad, seguridad y despliegue | ~1.300 |
 
-**Sección total:** ~14.500 fichas
+**Sección total:** ~14.500 tokens
 
 ## Ejemplo rápido
 

@@ -1,7 +1,7 @@
 ---
 title: Referencia DSL
 weight: 2
-description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
+description: "Referencia completa del lenguaje de diseño de Goa: modelado de datos, servicios, métodos, asignación HTTP/gRPC y seguridad."
 llm_optimized: true
 aliases:
 ---
@@ -174,20 +174,20 @@ Goa incluye formatos predefinidos para patrones de datos comunes:
 
 | Formato | Descripción |
 |--------|-------------|
-`FormatDate` Valores de fecha RFC3339
-`FormatDateTime` Valores de fecha y hora RFC3339
-`FormatUUID` Valores UUID RFC4122
-`FormatEmail` Direcciones de correo electrónico RFC5322
-| RFC1035 Nombres de host de Internet
-| RFC2373 Valores de dirección IPv4
-`FormatIPv6` Valores de dirección IPv6 RFC2373
-| `FormatIP` | Valores de dirección IPv4 o IPv6 RFC2373 | `FormatURI` | Valores de dirección IPv4 o IPv6 RFC2373
-| `FormatURI` | Valores de URI de RFC3986 | `FormatMAC` | Valores de dirección IPv6 de RFC2373
-`FormatMAC` Direcciones IEEE 802 MAC-48/EUI-48/EUI-64
-`FormatCIDR` Notación CIDR RFC4632/RFC4291
-`FormatRegexp` Sintaxis de expresiones regulares RE2
-`FormatJSON` Texto JSON
-`FormatRFC1123` Valores fecha-hora RFC1123
+| `FormatDate` | Valores de fecha RFC3339 |
+| `FormatDateTime` | Valores de fecha y hora RFC3339 |
+| `FormatUUID` | Valores UUID RFC4122 |
+| `FormatEmail` | Direcciones de correo electrónico RFC5322 |
+| `FormatHostname` | Nombres de host de Internet RFC1035 |
+| `FormatIPv4` | Valores de dirección IPv4 RFC2373 |
+| `FormatIPv6` | Valores de dirección IPv6 RFC2373 |
+| `FormatIP` | Valores de dirección IPv4 o IPv6 RFC2373 |
+| `FormatURI` | Valores de URI RFC3986 |
+| `FormatMAC` | Direcciones IEEE 802 MAC-48/EUI-48/EUI-64 |
+| `FormatCIDR` | Notación CIDR RFC4632/RFC4291 |
+| `FormatRegexp` | Sintaxis de expresiones regulares RE2 |
+| `FormatJSON` | Texto JSON |
+| `FormatRFC1123` | Valores de fecha y hora RFC1123 |
 
 ### Atributo vs Campo DSL
 
@@ -255,7 +255,7 @@ var _ = API("exampleAPI", func() {
 
 La función `API` define propiedades globales para su servicio y sirve como raíz de su diseño.
 
-### Estructura Básica
+### Estructura básica
 
 ```go
 var _ = API("calculator", func() {
@@ -488,11 +488,11 @@ El streaming permite el intercambio continuo de datos en tiempo real entre clien
 
 Goa soporta tres patrones de streaming:
 
-| Patrón | DSL | Caso de Uso |
+| Patrón | DSL | Caso de uso |
 |---------|-----|----------|
-| Servidor a cliente `StreamingResult` Transmisión en directo, notificaciones, actualizaciones de progreso
-| Cliente-servidor `StreamingPayload` Carga de archivos, ingesta de eventos..
-| Chat, colaboración en tiempo real
+| Servidor a cliente | `StreamingResult` | Transmisión en directo, notificaciones, actualizaciones de progreso |
+| Cliente a servidor | `StreamingPayload` | Carga de archivos, ingesta de eventos |
+| Bidireccional | Ambos | Chat, colaboración en tiempo real |
 
 ### StreamingPayload
 
@@ -518,7 +518,7 @@ Method("ingestEvents", func() {
 })
 ```
 
-### StreamingResultado
+### StreamingResult
 
 Utilice `StreamingResult` cuando el servidor envía un flujo de mensajes al cliente:
 
@@ -544,7 +544,7 @@ Method("subscribe", func() {
 
 ### Streaming bidireccional
 
-Combina ambos para una comunicación full-duplex:
+Combine ambos para una comunicación full-duplex:
 
 ```go
 // Real-time chat with structured messages
@@ -601,7 +601,7 @@ Method("watch", func() {
 
 El DSL `Files` sirve contenido estático directamente desde el sistema de ficheros. Esta es una característica sólo HTTP - gRPC no soporta el servicio de archivos estáticos.
 
-### Uso Básico
+### Uso básico
 
 ```go
 var _ = Service("web", func() {
@@ -651,17 +651,17 @@ var _ = Service("spa", func() {
 
 ## Tratamiento de errores (nivel de diseño)
 
-Los errores en Goa se definen a nivel de diseño y se asignan automáticamente a respuestas específicas del transporte. Esta sección cubre el DSL para definir errores; para detalles de mapeo de transporte, ver [Guía de Manejo de Errores](error-handling/).
+Los errores en Goa se definen a nivel de diseño y se asignan automáticamente a respuestas específicas del transporte. Esta sección cubre el DSL para definir errores; para detalles de mapeo de transporte, ver [Guía de tratamiento de errores](error-handling/).
 
 ### Ámbitos de error
 
 Los errores se pueden definir a tres niveles:
 
-| Ámbito | Disponibilidad | Caso de Uso |
+| Ámbito | Disponibilidad | Caso de uso |
 |-------|--------------|----------|
-| Nivel de API Todos los servicios Errores comunes (no autorizado, tasa limitada)
-| Nivel de servicio Todos los métodos del servicio Errores de dominio (no encontrado, estado no válido)
-| Nivel de método: Sólo un método. Errores específicos de la operación
+| Nivel de API | Todos los servicios | Errores comunes (no autorizado, tasa limitada) |
+| Nivel de servicio | Todos los métodos del servicio | Errores de dominio (no encontrado, estado no válido) |
+| Nivel de método | Sólo un método | Errores específicos de la operación |
 
 ### Errores a nivel de API
 
@@ -798,10 +798,10 @@ El DSL HTTP define cómo se asignan los métodos de servicio a los puntos finale
 
 Una petición HTTP tiene cuatro partes que pueden ser asignadas a atributos de carga útil:
 
-1. **URL Path Parameters** - por ejemplo, `/bottle/{id}`
-2. **Parámetros de cadena de consulta
-3. **Cabeceras HTTP
-4. **Cuerpo de la solicitud
+1. **Parámetros de ruta URL** - por ejemplo, `/bottle/{id}`
+2. **Parámetros de cadena de consulta**
+3. **Cabeceras HTTP**
+4. **Cuerpo de la solicitud**
 
 Expresiones de asignación:
 - `Param` - Carga desde la ruta o cadena de consulta
@@ -917,11 +917,11 @@ El DSL gRPC define cómo los métodos de servicio se asignan a los procedimiento
 
 ### Características de gRPC
 
-1. **Message Mapping** - Definir estructuras de petición/respuesta con números de campo
+1. **Asignación de mensajes** - Definir estructuras de petición/respuesta con números de campo
 2. **Códigos de estado** - Asignar resultados a códigos de estado gRPC
 3. **Metadatos** - Configurar el manejo de metadatos gRPC
 
-### Soporte de Protocolos Mixtos
+### Soporte de protocolos mixtos
 
 Los servicios pueden soportar tanto HTTP como gRPC:
 

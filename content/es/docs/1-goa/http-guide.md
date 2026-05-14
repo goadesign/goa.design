@@ -259,9 +259,9 @@ func main() {
 
 WebSocket permite la comunicación bidireccional en tiempo real. Goa implementa WebSocket a través de su DSL de streaming.
 
-### Streaming Patterns
+### Patrones de streaming
 
-**Client-to-Server Streaming:**
+**Streaming de cliente a servidor:**
 
 ```go
 Method("listener", func() {
@@ -275,17 +275,7 @@ Method("listener", func() {
 })
 ```
 
-**Streaming de servidor a cliente:** ```go
-Method("listener", func() {
-    StreamingPayload(func() {
-        Field(1, "message", String, "Message content")
-        Required("message")
-    })
-    HTTP(func() {
-        GET("/listen")  // WebSocket endpoints must use GET
-    })
-})
-```
+**Streaming de servidor a cliente:**
 
 ```go
 Method("subscribe", func() {
@@ -366,7 +356,7 @@ func (cm *ConnectionManager) AddConnection(id string, stream Stream) {
 
 ## Eventos enviados por el servidor
 
-> **Recapitulación del diseño**: SSE utiliza `StreamingResult` a nivel de diseño con `ServerSentEvents()` en el mapeo HTTP. Ver [DSL Reference: Streaming](dsl-reference/#streaming) para patrones de diseño.
+> **Recapitulación del diseño**: SSE utiliza `StreamingResult` a nivel de diseño con `ServerSentEvents()` en el mapeo HTTP. Ver [Referencia DSL: Streaming](dsl-reference/#streaming) para patrones de diseño.
 
 SSE proporciona streaming unidireccional de servidor a cliente sobre HTTP. Es ideal para:
 - Notificaciones en tiempo real
@@ -533,7 +523,7 @@ var _ = Service("calc", func() {
 
 ## Contenido estático
 
-> **Recapitulación del diseño**: El servicio de archivos estáticos utiliza la función DSL `Files`. Se trata de una función exclusiva de HTTP. Ver [DSL Reference: Static Files](dsl-reference/#static-files) para patrones de diseño.
+> **Recapitulación del diseño**: El servicio de archivos estáticos utiliza la función DSL `Files`. Se trata de una función exclusiva de HTTP. Ver [Referencia DSL: Archivos estáticos](dsl-reference/#static-files) para patrones de diseño.
 
 Sirve archivos estáticos usando la función `Files`:
 
@@ -567,11 +557,11 @@ var _ = Service("spa", func() {
 
 ---
 
-## See Also
+## Ver también
 
 - [Referencia DSL: Streaming](dsl-reference/#streaming) - Patrones de streaming a nivel de diseño
 - [Referencia DSL: Archivos estáticos](dsl-reference/#static-files) - DSL de archivos para contenido estático
-- [DSL Reference: Error Handling](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
 - [Guía gRPC](grpc-guide/) - Características del transporte gRPC
 - [Guía de manejo de errores](error-handling/) - Patrones completos de manejo de errores
 - [Documentación de Clue](../3-ecosystem/clue/) - Middleware HTTP para observabilidad
