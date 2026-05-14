@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Autenticazione con token bearer
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### Autenticazione JWT
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` e `JWTSecurity` usano entrambi come impostazione predefinita il
+formato di trasmissione standard `Authorization: Bearer <token>`. Usare
+`BearerSecurity` per token bearer generici o opachi, e `JWTSecurity` quando
+l'API generata deve essere esplicitamente orientata ai JWT. Usare `BearerFormat`
+solo quando la documentazione OpenAPI v3 deve pubblicizzare un formato specifico
+di token bearer; `JWTSecurity` emette `bearerFormat: JWT` in modo predefinito.
 
 #### Autenticazione OAuth2
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -282,14 +299,14 @@ var _ = Service("users", func() {
 
 ### Migliori pratiche di sicurezza
 
-1. **Usare sempre l'HTTPS in produzione
+1. **Usare sempre HTTPS in produzione**
 2. **Definire la sicurezza a livello di API** per ottenere valori predefiniti coerenti
 3. **Usare `NoSecurity()` in modo esplicito** per gli endpoint pubblici
 4. **Implementare la limitazione della velocità** per l'autenticazione con chiave API
-5. **Utilizzare la scadenza appropriata dei token** per i token JWT
+5. **Usare una scadenza dei token appropriata** per i token bearer e JWT
 6. **Ruotare regolarmente i segreti e le chiavi**
 7. **Registrare e monitorare i fallimenti di autenticazione**
-8. **Validare tutti gli input** anche per le richieste autenticate
+8. **Validare tutti gli input**, anche per le richieste autenticate
 
 ---
 

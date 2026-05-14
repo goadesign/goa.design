@@ -969,7 +969,26 @@ Goa proporciona construcciones DSL para autenticación y autorización.
 
 ### Esquemas de seguridad
 
+#### Tokens bearer
+
+Utilice `BearerSecurity` para las API que aceptan tokens mediante la cabecera estándar
+`Authorization: Bearer <token>` sin convertir el formato del token en parte del
+contrato del servicio. Es adecuado para tokens de acceso opacos, tokens de
+sesión o API que aceptan varios formatos de token bearer.
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Bearer token authentication")
+    Scope("api:read", "Read-only access")
+    Scope("api:write", "Read and write access")
+})
+```
+
 #### JWT (Token Web JSON)
+
+Utilice `JWTSecurity` cuando el token sea específicamente un JWT y quiera que la
+API de servicio generada use nombres orientados a JWT. Utiliza el mismo formato HTTP
+de transporte predeterminado que `BearerSecurity`.
 
 ```go
 var JWTAuth = JWTSecurity("jwt", func() {
@@ -978,6 +997,10 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Read and write access")
 })
 ```
+
+Utilice `BearerFormat` solo cuando la documentación OpenAPI v3 deba anunciar un
+formato específico de token bearer. `JWTSecurity` emite `bearerFormat: JWT` de
+forma predeterminada.
 
 #### Claves API
 
@@ -1016,12 +1039,12 @@ var OAuth2Auth = OAuth2Security("oauth2", func() {
 
 ```go
 Method("secure_endpoint", func() {
-    Security(JWTAuth, func() {
+    Security(BearerAuth, func() {
         Scope("api:read")
     })
     
     Payload(func() {
-        TokenField(1, "token", String)
+        BearerTokenField(1, "token", String)
         Required("token")
     })
     
@@ -1060,9 +1083,25 @@ Goa genera una interfaz `Auther` que tu servicio debe implementar:
 ```go
 type Auther interface {
     BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error)
+    BearerAuth(ctx context.Context, token string, scheme *security.BearerScheme) (context.Context, error)
     JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error)
     APIKeyAuth(ctx context.Context, key string, scheme *security.APIKeyScheme) (context.Context, error)
     OAuth2Auth(ctx context.Context, token string, scheme *security.OAuth2Scheme) (context.Context, error)
+}
+```
+
+Ejemplo de implementación de bearer:
+
+```go
+func (s *svc) BearerAuth(ctx context.Context, token string, scheme *security.BearerScheme) (context.Context, error) {
+    scopes, err := s.validateAccessToken(ctx, token)
+    if err != nil {
+        return ctx, ErrInvalidToken
+    }
+    if err := scheme.Validate(scopes); err != nil {
+        return ctx, ErrInvalidScopes
+    }
+    return contextWithAuthInfo(ctx, authInfo{token: token}), nil
 }
 ```
 

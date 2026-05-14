@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Autenticación con token bearer
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### Autenticación JWT
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` y `JWTSecurity` usan de forma predeterminada el formato de
+transporte estándar `Authorization: Bearer <token>`. Utilice `BearerSecurity` para tokens
+bearer genéricos u opacos, y `JWTSecurity` cuando la API generada deba estar
+orientada explícitamente a JWT. Utilice `BearerFormat` solo cuando la documentación
+OpenAPI v3 deba anunciar un formato específico de token bearer; `JWTSecurity`
+emite `bearerFormat: JWT` de forma predeterminada.
 
 #### Autenticación OAuth2
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -283,13 +300,13 @@ var _ = Service("users", func() {
 ### Mejores prácticas de seguridad
 
 1. **Utilice siempre HTTPS en producción**
-2. **Defina la seguridad a nivel de API** para que los valores predeterminados sean coherentes
+2. **Defina la seguridad a nivel de API** para obtener valores predeterminados coherentes
 3. **Utilice `NoSecurity()` explícitamente** para los puntos finales públicos
-4. **Implementar la limitación de velocidad** para la autenticación de claves API
-5. **Utilizar una caducidad de token adecuada** para tokens JWT
-6. **Rotación periódica de secretos y claves
-7. **Registrar y supervisar los fallos de autenticación
-8. **Validación de todas las entradas**, incluso para solicitudes autenticadas
+4. **Implemente limitación de velocidad** para la autenticación con claves API
+5. **Utilice una caducidad de token adecuada** para tokens bearer y JWT
+6. **Rote secretos y claves periódicamente**
+7. **Registre y supervise los fallos de autenticación**
+8. **Valide todas las entradas**, incluso en solicitudes autenticadas
 
 ---
 

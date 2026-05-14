@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Authentification par jeton bearer
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### Authentification par JWT
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` et `JWTSecurity` utilisent tous deux par défaut le format de
+transport standard `Authorization: Bearer <token>`. Utilisez `BearerSecurity`
+pour les jetons bearer génériques ou opaques, et `JWTSecurity` lorsque l'API
+générée doit être explicitement orientée JWT. Utilisez `BearerFormat` uniquement
+lorsque la documentation OpenAPI v3 doit annoncer un format précis de jeton
+bearer; `JWTSecurity` émet `bearerFormat: JWT` par défaut.
 
 #### Authentification OAuth2
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -282,14 +299,14 @@ var _ = Service("users", func() {
 
 ### Meilleures pratiques en matière de sécurité
 
-1. **Toujours utiliser HTTPS en production
+1. **Toujours utiliser HTTPS en production**
 2. **Définir la sécurité au niveau de l'API** pour des valeurs par défaut cohérentes
 3. **Utiliser `NoSecurity()` explicitement** pour les points d'extrémité publics
 4. **Mettre en place une limitation de débit** pour l'authentification par clé d'API
-5. **Utiliser une expiration de jeton appropriée** pour les jetons JWT
+5. **Utiliser une expiration de jeton appropriée** pour les jetons bearer et JWT
 6. **Effectuer une rotation régulière des secrets et des clés**
 7. **Enregistrer et surveiller les échecs d'authentification**
-8. **Valider toutes les entrées** même pour les demandes authentifiées
+8. **Valider toutes les entrées**, même pour les demandes authentifiées
 
 ---
 

@@ -221,6 +221,16 @@ var APIKeyAuth = APIKeySecurity("api_key", func() {
 })
 ```
 
+#### Bearer トークン認証
+
+```go
+var BearerAuth = BearerSecurity("bearer", func() {
+    Description("Secures endpoint by requiring a bearer token")
+    Scope("api:read", "Read access to API")
+    Scope("api:write", "Write access to API")
+})
+```
+
 #### JWT認証
 
 ```go
@@ -230,6 +240,13 @@ var JWTAuth = JWTSecurity("jwt", func() {
     Scope("api:write", "Write access to API")
 })
 ```
+
+`BearerSecurity` と `JWTSecurity` はどちらも、標準の
+`Authorization: Bearer <token>` ワイヤ形式をデフォルトで使用します。汎用または
+不透明な bearer トークンには `BearerSecurity` を使用し、生成される API を明示的に
+JWT 向けにしたい場合は `JWTSecurity` を使用します。OpenAPI v3 ドキュメントで特定の
+bearer トークン形式を示す必要がある場合にのみ `BearerFormat` を使用します。
+`JWTSecurity` はデフォルトで `bearerFormat: JWT` を出力します。
 
 #### OAuth2 認証
 
@@ -265,10 +282,10 @@ var _ = Service("users", func() {
     })
     
     Method("admin", func() {
-        // Override with JWT for this method
-        Security(JWTAuth)
+        // Override with bearer token auth for this method
+        Security(BearerAuth)
         Payload(func() {
-            Token("token", String)
+            BearerToken("token", String)
             Required("token")
         })
     })
@@ -282,14 +299,14 @@ var _ = Service("users", func() {
 
 ### セキュリティのベストプラクティス
 
-1. **本番環境では常にHTTPSを使用すること**。
-2. **Define security at API level** for consistent defaults
-3. **パブリック・エンドポイントには明示的に`NoSecurity()`を使用する。
-4. **APIキー認証にレート制限** を導入する。
-5. **JWT トークンに適切なトークン有効期限** を使用する。
-6. **シークレットとキーの定期的なローテーション**。
-7. **認証失敗のログと監視
-8. **認証されたリクエストであっても、すべての入力を検証する。
+1. **本番環境では常に HTTPS を使用する**
+2. **一貫したデフォルトのために API レベルでセキュリティを定義する**
+3. **公開エンドポイントには `NoSecurity()` を明示的に使用する**
+4. **API キー認証にはレート制限を実装する**
+5. **bearer トークンと JWT トークンには適切な有効期限を設定する**
+6. **シークレットとキーを定期的にローテーションする**
+7. **認証失敗をログに記録して監視する**
+8. **認証済みリクエストでもすべての入力を検証する**
 
 ---
 
