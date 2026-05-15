@@ -57,7 +57,7 @@ start: setup serve
 ## Start the Hugo server with live reload
 serve:
 	@echo "Starting Hugo server on http://$(BIND):$(PORT)..."
-	hugo server -D --bind $(BIND) -p $(PORT) --disableFastRender
+	BROWSERSLIST_ROOT_PATH=. hugo server -D --bind $(BIND) -p $(PORT) --disableFastRender
 
 ## Clean generated files (public/ and resources/)
 clean:
@@ -69,7 +69,7 @@ clean:
 ## Build the site for production with minification
 build: setup diagrams
 	@echo "Building site..."
-	hugo --minify
+	BROWSERSLIST_ROOT_PATH=. hugo --minify
 
 ## Generate architecture diagrams from Model DSL
 diagrams:
