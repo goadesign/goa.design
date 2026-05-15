@@ -191,3 +191,9 @@ defaultContentLanguageInSubdir = false
   resampleFilter = "CatmullRom"
   quality = 75
   anchor = "smart"
+
+[security]
+  [security.exec]
+    # Keep Hugo's default exec environment allowlist, plus BROWSERSLIST_ROOT_PATH
+    # so Browserslist stops searching for config above the repository root.
+    osEnv = ['(?i)^((HTTPS?|NO)_PROXY|PATH(EXT)?|APPDATA|TE?MP|TERM|GO\w+|(XDG_CONFIG_)?HOME|USERPROFILE|SSH_AUTH_SOCK|DISPLAY|LANG|SYSTEMDRIVE|PROGRAMDATA|BROWSERSLIST_ROOT_PATH)$']

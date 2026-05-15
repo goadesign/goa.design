@@ -69,7 +69,7 @@ clean:
 ## Build the site for production with minification
 build: setup diagrams
 	@echo "Building site..."
-	hugo --minify
+	BROWSERSLIST_ROOT_PATH=. hugo --minify
 
 ## Generate architecture diagrams from Model DSL
 diagrams:
