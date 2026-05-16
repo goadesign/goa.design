@@ -214,6 +214,20 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## OpenTelemetry GenAI オブザーバビリティ
+
+tracer を設定すると、Goa-AI は planner が実行するエージェント操作について、ベンダー非依存の OpenTelemetry GenAI semantic convention に沿った span を出力します。
+
+- モデル呼び出しは `gen_ai.operation.name="chat"` を使い、`chat {model}` のような span 名になります
+- ツール完了は `gen_ai.operation.name="execute_tool"` を使い、`execute_tool {tool_name}` のような span 名になります
+- agent-as-tool の委譲は `gen_ai.operation.name="invoke_agent"` を使い、`invoke_agent {agent_name}` のような span 名になります
+
+これらの span には、利用可能な場合に `gen_ai.conversation.id`、`gen_ai.agent.id`、`gen_ai.agent.name`、`gen_ai.request.model`、`gen_ai.response.model`、トークン使用量、終了理由、ツール識別子、streaming の time-to-first-chunk が含まれます。runtime は識別子、件数、時間、エラーを既定で記録します。prompt 本文、chat 履歴、ツール引数、ツール結果を添付するかどうかはアプリケーション側のポリシーであり、自動では添付されません。
+
+これにより、Goa-AI の open source telemetry は OpenTelemetry backend 間で移植可能なまま、production システムは conversation のグルーピング、モデルごとの latency と token 使用量の比較、multi-agent tool chain の調査に必要な構造を得られます。
+
+---
+
 ## Mongo Store を使った Prompt Override
 
 本番での Prompt 管理は通常、次の組み合わせで行います。

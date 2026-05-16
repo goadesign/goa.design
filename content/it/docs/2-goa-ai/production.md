@@ -214,6 +214,20 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Osservabilità GenAI con OpenTelemetry
+
+Quando è configurato un tracer, Goa-AI emette span neutrali rispetto al vendor secondo le convenzioni semantiche GenAI di OpenTelemetry per le operazioni agente eseguite dal planner:
+
+- le chiamate al modello usano `gen_ai.operation.name="chat"` e nomi di span come `chat {model}`
+- le conclusioni delle chiamate agli strumenti usano `gen_ai.operation.name="execute_tool"` e nomi di span come `execute_tool {tool_name}`
+- la delega agent-as-tool usa `gen_ai.operation.name="invoke_agent"` e nomi di span come `invoke_agent {agent_name}`
+
+Questi span includono `gen_ai.conversation.id`, `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.request.model`, `gen_ai.response.model`, uso dei token, motivi di terminazione, identificatori degli strumenti e tempo al primo frammento di streaming quando disponibili. Il runtime registra per impostazione predefinita identificatori, conteggi, tempi ed errori; testo dei prompt, cronologia chat, argomenti degli strumenti e risultati degli strumenti restano una scelta dell'applicazione e non vengono allegati automaticamente.
+
+In questo modo la telemetria open source di Goa-AI resta portabile tra backend OpenTelemetry, ma offre ai sistemi di produzione abbastanza struttura per raggruppare una conversazione, confrontare latenza e uso dei token per modello e ispezionare catene di strumenti multi-agente.
+
+---
+
 ## Override dei prompt con Mongo Store
 
 In produzione, la gestione dei prompt usa in genere:

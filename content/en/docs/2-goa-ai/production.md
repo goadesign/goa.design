@@ -214,6 +214,20 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## OpenTelemetry GenAI Observability
+
+When a tracer is configured, Goa-AI emits vendor-neutral OpenTelemetry GenAI semantic-convention spans for planner-scoped agent operations:
+
+- model calls use `gen_ai.operation.name="chat"` and span names like `chat {model}`
+- tool completions use `gen_ai.operation.name="execute_tool"` and span names like `execute_tool {tool_name}`
+- agent-as-tool delegation uses `gen_ai.operation.name="invoke_agent"` and span names like `invoke_agent {agent_name}`
+
+These spans include `gen_ai.conversation.id`, `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.request.model`, `gen_ai.response.model`, token usage, finish reasons, tool identifiers, and streaming time-to-first-chunk when available. The runtime records identifiers, counts, timings, and errors by default; prompt text, chat history, tool arguments, and tool results remain application policy and are not attached automatically.
+
+This keeps open-source Goa-AI telemetry portable across OpenTelemetry backends while still giving production systems enough structure to group a conversation, compare model latency and token usage, and inspect multi-agent tool chains.
+
+---
+
 ## Prompt Overrides with Mongo Store
 
 Production prompt management typically uses:

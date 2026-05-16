@@ -214,6 +214,20 @@ currentTPM := limiter.CurrentTPM()
 
 ---
 
+## Observabilité GenAI avec OpenTelemetry
+
+Lorsqu'un traceur est configuré, Goa-AI émet des spans indépendants du fournisseur qui suivent les conventions sémantiques GenAI d'OpenTelemetry pour les opérations d'agent exécutées par le planner :
+
+- les appels de modèle utilisent `gen_ai.operation.name="chat"` et des noms de span comme `chat {model}`
+- les fins d'exécution d'outils utilisent `gen_ai.operation.name="execute_tool"` et des noms de span comme `execute_tool {tool_name}`
+- la délégation agent-comme-outil utilise `gen_ai.operation.name="invoke_agent"` et des noms de span comme `invoke_agent {agent_name}`
+
+Ces spans incluent `gen_ai.conversation.id`, `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.request.model`, `gen_ai.response.model`, l'utilisation des jetons, les raisons d'arrêt, les identifiants d'outil et le temps jusqu'au premier fragment de streaming lorsque ces valeurs sont disponibles. Le runtime enregistre par défaut les identifiants, les compteurs, les durées et les erreurs ; le texte des prompts, l'historique de conversation, les arguments d'outil et les résultats d'outil restent une politique de l'application et ne sont pas attachés automatiquement.
+
+Cette approche garde la télémétrie open source de Goa-AI portable entre backends OpenTelemetry tout en donnant aux systèmes de production assez de structure pour regrouper une conversation, comparer la latence et l'utilisation des jetons par modèle, et inspecter les chaînes d'outils multi-agents.
+
+---
+
 ## Remplacements d'invite avec le magasin Mongo
 
 La gestion des invites de production utilise généralement :
