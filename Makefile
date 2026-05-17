@@ -46,9 +46,9 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 	@echo
 
-## Initialize Hugo modules and install dependencies
+## Resolve pinned Hugo modules
 setup:
-	hugo mod get -u
+	go mod download
 	hugo mod tidy
 
 ## Start the Hugo server with live reload (alias for 'serve')
@@ -69,7 +69,7 @@ clean:
 ## Build the site for production with minification
 build: setup diagrams
 	@echo "Building site..."
-	hugo --minify
+	BROWSERSLIST_ROOT_PATH=. hugo --minify
 
 ## Generate architecture diagrams from Model DSL
 diagrams:
