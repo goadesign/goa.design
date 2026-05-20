@@ -57,6 +57,7 @@ jobs:
       - name: Build
         run: hugo --minify
         env:
+          BROWSERSLIST_ROOT_PATH: .
           HUGO_GIT_SHA: ${{ github.sha }}
 
       - name: Auth
