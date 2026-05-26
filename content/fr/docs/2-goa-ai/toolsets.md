@@ -129,10 +129,13 @@ Bedrock transporte les champs Anthropic via `additionalModelRequestFields` quand
 le contrat beta applicable l'exige.
 
 Si votre application route les requêtes modèle via un service d'inférence ou un
-proxy, cette frontière doit préserver toutes les projections d'entrée d'outil
-générées. Supprimer le schéma sans exemple racine ou l'entrée d'exemple parsée
-empêche les adaptateurs fournisseur d'envoyer des `input_examples` natifs, même
-si la spécification générée était correcte.
+proxy, cette frontière doit transporter ces projections ensemble sous forme de
+`model.ToolInputContract` neutre vis-à-vis du fournisseur. Elle ne doit pas
+importer le `tools.TypeSpec` propre au générateur, re-sérialiser des schémas déjà
+décodés ni savoir quel fournisseur consomme quelle projection. Supprimer le
+schéma sans exemple racine ou l'entrée d'exemple parsée empêche les adaptateurs
+fournisseur d'envoyer des `input_examples` natifs, même si la spécification
+générée était correcte.
 
 ### Résultats des outils limités
 

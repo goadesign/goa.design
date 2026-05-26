@@ -127,10 +127,12 @@ the Anthropic fields through `additionalModelRequestFields` when the relevant
 beta contract applies.
 
 If your application routes model requests through an inference service or proxy,
-that boundary must preserve all generated tool input projections. Dropping the
-schema-without-root-example or parsed example input prevents provider adapters
-from sending native `input_examples`, even though the generated tool spec was
-correct.
+that boundary should carry the projections together as a provider-neutral
+`model.ToolInputContract`. The boundary should not import generator-only
+`tools.TypeSpec`, re-marshal decoded schemas, or know which provider consumes
+which projection. Dropping the schema-without-root-example or parsed example
+input prevents provider adapters from sending native `input_examples`, even
+though the generated tool spec was correct.
 
 ### Bounded Tool Results
 

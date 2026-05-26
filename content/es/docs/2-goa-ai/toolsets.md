@@ -130,10 +130,13 @@ raíz; Bedrock transporta los campos de Anthropic mediante
 `additionalModelRequestFields` cuando lo exige el contrato beta aplicable.
 
 Si tu aplicación enruta las solicitudes de modelo a través de un servicio de
-inferencia o proxy, ese límite debe preservar todas las proyecciones de entrada
-de herramienta generadas. Eliminar el esquema sin ejemplo raíz o la entrada de
-ejemplo parseada impide que los adaptadores del proveedor envíen
-`input_examples` nativos, aunque la especificación generada fuera correcta.
+inferencia o proxy, ese límite debe transportar esas proyecciones juntas como un
+`model.ToolInputContract` neutral para el proveedor. El límite no debe importar
+`tools.TypeSpec` propio del generador, volver a serializar esquemas ya
+decodificados ni saber qué proveedor consume cada proyección. Eliminar el
+esquema sin ejemplo raíz o la entrada de ejemplo parseada impide que los
+adaptadores del proveedor envíen `input_examples` nativos, aunque la
+especificación generada fuera correcta.
 
 ### Resultados de herramientas acotados
 

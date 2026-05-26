@@ -127,10 +127,13 @@ Bedrock trasporta i campi Anthropic tramite `additionalModelRequestFields` quand
 lo richiede il relativo contratto beta.
 
 Se l'applicazione instrada le richieste modello tramite un servizio di inferenza
-o un proxy, quel confine deve preservare tutte le proiezioni di input dello
-strumento generate. Eliminare lo schema senza esempio radice o l'input di esempio
-analizzato impedisce agli adattatori del provider di inviare `input_examples`
-nativi, anche se la specifica generata era corretta.
+o un proxy, quel confine deve trasportare queste proiezioni insieme come
+`model.ToolInputContract` neutrale rispetto al provider. Il confine non deve
+importare il `tools.TypeSpec` riservato al generatore, serializzare di nuovo
+schemi già decodificati o sapere quale provider consuma quale proiezione.
+Eliminare lo schema senza esempio radice o l'input di esempio analizzato
+impedisce agli adattatori del provider di inviare `input_examples` nativi, anche
+se la specifica generata era corretta.
 
 ### Bounded Tool Results
 

@@ -126,8 +126,11 @@ contract が適用される場合、Anthropic の field を
 `additionalModelRequestFields` 経由で渡します。
 
 アプリケーションが inference service や proxy を通して model request を
-ルーティングする場合、その boundary は生成された tool input projection を
-すべて保持する必要があります。schema-without-root-example や parsed example
+ルーティングする場合、その boundary は provider-neutral な
+`model.ToolInputContract` として projection をまとめて運ぶ必要があります。
+その boundary は generator 専用の `tools.TypeSpec` を import したり、decode
+済み schema を再 marshal したり、どの provider がどの projection を使うかを
+知ったりしてはいけません。schema-without-root-example や parsed example
 input を落とすと、生成 tool spec が正しくても provider adapter は native
 `input_examples` を送れません。
 
