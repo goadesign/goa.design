@@ -97,8 +97,24 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Attribute`                                             | Args, retour, ServerData | Définit le champ de schéma (usage général)                                                                                 |
 | `Field`                                                 | Args, retour, ServerData | Définit le champ proto numéroté (gRPC)                                                                                |
 | `Required`                                              | Schéma                   | Marque les champs comme requis                                                                                           |
-| `Example`                                               | Schéma                   | Joint un exemple explicite ; des exemples de charge utile d'outil de niveau supérieur sont conservés dans les spécifications d'outils générées et les conseils de nouvelle tentative |
+| `Example`                                               | Schéma                   | Joint un exemple explicite ; les exemples de payload d'outil racine déclarés deviennent des exemples natifs fournisseur et des conseils de nouvelle tentative |
 
+
+### Exemples de payload d'outil
+
+Pour les schémas de payload d'outil, un `Example(...)` Goa de niveau supérieur
+déclaré est la source des exemples de niveau supérieur exposés aux fournisseurs.
+Codegen conserve cet exemple dans la spécification d'outil générée sous forme de
+JSON brut et d'objet d'entrée parsé, et émet aussi le schéma annoté ainsi qu'un
+schéma dont seul l'`example` racine a été retiré.
+
+Les adaptateurs fournisseur utilisent directement ces projections. Les
+fournisseurs basés sur les annotations de schéma utilisent le JSON Schema annoté.
+Anthropic direct et Bedrock Claude utilisent des `input_examples` natifs avec la
+projection sans exemple racine ; Bedrock transmet les champs Anthropic via
+`additionalModelRequestFields` quand le contrat beta l'exige. Les exemples
+générés ou synthétisés ne sont jamais promus en exemples fournisseur de niveau
+supérieur.
 
 ## Gestion des invites (chemin d'intégration v1)
 

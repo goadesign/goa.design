@@ -97,8 +97,22 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Attribute`                                             | Args, Return, ServerData | Defines schema field (general use)                                                                                 |
 | `Field`                                                 | Args, Return, ServerData | Defines numbered proto field (gRPC)                                                                                |
 | `Required`                                              | Schema                   | Marks fields as required                                                                                           |
-| `Example`                                               | Schema                   | Attaches an explicit example; top-level tool payload examples are preserved in generated tool specs and retry hints |
+| `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and retry hints |
 
+
+### Tool Payload Examples
+
+For tool payload schemas, an authored top-level Goa `Example(...)` is the source
+for provider-facing top-level examples. Codegen preserves that example in the
+generated tool spec as raw JSON and parsed object input, and also emits both the
+annotated schema and a schema with only the root `example` removed.
+
+Provider adapters use those projections directly. Schema-annotation providers use
+the annotated JSON Schema. Direct Anthropic and Bedrock Claude use native
+`input_examples` with the schema-without-root-example projection, with Bedrock
+passing the Anthropic fields through `additionalModelRequestFields` when the beta
+contract requires it. Generated or synthesized examples are never promoted to
+top-level provider examples.
 
 ## Prompt Management (v1 Integration Path)
 

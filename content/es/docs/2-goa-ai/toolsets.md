@@ -104,6 +104,37 @@ func (e *Executor) Execute(
 
 ```
 
+### Esquemas y ejemplos de herramientas generados
+
+Goa-AI trata la especificación de herramienta generada como el contrato canónico
+visible para el modelo. Para cada payload de herramienta, codegen deriva JSON
+Schema desde el atributo Goa y precalcula las proyecciones que necesitan los
+adaptadores de proveedores:
+
+- el esquema anotado, incluidos los ejemplos JSON Schema de nivel raíz y de campo
+- el mismo esquema con solo el `example` raíz eliminado
+- el JSON sin procesar del ejemplo raíz declarado y el objeto de entrada de
+  ejemplo ya parseado
+
+Solo un `Example(...)` de Goa de nivel superior declarado en el payload de la
+herramienta se convierte en un ejemplo de herramienta de nivel superior expuesto
+al proveedor. Los ejemplos sintetizados por Goa pueden permanecer como
+anotaciones de esquema anidadas, pero no se promocionan a ejemplos nativos del
+proveedor.
+
+Los adaptadores eligen la proyección que coincide con el contrato del proveedor.
+Las llamadas a herramientas de estilo OpenAI pueden consumir directamente las
+anotaciones del esquema. Anthropic directo y Bedrock Claude envían los ejemplos
+parseados como `input_examples` nativos mientras usan el esquema sin el ejemplo
+raíz; Bedrock transporta los campos de Anthropic mediante
+`additionalModelRequestFields` cuando lo exige el contrato beta aplicable.
+
+Si tu aplicación enruta las solicitudes de modelo a través de un servicio de
+inferencia o proxy, ese límite debe preservar todas las proyecciones de entrada
+de herramienta generadas. Eliminar el esquema sin ejemplo raíz o la entrada de
+ejemplo parseada impide que los adaptadores del proveedor envíen
+`input_examples` nativos, aunque la especificación generada fuera correcta.
+
 ### Resultados de herramientas acotados
 
 Algunas herramientas devuelven de forma natural listas grandes, grafos o ventanas de series temporales. Puedes marcarlas como **vistas acotadas** para que los servicios sigan siendo responsables del recorte mientras el runtime hace cumplir y expone el contrato.

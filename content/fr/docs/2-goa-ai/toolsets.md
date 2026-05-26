@@ -104,6 +104,36 @@ func (e *Executor) Execute(
 
 ```
 
+### Schémas et exemples d'outils générés
+
+Goa-AI traite la spécification d'outil générée comme le contrat canonique visible
+par le modèle. Pour chaque payload d'outil, codegen dérive le JSON Schema depuis
+l'attribut Goa et précalcule les projections dont les adaptateurs de fournisseurs
+ont besoin :
+
+- le schéma annoté, y compris les exemples JSON Schema déclarés au niveau racine
+  et au niveau des champs
+- le même schéma avec seulement l'`example` racine retiré
+- le JSON brut de l'exemple racine déclaré et l'objet d'entrée d'exemple parsé
+
+Seul un `Example(...)` Goa de niveau supérieur déclaré sur le payload d'outil
+devient un exemple d'outil de niveau supérieur exposé au fournisseur. Les
+exemples synthétisés par Goa peuvent rester des annotations de schéma imbriquées,
+mais ils ne sont pas promus en exemples natifs du fournisseur.
+
+Les adaptateurs choisissent la projection adaptée au contrat du fournisseur. Les
+appels d'outils de style OpenAI peuvent consommer directement les annotations de
+schéma. Anthropic direct et Bedrock Claude envoient les exemples parsés sous forme
+de `input_examples` natifs tout en utilisant le schéma sans l'exemple racine ;
+Bedrock transporte les champs Anthropic via `additionalModelRequestFields` quand
+le contrat beta applicable l'exige.
+
+Si votre application route les requêtes modèle via un service d'inférence ou un
+proxy, cette frontière doit préserver toutes les projections d'entrée d'outil
+générées. Supprimer le schéma sans exemple racine ou l'entrée d'exemple parsée
+empêche les adaptateurs fournisseur d'envoyer des `input_examples` natifs, même
+si la spécification générée était correcte.
+
 ### Résultats des outils limités
 
 Certains outils renvoient naturellement de grandes listes, graphiques ou fenêtres de séries chronologiques. Vous pouvez les marquer comme **vues limitées** afin que les services restent responsables du découpage pendant que le runtime applique et fait apparaître le contrat.

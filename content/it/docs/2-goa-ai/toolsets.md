@@ -101,6 +101,37 @@ func (e *Executor) Execute(
 }
 ```
 
+### Schemi ed esempi degli strumenti generati
+
+Goa-AI considera la specifica dello strumento generata come il contratto canonico
+visibile al modello. Per ogni payload di strumento, codegen deriva JSON Schema
+dall'attributo Goa e precalcola le proiezioni richieste dagli adattatori dei
+provider:
+
+- lo schema annotato, inclusi gli esempi JSON Schema dichiarati alla radice e nei
+  campi
+- lo stesso schema con solo l'`example` radice rimosso
+- il JSON grezzo dell'esempio radice dichiarato e l'oggetto di input di esempio
+  già analizzato
+
+Solo un `Example(...)` Goa di livello superiore dichiarato sul payload dello
+strumento diventa un esempio di strumento di livello superiore esposto al
+provider. Gli esempi sintetizzati da Goa possono restare annotazioni di schema
+annidate, ma non vengono promossi a esempi nativi del provider.
+
+Gli adattatori scelgono la proiezione adatta al contratto del provider. Le
+chiamate di strumenti in stile OpenAI possono consumare direttamente le
+annotazioni dello schema. Anthropic diretto e Bedrock Claude inviano gli esempi
+analizzati come `input_examples` nativi usando lo schema senza l'esempio radice;
+Bedrock trasporta i campi Anthropic tramite `additionalModelRequestFields` quando
+lo richiede il relativo contratto beta.
+
+Se l'applicazione instrada le richieste modello tramite un servizio di inferenza
+o un proxy, quel confine deve preservare tutte le proiezioni di input dello
+strumento generate. Eliminare lo schema senza esempio radice o l'input di esempio
+analizzato impedisce agli adattatori del provider di inviare `input_examples`
+nativi, anche se la specifica generata era corretta.
+
 ### Bounded Tool Results
 
 Some tools naturally return large lists, graphs, or time-series windows. You can mark these as **bounded views** so that services remain responsible for trimming while the runtime enforces and surfaces the contract.

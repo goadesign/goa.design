@@ -97,8 +97,24 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Attribute`                                             | Args, Return, ServerData | Define un campo del esquema (uso general)                                                                          |
 | `Field`                                                 | Args, Return, ServerData | Define un campo proto numerado (gRPC)                                                                              |
 | `Required`                                              | Esquema                  | Marca los campos como obligatorios                                                                                 |
-| `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos de payload de herramienta de nivel superior se preservan en las specs generadas y en las pistas de reintento |
+| `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos raíz de payload de herramienta declarados se convierten en ejemplos nativos del proveedor y pistas de reintento |
 
+
+### Ejemplos de payload de herramientas
+
+Para los esquemas de payload de herramientas, un `Example(...)` de Goa de nivel
+superior declarado es la fuente de los ejemplos de nivel superior expuestos al
+proveedor. Codegen conserva ese ejemplo en la especificación generada como JSON
+sin procesar y como objeto de entrada parseado, y también emite el esquema
+anotado y un esquema con solo el `example` raíz eliminado.
+
+Los adaptadores de proveedor usan esas proyecciones directamente. Los proveedores
+basados en anotaciones de esquema usan el JSON Schema anotado. Anthropic directo
+y Bedrock Claude usan `input_examples` nativos con la proyección sin ejemplo
+raíz; Bedrock transmite los campos de Anthropic mediante
+`additionalModelRequestFields` cuando lo exige el contrato beta. Los ejemplos
+generados o sintetizados nunca se promocionan a ejemplos de proveedor de nivel
+superior.
 
 ## Gestión de prompts (ruta de integración v1)
 

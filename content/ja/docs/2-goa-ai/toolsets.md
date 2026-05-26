@@ -103,6 +103,34 @@ func (e *Executor) Execute(
 }
 ```
 
+### 生成されるツールスキーマと例
+
+Goa-AI では、生成された tool spec が model-facing な canonical contract
+です。各 tool payload について、codegen は Goa attribute から JSON Schema
+を導出し、provider adapter が必要とする projection を事前計算します:
+
+- authored example と field-level JSON Schema example を含む annotated schema
+- root の `example` だけを取り除いた同じ schema
+- authored top-level example の raw JSON と parsed object example input
+
+provider-facing な top-level tool example になるのは、tool payload に明示的に
+書いた Goa の top-level `Example(...)` だけです。Goa が合成した example は
+nested schema annotation として残ることがありますが、provider-native example
+には昇格しません。
+
+provider adapter は provider contract に合う projection を選びます。
+OpenAI-style の tool calling は schema annotation を直接使えます。Direct
+Anthropic と Bedrock Claude は root example を除いた schema とともに、parsed
+example を native `input_examples` として送ります。Bedrock は必要な beta
+contract が適用される場合、Anthropic の field を
+`additionalModelRequestFields` 経由で渡します。
+
+アプリケーションが inference service や proxy を通して model request を
+ルーティングする場合、その boundary は生成された tool input projection を
+すべて保持する必要があります。schema-without-root-example や parsed example
+input を落とすと、生成 tool spec が正しくても provider adapter は native
+`input_examples` を送れません。
+
 ### バウンデッドなツール結果
 
 一部の tool は、大きな list、graph、time-series window を返すのが自然です。これらを **bounded view** としてマークすると、trim は service が責任を持ったまま、runtime が contract を強制し表面化できます。

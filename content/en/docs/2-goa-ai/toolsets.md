@@ -104,6 +104,34 @@ func (e *Executor) Execute(
 
 ```
 
+### Generated Tool Schemas and Examples
+
+Goa-AI treats the generated tool spec as the canonical model-facing contract.
+For each tool payload, codegen derives JSON Schema from the Goa attribute and
+precomputes the provider projections adapters need:
+
+- the annotated schema, including authored and field-level JSON Schema examples
+- the same schema with only the root `example` removed
+- the raw authored top-level example JSON and parsed object example input
+
+Only an authored top-level Goa `Example(...)` on the tool payload becomes a
+provider-facing top-level tool example. Synthesized Goa examples may remain as
+nested schema annotations, but they are not promoted to provider-native examples.
+This prevents generated placeholder values from becoming model instructions.
+
+Provider adapters choose the projection that matches the provider contract.
+OpenAI-style tool calling can consume schema annotations directly. Direct
+Anthropic and Bedrock Claude send the parsed examples as native
+`input_examples` while using the schema without the root example; Bedrock carries
+the Anthropic fields through `additionalModelRequestFields` when the relevant
+beta contract applies.
+
+If your application routes model requests through an inference service or proxy,
+that boundary must preserve all generated tool input projections. Dropping the
+schema-without-root-example or parsed example input prevents provider adapters
+from sending native `input_examples`, even though the generated tool spec was
+correct.
+
 ### Bounded Tool Results
 
 Some tools naturally return large lists, graphs, or time-series windows. You can mark these as **bounded views** so that services remain responsible for trimming while the runtime enforces and surfaces the contract.

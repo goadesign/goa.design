@@ -111,7 +111,21 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Attribute` | Args, Return, ServerData | スキーマフィールドを定義する（一般） |
 | `Field` | Args, Return, ServerData | proto フィールド番号付きで定義する（gRPC） |
 | `Required` | Schema | 必須フィールドを指定する |
-| `Example` | Schema | 明示的な例を付与する。top-level tool payload の例は生成 tool spec と retry hint に保持される |
+| `Example` | Schema | 明示的な例を付与する。authored top-level tool payload example は provider-native example と retry hint になる |
+
+### ツール payload の例
+
+tool payload schema では、明示的に書いた Goa の top-level `Example(...)` が
+provider-facing top-level example の source です。codegen はこの example を
+生成 tool spec に raw JSON と parsed object input として保持し、annotated
+schema と root の `example` だけを取り除いた schema も出力します。
+
+provider adapter はこれらの projection を直接使います。schema annotation を
+使う provider は annotated JSON Schema を使います。Direct Anthropic と
+Bedrock Claude は schema-without-root-example projection と native
+`input_examples` を使い、Bedrock は beta contract が要求する場合に
+Anthropic field を `additionalModelRequestFields` 経由で渡します。生成または
+合成された example は top-level provider example には昇格しません。
 
 ## Prompt 管理（v1 統合パス）
 
