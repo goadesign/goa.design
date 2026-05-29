@@ -155,7 +155,7 @@ err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
 1. Il runtime avvia un flusso di lavoro per l'agente (in-memory o temporale) e registra un nuovo `run.Context` con `RunID`, `SessionID`, `TurnID`, etichette e cappucci di politica.
 2. Richiama il `PlanStart` del pianificatore con i messaggi e il contesto di esecuzione correnti.
 3. Pianifica le chiamate agli strumenti restituite dal pianificatore (il pianificatore passa payload JSON canonici; il runtime gestisce la codifica/decodifica utilizzando i codec generati).
-4. Chiama `PlanResume` con i risultati degli strumenti che restano visibili al planner; gli strumenti con budget sono visibili per impostazione predefinita, mentre gli strumenti di bookkeeping vengono riprodotti solo quando deve essere riparato un fallimento ritentabile. Il ciclo si ripete finché il pianificatore non restituisce una risposta finale o finché non vengono raggiunti i limiti di tempo. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
+4. Chiama `PlanResume` con i risultati degli strumenti che restano visibili al planner; gli strumenti con budget sono visibili per impostazione predefinita, mentre gli strumenti di bookkeeping vengono riprodotti solo quando deve essere riparato un fallimento ritentabile. Il ciclo si ripete finché il pianificatore non restituisce una risposta finale, un risultato finale dello strumento o finché uno strumento `TerminalRun` riuscito non completa il run. Se la finalizzazione forzata è attiva perché sono stati raggiunti limiti o deadline, il pianificatore può chiudere tramite strumenti terminali di bookkeeping invece che con prosa. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
 5. I ganci e i sottoscrittori del flusso emettono eventi (pensieri del pianificatore, avvio/aggiornamento/fine dello strumento, attese, utilizzo, flusso di lavoro, collegamenti tra agenti e corse) e, se configurati, persistono le voci di trascrizione e i metadati della corsa.
 
 ---
@@ -252,7 +252,7 @@ Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 - **Caps**: `MaxToolCalls` - chiamate totali allo strumento *con budget* per esecuzione. Gli strumenti marcati `Bookkeeping()` nel DSL sono esenti e non consumano mai questo cap. I risultati bookkeeping riusciti restano nascosti ai futuri turni del planner. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
-- **Completamento atomico del run**: gli strumenti dichiarati `TerminalRun()` nel DSL chiudono il run immediatamente dopo una chiamata riuscita, senza richiedere un turno di finalizzazione del planner.
+- **Completamento atomico del run**: gli strumenti dichiarati `TerminalRun()` nel DSL chiudono il run immediatamente dopo una chiamata riuscita, senza richiedere un turno di finalizzazione del planner. Durante la finalizzazione forzata, il runtime ammette solo chiamate a strumenti `Bookkeeping()` + `TerminalRun()`, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce.
 - **Comportamento dei campi mancanti**: `OnMissingFields` - regola cosa succede quando la validazione indica campi mancanti.
 
 ### Sovrascritture dei criteri di runtime
@@ -608,7 +608,7 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contiene le chiamate allo strumento, la risposta finale, le annotazioni e l'opzione `RetryHint`. Il runtime fa rispettare i tappi, pianifica le attività dello strumento e alimenta i risultati dello strumento in `PlanResume` finché non viene prodotta una risposta finale.
+`PlanResult` contiene le chiamate allo strumento, la risposta finale, il risultato finale dello strumento, le annotazioni e l'opzione `RetryHint`. Il runtime fa rispettare i tappi, pianifica le attività dello strumento e alimenta i risultati dello strumento in `PlanResume` finché una risposta finale, un risultato finale dello strumento o uno strumento terminale riuscito non chiude il run. Quando `PlanResumeInput.Finalize` è impostato, i planner possono restituire strumenti terminali di bookkeeping; tali chiamate non vengono riprodotte in un turno successivo del planner e devono completare durevolmente la finalizzazione.
 
 I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che espone i servizi del runtime:
 - `AdvertisedToolDefinitions()` - ottenere le definizioni degli strumenti filtrate dal runtime e visibili al modello in questo turno

@@ -242,7 +242,7 @@ if err := rt.Seal(ctx); err != nil {
 1. The runtime starts a workflow for the agent (in-memory or Temporal) and records a new `run.Context` with `RunID`, `SessionID`, `TurnID`, labels, and policy caps.
 2. It calls your planner's `PlanStart` with the current messages and run context.
 3. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs).
-4. It calls `PlanResume` with the surviving planner-visible tool results; budgeted tools are visible by default, while bookkeeping tools replay only when a retryable failure must be repaired. The loop repeats until the planner returns a final response or caps/time budgets are hit. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
+4. It calls `PlanResume` with the surviving planner-visible tool results; budgeted tools are visible by default, while bookkeeping tools replay only when a retryable failure must be repaired. The loop repeats until the planner returns a final response, a final tool result, or a successful `TerminalRun` tool completes the run. If forced finalization is active because caps or deadlines were hit, the planner may close through terminal bookkeeping tools instead of prose. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
 5. Hooks and stream subscribers emit events (planner thoughts, tool start/update/end, awaits, usage, workflow, agent-run links) and, when configured, persist transcript entries and run metadata.
 
 ---
@@ -340,7 +340,7 @@ This becomes a `runtime.RunPolicy` attached to the agent's registration:
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
-- **Terminal tools**: Tools declared `TerminalRun()` complete the run atomically once they succeed—no follow-up `PlanResume` turn is scheduled. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to execute even when the retrieval budget is exhausted.
+- **Terminal tools**: Tools declared `TerminalRun()` complete the run atomically once they succeed—no follow-up `PlanResume` turn is scheduled. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to execute even when the retrieval budget is exhausted. During forced finalization, the runtime admits only `Bookkeeping()` + `TerminalRun()` tool calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds.
 
 ### Runtime Policy Overrides
 
@@ -784,7 +784,7 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contains tool calls, final response, annotations, and optional `RetryHint`. The runtime enforces caps, schedules tool activities, and feeds tool results back into `PlanResume` until a final response is produced.
+`PlanResult` contains tool calls, final response, final tool result, annotations, and optional `RetryHint`. The runtime enforces caps, schedules tool activities, and feeds tool results back into `PlanResume` until a final response, final tool result, or successful terminal tool closes the run. When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
 
 Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
 - `AdvertisedToolDefinitions()` - get the runtime-filtered tool definitions visible to the model for this turn

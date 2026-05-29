@@ -234,7 +234,7 @@ if err := rt.Seal(ctx); err != nil {
 1. El runtime inicia un workflow para el agente (en memoria o Temporal) y registra un nuevo `run.Context` con `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
 2. Llama al `PlanStart` de tu planificador con los mensajes actuales y el contexto de ejecución.
 3. Programa las llamadas a herramientas devueltas por el planificador (el planificador pasa payloads JSON canónicos; el runtime se encarga de la codificación/decodificación mediante los codecs generados).
-4. Llama a `PlanResume` con los resultados de herramienta que siguen siendo visibles para el planificador; las herramientas con presupuesto son visibles por defecto, mientras que las herramientas de bookkeeping solo se reproducen cuando hay que reparar un fallo reintentable. El bucle se repite hasta que el planificador devuelve una respuesta final o se alcanzan los límites/presupuestos de tiempo. A medida que avanza la ejecución, se pasa por los valores de `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fases terminales).
+4. Llama a `PlanResume` con los resultados de herramienta que siguen siendo visibles para el planificador; las herramientas con presupuesto son visibles por defecto, mientras que las herramientas de bookkeeping solo se reproducen cuando hay que reparar un fallo reintentable. El bucle se repite hasta que el planificador devuelve una respuesta final, un resultado de herramienta final, o una herramienta `TerminalRun` correcta completa la ejecución. Si la finalización forzada está activa porque se alcanzaron límites o deadlines, el planificador puede cerrar mediante herramientas terminales de bookkeeping en vez de prosa. A medida que avanza la ejecución, se pasa por los valores de `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fases terminales).
 5. Los hooks y los suscriptores de stream emiten eventos (pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, workflow, enlaces agente-ejecución) y, cuando están configurados, persisten entradas de transcripción y metadatos de ejecución.
 
 ---
@@ -332,7 +332,7 @@ Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 - **Presupuesto de tiempo**: `TimeBudget` – presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (solo runtime) – ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` – opt-in para pausa/reanudación.
 - **Comportamiento ante campos faltantes**: `OnMissingFields` – rige lo que ocurre cuando la validación indica que faltan campos.
-- **Herramientas terminales**: Las herramientas declaradas `TerminalRun()` cierran la ejecución atómicamente en cuanto tienen éxito: no se programa un turno `PlanResume` de seguimiento. Combina `Bookkeeping()` con `TerminalRun()` para una herramienta de "hacer commit de esta ejecución" que tiene garantizada su ejecución incluso cuando el presupuesto de recuperación está agotado.
+- **Herramientas terminales**: Las herramientas declaradas `TerminalRun()` cierran la ejecución atómicamente en cuanto tienen éxito: no se programa un turno `PlanResume` de seguimiento. Combina `Bookkeeping()` con `TerminalRun()` para una herramienta de "hacer commit de esta ejecución" que tiene garantizada su ejecución incluso cuando el presupuesto de recuperación está agotado. Durante la finalización forzada, el runtime admite solo llamadas de herramienta `Bookkeeping()` + `TerminalRun()`, las ejecuta dentro de la ventana restante del hard deadline y cierra la ejecución solo si todos los efectos laterales terminales tienen éxito.
 
 ### Overrides de política en runtime
 
@@ -746,7 +746,7 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contiene llamadas a herramientas, respuesta final, anotaciones y `RetryHint` opcional. El runtime aplica los límites, programa las actividades de herramientas y realimenta los resultados en `PlanResume` hasta que se produce una respuesta final.
+`PlanResult` contiene llamadas a herramientas, respuesta final, resultado de herramienta final, anotaciones y `RetryHint` opcional. El runtime aplica los límites, programa las actividades de herramientas y realimenta los resultados en `PlanResume` hasta que una respuesta final, un resultado de herramienta final o una herramienta terminal correcta cierre la ejecución. Cuando `PlanResumeInput.Finalize` está presente, los planificadores pueden devolver herramientas terminales de bookkeeping; esas llamadas no se reproducen en un turno posterior del planificador y deben terminar la finalización de forma duradera.
 
 Los planificadores también reciben un `PlannerContext` a través de `input.Agent` que expone servicios del runtime:
 - `AdvertisedToolDefinitions()` - obtén las definiciones de herramientas filtradas por el runtime y visibles para el modelo en este turno

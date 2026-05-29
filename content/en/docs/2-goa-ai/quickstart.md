@@ -135,6 +135,11 @@ updates, then keep application edits in `cmd/` and `internal/`.
 4. `PlanResume` receives planner-visible tool outputs.
 5. The loop repeats until the planner returns a final response, a terminal tool result, or the runtime enforces caps/time budgets.
 
+When caps or deadlines force finalization, a planner can still close the run by
+returning terminal bookkeeping tools. The runtime executes only
+`Bookkeeping()` + `TerminalRun()` tools in that path and requires them to
+succeed before the run is considered closed.
+
 The generated example starts with a stub planner so this flow is visible before
 you connect a model. A real planner follows the same contract; it just delegates
 the decision to a model client.

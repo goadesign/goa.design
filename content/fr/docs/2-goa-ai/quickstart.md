@@ -135,6 +135,11 @@ mises à jour, puis conservez les modifications de l'application dans `cmd/` et 
 4. `PlanResume` reçoit les sorties d'outils visibles par le planificateur.
 5. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale, un résultat d'outil de terminal ou que le moteur d'exécution applique des plafonds/budgets de temps.
 
+Lorsque des plafonds ou deadlines forcent la finalisation, un planificateur peut
+encore fermer l'exécution en renvoyant des outils terminaux de comptabilité. Le
+runtime n'exécute que des outils `Bookkeeping()` + `TerminalRun()` dans ce chemin
+et exige leur succès avant de considérer l'exécution comme fermée.
+
 L'exemple généré commence par un planificateur de stub afin que ce flux soit visible avant
 vous connectez un modèle. Un vrai planificateur suit le même contrat ; ça délègue simplement
 la décision à un client modèle.

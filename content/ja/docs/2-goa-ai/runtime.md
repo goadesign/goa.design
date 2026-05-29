@@ -249,7 +249,7 @@ if err := rt.Seal(ctx); err != nil {
 1. ランタイムはエージェントのワークフロー（インメモリまたは Temporal）を開始し、`RunID`、`SessionID`、`TurnID`、ラベル、ポリシー上限を含む新しい `run.Context` を記録します。
 2. 現在のメッセージと run コンテキストを渡して、プランナーの `PlanStart` を呼び出します。
 3. プランナーが返したツール呼び出しをスケジュールします（プランナーは「正規（canonical）JSON」のペイロードを渡し、エンコード/デコードはランタイムが生成済みコーデックで処理します）。
-4. プランナーから見えるまま残ったツール結果を添えて `PlanResume` を呼び出します。予算対象ツールは既定で可視ですが、bookkeeping ツールはリトライ可能な失敗を修復する必要がある場合にのみ再生されます。プランナーが最終応答を返すか、上限/時間予算に達するまでループします。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
+4. プランナーから見えるまま残ったツール結果を添えて `PlanResume` を呼び出します。予算対象ツールは既定で可視ですが、bookkeeping ツールはリトライ可能な失敗を修復する必要がある場合にのみ再生されます。プランナーが最終応答、最終ツール結果を返すか、成功した `TerminalRun` ツールが run を完了するまでループします。上限や deadline によって強制 finalization が有効な場合、プランナーは prose ではなく terminal bookkeeping ツールで閉じることができます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
 5. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 
 ---
@@ -346,7 +346,7 @@ Agent("chat", "Conversational runner", func() {
 - **Caps**: `MaxToolCalls`（run あたりの*予算対象*ツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。DSL で `Bookkeeping()` としてマークされたツールはこの上限から免除され、`MaxToolCalls` を消費しません。成功した bookkeeping 結果は将来のプランナーターンから隠されたままです。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
-- **原子的な run 完了**: DSL で `TerminalRun()` として宣言されたツールは、成功した呼び出しの直後に run を終了させ、プランナーによるファイナライズターンを必要としません。
+- **原子的な run 完了**: DSL で `TerminalRun()` として宣言されたツールは、成功した呼び出しの直後に run を終了させ、プランナーによるファイナライズターンを必要としません。強制 finalization 中、ランタイムは `Bookkeeping()` + `TerminalRun()` ツール呼び出しだけを受け入れ、残りの hard deadline ウィンドウ内で実行し、すべての terminal side effect が成功した場合にのみ run を閉じます。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
 
 ### ランタイムポリシーのオーバーライド
@@ -746,7 +746,7 @@ type Planner interface {
 }
 ```
 
-`PlanResult` にはツール呼び出し、最終応答、注釈、オプションの `RetryHint` が含まれます。ランタイムは上限を強制し、ツールアクティビティをスケジュールし、最終応答が生成されるまでツール結果を `PlanResume` にフィードバックします。
+`PlanResult` にはツール呼び出し、最終応答、最終ツール結果、注釈、オプションの `RetryHint` が含まれます。ランタイムは上限を強制し、ツールアクティビティをスケジュールし、最終応答、最終ツール結果、または成功した terminal ツールが run を閉じるまでツール結果を `PlanResume` にフィードバックします。`PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal bookkeeping ツールを返すことができます。これらの呼び出しは後続のプランナーターンには再生されず、finalization を永続的に完了する必要があります。
 
 プランナーは `input.Agent` 経由でランタイムサービスを提供する `PlannerContext` も受け取ります。
 

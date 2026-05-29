@@ -138,6 +138,11 @@ actualizaciones del scaffold y mantén las modificaciones de la aplicación en
 4. `PlanResume` recibe las salidas de herramientas visibles para el planificador.
 5. El bucle se repite hasta que el planificador devuelve una respuesta final, un resultado de herramienta terminal o el runtime aplica los límites o presupuestos de tiempo.
 
+Cuando los límites o deadlines fuerzan la finalización, un planificador todavía
+puede cerrar la ejecución devolviendo herramientas terminales de bookkeeping. El
+runtime ejecuta solo herramientas `Bookkeeping()` + `TerminalRun()` en ese camino
+y exige que tengan éxito antes de considerar cerrada la ejecución.
+
 El ejemplo generado arranca con un planificador stub para que este flujo sea
 visible antes de conectar un modelo. Un planificador real sigue el mismo
 contrato; simplemente delega la decisión en un cliente de modelo.
