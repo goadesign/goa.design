@@ -821,10 +821,8 @@ Goa-AI fornisce:
 **Contratto runtime:**
 
 - I costruttori di hook non visualizzano i suggerimenti. Gli eventi pianificati delle chiamate dello strumento sono impostati per impostazione predefinita su `DisplayHint==""`.
-- Il runtime può arricchire e rendere persistente un suggerimento di chiamata predefinito durevole al momento della pubblicazione decodificando lo strumento digitato
-payload ed eseguendo `CallHintTemplate`.
-- Quando la decodifica digitata non riesce o non è registrato alcun modello, il runtime lascia vuoto `DisplayHint`. I suggerimenti sono
-mai reso rispetto ai byte JSON grezzi.
+- Il runtime arricchisce e rende persistente un suggerimento di chiamata predefinito durevole al momento della pubblicazione a partire dal template tipizzato quando la decodifica del payload riesce.
+- La registrazione dei tool richiede un titolo di metadati non vuoto. Quando la decodifica tipizzata non riesce o non è registrato alcun modello, il runtime usa quel titolo come display hint. I payload malformati continuano a fallire al confine del tool; il titolo di metadati serve solo a mantenere renderizzabile il lavoro tentato. I suggerimenti non vengono mai renderizzati rispetto ai byte JSON grezzi.
 - Se un produttore imposta esplicitamente `DisplayHint` (non vuoto) prima di pubblicare l'evento hook, il runtime tratta
 come autorevole e non lo sovrascrive.
 - Per le modifiche alla formulazione per consumatore, configurare `runtime.WithHintOverrides` in fase di runtime. Le sovrascritture richiedono

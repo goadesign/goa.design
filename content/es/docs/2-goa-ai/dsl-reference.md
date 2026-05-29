@@ -906,10 +906,8 @@ Goa-AI provee:
 **Contrato en tiempo de ejecución:**
 
 - Los constructores de hooks no renderizan pistas. Los eventos tool call scheduled tienen por defecto `DisplayHint==""`.
-- El runtime puede enriquecer y persistir una pista de llamada por defecto duradera en el momento de publicación decodificando el payload tipado de
-la herramienta y ejecutando el `CallHintTemplate`.
-- Cuando la decodificación tipada falla o no hay plantilla registrada, el runtime deja `DisplayHint` vacío. Las pistas
-nunca se renderizan sobre bytes JSON crudos.
+- El runtime enriquece y persiste una pista de llamada por defecto duradera en el momento de publicación a partir de la plantilla tipada cuando la decodificación del payload tiene éxito.
+- El registro de herramientas requiere un título de metadatos no vacío. Cuando la decodificación tipada falla o no hay plantilla registrada, el runtime usa ese título como display hint. Los payloads malformados siguen fallando en el límite de la herramienta; el título de metadatos solo mantiene renderizable el trabajo intentado. Las pistas nunca se renderizan sobre bytes JSON crudos.
 - Si un productor establece explícitamente `DisplayHint` (no vacío) antes de publicar el evento del hook, el runtime lo trata
 como autoritativo y no lo sobrescribe.
 - Para cambios de redacción por consumidor, configura `runtime.WithHintOverrides` en el runtime. Las sobrescrituras toman

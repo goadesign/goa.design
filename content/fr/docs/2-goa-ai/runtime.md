@@ -511,10 +511,8 @@ Les appels d'outils peuvent porter un `DisplayHint` destiné à l'utilisateur (p
 Contracter:
 
 - Les constructeurs de hooks ne rendent pas d'indices. Les événements planifiés d’appel d’outil sont par défaut `DisplayHint==""`.
-- Le moteur d'exécution peut enrichir et conserver un indice d'appel par défaut durable au moment de la publication en décodant l'outil saisi.
-charge utile et exécution du DSL `CallHintTemplate`.
-- Lorsque le décodage typé échoue ou qu’aucun modèle n’est enregistré, le runtime laisse `DisplayHint` vide. Les indices sont
-jamais rendu sur les octets bruts JSON.
+- Le runtime enrichit et conserve un indice d'appel par défaut durable au moment de la publication à partir du modèle typé lorsque le décodage de la charge utile réussit.
+- L'enregistrement des outils exige un titre de métadonnées non vide. Lorsque le décodage typé échoue ou qu'aucun modèle n'est enregistré, le runtime utilise ce titre comme display hint. Les charges utiles mal formées échouent toujours à la frontière de l'outil ; le titre de métadonnées sert seulement à garder le travail tenté affichable. Les indices ne sont jamais rendus à partir des octets JSON bruts.
 - Si un producteur définit explicitement `DisplayHint` (non vide) avant de publier l'événement hook, le runtime traite
 comme faisant autorité et ne l'écrase pas.
 - Pour les modifications de formulation par consommateur, configurez `runtime.WithHintOverrides` au moment de l'exécution. Les remplacements prennent

@@ -485,8 +485,8 @@ Las llamadas a herramientas pueden llevar un `DisplayHint` orientado al usuario 
 Contrato:
 
 - Los constructores de hooks no renderizan hints. Los eventos de programación de llamada a herramienta tienen `DisplayHint==""` por defecto.
-- El runtime puede enriquecer y persistir un hint duradero por defecto para la llamada en el momento de la publicación decodificando el payload tipado de la herramienta y ejecutando el `CallHintTemplate` del DSL.
-- Cuando falla la decodificación tipada o no hay plantilla registrada, el runtime deja `DisplayHint` vacío. Los hints nunca se renderizan contra bytes JSON en bruto.
+- El runtime enriquece y persiste un hint duradero por defecto para la llamada en el momento de la publicación a partir de la plantilla tipada cuando la decodificación del payload tiene éxito.
+- El registro de herramientas requiere un título de metadatos no vacío. Cuando falla la decodificación tipada o no hay plantilla registrada, el runtime usa ese título como display hint. Los payloads malformados siguen fallando en el límite de la herramienta; el título de metadatos solo mantiene renderizable el trabajo intentado. Los hints nunca se renderizan contra bytes JSON en bruto.
 - Si un productor establece explícitamente `DisplayHint` (no vacío) antes de publicar el evento de hook, el runtime lo trata como autoritativo y no lo sobrescribe.
 - Para cambios de texto por consumidor, configura `runtime.WithHintOverrides` en el runtime. Los overrides tienen precedencia sobre las plantillas autoradas en DSL para los eventos `tool_start` streameados.
 

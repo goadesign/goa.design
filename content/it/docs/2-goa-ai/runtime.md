@@ -357,8 +357,8 @@ Le chiamate ai tool possono includere un `DisplayHint` rivolto all'utente (ad es
 Contratto:
 
 - I costruttori di hook non renderizzano suggerimenti. Gli eventi di pianificazione dei tool hanno `DisplayHint==""` per impostazione predefinita.
-- Il runtime può arricchire e persistere un suggerimento di chiamata **duraturo** al momento della pubblicazione decodificando il payload tipizzato ed eseguendo il `CallHintTemplate` del DSL.
-- Se la decodifica tipizzata fallisce o non è registrato alcun template, il runtime lascia `DisplayHint` vuoto. I suggerimenti non vengono mai renderizzati a partire da JSON grezzo.
+- Il runtime arricchisce e persiste un suggerimento di chiamata **duraturo** al momento della pubblicazione a partire dal template tipizzato quando la decodifica del payload riesce.
+- La registrazione dei tool richiede un titolo di metadati non vuoto. Se la decodifica tipizzata fallisce o non è registrato alcun template, il runtime usa quel titolo come display hint. I payload malformati continuano a fallire al confine del tool; il titolo di metadati serve solo a mantenere renderizzabile il lavoro tentato. I suggerimenti non vengono mai renderizzati a partire da JSON grezzo.
 - Se un producer imposta esplicitamente `DisplayHint` (non vuoto) prima di pubblicare l'evento hook, il runtime lo considera autorevole e non lo sovrascrive.
 - Per variazioni per-consumer (ad esempio testo UI), configurare `runtime.WithHintOverrides` sul runtime. Gli override hanno la precedenza sui template DSL per gli eventi `tool_start` streammati.
 
