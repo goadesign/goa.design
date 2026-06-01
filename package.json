@@ -3,7 +3,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.14",
     "postcss-cli": "^11.0.0",
-    "vitest": "^4.0.15",
+    "vitest": "^4.1.0",
     "fast-check": "^3.22.0",
     "jsdom": "^25.0.0"
   },
