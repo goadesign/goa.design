@@ -51,8 +51,8 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `AudienceInternal` | ServerData | server-data を internal composition attachment としてマークする |
 | `AudienceEvidence` | ServerData | server-data を provenance または audit evidence としてマークする |
 | `BoundedResult` | Tool | 結果を「境界付きビュー」としてマークし、bounds フィールドの標準形を適用する（任意で cursor 設定のサブ DSL を指定可能） |
-| `Cursor` | BoundedResult | ページング用 cursor を格納する payload フィールド名を指定する（任意） |
-| `NextCursor` | BoundedResult | 次ページ cursor を格納する result フィールド名を指定する（任意） |
+| `Cursor` | BoundedResult | runtime continuation reference を格納する payload フィールド名を指定する（任意） |
+| `NextCursor` | BoundedResult | 次ページ continuation reference を格納する result フィールド名を指定する（任意） |
 | `Idempotent` | Tool | run transcript 内で idempotent な tool としてマークし、同一呼び出しの de-duplication を可能にする |
 | `Tags` | Tool, Toolset | メタデータラベルを付与する |
 | `BindTo` | Tool | ツールをサービスメソッドにバインドする |
@@ -723,20 +723,21 @@ func handleToolResult(result *planner.ToolResult) {
 - `truncated` (required, `Boolean`)
 - `total` (optional, `Int`)
 - `refinement_hint` (optional, `String`)
-- `next_cursor` (optional, `NextCursor(...)` で宣言した場合は `String`)
+- `next_cursor` (optional, `NextCursor(...)` で宣言した場合は `String`): runtime continuation reference であり、provider cursor そのものではありません
 
 `BoundedResult` はこの contract の single source of truth です:
 
 - codegen は生成 `tools.ToolSpec.Bounds` に記録します
 - codegen は生成 JSON result schema へ正規 bounded field を project します
 - successful bounded execution は `planner.ToolResult.Bounds` を設定する必要があります
-- runtime はそれらの bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
+- runtime は provider-owned bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
+- cursor-paged tool では、model-visible な `next_cursor` は result を生成した `tool_call_id` です。provider cursor は runtime history 内の private state として残ります
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -758,7 +759,7 @@ service は次を担います:
 
 1. 独自の truncation logic (pagination、limit、depth cap) を適用する
 2. `planner.ToolResult.Bounds` を populate する
-3. 別ページがある場合に `Bounds.NextCursor` を設定する
+3. 別ページがある場合に `Bounds.NextCursor` へ provider cursor を設定する
 4. result が truncated のとき、任意で `RefinementHint` を提供する
 
 runtime は subset や truncation を計算しません。tool が報告した bounds metadata を validate/project するだけです。
@@ -791,7 +792,8 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します。
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します。
-3. 同じ `planner.ToolResult.Bounds` struct が planner、hook、UI 用の正規 runtime contract のまま残ります。
+   `Bounds.NextCursor` がある場合、emitted `next_cursor` は result を生成した `tool_call_id` continuation reference です。
+3. provider cursor は次の call を hydrate する private runtime state として残ります。planner、hook、stream、UI は model-visible bounds を受け取ります。
 
 tool は標準 `Title()` DSL function を使って display title を持てます:
 

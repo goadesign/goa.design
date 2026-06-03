@@ -37,8 +37,8 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `AudienceInternal`                                      | Données du serveur               | Marque les données du serveur comme pièce jointe de composition interne                                                           |
 | `AudienceEvidence`                                      | Données du serveur               | Marque les données du serveur comme provenance ou preuve d'audit                                                                 |
 | `BoundedResult`                                         | Outil                     | Déclare un contrat à résultats limités appartenant au runtime ; le sous-DSL facultatif peut déclarer les champs du curseur de pagination                |
-| `Cursor`                                                | Résultat délimité            | Déclare quel champ de charge utile porte le curseur de pagination (facultatif)                                                  |
-| `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour le curseur de la page suivante (facultatif)                                       |
+| `Cursor`                                                | Résultat délimité            | Déclare quel champ de charge utile porte la référence de continuation du runtime (facultatif)                                      |
+| `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour la référence de continuation de la page suivante (facultatif)                     |
 | `Idempotent`                                            | Outil                     | Marque l’outil comme idempotent dans une transcription d’exécution ; permet une déduplication sécurisée des transcriptions croisées pour des appels identiques |
 | `Tags`                                                  | Outil, ensemble d'outils            | Attache des étiquettes de métadonnées                                                                                           |
 | `BindTo`                                                | Outil                     | Lie l'outil à la méthode de service                                                                                       |
@@ -736,21 +736,22 @@ Champs visibles dans le modèle canonique :
 - `truncated` (obligatoire, `Boolean`)
 - `total` (en option, `Int`)
 - `refinement_hint` (en option, `String`)
-- `next_cursor` (facultatif, `String`) lorsqu'il est déclaré via `NextCursor(...)`
+- `next_cursor` (facultatif, `String`) lorsqu'il est déclaré via `NextCursor(...)`; c'est une référence de continuation du runtime, pas le curseur du fournisseur
 
 `BoundedResult` est la seule source de vérité pour ce contrat :
 
 - codegen l'enregistre dans le `tools.ToolSpec.Bounds` généré
 - codegen projette les champs délimités canoniques dans le schéma de résultat JSON généré
 - les exécutions limitées réussies doivent définir `planner.ToolResult.Bounds`
-- le runtime projette ces limites dans des données codées `tool_result` JSON, des données de modèle d'indice de résultat,
+- le runtime projette les limites détenues par le fournisseur dans le JSON `tool_result` codé, les données de modèle d'indice de résultat,
 hooks et événements de flux
+- pour les outils paginés par curseur, le `next_cursor` visible par le modèle est le `tool_call_id` producteur; le curseur du fournisseur reste privé dans l'historique du runtime
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -777,7 +778,7 @@ Les services sont chargés de :
 
 1. Appliquer leur propre logique de troncature (pagination, limites, plafonds de profondeur)
 2. Remplissage de `planner.ToolResult.Bounds`
-3. Définition de `Bounds.NextCursor` lorsqu'une autre page existe
+3. Définition de `Bounds.NextCursor` avec le curseur du fournisseur lorsqu'une autre page existe
 4. Fournir éventuellement un `RefinementHint` lorsque les résultats sont tronqués
 
 Le runtime ne calcule pas lui-même les sous-ensembles ni la troncature. Il valide et projette uniquement les limites
@@ -811,8 +812,9 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu’un outil limité réussi a renvoyé `planner.ToolResult.Bounds`.
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-3. La même structure `planner.ToolResult.Bounds` reste le contrat d'exécution canonique pour les planificateurs,
-crochets et UIs.
+   Quand `Bounds.NextCursor` est présent, le `next_cursor` émis est la référence de continuation `tool_call_id` productrice.
+3. Le curseur du fournisseur reste un état privé du runtime utilisé pour hydrater l'appel suivant; les planificateurs, hooks,
+flux et UIs reçoivent les limites visibles par le modèle.
 
 Les outils peuvent inclure un titre d'affichage à l'aide de la fonction standard `Title()` DSL :
 

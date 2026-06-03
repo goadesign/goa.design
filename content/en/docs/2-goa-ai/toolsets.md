@@ -140,7 +140,7 @@ Some tools naturally return large lists, graphs, or time-series windows. You can
 
 #### The agent.Bounds Contract
 
-The `agent.Bounds` type is a small, provider-agnostic contract that describes how a tool result has been bounded relative to the full underlying data set:
+The `agent.Bounds` type describes how a tool result has been bounded relative to the full underlying data set. For paged tools, providers put their private cursor in `NextCursor`; the runtime projects a continuation reference for model-visible outputs.
 
 ```go
 type Bounds struct {
@@ -176,7 +176,7 @@ Use the DSL helper `BoundedResult()` inside a `Tool` definition:
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -198,6 +198,8 @@ When a tool is marked with `BoundedResult()`:
 - The generated tool spec includes `tools.ToolSpec.Bounds`
 - The generated JSON result schema includes the canonical bounded fields (`returned`, `total`,
   `truncated`, `refinement_hint`, and optional `next_cursor`)
+- For cursor-paged tools, model-visible `next_cursor` is a runtime continuation reference; provider
+  cursors remain private runtime state.
 - The semantic Go result type stays domain-specific; it does not need to duplicate those fields
 
 For method-backed `BindTo` tools, the bound service method result still needs to
@@ -221,6 +223,8 @@ Bounded tools are a hard contract: services implement truncation and populate bo
 
 - `Bounds.Returned` and `Bounds.Truncated` must always be set on successful bounded tool results.
 - `Bounds.Total`, `Bounds.NextCursor`, and `Bounds.RefinementHint` are optional and should only be set when known.
+  Provider code sets `Bounds.NextCursor` to the private provider cursor; the runtime projects a
+  continuation reference into model-visible results.
 
 Executors implement truncation and populate bounds metadata:
 
@@ -261,8 +265,10 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`
-3. Bounds remain attached to `planner.ToolResult.Bounds`
-4. Stream subscribers and finalizers can access bounds for UI display, logging, or policy decisions
+3. When a provider cursor exists, the emitted `next_cursor` is the producing `tool_call_id`
+   continuation reference
+4. Stream subscribers and finalizers access the model-visible bounds for UI display, logging, or
+   policy decisions
 
 ```go
 // In a stream subscriber

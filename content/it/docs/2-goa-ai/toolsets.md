@@ -141,13 +141,14 @@ Some tools naturally return large lists, graphs, or time-series windows. You can
 
 #### The agent.Bounds Contract
 
-The `agent.Bounds` type is a small, provider-agnostic contract that describes how a tool result has been bounded relative to the full underlying data set:
+The `agent.Bounds` type describes how a tool result has been bounded relative to the full underlying data set. For paged tools, providers put their private cursor in `NextCursor`; the runtime projects a continuation reference for model-visible outputs.
 
 ```go
 tipo Bounds struct {
     Returned int // Numero di elementi nella vista delimitata
     Total *int // Totale al meglio prima del troncamento (opzionale)
     Truncated bool // Se sono stati applicati dei tappi (lunghezza, finestra, profondità)
+    NextCursor *string // Cursor privato del provider quando esiste un'altra pagina
     RefinementHint string // Guida su come restringere la query quando è troncata
 }
 ```
@@ -157,6 +158,7 @@ tipo Bounds struct {
 | `Returned` | Count of items actually present in the result |
 | `Total` | Best-effort count of total items before truncation (nil if unknown) |
 | `Truncated` | True if any caps were applied (pagination, depth limits, size limits) |
+| `NextCursor` | Provider-owned cursor for the next page; the runtime exposes a continuation reference to models |
 | `RefinementHint` | Human-readable guidance for narrowing the query (e.g., "Add a date filter to reduce results") |
 
 #### Service Responsibility for Trimming
@@ -165,7 +167,8 @@ The runtime does not compute subsets or truncation itself—**services are respo
 
 1. **Applying truncation logic**: Pagination, result limits, depth caps, time windows
 2. **Populating bounds metadata**: Setting `Returned`, `Total`, `Truncated` accurately
-3. **Providing refinement hints**: Guiding users/models on how to narrow queries when results are truncated
+3. **Setting provider cursors**: Put the private provider cursor in `Bounds.NextCursor` when another page exists
+4. **Providing refinement hints**: Guiding users/models on how to narrow queries when results are truncated
 
 This design keeps truncation logic where domain knowledge lives (in services) while providing a uniform contract for the runtime, planners, and UIs to consume.
 
@@ -277,7 +280,8 @@ When a bounded tool executes:
 1. The runtime decodes the result and checks for `agent.BoundedResult` implementation
 2. If the result implements the interface, `ResultBounds()` extracts bounds metadata
 3. Bounds are attached to `planner.ToolResult.Bounds`
-4. Stream subscribers and finalizers can access bounds for UI display, logging, or policy decisions
+4. When `Bounds.NextCursor` is present, the runtime emits the producing `tool_call_id` as the model-visible `next_cursor` continuation reference
+5. Stream subscribers and finalizers access model-visible bounds for UI display, logging, or policy decisions
 
 ```go
 // In un sottoscrittore di flusso

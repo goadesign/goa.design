@@ -433,8 +433,10 @@ in the DSL. The runtime contract for those tools is:
 
 - generated `tools.ToolSpec.Bounds` declares the canonical bounded-result schema
 - successful executions must populate `planner.ToolResult.Bounds`
-- the runtime projects those bounds into emitted `tool_result` JSON, result-hint
+- the runtime projects provider-owned bounds into emitted `tool_result` JSON, result-hint
   template data under `.Bounds`, hook payloads, and stream events
+- for cursor-paged tools, provider code sets `Bounds.NextCursor` to its private cursor; the
+  emitted `next_cursor` is the producing `tool_call_id` continuation reference
 
 Canonical projected fields:
 
@@ -442,11 +444,14 @@ Canonical projected fields:
 - `truncated` (required)
 - `total` (optional)
 - `refinement_hint` (optional)
-- `next_cursor` (optional, when declared via `NextCursor(...)`)
+- `next_cursor` (optional, when declared via `NextCursor(...)`; this is a runtime continuation reference)
 
-`planner.ToolResult.Bounds` remains the single machine-readable runtime contract.
+`planner.ToolResult.Bounds` remains the single machine-readable provider contract.
 Authored Go result types stay semantic and domain-specific; they do not need to
 duplicate the canonical bounded fields just so models can see them.
+When a follow-up call passes the continuation reference in the payload cursor
+field, the runtime reuses the prior payload and injects the private provider
+cursor before tool execution.
 
 For method-backed `BindTo` tools, the bound service method result still needs to
 carry the canonical bounded fields so the generated executor can build

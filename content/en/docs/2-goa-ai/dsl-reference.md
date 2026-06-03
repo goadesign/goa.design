@@ -37,8 +37,8 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `AudienceInternal`                                      | ServerData               | Marks server-data as an internal composition attachment                                                           |
 | `AudienceEvidence`                                      | ServerData               | Marks server-data as provenance or audit evidence                                                                 |
 | `BoundedResult`                                         | Tool                     | Declares a runtime-owned bounded-result contract; optional sub-DSL can declare paging cursor fields                |
-| `Cursor`                                                | BoundedResult            | Declares which payload field carries the paging cursor (optional)                                                  |
-| `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page cursor (optional)                                       |
+| `Cursor`                                                | BoundedResult            | Declares which payload field carries the runtime continuation reference (optional)                                 |
+| `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page continuation reference (optional)                       |
 | `Idempotent`                                            | Tool                     | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags`                                                  | Tool, Toolset            | Attaches metadata labels                                                                                           |
 | `BindTo`                                                | Tool                     | Binds tool to service method                                                                                       |
@@ -734,21 +734,23 @@ Canonical model-visible fields:
 - `truncated` (required, `Boolean`)
 - `total` (optional, `Int`)
 - `refinement_hint` (optional, `String`)
-- `next_cursor` (optional, `String`) when declared via `NextCursor(...)`
+- `next_cursor` (optional, `String`) when declared via `NextCursor(...)`; this is a runtime continuation reference, not the provider cursor itself
 
 `BoundedResult` is the single source of truth for that contract:
 
 - codegen records it in generated `tools.ToolSpec.Bounds`
 - codegen projects the canonical bounded fields into the generated JSON result schema
 - successful bounded executions must set `planner.ToolResult.Bounds`
-- the runtime projects those bounds into encoded `tool_result` JSON, result-hint template data,
+- the runtime projects provider-owned bounds into encoded `tool_result` JSON, result-hint template data,
 hooks, and stream events
+- for cursor-paged tools, the model-visible `next_cursor` is the producing `tool_call_id`;
+the provider cursor stays private in runtime history
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -775,7 +777,7 @@ Services are responsible for:
 
 1. Applying their own truncation logic (pagination, limits, depth caps)
 2. Populating `planner.ToolResult.Bounds`
-3. Setting `Bounds.NextCursor` when another page exists
+3. Setting `Bounds.NextCursor` to the provider cursor when another page exists
 4. Optionally providing a `RefinementHint` when results are truncated
 
 The runtime does not compute subsets or truncation itself. It only validates and projects the bounds
@@ -809,8 +811,10 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
 2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`.
-3. The same `planner.ToolResult.Bounds` struct remains the canonical runtime contract for planners,
-  hooks, and UIs.
+   When `Bounds.NextCursor` is present, the emitted `next_cursor` is the producing `tool_call_id`
+   continuation reference.
+3. The provider cursor remains private runtime state used to hydrate the next call; planners, hooks,
+  streams, and UIs receive the model-visible bounds.
 
 Tools can include a display title using the standard `Title()` DSL function:
 

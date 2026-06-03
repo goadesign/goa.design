@@ -180,7 +180,7 @@ Utiliza el helper DSL `BoundedResult()` dentro de la definición de un `Tool`:
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -202,6 +202,7 @@ Cuando una herramienta está marcada con `BoundedResult()`:
 - El spec de herramienta generado incluye `tools.ToolSpec.Bounds`
 - El esquema JSON generado del resultado incluye los campos canónicos de acotado (`returned`, `total`,
   `truncated`, `refinement_hint`, y el opcional `next_cursor`)
+- Para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es una referencia de continuación del runtime; los cursores del proveedor permanecen como estado privado del runtime.
 - El tipo de resultado Go semántico sigue siendo específico del dominio; no necesita duplicar esos campos
 
 Para herramientas `BindTo` respaldadas por métodos, el resultado del método de servicio enlazado todavía debe
@@ -225,6 +226,7 @@ Las herramientas acotadas son un contrato estricto: los servicios implementan el
 
 - `Bounds.Returned` y `Bounds.Truncated` deben establecerse siempre en los resultados exitosos de herramientas acotadas.
 - `Bounds.Total`, `Bounds.NextCursor` y `Bounds.RefinementHint` son opcionales y solo deben establecerse cuando se conozcan.
+  El código del proveedor establece `Bounds.NextCursor` con el cursor privado del proveedor; el runtime proyecta una referencia de continuación en los resultados visibles para el modelo.
 
 Los ejecutores implementan el truncado y rellenan los metadatos de bounds:
 
@@ -265,8 +267,8 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
 2. El runtime fusiona esos bounds en el JSON emitido usando los nombres de campo de `BoundedResult(...)`
-3. Los bounds permanecen adjuntos a `planner.ToolResult.Bounds`
-4. Los suscriptores de streams y los finalizadores pueden acceder a los bounds para su visualización en la UI, logging o decisiones de políticas
+3. Cuando existe un cursor del proveedor, el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado
+4. Los suscriptores de streams y los finalizadores acceden a los bounds visibles para el modelo para su visualización en la UI, logging o decisiones de políticas
 
 ```go
 // En un suscriptor de stream

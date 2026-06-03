@@ -651,21 +651,22 @@ Campi visibili nel modello canonico:
 - `truncated` (richiesto, `Boolean`)
 - `total` (opzionale, `Int`)
 - `refinement_hint` (opzionale, `String`)
-- `next_cursor` (opzionale, `String`) se dichiarato tramite `NextCursor(...)`
+- `next_cursor` (opzionale, `String`) se dichiarato tramite `NextCursor(...)`; è un riferimento di continuazione del runtime, non il cursor del provider
 
 `BoundedResult` è l'unica fonte di verità per quel contratto:
 
 - codegen lo registra nel `tools.ToolSpec.Bounds` generato
 - codegen proietta i campi delimitati canonici nello schema dei risultati JSON generato
 - le esecuzioni limitate riuscite devono impostare `planner.ToolResult.Bounds`
-- il runtime proietta tali limiti in JSON codificato `tool_result`, dati del modello di suggerimento dei risultati,
+- il runtime proietta i bounds di proprietà del provider nel JSON codificato `tool_result`, nei dati del modello di suggerimento dei risultati,
 hook ed eventi in streaming
+- per gli strumenti paginati con cursor, il `next_cursor` visibile al modello è il `tool_call_id` che ha prodotto il risultato; il cursor del provider resta privato nella cronologia del runtime
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Opaque pagination cursor")
+        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
     })
     Return(func() {
@@ -692,7 +693,7 @@ I servizi sono responsabili di:
 
 1. Applicare la propria logica di troncamento (impaginazione, limiti, limiti di profondità)
 2. Compilazione di `planner.ToolResult.Bounds`
-3. Impostazione di `Bounds.NextCursor` quando esiste un'altra pagina
+3. Impostazione di `Bounds.NextCursor` con il cursor del provider quando esiste un'altra pagina
 4. Facoltativamente fornire `RefinementHint` quando i risultati vengono troncati
 
 Il runtime non calcola i sottoinsiemi o il troncamento stesso. Convalida e proietta solo i limiti
@@ -726,8 +727,9 @@ Quando uno strumento limitato viene eseguito:
 
 1. Il runtime convalida che uno strumento associato con successo ha restituito `planner.ToolResult.Bounds`.
 2. Il runtime unisce tali limiti nel JSON emesso utilizzando i nomi dei campi da `BoundedResult(...)`.
-3. La stessa struttura `planner.ToolResult.Bounds` rimane il contratto runtime canonico per i pianificatori,
-  hook e interfacce utente.
+   Quando `Bounds.NextCursor` è presente, il `next_cursor` emesso è il riferimento di continuazione `tool_call_id` che ha prodotto il risultato.
+3. Il cursor del provider resta stato privato del runtime usato per idratare la chiamata successiva; planner, hook,
+  stream e interfacce utente ricevono i bounds visibili al modello.
 
 Gli strumenti possono includere un titolo visualizzato utilizzando la funzione DSL `Title()` standard:
 

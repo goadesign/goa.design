@@ -420,7 +420,8 @@ Las herramientas que devuelven vistas parciales de datasets más grandes deberí
 
 - `tools.ToolSpec.Bounds` generado declara el esquema canónico de resultado acotado
 - las ejecuciones correctas deben poblar `planner.ToolResult.Bounds`
-- el runtime proyecta esos bounds en el JSON `tool_result` emitido, los datos de plantilla de result hint bajo `.Bounds`, los payloads de hook y los eventos de stream
+- el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` emitido, los datos de plantilla de result hint bajo `.Bounds`, los payloads de hook y los eventos de stream
+- para herramientas paginadas por cursor, el código del proveedor establece `Bounds.NextCursor` con su cursor privado; el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado
 
 Campos canónicos proyectados:
 
@@ -428,9 +429,9 @@ Campos canónicos proyectados:
 - `truncated` (requerido)
 - `total` (opcional)
 - `refinement_hint` (opcional)
-- `next_cursor` (opcional, cuando se declara vía `NextCursor(...)`)
+- `next_cursor` (opcional, cuando se declara vía `NextCursor(...)`; es una referencia de continuación del runtime)
 
-`planner.ToolResult.Bounds` sigue siendo el único contrato de runtime legible por máquina. Los tipos Go de resultado escritos por el autor permanecen semánticos y específicos del dominio; no necesitan duplicar los campos canónicos acotados solo para que los modelos puedan verlos.
+`planner.ToolResult.Bounds` sigue siendo el único contrato de proveedor legible por máquina. Los tipos Go de resultado escritos por el autor permanecen semánticos y específicos del dominio; no necesitan duplicar los campos canónicos acotados solo para que los modelos puedan verlos. Cuando una llamada posterior pasa la referencia de continuación en el campo de cursor del payload, el runtime reutiliza el payload anterior e inyecta el cursor privado del proveedor antes de ejecutar la herramienta.
 
 Para las herramientas `BindTo` respaldadas por un método, el resultado del método de servicio ligado todavía necesita llevar los campos canónicos acotados para que el ejecutor generado pueda construir `planner.ToolResult.Bounds` antes de la proyección. Las formas explícitas `Return(...)` orientadas a herramienta no deben duplicar esos campos canónicos. Dentro del resultado del método ligado, solo `returned` y `truncated` pueden ser requeridos; `total`, `refinement_hint` y `next_cursor` siguen siendo opcionales y se omiten del JSON emitido siempre que los bounds del runtime también los omitan.
 
