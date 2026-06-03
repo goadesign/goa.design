@@ -86,7 +86,8 @@ const internalDomainArb = fc.constantFrom(
  * Generate a random URL path
  */
 const urlPathArb = fc.array(
-  fc.stringOf(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789-_'), { minLength: 1, maxLength: 20 }),
+  fc.array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789-_'), { minLength: 1, maxLength: 20 })
+    .map(chars => chars.join('')),
   { minLength: 0, maxLength: 4 }
 ).map(parts => '/' + parts.join('/'));
 
@@ -116,10 +117,10 @@ const internalRelativeUrlArb = urlPathArb;
 /**
  * Generate anchor-only URLs
  */
-const anchorUrlArb = fc.stringOf(
+const anchorUrlArb = fc.array(
   fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789-_'),
   { minLength: 1, maxLength: 20 }
-).map(s => '#' + s);
+).map(chars => '#' + chars.join(''));
 
 /**
  * Generate mailto URLs

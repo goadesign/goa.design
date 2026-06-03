@@ -309,7 +309,7 @@ describe('Auto TOC Property Tests', () => {
     it('countWords returns 0 for empty or whitespace-only text', () => {
       fc.assert(
         fc.property(
-          fc.stringOf(fc.constantFrom(' ', '\t', '\n', '\r')),
+          fc.array(fc.constantFrom(' ', '\t', '\n', '\r')).map(chars => chars.join('')),
           (whitespace) => {
             const count = TocAuto.countWords(whitespace);
             expect(count).toBe(0);

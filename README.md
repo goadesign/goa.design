@@ -18,7 +18,7 @@ Translated content mirrors the same structure under `content/{lang}/docs/` (for 
 Is that typo bugging you? us too! If you want to do something about it:
 
 1. [Fork](https://help.github.com/articles/fork-a-repo/) and [clone](https://help.github.com/articles/cloning-a-repository/) the repo
-2. Open a terminal, `cd` into the cloned repo and run `make start` (or `make serve`)
+2. Open a terminal, `cd` into the cloned repo, run `make prereqs`, then run `make start` (or `make serve`)
 3. Edit the content of the markdown files in the `content/` directory.
 4. Submit a [Pull Request](https://help.github.com/articles/using-pull-requests/)
 
@@ -42,12 +42,13 @@ Run in a terminal:
 
 ```bash
 cd goa.design;
-docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -e BIND=0.0.0.0 -it golang:1.24.2 bash;
+docker run --name goadocs --volume .:/go/src/app -p 1313:1313 -e BIND=0.0.0.0 -it golang:latest bash;
 # in the container:
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -;
+curl -fsSL https://deb.nodesource.com/setup_26.x | bash -;
 apt install -y nodejs;
 cd /go/src/app;
-make;
+make prereqs;
+make start;
 ```
 
 To run the container in the future:
@@ -63,7 +64,7 @@ To remove the container:
 ```bash
 docker stop goadocs;
 docker rm goadocs;
-docker rmi golang:1.24.2;
+docker rmi golang:latest;
 ```
 
 ## Translations

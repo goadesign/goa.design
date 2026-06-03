@@ -57,7 +57,7 @@ start: setup serve
 ## Start the Hugo server with live reload
 serve:
 	@echo "Starting Hugo server on http://$(BIND):$(PORT)..."
-	BROWSERSLIST_ROOT_PATH=. hugo server -D --bind $(BIND) -p $(PORT) --disableFastRender
+	PATH="$(CURDIR)/bin:$(CURDIR)/node_modules/.bin:$$PATH" BROWSERSLIST_ROOT_PATH=. hugo server -D --bind $(BIND) -p $(PORT) --disableFastRender
 
 ## Clean generated files (public/ and resources/)
 clean:
@@ -69,7 +69,7 @@ clean:
 ## Build the site for production with minification
 build: setup diagrams
 	@echo "Building site..."
-	BROWSERSLIST_ROOT_PATH=. hugo --minify
+	PATH="$(CURDIR)/bin:$(CURDIR)/node_modules/.bin:$$PATH" BROWSERSLIST_ROOT_PATH=. hugo --minify
 
 ## Generate architecture diagrams from Model DSL
 diagrams:
@@ -86,10 +86,11 @@ diagrams-check:
 	@rm -rf /tmp/diagrams-check
 	@echo "Diagrams are up-to-date"
 
-## Update npm dependencies
+## Update npm dependencies to their latest releases
 update-deps: check-npm  ## Update npm dependencies
 	@echo "Updating npm dependencies..."
-	npm update
+	npm install @fortawesome/fontawesome-free@latest --save
+	npm install autoprefixer@latest postcss@latest postcss-cli@latest vitest@latest fast-check@latest jsdom@latest sass-embedded@latest --save-dev
 	npm audit fix
 	@echo "Dependencies updated successfully"
 

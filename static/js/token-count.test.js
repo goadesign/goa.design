@@ -110,7 +110,7 @@ describe('Token Count Property Tests', () => {
     it('token count is zero for empty or whitespace-only content', () => {
       fc.assert(
         fc.property(
-          fc.stringOf(fc.constantFrom(' ', '\t', '\n', '\r')),
+          fc.array(fc.constantFrom(' ', '\t', '\n', '\r')).map(chars => chars.join('')),
           (whitespace) => {
             const tokenCount = TokenCount.estimateTokens(whitespace);
             expect(tokenCount).toBe(0);
