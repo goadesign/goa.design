@@ -75,7 +75,10 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Tools` | Timing | ツール実行アクティビティのタイムアウト |
 | `History` | RunPolicy | 会話履歴管理 |
 | `KeepRecentTurns` | History | スライディングウィンドウ（直近 N ターン） |
-| `Compress` | History | モデル支援による要約圧縮 |
+| `CompressAtTurns` | History | モデル支援の要約を開始するターン数トリガー |
+| `CompressAtMaxInputTokens` | History | 実行時の入力トークン数で要約を開始するトリガー |
+| `KeepMaxTurns` | History | 最新の完全なターンをいくつまで正確に保持するか |
+| `KeepMaxInputTokens` | History | 実行時トークン予算内に収まる完全なターンだけを正確に保持する |
 | `Cache` | RunPolicy | プロンプトキャッシュ設定 |
 | `AfterSystem` | Cache | システムメッセージ後にチェックポイント |
 | `AfterTools` | Cache | ツール定義後にチェックポイント |
@@ -1416,40 +1419,62 @@ RunPolicy(func() {
 **パラメータ:**
 - `n`: 保持する直近ターン数（> 0 必須）
 
-**Compress（モデル支援の要約）:**
+**圧縮（モデル支援の要約）:**
 
-`Compress(triggerAt, keepRecent)` は、古いターンをモデルで要約し、最近のターンを高忠実度で保持します。単純なスライディングウィンドウより多くの文脈を維持できます。
+圧縮は、古いターンをモデルで要約しつつ、最新の完全なターンを正確なまま bounded tail として保持します。設定は 2 つの判断に分かれます:
+
+- `CompressAtTurns(n)` と `CompressAtMaxInputTokens(n)` は、いつ要約を実行するかを決めます。両方を設定した場合、どちらか一方の条件で圧縮が開始されます。
+- `KeepMaxTurns(n)` と `KeepMaxInputTokens(n)` は、要約後にどの最新の完全なターンを正確に残すかを決めます。両方を設定した場合、両方の上限が適用されます。
+
+トークン予算は、モデルごとに tokenization が異なるため、設定された履歴モデルで実行時に数えます。`KeepMaxInputTokens` はターンを切り詰めません。ランタイムは最新ターンから後ろ向きにたどり、予算に収まる完全なターンだけを保持します。
 
 ```go
 RunPolicy(func() {
     History(func() {
-        // When at least 30 turns exist, summarize older turns
-        // and keep the most recent 10 in full fidelity
-        Compress(30, 10)
+        CompressAtMaxInputTokens(120_000)
+        KeepMaxInputTokens(40_000)
+        KeepMaxTurns(12)
     })
 })
 ```
 
-**パラメータ:**
-- `triggerAt`: 圧縮を実行する最小総ターン数（> 0 必須）
-- `keepRecent`: 高忠実度で保持する直近ターン数（>= 0 かつ < triggerAt）
+**圧縮関数:**
+- `CompressAtTurns(n)`: 少なくとも `n` 個の論理ターンがあるときに開始します。
+- `CompressAtMaxInputTokens(n)`: provider-visible transcript が `n` 入力トークンを超えたときに開始します。
+- `KeepMaxTurns(n)`: 最新の完全なターンを最大 `n` 個まで正確に保持します。
+- `KeepMaxInputTokens(n)`: 実行時の入力トークン数が `n` に収まる最新の完全なターンを保持します。
+
+圧縮には、少なくとも 1 つの `CompressAt...` トリガーと、少なくとも 1 つの `KeepMax...` 保持予算が必要です。
 
 **HistoryModel の要件:**
 
-`Compress` を使う場合、生成されるエージェント設定の `HistoryModel` フィールドに `model.Client` を渡す必要があります。ランタイムはこのクライアントを `ModelClassSmall` とともに使用して古いターンを要約します:
+圧縮を使う場合、生成されるエージェント設定の `HistoryModel` フィールドに `model.Client` を渡す必要があります。ランタイムはこのクライアントを `ModelClassSmall` とともに使用して古いターンを要約し、トークン予算が設定されている場合は provider-visible request のトークン数も数えます。トークン予算による圧縮には、履歴モデルが exact count を返す `model.TokenCounter` を実装している必要があります。Bedrock アダプターは Bedrock の native `CountTokens` API でこれを実装しています:
 
 ```go
-// Generated agent config includes HistoryModel field when Compress is used
 cfg := chat.ChatAgentConfig{
     Planner:      &ChatPlanner{},
-    HistoryModel: smallModelClient, // Required: implements model.Client
+    HistoryModel: smallModelClient,
 }
 if err := chat.RegisterChatAgent(ctx, rt, cfg); err != nil {
     log.Fatal(err)
 }
 ```
 
-`Compress` が設定されているにもかかわらず `HistoryModel` が提供されない場合、登録は失敗します。
+DSL の値は生成されるデフォルトです。選択したモデルの context window や運用予算が異なる場合、デプロイ時に上書きできます:
+
+```go
+cfg := chat.ChatAgentConfig{
+    Planner:      &ChatPlanner{},
+    HistoryModel: smallModelClient,
+    HistoryCompression: &runtime.HistoryCompressionConfig{
+        CompressAtMaxInputTokens: 180_000,
+        KeepMaxInputTokens:       60_000,
+        KeepMaxTurns:             16,
+    },
+}
+```
+
+圧縮が設定されているにもかかわらず `HistoryModel` が提供されない場合、登録は失敗します。
 
 **ターン境界の保持:**
 
@@ -1516,7 +1541,9 @@ Agent("chat", "Conversational runner", func() {
         InterruptsAllowed(true)
         OnMissingFields("await_clarification")
         History(func() {
-            Compress(30, 10)
+            CompressAtMaxInputTokens(120_000)
+            KeepMaxInputTokens(40_000)
+            KeepMaxTurns(12)
         })
     })
 })

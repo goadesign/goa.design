@@ -61,7 +61,10 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Tools`                                                 | Timing                   | Tool activity timeout                                                                                              |
 | `History`                                               | RunPolicy                | Conversation history management                                                                                    |
 | `KeepRecentTurns`                                       | History                  | Sliding window policy                                                                                              |
-| `Compress`                                              | History                  | Model-assisted summarization                                                                                       |
+| `CompressAtTurns`                                       | History                  | Turn-count trigger for model-assisted summarization                                                                |
+| `CompressAtMaxInputTokens`                              | History                  | Runtime token-count trigger for model-assisted summarization                                                       |
+| `KeepMaxTurns`                                          | History                  | Exact-retention cap by newest whole turns                                                                          |
+| `KeepMaxInputTokens`                                    | History                  | Exact-retention cap by runtime token count, keeping only whole turns                                                |
 | `Cache`                                                 | RunPolicy                | Prompt caching configuration                                                                                       |
 | `AfterSystem`                                           | Cache                    | Checkpoint after system messages                                                                                   |
 | `AfterTools`                                            | Cache                    | Checkpoint after tool definitions                                                                                  |
@@ -1487,41 +1490,67 @@ RunPolicy(func() {
 
 - `n`: Number of recent turns to keep (must be > 0)
 
-**Compress (Model-Assisted Summarization):**
+**Compression (Model-Assisted Summarization):**
 
-`Compress(triggerAt, keepRecent)` summarizes older turns using a model while keeping recent turns in full fidelity. This preserves more context than a simple sliding window by condensing older conversation into a summary.
+Compression summarizes older turns using a model while keeping a bounded exact tail of recent whole turns. It separates two decisions:
+
+- `CompressAtTurns(n)` and `CompressAtMaxInputTokens(n)` decide when summarization runs. If both are set, either trigger may start compression.
+- `KeepMaxTurns(n)` and `KeepMaxInputTokens(n)` decide which newest complete turns remain exact after summarization. If both are set, both retention caps apply.
+
+Token budgets are counted at runtime through the configured history model because tokenization is model-specific. `KeepMaxInputTokens` never truncates a turn; the runtime walks backward from the newest turn and keeps only complete turns that fit the budget.
 
 ```go
 RunPolicy(func() {
     History(func() {
-        // When at least 30 turns exist, summarize older turns
-        // and keep the most recent 10 in full fidelity
-        Compress(30, 10)
+        // Summarize when the provider-visible input grows too large.
+        CompressAtMaxInputTokens(120_000)
+
+        // Keep a bounded exact tail of newest whole turns.
+        KeepMaxInputTokens(40_000)
+        KeepMaxTurns(12)
     })
 })
 ```
 
-**Parameters:**
+**Compression functions:**
 
-- `triggerAt`: Minimum total turn count before compression runs (must be > 0)
-- `keepRecent`: Number of most recent turns to retain in full fidelity (must be >= 0 and < triggerAt)
+- `CompressAtTurns(n)`: Trigger once at least `n` logical turns are present.
+- `CompressAtMaxInputTokens(n)`: Trigger once the provider-visible transcript exceeds `n` input tokens.
+- `KeepMaxTurns(n)`: Keep at most `n` newest whole turns exact.
+- `KeepMaxInputTokens(n)`: Keep newest whole turns whose runtime input-token count fits `n`.
+
+At least one `CompressAt...` trigger and at least one `KeepMax...` retention budget are required for compression.
 
 **HistoryModel Requirement:**
 
-When using `Compress`, you must supply a `model.Client` via the generated `HistoryModel` field on the agent config. The runtime uses this client with `ModelClassSmall` to summarize older turns:
+When using compression, you must supply a `model.Client` via the generated `HistoryModel` field on the agent config. The runtime uses this client with `ModelClassSmall` to summarize older turns and, when a token budget is configured, to count the provider-visible request. Token-budget compression requires the history model to implement `model.TokenCounter` with exact counts; the Bedrock adapter does this with Bedrock's native `CountTokens` API.
 
 ```go
-// Generated agent config includes HistoryModel field when Compress is used
+// Generated agent config includes HistoryModel when compression is configured.
 cfg := chat.ChatAgentConfig{
     Planner:      &ChatPlanner{},
-    HistoryModel: smallModelClient, // Required: implements model.Client
+    HistoryModel: smallModelClient,
 }
 if err := chat.RegisterChatAgent(ctx, rt, cfg); err != nil {
     log.Fatal(err)
 }
 ```
 
-If `HistoryModel` is not provided when `Compress` is configured, registration will fail.
+The DSL values are generated defaults. Deployments can override them when the selected model has a different context window or operating budget:
+
+```go
+cfg := chat.ChatAgentConfig{
+    Planner:      &ChatPlanner{},
+    HistoryModel: smallModelClient,
+    HistoryCompression: &runtime.HistoryCompressionConfig{
+        CompressAtMaxInputTokens: 180_000,
+        KeepMaxInputTokens:       60_000,
+        KeepMaxTurns:             16,
+    },
+}
+```
+
+If `HistoryModel` is not provided when compression is configured, registration will fail.
 
 **Turn Boundary Preservation:**
 
@@ -1591,7 +1620,9 @@ Agent("chat", "Conversational runner", func() {
         InterruptsAllowed(true)
         OnMissingFields("await_clarification")
         History(func() {
-            Compress(30, 10)
+            CompressAtMaxInputTokens(120_000)
+            KeepMaxInputTokens(40_000)
+            KeepMaxTurns(12)
         })
     })
 })

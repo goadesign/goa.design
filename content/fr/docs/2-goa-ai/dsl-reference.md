@@ -61,7 +61,10 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Tools`                                                 | Timing                   | Expiration du délai d'activité de l'outil                                                                                              |
 | `History`                                               | Exécuter la politique                | Gestion de l'historique des conversations                                                                                    |
 | `KeepRecentTurns`                                       | Histoire                  | Politique de fenêtre glissante                                                                                              |
-| `Compress`                                              | Histoire                  | Résumé assisté par modèle                                                                                       |
+| `CompressAtTurns`                                       | Histoire                  | Déclencheur par nombre de tours pour le résumé assisté par modèle                                              |
+| `CompressAtMaxInputTokens`                              | Histoire                  | Déclencheur par nombre de tokens d'entrée mesuré à l'exécution                                                  |
+| `KeepMaxTurns`                                          | Histoire                  | Limite de rétention exacte par tours complets les plus récents                                                  |
+| `KeepMaxInputTokens`                                    | Histoire                  | Limite de rétention exacte par tokens, en conservant uniquement des tours complets                              |
 | `Cache`                                                 | Exécuter la politique                | Configuration de la mise en cache rapide                                                                                       |
 | `AfterSystem`                                           | Cache                    | Point de contrôle après les messages système                                                                                   |
 | `AfterTools`                                            | Cache                    | Point de contrôle après les définitions d'outils                                                                                  |
@@ -1483,41 +1486,63 @@ RunPolicy(func() {
 
 - `n` : Nombre de tours récents à conserver (doit être > 0)
 
-**Compresser (résumé assisté par modèle) :**
+**Compression (résumé assisté par modèle) :**
 
-`Compress(triggerAt, keepRecent)` résume les tours plus anciens à l'aide d'un modèle tout en conservant les tours récents en toute fidélité. Cela préserve plus de contexte qu'une simple fenêtre coulissante en condensant une conversation plus ancienne en un résumé.
+La compression résume les tours plus anciens avec un modèle tout en conservant une queue exacte et bornée de tours récents complets. Elle sépare deux décisions :
+
+- `CompressAtTurns(n)` et `CompressAtMaxInputTokens(n)` décident quand le résumé s'exécute. Si les deux sont configurés, l'un ou l'autre déclencheur peut lancer la compression.
+- `KeepMaxTurns(n)` et `KeepMaxInputTokens(n)` décident quels tours complets les plus récents restent exacts après le résumé. Si les deux sont configurés, les deux limites s'appliquent.
+
+Les budgets de tokens sont comptés à l'exécution par le modèle d'historique configuré, car la tokenisation dépend du modèle. `KeepMaxInputTokens` ne tronque jamais un tour : le runtime remonte depuis le tour le plus récent et conserve uniquement les tours complets qui tiennent dans le budget.
 
 ```go
 RunPolicy(func() {
     History(func() {
-        // When at least 30 turns exist, summarize older turns
-        // and keep the most recent 10 in full fidelity
-        Compress(30, 10)
+        CompressAtMaxInputTokens(120_000)
+        KeepMaxInputTokens(40_000)
+        KeepMaxTurns(12)
     })
 })
 ```
 
-**Paramètres :**
+**Fonctions de compression :**
 
-- `triggerAt` : nombre total de tours minimum avant les opérations de compression (doit être > 0)
-- `keepRecent` : Nombre de tours les plus récents à conserver en toute fidélité (doit être >= 0 et < triggerAt)
+- `CompressAtTurns(n)` : déclenche quand au moins `n` tours logiques sont présents.
+- `CompressAtMaxInputTokens(n)` : déclenche quand le transcript visible par le fournisseur dépasse `n` tokens d'entrée.
+- `KeepMaxTurns(n)` : conserve au plus `n` tours complets récents exacts.
+- `KeepMaxInputTokens(n)` : conserve les tours complets récents dont le nombre de tokens d'entrée tient dans `n`.
+
+La compression nécessite au moins un déclencheur `CompressAt...` et au moins un budget de rétention `KeepMax...`.
 
 **Exigence du modèle d'historique :**
 
-Lorsque vous utilisez `Compress`, vous devez fournir un `model.Client` via le champ `HistoryModel` généré dans la configuration de l'agent. Le runtime utilise ce client avec `ModelClassSmall` pour résumer les tours plus anciens :
+Lorsque vous utilisez la compression, vous devez fournir un `model.Client` via le champ `HistoryModel` généré dans la configuration de l'agent. Le runtime utilise ce client avec `ModelClassSmall` pour résumer les tours plus anciens et, lorsqu'un budget par tokens est configuré, compter la requête visible par le fournisseur. La compression basée sur les tokens exige que le modèle d'historique implémente `model.TokenCounter` avec des comptes exacts ; l'adaptateur Bedrock le fait avec l'API native `CountTokens` de Bedrock.
 
 ```go
-// Generated agent config includes HistoryModel field when Compress is used
 cfg := chat.ChatAgentConfig{
     Planner:      &ChatPlanner{},
-    HistoryModel: smallModelClient, // Required: implements model.Client
+    HistoryModel: smallModelClient,
 }
 if err := chat.RegisterChatAgent(ctx, rt, cfg); err != nil {
     log.Fatal(err)
 }
 ```
 
-Si `HistoryModel` n’est pas fourni lorsque `Compress` est configuré, l’enregistrement échouera.
+Les valeurs du DSL sont des valeurs par défaut générées. Un déploiement peut les remplacer lorsque le modèle choisi a une fenêtre de contexte ou un budget opérationnel différent :
+
+```go
+cfg := chat.ChatAgentConfig{
+    Planner:      &ChatPlanner{},
+    HistoryModel: smallModelClient,
+    HistoryCompression: &runtime.HistoryCompressionConfig{
+        CompressAtMaxInputTokens: 180_000,
+        KeepMaxInputTokens:       60_000,
+        KeepMaxTurns:             16,
+    },
+}
+```
+
+Si `HistoryModel` n’est pas fourni lorsque la compression est configurée, l’enregistrement échouera.
 
 **Préservation des limites de virage :**
 
@@ -1587,7 +1612,9 @@ Agent("chat", "Conversational runner", func() {
         InterruptsAllowed(true)
         OnMissingFields("await_clarification")
         History(func() {
-            Compress(30, 10)
+            CompressAtMaxInputTokens(120_000)
+            KeepMaxInputTokens(40_000)
+            KeepMaxTurns(12)
         })
     })
 })
