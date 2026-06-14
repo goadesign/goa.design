@@ -814,7 +814,7 @@ result := &planner.ToolResult{
 Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa devolvió `planner.ToolResult.Bounds`.
-2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres de campo de `BoundedResult(...)`.
+2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`.
    Cuando `Bounds.NextCursor` está presente, el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado.
 3. El cursor del proveedor permanece como estado privado del runtime para hidratar la siguiente llamada; planners, hooks,
   streams y UIs reciben los bounds visibles para el modelo.

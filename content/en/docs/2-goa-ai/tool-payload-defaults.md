@@ -50,18 +50,38 @@ Defaults are applied during **helper → payload transformation**:
   - copies values when helper pointers are non-nil
   - assigns default literals when helper pointers are nil (and a default exists)
 
+## Boundary validation and retry guidance
+
+Generated tool codecs are the boundary between model-authored JSON and typed
+Goa-AI tool values. They do more than call `json.Unmarshal`:
+
+- closed object payloads and results reject unknown fields
+- unknown fields produce structured `unknown_field` issues that include the
+  allowed keys at that object path
+- JSON type mismatches produce structured `invalid_field_type` issues with
+  generated expected and actual JSON type names
+- bounded result codecs accept only the semantic result fields plus Goa-AI's
+  canonical bounded fields (`returned`, `total`, `truncated`,
+  `refinement_hint`, and optional `next_cursor`)
+
+At runtime, these structured validation errors become planner retry guidance
+that is restricted back to the same tool. Planners can then remove an unexpected
+field, correct a scalar type, or provide a missing value without parsing Go
+decoder error strings.
+
 ## Generator maintainer contract (do not break this)
 
 When changing codegen that touches any of the following:
 
 - tool payload type materialization
 - decode-body helper generation
+- closed-object key metadata and validation enrichment
 - adapter transforms (tool payload → service method payload)
 
 you must keep default semantics consistent across:
 
 - the tool payload type generation, and
-- any transforms that read tool payload fields.
+- the generated codecs and transforms that read tool payload fields.
 
 If you mismatch them, Goa’s transform generator can emit uncompilable code such as:
 

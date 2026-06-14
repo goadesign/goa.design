@@ -202,6 +202,10 @@ Cuando una herramienta está marcada con `BoundedResult()`:
 - El spec de herramienta generado incluye `tools.ToolSpec.Bounds`
 - El esquema JSON generado del resultado incluye los campos canónicos de acotado (`returned`, `total`,
   `truncated`, `refinement_hint`, y el opcional `next_cursor`)
+- `tools.ToolSpec.Bounds` almacena los nombres JSON visibles para el modelo. Si
+  el DSL nombra un atributo Goa lower-camel como `NextCursor("nextCursor")`,
+  codegen emite `NextCursorField: "next_cursor"` para que esquemas, proyección
+  del runtime y codecs de resultado usen la misma forma.
 - Para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es una referencia de continuación del runtime; los cursores del proveedor permanecen como estado privado del runtime.
 - El tipo de resultado Go semántico sigue siendo específico del dominio; no necesita duplicar esos campos
 
@@ -266,7 +270,7 @@ func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta
 Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
-2. El runtime fusiona esos bounds en el JSON emitido usando los nombres de campo de `BoundedResult(...)`
+2. El runtime fusiona esos bounds en el JSON emitido usando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`
 3. Cuando existe un cursor del proveedor, el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado
 4. Los suscriptores de streams y los finalizadores acceden a los bounds visibles para el modelo para su visualización en la UI, logging o decisiones de políticas
 

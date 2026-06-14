@@ -197,6 +197,10 @@ tool が `BoundedResult()` でマークされると:
 
 - 生成 tool spec に `tools.ToolSpec.Bounds` が含まれます
 - 生成 JSON result schema には正規 bounded field (`returned`, `total`, `truncated`, `refinement_hint`, optional `next_cursor`) が含まれます
+- `tools.ToolSpec.Bounds` は model-facing JSON 名を保存します。DSL が
+  `NextCursor("nextCursor")` のような lower-camel Goa attribute を指定しても、
+  codegen は `NextCursorField: "next_cursor"` を出力し、schema、runtime
+  projection、result codec は同じ spelling を使います。
 - cursor-paged tool では、model-visible な `next_cursor` は runtime continuation reference です。provider cursor は private runtime state として残ります
 - semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
 

@@ -440,6 +440,10 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 - runtime は provider-owned bounds を emitted `tool_result` JSON、`.Bounds` 配下の result-hint template data、hook payload、stream event へ project する
 - cursor-paged tool では、provider code は private cursor を `Bounds.NextCursor` に設定します。emitted `next_cursor` は result を生成した `tool_call_id` continuation reference です
 
+`tools.ToolSpec.Bounds` は model-facing JSON 名を使います。DSL 宣言が
+`NextCursor("nextCursor")` のような lower-camel Goa attribute を参照しても、
+生成 specs、schemas、runtime projection、result codec は `next_cursor` を使います。
+
 正規 projected field:
 
 - `returned` (required)

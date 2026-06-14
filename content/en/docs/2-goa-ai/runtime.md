@@ -438,6 +438,11 @@ in the DSL. The runtime contract for those tools is:
 - for cursor-paged tools, provider code sets `Bounds.NextCursor` to its private cursor; the
   emitted `next_cursor` is the producing `tool_call_id` continuation reference
 
+`tools.ToolSpec.Bounds` uses model-facing JSON names. A DSL declaration may
+refer to lower-camel Goa attributes such as `NextCursor("nextCursor")`, but
+generated specs, schemas, runtime projection, and result codecs use
+`next_cursor`.
+
 Canonical projected fields:
 
 - `returned` (required)
@@ -452,6 +457,11 @@ duplicate the canonical bounded fields just so models can see them.
 When a follow-up call passes the continuation reference in the payload cursor
 field, the runtime reuses the prior payload and injects the private provider
 cursor before tool execution.
+
+Generated result codecs accept the same canonical bounded fields projected by
+the runtime and reject unknown fields outside the semantic result plus those
+runtime-owned fields. This keeps method results, tool results, and transcript
+JSON aligned without handwritten schema walking.
 
 For method-backed `BindTo` tools, the bound service method result still needs to
 carry the canonical bounded fields so the generated executor can build

@@ -198,6 +198,10 @@ When a tool is marked with `BoundedResult()`:
 - The generated tool spec includes `tools.ToolSpec.Bounds`
 - The generated JSON result schema includes the canonical bounded fields (`returned`, `total`,
   `truncated`, `refinement_hint`, and optional `next_cursor`)
+- `tools.ToolSpec.Bounds` stores the **model-facing JSON field names**. If the
+  Goa DSL names a lower-camel attribute such as `NextCursor("nextCursor")`,
+  codegen emits `NextCursorField: "next_cursor"` so schemas, runtime
+  projection, and result-codec validation use one spelling.
 - For cursor-paged tools, model-visible `next_cursor` is a runtime continuation reference; provider
   cursors remain private runtime state.
 - The semantic Go result type stays domain-specific; it does not need to duplicate those fields
@@ -264,7 +268,8 @@ func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta
 When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
-2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`
+2. The runtime merges those bounds into the emitted JSON using the model-facing
+   JSON field names generated from `BoundedResult(...)`
 3. When a provider cursor exists, the emitted `next_cursor` is the producing `tool_call_id`
    continuation reference
 4. Stream subscribers and finalizers access the model-visible bounds for UI display, logging, or
@@ -672,8 +677,16 @@ type ToolResult struct {
 The recommended pattern:
 
 1. **Design tools with strong payload schemas** (Goa design)
-2. **Let executors/tools surface validation failures** as `ToolError` + `RetryHint` instead of panicking or hiding errors
+2. **Let generated codecs and executors surface validation failures** as structured validation errors or `ToolError` + `RetryHint` instead of panicking or hiding errors
 3. **Teach your planner** to inspect `ToolResult.Error` and `ToolResult.RetryHint`, repair the payload when possible, and retry the tool call if appropriate
+
+Generated tool codecs reject closed-object contract violations before executor
+logic runs. Unknown fields become structured `unknown_field` issues with the
+allowed keys for that object path, and JSON type mismatches become
+`invalid_field_type` issues with generated expected/actual JSON type metadata.
+The runtime converts those validation issues into restricted retry hints so the
+next planner turn repairs the same tool call instead of choosing a different
+tool or guessing from a plain decoder string.
 
 **Example Executor:**
 
@@ -753,7 +766,8 @@ For each agent, Goa-AI emits a **specs package** and a **JSON catalog**:
 
 **Specs packages (`gen/<service>/agents/<agent>/specs/...`):**
 - `types.go` – payload/result Go structs
-- `codecs.go` – JSON codecs (encode/decode typed payloads/results)
+- `codecs.go` – JSON codecs (encode/decode typed payloads/results, enforce
+  closed-object keys, and produce structured validation issues)
 - `specs.go` – `[]tools.ToolSpec` entries with canonical tool ID, payload/result schemas, hints
 
 **JSON catalog (`tool_schemas.json`):**

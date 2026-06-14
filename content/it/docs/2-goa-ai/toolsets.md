@@ -206,25 +206,23 @@ Tool("list_devices", "Elenco dei dispositivi con paginazione", func() {
 
 When a tool is marked with `BoundedResult()`:
 
-- The generated tool spec includes `BoundedResult: true`
-- Generated result types implement the `agent.BoundedResult` interface via `ResultBounds()`:
+- The generated tool spec includes `tools.ToolSpec.Bounds`
+- The generated JSON result schema includes the canonical bounded fields (`returned`, `total`,
+  `truncated`, `refinement_hint`, and optional `next_cursor`)
+- `tools.ToolSpec.Bounds` stores model-facing JSON names. If the DSL names a
+  lower-camel Goa attribute such as `NextCursor("nextCursor")`, codegen emits
+  `NextCursorField: "next_cursor"` so schemas, runtime projection, and result
+  codecs use one spelling.
+- For cursor-paged tools, model-visible `next_cursor` is a runtime continuation
+  reference; provider cursors remain private runtime state.
+- The semantic Go result type stays domain-specific; it does not need to
+  duplicate those fields
 
 ```go
-// Implementazione dell'interfaccia generata
-tipo ListDevicesResult struct {
-    Dispositivi []*Dispositivo
-    Restituito int
-    Totale *int
-    Troncato bool
-    RefinementHint string
-}
-
-func (r *ListDevicesResult) ResultBounds() *agent.Bounds {
-    return &agent.Bounds{
-        Restituito: r.Restituito,
-        Totale: r.Total,
-        Troncato: r.Troncato,
-        RefinementHint: r.RefinementHint,
+spec.Bounds = &tools.BoundsSpec{
+    Paging: &tools.PagingSpec{
+        CursorField:     "cursor",
+        NextCursorField: "next_cursor",
     }
 }
 ```
@@ -277,11 +275,10 @@ func (s *DeviceService) ListDevices(ctx context.Context, p *ListDevicesPayload) 
 
 When a bounded tool executes:
 
-1. The runtime decodes the result and checks for `agent.BoundedResult` implementation
-2. If the result implements the interface, `ResultBounds()` extracts bounds metadata
-3. Bounds are attached to `planner.ToolResult.Bounds`
-4. When `Bounds.NextCursor` is present, the runtime emits the producing `tool_call_id` as the model-visible `next_cursor` continuation reference
-5. Stream subscribers and finalizers access model-visible bounds for UI display, logging, or policy decisions
+1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
+2. The runtime merges those bounds into emitted JSON using the model-facing JSON field names generated from `BoundedResult(...)`
+3. When `Bounds.NextCursor` is present, the runtime emits the producing `tool_call_id` as the model-visible `next_cursor` continuation reference
+4. Stream subscribers and finalizers access model-visible bounds for UI display, logging, or policy decisions
 
 ```go
 // In un sottoscrittore di flusso

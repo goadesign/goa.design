@@ -743,6 +743,8 @@ Canonical model-visible fields:
 
 - codegen records it in generated `tools.ToolSpec.Bounds`
 - codegen projects the canonical bounded fields into the generated JSON result schema
+- generated `tools.ToolSpec.Bounds` stores model-facing JSON field names, so
+  lower-camel Goa attributes such as `nextCursor` are exposed as `next_cursor`
 - successful bounded executions must set `planner.ToolResult.Bounds`
 - the runtime projects provider-owned bounds into encoded `tool_result` JSON, result-hint template data,
 hooks, and stream events
@@ -813,7 +815,7 @@ result := &planner.ToolResult{
 When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
-2. The runtime merges those bounds into the emitted JSON using field names from `BoundedResult(...)`.
+2. The runtime merges those bounds into the emitted JSON using model-facing JSON field names generated from `BoundedResult(...)`.
    When `Bounds.NextCursor` is present, the emitted `next_cursor` is the producing `tool_call_id`
    continuation reference.
 3. The provider cursor remains private runtime state used to hydrate the next call; planners, hooks,

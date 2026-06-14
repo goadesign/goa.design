@@ -423,6 +423,11 @@ Las herramientas que devuelven vistas parciales de datasets más grandes deberí
 - el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` emitido, los datos de plantilla de result hint bajo `.Bounds`, los payloads de hook y los eventos de stream
 - para herramientas paginadas por cursor, el código del proveedor establece `Bounds.NextCursor` con su cursor privado; el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado
 
+`tools.ToolSpec.Bounds` usa nombres JSON visibles para el modelo. Una declaración
+DSL puede referirse a atributos Goa lower-camel como `NextCursor("nextCursor")`,
+pero las specs generadas, los esquemas, la proyección del runtime y los codecs
+de resultado usan `next_cursor`.
+
 Campos canónicos proyectados:
 
 - `returned` (requerido)

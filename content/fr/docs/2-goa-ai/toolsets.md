@@ -201,6 +201,10 @@ Lorsqu'un outil est marqué de `BoundedResult()` :
 - La spécification d'outil générée inclut `tools.ToolSpec.Bounds`
 - Le schéma de résultat JSON généré inclut les champs délimités canoniques (`returned`, `total`,
 `truncated`, `refinement_hint` et `next_cursor` en option)
+- `tools.ToolSpec.Bounds` stocke les noms JSON visibles par le modèle. Si le
+  DSL nomme un attribut Goa en lower-camel comme `NextCursor("nextCursor")`,
+  codegen émet `NextCursorField: "next_cursor"` afin que les schémas, la
+  projection du runtime et les codecs de résultat utilisent la même forme.
 - Pour les outils paginés par curseur, le `next_cursor` visible par le modèle est une référence de continuation du runtime; les curseurs du fournisseur restent un état privé du runtime.
 - Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
 

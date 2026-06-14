@@ -437,6 +437,11 @@ dans le DSL. Le contrat d'exécution de ces outils est :
 données de modèle sous `.Bounds`, charges utiles de hook et événements de flux
 - pour les outils paginés par curseur, le code fournisseur définit `Bounds.NextCursor` avec son curseur privé; le `next_cursor` émis est la référence de continuation `tool_call_id` productrice
 
+`tools.ToolSpec.Bounds` utilise les noms JSON visibles par le modèle. Une
+déclaration DSL peut référencer des attributs Goa en lower-camel comme
+`NextCursor("nextCursor")`, mais les specs générées, les schémas, la projection
+du runtime et les codecs de résultat utilisent `next_cursor`.
+
 Champs projetés canoniques :
 
 - `returned` (obligatoire)
