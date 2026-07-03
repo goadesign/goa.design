@@ -234,7 +234,9 @@ events, and passes planner-visible outputs to `PlanResume`.
 
 Register provider clients with the runtime, then access them from planners by ID.
 For streaming planners, prefer `PlannerModelClient`; it owns assistant/thinking
-and usage event emission.
+and usage event emission. This example uses OpenAI; see
+[Runtime → LLM Integration](./runtime/#llm-integration) for AWS Bedrock and
+Google Vertex AI (Gemini and Claude-on-Vertex) equivalents.
 
 ```go
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{

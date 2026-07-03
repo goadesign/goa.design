@@ -277,24 +277,32 @@ Goa-AI follows a **define → generate → execute** pipeline that transforms de
 | **Codegen** | Generate type-safe specs, codecs, workflow definitions, and registry clients—never edit `gen/` |
 | **Runtime** | Execute the plan/execute loop with policy enforcement, memory persistence, and event streaming |
 | **Engine** | Swap execution backends: in-memory for development, Temporal for production durability |
-| **Features** | Plug in model providers (OpenAI, Anthropic, AWS Bedrock), persistence (Mongo), streaming (Pulse), and registries |
+| **Features** | Plug in model providers (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistence (Mongo), streaming (Pulse), and registries |
 
 **Key Integration Points:**
 
-- **Model Clients** — Abstract LLM providers behind a unified interface; switch between OpenAI, Anthropic, or Bedrock without changing agent code
+- **Model Clients** — Abstract LLM providers behind a unified interface; switch between OpenAI, Anthropic, Bedrock, or Vertex AI (Gemini or Claude-on-Vertex) without changing agent code
 - **Registry** — Discover and invoke toolsets across process boundaries; clustered via Redis for horizontal scaling
 - **Pulse Streaming** — Real-time event bus for UI updates, observability pipelines, and cross-service communication
 - **Temporal Engine** — Durable workflow execution with automatic retries, replay, and crash recovery
 
 ### Model Providers & Extensibility {#model-providers}
 
-Goa-AI ships first-class adapters for three LLM providers:
+Goa-AI ships first-class adapters for four LLM providers:
 
 - **OpenAI** (`features/model/openai`)
 - **Anthropic Claude** (`features/model/anthropic`)
 - **AWS Bedrock** (`features/model/bedrock`)
+- **Google Vertex AI** (`features/model/vertex`) — a native Gemini adapter plus a pure-construction helper for Claude models hosted on Vertex (which delegates translation and error classification to `features/model/anthropic`)
 
-All three implement the same `model.Client` interface used by planners. Applications register model clients with the runtime using `rt.RegisterModel("provider-id", client)` and refer to them by ID from planners and generated agent configs, so swapping providers is a configuration change rather than a redesign.
+All four implement the same `model.Client` interface used by planners. Applications register model clients with the runtime using `rt.RegisterModel("provider-id", client)` and refer to them by ID from planners and generated agent configs, so swapping providers is a configuration change rather than a redesign.
+
+Gemini 3-class models attach an opaque thought signature to tool-call
+(`functionCall`) parts to authenticate the reasoning that produced them. The
+runtime captures and reattaches this signature entirely on its own side —
+it is never exposed on planner-facing types — so planner code is identical
+whether or not the configured model uses this feature. See
+[Runtime → LLM Integration](./runtime/#llm-integration) for details.
 
 Adding a new provider follows the same pattern:
 

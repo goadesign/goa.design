@@ -862,7 +862,7 @@ if err := rt.RegisterModel("bedrock", limited); err != nil {
 
 ## LLM Integration
 
-Goa-AI planners interact with large language models through a **provider-agnostic interface**. This design lets you swap providers—AWS Bedrock, OpenAI, or custom endpoints—without changing your planner code.
+Goa-AI planners interact with large language models through a **provider-agnostic interface**. This design lets you swap providers—AWS Bedrock, OpenAI, Google Vertex AI (Gemini and Claude-on-Vertex), or custom endpoints—without changing your planner code.
 
 ### The model.Client Interface
 
@@ -909,6 +909,49 @@ modelClient, err := openai.New(openai.Options{
     SmallModel:   "gpt-5-nano",
 })
 ```
+
+**Google Vertex AI (Gemini and Claude-on-Vertex)**
+
+The `features/model/vertex` package ships two constructors that both satisfy
+`model.Client`: a native Gemini adapter, and a pure-construction helper that
+points the Anthropic adapter at Claude models hosted on Vertex.
+
+```go
+import "goa.design/goa-ai/runtime/agent/runtime"
+
+// Gemini on Vertex, using Application Default Credentials.
+geminiClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+    ProjectID:      "my-gcp-project",
+    Location:       "us-central1",
+    DefaultModel:   "gemini-2.5-flash",
+    HighModel:      "gemini-3-pro-preview",
+    SmallModel:     "gemini-2.5-flash-lite",
+    MaxTokens:      4096,
+    ThinkingBudget: 10000,
+})
+
+// Claude on Vertex. This is pure construction: it builds an Anthropic SDK
+// client against the SDK's Vertex transport and hands it to
+// features/model/anthropic, which owns Messages translation and
+// HTTP-status error classification for every Anthropic-hosted adapter
+// (direct API and Vertex-hosted alike) — no separate translation layer.
+claudeOnVertexClient, err := rt.NewVertexAnthropicModelClient(ctx, runtime.VertexConfig{
+    ProjectID:    "my-gcp-project",
+    Location:     "us-east5",
+    DefaultModel: "claude-sonnet-4-5@20250929",
+})
+```
+
+Gemini 3-class models attach an opaque **thought signature** to `functionCall`
+parts (not only to thought/thinking parts) to authenticate the reasoning chain
+behind a tool call. The Vertex adapter round-trips this signature through
+`model.ToolCall.ThoughtSignature` / `model.ToolUsePart.ThoughtSignature` using
+the same base64 convention as `ThinkingPart.Signature`. The runtime captures
+this signature at the model-client boundary — before either integration style
+below ever produces a `planner.ToolRequest` — and reattaches it by tool-call
+ID when rebuilding the provider transcript. `planner.ToolRequest` never
+carries a signature field; planner code does not need to know signatures
+exist.
 
 ### Using Model Clients in Planners
 
