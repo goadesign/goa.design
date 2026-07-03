@@ -811,7 +811,7 @@ if err := rt.RegisterModel("bedrock", limited); err != nil {
 
 ## LLM 統合
 
-Goa-AI のプランナーは、**provider-agnostic なインターフェース**を通じて大規模言語モデルと対話します。この設計により、プランナーコードを変えずに、AWS Bedrock、OpenAI、カスタムエンドポイントなどのプロバイダーを切り替えられます。
+Goa-AI のプランナーは、**provider-agnostic なインターフェース**を通じて大規模言語モデルと対話します。この設計により、プランナーコードを変えずに、AWS Bedrock、OpenAI、Google Vertex AI（Gemini / Claude-on-Vertex）、カスタムエンドポイントなどのプロバイダーを切り替えられます。
 
 ### `model.Client` インターフェース
 
@@ -858,6 +858,50 @@ modelClient, err := openai.New(openai.Options{
     SmallModel:   "gpt-5-nano",
 })
 ```
+
+**Google Vertex AI（Gemini / Claude-on-Vertex）**
+
+`features/model/vertex` パッケージは、いずれも `model.Client` を満たす 2 つの
+コンストラクタを提供します。ネイティブの Gemini アダプタと、Vertex 上でホスト
+される Claude モデルに Anthropic アダプタを向ける純粋なコンストラクタヘルパー
+です。
+
+```go
+import "goa.design/goa-ai/runtime/agent/runtime"
+
+// Vertex 上の Gemini。Application Default Credentials を使用。
+geminiClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+    ProjectID:      "my-gcp-project",
+    Location:       "us-central1",
+    DefaultModel:   "gemini-2.5-flash",
+    HighModel:      "gemini-3-pro-preview",
+    SmallModel:     "gemini-2.5-flash-lite",
+    MaxTokens:      4096,
+    ThinkingBudget: 10000,
+})
+
+// Vertex 上の Claude。これは純粋な構築です: SDK の Vertex トランスポートに
+// 対して Anthropic SDK クライアントを構築し、features/model/anthropic に渡し
+// ます。同パッケージが、Anthropic がホストするすべてのアダプタ（直接 API /
+// Vertex ホスト共通）の Messages 変換と HTTP ステータスのエラー分類を担います
+// — 別個の変換レイヤはありません。
+claudeOnVertexClient, err := rt.NewVertexAnthropicModelClient(ctx, runtime.VertexConfig{
+    ProjectID:    "my-gcp-project",
+    Location:     "us-east5",
+    DefaultModel: "claude-sonnet-4-5@20250929",
+})
+```
+
+Gemini 3 世代のモデルは、ツール呼び出しの背後にある推論チェーンを認証する
+ために、`functionCall` パート（thought/thinking パートだけでなく）に不透明な
+**thought signature** を付与します。Vertex アダプタはこのシグネチャを、
+`ThinkingPart.Signature` と同じ base64 規約で
+`model.ToolCall.ThoughtSignature` / `model.ToolUsePart.ThoughtSignature` を
+通じてラウンドトリップします。ランタイムはこのシグネチャをモデルクライアント
+境界で（以下のどちらの統合スタイルでも `planner.ToolRequest` が生成される前
+に）捕捉し、プロバイダー向けトランスクリプトを再構築する際にツールコール ID
+で再付与します。`planner.ToolRequest` にシグネチャフィールドはありません。
+プランナーコードがシグネチャの存在を意識する必要はありません。
 
 ### プランナーでモデルクライアントを使う
 

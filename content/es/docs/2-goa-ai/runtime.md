@@ -813,7 +813,7 @@ if err := rt.RegisterModel("bedrock", limited); err != nil {
 
 ## Integración LLM
 
-Los planificadores de Goa-AI interactúan con grandes modelos de lenguaje a través de una **interfaz agnóstica frente al proveedor**. Este diseño te permite intercambiar proveedores —AWS Bedrock, OpenAI o endpoints personalizados— sin cambiar el código de tu planificador.
+Los planificadores de Goa-AI interactúan con grandes modelos de lenguaje a través de una **interfaz agnóstica frente al proveedor**. Este diseño te permite intercambiar proveedores —AWS Bedrock, OpenAI, Google Vertex AI (Gemini y Claude-on-Vertex) o endpoints personalizados— sin cambiar el código de tu planificador.
 
 ### La interfaz model.Client
 
@@ -860,6 +860,51 @@ modelClient, err := openai.New(openai.Options{
     SmallModel:   "gpt-5-nano",
 })
 ```
+
+**Google Vertex AI (Gemini y Claude-on-Vertex)**
+
+El paquete `features/model/vertex` incluye dos constructores que satisfacen
+ambos `model.Client`: un adaptador nativo de Gemini y un helper de
+construcción pura que apunta el adaptador de Anthropic a los modelos Claude
+alojados en Vertex.
+
+```go
+import "goa.design/goa-ai/runtime/agent/runtime"
+
+// Gemini en Vertex, usando Application Default Credentials.
+geminiClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+    ProjectID:      "my-gcp-project",
+    Location:       "us-central1",
+    DefaultModel:   "gemini-2.5-flash",
+    HighModel:      "gemini-3-pro-preview",
+    SmallModel:     "gemini-2.5-flash-lite",
+    MaxTokens:      4096,
+    ThinkingBudget: 10000,
+})
+
+// Claude en Vertex. Esto es construcción pura: crea un cliente del SDK de
+// Anthropic sobre el transporte Vertex del SDK y se lo entrega a
+// features/model/anthropic, que posee la traducción de Messages y la
+// clasificación de errores HTTP para todos los adaptadores alojados por
+// Anthropic (API directa y Vertex) — sin capa de traducción separada.
+claudeOnVertexClient, err := rt.NewVertexAnthropicModelClient(ctx, runtime.VertexConfig{
+    ProjectID:    "my-gcp-project",
+    Location:     "us-east5",
+    DefaultModel: "claude-sonnet-4-5@20250929",
+})
+```
+
+Los modelos de la generación Gemini 3 adjuntan una **thought signature** opaca
+a las partes `functionCall` (no solo a las partes thought/thinking) para
+autenticar la cadena de razonamiento detrás de una llamada a herramienta. El
+adaptador de Vertex hace el round-trip de esta firma a través de
+`model.ToolCall.ThoughtSignature` / `model.ToolUsePart.ThoughtSignature`
+usando la misma convención base64 que `ThinkingPart.Signature`. El runtime
+captura esta firma en la frontera del model-client —antes de que cualquiera
+de los dos estilos de integración de abajo produzca un `planner.ToolRequest`—
+y la vuelve a adjuntar por ID de llamada a herramienta al reconstruir el
+transcript orientado al proveedor. `planner.ToolRequest` nunca lleva un campo
+de firma; el código del planner no necesita saber que las firmas existen.
 
 ### Uso de clientes de modelo en planificadores
 

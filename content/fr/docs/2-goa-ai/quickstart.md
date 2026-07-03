@@ -234,7 +234,9 @@ encode les résultats réussis avec les codecs de résultat générés, enregist
 
 Enregistrez les clients du fournisseur auprès du runtime, puis accédez-y à partir des planificateurs par ID.
 Pour les planificateurs de streaming, préférez `PlannerModelClient` ; il possède un assistant/réfléchissant
-et l'émission d'événements d'utilisation.
+et l'émission d'événements d'utilisation. Cet exemple utilise OpenAI ; voir
+[Runtime → Intégration LLM](./runtime/#intégration-llm) pour les équivalents
+AWS Bedrock et Google Vertex AI (Gemini et Claude-on-Vertex).
 
 ```go
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{

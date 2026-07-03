@@ -251,24 +251,33 @@ Goa-AI segue una pipeline **definisci → genera → esegui** che trasforma i pr
 **Panoramica dei livelli:**
 
 | Strato | Scopo ||-------|---------|
-| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegui il ciclo di pianificazione/esecuzione con applicazione delle policy, persistenza della memoria e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega fornitori di modelli (OpenAI, Anthropic, AWS Bedrock), persistenza (Mongo), streaming (Pulse) e registri |
+| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegui il ciclo di pianificazione/esecuzione con applicazione delle policy, persistenza della memoria e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega fornitori di modelli (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistenza (Mongo), streaming (Pulse) e registri |
 
 **Punti chiave di integrazione:**
 
-- **Clienti modello**: fornitori LLM astratti dietro un'interfaccia unificata; passare da OpenAI, Anthropic o Bedrock senza modificare il codice agente
+- **Clienti modello**: fornitori LLM astratti dietro un'interfaccia unificata; passare da OpenAI, Anthropic, Bedrock o Vertex AI (Gemini o Claude-on-Vertex) senza modificare il codice agente
 - **Registro**: scopri e richiama set di strumenti oltre i confini del processo; raggruppati tramite Redis per il ridimensionamento orizzontale
 - **Pulse Streaming**: bus di eventi in tempo reale per aggiornamenti dell'interfaccia utente, pipeline di osservabilità e comunicazione tra servizi
 - **Temporal Engine**: esecuzione duratura del flusso di lavoro con tentativi automatici, riproduzione e ripristino da arresto anomalo
 
 ### Provider di modelli ed estensibilità {#model-providers}
 
-Goa-AI fornisce adattatori di prima classe per tre fornitori LLM:
+Goa-AI fornisce adattatori di prima classe per quattro fornitori LLM:
 
 - **OpenAI** (`features/model/openai`)
 - **Claude antropico** (`features/model/anthropic`)
 - **AWS Bedrock** (`features/model/bedrock`)
+- **Google Vertex AI** (`features/model/vertex`) — un adattatore Gemini nativo più un helper di pura costruzione per i modelli Claude ospitati su Vertex (che delega traduzione e classificazione degli errori a `features/model/anthropic`)
 
-Tutti e tre implementano la stessa interfaccia `model.Client` utilizzata dai pianificatori. Le applicazioni registrano i client modello con il runtime utilizzando `rt.RegisterModel("provider-id", client)` e fanno riferimento ad essi tramite l'ID dei pianificatori e le configurazioni degli agenti generate, quindi lo scambio di provider è una modifica della configurazione anziché una riprogettazione.
+Tutti e quattro implementano la stessa interfaccia `model.Client` utilizzata dai pianificatori. Le applicazioni registrano i client modello con il runtime utilizzando `rt.RegisterModel("provider-id", client)` e fanno riferimento ad essi tramite l'ID dei pianificatori e le configurazioni degli agenti generate, quindi lo scambio di provider è una modifica della configurazione anziché una riprogettazione.
+
+I modelli di classe Gemini 3 allegano una thought signature opaca alle parti di
+chiamata strumento (`functionCall`) per autenticare il ragionamento che le ha
+prodotte. Il runtime cattura e ricollega questa firma interamente per conto
+proprio — non è mai esposta sui tipi rivolti al pianificatore — quindi il
+codice del pianificatore è identico indipendentemente dal fatto che il modello
+configurato usi questa funzionalità. Vedi
+[Runtime → Integrazione LLM](./runtime/#integrazione-llm) per i dettagli.
 
 L'aggiunta di un nuovo provider segue lo stesso schema:
 

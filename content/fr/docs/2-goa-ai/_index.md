@@ -277,24 +277,33 @@ Goa-AI suit un pipeline **définir → générer → exécuter** qui transforme 
 | **Codegen** | Générez des spécifications, des codecs, des définitions de flux de travail et des clients de registre de type sécurisé ; ne modifiez jamais `gen/` |
 | **Exécution** | Exécuter la boucle planifier/exécuter avec application des politiques, persistance de la mémoire et streaming d'événements |
 | **Moteur** | Backends d'exécution d'échange : en mémoire pour le développement, Temporal pour la durabilité de la production |
-| **Caractéristiques** | Fournisseurs de modèles de plug-in (OpenAI, Anthropic, AWS Bedrock), persistance (Mongo), streaming (Pulse) et registres |
+| **Caractéristiques** | Fournisseurs de modèles de plug-in (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistance (Mongo), streaming (Pulse) et registres |
 
 **Points d'intégration clés :**
 
-- **Clients modèles** — Fournisseurs LLM abstraits derrière une interface unifiée ; basculer entre OpenAI, Anthropic ou Bedrock sans changer le code de l'agent
+- **Clients modèles** — Fournisseurs LLM abstraits derrière une interface unifiée ; basculer entre OpenAI, Anthropic, Bedrock ou Vertex AI (Gemini ou Claude-on-Vertex) sans changer le code de l'agent
 - **Registre** – Découvrez et invoquez des ensembles d'outils au-delà des limites des processus ; regroupé via Redis pour une mise à l'échelle horizontale
 - **Pulse Streaming** — Bus d'événements en temps réel pour les mises à jour UI, les pipelines d'observabilité et la communication interservices
 - **Moteur Temporal** — Exécution de flux de travail durable avec tentatives automatiques, relecture et récupération après incident
 
 ### Fournisseurs de modèles et extensibilité {#model-providers}
 
-Goa-AI fournit des adaptateurs de première classe pour trois fournisseurs LLM :
+Goa-AI fournit des adaptateurs de première classe pour quatre fournisseurs LLM :
 
 - **OpenAI** (`features/model/openai`)
 - **Anthropic Claude** (`features/model/anthropic`)
 - **AWS Bedrock** (`features/model/bedrock`)
+- **Google Vertex AI** (`features/model/vertex`) — un adaptateur Gemini natif plus un constructeur de pure construction pour les modèles Claude hébergés sur Vertex (qui délègue la traduction et la classification des erreurs à `features/model/anthropic`)
 
-Tous les trois implémentent la même interface `model.Client` utilisée par les planificateurs. Les applications enregistrent les clients modèles avec le runtime à l'aide de `rt.RegisterModel("provider-id", client)` et y font référence par ID à partir des planificateurs et des configurations d'agent générées, de sorte que l'échange de fournisseurs est un changement de configuration plutôt qu'une refonte.
+Tous les quatre implémentent la même interface `model.Client` utilisée par les planificateurs. Les applications enregistrent les clients modèles avec le runtime à l'aide de `rt.RegisterModel("provider-id", client)` et y font référence par ID à partir des planificateurs et des configurations d'agent générées, de sorte que l'échange de fournisseurs est un changement de configuration plutôt qu'une refonte.
+
+Les modèles de la génération Gemini 3 attachent une thought signature opaque
+aux parties d'appel d'outil (`functionCall`) afin d'authentifier le
+raisonnement qui les a produites. Le runtime capture et rattache cette
+signature entièrement de son côté — elle n'est jamais exposée sur les types
+destinés au planificateur — de sorte que le code du planificateur est
+identique, que le modèle configuré utilise ou non cette fonctionnalité. Voir
+[Runtime → Intégration LLM](./runtime/#intégration-llm) pour plus de détails.
 
 L'ajout d'un nouveau fournisseur suit le même schéma :
 

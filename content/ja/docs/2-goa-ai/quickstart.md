@@ -217,7 +217,7 @@ if err := chat.RegisterUsedToolsets(ctx, rt, chat.WithHelpersExecutor(&HelpersEx
 
 ## 7. モデルを接続する
 
-プロバイダークライアントをランタイムへ登録し、プランナーから ID で参照します。ストリーミングプランナーでは、assistant/thinking/usage イベントの発行を所有する `PlannerModelClient` を優先してください。
+プロバイダークライアントをランタイムへ登録し、プランナーから ID で参照します。ストリーミングプランナーでは、assistant/thinking/usage イベントの発行を所有する `PlannerModelClient` を優先してください。この例では OpenAI を使用します。AWS Bedrock や Google Vertex AI（Gemini / Claude-on-Vertex）の同等な例は [Runtime → LLM 統合](./runtime/#llm-統合) を参照してください。
 
 ```go
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{

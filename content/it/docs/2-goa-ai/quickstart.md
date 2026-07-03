@@ -234,7 +234,9 @@ eventi e passa gli output visibili dal pianificatore a `PlanResume`.
 
 Registra i clienti del fornitore con il runtime, quindi accedi ad essi dai pianificatori tramite ID.
 Per i pianificatori di streaming, preferisci `PlannerModelClient`; possiede assistente/pensiero
-e l'emissione di eventi di utilizzo.
+e l'emissione di eventi di utilizzo. Questo esempio usa OpenAI; vedi
+[Runtime → Integrazione LLM](./runtime/#integrazione-llm) per gli equivalenti
+AWS Bedrock e Google Vertex AI (Gemini e Claude-on-Vertex).
 
 ```go
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{

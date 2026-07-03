@@ -240,7 +240,9 @@ visibles al planificador a `PlanResume`.
 Registra los clientes de proveedor en el runtime y después accede a ellos desde
 los planificadores por ID. Para planificadores con streaming, prefiere
 `PlannerModelClient`; es el responsable de emitir los eventos de assistant,
-thinking y uso.
+thinking y uso. Este ejemplo usa OpenAI; consulta
+[Runtime → Integración LLM](./runtime/#integración-llm) para los equivalentes
+de AWS Bedrock y Google Vertex AI (Gemini y Claude-on-Vertex).
 
 ```go
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{

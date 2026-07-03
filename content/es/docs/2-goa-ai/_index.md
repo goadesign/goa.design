@@ -262,24 +262,33 @@ Goa-AI sigue un pipeline **definir → generar → ejecutar** que transforma dis
 | **Codegen** | Genera specs con seguridad de tipos, codecs, definiciones de workflow y clientes de registro; nunca edites `gen/` |
 | **Runtime** | Ejecuta el bucle plan/execute con aplicación de políticas, persistencia de memoria y streaming de eventos |
 | **Engine** | Intercambia backends de ejecución: en memoria para desarrollo, Temporal para durabilidad en producción |
-| **Features** | Conecta proveedores de modelos (OpenAI, Anthropic, AWS Bedrock), persistencia (Mongo), streaming (Pulse) y registros |
+| **Features** | Conecta proveedores de modelos (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistencia (Mongo), streaming (Pulse) y registros |
 
 **Puntos clave de integración:**
 
-- **Clientes de modelos** — Abstraen los proveedores LLM detrás de una interfaz unificada; cambia entre OpenAI, Anthropic o Bedrock sin tocar el código del agente
+- **Clientes de modelos** — Abstraen los proveedores LLM detrás de una interfaz unificada; cambia entre OpenAI, Anthropic, Bedrock o Vertex AI (Gemini o Claude-on-Vertex) sin tocar el código del agente
 - **Registry** — Descubre e invoca toolsets a través de los límites entre procesos; en clúster a través de Redis para escalado horizontal
 - **Pulse Streaming** — Bus de eventos en tiempo real para actualizaciones de UI, pipelines de observabilidad y comunicación entre servicios
 - **Temporal Engine** — Ejecución duradera de workflows con reintentos automáticos, replay y recuperación ante caídas
 
 ### Proveedores de modelos y extensibilidad {#model-providers}
 
-Goa-AI incluye adaptadores de primera clase para tres proveedores LLM:
+Goa-AI incluye adaptadores de primera clase para cuatro proveedores LLM:
 
 - **OpenAI** (`features/model/openai`)
 - **Anthropic Claude** (`features/model/anthropic`)
 - **AWS Bedrock** (`features/model/bedrock`)
+- **Google Vertex AI** (`features/model/vertex`) — un adaptador nativo de Gemini más un helper de construcción pura para los modelos Claude alojados en Vertex (que delega la traducción y la clasificación de errores en `features/model/anthropic`)
 
-Los tres implementan la misma interfaz `model.Client` que utilizan los planners. Las aplicaciones registran clientes de modelo con el runtime mediante `rt.RegisterModel("provider-id", client)` y los referencian por ID desde los planners y las configuraciones de agente generadas, de modo que cambiar de proveedor es un cambio de configuración y no un rediseño.
+Los cuatro implementan la misma interfaz `model.Client` que utilizan los planners. Las aplicaciones registran clientes de modelo con el runtime mediante `rt.RegisterModel("provider-id", client)` y los referencian por ID desde los planners y las configuraciones de agente generadas, de modo que cambiar de proveedor es un cambio de configuración y no un rediseño.
+
+Los modelos de la generación Gemini 3 adjuntan una thought signature opaca a
+las partes de llamada a herramienta (`functionCall`) para autenticar el
+razonamiento que las produjo. El runtime captura y vuelve a adjuntar esta
+firma completamente por su cuenta — nunca se expone en los tipos orientados
+al planner — de modo que el código del planner es idéntico use o no el modelo
+configurado esta característica. Consulta
+[Runtime → Integración LLM](./runtime/#integración-llm) para más detalles.
 
 Añadir un nuevo proveedor sigue el mismo patrón:
 
