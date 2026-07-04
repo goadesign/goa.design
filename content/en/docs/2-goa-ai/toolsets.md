@@ -303,15 +303,16 @@ The bounded contract helps:
 
 ### Injected Fields
 
-The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but required by the service method. This is useful for session IDs, user context, authentication tokens, and other runtime-provided values.
+The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but populated by generated code before the tool executes. This is useful for session IDs, tenant/household scoping, and other runtime- or caller-provided values.
 
 #### How Inject Works
 
-When you mark a field with `Inject`:
+When you mark a field with `Inject`, codegen resolves it to one of two generation-time sources:
 
-1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
-2. **Validated at design time**: The bound method payload must expose the field as a required `String`
-3. **Executor population**: Generated service executors copy supported values from `runtime.ToolCallMeta` before optional interceptor hooks run
+1. **Hidden from LLM**: the field is excluded from the JSON schema and the model-facing required list sent to the model provider.
+2. **Validated at design time**: the field must be a required `String` on the tool's effective payload (the explicit `Args()` when given, otherwise the bound method's payload).
+3. **Meta-backed or label-backed**: a name that Goify's to one of the five fixed `runtime.ToolCallMeta` fields (`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`, `tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) is **meta-backed** and compiles to a direct meta read. Every other name is **label-backed**: it compiles to a run-label lookup (the label key is the design name verbatim), with the field's own declared validation (`Pattern`, `Length`, enum, ...) applied to the label value. A label-backed field cannot be declared on a `BindTo` tool, because the registry wire protocol used by registry-served bound tools carries no run labels.
+4. **Executor population**: both execution topologies (local in-process executors and the registry-served provider) call the *same* generated `Inject<Tool>` function between decode and execute, so population never diverges by where a tool runs.
 
 #### DSL Declaration
 
@@ -327,27 +328,83 @@ Tool("get_user_data", "Get data for current user", func() {
         Required("data")
     })
     BindTo("UserService", "GetData")
-    Inject("session_id")  // Hidden from LLM, populated at runtime
+    Inject("session_id")  // meta-backed: hidden from LLM, populated at runtime
 })
 ```
 
-#### Generated Code
-
-Generated method-backed executors copy injected fields from `runtime.ToolCallMeta`
-onto the typed method payload before invoking the service client:
+Label-backed fields work the same way but are not `runtime.ToolCallMeta` names:
 
 ```go
-p := specs.InitGetUserDataMethodPayload(toolArgs)
-p.SessionID = meta.SessionID
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id")  // label-backed: set via WithLabels("household_id", ...)
+})
 ```
 
-Supported injected field names are fixed: `run_id`, `session_id`, `turn_id`,
-`tool_call_id`, and `parent_tool_call_id`.
+Callers supply label values by starting the run with `runtime.WithLabels(...)`:
+
+```go
+out, err := client.Run(ctx, sessionID, messages,
+    runtime.WithLabels(map[string]string{"household_id": "house-42"}),
+)
+```
+
+A toolset's label-backed fields also contribute to a generated
+`RequiredLabels` list, aggregated per agent. `Runtime.Start`/`StartOneShot`
+validate the caller-supplied labels against this list **before** scheduling
+any workflow or activity, failing fast with every missing key named in one
+error. This check is a no-op for a process that only holds a
+`Runtime.ClientFor(route)` gateway/orchestration client (no local agent
+registration); in that topology a missing label is instead caught later,
+per tool call.
+
+#### Generated Code
+
+Generated method-backed executors call one generated `Inject<Tool>` function
+per injecting tool (in the toolset's `inject.go`, beside its codecs), which
+copies meta-backed fields from `runtime.ToolCallMeta` and label-backed
+fields from the run's labels onto the typed payload:
+
+```go
+p, err := specs.InjectGetUserData(toolArgs, meta, labels)
+```
+
+Supported injected field names are **not** a fixed list: any name that
+matches a `runtime.ToolCallMeta` field is meta-backed, and every other name
+is label-backed.
+
+#### Decoding Payloads in Custom Executors
+
+Hand-written `ToolCallExecutor`s (for tools with no `BindTo`, registered
+directly with the runtime) have no generated dispatch to call
+`Inject<Tool>` for them. Decode these tools' payloads with the toolset's
+generated `Decode<Tool>` function instead of the raw payload codec:
+
+```go
+p, err := specs.DecodeLookupHousehold(call.Payload, meta, call.Labels)
+if err != nil {
+    // handle decode or injection failure (missing/invalid label, etc.)
+}
+```
+
+`Decode<Tool>` composes `<Tool>PayloadCodec.FromJSON` with `Inject<Tool>` in
+one call, so injection can never be silently skipped. Decoding with the
+codec alone would leave injected fields at their Go zero value with no
+error, since their wire tag is `json:"-"` (hidden from the model) and there
+is no "missing key" signal.
 
 #### Runtime Population via Generated Interceptors
 
-Generated service executors also expose typed interceptor hooks. Use them to
-derive method payload fields from request context or other runtime state:
+Generated service executors also expose typed interceptor hooks, independent
+of `Inject()`. Use them to derive method payload fields from request context
+or other runtime state, in addition to or instead of design-declared
+injected fields:
 
 ```go
 type SessionInterceptor struct{}
@@ -371,11 +428,14 @@ exec := usertools.NewChatUserToolsExec(
 )
 ```
 
+Registered interceptors run after the generated `Inject<Tool>` call, on the
+already-decoded typed payload.
+
 #### When to Use Inject
 
 Use `Inject` for fields that:
 - Are required by the service but shouldn't be chosen by the LLM
-- Come from runtime context (session, user, tenant, request ID)
+- Come from runtime context (session, run/turn/tool-call IDs) or caller-supplied run labels (tenant, household, user)
 - Contain sensitive values (auth tokens, API keys)
 - Are infrastructure concerns (tracing IDs, correlation IDs)
 

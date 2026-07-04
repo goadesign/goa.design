@@ -1104,13 +1104,15 @@ var _ = Service("orchestrator", func() {
 
 ### Inject
 
-`Inject(fields...)` は、特定の payload フィールドを「注入」（サーバー側インフラ）としてマークします。注入フィールドは:
+`Inject(fields...)` は、特定の payload フィールドをサーバー側で設定するものとしてマークします。注入フィールドは:
 
-1. LLM から隠される（モデルへ送る JSON Schema から除外される）
-2. バインド先メソッド payload 上の必須 `String` フィールドとして検証される
-3. 生成された executor が `runtime.ToolCallMeta` から値を設定し、必要なら `ToolInterceptor.Inject` フックを追加できる
+1. LLM から隠される（JSON Schema と、モデル向けの必須フィールド一覧から除外される）
+2. ツールの実効ペイロード（明示的な `Args()` があればそれ、なければバインド先メソッドの payload）上の必須 `String` フィールドである
+3. 生成コードによって、コード生成時に決まる 2 つのソースのいずれかから設定される：`runtime.ToolCallMeta` またはランのラベル
 
 **コンテキスト**: `Tool` の内部
+
+Goify した結果が `runtime.ToolCallMeta` の 5 つの固定フィールド（`run_id`/`runId`、`session_id`/`sessionId`、`turn_id`/`turnId`、`tool_call_id`/`toolCallId`、`parent_tool_call_id`/`parentToolCallId`）のいずれかに一致する名前は **メタデータ由来** となり、そのメタデータを直接読み取るコードにコンパイルされます。それ以外の名前はすべて **ラベル由来** です：ランのラベルを検索するコードにコンパイルされ（ラベルキーは設計上の名前そのまま）、そのフィールド自身に宣言されたバリデーション（`Pattern`、`Length`、enum など）がラベル値に適用され、呼び出し側はラン開始時に `runtime.WithLabels(...)` でその値を渡さなければなりません。ラベル由来のフィールドは `BindTo` ツールでは宣言できません。レジストリ経由で提供されるバインド済みツールが使うレジストリのワイヤープロトコルには、ランのラベルが一切含まれないためです。
 
 ```go
 Tool("get_data", "Get data for current session", func() {
@@ -1123,22 +1125,26 @@ Tool("get_data", "Get data for current session", func() {
         Attribute("data", ArrayOf(String))
     })
     BindTo("data_service", "get")
-    Inject("session_id") // hidden from LLM, populated by interceptor
+    Inject("session_id") // メタデータ由来: LLM から隠され、ランタイムが設定する
+})
+
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id") // ラベル由来: WithLabels("household_id", ...) で設定する
 })
 ```
 
-サポートされる注入フィールド名は固定で、`run_id`、`session_id`、`turn_id`、`tool_call_id`、`parent_tool_call_id` です。
+コード生成は、注入を行う各ツールごとに `Inject<Tool>` 関数をツールセットの生成済み `inject.go` に出力し、両方の実行トポロジー（インプロセスのローカル executor と、レジストリ経由で提供される provider）はデコードと実行の間でこれを同一に呼び出します。ツールセットは生成済みの `RequiredLabels` 一覧も持ち、`Runtime.Start`/`StartOneShot` はワークフローやアクティビティをスケジュールする前に、`WithLabels(...)` で渡されたラベルをこの一覧と照合し、不足しているキーをすべて 1 つのエラーにまとめて早期に失敗します。
 
-実行時は、生成されたサービス executor が `runtime.ToolCallMeta` から対応する値をコピーし、その後で必要なら型付き interceptor を実行します:
+手書きの `ToolCallExecutor`（`BindTo` を持たず、ランタイムに直接登録するツール向け）には、生成済みの呼び出し口がありません。これらのツールの payload は、生の payload コーデックの `FromJSON` ではなく、生成された `Decode<Tool>(payload, meta, labels) (*<Tool>Payload, error)` 関数でデコードするべきです：`Decode<Tool>` はコーデックと `Inject<Tool>` を 1 回の呼び出しに合成するため、注入が黙って省略されることはありません。コーデックだけでデコードすると、注入対象フィールドはワイヤータグが `json:"-"` であるためにエラーなしで Go のゼロ値のまま残ってしまいます。
 
-```go
-func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
-    if p, ok := payload.(*dataservice.GetPayload); ok {
-        p.SessionID = meta.SessionID
-    }
-    return nil
-}
-```
+`WithInterceptors`（[Toolsets](toolsets.md#注入フィールドinjected-fields) 参照）は、`Inject<Tool>` の後に、生成されたサービス executor の型付き payload に対して実行される、ユーザー定義フック用の別の（引き続きサポートされる）仕組みです。これは、設計がどの `Inject()` フィールドを宣言しているかとは独立しています。
 
 ### TerminalRun
 

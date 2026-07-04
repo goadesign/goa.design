@@ -301,15 +301,16 @@ Le contrat limité permet :
 
 ### Champs injectés
 
-La fonction `Inject` DSL marque des champs de charge utile spécifiques comme « injectés » : des valeurs d'infrastructure côté serveur qui sont masquées pour le LLM mais requises par la méthode de service. Ceci est utile pour les ID de session, le contexte utilisateur, les jetons d'authentification et d'autres valeurs fournies par l'exécution.
+La fonction `Inject` DSL marque des champs de charge utile spécifiques comme « injectés » : des valeurs d'infrastructure côté serveur qui sont masquées pour le LLM et que le code généré renseigne avant l'exécution de l'outil. Ceci est utile pour les ID de session, le cloisonnement par tenant/foyer et d'autres valeurs fournies par l'exécution ou par l'appelant.
 
 #### Comment fonctionne l'injection
 
-Lorsque vous marquez un champ avec `Inject` :
+Lorsque vous marquez un champ avec `Inject`, la génération de code le résout vers l'une de deux sources déterminées au moment de la génération :
 
-1. **Masqué de LLM** : Le champ est exclu du schéma JSON envoyé au fournisseur de modèles
-2. **Validé au moment de la conception** : la charge utile de la méthode liée doit exposer le champ en tant que `String` requis
-3. **Population d'exécuteurs** : les exécuteurs de service générés copient les valeurs prises en charge à partir de `runtime.ToolCallMeta` avant l'exécution des hooks d'intercepteur facultatifs.
+1. **Masqué de LLM** : le champ est exclu du schéma JSON et de la liste des champs requis visible par le modèle
+2. **Validé au moment de la conception** : le champ doit être un `String` requis sur la charge utile effective de l'outil (le `Args()` explicite s'il est fourni, sinon la charge utile de la méthode liée)
+3. **Adossé aux métadonnées ou à un label** : un nom dont le Goify correspond à l'un des cinq champs fixes de `runtime.ToolCallMeta` (`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`, `tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) est **adossé aux métadonnées** et se compile en une lecture directe de ces métadonnées. Tout autre nom est **adossé à un label** : il se compile en une recherche dans les labels de l'exécution (la clé du label est le nom du design tel quel), la validation propre au champ (`Pattern`, `Length`, enum, ...) étant appliquée à la valeur du label. Un champ adossé à un label ne peut pas être déclaré sur un outil `BindTo`, car le protocole du registre utilisé par les outils liés et servis par le registre ne transporte aucun label d'exécution
+4. **Population par l'exécuteur** : les deux topologies d'exécution (les exécuteurs locaux en processus et le fournisseur servi par le registre) appellent la *même* fonction `Inject<Tool>` générée entre le décodage et l'exécution, si bien que la population ne diverge jamais selon l'endroit où l'outil s'exécute
 
 #### Déclaration DSL
 
@@ -325,27 +326,61 @@ Tool("get_user_data", "Get data for current user", func() {
         Required("data")
     })
     BindTo("UserService", "GetData")
-    Inject("session_id")  // Hidden from LLM, populated at runtime
+    Inject("session_id")  // adossé aux métadonnées : masqué pour le LLM, renseigné à l'exécution
 })
 ```
 
-#### Code généré
-
-Les exécuteurs générés basés sur la méthode copient les champs injectés à partir de `runtime.ToolCallMeta`
-sur la charge utile de la méthode typée avant d'appeler le client de service :
+Les champs adossés à un label fonctionnent de la même façon, mais ne sont pas des noms `runtime.ToolCallMeta` :
 
 ```go
-p := specs.InitGetUserDataMethodPayload(toolArgs)
-p.SessionID = meta.SessionID
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id")  // adossé à un label : défini via WithLabels("household_id", ...)
+})
 ```
 
-Les noms de champs injectés pris en charge sont fixes : `run_id`, `session_id`, `turn_id`,
-`tool_call_id` et `parent_tool_call_id`.
+L'appelant fournit les valeurs des labels en démarrant l'exécution avec `runtime.WithLabels(...)` :
+
+```go
+out, err := client.Run(ctx, sessionID, messages,
+    runtime.WithLabels(map[string]string{"household_id": "house-42"}),
+)
+```
+
+Les champs adossés à un label d'un ensemble d'outils contribuent aussi à une liste `RequiredLabels` générée, agrégée par agent. `Runtime.Start`/`StartOneShot` valident les labels fournis par l'appelant par rapport à cette liste **avant** de planifier un quelconque workflow ou activité, échouant immédiatement en nommant dans une seule erreur toutes les clés manquantes. Cette vérification est un no-op pour un processus qui ne dispose que d'un client `Runtime.ClientFor(route)` de passerelle/orchestration (sans enregistrement local de l'agent) ; dans cette topologie, un label manquant n'est détecté que plus tard, à chaque appel d'outil.
+
+#### Code généré
+
+Les exécuteurs générés basés sur la méthode appellent une fonction `Inject<Tool>` générée par outil injectant (dans le `inject.go` de l'ensemble d'outils, à côté de ses codecs), qui copie les champs adossés aux métadonnées depuis `runtime.ToolCallMeta` et les champs adossés à un label depuis les labels de l'exécution sur la charge utile typée :
+
+```go
+p, err := specs.InjectGetUserData(toolArgs, meta, labels)
+```
+
+Les noms de champs injectés pris en charge ne sont **pas** une liste fixe : tout nom correspondant à un champ de `runtime.ToolCallMeta` est adossé aux métadonnées, et tout autre nom est adossé à un label.
+
+#### Décodage des charges utiles dans les exécuteurs personnalisés
+
+Les `ToolCallExecutor` écrits à la main (pour les outils sans `BindTo`, enregistrés directement auprès du runtime) n'ont aucun point de répartition généré pour appeler `Inject<Tool>` à leur place. Décodez la charge utile de ces outils avec la fonction `Decode<Tool>` générée par l'ensemble d'outils plutôt qu'avec le codec de charge utile brut :
+
+```go
+p, err := specs.DecodeLookupHousehold(call.Payload, meta, call.Labels)
+if err != nil {
+    // gérer l'échec de décodage ou d'injection (label manquant/invalide, etc.)
+}
+```
+
+`Decode<Tool>` compose `<Tool>PayloadCodec.FromJSON` avec `Inject<Tool>` en un seul appel, de sorte que l'injection ne peut jamais être silencieusement omise. Décoder avec le seul codec laisserait les champs injectés à leur valeur zéro Go sans aucune erreur, puisque leur tag de wire est `json:"-"` (masqué au modèle) et qu'il n'y a aucun signal de « clé manquante ».
 
 #### Population d'exécution via des intercepteurs générés
 
-Les exécuteurs de service générés exposent également les hooks d’intercepteur typés. Utilisez-les pour
-dériver les champs de charge utile de la méthode à partir du contexte de la demande ou d'un autre état d'exécution :
+Les exécuteurs de service générés exposent également les hooks d'intercepteur typés, indépendants de `Inject()`. Utilisez-les pour dériver les champs de charge utile de la méthode à partir du contexte de la demande ou d'un autre état d'exécution, en plus des (ou à la place des) champs injectés déclarés dans le design :
 
 ```go
 type SessionInterceptor struct{}
@@ -369,13 +404,15 @@ exec := usertools.NewChatUserToolsExec(
 )
 ```
 
-#### Quand utiliser l’injection
+Les intercepteurs enregistrés s'exécutent après l'appel à `Inject<Tool>` généré, sur la charge utile typée déjà décodée.
+
+#### Quand utiliser l'injection
 
 Utilisez `Inject` pour les champs qui :
 - Sont requis par le service mais ne doivent pas être choisis par le LLM
-- Proviennent du contexte d'exécution (session, utilisateur, locataire, ID de demande)
-- Contenir des valeurs sensibles (jetons d'authentification, clés API)
-- Y a-t-il des problèmes d'infrastructure (ID de traçage, ID de corrélation)
+- Proviennent du contexte d'exécution (session, ID d'exécution/tour/appel) ou de labels d'exécution fournis par l'appelant (tenant, foyer, utilisateur)
+- Contiennent des valeurs sensibles (jetons d'authentification, clés API)
+- Concernent des problématiques d'infrastructure (ID de traçage, ID de corrélation)
 
 ---
 

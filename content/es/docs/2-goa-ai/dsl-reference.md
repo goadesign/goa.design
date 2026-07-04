@@ -1161,13 +1161,15 @@ var _ = Service("orchestrator", func() {
 
 ### Inject
 
-`Inject(fields...)` marca determinados campos del payload como "inyectados" (infraestructura del lado del servidor). Los campos inyectados son:
+`Inject(fields...)` marca determinados campos del payload como rellenados por el servidor. Los campos inyectados son:
 
-1. Ocultos al LLM (excluidos del esquema JSON enviado al modelo)
-2. Validados como campos `String` obligatorios en el payload del método vinculado
-3. Poblados desde `runtime.ToolCallMeta` por los ejecutores generados, con hooks opcionales `ToolInterceptor.Inject`
+1. Ocultos al LLM (excluidos del esquema JSON y de la lista de campos obligatorios visible para el modelo)
+2. Campos `String` obligatorios en la carga efectiva de la herramienta (el `Args()` explícito si se indica, o si no la carga del método vinculado)
+3. Poblados por código generado, a partir de una de dos fuentes determinadas en tiempo de generación: `runtime.ToolCallMeta` o etiquetas de la ejecución
 
 **Contexto**: Dentro de `Tool`
+
+Un nombre cuyo Goify coincide con uno de los cinco campos fijos de `runtime.ToolCallMeta` (`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`, `tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) está **respaldado por metadatos** y se compila como una lectura directa de esos metadatos. Cualquier otro nombre está **respaldado por una etiqueta**: se compila como una búsqueda en las etiquetas de la ejecución (la clave es el nombre del diseño tal cual), se aplica la validación declarada del propio campo (`Pattern`, `Length`, enum, ...) al valor de la etiqueta, y el llamador debe proporcionarla mediante `runtime.WithLabels(...)` al iniciar la ejecución. Un campo respaldado por etiqueta no puede declararse en una herramienta `BindTo`, porque el protocolo del registro que usan las herramientas enlazadas y servidas por el registro no transporta etiquetas de ejecución.
 
 ```go
 Tool("get_data", "Get data for current session", func() {
@@ -1180,24 +1182,26 @@ Tool("get_data", "Get data for current session", func() {
         Attribute("data", ArrayOf(String))
     })
     BindTo("data_service", "get")
-    Inject("session_id") // hidden from LLM, populated by interceptor
+    Inject("session_id") // respaldado por metadatos: oculto al LLM, establecido por el runtime
+})
+
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id") // respaldado por etiqueta: se establece con WithLabels("household_id", ...)
 })
 ```
 
-Los nombres de campo inyectados soportados son fijos: `run_id`, `session_id`, `turn_id`,
-`tool_call_id` y `parent_tool_call_id`.
+La generación de código emite una función `Inject<Tool>` por cada herramienta que inyecta, en el `inject.go` generado del conjunto de herramientas, que ambas topologías de ejecución (los ejecutores locales en proceso y el proveedor servido por el registro) llaman de forma idéntica entre la decodificación y la ejecución. Un conjunto de herramientas también lleva una lista `RequiredLabels` generada; `Runtime.Start`/`StartOneShot` la validan frente a las etiquetas proporcionadas mediante `WithLabels(...)` antes de programar cualquier workflow o actividad, fallando rápido y nombrando en un solo error todas las claves que falten.
 
-En tiempo de ejecución, los ejecutores de servicio generados copian los valores coincidentes desde
-`runtime.ToolCallMeta` antes de que se ejecuten los interceptores tipados opcionales:
+Los `ToolCallExecutor` escritos a mano (para herramientas sin `BindTo`, registradas directamente en el runtime) no tienen ningún punto de llamada generado. Deberían decodificar la carga de estas herramientas con la función generada `Decode<Tool>(payload, meta, labels) (*<Tool>Payload, error)` en lugar del `FromJSON` del códec de carga en bruto: `Decode<Tool>` compone el códec con `Inject<Tool>` en una sola llamada, de modo que la inyección nunca puede omitirse silenciosamente. Decodificar solo con el códec dejaría los campos inyectados en su valor cero de Go sin ningún error, ya que su etiqueta de wire es `json:"-"`.
 
-```go
-func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
-    if p, ok := payload.(*dataservice.GetPayload); ok {
-        p.SessionID = meta.SessionID
-    }
-    return nil
-}
-```
+`WithInterceptors` (ver [Toolsets](toolsets.md#campos-inyectados)) es un mecanismo aparte, que sigue siendo compatible, para hooks definidos por el usuario que se ejecutan después de `Inject<Tool>` sobre la carga tipada del ejecutor de servicio generado; es independiente de qué campos `Inject()` declare un diseño.
 
 ### TerminalRun
 

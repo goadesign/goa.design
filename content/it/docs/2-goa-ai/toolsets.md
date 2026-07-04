@@ -306,50 +306,88 @@ The bounded contract helps:
 - **UIs** display truncation indicators and pagination controls
 - **Policies** enforce size limits and detect runaway queries
 
-### Injected Fields
+### Campi iniettati
 
-The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but required by the service method. This is useful for session IDs, user context, authentication tokens, and other runtime-provided values.
+La funzione DSL `Inject` marca campi specifici del payload come "iniettati": valori di infrastruttura lato server che sono nascosti al LLM e che il codice generato popola prima dell'esecuzione dello strumento. Utile per ID di sessione, ambito per tenant/famiglia (household) e altri valori forniti a runtime o dal chiamante.
 
-#### How Inject Works
+#### Come funziona Inject
 
-When you mark a field with `Inject`:
+Quando marchi un campo con `Inject`, la generazione del codice lo risolve verso una di due fonti determinate in fase di generazione:
 
-1. **Hidden from LLM**: The field is excluded from the JSON schema sent to the model provider
-2. **Validated at design time**: Il campo deve esistere come `String` obbligatoria nel payload del metodo associato
-3. **Executor population**: Gli esecutori generati copiano i valori da `runtime.ToolCallMeta` prima di eseguire hook opzionali
+1. **Nascosto al LLM**: il campo è escluso dallo schema JSON e dall'elenco dei campi obbligatori visibile al modello
+2. **Validato in fase di design**: il campo deve essere una `String` obbligatoria sul payload effettivo dello strumento (l'`Args()` esplicito se fornito, altrimenti il payload del metodo associato)
+3. **Basato sui metadati o su un'etichetta**: un nome il cui Goify corrisponde a uno dei cinque campi fissi di `runtime.ToolCallMeta` (`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`, `tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) è **basato sui metadati** e si compila come una lettura diretta di tali metadati. Ogni altro nome è **basato su un'etichetta**: si compila come una ricerca nelle etichette dell'esecuzione (la chiave dell'etichetta è il nome del design testuale), applicando al valore dell'etichetta la validazione dichiarata dal campo stesso (`Pattern`, `Length`, enum, ...). Un campo basato su etichetta non può essere dichiarato su uno strumento `BindTo`, perché il protocollo del registro usato dagli strumenti associati e serviti dal registro non trasporta etichette dell'esecuzione
+4. **Popolamento da parte dell'executor**: entrambe le topologie di esecuzione (gli executor locali in-process e il provider servito dal registro) chiamano la *stessa* funzione generata `Inject<Tool>` tra la decodifica e l'esecuzione, così il popolamento non diverge mai in base a dove viene eseguito lo strumento
 
-#### DSL Declaration
+#### Dichiarazione DSL
 
 ```go
-Tool("get_user_data", "Ottieni dati per l'utente corrente", func() {
+Tool("get_user_data", "Get data for current user", func() {
     Args(func() {
-        Attribute("session_id", String, "ID della sessione corrente")
-        Attributo("query", Stringa, "Domanda di dati")
+        Attribute("session_id", String, "Current session ID")
+        Attribute("query", String, "Data query")
         Required("session_id", "query")
     })
     Return(func() {
-        Attributo("dati", ArrayOf(String), "Risultati della query")
-        Richiesto("dati")
+        Attribute("data", ArrayOf(String), "Query results")
+        Required("data")
     })
     BindTo("UserService", "GetData")
-    Inject("session_id") // Nascosto da LLM, popolato a runtime
+    Inject("session_id")  // basato sui metadati: nascosto al LLM, popolato a runtime
 })
 ```
 
-#### Generated Code
-
-Gli esecutori generati per gli strumenti associati a metodi copiano i campi iniettati da `runtime.ToolCallMeta` nel payload tipizzato del metodo prima di invocare il client di servizio:
+I campi basati su etichetta funzionano allo stesso modo, ma non sono nomi di `runtime.ToolCallMeta`:
 
 ```go
-p := specs.InitGetUserDataMethodPayload(toolArgs)
-p.SessionID = meta.SessionID
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id")  // basato su etichetta: impostato tramite WithLabels("household_id", ...)
+})
 ```
 
-I nomi dei campi iniettati supportati sono fissi: `run_id`, `session_id`, `turn_id`, `tool_call_id` e `parent_tool_call_id`.
+Il chiamante fornisce i valori delle etichette avviando l'esecuzione con `runtime.WithLabels(...)`:
 
-#### Runtime Population via Generated Interceptors
+```go
+out, err := client.Run(ctx, sessionID, messages,
+    runtime.WithLabels(map[string]string{"household_id": "house-42"}),
+)
+```
 
-Gli esecutori di servizio generati espongono anche hook tipizzati. Usali per derivare campi del payload del metodo dal contesto della richiesta o da altro stato di runtime:
+I campi basati su etichetta di un toolset contribuiscono anche a un elenco `RequiredLabels` generato, aggregato per agente. `Runtime.Start`/`StartOneShot` validano le etichette fornite dal chiamante rispetto a questo elenco **prima** di pianificare qualsiasi workflow o attività, fallendo immediatamente e indicando in un unico errore tutte le chiavi mancanti. Questo controllo è un no-op per un processo che dispone solo di un client `Runtime.ClientFor(route)` di gateway/orchestrazione (senza registrazione locale dell'agente); in quella topologia, un'etichetta mancante viene rilevata solo più tardi, a ogni chiamata di strumento.
+
+#### Codice generato
+
+Gli esecutori generati per gli strumenti associati a metodi chiamano una funzione `Inject<Tool>` generata per ogni strumento che inietta (nel file `inject.go` del toolset, accanto ai suoi codec), che copia i campi basati sui metadati da `runtime.ToolCallMeta` e i campi basati su etichetta dalle etichette dell'esecuzione sul payload tipizzato:
+
+```go
+p, err := specs.InjectGetUserData(toolArgs, meta, labels)
+```
+
+I nomi dei campi iniettati supportati **non** sono un elenco fisso: qualsiasi nome che corrisponda a un campo di `runtime.ToolCallMeta` è basato sui metadati, e ogni altro nome è basato su un'etichetta.
+
+#### Decodifica dei payload negli executor personalizzati
+
+I `ToolCallExecutor` scritti a mano (per strumenti senza `BindTo`, registrati direttamente presso il runtime) non hanno alcun punto di dispatch generato che chiami `Inject<Tool>` al posto loro. Decodifica il payload di questi strumenti con la funzione `Decode<Tool>` generata dal toolset, anziché con il codec di payload grezzo:
+
+```go
+p, err := specs.DecodeLookupHousehold(call.Payload, meta, call.Labels)
+if err != nil {
+    // gestisci il fallimento di decodifica o iniezione (etichetta mancante/non valida, ecc.)
+}
+```
+
+`Decode<Tool>` compone `<Tool>PayloadCodec.FromJSON` con `Inject<Tool>` in un'unica chiamata, così l'iniezione non può mai essere saltata silenziosamente. Decodificare con il solo codec lascerebbe i campi iniettati al loro valore zero di Go senza alcun errore, poiché il loro tag di wire è `json:"-"` (nascosto al modello) e non c'è alcun segnale di "chiave mancante".
+
+#### Popolamento a runtime tramite interceptor generati
+
+Gli esecutori di servizio generati espongono anche hook di interceptor tipizzati, indipendenti da `Inject()`. Usali per derivare campi del payload del metodo dal contesto della richiesta o da altro stato di runtime, in aggiunta a (o al posto di) campi iniettati dichiarati nel design:
 
 ```go
 type SessionInterceptor struct{}
@@ -373,13 +411,15 @@ exec := usertools.NewChatUserToolsExec(
 )
 ```
 
-#### When to Use Inject
+Gli interceptor registrati vengono eseguiti dopo la chiamata a `Inject<Tool>` generata, sul payload tipizzato già decodificato.
 
-Use `Inject` for fields that:
-- Are required by the service but shouldn't be chosen by the LLM
-- Come from runtime context (session, user, tenant, request ID)
-- Contain sensitive values (auth tokens, API keys)
-- Are infrastructure concerns (tracing IDs, correlation IDs)
+#### Quando usare Inject
+
+Usa `Inject` per campi che:
+- Sono richiesti dal servizio ma non dovrebbero essere scelti dal LLM
+- Provengono dal contesto di runtime (sessione, ID di esecuzione/turno/chiamata) o da etichette dell'esecuzione fornite dal chiamante (tenant, famiglia, utente)
+- Contengono valori sensibili (token di autenticazione, chiavi API)
+- Sono aspetti infrastrutturali (ID di tracciamento, ID di correlazione)
 
 ---
 

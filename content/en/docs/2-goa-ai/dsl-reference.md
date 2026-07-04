@@ -1167,13 +1167,24 @@ var _ = Service("orchestrator", func() {
 
 ### Inject
 
-`Inject(fields...)` marks specific payload fields as "injected" (server-side infrastructure). Injected fields are:
+`Inject(fields...)` marks specific payload fields as server-populated. Injected fields are:
 
-1. Hidden from the LLM (excluded from the JSON schema sent to the model)
-2. Validated as required `String` fields on the bound method payload
-3. Populated from `runtime.ToolCallMeta` by generated executors, with optional `ToolInterceptor.Inject` hooks
+1. Hidden from the LLM (excluded from the JSON schema and the model-facing required list)
+2. Required `String` fields on the tool's effective payload (the explicit `Args()` when given, otherwise the bound method's payload)
+3. Populated by generated code, from one of two generation-time-resolved sources: `runtime.ToolCallMeta` or run labels
 
 **Context**: Inside `Tool`
+
+A name that Goify's to one of the five fixed `runtime.ToolCallMeta` fields
+(`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`,
+`tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) is
+**meta-backed** and compiles to a direct meta read. Every other name is
+**label-backed**: it compiles to a run-label lookup (the label key is the
+design name verbatim), the field's own declared validation (`Pattern`,
+`Length`, enum, ...) is applied to the label value, and callers must supply
+it via `runtime.WithLabels(...)` when starting the run. A label-backed field
+cannot be declared on a `BindTo` tool, because the registry wire protocol
+used by registry-served bound tools carries no run labels.
 
 ```go
 Tool("get_data", "Get data for current session", func() {
@@ -1186,24 +1197,42 @@ Tool("get_data", "Get data for current session", func() {
         Attribute("data", ArrayOf(String))
     })
     BindTo("data_service", "get")
-    Inject("session_id") // hidden from LLM, populated by interceptor
+    Inject("session_id") // meta-backed: hidden from LLM, set by the runtime
+})
+
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id") // label-backed: set via WithLabels("household_id", ...)
 })
 ```
 
-Supported injected field names are fixed: `run_id`, `session_id`, `turn_id`,
-`tool_call_id`, and `parent_tool_call_id`.
+Codegen emits one `Inject<Tool>` function per injecting tool, in the
+toolset's generated `inject.go`, which both execution topologies (local
+in-process executors and the registry-served provider) call identically
+between decode and execute. A toolset also carries a generated
+`RequiredLabels` list; `Runtime.Start`/`StartOneShot` validate it against
+`WithLabels(...)`-supplied labels before scheduling any workflow or
+activity, failing fast with every missing key named in one error.
 
-At runtime, generated service executors copy matching values from
-`runtime.ToolCallMeta` before optional typed interceptors run:
+Hand-written `ToolCallExecutor`s (for tools with no `BindTo`, registered
+directly with the runtime) have no generated call site. They should decode
+these tools' payloads with the generated `Decode<Tool>(payload, meta,
+labels) (*<Tool>Payload, error)` function instead of the raw payload
+codec's `FromJSON`: `Decode<Tool>` composes the codec with `Inject<Tool>` in
+one call, so injection can never be silently skipped. Decoding with the
+codec alone would leave injected fields at their Go zero value with no
+error, since their wire tag is `json:"-"`.
 
-```go
-func (h *Handler) Inject(ctx context.Context, payload any, meta *runtime.ToolCallMeta) error {
-    if p, ok := payload.(*dataservice.GetPayload); ok {
-        p.SessionID = meta.SessionID
-    }
-    return nil
-}
-```
+`WithInterceptors` (see [Toolsets](toolsets.md#injected-fields)) is a
+separate, still-supported mechanism for user-supplied hooks that run after
+`Inject<Tool>` on the generated service executor's typed payload; it is
+independent of which `Inject()` fields a design declares.
 
 ### TerminalRun
 

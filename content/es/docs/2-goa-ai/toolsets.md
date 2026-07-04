@@ -302,15 +302,16 @@ El contrato acotado ayuda a que:
 
 ### Campos inyectados
 
-La función DSL `Inject` marca campos específicos de la carga como "inyectados": valores de infraestructura del lado del servidor que se ocultan al LLM pero son necesarios para el método de servicio. Esto es útil para IDs de sesión, contexto de usuario, tokens de autenticación y otros valores proporcionados en tiempo de ejecución.
+La función DSL `Inject` marca campos específicos de la carga como "inyectados": valores de infraestructura del lado del servidor que se ocultan al LLM y que el código generado rellena antes de ejecutar la herramienta. Esto es útil para IDs de sesión, alcance por tenant/household y otros valores proporcionados en tiempo de ejecución o por el llamador.
 
 #### Cómo funciona Inject
 
-Cuando marcas un campo con `Inject`:
+Cuando marcas un campo con `Inject`, la generación de código lo resuelve a una de dos fuentes determinadas en tiempo de generación:
 
-1. **Oculto al LLM**: el campo se excluye del esquema JSON enviado al proveedor del modelo
-2. **Validado en tiempo de diseño**: la carga del método enlazado debe exponer el campo como un `String` obligatorio
-3. **Rellenado por el ejecutor**: los ejecutores de servicio generados copian los valores compatibles desde `runtime.ToolCallMeta` antes de que se ejecuten los hooks de interceptor opcionales
+1. **Oculto al LLM**: el campo se excluye del esquema JSON y de la lista de campos obligatorios visible para el modelo
+2. **Validado en tiempo de diseño**: el campo debe ser un `String` obligatorio en la carga efectiva de la herramienta (el `Args()` explícito si se indica, o si no la carga del método enlazado)
+3. **Respaldado por metadatos o por etiquetas**: un nombre cuyo Goify coincide con uno de los cinco campos fijos de `runtime.ToolCallMeta` (`run_id`/`runId`, `session_id`/`sessionId`, `turn_id`/`turnId`, `tool_call_id`/`toolCallId`, `parent_tool_call_id`/`parentToolCallId`) está **respaldado por metadatos** y se compila como una lectura directa de esos metadatos. Cualquier otro nombre está **respaldado por una etiqueta**: se compila como una búsqueda en las etiquetas de la ejecución (la clave de la etiqueta es el nombre del diseño tal cual), aplicando la validación declarada del propio campo (`Pattern`, `Length`, enum, ...) al valor de la etiqueta. Un campo respaldado por etiqueta no puede declararse en una herramienta `BindTo`, porque el protocolo del registro que usan las herramientas enlazadas y servidas por el registro no transporta etiquetas de ejecución
+4. **Rellenado por el ejecutor**: ambas topologías de ejecución (los ejecutores locales en proceso y el proveedor servido por el registro) llaman a la *misma* función `Inject<Tool>` generada entre la decodificación y la ejecución, de modo que el rellenado nunca diverge según dónde se ejecute la herramienta
 
 #### Declaración DSL
 
@@ -326,27 +327,61 @@ Tool("get_user_data", "Get data for current user", func() {
         Required("data")
     })
     BindTo("UserService", "GetData")
-    Inject("session_id")  // Oculto al LLM, rellenado en tiempo de ejecución
+    Inject("session_id")  // respaldado por metadatos: oculto al LLM, rellenado en tiempo de ejecución
 })
 ```
 
-#### Código generado
-
-Los ejecutores generados respaldados por métodos copian los campos inyectados desde `runtime.ToolCallMeta`
-sobre la carga tipada del método antes de invocar al cliente del servicio:
+Los campos respaldados por etiqueta funcionan igual, pero no son nombres de `runtime.ToolCallMeta`:
 
 ```go
-p := specs.InitGetUserDataMethodPayload(toolArgs)
-p.SessionID = meta.SessionID
+Tool("lookup_household", "Lookup scoped to a household", func() {
+    Args(func() {
+        Attribute("household_id", String, "Household to scope the search to.", func() {
+            Pattern("^[a-z0-9-]+$")
+        })
+        Attribute("query", String, "Search query.")
+        Required("household_id", "query")
+    })
+    Inject("household_id")  // respaldado por etiqueta: se establece con WithLabels("household_id", ...)
+})
 ```
 
-Los nombres admitidos para los campos inyectados son fijos: `run_id`, `session_id`, `turn_id`,
-`tool_call_id` y `parent_tool_call_id`.
+El llamador proporciona los valores de las etiquetas al iniciar la ejecución con `runtime.WithLabels(...)`:
+
+```go
+out, err := client.Run(ctx, sessionID, messages,
+    runtime.WithLabels(map[string]string{"household_id": "house-42"}),
+)
+```
+
+Los campos respaldados por etiqueta de un conjunto de herramientas también contribuyen a una lista `RequiredLabels` generada, agregada por agente. `Runtime.Start`/`StartOneShot` validan las etiquetas proporcionadas por el llamador frente a esta lista **antes** de programar cualquier workflow o actividad, fallando rápido y nombrando en un solo error todas las claves que falten. Esta comprobación es un no-op para un proceso que solo dispone de un cliente `Runtime.ClientFor(route)` de pasarela/orquestación (sin registro local del agente); en esa topología, una etiqueta faltante se detecta más tarde, en cada llamada a herramienta.
+
+#### Código generado
+
+Los ejecutores generados respaldados por métodos llaman a una función `Inject<Tool>` generada por cada herramienta que inyecta (en el `inject.go` del conjunto de herramientas, junto a sus códecs), que copia los campos respaldados por metadatos desde `runtime.ToolCallMeta` y los respaldados por etiqueta desde las etiquetas de la ejecución sobre la carga tipada:
+
+```go
+p, err := specs.InjectGetUserData(toolArgs, meta, labels)
+```
+
+Los nombres de campo inyectados admitidos **no** son una lista fija: cualquier nombre que coincida con un campo de `runtime.ToolCallMeta` está respaldado por metadatos, y cualquier otro nombre está respaldado por una etiqueta.
+
+#### Decodificación de cargas en ejecutores personalizados
+
+Los `ToolCallExecutor` escritos a mano (para herramientas sin `BindTo`, registradas directamente en el runtime) no tienen ningún punto de despacho generado que llame a `Inject<Tool>` por ellos. Decodifica la carga de estas herramientas con la función `Decode<Tool>` generada por el conjunto de herramientas en lugar del códec de carga en bruto:
+
+```go
+p, err := specs.DecodeLookupHousehold(call.Payload, meta, call.Labels)
+if err != nil {
+    // gestiona el fallo de decodificación o de inyección (etiqueta faltante/no válida, etc.)
+}
+```
+
+`Decode<Tool>` compone `<Tool>PayloadCodec.FromJSON` con `Inject<Tool>` en una sola llamada, de modo que la inyección nunca puede omitirse silenciosamente. Decodificar solo con el códec dejaría los campos inyectados en su valor cero de Go sin ningún error, ya que su etiqueta de wire es `json:"-"` (oculta al modelo) y no hay ninguna señal de "clave faltante".
 
 #### Rellenado en runtime mediante interceptores generados
 
-Los ejecutores de servicio generados también exponen hooks de interceptor tipados. Úsalos para
-derivar campos de la carga del método a partir del contexto de la solicitud u otro estado de runtime:
+Los ejecutores de servicio generados también exponen hooks de interceptor tipados, independientes de `Inject()`. Úsalos para derivar campos de la carga del método a partir del contexto de la solicitud u otro estado de runtime, además de (o en lugar de) los campos inyectados declarados en el diseño:
 
 ```go
 type SessionInterceptor struct{}
@@ -370,11 +405,13 @@ exec := usertools.NewChatUserToolsExec(
 )
 ```
 
+Los interceptores registrados se ejecutan después de la llamada a `Inject<Tool>` generada, sobre la carga tipada ya decodificada.
+
 #### Cuándo usar Inject
 
 Usa `Inject` para campos que:
 - Son necesarios para el servicio pero no deberían ser elegidos por el LLM
-- Provienen del contexto de runtime (sesión, usuario, tenant, ID de solicitud)
+- Provienen del contexto de runtime (sesión, IDs de ejecución/turno/llamada) o de etiquetas de ejecución proporcionadas por el llamador (tenant, household, usuario)
 - Contienen valores sensibles (tokens de autenticación, claves de API)
 - Son aspectos de infraestructura (IDs de trazado, IDs de correlación)
 
