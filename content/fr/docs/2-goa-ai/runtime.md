@@ -313,6 +313,20 @@ Pour `status="failed"`, la charge utile du flux comprend :
 - `error` : message **sécurisé pour l'utilisateur** adapté à l'affichage direct
 - `debug_error` : chaîne d'erreur brute pour les journaux/diagnostics (pas pour UI)
 
+**Identité terminale**
+
+`RunCompleted` porte `Labels` : les étiquettes de portée exécution fournies au
+démarrage de l'exécution (`RunInput.Labels`, définies via
+`runtime.WithLabels(...)`), nil quand l'exécution n'en avait aucune. Les
+abonnés à la fin d'exécution peuvent attribuer le résultat terminal — success,
+failed ou canceled — sans maintenir leur propre table run-ID vers identité. Les
+mêmes étiquettes sont exposées sur `run.Snapshot.Labels` pour les lecteurs par
+sondage, rejouées depuis l'enregistrement durable `RunStarted`, de sorte que
+l'identité de l'exécution survit aux redémarrages du processus sur les deux
+moteurs. Les étiquettes fusionnées par des décisions de politique en cours
+d'exécution ne sont pas incluses ; elles restent observables via les
+événements `PolicyDecision`.
+
 ---
 
 ## Politiques, plafonds et étiquettes
@@ -382,6 +396,7 @@ Les étiquettes arrivent dans :
 - `run.Context.Labels` – disponible pour les planificateurs pendant une exécution
 - entrée d'activité d'outil (`api.ToolInput.Labels`) - clonée dans des exécutions d'outils distribuées afin que les activités d'outils observent les mêmes métadonnées d'exécution, à moins que le planificateur ne remplace les étiquettes pour un appel spécifique
 - exécuter les événements du journal (`runlog.Store`) – conservés avec les événements du cycle de vie pour l'audit/la recherche/les tableaux de bord (là où ils sont indexés)
+- fin d'exécution et instantanés – les étiquettes de départ ressortent à la fin de l'exécution sur `hooks.RunCompletedEvent.Labels` et `run.Snapshot.Labels`, si bien que les hooks de fin et les lecteurs de `GetRunSnapshot` retrouvent l'identité de l'exécution sans suivi hors bande
 
 ### Filtrage des outils par exécution
 

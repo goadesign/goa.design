@@ -313,6 +313,17 @@ For `status="failed"`, the stream payload includes:
 - `error`: **user-safe** message suitable for direct display
 - `debug_error`: raw error string for logs/diagnostics (not for UI)
 
+**Terminal identity**
+
+`RunCompleted` carries `Labels`: the run-scoped labels provided when the run
+started (`RunInput.Labels`, set via `runtime.WithLabels(...)`), nil when the run
+had none. Completion subscribers can attribute the terminal outcome — success,
+failed, or canceled — without maintaining their own run-ID-to-identity map. The
+same labels are exposed on `run.Snapshot.Labels` for polling readers, replayed
+from the durable `RunStarted` record, so run identity survives process restarts
+on both engines. Labels merged by policy decisions mid-run are not included;
+they remain observable via `PolicyDecision` events.
+
 ---
 
 ## Policies, Caps, and Labels
@@ -382,6 +393,7 @@ Labels flow into:
 - `run.Context.Labels` – available to planners during a run
 - tool activity input (`api.ToolInput.Labels`) – cloned into dispatched tool executions so tool activities observe the same run-scoped metadata unless the planner overrides labels for one specific call
 - run log events (`runlog.Store`) – persisted alongside lifecycle events for audit/search/dashboards (where indexed)
+- terminal completion and snapshots – the start labels come back out at the end of the run on `hooks.RunCompletedEvent.Labels` and `run.Snapshot.Labels`, so completion hooks and `GetRunSnapshot` readers recover run identity without out-of-band tracking
 
 ### Per-Run Tool Filtering
 

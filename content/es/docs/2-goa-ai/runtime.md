@@ -305,6 +305,19 @@ Para `status="failed"`, el payload del stream incluye:
 - `error`: mensaje **seguro para el usuario** apto para mostrar directamente
 - `debug_error`: cadena de error cruda para logs/diagnóstico (no para UI)
 
+**Identidad terminal**
+
+`RunCompleted` incluye `Labels`: las etiquetas con alcance de ejecución
+proporcionadas al iniciar la ejecución (`RunInput.Labels`, establecidas con
+`runtime.WithLabels(...)`), nil cuando la ejecución no tenía ninguna. Los
+suscriptores de finalización pueden atribuir el resultado terminal — success,
+failed o canceled — sin mantener su propio mapa de run-ID a identidad. Las
+mismas etiquetas se exponen en `run.Snapshot.Labels` para lectores por sondeo,
+reconstruidas desde el registro durable `RunStarted`, de modo que la identidad
+de la ejecución sobrevive a reinicios del proceso en ambos motores. Las
+etiquetas fusionadas por decisiones de política a mitad de la ejecución no se
+incluyen; siguen siendo observables mediante eventos `PolicyDecision`.
+
 ---
 
 ## Políticas, límites y etiquetas
@@ -374,6 +387,7 @@ Las etiquetas fluyen hacia:
 - `run.Context.Labels` – disponibles para los planificadores durante una ejecución
 - entrada de actividad de herramienta (`api.ToolInput.Labels`) – clonadas en las ejecuciones de herramientas despachadas para que las actividades observen los mismos metadatos con alcance de ejecución, salvo que el planificador sobrescriba las etiquetas para una llamada concreta
 - eventos del run log (`runlog.Store`) – persistidos junto con los eventos de ciclo de vida para auditoría/búsqueda/paneles (cuando se indexan)
+- finalización terminal e instantáneas – las etiquetas de inicio vuelven a salir al final de la ejecución en `hooks.RunCompletedEvent.Labels` y `run.Snapshot.Labels`, de modo que los hooks de finalización y los lectores de `GetRunSnapshot` recuperan la identidad de la ejecución sin seguimiento fuera de banda
 
 ### Filtrado de herramientas por ejecución
 

@@ -226,6 +226,19 @@ Per `status="failed"`, il payload stream include:
 - `error`: messaggio **user-safe** (render diretto)
 - `debug_error`: errore raw per log/diagnostica (non per UI)
 
+**Identità terminale**
+
+`RunCompleted` include `Labels`: le etichette con ambito di run fornite
+all'avvio della run (`RunInput.Labels`, impostate con
+`runtime.WithLabels(...)`), nil quando la run non ne aveva. I sottoscrittori di
+completamento possono attribuire l'esito terminale — success, failed o
+canceled — senza mantenere una propria mappa da run-ID a identità. Le stesse
+etichette sono esposte su `run.Snapshot.Labels` per i lettori in polling,
+ricostruite dal record durevole `RunStarted`, così l'identità della run
+sopravvive ai riavvii del processo su entrambi gli engine. Le etichette unite
+dalle decisioni di policy a metà run non sono incluse; restano osservabili
+tramite gli eventi `PolicyDecision`.
+
 ---
 
 ## Politiche, cappucci ed etichette
@@ -295,6 +308,7 @@ Le etichette confluiscono in:
 - `run.Context.Labels` - disponibili per i pianificatori durante una sessione
 - input dell'attività di tool (`api.ToolInput.Labels`) - clonato nelle esecuzioni di tool inviate, così che le attività osservino gli stessi metadati di run, salvo che il planner sovrascriva le labels per una chiamata specifica
 - eventi del log di esecuzione (`runlog.Store`) - persistiti con gli eventi di lifecycle per audit/ricerca/dashboard (quando indicizzati)
+- completamento terminale e snapshot - le etichette iniziali riemergono alla fine della run su `hooks.RunCompletedEvent.Labels` e `run.Snapshot.Labels`, così gli hook di completamento e i lettori di `GetRunSnapshot` recuperano l'identità della run senza tracciamento fuori banda
 
 ---
 
