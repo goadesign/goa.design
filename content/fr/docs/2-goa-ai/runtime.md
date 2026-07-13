@@ -959,6 +959,24 @@ reconstruction du transcript destiné au fournisseur. `planner.ToolRequest`
 ne porte aucun champ signature ; le code du planificateur n'a pas besoin de
 savoir que les signatures existent.
 
+### Métadonnées canoniques et rejeu des citations
+
+`model.Message.Meta` contient les données produites par le fournisseur
+nécessaires au rejeu exact d'une réponse. Les frontières qui persistent ou
+transportent ces métadonnées doivent utiliser `model.MarshalMetadata` et
+`model.UnmarshalMetadata`. Ces codecs exigent un objet JSON unique, conservent
+les nombres décodés sous forme de `json.Number`, rejettent les données
+supplémentaires et ramènent nil ou un objet vide à nil.
+
+Le rejeu des citations dépend du fournisseur et ne doit jamais les aplatir en
+texte ordinaire. L'adaptateur Bedrock peut rejouer les valeurs `CitationsPart`
+de l'assistant sous forme de blocs de citation natifs, en préservant l'identité
+de la source, les extraits et les emplacements du document par caractères,
+chunks ou pages. Les citations système Bedrock restent non prises en charge car
+son union de contenu système ne possède aucun membre citation. Anthropic et
+Vertex rejettent le rejeu lorsqu'une partie canonique ne contient pas les champs
+exigés par leur protocole.
+
 ### Utilisation de clients modèles dans les planificateurs
 
 Les planificateurs obtiennent des clients modèles via le `PlannerContext` du runtime. Il y a
@@ -994,21 +1012,24 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if len(sum.ToolCalls) > 0 {
         return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
     }
+    final := sum.FinalResponse()
+    if final == nil {
+        return nil, errors.New("model stream ended without a canonical response")
+    }
     return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: sum.Text}},
-            },
-        },
-        Streamed: true, // Assistant text was already streamed
+        FinalResponse: final,
+        Streamed: true, // Le texte de l'assistant a déjà été diffusé
     }, nil
 }
 ```
 
-Il s'agit du style d'intégration le plus sûr car le client limité au planificateur ne
-exposer un `model.Streamer` brut, afin qu'il ne puisse pas être combiné accidentellement avec
-`planner.ConsumeStream`.
+Il s'agit du style d'intégration le plus sûr car le client limité au
+planificateur n'expose pas de `model.Streamer` brut et ne peut donc pas être
+combiné accidentellement avec `planner.ConsumeStream`. Le retour de
+`sum.FinalResponse()` sélectionne aussi la réponse exacte du fournisseur
+capturée pour cette invocation ; reconstruire un message uniquement textuel
+supprimerait le raisonnement, les citations, les signatures, les métadonnées et
+les frontières des messages.
 
 #### Client brut + ConsumeStream
 

@@ -771,6 +771,24 @@ strumento quando ricostruisce il transcript per il provider.
 `planner.ToolRequest` non ha alcun campo firma; il codice del pianificatore
 non ha bisogno di sapere che le firme esistono.
 
+### Metadati canonici e replay delle citazioni
+
+`model.Message.Meta` contiene i dati prodotti dal provider necessari per
+riprodurre esattamente una risposta. I confini che persistono o trasportano i
+metadati devono usare `model.MarshalMetadata` e `model.UnmarshalMetadata`.
+Questi codec richiedono un singolo oggetto JSON, conservano i numeri decodificati
+come `json.Number`, rifiutano dati successivi e canonicalizzano nil o un oggetto
+vuoto a nil.
+
+Il replay delle citazioni è specifico del provider e non deve mai appiattire le
+citazioni in testo ordinario. L'adattatore Bedrock può riprodurre i valori
+`CitationsPart` dell'assistente come blocchi di citazione nativi, preservando
+l'identità della fonte, gli estratti e le posizioni nel documento per caratteri,
+chunk o pagine. Le citazioni di sistema Bedrock restano non supportate perché
+la relativa unione di contenuto non prevede citazioni. Anthropic e Vertex
+rifiutano il replay quando la parte canonica non contiene i campi richiesti dal
+protocollo del provider.
+
 ### Utilizzo dei client modello nei pianificatori
 
 I pianificatori ottengono i client di modello tramite il `PlannerContext` del
@@ -806,21 +824,23 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if len(sum.ToolCalls) > 0 {
         return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
     }
+    final := sum.FinalResponse()
+    if final == nil {
+        return nil, errors.New("model stream ended without a canonical response")
+    }
     return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: sum.Text}},
-            },
-        },
-        Streamed: true, // Assistant text was already streamed
+        FinalResponse: final,
+        Streamed: true, // Il testo dell'assistente è già stato trasmesso
     }, nil
 }
 ```
 
 Questo è lo stile di integrazione più sicuro perché il client con ambito
 planner non espone un `model.Streamer` grezzo e quindi non può essere combinato
-accidentalmente con `planner.ConsumeStream`.
+accidentalmente con `planner.ConsumeStream`. Restituire `sum.FinalResponse()`
+seleziona inoltre la risposta esatta del provider catturata per
+quell'invocazione; ricostruire un messaggio di solo testo eliminerebbe
+ragionamento, citazioni, firme, metadati e confini dei messaggi.
 
 #### Client grezzo + ConsumeStream
 

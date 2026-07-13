@@ -920,6 +920,24 @@ y la vuelve a adjuntar por ID de llamada a herramienta al reconstruir el
 transcript orientado al proveedor. `planner.ToolRequest` nunca lleva un campo
 de firma; el código del planner no necesita saber que las firmas existen.
 
+### Metadatos canónicos y replay de citas
+
+`model.Message.Meta` contiene datos producidos por el proveedor necesarios para
+reproducir una respuesta con exactitud. Las fronteras que persisten o
+transportan metadatos deben usar `model.MarshalMetadata` y
+`model.UnmarshalMetadata`. Estos codecs exigen un único objeto JSON, conservan
+los números decodificados como `json.Number`, rechazan datos posteriores y
+canonicalizan nil o un objeto vacío a nil.
+
+El replay de citas es específico de cada proveedor y nunca debe aplanarlas como
+texto ordinario. El adaptador de Bedrock puede reproducir valores
+`CitationsPart` del asistente como bloques nativos de citas, preservando la
+identidad de la fuente, los extractos y las ubicaciones del documento por
+caracteres, chunks o páginas. Las citas de sistema de Bedrock siguen sin estar
+soportadas porque su unión de contenido de sistema no incluye citas. Anthropic
+y Vertex rechazan el replay cuando la parte canónica carece de campos exigidos
+por el protocolo del proveedor.
+
 ### Uso de clientes de modelo en planificadores
 
 Los planificadores obtienen clientes de modelo a través del `PlannerContext` del runtime. Hay dos estilos de integración explícitos:
@@ -951,19 +969,23 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if len(sum.ToolCalls) > 0 {
         return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
     }
+    final := sum.FinalResponse()
+    if final == nil {
+        return nil, errors.New("model stream ended without a canonical response")
+    }
     return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: sum.Text}},
-            },
-        },
-        Streamed: true, // Assistant text was already streamed
+        FinalResponse: final,
+        Streamed: true, // El texto del asistente ya fue transmitido
     }, nil
 }
 ```
 
-Este es el estilo de integración más seguro porque el cliente con alcance de planificador no expone un `model.Streamer` crudo, por lo que no puede combinarse accidentalmente con `planner.ConsumeStream`.
+Este es el estilo de integración más seguro porque el cliente con alcance de
+planificador no expone un `model.Streamer` crudo, por lo que no puede combinarse
+accidentalmente con `planner.ConsumeStream`. Devolver `sum.FinalResponse()`
+también selecciona la respuesta exacta del proveedor capturada para esa
+invocación; reconstruir un mensaje de solo texto descartaría el razonamiento,
+las citas, las firmas, los metadatos y los límites de los mensajes.
 
 #### Cliente crudo + ConsumeStream
 

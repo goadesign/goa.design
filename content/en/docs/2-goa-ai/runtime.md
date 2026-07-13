@@ -965,6 +965,22 @@ ID when rebuilding the provider transcript. `planner.ToolRequest` never
 carries a signature field; planner code does not need to know signatures
 exist.
 
+### Canonical Message Metadata and Citation Replay
+
+`model.Message.Meta` contains provider-authored data needed to replay a
+response exactly. Boundaries that persist or transport metadata should use
+`model.MarshalMetadata` and `model.UnmarshalMetadata`. These codecs require one
+JSON object, preserve decoded numbers as `json.Number`, reject trailing data,
+and canonicalize nil or an empty object to nil.
+
+Citation replay is provider-specific and must never flatten citations into
+ordinary text. The Bedrock adapter can replay assistant `CitationsPart` values
+as native citation content blocks, preserving source identity, excerpts, and
+document character, chunk, or page locations. Bedrock system citations remain
+unsupported because its system-content union has no citation member. Anthropic
+and Vertex reject citation replay when the canonical part lacks fields their
+provider protocol requires.
+
 ### Using Model Clients in Planners
 
 Planners obtain model clients through the runtime's `PlannerContext`. There are
@@ -1000,13 +1016,12 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if len(sum.ToolCalls) > 0 {
         return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
     }
+    final := sum.FinalResponse()
+    if final == nil {
+        return nil, errors.New("model stream ended without a canonical response")
+    }
     return &planner.PlanResult{
-        FinalResponse: &planner.FinalResponse{
-            Message: &model.Message{
-                Role:  model.ConversationRoleAssistant,
-                Parts: []model.Part{model.TextPart{Text: sum.Text}},
-            },
-        },
+        FinalResponse: final,
         Streamed: true, // Assistant text was already streamed
     }, nil
 }
@@ -1014,7 +1029,9 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
 
 This is the safest integration style because the planner-scoped client does not
 expose a raw `model.Streamer`, so it cannot be combined accidentally with
-`planner.ConsumeStream`.
+`planner.ConsumeStream`. Returning `sum.FinalResponse()` also selects the exact
+provider response captured for that invocation; rebuilding a text-only message
+would discard thinking, citations, signatures, metadata, and message boundaries.
 
 #### Raw Client + ConsumeStream
 
