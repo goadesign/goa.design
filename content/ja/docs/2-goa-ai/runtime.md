@@ -249,7 +249,7 @@ if err := rt.Seal(ctx); err != nil {
 1. ランタイムはエージェントのワークフロー（インメモリまたは Temporal）を開始し、`RunID`、`SessionID`、`TurnID`、ラベル、ポリシー上限を含む新しい `run.Context` を記録します。
 2. 現在のメッセージと run コンテキストを渡して、プランナーの `PlanStart` を呼び出します。
 3. プランナーが返したツール呼び出しをスケジュールします（プランナーは「正規（canonical）JSON」のペイロードを渡し、エンコード/デコードはランタイムが生成済みコーデックで処理します）。
-4. プランナーから見えるまま残ったツール結果を添えて `PlanResume` を呼び出します。予算対象ツールは既定で可視ですが、bookkeeping ツールはリトライ可能な失敗を修復する必要がある場合にのみ再生されます。プランナーが最終応答、最終ツール結果を返すか、成功した `TerminalRun` ツールが run を完了するまでループします。上限や deadline によって強制 finalization が有効な場合、プランナーは prose ではなく terminal bookkeeping ツールで閉じることができます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
+4. プランナーから見えるまま残ったツール結果を添えて `PlanResume` を呼び出します。予算対象ツールは既定で可視ですが、bookkeeping ツールは `RetryHint.AllowsRetry()` が修復を許可する場合にのみ再生されます。プランナーが最終応答、最終ツール結果を返すか、成功した `TerminalRun` ツールが run を完了するまでループします。上限や deadline によって強制 finalization が有効な場合、プランナーは prose ではなく terminal bookkeeping ツールで閉じることができます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / 終端フェーズ）を遷移します。
 5. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 
 ---
@@ -355,10 +355,10 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **Caps**: `MaxToolCalls`（run あたりの*予算対象*ツール呼び出し総数）、`MaxConsecutiveFailedToolCalls`（連続失敗回数の上限）。DSL で `Bookkeeping()` としてマークされたツールはこの上限から免除され、`MaxToolCalls` を消費しません。成功した bookkeeping 結果は将来のプランナーターンから隠されたままです。
+- **Caps**: `MaxToolCalls` は run あたりの予算対象 tool call 総数です。DSL で `Bookkeeping()` として宣言されたツールは retrieval budget を消費せず、`MaxConsecutiveFailedToolCalls` も変更しません。モデルが生成した batch は原子的なままです。bookkeeping call のコストはゼロですが、mixed batch を収めるために個々の call を除去することはありません。成功した bookkeeping 結果は将来の compact な `ToolOutputs` に入りません。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
-- **原子的な run 完了**: DSL で `TerminalRun()` として宣言されたツールは、成功した呼び出しの直後に run を終了させ、プランナーによるファイナライズターンを必要としません。強制 finalization 中、ランタイムは `Bookkeeping()` + `TerminalRun()` ツール呼び出しだけを受け入れ、残りの hard deadline ウィンドウ内で実行し、すべての terminal side effect が成功した場合にのみ run を閉じます。
+- **Terminal tools**: DSL で `TerminalRun()` として宣言されたツールは自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受け入れられます。強制 finalization 中、ランタイムは terminal bookkeeping call だけを受け入れ、残りの hard deadline 内で実行し、すべての terminal effect が成功した場合にのみ run を閉じます。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
 
 ### ランタイムポリシーのオーバーライド
@@ -764,7 +764,41 @@ type Planner interface {
 }
 ```
 
-`PlanResult` にはツール呼び出し、最終応答、最終ツール結果、注釈、オプションの `RetryHint` が含まれます。ランタイムは上限を強制し、ツールアクティビティをスケジュールし、最終応答、最終ツール結果、または成功した terminal ツールが run を閉じるまでツール結果を `PlanResume` にフィードバックします。`PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal bookkeeping ツールを返すことができます。これらの呼び出しは後続のプランナーターンには再生されず、finalization を永続的に完了する必要があります。
+`PlanResult` には tool call、最終応答、最終 tool result、注釈、選択された
+post-tool transition が含まれます。`PlanResumeInput` は、プランナーが呼ばれた
+理由を示します。
+
+これらの契約は別々です。
+
+| 契約 | スコープ | 意味 |
+| --- | --- | --- |
+| `ToolSpec.Tags` | すべての run における 1 つの tool | 汎用的な policy と UI filtering に使えるフラットなラベル。 |
+| `ToolSpec.Meta` | すべての run における 1 つの tool | 名前付きコンシューマが意味を所有する、不活性な生成アノテーション。メタデータだけでは runtime 動作は変わらない。 |
+| `ToolSpec.Bookkeeping` | すべての run における 1 つの tool | 成功後に別の planner turn を必要としない durable な制御記録。retrieval と連続失敗の budget を消費しない。 |
+| `ToolSpec.TerminalRun` | すべての run における 1 つの tool | 成功そのものが run を終了し、自動的に bookkeeping を含む。 |
+| `RetryHint.AllowsRetry()` | 1 つの失敗 result | この run で別の tool attempt が許可される。timeout hint は terminal failure を表し false を返す。 |
+| `PlanResult.SynthesizeAfterTools` | 選択された 1 batch | recoverable failure がなければ、次の planner turn は回答しなければならない。 |
+| `PlanResumeInput.SynthesisOnly` | 1 planner activity | 最終回答を返す。tool call は無効。 |
+| `PlanResumeInput.Finalize` | runtime が強制する終了 | cap または deadline により通常作業が禁止されている。 |
+
+ランタイムは次の順序で次状態を選びます。
+
+| 完了したステップ | 次の状態 |
+| --- | --- |
+| cap または deadline が finalization を要求 | `Finalize` turn |
+| `TerminalRun` tool が成功 | 即時終了 |
+| 失敗 result のいずれかで `AllowsRetry() == true` | 通常の repair turn |
+| `SynthesizeAfterTools` が true | `SynthesisOnly` turn |
+| その他 | 通常の continuation turn |
+
+これにより planner intent が 2 つ目の retry policy になることを防ぎます。
+recoverable failure を先に修復し、成功した final batch または terminal failure を
+含む final batch は synthesis に進みます。ランタイムは `SynthesisOnly` turn
+から返された tool call を拒否します。
+
+`PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal
+bookkeeping tool を返せます。これらは後続プランナーターンには再生されず、
+finalization を永続的に完了する必要があります。
 
 プランナーは `input.Agent` 経由でランタイムサービスを提供する `PlannerContext` も受け取ります。
 

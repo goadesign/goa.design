@@ -300,14 +300,14 @@ RunPolicy(func() {
 
 3. **Vérifiez les boucles infinies** dans la logique du planificateur qui appelle à plusieurs reprises le même outil.
 
-4. **Exempter du budget les outils de comptabilité structurée** en les déclarant `Bookkeeping()` dans le DSL. Les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal appartiennent généralement à cette catégorie ; une fois exonérés, ils ne consomment jamais `RemainingToolCalls` et peuvent toujours s'exécuter. Associez `Bookkeeping()` à `TerminalRun()` pour obtenir un outil de « validation de cette exécution » dont la finalisation est garantie même une fois le budget de récupération épuisé.
+4. **Exempter les enregistrements de contrôle structurés des budgets de récupération et d'échecs** en les déclarant `Bookkeeping()` dans le DSL. Les marqueurs de statut et déclarations de transition appartiennent à cette catégorie, contrairement aux résultats de recherche dont le succès doit planifier un raisonnement ultérieur. Un lot mixte produit par le modèle reste atomique et est rejeté entièrement si ses appels budgétisés ne tiennent pas. Utilisez `TerminalRun()` seul pour une validation terminale : les outils terminaux deviennent automatiquement comptables et peuvent être admis après épuisement du budget.
 
 **Symptôme:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Cause :** Le planificateur n'a émis que des outils de comptabilité. Les résultats de comptabilité réussis restent cachés des futurs tours `PlanResume`, donc le même tour doit être résolu de manière terminale ou attendre une entrée.
+**Cause :** Le planificateur n'a émis que des outils de comptabilité. Leurs appels et résultats restent dans la transcription du fournisseur, mais les résultats réussis ne déclenchent pas un autre `PlanResume` et n'entrent pas dans les futurs `ToolOutputs` typés. Le même tour doit donc se résoudre de manière terminale ou attendre une entrée.
 
 **Solutions :**
 

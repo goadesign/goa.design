@@ -137,8 +137,8 @@ aggiornamenti, quindi mantenere le modifiche dell'applicazione in `cmd/` e `inte
 
 Quando limiti o deadline forzano la finalizzazione, un planner può comunque
 chiudere il run restituendo strumenti terminali di bookkeeping. Il runtime
-esegue solo strumenti `Bookkeeping()` + `TerminalRun()` in quel percorso e
-richiede che abbiano successo prima di considerare chiuso il run.
+esegue solo strumenti `TerminalRun()` in quel percorso (`TerminalRun()` implica
+bookkeeping) e richiede che abbiano successo prima di considerare chiuso il run.
 
 L'esempio generato inizia con uno stub planner in modo che questo flusso sia visibile prima
 colleghi un modello. Un vero pianificatore segue lo stesso contratto; delega semplicemente

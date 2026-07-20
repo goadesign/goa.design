@@ -41,14 +41,15 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour la référence de continuation de la page suivante (facultatif)                     |
 | `Idempotent`                                            | Outil                     | Marque l’outil comme idempotent dans une transcription d’exécution ; permet une déduplication sécurisée des transcriptions croisées pour des appels identiques |
 | `Tags`                                                  | Outil, ensemble d'outils            | Attache des étiquettes de métadonnées                                                                                           |
+| `Meta`                                                  | Outil                     | Attache des métadonnées de conception inertes et nommées, émises dans `ToolSpec.Meta`                                           |
 | `BindTo`                                                | Outil                     | Lie l'outil à la méthode de service                                                                                       |
 | `Inject`                                                | Outil                     | Marque les champs comme injectés lors de l'exécution                                                                                   |
 | `CallHintTemplate`                                      | Outil                     | Modèle d'affichage pour les appels                                                                                   |
 | `ResultHintTemplate`                                    | Outil                     | Modèle d'affichage des résultats                                                                                       |
 | `ResultReminder`                                        | Outil                     | Rappel du système statique après le résultat de l'outil                                                                           |
 | `Confirmation`                                          | Outil                     | Nécessite une confirmation hors bande explicite avant l'exécution                                                        |
-| `TerminalRun`                                           | Outil                     | Marque le terminal de l'outil : l'exécution se termine immédiatement après son exécution (pas de tour de suivi du planificateur)               |
-| `Bookkeeping`                                           | Outil                     | Marque l'outil comme comptabilité : les appels ne consomment pas le budget de récupération `MaxToolCalls` au niveau de l'exécution et restent cachés par défaut aux futurs tours du planificateur. |
+| `TerminalRun`                                           | Outil                     | Marque l'outil comme terminal et comptable : son succès termine l'exécution sans tour de suivi du planificateur |
+| `Bookkeeping`                                           | Outil                     | Marque un enregistrement de contrôle : aucun budget de récupération ou d'échecs consécutifs, tandis que l'appel et le résultat exacts restent durables |
 | **Fonctions de stratégie**                                    |                          |                                                                                                                    |
 | `RunPolicy`                                             | Agent                    | Configure les contraintes d'exécution                                                                                   |
 | `DefaultCaps`                                           | Exécuter la politique                | Fixe les limites des ressources                                                                                               |
@@ -1111,7 +1112,9 @@ func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInp
 
 ### Balises
 
-`Tags(values...)` annote les outils ou jeux d’outils avec des étiquettes de métadonnées. Les balises sont présentées aux moteurs de politiques et à la télémétrie.
+`Tags(values...)` annote les outils ou jeux d'outils avec des étiquettes plates
+destinées au filtrage générique par les politiques et l'interface utilisateur.
+Les balises d'un jeu d'outils sont héritées par ses outils.
 
 **Contexte** : à l'intérieur de `Tool` ou `Toolset`
 
@@ -1127,6 +1130,34 @@ Tool("delete_file", "Delete a file", func() {
     Tags("filesystem", "write", "destructive")
 })
 ```
+
+### Meta
+
+Le DSL standard de Goa `Meta(name, values...)` attache une annotation nommée
+au moment de la conception à l'outil courant. La génération de code Goa-AI la
+conserve dans `ToolSpec.Meta` sous la forme `map[string][]string`.
+
+```go
+Tool("resolve_source", "Resolve a selectable source", func() {
+    Args(ResolveSourceArgs)
+    Return(ResolveSourceResult)
+    Meta("example.chat.supplies_tool_input")
+})
+```
+
+Utilisez `Meta` pour un contrat stable appartenant à un consommateur, et non
+pour une catégorie de politique générique. Ces métadonnées sont inertes :
+Goa-AI ne modifie ni la planification, ni la visibilité, ni les budgets, ni les
+reprises, ni le comportement terminal du seul fait qu'une clé est présente.
+Le planificateur, la politique ou l'interface qui interprète une clé possède et
+documente sa sémantique.
+
+Conservez les contrats intégrés comme sources canoniques :
+
+- utilisez `Tags` pour les filtrages génériques d'autorisation et de capacité ;
+- utilisez `Bookkeeping` et `TerminalRun` pour la comptabilisation et la fin d'exécution ;
+- utilisez `RetryHint` pour le traitement des échecs de chaque résultat ;
+- utilisez les champs du planificateur tels que `SynthesizeAfterTools` pour les transitions de lot.
 
 ### Lier à
 
@@ -1205,7 +1236,11 @@ Les `ToolCallExecutor` écrits à la main (pour les outils sans `BindTo`, enregi
 
 ### TerminalExécuter
 
-`TerminalRun()` marque l'outil actuel comme terminal pour l'exécution. Une fois que l'outil s'exécute avec succès, le moteur d'exécution termine l'exécution immédiatement après la publication du résultat de l'outil sans demander un tour de suivi `PlanResume`/finalisation.
+`TerminalRun()` marque l'outil actuel comme terminal pour l'exécution. Une fois
+que l'outil s'exécute avec succès, le moteur d'exécution termine l'exécution
+immédiatement après la publication du résultat sans demander un tour de suivi
+`PlanResume`/finalisation. Goa-AI classe automatiquement tout outil terminal
+comme comptable ; `TerminalRun()` est donc la seule déclaration nécessaire.
 
 **Contexte** : À l'intérieur de `Tool`
 
@@ -1223,15 +1258,20 @@ Tool("commit_task", "Commit the terminal task artifact", func() {
 
 - Codegen enregistre le drapeau sur `tools.ToolSpec.TerminalRun`.
 - Après un appel réussi à l'outil de terminal, le runtime finalise l'exécution sans appeler `PlanResume`.
-- Les outils de terminal composent naturellement avec `Bookkeeping()` (voir ci-dessous) : l'outil typique « valider cette exécution » est à la fois un terminal et une comptabilité, il s'exécute donc toujours même lorsque le budget de récupération est épuisé et termine l'exécution de manière atomique.
+- La génération marque aussi l'outil comme comptable. Un outil terminal ne consomme donc aucun budget de récupération ou d'échecs consécutifs et peut être admis après épuisement du budget de récupération.
 
 ### Comptabilité
 
-`Bookkeeping()` marque l'outil actuel comme un outil de comptabilité qui ne consomme pas le budget de récupération `MaxToolCalls` au niveau de l'exécution. Le moteur d'exécution ne décrémente pas `RemainingToolCalls` pour les appels de comptabilité et ne les supprime jamais lors de la réduction d'un lot pour l'adapter au budget restant.
+`Bookkeeping()` marque l'outil actuel comme un enregistrement de contrôle dont le
+succès ne planifie pas à lui seul un autre tour du planificateur. Il ne consomme
+ni le budget de récupération `MaxToolCalls`, ni la marge d'échecs consécutifs.
 
 **Contexte** : À l'intérieur de `Tool`
 
-Utilisez `Bookkeeping()` pour les outils structurés de progression, de statut, de recherche et de validation de terminal dont le coût est la tenue de registres plutôt que la récupération ou le travail secondaire. Les exemples classiques sont les mises à jour de statut, les marqueurs de progression et l'outil atomique « valider cette exécution » qui écrit l'artefact final.
+Utilisez `Bookkeeping()` pour les marqueurs de statut structurés, les
+déclarations de transition, les constats et les validations terminales. Ne
+l'utilisez pas pour un instantané ou un résultat de recherche dont le succès
+doit planifier un raisonnement ultérieur.
 
 ```go
 Tool("set_step_status", "Update step status", func() {
@@ -1244,25 +1284,28 @@ Tool("set_step_status", "Update step status", func() {
 **Comportement d'exécution :**
 
 - Codegen enregistre le drapeau sur `tools.ToolSpec.Bookkeeping`.
-- Les appels de comptabilité ne sont jamais pris en compte dans `MaxToolCalls` et ne sont jamais ignorés lorsque le runtime réduit un lot pour l'adapter au budget restant. Les appels budgétisés (hors comptabilité) sont coupés en premier ; les appels comptables conservent leur position d'origine.
-- Les résultats de comptabilité réussis restent cachés aux futurs tours de planification. Placez l'état canonique nécessaire au prochain tour dans une entrée explicite du planificateur plutôt que dans le résultat d'un outil de comptabilité.
+- Les appels de comptabilité ont un coût nul pour `MaxToolCalls` et ne modifient pas le compteur d'échecs consécutifs.
+- Chaque lot d'appels produit par le modèle est atomique. Le runtime admet tout le lot si tous les appels budgétisés tiennent dans le budget, sinon il rejette tout le lot. Il ne retire jamais un appel individuel de la réponse du fournisseur.
+- Les appels et résultats restent des événements durables du flux et du journal d'exécution, ainsi que dans la transcription du fournisseur. Seuls les résultats comptables réussis sont omis des futurs `ToolOutputs` compacts.
+- Un résultat comptable en échec ouvre un tour de réparation uniquement lorsque `RetryHint.AllowsRetry()` renvoie true.
 - Les outils inconnus sont traités comme budgétisés ; seuls les outils déclarés `Bookkeeping()` dans le DSL (ou la comptabilité marquée sur le runtime `ToolSpec`) sont exonérés.
 - Un tour de comptabilité uniquement doit être résolu au cours du même tour (`TerminalRun()`, `FinalResponse`, `FinalToolResult` ou attente/pause).
 
-**Composition avec `TerminalRun()` :**
+**Validations terminales :**
 
-Un outil de validation de terminal est généralement à la fois un outil de comptabilité et un terminal :
+Un outil de validation terminale n'a besoin que de `TerminalRun()`, car les
+outils terminaux impliquent la comptabilité :
 
 ```go
 Tool("commit_task", "Commit the terminal task artifact", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
-    Bookkeeping()  // always executes, even when the budget is exhausted
-    TerminalRun()  // ends the run atomically once it succeeds
+    TerminalRun()  // aucun coût de récupération ; termine l'exécution après son succès
 })
 ```
 
-Ce modèle garantit que l'exécution peut toujours se finaliser de manière déterministe : l'outil de validation est exempté du budget de récupération, et une fois qu'il réussit, l'exécution est effectuée sans un tour de suivi du planificateur.
+L'outil de validation peut être admis sans budget de récupération restant. Une
+fois qu'il réussit, l'exécution est terminée sans tour de suivi du planificateur.
 
 ## Fonctions de politique
 

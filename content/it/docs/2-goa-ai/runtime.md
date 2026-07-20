@@ -155,7 +155,7 @@ err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: myPlanner})
 1. Il runtime avvia un flusso di lavoro per l'agente (in-memory o temporale) e registra un nuovo `run.Context` con `RunID`, `SessionID`, `TurnID`, etichette e cappucci di politica.
 2. Richiama il `PlanStart` del pianificatore con i messaggi e il contesto di esecuzione correnti.
 3. Pianifica le chiamate agli strumenti restituite dal pianificatore (il pianificatore passa payload JSON canonici; il runtime gestisce la codifica/decodifica utilizzando i codec generati).
-4. Chiama `PlanResume` con i risultati degli strumenti che restano visibili al planner; gli strumenti con budget sono visibili per impostazione predefinita, mentre gli strumenti di bookkeeping vengono riprodotti solo quando deve essere riparato un fallimento ritentabile. Il ciclo si ripete finché il pianificatore non restituisce una risposta finale, un risultato finale dello strumento o finché uno strumento `TerminalRun` riuscito non completa il run. Se la finalizzazione forzata è attiva perché sono stati raggiunti limiti o deadline, il pianificatore può chiudere tramite strumenti terminali di bookkeeping invece che con prosa. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
+4. Chiama `PlanResume` con i risultati degli strumenti che restano visibili al planner; gli strumenti con budget sono visibili per impostazione predefinita, mentre gli strumenti di bookkeeping vengono riprodotti solo quando `RetryHint.AllowsRetry()` autorizza una riparazione. Il ciclo si ripete finché il pianificatore non restituisce una risposta finale, un risultato finale dello strumento o finché uno strumento `TerminalRun` riuscito non completa il run. Se la finalizzazione forzata è attiva perché sono stati raggiunti limiti o deadline, il pianificatore può chiudere tramite strumenti terminali di bookkeeping invece che con prosa. Man mano che l'esecuzione procede, la corsa avanza attraverso i valori di `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fasi terminali).
 5. I ganci e i sottoscrittori del flusso emettono eventi (pensieri del pianificatore, avvio/aggiornamento/fine dello strumento, attese, utilizzo, flusso di lavoro, collegamenti tra agenti e corse) e, se configurati, persistono le voci di trascrizione e i metadati della corsa.
 
 ---
@@ -262,10 +262,10 @@ Agent("chat", "Conversational runner", func() {
 
 Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 
-- **Caps**: `MaxToolCalls` - chiamate totali allo strumento *con budget* per esecuzione. Gli strumenti marcati `Bookkeeping()` nel DSL sono esenti e non consumano mai questo cap. I risultati bookkeeping riusciti restano nascosti ai futuri turni del planner. `MaxConsecutiveFailedToolCalls` - fallimenti consecutivi prima dell'interruzione.
+- **Caps**: `MaxToolCalls` è il totale delle chiamate con budget per run. Gli strumenti dichiarati `Bookkeeping()` non consumano budget di retrieval e non modificano `MaxConsecutiveFailedToolCalls`. I batch prodotti dal modello restano atomici: le chiamate bookkeeping hanno costo zero, ma il runtime non rimuove singole chiamate per far rientrare un batch misto. I risultati bookkeeping riusciti restano fuori dai futuri `ToolOutputs` compatti.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
-- **Completamento atomico del run**: gli strumenti dichiarati `TerminalRun()` nel DSL chiudono il run immediatamente dopo una chiamata riuscita, senza richiedere un turno di finalizzazione del planner. Durante la finalizzazione forzata, il runtime ammette solo chiamate a strumenti `Bookkeeping()` + `TerminalRun()`, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce.
+- **Completamento terminale del run**: gli strumenti dichiarati `TerminalRun()` diventano automaticamente bookkeeping e chiudono il run dopo una chiamata riuscita, senza un turno `PlanResume` successivo. Un commit terminale può quindi essere ammesso senza budget di retrieval residuo. Durante la finalizzazione forzata, il runtime ammette solo chiamate terminali di bookkeeping, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce.
 - **Comportamento dei campi mancanti**: `OnMissingFields` - regola cosa succede quando la validazione indica campi mancanti.
 
 ### Sovrascritture dei criteri di runtime
@@ -622,7 +622,41 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contiene le chiamate allo strumento, la risposta finale, il risultato finale dello strumento, le annotazioni e l'opzione `RetryHint`. Il runtime fa rispettare i tappi, pianifica le attività dello strumento e alimenta i risultati dello strumento in `PlanResume` finché una risposta finale, un risultato finale dello strumento o uno strumento terminale riuscito non chiude il run. Quando `PlanResumeInput.Finalize` è impostato, i planner possono restituire strumenti terminali di bookkeeping; tali chiamate non vengono riprodotte in un turno successivo del planner e devono completare durevolmente la finalizzazione.
+`PlanResult` contiene chiamate agli strumenti, risposta finale, risultato finale
+dello strumento, annotazioni e la transizione selezionata dopo gli strumenti.
+`PlanResumeInput` indica al planner perché viene chiamato.
+
+Questi contratti sono distinti:
+
+| Contratto | Ambito | Significato |
+| --- | --- | --- |
+| `ToolSpec.Tags` | Uno strumento, per ogni run | Etichette piatte disponibili al filtro generico di policy e interfaccia utente. |
+| `ToolSpec.Meta` | Uno strumento, per ogni run | Annotazioni generate e inerti la cui semantica appartiene al consumer denominato; i metadati da soli non cambiano il runtime. |
+| `ToolSpec.Bookkeeping` | Uno strumento, per ogni run | La chiamata è un record di controllo durevole il cui successo non richiede un altro turno del planner. Non consuma budget di retrieval o di errori consecutivi. |
+| `ToolSpec.TerminalRun` | Uno strumento, per ogni run | Il successo termina direttamente il run e implica automaticamente bookkeeping. |
+| `RetryHint.AllowsRetry()` | Un risultato fallito | È consentito un altro tentativo nel run. Un'indicazione di timeout classifica l'errore come terminale e restituisce false. |
+| `PlanResult.SynthesizeAfterTools` | Un batch selezionato | Se il batch non contiene errori recuperabili, il turno successivo del planner deve rispondere. |
+| `PlanResumeInput.SynthesisOnly` | Un'attività del planner | Restituire una risposta finale; le chiamate agli strumenti non sono valide. |
+| `PlanResumeInput.Finalize` | Terminazione forzata dal runtime | Un limite o una deadline impedisce il lavoro normale. |
+
+Il runtime sceglie il prossimo stato in quest'ordine:
+
+| Passo completato | Stato successivo |
+| --- | --- |
+| Un limite o una deadline richiede la finalizzazione | Turno `Finalize` |
+| Uno strumento `TerminalRun` è riuscito | Termine immediato |
+| Un risultato fallito ha `AllowsRetry() == true` | Normale turno di riparazione |
+| `SynthesizeAfterTools` è true | Turno `SynthesisOnly` |
+| Altrimenti | Normale turno di continuazione |
+
+In questo modo l'intento del planner non diventa una seconda policy di retry.
+Un errore recuperabile viene riparato per primo; un batch finale riuscito o con
+errore terminale passa alla sintesi. Il runtime rifiuta chiamate agli strumenti
+restituite da un turno `SynthesisOnly`.
+
+Quando `PlanResumeInput.Finalize` è impostato, i planner possono restituire
+strumenti terminali di bookkeeping; queste chiamate non vengono riprodotte in
+un turno successivo e devono completare durevolmente la finalizzazione.
 
 I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che espone i servizi del runtime:
 - `AdvertisedToolDefinitions()` - ottenere le definizioni degli strumenti filtrate dal runtime e visibili al modello in questo turno

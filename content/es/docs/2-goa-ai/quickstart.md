@@ -140,8 +140,9 @@ actualizaciones del scaffold y mantén las modificaciones de la aplicación en
 
 Cuando los límites o deadlines fuerzan la finalización, un planificador todavía
 puede cerrar la ejecución devolviendo herramientas terminales de bookkeeping. El
-runtime ejecuta solo herramientas `Bookkeeping()` + `TerminalRun()` en ese camino
-y exige que tengan éxito antes de considerar cerrada la ejecución.
+runtime ejecuta solo herramientas `TerminalRun()` en ese camino
+(`TerminalRun()` implica bookkeeping) y exige que tengan éxito antes de
+considerar cerrada la ejecución.
 
 El ejemplo generado arranca con un planificador stub para que este flujo sea
 visible antes de conectar un modelo. Un planificador real sigue el mismo

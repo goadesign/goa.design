@@ -242,7 +242,7 @@ if err := rt.Seal(ctx); err != nil {
 1. Le runtime démarre un workflow pour l'agent (en mémoire ou Temporal) et enregistre un nouveau `run.Context` avec `RunID`, `SessionID`, `TurnID`, des étiquettes et des limites de stratégie.
 2. Il appelle le `PlanStart` de votre planificateur avec les messages actuels et le contexte d'exécution.
 3. Il planifie les appels d'outils renvoyés par le planificateur (le planificateur transmet les charges utiles canoniques JSON ; le runtime gère l'encodage/décodage à l'aide des codecs générés).
-4. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par le planificateur ; les outils budgétisés sont visibles par défaut, tandis que les outils de comptabilité ne rejouent que lorsqu'un échec réessayable doit être réparé. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale, un résultat d'outil final, ou qu'un outil `TerminalRun` réussi termine l'exécution. Si la finalisation forcée est active parce que des plafonds ou deadlines ont été atteints, le planificateur peut fermer via des outils terminaux de comptabilité plutôt que par de la prose. Au fur et à mesure que l'exécution progresse, l'exécution avance à travers les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
+4. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par le planificateur ; les outils budgétisés sont visibles par défaut, tandis que les outils de comptabilité ne sont rejoués que lorsque `RetryHint.AllowsRetry()` autorise une réparation. La boucle se répète jusqu'à ce que le planificateur renvoie une réponse finale, un résultat d'outil final, ou qu'un outil `TerminalRun` réussi termine l'exécution. Si la finalisation forcée est active parce que des plafonds ou deadlines ont été atteints, le planificateur peut fermer via des outils terminaux de comptabilité plutôt que par de la prose. Au fur et à mesure que l'exécution progresse, l'exécution avance à travers les valeurs `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, phases terminales).
 5. Les hooks et les abonnés au flux émettent des événements (pensées du planificateur, démarrage/mise à jour/fin de l'outil, attentes, utilisation, flux de travail, liens exécutés par l'agent) et, une fois configurés, conservent les entrées de transcription et exécutent les métadonnées.
 
 ---
@@ -350,11 +350,11 @@ Agent("chat", "Conversational runner", func() {
 
 Celui-ci devient un `runtime.RunPolicy` attaché à l'inscription de l'agent :
 
-- **Caps** : `MaxToolCalls` – nombre total d'appels d'outils budgétisés par exécution. Les outils déclarés `Bookkeeping()` dans le DSL sont **exemptés** de ce plafond : les mises à jour de statut, les marqueurs de progression et les outils de validation de terminal ne consomment jamais `RemainingToolCalls` et ne sont jamais supprimés lorsqu'un lot est réduit pour s'adapter au budget restant. Les résultats de comptabilité réussis restent cachés aux futurs tours du planificateur. `MaxConsecutiveFailedToolCalls` – échecs consécutifs avant l’abandon.
+- **Caps** : `MaxToolCalls` est le nombre total d'appels budgétisés par exécution. Les outils déclarés `Bookkeeping()` ne consomment aucun budget de récupération et ne modifient pas `MaxConsecutiveFailedToolCalls`. Les lots produits par le modèle restent atomiques : les appels comptables ont un coût nul, mais le runtime ne retire jamais un appel individuel pour faire tenir un lot mixte. Les résultats comptables réussis restent hors des futurs `ToolOutputs` compacts.
 - **Budget temps** : `TimeBudget` – budget d'horloge murale pour la course. `FinalizerGrace` (exécution uniquement) – fenêtre réservée en option pour la finalisation.
 - **Interruptions** : `InterruptsAllowed` – option pour la pause/reprise.
 - **Comportement des champs manquants** : `OnMissingFields` – régit ce qui se passe lorsque la validation indique des champs manquants.
-- **Outils de terminal** : les outils déclarés `TerminalRun()` terminent l'exécution de manière atomique une fois qu'ils réussissent ; aucun tour de suivi `PlanResume` n'est planifié. Associez `Bookkeeping()` à `TerminalRun()` pour obtenir un outil « valider cette exécution » dont l'exécution est garantie même lorsque le budget de récupération est épuisé. Pendant la finalisation forcée, le runtime n'admet que les appels d'outils `Bookkeeping()` + `TerminalRun()`, les exécute dans la fenêtre restante de hard deadline, et ferme l'exécution uniquement si chaque effet de bord terminal réussit.
+- **Outils terminaux** : les outils déclarés `TerminalRun()` deviennent automatiquement comptables et terminent l'exécution après leur succès ; aucun tour de suivi `PlanResume` n'est planifié. Une validation terminale peut donc être admise sans budget de récupération restant. Pendant la finalisation forcée, le runtime n'admet que les appels terminaux comptables, les exécute dans la fenêtre restante de hard deadline et ferme l'exécution uniquement si chaque effet terminal réussit.
 
 ### Remplacements de stratégie d'exécution
 
@@ -804,7 +804,41 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contient des appels d'outils, une réponse finale, un résultat d'outil final, des annotations et un `RetryHint` facultatif. Le moteur d'exécution applique les plafonds, planifie les activités des outils et renvoie les résultats des outils dans `PlanResume` jusqu'à ce qu'une réponse finale, un résultat d'outil final ou un outil terminal réussi ferme l'exécution. Lorsque `PlanResumeInput.Finalize` est défini, les planificateurs peuvent renvoyer des outils terminaux de comptabilité ; ces appels ne sont pas rejoués dans un tour ultérieur du planificateur et doivent terminer durablement la finalisation.
+`PlanResult` contient des appels d'outils, une réponse finale, un résultat d'outil
+final, des annotations et la transition choisie après les outils.
+`PlanResumeInput` indique au planificateur pourquoi il est appelé.
+
+Ces contrats sont distincts :
+
+| Contrat | Portée | Signification |
+| --- | --- | --- |
+| `ToolSpec.Tags` | Un outil, pour chaque exécution | Étiquettes plates disponibles au filtrage générique par les politiques et l'interface utilisateur. |
+| `ToolSpec.Meta` | Un outil, pour chaque exécution | Annotations générées et inertes dont la sémantique appartient au consommateur nommé ; les métadonnées seules ne changent pas le runtime. |
+| `ToolSpec.Bookkeeping` | Un outil, pour chaque exécution | L'appel est un enregistrement de contrôle durable dont le succès ne requiert pas un autre tour du planificateur. Il ne consomme aucun budget de récupération ou d'échecs consécutifs. |
+| `ToolSpec.TerminalRun` | Un outil, pour chaque exécution | Le succès termine lui-même l'exécution et implique automatiquement la comptabilité. |
+| `RetryHint.AllowsRetry()` | Un résultat en échec | Une autre tentative d'outil est permise dans cette exécution. Une indication de timeout classe l'échec comme terminal et renvoie false. |
+| `PlanResult.SynthesizeAfterTools` | Un lot sélectionné | Si le lot n'a aucun échec récupérable, le prochain tour du planificateur doit répondre. |
+| `PlanResumeInput.SynthesisOnly` | Une activité du planificateur | Renvoyer une réponse finale ; les appels d'outils sont invalides. |
+| `PlanResumeInput.Finalize` | Arrêt imposé par le runtime | Un plafond ou une deadline interdit le travail normal. |
+
+Le runtime choisit l'état suivant dans cet ordre :
+
+| Étape terminée | État suivant |
+| --- | --- |
+| Un plafond ou une deadline impose la finalisation | Tour `Finalize` |
+| Un outil `TerminalRun` a réussi | Fin immédiate |
+| Un résultat en échec a `AllowsRetry() == true` | Tour normal de réparation |
+| `SynthesizeAfterTools` vaut true | Tour `SynthesisOnly` |
+| Sinon | Tour normal de continuation |
+
+Ainsi, l'intention du planificateur ne devient pas une seconde politique de
+reprise. Un échec récupérable est réparé d'abord ; un lot final réussi ou en
+échec terminal passe à la synthèse. Le runtime rejette les appels d'outils
+renvoyés depuis un tour `SynthesisOnly`.
+
+Lorsque `PlanResumeInput.Finalize` est défini, les planificateurs peuvent
+renvoyer des outils terminaux de comptabilité ; ces appels ne sont pas rejoués
+dans un tour ultérieur et doivent terminer durablement la finalisation.
 
 Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` qui expose les services d'exécution :
 - `AdvertisedToolDefinitions()` - obtient les définitions d'outils filtrées à l'exécution et visibles par le modèle pour ce tour

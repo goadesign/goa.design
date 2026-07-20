@@ -55,14 +55,15 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `NextCursor` | BoundedResult | 次ページ continuation reference を格納する result フィールド名を指定する（任意） |
 | `Idempotent` | Tool | run transcript 内で idempotent な tool としてマークし、同一呼び出しの de-duplication を可能にする |
 | `Tags` | Tool, Toolset | メタデータラベルを付与する |
+| `Meta` | Tool | `ToolSpec.Meta` に出力される、名前付きで不活性な設計メタデータを付与する |
 | `BindTo` | Tool | ツールをサービスメソッドにバインドする |
 | `Inject` | Tool | ランタイム注入フィールドを指定する |
 | `CallHintTemplate` | Tool | 呼び出し表示用テンプレート（ヒント） |
 | `ResultHintTemplate` | Tool | 結果表示用テンプレート（ヒント） |
 | `ResultReminder` | Tool | ツール結果後の静的なシステムリマインダ |
 | `Confirmation` | Tool | 実行前に明示的な帯域外確認を要求する |
-| `TerminalRun` | Tool | ツールを run の終端としてマーク: ツール成功直後にランが終了し、後続プランナーターンは行われない |
-| `Bookkeeping` | Tool | ツールを bookkeeping としてマーク: 呼び出しは run レベルの `MaxToolCalls` バジェットを消費せず、既定では将来のプランナーターンから隠される |
+| `TerminalRun` | Tool | ツールを終端かつ bookkeeping としてマークする。成功すると後続プランナーターンなしで run が終了する |
+| `Bookkeeping` | Tool | 制御記録としてマークする。retrieval と連続失敗の予算を消費せず、正確な呼び出しと結果は永続化される |
 | **ポリシー関数** | | |
 | `RunPolicy` | Agent | 実行制約を設定する |
 | `DefaultCaps` | RunPolicy | リソース制限を設定する |
@@ -1056,7 +1057,9 @@ func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInp
 
 ### Tags
 
-`Tags(values...)` はツールまたはツールセットにメタデータラベルを付与します。タグはポリシーエンジンやテレメトリで参照されます。
+`Tags(values...)` は、汎用的なポリシーおよび UI フィルタリングのための
+フラットなラベルをツールまたはツールセットに付与します。ツールセットのタグは
+そのツールに継承されます。
 
 **コンテキスト**: `Tool` または `Toolset` の内部
 
@@ -1071,6 +1074,33 @@ Tool("delete_file", "Delete a file", func() {
     Tags("filesystem", "write", "destructive")
 })
 ```
+
+### Meta
+
+Goa 標準 DSL の `Meta(name, values...)` は、現在のツールに名前付きの
+設計時アノテーションを付与します。Goa-AI のコード生成はこれを
+`ToolSpec.Meta` の `map[string][]string` として保持します。
+
+```go
+Tool("resolve_source", "Resolve a selectable source", func() {
+    Args(ResolveSourceArgs)
+    Return(ResolveSourceResult)
+    Meta("example.chat.supplies_tool_input")
+})
+```
+
+`Meta` は、汎用ポリシーカテゴリではなく、特定のコンシューマが所有する
+安定した契約に使用します。メタデータは不活性です。キーが存在するだけで
+Goa-AI のスケジューリング、可視性、予算、リトライ、終端動作が変わることは
+ありません。キーを解釈するプランナー、ポリシー、または UI が、その意味を
+所有して文書化します。
+
+組み込み契約は正規のまま使用してください。
+
+- 汎用的な許可・拒否と能力フィルタリングには `Tags` を使用する
+- 計上と終端動作には `Bookkeeping` と `TerminalRun` を使用する
+- 結果ごとの失敗処理には `RetryHint` を使用する
+- バッチごとの遷移には `SynthesizeAfterTools` などのプランナーフィールドを使用する
 
 ### BindTo
 
@@ -1148,7 +1178,11 @@ Tool("lookup_household", "Lookup scoped to a household", func() {
 
 ### TerminalRun
 
-`TerminalRun()` は現在のツールを run の終端としてマークします。ツールが成功して実行されると、ランタイムはツール結果を公開した直後にランを終了し、`PlanResume`/ファイナライズターンを追加で要求しません。
+`TerminalRun()` は現在のツールを run の終端としてマークします。ツールが
+成功すると、ランタイムは結果の公開直後に run を終了し、追加の
+`PlanResume`/ファイナライズターンを要求しません。Goa-AI はすべての終端
+ツールを自動的に bookkeeping として分類するため、宣言は `TerminalRun()`
+だけで十分です。
 
 **コンテキスト**: `Tool` の内部
 
@@ -1166,15 +1200,19 @@ Tool("commit_task", "タスクの終端アーティファクトをコミット",
 
 - コード生成はこのフラグを `tools.ToolSpec.TerminalRun` に記録します。
 - 終端ツール呼び出しが成功した後、ランタイムは `PlanResume` を呼ばずにランを完了します。
-- 終端ツールは `Bookkeeping()`（下記参照）と自然に合成されます。典型的な「この run をコミット」ツールは終端かつ bookkeeping であり、リトリーバル予算が枯渇していても常に実行可能で、ランを原子的に終了できます。
+- コード生成はこのツールを bookkeeping としても記録します。したがって終端ツールは retrieval 予算も連続失敗予算も消費せず、retrieval 予算が尽きた後でも受け入れられます。
 
 ### Bookkeeping
 
-`Bookkeeping()` は現在のツールを bookkeeping ツールとしてマークし、run レベルの `MaxToolCalls` リトリーバル予算を消費しないようにします。ランタイムは bookkeeping 呼び出しについて `RemainingToolCalls` をデクリメントせず、バッチを残り予算に収めるために切り詰める際にも bookkeeping 呼び出しを破棄しません。
+`Bookkeeping()` は現在のツールを制御記録としてマークします。その成功だけで
+次のプランナーターンをスケジュールすることはありません。run レベルの
+`MaxToolCalls` retrieval 予算も、連続失敗の許容量も消費しません。
 
 **コンテキスト**: `Tool` の内部
 
-コストがリトリーバルや副作用ではなく「記録」である構造化された進捗・ステータス・ファインディング・終端コミット系のツールに `Bookkeeping()` を使用します。ステータス更新、進捗マーカー、最終成果物を書き込む原子的な「この run をコミット」ツールが典型例です。
+構造化されたステータスマーカー、遷移宣言、findings、終端コミットに
+`Bookkeeping()` を使用します。成功後に追加のプランナー推論をスケジュール
+すべき snapshot や lookup result には使用しません。
 
 ```go
 Tool("set_step_status", "ステップのステータスを更新", func() {
@@ -1187,25 +1225,28 @@ Tool("set_step_status", "ステップのステータスを更新", func() {
 **ランタイム動作:**
 
 - コード生成はこのフラグを `tools.ToolSpec.Bookkeeping` に記録します。
-- bookkeeping 呼び出しは `MaxToolCalls` に計上されず、ランタイムがバッチを残り予算に合わせて切り詰める際にも破棄されません。予算対象（非 bookkeeping）の呼び出しが先に切り詰められ、bookkeeping 呼び出しは元の位置を維持します。
-- 成功した bookkeeping 結果は将来のプランナーターンから隠されたままです。次のターンが推論すべき正規状態は、bookkeeping ツール結果ではなく明示的なプランナー入力に置きます。
+- bookkeeping 呼び出しの `MaxToolCalls` コストはゼロで、連続失敗カウンタも変更しません。
+- モデルが生成した各 tool-call batch は原子的です。予算対象の全呼び出しが収まる場合は batch 全体を受け入れ、収まらない場合は batch 全体を拒否します。provider response から個々の呼び出しを除去することはありません。
+- 呼び出しと結果は durable な stream/run-log event として、また provider transcript 内に残ります。成功した bookkeeping 結果だけが、将来の compact な `ToolOutputs` から除外されます。
+- 失敗した bookkeeping 結果は、`RetryHint.AllowsRetry()` が true を返す場合にのみ修復ターンへ進みます。
 - 未知のツールは予算対象として扱われます。DSL で `Bookkeeping()` として宣言された（またはランタイムの `ToolSpec` で bookkeeping としてマークされた）ツールのみが免除されます。
 - bookkeeping だけのターンは、同一ターン内で解決する必要があります（`TerminalRun()`、`FinalResponse`、`FinalToolResult`、await/pause）。
 
-**`TerminalRun()` との合成:**
+**終端コミット:**
 
-終端コミットツールは通常 bookkeeping かつ終端として宣言されます:
+終端ツールは bookkeeping を暗黙に含むため、終端コミットには
+`TerminalRun()` だけが必要です。
 
 ```go
 Tool("commit_task", "タスクの終端アーティファクトをコミット", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
-    Bookkeeping()  // 予算が尽きても常に実行される
-    TerminalRun()  // 成功するとランを原子的に終了する
+    TerminalRun()  // retrieval コストなし。成功すると run を終了する
 })
 ```
 
-このパターンにより、ランは常に決定的にファイナライズできます。コミットツールはリトリーバル予算から免除され、成功するとその後のプランナーターンなしで run が終了します。
+コミットツールは retrieval 予算が残っていなくても受け入れられます。成功すると、
+後続プランナーターンなしで run が終了します。
 
 ## ポリシー関数
 
@@ -2048,4 +2089,3 @@ var _ = Service("orchestrator", func() {
 - **[ランタイム](./runtime.md)** - 設計が実行時の挙動にどう変換されるかを理解する
 - **[ツールセット](./toolsets.md)** - ツールセットの実行モデルを深掘りする
 - **[MCP 連携](./mcp-integration.md)** - MCP サーバのランタイム配線を理解する
-

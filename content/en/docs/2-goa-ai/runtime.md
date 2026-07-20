@@ -242,7 +242,7 @@ if err := rt.Seal(ctx); err != nil {
 1. The runtime starts a workflow for the agent (in-memory or Temporal) and records a new `run.Context` with `RunID`, `SessionID`, `TurnID`, labels, and policy caps.
 2. It calls your planner's `PlanStart` with the current messages and run context.
 3. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs).
-4. It calls `PlanResume` with the surviving planner-visible tool results; budgeted tools are visible by default, while bookkeeping tools replay only when a retryable failure must be repaired. The loop repeats until the planner returns a final response, a final tool result, or a successful `TerminalRun` tool completes the run. If forced finalization is active because caps or deadlines were hit, the planner may close through terminal bookkeeping tools instead of prose. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
+4. It calls `PlanResume` with the surviving planner-visible tool results; budgeted tools are visible by default, while bookkeeping tools replay only when `RetryHint.AllowsRetry()` authorizes repair. The loop repeats until the planner returns a final response, a final tool result, or a successful `TerminalRun` tool completes the run. If forced finalization is active because caps or deadlines were hit, the planner may close through terminal bookkeeping tools instead of prose. As execution progresses, the run advances through `run.Phase` values (`prompted`, `planning`, `executing_tools`, `synthesizing`, terminal phases).
 5. Hooks and stream subscribers emit events (planner thoughts, tool start/update/end, awaits, usage, workflow, agent-run links) and, when configured, persist transcript entries and run metadata.
 
 ---
@@ -347,11 +347,11 @@ Agent("chat", "Conversational runner", func() {
 
 This becomes a `runtime.RunPolicy` attached to the agent's registration:
 
-- **Caps**: `MaxToolCalls` – total budgeted tool calls per run. Tools declared `Bookkeeping()` in the DSL are **exempt** from this cap: status updates, progress markers, and terminal-commit tools never consume `RemainingToolCalls` and are never dropped when a batch is trimmed to fit the remaining budget. Successful bookkeeping results stay hidden from future planner turns. `MaxConsecutiveFailedToolCalls` – consecutive failures before abort.
+- **Caps**: `MaxToolCalls` is the total budgeted tool calls per run. Tools declared `Bookkeeping()` consume no retrieval budget and do not change `MaxConsecutiveFailedToolCalls`. Model-authored batches stay atomic: bookkeeping calls add zero cost, but the runtime never removes individual calls to make a mixed batch fit. Successful bookkeeping results stay out of compact future `ToolOutputs`.
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
-- **Terminal tools**: Tools declared `TerminalRun()` complete the run atomically once they succeed—no follow-up `PlanResume` turn is scheduled. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to execute even when the retrieval budget is exhausted. During forced finalization, the runtime admits only `Bookkeeping()` + `TerminalRun()` tool calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds.
+- **Terminal tools**: Tools declared `TerminalRun()` automatically become bookkeeping and complete the run once they succeed—no follow-up `PlanResume` turn is scheduled. A terminal commit can therefore be admitted with no retrieval budget remaining. During forced finalization, the runtime admits only terminal bookkeeping calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds.
 
 ### Runtime Policy Overrides
 
@@ -813,7 +813,34 @@ type Planner interface {
 }
 ```
 
-`PlanResult` contains tool calls, final response, final tool result, annotations, and optional `RetryHint`. The runtime enforces caps, schedules tool activities, and feeds tool results back into `PlanResume` until a final response, final tool result, or successful terminal tool closes the run. When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
+`PlanResult` contains tool calls, a final response, a final tool result, annotations, and the selected post-tool transition. `PlanResumeInput` tells the planner why it is being called.
+
+These contracts are separate:
+
+| Contract | Scope | Plain-English meaning |
+| --- | --- | --- |
+| `ToolSpec.Tags` | A tool, for every run | Flat labels available to generic policy and UI filtering. |
+| `ToolSpec.Meta` | A tool, for every run | Inert generated annotations whose semantics belong to the named consumer; metadata alone changes no runtime behavior. |
+| `ToolSpec.Bookkeeping` | A tool, for every run | The call is a durable control record whose success does not require another planner turn. It consumes no retrieval or consecutive-failure budget. |
+| `ToolSpec.TerminalRun` | A tool, for every run | Successful execution itself ends the run. It automatically implies bookkeeping. |
+| `RetryHint.AllowsRetry()` | One failed result | Another tool attempt is permitted in this run. A timeout hint classifies a terminal failure and returns false. |
+| `PlanResult.SynthesizeAfterTools` | One selected batch | If the batch has no recoverable failure, the next planner turn must answer. |
+| `PlanResumeInput.SynthesisOnly` | One planner activity | Return a final answer; tool calls are invalid. |
+| `PlanResumeInput.Finalize` | Runtime-forced termination | A cap or deadline has prohibited normal work. |
+
+The runtime chooses one next state in this order:
+
+| Completed step | Next state |
+| --- | --- |
+| A cap or deadline requires finalization | `Finalize` turn |
+| A successful `TerminalRun` tool completed | End immediately |
+| Any failed result has `AllowsRetry() == true` | Normal repair turn |
+| `SynthesizeAfterTools` is true | `SynthesisOnly` turn |
+| Otherwise | Normal continuation turn |
+
+This keeps planner intent from becoming a second retry policy. A recoverable failure is repaired first; a successful or terminally failed final batch proceeds to synthesis. The runtime rejects tool calls returned from a `SynthesisOnly` turn.
+
+When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
 
 Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
 - `AdvertisedToolDefinitions()` - get the runtime-filtered tool definitions visible to the model for this turn

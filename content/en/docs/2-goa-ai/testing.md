@@ -300,14 +300,14 @@ RunPolicy(func() {
 
 3. **Check for infinite loops** in planner logic that repeatedly calls the same tool.
 
-4. **Exempt structured bookkeeping tools from the budget** by declaring them `Bookkeeping()` in the DSL. Status updates, progress markers, and terminal-commit tools typically belong in this category; once exempt, they never consume `RemainingToolCalls` and can always execute. Pair `Bookkeeping()` with `TerminalRun()` for a "commit this run" tool that is guaranteed to finalize even after the retrieval budget is exhausted.
+4. **Exempt structured control records from retrieval and failure budgets** by declaring them `Bookkeeping()` in the DSL. Status markers and transition declarations belong in this category; lookup results whose success must schedule later reasoning do not. A mixed model-authored batch remains atomic and is rejected as a whole if its budgeted calls do not fit. Use `TerminalRun()` alone for a terminal commit; terminal tools automatically become bookkeeping and can be admitted after the retrieval budget is exhausted.
 
 **Symptom:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Cause:** The planner emitted only bookkeeping tools. Successful bookkeeping results stay hidden from future `PlanResume` turns, so the same turn must resolve terminally or await input.
+**Cause:** The planner emitted only bookkeeping tools. Their calls and results remain in the provider transcript, but successful results do not trigger another `PlanResume` or enter typed future `ToolOutputs`. The same turn must therefore resolve terminally or await input.
 
 **Solutions:**
 

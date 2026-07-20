@@ -14,6 +14,15 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 | Funzione | Contesto | Descrizione || ------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | **Funzioni dell'agente** |                          |                                                                                                                    || `Agent` | Servizio | Definisce un agente basato su LLM || `Completion` | Servizio | Dichiara contratto di proprietà di tipo assistente diretto-output || `Use` | Agente | Dichiara il consumo del set di strumenti || `Export` | Agente, Servizio | Espone i set di strumenti ad altri agenti || `AgentToolset` | Utilizzare l'argomento | Set di strumenti di riferimento da un altro agente || `UseAgentToolset` | Agente | Alias ​​per AgentToolset + Usa || `Passthrough` | Strumento (in Esportazione) | Metodo di inoltro deterministico al servizio || `DisableAgentDocs` | API | Disabilita la generazione di AGENTS_QUICKSTART.md || **Funzioni del set di strumenti** |                          |                                                                                                                    || `Toolset` | Livello superiore | Dichiara un set di strumenti di proprietà del provider || `FromMCP` | Argomento del set di strumenti | Configura il set di strumenti supportato da MCP || `FromRegistry` | Argomento del set di strumenti | Configura il set di strumenti supportati dal registro || `Description` | Set di strumenti | Imposta la descrizione del set di strumenti || **Funzioni strumento** |                          |                                                                                                                    || `Tool` | Set di strumenti, Metodo | Definisce uno strumento richiamabile || `Args` | Strumento | Definisce lo schema dei parametri di input || `Return` | Strumento, Completamento | Definisce lo schema dei risultati visibili nel modello || `ServerData` | Strumento | Definisce lo schema dei dati solo del server (mai inviato ai fornitori di modelli) || `FromMethodResultField` | Dati server | Proietta i dati del server da un campo risultato del metodo di servizio associato || `AudienceTimeline` | Dati server | Contrassegna i dati del server come idonei per sequenza temporale/interfaccia utente (impostazione predefinita) || `AudienceInternal` | Dati server | Contrassegna i dati del server come allegato di composizione interna || `AudienceEvidence` | Dati server | Contrassegna i dati del server come provenienza o prova di controllo || `BoundedResult` | Strumento | Dichiara un contratto con risultati limitati di proprietà del runtime; il sub-DSL opzionale può dichiarare i campi del cursore di paging || `Cursor` | Risultato limitato | Dichiara quale campo del payload trasporta il cursore di paging (opzionale) || `NextCursor` | Risultato limitato | Dichiara il nome del campo del risultato previsto per il cursore della pagina successiva (facoltativo) || `Idempotent` | Strumento | Contrassegna lo strumento come idempotente all'interno di una trascrizione dell'esecuzione; consente la deduplicazione sicura delle trascrizioni incrociate per chiamate identiche || `Tags` | Strumento, set di strumenti | Allega etichette di metadati || `BindTo` | Strumento | Associa lo strumento al metodo del servizio || `Inject` | Strumento | Contrassegna i campi come inseriti dal runtime || `CallHintTemplate` | Strumento | Modello di visualizzazione per le invocazioni || `ResultHintTemplate` | Strumento | Modello di visualizzazione dei risultati || `ResultReminder` | Strumento | Promemoria di sistema statico dopo il risultato dello strumento || `Confirmation` | Strumento | Richiede una conferma esplicita fuori banda prima dell'esecuzione || `TerminalRun` | Strumento | Contrassegna il terminale dello strumento: l'esecuzione viene completata immediatamente dopo l'esecuzione (nessun turno di pianificazione successivo) || `Bookkeeping` | Strumento | Contrassegna lo strumento come contabilità: le chiamate non consumano il budget di recupero `MaxToolCalls` a livello di esecuzione e rimangono nascoste ai futuri turni di pianificazione per impostazione predefinita || **Funzioni politiche** |                          |                                                                                                                    || `RunPolicy` | Agente | Configura i vincoli di esecuzione || `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse || `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento || `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi || `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete || `Timing` | EseguiPolitica | Configurazione dettagliata del timeout || `Budget` | Tempi | Budget di gestione complessivo || `Plan` | Tempi | Timeout attività pianificatore || `Tools` | Tempi | Timeout attività strumento || `History` | EseguiPolitica | Gestione della cronologia delle conversazioni || `KeepRecentTurns` | Storia | Politica della finestra scorrevole || `CompressAtTurns` | Storia | Trigger per riepilogo assistito dal modello basato sui turni || `CompressAtMaxInputTokens` | Storia | Trigger per riepilogo basato sui token di input contati a runtime || `KeepMaxTurns` | Storia | Limite di mantenimento esatto per turni completi recenti || `KeepMaxInputTokens` | Storia | Limite di mantenimento esatto per token, conservando solo turni completi || `Cache` | EseguiPolitica | Richiedi configurazione della memorizzazione nella cache || `AfterSystem` | Cache | Punto di controllo dopo i messaggi di sistema || `AfterTools` | Cache | Punto di controllo dopo le definizioni degli strumenti || `InterruptsAllowed` | EseguiPolitica | Abilita pausa/riprendi || `OnMissingFields` | EseguiPolitica | Comportamento di convalida || **Funzioni MCP** |                          |                                                                                                                    || `MCP` | Servizio | Abilita il supporto MCP || `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP || `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP || `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa || `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea || `Resource` | Metodo | Contrassegna il metodo come risorsa MCP || `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile || `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico || `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt || `Notification` | Metodo | Contrassegna il metodo come mittente della notifica || `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione || `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti || **Funzioni di registro** |                          |                                                                                                                    || `Registry` | Livello superiore | Dichiara un'origine del registro || `URL` | Registro | Imposta l'endpoint del registro || `APIVersion` | Registro | Imposta la versione API || `Timeout` | Registro | Imposta il timeout HTTP || `Retry` | Registro | Configura la policy di ripetizione || `SyncInterval` | Registro | Imposta l'intervallo di aggiornamento del catalogo || `CacheTTL` | Registro | Imposta la durata della cache locale || `Federation` | Registro | Configura le importazioni del registro esterno || `Include` | Federazione | Modelli globali da importare || `Exclude` | Federazione | Modelli glob da saltare || `PublishTo` | Esporta | Configura la pubblicazione del registro || `Version` | Set di strumenti | Versione del set di strumenti del registro dei pin || **Funzioni dello schema** |                          |                                                                                                                    || `Attribute` | Argomenti, Ritorno, ServerData | Definisce il campo dello schema (uso generale) || `Field` | Argomenti, Ritorno, ServerData | Definisce il campo proto numerato (gRPC) || `Required` | Schema | Contrassegna i campi come obbligatori || `Example` | Schema | Allega un esempio esplicito; gli esempi di payload dello strumento di livello superiore vengono conservati nelle specifiche dello strumento generate e nei suggerimenti per i nuovi tentativi |
 
+La tabella seguente precisa i contratti degli strumenti che influenzano il
+controllo dell'esecuzione:
+
+| Funzione | Contesto | Descrizione |
+| --- | --- | --- |
+| `Meta` | Strumento | Allega metadati di progettazione inerti e denominati, emessi in `ToolSpec.Meta` |
+| `TerminalRun` | Strumento | Contrassegna lo strumento come terminale e di bookkeeping: il successo termina il run senza un turno successivo del planner |
+| `Bookkeeping` | Strumento | Contrassegna un record di controllo: nessun budget di retrieval o di errori consecutivi, mentre chiamata e risultato esatti restano durevoli |
+
 ### Esempi di payload degli strumenti
 
 Per gli schemi dei payload degli strumenti, un `Example(...)` Goa di livello
@@ -1020,7 +1029,9 @@ func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInp
 
 ### Tag
 
-`Tags(values...)` annota strumenti o set di strumenti con etichette di metadati. I tag vengono visualizzati nei motori di policy e nella telemetria.
+`Tags(values...)` annota strumenti o toolset con etichette piatte per il filtro
+generico di policy e interfaccia utente. I tag del toolset vengono ereditati dai
+suoi strumenti.
 
 **Contesto**: All'interno di `Tool` o `Toolset`
 
@@ -1036,6 +1047,33 @@ Tool("delete_file", "Delete a file", func() {
     Tags("filesystem", "write", "destructive")
 })
 ```
+
+### Meta
+
+Il DSL standard di Goa `Meta(name, values...)` associa un'annotazione denominata
+in fase di progettazione allo strumento corrente. La generazione Goa-AI la
+conserva in `ToolSpec.Meta` come `map[string][]string`.
+
+```go
+Tool("resolve_source", "Resolve a selectable source", func() {
+    Args(ResolveSourceArgs)
+    Return(ResolveSourceResult)
+    Meta("example.chat.supplies_tool_input")
+})
+```
+
+Usa `Meta` per un contratto stabile di proprietà di uno specifico consumer, non
+per una categoria generica di policy. I metadati sono inerti: la sola presenza
+di una chiave non cambia scheduling, visibilità, budget, retry o comportamento
+terminale. Il planner, la policy o l'interfaccia che interpreta una chiave ne
+possiede e documenta la semantica.
+
+Mantieni canonici i contratti integrati:
+
+- usa `Tags` per filtri generici di autorizzazione e capacità;
+- usa `Bookkeeping` e `TerminalRun` per contabilità e comportamento terminale;
+- usa `RetryHint` per la gestione degli errori del singolo risultato;
+- usa campi del planner come `SynthesizeAfterTools` per le transizioni del batch.
 
 ### Associa a
 
@@ -1114,7 +1152,11 @@ I `ToolCallExecutor` scritti a mano (per strumenti senza `BindTo`, registrati di
 
 ### TerminalRun
 
-`TerminalRun()` contrassegna lo strumento corrente come terminale per la corsa. Una volta eseguito correttamente lo strumento, il runtime completa l'esecuzione immediatamente dopo aver pubblicato il risultato dello strumento senza richiedere un turno `PlanResume`/finalizzazione successivo.
+`TerminalRun()` contrassegna lo strumento corrente come terminale per il run.
+Quando lo strumento riesce, il runtime completa il run subito dopo aver
+pubblicato il risultato, senza un turno `PlanResume`/finalizzazione successivo.
+Goa-AI classifica automaticamente ogni strumento terminale come bookkeeping,
+quindi `TerminalRun()` è l'unica dichiarazione necessaria.
 
 **Contesto**: All'interno di `Tool`
 
@@ -1132,15 +1174,19 @@ Tool("commit_task", "Commit the terminal task artifact", func() {
 
 - Codegen registra il flag su `tools.ToolSpec.TerminalRun`.
 - Dopo una chiamata allo strumento terminale riuscita, il runtime finalizza l'esecuzione senza chiamare `PlanResume`.
-- Gli strumenti terminali si compongono naturalmente con `Bookkeeping()` (vedi sotto): il tipico strumento "commit this run" è sia terminale che contabile, quindi viene sempre eseguito anche quando il budget di recupero è esaurito e termina l'esecuzione in modo atomico.
+- La generazione marca lo strumento anche come bookkeeping. Uno strumento terminale non consuma quindi budget di retrieval o di errori consecutivi e può essere ammesso anche quando il budget di retrieval è esaurito.
 
 ### Contabilità
 
-`Bookkeeping()` contrassegna lo strumento corrente come strumento di contabilità che non utilizza il budget di recupero `MaxToolCalls` a livello di esecuzione. Il runtime non diminuisce `RemainingToolCalls` per le chiamate di contabilità e non le elimina mai quando si taglia un batch per adattarlo al budget rimanente.
+`Bookkeeping()` contrassegna lo strumento corrente come record di controllo il
+cui successo non pianifica da solo un altro turno del planner. Non consuma né
+il budget di retrieval `MaxToolCalls` né la tolleranza agli errori consecutivi.
 
 **Contesto**: All'interno di `Tool`
 
-Utilizzare `Bookkeeping()` per strumenti strutturati di avanzamento, stato, ricerca e impegno terminale il cui costo è la tenuta dei registri piuttosto che il recupero o il lavoro con effetti collaterali. Esempi classici sono gli aggiornamenti di stato, gli indicatori di avanzamento e lo strumento atomico "commit this run" che scrive l'artefatto finale.
+Usa `Bookkeeping()` per marker di stato strutturati, dichiarazioni di
+transizione, finding e commit terminali. Non usarlo per snapshot o risultati di
+lookup il cui successo deve pianificare un ragionamento successivo.
 
 ```go
 Tool("set_step_status", "Update step status", func() {
@@ -1153,25 +1199,28 @@ Tool("set_step_status", "Update step status", func() {
 **Comportamento in fase di esecuzione:**
 
 - Codegen registra il flag su `tools.ToolSpec.Bookkeeping`.
-- Le chiamate di contabilità non vengono mai conteggiate nei confronti di `MaxToolCalls` e non vengono mai scartate quando il runtime ritaglia un batch per adattarlo al budget rimanente. Le chiamate a budget (non contabili) vengono tagliate per prime; le chiamate contabili mantengono la loro posizione originale.
-- I risultati contabili di successo rimangono nascosti ai futuri turni di pianificazione. Inserisci lo stato canonico necessario al turno successivo in un input esplicito del pianificatore invece che nel risultato di uno strumento di contabilità.
+- Le chiamate di bookkeeping hanno costo zero per `MaxToolCalls` e non modificano il contatore degli errori consecutivi.
+- Ogni batch di tool call prodotto dal modello è atomico. Il runtime ammette tutto il batch se tutte le chiamate con budget rientrano nel limite, altrimenti rifiuta tutto il batch. Non rimuove mai singole chiamate dalla risposta del provider.
+- Chiamate e risultati restano eventi durevoli nello stream e nel run log, oltre che nella trascrizione del provider. Solo i risultati bookkeeping riusciti vengono omessi dai futuri `ToolOutputs` compatti.
+- Un risultato bookkeeping fallito apre un turno di riparazione solo quando `RetryHint.AllowsRetry()` restituisce true.
 - Gli strumenti sconosciuti vengono trattati come preventivati; sono esenti solo gli strumenti dichiarati `Bookkeeping()` nel DSL (o contrassegnati in contabilità sul runtime `ToolSpec`).
 - Un turno esclusivamente contabile deve risolversi nello stesso turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult` o attendere/pausa).
 
-**Composizione con `TerminalRun()`:**
+**Commit terminali:**
 
-Uno strumento di commit del terminale è in genere sia contabile che terminale:
+Uno strumento di commit terminale richiede solo `TerminalRun()`, perché gli
+strumenti terminali implicano bookkeeping:
 
 ```go
 Tool("commit_task", "Commit the terminal task artifact", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
-    Bookkeeping()  // always executes, even when the budget is exhausted
-    TerminalRun()  // ends the run atomically once it succeeds
+    TerminalRun()  // nessun costo di retrieval; termina il run quando riesce
 })
 ```
 
-Questo modello garantisce che l'esecuzione possa sempre essere finalizzata in modo deterministico: lo strumento di commit è esente dal budget di recupero e, una volta riuscita, l'esecuzione viene eseguita senza un turno di pianificazione successivo.
+Il commit può essere ammesso senza budget di retrieval residuo. Quando riesce,
+il run termina senza un turno successivo del planner.
 
 ## Funzioni politiche
 

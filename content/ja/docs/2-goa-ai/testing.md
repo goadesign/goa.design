@@ -305,7 +305,7 @@ RunPolicy(func() {
 
 3. 同じ tool を繰り返し呼ぶ **無限ループ** がないか確認します。
 
-4. **構造化 bookkeeping tool を budget から免除**するには、DSL で `Bookkeeping()` を宣言します。status update、progress marker、terminal-commit tool は通常この category です。免除されると `RemainingToolCalls` を消費せず常に実行できます。`Bookkeeping()` と `TerminalRun()` を組み合わせると、retrieval budget が尽きても finalize できる "commit this run" tool を作れます。
+4. **構造化された制御記録を retrieval と失敗の budget から免除**するには、DSL で `Bookkeeping()` を宣言します。status marker と transition declaration はこの category ですが、成功後に追加推論をスケジュールすべき lookup result は該当しません。モデルが生成した mixed batch は原子的なままで、予算対象呼び出しが収まらなければ batch 全体が拒否されます。terminal commit には `TerminalRun()` だけを使用します。terminal tool は自動的に bookkeeping となり、retrieval budget が尽きた後でも受け入れられます。
 
 **症状:**
 
@@ -313,7 +313,7 @@ RunPolicy(func() {
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**原因:** プランナーが bookkeeping tool だけを出しました。成功した bookkeeping result は将来の `PlanResume` turn から隠されるため、同じ turn で terminal に解決するか、入力待ちにする必要があります。
+**原因:** プランナーが bookkeeping tool だけを出しました。呼び出しと結果は provider transcript に残りますが、成功した結果は次の `PlanResume` を起動せず、将来の型付き `ToolOutputs` にも入りません。そのため、同じ turn で terminal に解決するか、入力待ちにする必要があります。
 
 **解決策:**
 

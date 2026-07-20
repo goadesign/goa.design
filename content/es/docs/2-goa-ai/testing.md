@@ -300,14 +300,14 @@ RunPolicy(func() {
 
 3. **Comprueba si hay bucles infinitos** en la lógica del planificador que llamen repetidamente a la misma herramienta.
 
-4. **Exime del presupuesto las herramientas estructuradas de bookkeeping** declarándolas `Bookkeeping()` en el DSL. Las actualizaciones de estado, marcadores de progreso y herramientas de commit terminal suelen pertenecer a esta categoría; una vez exentas, nunca consumen `RemainingToolCalls` y siempre pueden ejecutarse. Combina `Bookkeeping()` con `TerminalRun()` para crear una herramienta de tipo "commit this run" con garantía de finalización incluso después de agotar el presupuesto de recuperación.
+4. **Exime los registros de control estructurados de los presupuestos de recuperación y fallos** declarándolos `Bookkeeping()` en el DSL. Los marcadores de estado y declaraciones de transición pertenecen a esta categoría; los resultados de consulta cuyo éxito deba programar razonamiento posterior no. Un lote mixto creado por el modelo permanece atómico y se rechaza por completo si no caben sus llamadas presupuestadas. Usa solo `TerminalRun()` para un commit terminal; las herramientas terminales se convierten automáticamente en bookkeeping y pueden admitirse tras agotar el presupuesto de recuperación.
 
 **Síntoma:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Causa:** El planificador emitió únicamente herramientas de bookkeeping. Los resultados satisfactorios de bookkeeping permanecen ocultos a futuros turnos `PlanResume`, por lo que el mismo turno debe resolverse de forma terminal o quedar a la espera de entrada.
+**Causa:** El planificador emitió únicamente herramientas de bookkeeping. Sus llamadas y resultados permanecen en la transcripción del proveedor, pero los resultados correctos no activan otro `PlanResume` ni entran en los `ToolOutputs` tipados futuros. Por tanto, el mismo turno debe resolverse de forma terminal o quedar a la espera de entrada.
 
 **Soluciones:**
 

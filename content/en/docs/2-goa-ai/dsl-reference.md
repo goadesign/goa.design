@@ -41,14 +41,15 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page continuation reference (optional)                       |
 | `Idempotent`                                            | Tool                     | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags`                                                  | Tool, Toolset            | Attaches metadata labels                                                                                           |
+| `Meta`                                                  | Tool                     | Attaches inert, named design metadata emitted in `ToolSpec.Meta`                                                   |
 | `BindTo`                                                | Tool                     | Binds tool to service method                                                                                       |
 | `Inject`                                                | Tool                     | Marks fields as runtime-injected                                                                                   |
 | `CallHintTemplate`                                      | Tool                     | Display template for invocations                                                                                   |
 | `ResultHintTemplate`                                    | Tool                     | Display template for results                                                                                       |
 | `ResultReminder`                                        | Tool                     | Static system reminder after tool result                                                                           |
 | `Confirmation`                                          | Tool                     | Requires explicit out-of-band confirmation before execution                                                        |
-| `TerminalRun`                                           | Tool                     | Marks the tool terminal: the run completes immediately after it executes (no follow-up planner turn)               |
-| `Bookkeeping`                                           | Tool                     | Marks the tool as bookkeeping: calls do not consume the run-level `MaxToolCalls` retrieval budget and stay hidden from future planner turns by default |
+| `TerminalRun`                                           | Tool                     | Marks the tool terminal and bookkeeping: successful execution completes the run without a follow-up planner turn |
+| `Bookkeeping`                                           | Tool                     | Marks a control record: no retrieval or consecutive-failure budget, while the exact call/result remains durable |
 | **Policy Functions**                                    |                          |                                                                                                                    |
 | `RunPolicy`                                             | Agent                    | Configures execution constraints                                                                                   |
 | `DefaultCaps`                                           | RunPolicy                | Sets resource limits                                                                                               |
@@ -1117,7 +1118,8 @@ func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInp
 
 ### Tags
 
-`Tags(values...)` annotates tools or toolsets with metadata labels. Tags are surfaced to policy engines and telemetry.
+`Tags(values...)` annotates tools or toolsets with flat labels for generic
+policy and UI filtering. Toolset tags are inherited by their tools.
 
 **Context**: Inside `Tool` or `Toolset`
 
@@ -1133,6 +1135,32 @@ Tool("delete_file", "Delete a file", func() {
     Tags("filesystem", "write", "destructive")
 })
 ```
+
+### Meta
+
+Goa's standard `Meta(name, values...)` DSL attaches a named design-time
+annotation to the current tool. Goa-AI code generation preserves it in
+`ToolSpec.Meta` as `map[string][]string`.
+
+```go
+Tool("resolve_source", "Resolve a selectable source", func() {
+    Args(ResolveSourceArgs)
+    Return(ResolveSourceResult)
+    Meta("example.chat.supplies_tool_input")
+})
+```
+
+Use `Meta` for a stable, consumer-owned contract that is not a generic policy
+category. Metadata is inert: Goa-AI does not change scheduling, visibility,
+budgets, retries, or terminal behavior merely because a key is present. The
+planner, policy, or UI that interprets a key owns and documents its semantics.
+
+Keep the built-in contracts canonical:
+
+- use `Tags` for generic allow/deny and capability filtering,
+- use `Bookkeeping` and `TerminalRun` for accounting and terminal behavior,
+- use `RetryHint` for per-result failure handling,
+- use planner fields such as `SynthesizeAfterTools` for per-batch transitions.
 
 ### BindTo
 
@@ -1236,7 +1264,7 @@ independent of which `Inject()` fields a design declares.
 
 ### TerminalRun
 
-`TerminalRun()` marks the current tool as terminal for the run. Once the tool executes successfully, the runtime completes the run immediately after publishing the tool result without requesting a follow-up `PlanResume`/finalization turn.
+`TerminalRun()` marks the current tool as terminal for the run. Once the tool executes successfully, the runtime completes the run immediately after publishing the tool result without requesting a follow-up `PlanResume`/finalization turn. Goa-AI automatically classifies every terminal tool as bookkeeping, so `TerminalRun()` is the only declaration needed.
 
 **Context**: Inside `Tool`
 
@@ -1254,15 +1282,15 @@ Tool("commit_task", "Commit the terminal task artifact", func() {
 
 - Codegen records the flag on `tools.ToolSpec.TerminalRun`.
 - After a successful terminal tool call, the runtime finalizes the run without calling `PlanResume`.
-- Terminal tools compose naturally with `Bookkeeping()` (see below): the typical "commit this run" tool is both terminal and bookkeeping, so it always executes even when the retrieval budget is exhausted and ends the run atomically.
+- Codegen also records the tool as bookkeeping. A terminal tool therefore consumes no retrieval or consecutive-failure budget and can still be admitted after the retrieval budget is exhausted.
 
 ### Bookkeeping
 
-`Bookkeeping()` marks the current tool as a bookkeeping tool that does not consume the run-level `MaxToolCalls` retrieval budget. The runtime does not decrement `RemainingToolCalls` for bookkeeping calls and never drops them when trimming a batch to fit the remaining budget.
+`Bookkeeping()` marks the current tool as a control record whose success does not independently schedule another planner turn. It consumes neither the run-level `MaxToolCalls` retrieval budget nor the consecutive-failure allowance.
 
 **Context**: Inside `Tool`
 
-Use `Bookkeeping()` for structured progress, status, finding, and terminal-commit tools whose cost is record-keeping rather than retrieval or side-effecting work. Classic examples are status updates, progress markers, and the atomic "commit this run" tool that writes the final artifact.
+Use `Bookkeeping()` for structured status markers, transition declarations, findings, and terminal commits. Do not use it for a snapshot or lookup result whose success must schedule later planner reasoning.
 
 ```go
 Tool("set_step_status", "Update step status", func() {
@@ -1275,25 +1303,26 @@ Tool("set_step_status", "Update step status", func() {
 **Runtime behavior:**
 
 - Codegen records the flag on `tools.ToolSpec.Bookkeeping`.
-- Bookkeeping calls never count against `MaxToolCalls` and are never discarded when the runtime trims a batch to fit the remaining budget. Budgeted (non-bookkeeping) calls are trimmed first; bookkeeping calls retain their original position.
-- Successful bookkeeping results stay hidden from future planner turns. Put canonical state the next turn must reason over into explicit planner input instead of a bookkeeping tool result.
+- Bookkeeping calls contribute zero cost to `MaxToolCalls` and do not change the consecutive-failure counter.
+- Each model-authored tool-call batch is atomic. The runtime admits the whole batch when all budgeted calls fit, or rejects the whole batch when they do not. It never removes individual calls from the provider response.
+- Calls and results remain durable stream/run-log events and remain in the provider transcript. Successful bookkeeping results are omitted only from compact future `ToolOutputs`.
+- A failed bookkeeping result enters a repair turn only when `RetryHint.AllowsRetry()` returns true.
 - Unknown tools are treated as budgeted; only tools declared `Bookkeeping()` in the DSL (or marked bookkeeping on the runtime `ToolSpec`) are exempt.
 - A bookkeeping-only turn must resolve in the same turn (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, or await/pause).
 
-**Composition with `TerminalRun()`:**
+**Terminal commits:**
 
-A terminal-commit tool is typically both bookkeeping and terminal:
+A terminal-commit tool needs only `TerminalRun()` because terminal tools imply bookkeeping:
 
 ```go
 Tool("commit_task", "Commit the terminal task artifact", func() {
     Args(TaskCompletionArgs)
     Return(TaskCompletionResult)
-    Bookkeeping()  // always executes, even when the budget is exhausted
-    TerminalRun()  // ends the run atomically once it succeeds
+    TerminalRun()  // no retrieval cost; ends the run once it succeeds
 })
 ```
 
-This pattern guarantees that the run can always finalize deterministically: the commit tool is exempt from the retrieval budget, and once it succeeds the run is done without a follow-up planner turn.
+The commit tool can be admitted with no retrieval budget remaining. Once it succeeds, the run is done without a follow-up planner turn.
 
 ## Policy Functions
 
@@ -2159,4 +2188,3 @@ var _ = Service("orchestrator", func() {
 - **[Runtime](./runtime.md)** - Understand how designs translate into runtime behavior
 - **[Toolsets](./toolsets.md)** - Deep dive into toolset execution models
 - **[MCP Integration](./mcp-integration.md)** - Runtime wiring for MCP servers
-

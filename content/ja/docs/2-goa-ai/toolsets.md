@@ -665,7 +665,9 @@ Goa-AI は **Goa の設計時検証** と **構造化されたツールエラー
 - `Cause *ToolError`：任意のネスト原因（リトライや agent-as-tool hop を跨いだチェーンを保持）
 - コンストラクタ：`planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
 
-**RetryHint**：ランタイムとポリシーエンジンが利用する、プランナー側のヒント：
+**RetryHint**：プランナー、ランタイム、ポリシーエンジンが利用する型付きの
+失敗ガイダンスです。ヒントが常にリトライを許可するとは限りません。
+`AllowsRetry()` を呼び出してください。
 
 ```go
 type RetryHint struct {
@@ -686,6 +688,11 @@ type RetryHint struct {
 - `missing_fields`：必須フィールドが欠落
 - `malformed_response`：ツールがデコードできないデータを返した
 - `timeout`, `rate_limited`, `tool_unavailable`：実行 / インフラ起因の問題
+
+`RetryReasonTimeout` は現在の run では終端なので、`hint.AllowsRetry()` は
+false を返します。その他の定義済み reason はすべて true を返します。この
+メソッドが正規の判定です。`RestrictToTool`、メッセージ文面、ヒントの存在だけ
+からリトライ可否を推測しないでください。
 
 **ToolResult** はエラーとヒントを運びます：
 
@@ -749,7 +756,7 @@ func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
     }
 
     last := in.ToolOutputs[len(in.ToolOutputs)-1]
-    if last.Error != nil && last.RetryHint != nil {
+    if last.Error != nil && last.RetryHint.AllowsRetry() {
         hint := last.RetryHint
 
         switch hint.Reason {
@@ -1000,4 +1007,3 @@ server-data は次の場合に使います:
 - **[Agent Composition](./agent-composition.md)** - agent-as-tool パターンで複雑なシステムを構築する
 - **[MCP Integration](./mcp-integration.md)** - 外部ツールサーバに接続する
 - **[Runtime](./runtime.md)** - ツール実行フローを理解する
-

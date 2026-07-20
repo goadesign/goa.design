@@ -137,8 +137,9 @@ mises à jour, puis conservez les modifications de l'application dans `cmd/` et 
 
 Lorsque des plafonds ou deadlines forcent la finalisation, un planificateur peut
 encore fermer l'exécution en renvoyant des outils terminaux de comptabilité. Le
-runtime n'exécute que des outils `Bookkeeping()` + `TerminalRun()` dans ce chemin
-et exige leur succès avant de considérer l'exécution comme fermée.
+runtime n'exécute que des outils `TerminalRun()` dans ce chemin
+(`TerminalRun()` implique la comptabilité) et exige leur succès avant de
+considérer l'exécution comme fermée.
 
 L'exemple généré commence par un planificateur de stub afin que ce flux soit visible avant
 vous connectez un modèle. Un vrai planificateur suit le même contrat ; ça délègue simplement

@@ -300,14 +300,14 @@ RunPolicy(func() {
 
 3. **Controllare i loop infiniti** nella logica del pianificatore che richiama ripetutamente lo stesso strumento.
 
-4. **Esentare gli strumenti strutturati di bookkeeping dal budget** dichiarandoli `Bookkeeping()` nel DSL. Aggiornamenti di stato, marker di progresso e strumenti di commit terminale appartengono tipicamente a questa categoria; una volta esentati non consumano mai `RemainingToolCalls` e possono sempre essere eseguiti. Combina `Bookkeeping()` con `TerminalRun()` per uno strumento di "commit di questo run" che finalizza atomicamente anche dopo che il budget di retrieval è esaurito.
+4. **Esentare i record di controllo strutturati dai budget di retrieval e di errori** dichiarandoli `Bookkeeping()` nel DSL. Marker di stato e dichiarazioni di transizione appartengono a questa categoria; i risultati di lookup il cui successo deve pianificare altro ragionamento no. Un batch misto prodotto dal modello resta atomico ed è rifiutato interamente se le chiamate con budget non rientrano. Per un commit terminale usa solo `TerminalRun()`: gli strumenti terminali diventano automaticamente bookkeeping e possono essere ammessi dopo l'esaurimento del budget.
 
 **Sintomo:**
 ```
 error: bookkeeping-only tool batch requires a terminal tool or terminal planner payload
 ```
 
-**Causa:** Il planner ha emesso solo strumenti di bookkeeping. I risultati bookkeeping riusciti restano nascosti ai futuri turni `PlanResume`, quindi lo stesso turno deve risolversi in modo terminale oppure restare in attesa di input.
+**Causa:** Il planner ha emesso solo strumenti di bookkeeping. Chiamate e risultati restano nella trascrizione del provider, ma i risultati riusciti non attivano un altro `PlanResume` e non entrano nei futuri `ToolOutputs` tipizzati. Lo stesso turno deve quindi risolversi in modo terminale oppure attendere input.
 
 **Soluzioni:**
 

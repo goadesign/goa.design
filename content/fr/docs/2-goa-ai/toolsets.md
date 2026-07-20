@@ -671,7 +671,9 @@ Goa-AI combine **les validations au moment de la conception de Goa** avec un **m
 - `Cause *ToolError` – cause imbriquée facultative (préserve les chaînes entre les tentatives et les sauts d'agent en tant qu'outil)
 - Constructeurs : `planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
 
-**RetryHint** – indice côté planificateur utilisé par le moteur d'exécution et de stratégie :
+**RetryHint** – indication d'échec typée utilisée par le planificateur, le
+runtime et le moteur de politique. Une indication n'autorise pas toujours une
+nouvelle tentative ; appelez `AllowsRetry()` :
 
 ```go
 type RetryHint struct {
@@ -691,6 +693,12 @@ Valeurs `RetryReason` courantes :
 - `missing_fields` – les champs obligatoires sont manquants
 - `malformed_response` – l'outil a renvoyé des données qui n'ont pas pu être décodées
 - `timeout`, `rate_limited`, `tool_unavailable` – problèmes d’exécution/infra
+
+`RetryReasonTimeout` est terminal pour l'exécution courante :
+`hint.AllowsRetry()` renvoie false. Toutes les autres raisons définies renvoient
+true. Cette méthode est la distinction canonique ; ne déduisez pas la
+possibilité de reprise de `RestrictToTool`, du texte du message ou de la seule
+présence d'une indication.
 
 **ToolResult** contient des erreurs et des astuces :
 
@@ -754,7 +762,7 @@ func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput)
     }
 
     last := in.ToolOutputs[len(in.ToolOutputs)-1]
-    if last.Error != nil && last.RetryHint != nil {
+    if last.Error != nil && last.RetryHint.AllowsRetry() {
         hint := last.RetryHint
 
         switch hint.Reason {
