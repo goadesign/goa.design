@@ -448,7 +448,7 @@ in the DSL. The runtime contract for those tools is:
 - the runtime projects provider-owned bounds into emitted `tool_result` JSON, result-hint
   template data under `.Bounds`, hook payloads, and stream events
 - for cursor-paged tools, provider code sets `Bounds.NextCursor` to its private cursor; the
-  emitted `next_cursor` is the producing `tool_call_id` continuation reference
+  emitted `next_cursor` is a short run-, session-, and tool-bound continuation reference
 
 `tools.ToolSpec.Bounds` uses model-facing JSON names. A DSL declaration may
 refer to lower-camel Goa attributes such as `NextCursor("nextCursor")`, but
@@ -466,9 +466,10 @@ Canonical projected fields:
 `planner.ToolResult.Bounds` remains the single machine-readable provider contract.
 Authored Go result types stay semantic and domain-specific; they do not need to
 duplicate the canonical bounded fields just so models can see them.
-When a follow-up call passes the continuation reference in the payload cursor
-field, the runtime reuses the prior payload and injects the private provider
-cursor before tool execution.
+When a follow-up call contains only the continuation reference in the payload
+cursor field, the runtime verifies that it is current, restores the originating
+arguments, and injects the private provider cursor before tool execution. A
+reference cannot be reused or moved to another session or tool.
 
 Generated result codecs accept the same canonical bounded fields projected by
 the runtime and reject unknown fields outside the semantic result plus those

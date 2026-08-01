@@ -450,7 +450,7 @@ dans le DSL. Le contrat d'exécution de ces outils est :
 - les exécutions réussies doivent remplir `planner.ToolResult.Bounds`
 - le runtime projette les limites détenues par le fournisseur dans les `tool_result` JSON émis, indice de résultat
 données de modèle sous `.Bounds`, charges utiles de hook et événements de flux
-- pour les outils paginés par curseur, le code fournisseur définit `Bounds.NextCursor` avec son curseur privé; le `next_cursor` émis est la référence de continuation `tool_call_id` productrice
+- pour les outils paginés par curseur, le fournisseur définit `Bounds.NextCursor` avec son curseur privé ; le `next_cursor` émis est une référence courte liée à l'exécution, la session et l'outil
 
 `tools.ToolSpec.Bounds` utilise les noms JSON visibles par le modèle. Une
 déclaration DSL peut référencer des attributs Goa en lower-camel comme
@@ -468,7 +468,7 @@ Champs projetés canoniques :
 `planner.ToolResult.Bounds` reste le seul contrat fournisseur lisible par machine.
 Les types de résultats Go créés restent sémantiques et spécifiques au domaine ; ils n'ont pas besoin de
 dupliquez les champs délimités canoniques juste pour que les modèles puissent les voir.
-Quand un appel suivant transmet la référence de continuation dans le champ de curseur de la charge utile, le runtime réutilise la charge utile précédente et injecte le curseur privé du fournisseur avant l'exécution de l'outil.
+Un appel de continuation contient uniquement la référence dans le champ de curseur. Le runtime vérifie sa fraîcheur et sa portée, restaure les arguments d'origine et injecte le curseur privé du fournisseur. La référence ne peut être réutilisée ni déplacée vers une autre session ou un autre outil.
 
 Pour les outils `BindTo` basés sur une méthode, le résultat de la méthode de service lié doit toujours
 transporter les champs délimités canoniques afin que l'exécuteur généré puisse construire

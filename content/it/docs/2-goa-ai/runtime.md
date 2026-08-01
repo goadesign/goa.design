@@ -324,6 +324,16 @@ Tool payload decoding follows Goa’s **decode-body → transform** pattern and 
 
 See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and codegen invariants.
 
+### Risultati degli strumenti delimitati
+
+Gli strumenti paginati dichiarano `BoundedResult(...)`. Il provider imposta il
+proprio cursor privato in `Bounds.NextCursor`; il runtime espone al modello un
+riferimento breve legato a run, sessione e strumento. La chiamata successiva
+contiene solo quel riferimento nel campo cursor. Il runtime ne verifica validità
+e ambito, ripristina gli argomenti originali e inserisce il cursor privato prima
+dell'esecuzione. Il riferimento non può essere riutilizzato né spostato su
+un'altra sessione o un altro strumento.
+
 ## Contratti runtime dei prompt
 
 La gestione dei prompt e nativa del runtime e versionata:

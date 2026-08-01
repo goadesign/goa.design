@@ -103,6 +103,13 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Required`                                              | Esquema                  | Marca los campos como obligatorios                                                                                 |
 | `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos raíz de payload de herramienta declarados se convierten en ejemplos nativos del proveedor y pistas de reintento |
 
+### DSL de evaluaciones
+
+`goa.design/goa-ai/eval/dsl` es un DSL de nivel superior independiente.
+`Suite` contiene escenarios y calibraciones; `Scenario`, `Description`,
+`Input`, `Tags` y `Timeout` definen casos inmutables; `Calibration`, `Answer`,
+`Claim` y `Want` prueban el juez semántico. Consulta [Evaluaciones generadas](evaluations/)
+para los contratos de hooks y runtime.
 
 ### Ejemplos de payload de herramientas
 
@@ -749,7 +756,7 @@ Campos canónicos visibles para el modelo:
 - las ejecuciones acotadas exitosas deben establecer `planner.ToolResult.Bounds`
 - el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` codificado, los datos de plantilla de result-hint,
 los hooks y los eventos de stream
-- para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es el `tool_call_id` que produjo el resultado; el cursor del proveedor permanece privado en el historial del runtime
+- para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es una referencia corta ligada al run, la sesión y la herramienta; el cursor del proveedor permanece privado en el historial del runtime
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -816,8 +823,8 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa devolvió `planner.ToolResult.Bounds`.
 2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`.
-   Cuando `Bounds.NextCursor` está presente, el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado.
-3. El cursor del proveedor permanece como estado privado del runtime para hidratar la siguiente llamada; planners, hooks,
+   Cuando `Bounds.NextCursor` está presente, el `next_cursor` emitido es una referencia corta de continuación.
+3. La llamada siguiente contiene únicamente esa referencia. El runtime verifica su vigencia y alcance, restaura los argumentos originales e inyecta el cursor privado del proveedor. El cursor permanece como estado privado del runtime; planners, hooks,
   streams y UIs reciben los bounds visibles para el modelo.
 
 Las herramientas pueden incluir un título de visualización usando la función estándar del DSL `Title()`:

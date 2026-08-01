@@ -103,6 +103,13 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Required`                                              | Schema                   | Marks fields as required                                                                                           |
 | `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and retry hints |
 
+### Evaluation DSL
+
+`goa.design/goa-ai/eval/dsl` is an independent top-level DSL. `Suite` owns
+generated scenarios and calibrations; `Scenario`, `Description`, `Input`,
+`Tags`, and `Timeout` define immutable case data; `Calibration`, `Answer`,
+`Claim`, and `Want` prove the semantic judge. See [Generated Evaluations](evaluations/)
+for the generated hook and runtime contracts.
 
 ### Tool Payload Examples
 
@@ -749,8 +756,8 @@ Canonical model-visible fields:
 - successful bounded executions must set `planner.ToolResult.Bounds`
 - the runtime projects provider-owned bounds into encoded `tool_result` JSON, result-hint template data,
 hooks, and stream events
-- for cursor-paged tools, the model-visible `next_cursor` is the producing `tool_call_id`;
-the provider cursor stays private in runtime history
+- for cursor-paged tools, the model-visible `next_cursor` is a short run-, session-, and
+  tool-bound reference; the provider cursor stays private in runtime history
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -817,9 +824,9 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
 2. The runtime merges those bounds into the emitted JSON using model-facing JSON field names generated from `BoundedResult(...)`.
-   When `Bounds.NextCursor` is present, the emitted `next_cursor` is the producing `tool_call_id`
-   continuation reference.
-3. The provider cursor remains private runtime state used to hydrate the next call; planners, hooks,
+   When `Bounds.NextCursor` is present, the emitted `next_cursor` is a short continuation reference.
+3. A continuation call contains only that reference. The runtime verifies freshness and scope,
+   restores the original arguments, and injects the private provider cursor; planners, hooks,
   streams, and UIs receive the model-visible bounds.
 
 Tools can include a display title using the standard `Title()` DSL function:

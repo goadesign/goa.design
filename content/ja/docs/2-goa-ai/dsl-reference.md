@@ -117,6 +117,14 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Required` | Schema | 必須フィールドを指定する |
 | `Example` | Schema | 明示的な例を付与する。authored top-level tool payload example は provider-native example と retry hint になる |
 
+### 評価 DSL
+
+`goa.design/goa-ai/eval/dsl` は独立した top-level DSL です。`Suite` が生成
+scenario と calibration を所有し、`Scenario`、`Description`、`Input`、`Tags`、
+`Timeout` が immutable case data を定義します。`Calibration`、`Answer`、`Claim`、
+`Want` は semantic judge を検証します。hook と runtime contract は
+[生成型評価](evaluations/)を参照してください。
+
 ### ツール payload の例
 
 tool payload schema では、明示的に書いた Goa の top-level `Example(...)` が
@@ -735,7 +743,7 @@ func handleToolResult(result *planner.ToolResult) {
 - codegen は生成 JSON result schema へ正規 bounded field を project します
 - successful bounded execution は `planner.ToolResult.Bounds` を設定する必要があります
 - runtime は provider-owned bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
-- cursor-paged tool では、model-visible な `next_cursor` は result を生成した `tool_call_id` です。provider cursor は runtime history 内の private state として残ります
+- cursor-paged tool では、model-visible な `next_cursor` は run、session、tool に束縛された短い reference です。provider cursor は runtime history 内の private state として残ります
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -796,8 +804,8 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します。
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します。
-   `Bounds.NextCursor` がある場合、emitted `next_cursor` は result を生成した `tool_call_id` continuation reference です。
-3. provider cursor は次の call を hydrate する private runtime state として残ります。planner、hook、stream、UI は model-visible bounds を受け取ります。
+   `Bounds.NextCursor` がある場合、emitted `next_cursor` は短い continuation reference です。
+3. 次の call はその reference だけを含みます。runtime は freshness と scope を検証し、元の argument を復元して private provider cursor を inject します。provider cursor は private runtime state のままで、planner、hook、stream、UI は model-visible bounds を受け取ります。
 
 tool は標準 `Title()` DSL function を使って display title を持てます:
 

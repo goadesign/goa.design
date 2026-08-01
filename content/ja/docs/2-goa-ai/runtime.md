@@ -451,7 +451,7 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 - 生成 `tools.ToolSpec.Bounds` が正規 bounded-result schema を宣言する
 - successful execution は `planner.ToolResult.Bounds` を populate する必要がある
 - runtime は provider-owned bounds を emitted `tool_result` JSON、`.Bounds` 配下の result-hint template data、hook payload、stream event へ project する
-- cursor-paged tool では、provider code は private cursor を `Bounds.NextCursor` に設定します。emitted `next_cursor` は result を生成した `tool_call_id` continuation reference です
+- cursor-paged tool では、provider code は private cursor を `Bounds.NextCursor` に設定します。emitted `next_cursor` は run、session、tool に束縛された短い continuation reference です
 
 `tools.ToolSpec.Bounds` は model-facing JSON 名を使います。DSL 宣言が
 `NextCursor("nextCursor")` のような lower-camel Goa attribute を参照しても、
@@ -465,7 +465,7 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 - `refinement_hint` (optional)
 - `next_cursor` (optional, `NextCursor(...)` で宣言した場合。runtime continuation reference です)
 
-`planner.ToolResult.Bounds` が唯一の machine-readable provider contract です。手書きの Go result type は semantic かつ domain-specific のままでよく、model に見せるためだけに正規 bounded field を重複させる必要はありません。follow-up call が payload cursor field に continuation reference を渡すと、runtime は prior payload を再利用し、tool execution 前に private provider cursor を inject します。
+`planner.ToolResult.Bounds` が唯一の machine-readable provider contract です。手書きの Go result type は semantic かつ domain-specific のままでよく、model に見せるためだけに正規 bounded field を重複させる必要はありません。continuation call は cursor field の reference だけを含みます。runtime は freshness と scope を検証し、元の argument を復元して private provider cursor を inject します。reference は再利用できず、別の session や tool へ移せません。
 
 method-backed `BindTo` tool では、生成 executor が projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。明示的な tool-facing `Return(...)` shape はそれらの正規 field を重複させてはいけません。bound method result の中で required にできるのは `returned` と `truncated` だけです。`total`、`refinement_hint`、`next_cursor` は bounds contract の optional part のままで、runtime bounds が省略した場合は emitted JSON からも省略されます。
 

@@ -103,6 +103,13 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Required`                                              | Schéma                   | Marque les champs comme requis                                                                                           |
 | `Example`                                               | Schéma                   | Joint un exemple explicite ; les exemples de payload d'outil racine déclarés deviennent des exemples natifs fournisseur et des conseils de nouvelle tentative |
 
+### DSL d'évaluation
+
+`goa.design/goa-ai/eval/dsl` est un DSL de premier niveau indépendant. `Suite`
+contient les scénarios et calibrations ; `Scenario`, `Description`, `Input`,
+`Tags` et `Timeout` définissent les cas immuables ; `Calibration`, `Answer`,
+`Claim` et `Want` valident le juge sémantique. Consultez [Évaluations générées](evaluations/)
+pour les contrats des hooks et du runtime.
 
 ### Exemples de payload d'outil
 
@@ -749,7 +756,7 @@ Champs visibles dans le modèle canonique :
 - les exécutions limitées réussies doivent définir `planner.ToolResult.Bounds`
 - le runtime projette les limites détenues par le fournisseur dans le JSON `tool_result` codé, les données de modèle d'indice de résultat,
 hooks et événements de flux
-- pour les outils paginés par curseur, le `next_cursor` visible par le modèle est le `tool_call_id` producteur; le curseur du fournisseur reste privé dans l'historique du runtime
+- pour les outils paginés par curseur, le `next_cursor` visible par le modèle est une référence courte liée à l'exécution, la session et l'outil ; le curseur du fournisseur reste privé dans l'historique du runtime
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -816,8 +823,8 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu’un outil limité réussi a renvoyé `planner.ToolResult.Bounds`.
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-   Quand `Bounds.NextCursor` est présent, le `next_cursor` émis est la référence de continuation `tool_call_id` productrice.
-3. Le curseur du fournisseur reste un état privé du runtime utilisé pour hydrater l'appel suivant; les planificateurs, hooks,
+   Quand `Bounds.NextCursor` est présent, le `next_cursor` émis est une référence courte de continuation.
+3. L'appel suivant contient uniquement cette référence. Le runtime vérifie sa fraîcheur et sa portée, restaure les arguments d'origine et injecte le curseur privé du fournisseur. Le curseur reste un état privé du runtime ; les planificateurs, hooks,
 flux et UIs reçoivent les limites visibles par le modèle.
 
 Les outils peuvent inclure un titre d'affichage à l'aide de la fonction standard `Title()` DSL :

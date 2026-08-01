@@ -23,6 +23,14 @@ controllo dell'esecuzione:
 | `TerminalRun` | Strumento | Contrassegna lo strumento come terminale e di bookkeeping: il successo termina il run senza un turno successivo del planner |
 | `Bookkeeping` | Strumento | Contrassegna un record di controllo: nessun budget di retrieval o di errori consecutivi, mentre chiamata e risultato esatti restano durevoli |
 
+### DSL di valutazione
+
+`goa.design/goa-ai/eval/dsl` è un DSL di primo livello indipendente. `Suite`
+contiene scenari e calibrazioni; `Scenario`, `Description`, `Input`, `Tags` e
+`Timeout` definiscono casi immutabili; `Calibration`, `Answer`, `Claim` e `Want`
+verificano il giudice semantico. Consulta [Valutazioni generate](evaluations/)
+per i contratti degli hook e del runtime.
+
 ### Esempi di payload degli strumenti
 
 Per gli schemi dei payload degli strumenti, un `Example(...)` Goa di livello
@@ -669,7 +677,7 @@ Campi visibili nel modello canonico:
 - le esecuzioni limitate riuscite devono impostare `planner.ToolResult.Bounds`
 - il runtime proietta i bounds di proprietà del provider nel JSON codificato `tool_result`, nei dati del modello di suggerimento dei risultati,
 hook ed eventi in streaming
-- per gli strumenti paginati con cursor, il `next_cursor` visibile al modello è il `tool_call_id` che ha prodotto il risultato; il cursor del provider resta privato nella cronologia del runtime
+- per gli strumenti paginati con cursor, il `next_cursor` visibile al modello è un riferimento breve legato a run, sessione e strumento; il cursor del provider resta privato nella cronologia del runtime
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
@@ -736,8 +744,8 @@ Quando uno strumento limitato viene eseguito:
 
 1. Il runtime convalida che uno strumento associato con successo ha restituito `planner.ToolResult.Bounds`.
 2. Il runtime unisce tali limiti nel JSON emesso utilizzando i nomi dei campi da `BoundedResult(...)`.
-   Quando `Bounds.NextCursor` è presente, il `next_cursor` emesso è il riferimento di continuazione `tool_call_id` che ha prodotto il risultato.
-3. Il cursor del provider resta stato privato del runtime usato per idratare la chiamata successiva; planner, hook,
+   Quando `Bounds.NextCursor` è presente, il `next_cursor` emesso è un riferimento breve di continuazione.
+3. La chiamata successiva contiene solo quel riferimento. Il runtime ne verifica validità e ambito, ripristina gli argomenti originali e inserisce il cursor privato del provider. Il cursor resta stato privato del runtime; planner, hook,
   stream e interfacce utente ricevono i bounds visibili al modello.
 
 Gli strumenti possono includere un titolo visualizzato utilizzando la funzione DSL `Title()` standard:
