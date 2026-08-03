@@ -447,8 +447,8 @@ in the DSL. The runtime contract for those tools is:
 - successful executions must populate `planner.ToolResult.Bounds`
 - the runtime projects provider-owned bounds into emitted `tool_result` JSON, result-hint
   template data under `.Bounds`, hook payloads, and stream events
-- for cursor-paged tools, provider code sets `Bounds.NextCursor` to its private cursor; the
-  emitted `next_cursor` is a short run-, session-, and tool-bound continuation reference
+- for paged tools, provider code sets `Bounds.NextCursor` to the opaque
+  next-page cursor
 
 `tools.ToolSpec.Bounds` uses model-facing JSON names. A DSL declaration may
 refer to lower-camel Goa attributes such as `NextCursor("nextCursor")`, but
@@ -461,15 +461,25 @@ Canonical projected fields:
 - `truncated` (required)
 - `total` (optional)
 - `refinement_hint` (optional)
-- `next_cursor` (optional, when declared via `NextCursor(...)`; this is a runtime continuation reference)
+- `next_cursor` (optional, when declared via `NextCursor(...)` and exposed by a
+  self-paging `Cursor` contract)
 
 `planner.ToolResult.Bounds` remains the single machine-readable provider contract.
 Authored Go result types stay semantic and domain-specific; they do not need to
 duplicate the canonical bounded fields just so models can see them.
-When a follow-up call contains only the continuation reference in the payload
-cursor field, the runtime verifies that it is current, restores the originating
-arguments, and injects the private provider cursor before tool execution. A
-reference cannot be reused or moved to another session or tool.
+
+`ContinueWith("continue_tool", "cursor")` declares mechanical continuation as
+a separate action. The runtime advertises that action only when the preceding
+batch contains exactly one compatible successful page with another cursor. Its
+model-facing schema is an empty object; when the model chooses the action with
+`{}`, the runtime binds the cursor and any retained canonical query fields
+before execution. Multiple compatible pages are rejected as ambiguous because
+the contract exposes no result-chain selector.
+
+`Cursor("cursor")` on a self-paging tool is the open contract: the runtime
+projects `Bounds.NextCursor` into `next_cursor`, and the model repeats the
+unchanged query arguments with that opaque cursor. Use it when pagination
+itself requires a model-visible choice rather than mechanical continuation.
 
 Generated result codecs accept the same canonical bounded fields projected by
 the runtime and reject unknown fields outside the semantic result plus those

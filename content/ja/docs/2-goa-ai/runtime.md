@@ -451,7 +451,7 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 - 生成 `tools.ToolSpec.Bounds` が正規 bounded-result schema を宣言する
 - successful execution は `planner.ToolResult.Bounds` を populate する必要がある
 - runtime は provider-owned bounds を emitted `tool_result` JSON、`.Bounds` 配下の result-hint template data、hook payload、stream event へ project する
-- cursor-paged tool では、provider code は private cursor を `Bounds.NextCursor` に設定します。emitted `next_cursor` は run、session、tool に束縛された短い continuation reference です
+- paged tool では、provider code は次ページの opaque cursor を `Bounds.NextCursor` に設定します
 
 `tools.ToolSpec.Bounds` は model-facing JSON 名を使います。DSL 宣言が
 `NextCursor("nextCursor")` のような lower-camel Goa attribute を参照しても、
@@ -463,9 +463,11 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 - `truncated` (required)
 - `total` (optional)
 - `refinement_hint` (optional)
-- `next_cursor` (optional, `NextCursor(...)` で宣言した場合。runtime continuation reference です)
+- `next_cursor` (direct `Cursor` contract が `NextCursor(...)` を公開する場合は optional)
 
-`planner.ToolResult.Bounds` が唯一の machine-readable provider contract です。手書きの Go result type は semantic かつ domain-specific のままでよく、model に見せるためだけに正規 bounded field を重複させる必要はありません。continuation call は cursor field の reference だけを含みます。runtime は freshness と scope を検証し、元の argument を復元して private provider cursor を inject します。reference は再利用できず、別の session や tool へ移せません。
+`planner.ToolResult.Bounds` が唯一の machine-readable provider contract です。手書きの Go result type は semantic かつ domain-specific のままでよく、model に見せるためだけに正規 bounded field を重複させる必要はありません。
+
+`ContinueWith("continue_tool", "cursor")` は機械的な continuation を別 action として宣言します。runtime は、直前の batch に次の cursor を持つ互換 page が一つだけある場合に限って action を公開します。model は `{}` で action を選び、runtime が実行前に cursor と保持済み query field を bind します。direct `Cursor("cursor")` は open contract であり、model は `next_cursor` の opaque cursor と変更していない query argument を次の call に指定します。
 
 method-backed `BindTo` tool では、生成 executor が projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。明示的な tool-facing `Return(...)` shape はそれらの正規 field を重複させてはいけません。bound method result の中で required にできるのは `returned` と `truncated` だけです。`total`、`refinement_hint`、`next_cursor` は bounds contract の optional part のままで、runtime bounds が省略した場合は emitted JSON からも省略されます。
 

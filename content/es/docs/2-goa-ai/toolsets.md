@@ -180,7 +180,7 @@ Utiliza el helper DSL `BoundedResult()` dentro de la definición de un `Tool`:
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "Cursor opaco de la página siguiente devuelto por la página anterior")
         Required("site_id")
     })
     Return(func() {
@@ -206,7 +206,10 @@ Cuando una herramienta está marcada con `BoundedResult()`:
   el DSL nombra un atributo Goa lower-camel como `NextCursor("nextCursor")`,
   codegen emite `NextCursorField: "next_cursor"` para que esquemas, proyección
   del runtime y codecs de resultado usen la misma forma.
-- Para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es una referencia de continuación del runtime; los cursores del proveedor permanecen como estado privado del runtime.
+- `ContinueWith` mantiene el cursor en el runtime y expone al modelo una acción
+  de continuación sin argumentos solo cuando hay una única página anterior
+  compatible. Un contrato `Cursor` directo expone el cursor opaco en
+  `next_cursor`.
 - El tipo de resultado Go semántico sigue siendo específico del dominio; no necesita duplicar esos campos
 
 Para herramientas `BindTo` respaldadas por métodos, el resultado del método de servicio enlazado todavía debe
@@ -230,7 +233,7 @@ Las herramientas acotadas son un contrato estricto: los servicios implementan el
 
 - `Bounds.Returned` y `Bounds.Truncated` deben establecerse siempre en los resultados exitosos de herramientas acotadas.
 - `Bounds.Total`, `Bounds.NextCursor` y `Bounds.RefinementHint` son opcionales y solo deben establecerse cuando se conozcan.
-  El código del proveedor establece `Bounds.NextCursor` con el cursor privado del proveedor; el runtime proyecta una referencia de continuación en los resultados visibles para el modelo.
+  El código del proveedor establece `Bounds.NextCursor` con el cursor opaco de la página siguiente.
 
 Los ejecutores implementan el truncado y rellenan los metadatos de bounds:
 
@@ -271,8 +274,9 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
 2. El runtime fusiona esos bounds en el JSON emitido usando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`
-3. Cuando existe un cursor del proveedor, el `next_cursor` emitido es la referencia de continuación `tool_call_id` que produjo el resultado
-4. Los suscriptores de streams y los finalizadores acceden a los bounds visibles para el modelo para su visualización en la UI, logging o decisiones de políticas
+3. Con `ContinueWith`, el runtime ofrece la acción vacía solo cuando una única página anterior compatible puede continuar y enlaza el cursor antes de ejecutar
+4. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
+5. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
 
 ```go
 // En un suscriptor de stream

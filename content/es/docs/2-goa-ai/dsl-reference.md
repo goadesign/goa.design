@@ -37,8 +37,9 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `AudienceInternal`                                      | ServerData               | Marca los datos de servidor como adjunto de composición interna                                                    |
 | `AudienceEvidence`                                      | ServerData               | Marca los datos de servidor como procedencia o evidencia de auditoría                                              |
 | `BoundedResult`                                         | Tool                     | Declara un contrato de resultado acotado propiedad del runtime; un sub-DSL opcional puede declarar los campos de cursor de paginación |
-| `Cursor`                                                | BoundedResult            | Declara qué campo del payload lleva la referencia de continuación del runtime (opcional)                           |
-| `NextCursor`                                            | BoundedResult            | Declara el nombre del campo de resultado proyectado para la referencia de continuación de la siguiente página (opcional) |
+| `Cursor`                                                | BoundedResult            | Declara qué campo del payload lleva el cursor opaco de la página siguiente (opcional)                              |
+| `ContinueWith`                                          | BoundedResult            | Delega la paginación mecánica a una acción hermana cuyo cursor enlaza el runtime                                    |
+| `NextCursor`                                            | BoundedResult            | Declara el nombre del campo de resultado proyectado para el cursor de la página siguiente (opcional)               |
 | `Idempotent`                                            | Tool                     | Marca la herramienta como idempotente dentro de una transcripción de ejecución; habilita la de-duplicación segura entre transcripciones para llamadas idénticas |
 | `Tags`                                                  | Tool, Toolset            | Adjunta etiquetas de metadatos                                                                                     |
 | `Meta`                                                  | Tool                     | Adjunta metadatos de diseño inertes y con nombre, emitidos en `ToolSpec.Meta`                                      |
@@ -747,7 +748,7 @@ Campos canónicos visibles para el modelo:
 - `truncated` (obligatorio, `Boolean`)
 - `total` (opcional, `Int`)
 - `refinement_hint` (opcional, `String`)
-- `next_cursor` (opcional, `String`) cuando se declara mediante `NextCursor(...)`; es una referencia de continuación del runtime, no el cursor del proveedor
+- `next_cursor` (opcional, `String`) cuando `NextCursor(...)` se expone mediante un contrato `Cursor` directo
 
 `BoundedResult` es la única fuente de verdad para ese contrato:
 
@@ -756,13 +757,14 @@ Campos canónicos visibles para el modelo:
 - las ejecuciones acotadas exitosas deben establecer `planner.ToolResult.Bounds`
 - el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` codificado, los datos de plantilla de result-hint,
 los hooks y los eventos de stream
-- para herramientas paginadas por cursor, el `next_cursor` visible para el modelo es una referencia corta ligada al run, la sesión y la herramienta; el cursor del proveedor permanece privado en el historial del runtime
+- `ContinueWith` mantiene el cursor fuera del contrato del modelo y ofrece una acción sin argumentos solo mientras una única página anterior pueda continuar
+- `Cursor` directo expone el cursor opaco del proveedor en `next_cursor`
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "Cursor opaco de la página siguiente devuelto por la página anterior")
         Required("site_id")
     })
     Return(func() {
@@ -823,9 +825,8 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa devolvió `planner.ToolResult.Bounds`.
 2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`.
-   Cuando `Bounds.NextCursor` está presente, el `next_cursor` emitido es una referencia corta de continuación.
-3. La llamada siguiente contiene únicamente esa referencia. El runtime verifica su vigencia y alcance, restaura los argumentos originales e inyecta el cursor privado del proveedor. El cursor permanece como estado privado del runtime; planners, hooks,
-  streams y UIs reciben los bounds visibles para el modelo.
+3. Con `ContinueWith`, el cursor permanece en el runtime y la acción vacía se ofrece solo para una página anterior inequívoca.
+4. Con `Cursor` directo, `Bounds.NextCursor` se emite en `next_cursor` y el modelo proporciona ese valor opaco en la siguiente llamada.
 
 Las herramientas pueden incluir un título de visualización usando la función estándar del DSL `Title()`:
 

@@ -141,7 +141,7 @@ Some tools naturally return large lists, graphs, or time-series windows. You can
 
 #### The agent.Bounds Contract
 
-The `agent.Bounds` type describes how a tool result has been bounded relative to the full underlying data set. For paged tools, providers put their private cursor in `NextCursor`; the runtime projects a continuation reference for model-visible outputs.
+`agent.Bounds` descrive come il risultato di uno strumento è stato limitato rispetto al set di dati completo. Per gli strumenti paginati, il provider inserisce il cursor opaco della pagina successiva in `NextCursor`. `ContinueWith` lo mantiene nel runtime, mentre un contratto `Cursor` diretto lo espone al modello.
 
 ```go
 tipo Bounds struct {
@@ -158,7 +158,7 @@ tipo Bounds struct {
 | `Returned` | Count of items actually present in the result |
 | `Total` | Best-effort count of total items before truncation (nil if unknown) |
 | `Truncated` | True if any caps were applied (pagination, depth limits, size limits) |
-| `NextCursor` | Provider-owned cursor for the next page; the runtime exposes a continuation reference to models |
+| `NextCursor` | Cursor opaco della pagina successiva; la sua visibilità dipende dal contratto di paginazione |
 | `RefinementHint` | Human-readable guidance for narrowing the query (e.g., "Add a date filter to reduce results") |
 
 #### Service Responsibility for Trimming
@@ -167,7 +167,7 @@ The runtime does not compute subsets or truncation itself—**services are respo
 
 1. **Applying truncation logic**: Pagination, result limits, depth caps, time windows
 2. **Populating bounds metadata**: Setting `Returned`, `Total`, `Truncated` accurately
-3. **Setting provider cursors**: Put the private provider cursor in `Bounds.NextCursor` when another page exists
+3. **Impostazione dei cursor**: Inserire il cursor opaco della pagina successiva in `Bounds.NextCursor` quando esiste un'altra pagina
 4. **Providing refinement hints**: Guiding users/models on how to narrow queries when results are truncated
 
 This design keeps truncation logic where domain knowledge lives (in services) while providing a uniform contract for the runtime, planners, and UIs to consume.
@@ -213,8 +213,10 @@ When a tool is marked with `BoundedResult()`:
   lower-camel Goa attribute such as `NextCursor("nextCursor")`, codegen emits
   `NextCursorField: "next_cursor"` so schemas, runtime projection, and result
   codecs use one spelling.
-- For cursor-paged tools, model-visible `next_cursor` is a runtime continuation
-  reference; provider cursors remain private runtime state.
+- `ContinueWith` mantiene il cursor nel runtime ed espone un'azione senza
+  argomenti solo quando una singola pagina precedente compatibile può
+  continuare. Un contratto `Cursor` diretto espone il cursor opaco in
+  `next_cursor`.
 - The semantic Go result type stays domain-specific; it does not need to
   duplicate those fields
 
@@ -277,8 +279,9 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into emitted JSON using the model-facing JSON field names generated from `BoundedResult(...)`
-3. When `Bounds.NextCursor` is present, the runtime emits the producing `tool_call_id` as the model-visible `next_cursor` continuation reference
-4. Stream subscribers and finalizers access model-visible bounds for UI display, logging, or policy decisions
+3. Con `ContinueWith`, il runtime offre l'azione vuota solo per una singola pagina precedente compatibile e associa il cursor prima dell'esecuzione
+4. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
+5. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
 
 ```go
 // In un sottoscrittore di flusso

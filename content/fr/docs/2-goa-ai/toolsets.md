@@ -179,7 +179,7 @@ Utilisez l'assistant DSL `BoundedResult()` dans une définition `Tool` :
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "Curseur opaque de la page suivante renvoyé par la page précédente")
         Required("site_id")
     })
     Return(func() {
@@ -205,7 +205,10 @@ Lorsqu'un outil est marqué de `BoundedResult()` :
   DSL nomme un attribut Goa en lower-camel comme `NextCursor("nextCursor")`,
   codegen émet `NextCursorField: "next_cursor"` afin que les schémas, la
   projection du runtime et les codecs de résultat utilisent la même forme.
-- Pour les outils paginés par curseur, le `next_cursor` visible par le modèle est une référence de continuation du runtime; les curseurs du fournisseur restent un état privé du runtime.
+- `ContinueWith` conserve le curseur dans le runtime et n'expose une action
+  sans argument que lorsqu'une seule page précédente compatible peut
+  continuer. Un contrat `Cursor` direct expose le curseur opaque dans
+  `next_cursor`.
 - Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
 
 Pour les outils `BindTo` basés sur une méthode, le résultat de la méthode de service lié doit toujours
@@ -229,7 +232,7 @@ Les outils limités sont un contrat dur : les services implémentent la troncat
 
 - `Bounds.Returned` et `Bounds.Truncated` doivent toujours être définis sur des résultats d'outil limités réussis.
 - `Bounds.Total`, `Bounds.NextCursor` et `Bounds.RefinementHint` sont facultatifs et ne doivent être définis que lorsqu'ils sont connus.
-  Le code fournisseur définit `Bounds.NextCursor` avec le curseur privé du fournisseur; le runtime projette une référence de continuation dans les résultats visibles par le modèle.
+  Le code fournisseur définit `Bounds.NextCursor` avec le curseur opaque de la page suivante.
 
 Les exécuteurs implémentent la troncature et remplissent les métadonnées des limites :
 
@@ -270,8 +273,9 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-3. Lorsqu'un curseur fournisseur existe, le `next_cursor` émis est la référence de continuation `tool_call_id` productrice
-4. Les abonnés au flux et les finaliseurs accèdent aux limites visibles par le modèle pour l'affichage UI, la journalisation ou les décisions de politique
+3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une page précédente compatible et associe le curseur avant l'exécution
+4. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
+5. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 
 ```go
 // In a stream subscriber

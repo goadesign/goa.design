@@ -668,7 +668,7 @@ Campi visibili nel modello canonico:
 - `truncated` (richiesto, `Boolean`)
 - `total` (opzionale, `Int`)
 - `refinement_hint` (opzionale, `String`)
-- `next_cursor` (opzionale, `String`) se dichiarato tramite `NextCursor(...)`; è un riferimento di continuazione del runtime, non il cursor del provider
+- `next_cursor` (opzionale, `String`) quando `NextCursor(...)` è esposto da un contratto `Cursor` diretto
 
 `BoundedResult` è l'unica fonte di verità per quel contratto:
 
@@ -677,13 +677,14 @@ Campi visibili nel modello canonico:
 - le esecuzioni limitate riuscite devono impostare `planner.ToolResult.Bounds`
 - il runtime proietta i bounds di proprietà del provider nel JSON codificato `tool_result`, nei dati del modello di suggerimento dei risultati,
 hook ed eventi in streaming
-- per gli strumenti paginati con cursor, il `next_cursor` visibile al modello è un riferimento breve legato a run, sessione e strumento; il cursor del provider resta privato nella cronologia del runtime
+- `ContinueWith` mantiene il cursor fuori dal contratto del modello e offre un'azione senza argomenti solo finché una singola pagina precedente può continuare
+- `Cursor` diretto espone il cursor opaco del provider in `next_cursor`
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "Cursor opaco della pagina successiva restituito dalla pagina precedente")
         Required("site_id")
     })
     Return(func() {
@@ -744,9 +745,8 @@ Quando uno strumento limitato viene eseguito:
 
 1. Il runtime convalida che uno strumento associato con successo ha restituito `planner.ToolResult.Bounds`.
 2. Il runtime unisce tali limiti nel JSON emesso utilizzando i nomi dei campi da `BoundedResult(...)`.
-   Quando `Bounds.NextCursor` è presente, il `next_cursor` emesso è un riferimento breve di continuazione.
-3. La chiamata successiva contiene solo quel riferimento. Il runtime ne verifica validità e ambito, ripristina gli argomenti originali e inserisce il cursor privato del provider. Il cursor resta stato privato del runtime; planner, hook,
-  stream e interfacce utente ricevono i bounds visibili al modello.
+3. Con `ContinueWith`, il cursor resta nel runtime e l'azione vuota viene offerta solo per una pagina precedente non ambigua.
+4. Con `Cursor` diretto, `Bounds.NextCursor` viene emesso in `next_cursor` e il modello fornisce quel valore opaco nella chiamata successiva.
 
 Gli strumenti possono includere un titolo visualizzato utilizzando la funzione DSL `Title()` standard:
 

@@ -140,7 +140,7 @@ Some tools naturally return large lists, graphs, or time-series windows. You can
 
 #### The agent.Bounds Contract
 
-The `agent.Bounds` type describes how a tool result has been bounded relative to the full underlying data set. For paged tools, providers put their private cursor in `NextCursor`; the runtime projects a continuation reference for model-visible outputs.
+The `agent.Bounds` type describes how a tool result has been bounded relative to the full underlying data set. For paged tools, providers put the opaque next-page cursor in `NextCursor`. Whether the model sees that cursor depends on the paging contract: `ContinueWith` keeps it runtime-owned, while `Cursor` exposes it as part of a self-paging tool's public interaction.
 
 ```go
 type Bounds struct {
@@ -176,8 +176,23 @@ Use the DSL helper `BoundedResult()` inside a `Tool` definition:
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
+    })
+    Return(func() {
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
+    })
+    BoundedResult(func() {
+        ContinueWith("continue_devices", "cursor")
+        NextCursor("next_cursor")
+    })
+    BindTo("DeviceService", "ListDevices")
+})
+
+Tool("continue_devices", "Continue the available device results", func() {
+    Args(func() {
+        Attribute("cursor", String)
+        Required("cursor")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "Matching devices")
@@ -187,9 +202,14 @@ Tool("list_devices", "List devices with pagination", func() {
         Cursor("cursor")
         NextCursor("next_cursor")
     })
-    BindTo("DeviceService", "ListDevices")
+    BindTo("DeviceService", "ContinueDevices")
 })
 ```
+
+The continuation tool's cursor exists in its execution contract but is removed
+from the model-facing schema. The runtime advertises the action only while one
+unambiguous preceding page can continue, so the model calls it with `{}` and
+does not copy a cursor or repeat the original query.
 
 #### Code Generation
 
@@ -202,8 +222,11 @@ When a tool is marked with `BoundedResult()`:
   Goa DSL names a lower-camel attribute such as `NextCursor("nextCursor")`,
   codegen emits `NextCursorField: "next_cursor"` so schemas, runtime
   projection, and result-codec validation use one spelling.
-- For cursor-paged tools, model-visible `next_cursor` is a runtime continuation reference; provider
-  cursors remain private runtime state.
+- `ContinueWith` generates a dedicated continuation relationship. The source
+  result does not expose `next_cursor`, and the continuation's model-facing
+  payload is an empty object.
+- A tool declared directly with `Cursor` exposes `next_cursor` and accepts it
+  on the next model-authored call.
 - The semantic Go result type stays domain-specific; it does not need to duplicate those fields
 
 For method-backed `BindTo` tools, the bound service method result still needs to
@@ -213,6 +236,7 @@ carry the canonical bounded fields so the generated executor can build
 ```go
 spec.Bounds = &tools.BoundsSpec{
     Paging: &tools.PagingSpec{
+        ContinueTool:    "tools.continue_devices",
         CursorField:     "cursor",
         NextCursorField: "next_cursor",
     },
@@ -227,8 +251,7 @@ Bounded tools are a hard contract: services implement truncation and populate bo
 
 - `Bounds.Returned` and `Bounds.Truncated` must always be set on successful bounded tool results.
 - `Bounds.Total`, `Bounds.NextCursor`, and `Bounds.RefinementHint` are optional and should only be set when known.
-  Provider code sets `Bounds.NextCursor` to the private provider cursor; the runtime projects a
-  continuation reference into model-visible results.
+  Provider code sets `Bounds.NextCursor` to the opaque provider cursor.
 
 Executors implement truncation and populate bounds metadata:
 
@@ -242,7 +265,7 @@ func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta
         }), nil
     }
 
-    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, nil)
     if err != nil {
         return nil, err
     }
@@ -270,9 +293,12 @@ When a bounded tool executes:
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into the emitted JSON using the model-facing
    JSON field names generated from `BoundedResult(...)`
-3. When a provider cursor exists, the emitted `next_cursor` is the producing `tool_call_id`
-   continuation reference
-4. Stream subscribers and finalizers access the model-visible bounds for UI display, logging, or
+3. For `ContinueWith`, the runtime exposes the empty continuation action only
+   when the preceding batch contains exactly one compatible page, then binds
+   the cursor and retained query fields before execution
+4. For direct `Cursor`, the runtime projects the opaque cursor into
+   `next_cursor` and the model supplies it on the next call
+5. Stream subscribers and finalizers access bounds for UI display, logging, or
    policy decisions
 
 ```go

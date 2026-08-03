@@ -37,8 +37,9 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `AudienceInternal`                                      | ServerData               | Marks server-data as an internal composition attachment                                                           |
 | `AudienceEvidence`                                      | ServerData               | Marks server-data as provenance or audit evidence                                                                 |
 | `BoundedResult`                                         | Tool                     | Declares a runtime-owned bounded-result contract; optional sub-DSL can declare paging cursor fields                |
-| `Cursor`                                                | BoundedResult            | Declares which payload field carries the runtime continuation reference (optional)                                 |
-| `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page continuation reference (optional)                       |
+| `Cursor`                                                | BoundedResult            | Declares which payload field carries an opaque next-page cursor (optional)                                         |
+| `ContinueWith`                                          | BoundedResult            | Delegates mechanical pagination to a sibling continuation action whose cursor is bound by the runtime              |
+| `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page cursor (optional)                                       |
 | `Idempotent`                                            | Tool                     | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags`                                                  | Tool, Toolset            | Attaches metadata labels                                                                                           |
 | `Meta`                                                  | Tool                     | Attaches inert, named design metadata emitted in `ToolSpec.Meta`                                                   |
@@ -745,7 +746,8 @@ Canonical model-visible fields:
 - `truncated` (required, `Boolean`)
 - `total` (optional, `Int`)
 - `refinement_hint` (optional, `String`)
-- `next_cursor` (optional, `String`) when declared via `NextCursor(...)`; this is a runtime continuation reference, not the provider cursor itself
+- `next_cursor` (optional, `String`) when declared via `NextCursor(...)` and
+  exposed by a direct `Cursor` contract
 
 `BoundedResult` is the single source of truth for that contract:
 
@@ -756,15 +758,31 @@ Canonical model-visible fields:
 - successful bounded executions must set `planner.ToolResult.Bounds`
 - the runtime projects provider-owned bounds into encoded `tool_result` JSON, result-hint template data,
 hooks, and stream events
-- for cursor-paged tools, the model-visible `next_cursor` is a short run-, session-, and
-  tool-bound reference; the provider cursor stays private in runtime history
+- `ContinueWith` keeps the provider cursor out of the model contract and
+  exposes a no-argument continuation action only while a single preceding page
+  can continue
+- direct `Cursor` exposes the opaque provider cursor in `next_cursor`
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
         Required("site_id")
+    })
+    Return(func() {
+        Attribute("devices", ArrayOf(Device), "List of devices")
+        Required("devices")
+    })
+    BoundedResult(func() {
+        ContinueWith("continue_devices", "cursor")
+        NextCursor("next_cursor")
+    })
+})
+
+Tool("continue_devices", "Continue the available device results", func() {
+    Args(func() {
+        Attribute("cursor", String)
+        Required("cursor")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "List of devices")
@@ -776,6 +794,13 @@ Tool("list_devices", "List devices with pagination", func() {
     })
 })
 ```
+
+The continuation tool's cursor remains required for execution but is absent
+from its model-facing schema. The runtime advertises the tool only while the
+single compatible result from the preceding batch has another page. The model
+calls it with `{}`; the runtime supplies the cursor and, when necessary, the
+retained query payload. A planner result may contain at most one call for the
+same dedicated pagination chain.
 
 Tool-facing return types must not declare `returned`, `total`, `truncated`,
 `refinement_hint`, or `next_cursor` just so the model can see them. Keep the semantic result focused
@@ -824,10 +849,10 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
 2. The runtime merges those bounds into the emitted JSON using model-facing JSON field names generated from `BoundedResult(...)`.
-   When `Bounds.NextCursor` is present, the emitted `next_cursor` is a short continuation reference.
-3. A continuation call contains only that reference. The runtime verifies freshness and scope,
-   restores the original arguments, and injects the private provider cursor; planners, hooks,
-  streams, and UIs receive the model-visible bounds.
+3. For `ContinueWith`, the cursor stays runtime-owned and the dedicated empty
+   action is made available only for one unambiguous preceding page.
+4. For direct `Cursor`, `Bounds.NextCursor` is emitted in `next_cursor` and the
+   model supplies that opaque value on the next call.
 
 Tools can include a display title using the standard `Title()` DSL function:
 

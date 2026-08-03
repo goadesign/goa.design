@@ -140,7 +140,7 @@ input を落とすと、生成 tool spec が正しくても provider adapter は
 
 #### agent.Bounds contract
 
-`agent.Bounds` は、tool result が underlying data set 全体に対してどのように bounded されたかを表します。paged tool では provider が private cursor を `NextCursor` に入れ、runtime が model-visible output 用の continuation reference を project します:
+`agent.Bounds` は、tool result が underlying data set 全体に対してどのように bounded されたかを表します。paged tool では provider が次ページの opaque cursor を `NextCursor` に設定します。`ContinueWith` は cursor を runtime が所有し、direct `Cursor` contract は model に公開します。
 
 ```go
 type Bounds struct {
@@ -176,7 +176,7 @@ runtime は subset や truncation を自分では計算しません。**service 
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "前ページが返した次ページ用の opaque cursor")
         Required("site_id")
     })
     Return(func() {
@@ -201,7 +201,7 @@ tool が `BoundedResult()` でマークされると:
   `NextCursor("nextCursor")` のような lower-camel Goa attribute を指定しても、
   codegen は `NextCursorField: "next_cursor"` を出力し、schema、runtime
   projection、result codec は同じ spelling を使います。
-- cursor-paged tool では、model-visible な `next_cursor` は runtime continuation reference です。provider cursor は private runtime state として残ります
+- `ContinueWith` は cursor を runtime 内に保持し、互換性のある直前の page が一つだけ存在する場合に限って引数なしの continuation action を公開します。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
 - semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
 
 method-backed `BindTo` tool では、生成 executor が runtime projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。
@@ -223,7 +223,7 @@ bounded tool は強い contract です。service は truncation を実装し、�
 
 - `Bounds.Returned` と `Bounds.Truncated` は successful bounded tool result で常に設定する必要があります。
 - `Bounds.Total`、`Bounds.NextCursor`、`Bounds.RefinementHint` は optional で、分かる場合だけ設定します。
-  provider code は `Bounds.NextCursor` に private provider cursor を設定し、runtime は model-visible result に continuation reference を project します。
+  provider code は `Bounds.NextCursor` に次ページの opaque cursor を設定します。
 
 executor は truncation を実装し、bounds metadata を populate します:
 
@@ -264,8 +264,9 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
-3. provider cursor がある場合、emitted `next_cursor` は result を生成した `tool_call_id` continuation reference です
-4. stream subscriber と finalizer は model-visible bounds を UI display、logging、policy decision に使えます
+3. `ContinueWith` では、runtime は一意な直前の page に対してのみ空の action を公開し、実行前に cursor を bind します
+4. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
+5. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 
 ```go
 // In a stream subscriber

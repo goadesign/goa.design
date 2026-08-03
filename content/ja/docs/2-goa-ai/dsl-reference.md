@@ -51,8 +51,9 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `AudienceInternal` | ServerData | server-data を internal composition attachment としてマークする |
 | `AudienceEvidence` | ServerData | server-data を provenance または audit evidence としてマークする |
 | `BoundedResult` | Tool | 結果を「境界付きビュー」としてマークし、bounds フィールドの標準形を適用する（任意で cursor 設定のサブ DSL を指定可能） |
-| `Cursor` | BoundedResult | runtime continuation reference を格納する payload フィールド名を指定する（任意） |
-| `NextCursor` | BoundedResult | 次ページ continuation reference を格納する result フィールド名を指定する（任意） |
+| `Cursor` | BoundedResult | 次ページの opaque cursor を格納する payload フィールド名を指定する（任意） |
+| `ContinueWith` | BoundedResult | 機械的な pagination を runtime が cursor を bind する sibling action に委譲する |
+| `NextCursor` | BoundedResult | 次ページ cursor を格納する result フィールド名を指定する（任意） |
 | `Idempotent` | Tool | run transcript 内で idempotent な tool としてマークし、同一呼び出しの de-duplication を可能にする |
 | `Tags` | Tool, Toolset | メタデータラベルを付与する |
 | `Meta` | Tool | `ToolSpec.Meta` に出力される、名前付きで不活性な設計メタデータを付与する |
@@ -735,7 +736,7 @@ func handleToolResult(result *planner.ToolResult) {
 - `truncated` (required, `Boolean`)
 - `total` (optional, `Int`)
 - `refinement_hint` (optional, `String`)
-- `next_cursor` (optional, `NextCursor(...)` で宣言した場合は `String`): runtime continuation reference であり、provider cursor そのものではありません
+- `next_cursor` (direct `Cursor` contract が `NextCursor(...)` を公開する場合は optional `String`)
 
 `BoundedResult` はこの contract の single source of truth です:
 
@@ -743,13 +744,14 @@ func handleToolResult(result *planner.ToolResult) {
 - codegen は生成 JSON result schema へ正規 bounded field を project します
 - successful bounded execution は `planner.ToolResult.Bounds` を設定する必要があります
 - runtime は provider-owned bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
-- cursor-paged tool では、model-visible な `next_cursor` は run、session、tool に束縛された短い reference です。provider cursor は runtime history 内の private state として残ります
+- `ContinueWith` は cursor を model contract から除外し、一意な直前の page が続行可能な間だけ引数なし action を公開します
+- direct `Cursor` は provider の opaque cursor を `next_cursor` に公開します
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "前ページが返した次ページ用の opaque cursor")
         Required("site_id")
     })
     Return(func() {
@@ -804,8 +806,8 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します。
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します。
-   `Bounds.NextCursor` がある場合、emitted `next_cursor` は短い continuation reference です。
-3. 次の call はその reference だけを含みます。runtime は freshness と scope を検証し、元の argument を復元して private provider cursor を inject します。provider cursor は private runtime state のままで、planner、hook、stream、UI は model-visible bounds を受け取ります。
+3. `ContinueWith` では cursor は runtime 所有のままで、空の action は一意な直前の page に対してのみ公開されます。
+4. direct `Cursor` では `Bounds.NextCursor` が `next_cursor` に出力され、model がその opaque value を次の call に指定します。
 
 tool は標準 `Title()` DSL function を使って display title を持てます:
 

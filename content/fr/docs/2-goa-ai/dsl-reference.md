@@ -37,8 +37,9 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `AudienceInternal`                                      | Données du serveur               | Marque les données du serveur comme pièce jointe de composition interne                                                           |
 | `AudienceEvidence`                                      | Données du serveur               | Marque les données du serveur comme provenance ou preuve d'audit                                                                 |
 | `BoundedResult`                                         | Outil                     | Déclare un contrat à résultats limités appartenant au runtime ; le sous-DSL facultatif peut déclarer les champs du curseur de pagination                |
-| `Cursor`                                                | Résultat délimité            | Déclare quel champ de charge utile porte la référence de continuation du runtime (facultatif)                                      |
-| `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour la référence de continuation de la page suivante (facultatif)                     |
+| `Cursor`                                                | Résultat délimité            | Déclare quel champ de charge utile porte le curseur opaque de la page suivante (facultatif)                                       |
+| `ContinueWith`                                          | Résultat délimité            | Délègue la pagination mécanique à une action associée dont le curseur est lié par le runtime                                      |
+| `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour le curseur de la page suivante (facultatif)                                      |
 | `Idempotent`                                            | Outil                     | Marque l’outil comme idempotent dans une transcription d’exécution ; permet une déduplication sécurisée des transcriptions croisées pour des appels identiques |
 | `Tags`                                                  | Outil, ensemble d'outils            | Attache des étiquettes de métadonnées                                                                                           |
 | `Meta`                                                  | Outil                     | Attache des métadonnées de conception inertes et nommées, émises dans `ToolSpec.Meta`                                           |
@@ -747,7 +748,7 @@ Champs visibles dans le modèle canonique :
 - `truncated` (obligatoire, `Boolean`)
 - `total` (en option, `Int`)
 - `refinement_hint` (en option, `String`)
-- `next_cursor` (facultatif, `String`) lorsqu'il est déclaré via `NextCursor(...)`; c'est une référence de continuation du runtime, pas le curseur du fournisseur
+- `next_cursor` (facultatif, `String`) lorsque `NextCursor(...)` est exposé par un contrat `Cursor` direct
 
 `BoundedResult` est la seule source de vérité pour ce contrat :
 
@@ -756,13 +757,14 @@ Champs visibles dans le modèle canonique :
 - les exécutions limitées réussies doivent définir `planner.ToolResult.Bounds`
 - le runtime projette les limites détenues par le fournisseur dans le JSON `tool_result` codé, les données de modèle d'indice de résultat,
 hooks et événements de flux
-- pour les outils paginés par curseur, le `next_cursor` visible par le modèle est une référence courte liée à l'exécution, la session et l'outil ; le curseur du fournisseur reste privé dans l'historique du runtime
+- `ContinueWith` maintient le curseur hors du contrat du modèle et propose une action sans argument tant qu'une seule page précédente peut continuer
+- `Cursor` direct expose le curseur opaque du fournisseur dans `next_cursor`
 
 ```go
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Runtime continuation reference returned by the previous page")
+        Attribute("cursor", String, "Curseur opaque de la page suivante renvoyé par la page précédente")
         Required("site_id")
     })
     Return(func() {
@@ -823,9 +825,8 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu’un outil limité réussi a renvoyé `planner.ToolResult.Bounds`.
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-   Quand `Bounds.NextCursor` est présent, le `next_cursor` émis est une référence courte de continuation.
-3. L'appel suivant contient uniquement cette référence. Le runtime vérifie sa fraîcheur et sa portée, restaure les arguments d'origine et injecte le curseur privé du fournisseur. Le curseur reste un état privé du runtime ; les planificateurs, hooks,
-flux et UIs reçoivent les limites visibles par le modèle.
+3. Avec `ContinueWith`, le curseur reste dans le runtime et l'action vide n'est proposée que pour une page précédente non ambiguë.
+4. Avec `Cursor` direct, `Bounds.NextCursor` est émis dans `next_cursor` et le modèle fournit cette valeur opaque lors de l'appel suivant.
 
 Les outils peuvent inclure un titre d'affichage à l'aide de la fonction standard `Title()` DSL :
 
