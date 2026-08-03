@@ -201,7 +201,7 @@ tool が `BoundedResult()` でマークされると:
   `NextCursor("nextCursor")` のような lower-camel Goa attribute を指定しても、
   codegen は `NextCursorField: "next_cursor"` を出力し、schema、runtime
   projection、result codec は同じ spelling を使います。
-- `ContinueWith` は cursor を runtime 内に保持し、継続可能な live chain head が一つだけ存在する場合に限って引数なしの continuation action を公開します。正確な cursor lineage によって連続 page を進め、複数の live head は拒否します。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
+- `ContinueWith` は cursor を runtime 内に保持し、継続可能な live chain head が一つだけ存在する場合に限って引数なしの continuation action を公開します。正確な cursor lineage によって連続 page を進めます。source call は並列実行できますが、複数の live head がある間は引数なしの continuation action を公開しません。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
 - semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
 
 method-backed `BindTo` tool では、生成 executor が runtime projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。

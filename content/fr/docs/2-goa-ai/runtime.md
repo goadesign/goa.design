@@ -471,7 +471,9 @@ dupliquez les champs délimités canoniques juste pour que les modèles puissent
 `ContinueWith("continue_tool", "cursor")` déclare la continuation mécanique
 comme une action distincte. Le runtime ne la propose que lorsque l'historique
 contient une seule tête de chaîne active avec un autre curseur. La correspondance
-exacte du curseur fait avancer les pages séquentielles et plusieurs têtes actives sont rejetées. Le modèle
+exacte du curseur fait avancer les pages séquentielles. Les appels source parallèles
+restent valides, mais plusieurs têtes actives rendent l'action sans argument
+indisponible. Le modèle
 l'appelle avec `{}` et le runtime associe le curseur et les champs de requête
 conservés avant l'exécution. Un `Cursor("cursor")` direct garde le contrat
 ouvert : le modèle répète les arguments inchangés avec le curseur opaque renvoyé

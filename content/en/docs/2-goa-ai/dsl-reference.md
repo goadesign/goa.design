@@ -761,7 +761,8 @@ hooks, and stream events
 - `ContinueWith` keeps the provider cursor out of the model contract and
   exposes a no-argument continuation action only while a single live chain
   head can continue; exact cursor lineage advances sequential pages and
-  parallel live heads are rejected
+  parallel source invocations remain valid. Multiple live heads make the
+  no-argument continuation unavailable
 - direct `Cursor` exposes the opaque provider cursor in `next_cursor`
 
 ```go
@@ -801,7 +802,8 @@ from its model-facing schema. The runtime advertises the tool only while the
 single live result-chain head has another page. The model
 calls it with `{}`; the runtime supplies the cursor and, when necessary, the
 retained query payload. A planner result may contain at most one call for the
-same dedicated pagination chain.
+same dedicated continuation action; it may contain multiple calls to the source
+tool.
 
 Tool-facing return types must not declare `returned`, `total`, `truncated`,
 `refinement_hint`, or `next_cursor` just so the model can see them. Keep the semantic result focused

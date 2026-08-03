@@ -216,7 +216,8 @@ When a tool is marked with `BoundedResult()`:
 - `ContinueWith` mantiene il cursor nel runtime ed espone un'azione senza
   argomenti solo quando una singola testa di catena attiva può continuare.
   La corrispondenza esatta del cursor fa avanzare le pagine sequenziali;
-  più teste attive vengono rifiutate. Un contratto `Cursor` diretto espone il cursor opaco in
+  le chiamate sorgente parallele restano valide, ma più teste attive rendono
+  indisponibile la continuazione senza argomenti. Un contratto `Cursor` diretto espone il cursor opaco in
   `next_cursor`.
 - The semantic Go result type stays domain-specific; it does not need to
   duplicate those fields

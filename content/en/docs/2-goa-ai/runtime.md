@@ -471,11 +471,11 @@ duplicate the canonical bounded fields just so models can see them.
 `ContinueWith("continue_tool", "cursor")` declares mechanical continuation as
 a separate action. The runtime advertises that action only when result history
 contains exactly one live successful chain head with another cursor. Exact
-cursor lineage advances sequential pages and parallel live heads are rejected. Its
-model-facing schema is an empty object; when the model chooses the action with
-`{}`, the runtime binds the cursor and any retained canonical query fields
-before execution. Multiple compatible pages are rejected as ambiguous because
-the contract exposes no result-chain selector.
+cursor lineage advances sequential pages. Parallel source invocations remain
+valid, but multiple live heads make the no-argument action unavailable because
+the contract exposes no result-chain selector. Its model-facing schema is an
+empty object; when the model chooses the action with `{}`, the runtime binds the
+cursor and any retained canonical query fields before execution.
 
 `Cursor("cursor")` on a self-paging tool is the open contract: the runtime
 projects `Bounds.NextCursor` into `next_cursor`, and the model repeats the

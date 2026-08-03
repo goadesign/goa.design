@@ -677,7 +677,7 @@ Campi visibili nel modello canonico:
 - le esecuzioni limitate riuscite devono impostare `planner.ToolResult.Bounds`
 - il runtime proietta i bounds di proprietà del provider nel JSON codificato `tool_result`, nei dati del modello di suggerimento dei risultati,
 hook ed eventi in streaming
-- `ContinueWith` mantiene il cursor fuori dal contratto del modello e offre un'azione senza argomenti solo finché una singola testa di catena attiva può continuare; la corrispondenza esatta del cursor fa avanzare le pagine sequenziali e più teste attive vengono rifiutate
+- `ContinueWith` mantiene il cursor fuori dal contratto del modello e offre un'azione senza argomenti solo finché una singola testa di catena attiva può continuare; la corrispondenza esatta del cursor fa avanzare le pagine sequenziali. Le chiamate sorgente parallele restano valide, ma più teste attive rendono indisponibile la continuazione senza argomenti
 - `Cursor` diretto espone il cursor opaco del provider in `next_cursor`
 
 ```go

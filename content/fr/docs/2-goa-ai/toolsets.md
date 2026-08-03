@@ -208,7 +208,8 @@ Lorsqu'un outil est marqué de `BoundedResult()` :
 - `ContinueWith` conserve le curseur dans le runtime et n'expose une action
   sans argument que lorsqu'une seule tête de chaîne active peut continuer.
   La correspondance exacte du curseur fait avancer les pages séquentielles ;
-  plusieurs têtes actives sont rejetées. Un contrat `Cursor` direct expose le curseur opaque dans
+  les appels source parallèles restent valides, mais plusieurs têtes actives
+  rendent la continuation sans argument indisponible. Un contrat `Cursor` direct expose le curseur opaque dans
   `next_cursor`.
 - Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
 

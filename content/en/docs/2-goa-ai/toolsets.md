@@ -224,7 +224,9 @@ When a tool is marked with `BoundedResult()`:
   projection, and result-codec validation use one spelling.
 - `ContinueWith` generates a dedicated continuation relationship. The source
   result does not expose `next_cursor`, and the continuation's model-facing
-  payload is an empty object.
+  payload is an empty object. Independent source invocations may run in
+  parallel; the continuation is available only when one invocation can be
+  selected without another argument.
 - A tool declared directly with `Cursor` exposes `next_cursor` and accepts it
   on the next model-authored call.
 - The semantic Go result type stays domain-specific; it does not need to duplicate those fields
@@ -296,7 +298,8 @@ When a bounded tool executes:
 3. For `ContinueWith`, the runtime exposes the empty continuation action only
    when result history has exactly one live chain head, then binds the cursor
    and retained query fields before execution. Exact cursor lineage advances
-   sequential pages; parallel live heads are rejected
+   sequential pages. Parallel source invocations remain valid; multiple live
+   heads make the no-argument continuation unavailable
 4. For direct `Cursor`, the runtime projects the opaque cursor into
    `next_cursor` and the model supplies it on the next call
 5. Stream subscribers and finalizers access bounds for UI display, logging, or

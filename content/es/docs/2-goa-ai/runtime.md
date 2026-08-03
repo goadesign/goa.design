@@ -456,7 +456,9 @@ Campos canónicos proyectados:
 `ContinueWith("continue_tool", "cursor")` declara la continuación mecánica como
 una acción separada. El runtime la ofrece solo cuando el historial contiene
 una única cabeza activa de la cadena con otro cursor. La correspondencia exacta
-del cursor avanza páginas secuenciales y se rechazan varias cabezas activas. El modelo la llama con `{}` y el
+del cursor avanza páginas secuenciales. Las llamadas fuente en paralelo siguen
+siendo válidas, pero varias cabezas activas hacen que la acción sin argumentos
+no esté disponible. El modelo la llama con `{}` y el
 runtime enlaza el cursor y los campos de consulta retenidos antes de ejecutar.
 Un `Cursor("cursor")` directo mantiene el contrato abierto: el modelo repite los
 argumentos sin cambios con el cursor opaco devuelto en `next_cursor`.
