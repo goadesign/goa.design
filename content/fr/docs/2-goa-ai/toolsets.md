@@ -206,8 +206,9 @@ Lorsqu'un outil est marqué de `BoundedResult()` :
   codegen émet `NextCursorField: "next_cursor"` afin que les schémas, la
   projection du runtime et les codecs de résultat utilisent la même forme.
 - `ContinueWith` conserve le curseur dans le runtime et n'expose une action
-  sans argument que lorsqu'une seule page précédente compatible peut
-  continuer. Un contrat `Cursor` direct expose le curseur opaque dans
+  sans argument que lorsqu'une seule tête de chaîne active peut continuer.
+  La correspondance exacte du curseur fait avancer les pages séquentielles ;
+  plusieurs têtes actives sont rejetées. Un contrat `Cursor` direct expose le curseur opaque dans
   `next_cursor`.
 - Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
 
@@ -273,7 +274,7 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une page précédente compatible et associe le curseur avant l'exécution
+3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une tête de chaîne active non ambiguë et associe le curseur avant l'exécution
 4. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
 5. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 

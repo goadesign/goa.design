@@ -469,8 +469,9 @@ Authored Go result types stay semantic and domain-specific; they do not need to
 duplicate the canonical bounded fields just so models can see them.
 
 `ContinueWith("continue_tool", "cursor")` declares mechanical continuation as
-a separate action. The runtime advertises that action only when the preceding
-batch contains exactly one compatible successful page with another cursor. Its
+a separate action. The runtime advertises that action only when result history
+contains exactly one live successful chain head with another cursor. Exact
+cursor lineage advances sequential pages and parallel live heads are rejected. Its
 model-facing schema is an empty object; when the model chooses the action with
 `{}`, the runtime binds the cursor and any retained canonical query fields
 before execution. Multiple compatible pages are rejected as ambiguous because

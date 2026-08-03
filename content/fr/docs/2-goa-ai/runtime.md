@@ -469,8 +469,9 @@ Champs projetés canoniques :
 Les types de résultats Go créés restent sémantiques et spécifiques au domaine ; ils n'ont pas besoin de
 dupliquez les champs délimités canoniques juste pour que les modèles puissent les voir.
 `ContinueWith("continue_tool", "cursor")` déclare la continuation mécanique
-comme une action distincte. Le runtime ne la propose que lorsque le lot
-précédent contient une seule page compatible avec un autre curseur. Le modèle
+comme une action distincte. Le runtime ne la propose que lorsque l'historique
+contient une seule tête de chaîne active avec un autre curseur. La correspondance
+exacte du curseur fait avancer les pages séquentielles et plusieurs têtes actives sont rejetées. Le modèle
 l'appelle avec `{}` et le runtime associe le curseur et les champs de requête
 conservés avant l'exécution. Un `Cursor("cursor")` direct garde le contrat
 ouvert : le modèle répète les arguments inchangés avec le curseur opaque renvoyé

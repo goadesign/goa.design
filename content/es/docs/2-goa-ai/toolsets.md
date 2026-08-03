@@ -207,8 +207,9 @@ Cuando una herramienta está marcada con `BoundedResult()`:
   codegen emite `NextCursorField: "next_cursor"` para que esquemas, proyección
   del runtime y codecs de resultado usen la misma forma.
 - `ContinueWith` mantiene el cursor en el runtime y expone al modelo una acción
-  de continuación sin argumentos solo cuando hay una única página anterior
-  compatible. Un contrato `Cursor` directo expone el cursor opaco en
+  de continuación sin argumentos solo cuando hay una única cabeza activa de la
+  cadena. La correspondencia exacta del cursor avanza las páginas secuenciales;
+  varias cabezas activas se rechazan. Un contrato `Cursor` directo expone el cursor opaco en
   `next_cursor`.
 - El tipo de resultado Go semántico sigue siendo específico del dominio; no necesita duplicar esos campos
 
@@ -274,7 +275,7 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
 2. El runtime fusiona esos bounds en el JSON emitido usando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`
-3. Con `ContinueWith`, el runtime ofrece la acción vacía solo cuando una única página anterior compatible puede continuar y enlaza el cursor antes de ejecutar
+3. Con `ContinueWith`, el runtime ofrece la acción vacía solo cuando una única cabeza activa de la cadena puede continuar y enlaza el cursor antes de ejecutar
 4. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
 5. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
 

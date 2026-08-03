@@ -757,7 +757,7 @@ Champs visibles dans le modèle canonique :
 - les exécutions limitées réussies doivent définir `planner.ToolResult.Bounds`
 - le runtime projette les limites détenues par le fournisseur dans le JSON `tool_result` codé, les données de modèle d'indice de résultat,
 hooks et événements de flux
-- `ContinueWith` maintient le curseur hors du contrat du modèle et propose une action sans argument tant qu'une seule page précédente peut continuer
+- `ContinueWith` maintient le curseur hors du contrat du modèle et propose une action sans argument tant qu'une seule tête de chaîne active peut continuer ; la correspondance exacte du curseur fait avancer les pages séquentielles et plusieurs têtes actives sont rejetées
 - `Cursor` direct expose le curseur opaque du fournisseur dans `next_cursor`
 
 ```go
@@ -825,7 +825,7 @@ Lorsqu'un outil limité s'exécute :
 
 1. Le runtime valide qu’un outil limité réussi a renvoyé `planner.ToolResult.Bounds`.
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
-3. Avec `ContinueWith`, le curseur reste dans le runtime et l'action vide n'est proposée que pour une page précédente non ambiguë.
+3. Avec `ContinueWith`, le curseur reste dans le runtime et l'action vide n'est proposée que pour une tête de chaîne active non ambiguë.
 4. Avec `Cursor` direct, `Bounds.NextCursor` est émis dans `next_cursor` et le modèle fournit cette valeur opaque lors de l'appel suivant.
 
 Les outils peuvent inclure un titre d'affichage à l'aide de la fonction standard `Title()` DSL :

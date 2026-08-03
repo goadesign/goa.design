@@ -759,8 +759,9 @@ Canonical model-visible fields:
 - the runtime projects provider-owned bounds into encoded `tool_result` JSON, result-hint template data,
 hooks, and stream events
 - `ContinueWith` keeps the provider cursor out of the model contract and
-  exposes a no-argument continuation action only while a single preceding page
-  can continue
+  exposes a no-argument continuation action only while a single live chain
+  head can continue; exact cursor lineage advances sequential pages and
+  parallel live heads are rejected
 - direct `Cursor` exposes the opaque provider cursor in `next_cursor`
 
 ```go
@@ -797,7 +798,7 @@ Tool("continue_devices", "Continue the available device results", func() {
 
 The continuation tool's cursor remains required for execution but is absent
 from its model-facing schema. The runtime advertises the tool only while the
-single compatible result from the preceding batch has another page. The model
+single live result-chain head has another page. The model
 calls it with `{}`; the runtime supplies the cursor and, when necessary, the
 retained query payload. A planner result may contain at most one call for the
 same dedicated pagination chain.
@@ -850,7 +851,7 @@ When a bounded tool executes:
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
 2. The runtime merges those bounds into the emitted JSON using model-facing JSON field names generated from `BoundedResult(...)`.
 3. For `ContinueWith`, the cursor stays runtime-owned and the dedicated empty
-   action is made available only for one unambiguous preceding page.
+   action is made available only for one unambiguous live chain head.
 4. For direct `Cursor`, `Bounds.NextCursor` is emitted in `next_cursor` and the
    model supplies that opaque value on the next call.
 

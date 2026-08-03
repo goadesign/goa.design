@@ -208,7 +208,7 @@ Tool("continue_devices", "Continue the available device results", func() {
 
 The continuation tool's cursor exists in its execution contract but is removed
 from the model-facing schema. The runtime advertises the action only while one
-unambiguous preceding page can continue, so the model calls it with `{}` and
+unambiguous live chain head can continue, so the model calls it with `{}` and
 does not copy a cursor or repeat the original query.
 
 #### Code Generation
@@ -294,8 +294,9 @@ When a bounded tool executes:
 2. The runtime merges those bounds into the emitted JSON using the model-facing
    JSON field names generated from `BoundedResult(...)`
 3. For `ContinueWith`, the runtime exposes the empty continuation action only
-   when the preceding batch contains exactly one compatible page, then binds
-   the cursor and retained query fields before execution
+   when result history has exactly one live chain head, then binds the cursor
+   and retained query fields before execution. Exact cursor lineage advances
+   sequential pages; parallel live heads are rejected
 4. For direct `Cursor`, the runtime projects the opaque cursor into
    `next_cursor` and the model supplies it on the next call
 5. Stream subscribers and finalizers access bounds for UI display, logging, or

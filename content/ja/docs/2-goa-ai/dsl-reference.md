@@ -744,7 +744,7 @@ func handleToolResult(result *planner.ToolResult) {
 - codegen は生成 JSON result schema へ正規 bounded field を project します
 - successful bounded execution は `planner.ToolResult.Bounds` を設定する必要があります
 - runtime は provider-owned bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
-- `ContinueWith` は cursor を model contract から除外し、一意な直前の page が続行可能な間だけ引数なし action を公開します
+- `ContinueWith` は cursor を model contract から除外し、一意な live chain head が続行可能な間だけ引数なし action を公開します。正確な cursor lineage によって連続 page を進め、複数の live head は拒否します
 - direct `Cursor` は provider の opaque cursor を `next_cursor` に公開します
 
 ```go
@@ -806,7 +806,7 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します。
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します。
-3. `ContinueWith` では cursor は runtime 所有のままで、空の action は一意な直前の page に対してのみ公開されます。
+3. `ContinueWith` では cursor は runtime 所有のままで、空の action は一意な live chain head に対してのみ公開されます。
 4. direct `Cursor` では `Bounds.NextCursor` が `next_cursor` に出力され、model がその opaque value を次の call に指定します。
 
 tool は標準 `Title()` DSL function を使って display title を持てます:

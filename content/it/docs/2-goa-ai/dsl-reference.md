@@ -677,7 +677,7 @@ Campi visibili nel modello canonico:
 - le esecuzioni limitate riuscite devono impostare `planner.ToolResult.Bounds`
 - il runtime proietta i bounds di proprietà del provider nel JSON codificato `tool_result`, nei dati del modello di suggerimento dei risultati,
 hook ed eventi in streaming
-- `ContinueWith` mantiene il cursor fuori dal contratto del modello e offre un'azione senza argomenti solo finché una singola pagina precedente può continuare
+- `ContinueWith` mantiene il cursor fuori dal contratto del modello e offre un'azione senza argomenti solo finché una singola testa di catena attiva può continuare; la corrispondenza esatta del cursor fa avanzare le pagine sequenziali e più teste attive vengono rifiutate
 - `Cursor` diretto espone il cursor opaco del provider in `next_cursor`
 
 ```go
@@ -745,7 +745,7 @@ Quando uno strumento limitato viene eseguito:
 
 1. Il runtime convalida che uno strumento associato con successo ha restituito `planner.ToolResult.Bounds`.
 2. Il runtime unisce tali limiti nel JSON emesso utilizzando i nomi dei campi da `BoundedResult(...)`.
-3. Con `ContinueWith`, il cursor resta nel runtime e l'azione vuota viene offerta solo per una pagina precedente non ambigua.
+3. Con `ContinueWith`, il cursor resta nel runtime e l'azione vuota viene offerta solo per una testa di catena attiva non ambigua.
 4. Con `Cursor` diretto, `Bounds.NextCursor` viene emesso in `next_cursor` e il modello fornisce quel valore opaco nella chiamata successiva.
 
 Gli strumenti possono includere un titolo visualizzato utilizzando la funzione DSL `Title()` standard:

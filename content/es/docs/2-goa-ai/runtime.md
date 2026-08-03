@@ -454,8 +454,9 @@ Campos canónicos proyectados:
 `planner.ToolResult.Bounds` sigue siendo el único contrato de proveedor legible por máquina. Los tipos Go de resultado escritos por el autor permanecen semánticos y específicos del dominio; no necesitan duplicar los campos canónicos acotados solo para que los modelos puedan verlos.
 
 `ContinueWith("continue_tool", "cursor")` declara la continuación mecánica como
-una acción separada. El runtime la ofrece solo cuando el lote anterior contiene
-una única página compatible con otro cursor. El modelo la llama con `{}` y el
+una acción separada. El runtime la ofrece solo cuando el historial contiene
+una única cabeza activa de la cadena con otro cursor. La correspondencia exacta
+del cursor avanza páginas secuenciales y se rechazan varias cabezas activas. El modelo la llama con `{}` y el
 runtime enlaza el cursor y los campos de consulta retenidos antes de ejecutar.
 Un `Cursor("cursor")` directo mantiene el contrato abierto: el modelo repite los
 argumentos sin cambios con el cursor opaco devuelto en `next_cursor`.

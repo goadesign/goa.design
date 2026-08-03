@@ -214,8 +214,9 @@ When a tool is marked with `BoundedResult()`:
   `NextCursorField: "next_cursor"` so schemas, runtime projection, and result
   codecs use one spelling.
 - `ContinueWith` mantiene il cursor nel runtime ed espone un'azione senza
-  argomenti solo quando una singola pagina precedente compatibile può
-  continuare. Un contratto `Cursor` diretto espone il cursor opaco in
+  argomenti solo quando una singola testa di catena attiva può continuare.
+  La corrispondenza esatta del cursor fa avanzare le pagine sequenziali;
+  più teste attive vengono rifiutate. Un contratto `Cursor` diretto espone il cursor opaco in
   `next_cursor`.
 - The semantic Go result type stays domain-specific; it does not need to
   duplicate those fields
@@ -279,7 +280,7 @@ When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into emitted JSON using the model-facing JSON field names generated from `BoundedResult(...)`
-3. Con `ContinueWith`, il runtime offre l'azione vuota solo per una singola pagina precedente compatibile e associa il cursor prima dell'esecuzione
+3. Con `ContinueWith`, il runtime offre l'azione vuota solo per una singola testa di catena attiva non ambigua e associa il cursor prima dell'esecuzione
 4. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
 5. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
 

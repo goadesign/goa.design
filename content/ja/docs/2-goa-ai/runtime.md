@@ -467,7 +467,7 @@ See **[Tool Payload Defaults](tool-payload-defaults/)** for the contract and cod
 
 `planner.ToolResult.Bounds` が唯一の machine-readable provider contract です。手書きの Go result type は semantic かつ domain-specific のままでよく、model に見せるためだけに正規 bounded field を重複させる必要はありません。
 
-`ContinueWith("continue_tool", "cursor")` は機械的な continuation を別 action として宣言します。runtime は、直前の batch に次の cursor を持つ互換 page が一つだけある場合に限って action を公開します。model は `{}` で action を選び、runtime が実行前に cursor と保持済み query field を bind します。direct `Cursor("cursor")` は open contract であり、model は `next_cursor` の opaque cursor と変更していない query argument を次の call に指定します。
+`ContinueWith("continue_tool", "cursor")` は機械的な continuation を別 action として宣言します。runtime は、次の cursor を持つ live chain head が一つだけある場合に限って action を公開します。正確な cursor lineage によって連続 page を進め、複数の live head は拒否します。model は `{}` で action を選び、runtime が実行前に cursor と保持済み query field を bind します。direct `Cursor("cursor")` は open contract であり、model は `next_cursor` の opaque cursor と変更していない query argument を次の call に指定します。
 
 method-backed `BindTo` tool では、生成 executor が projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。明示的な tool-facing `Return(...)` shape はそれらの正規 field を重複させてはいけません。bound method result の中で required にできるのは `returned` と `truncated` だけです。`total`、`refinement_hint`、`next_cursor` は bounds contract の optional part のままで、runtime bounds が省略した場合は emitted JSON からも省略されます。
 

@@ -201,7 +201,7 @@ tool が `BoundedResult()` でマークされると:
   `NextCursor("nextCursor")` のような lower-camel Goa attribute を指定しても、
   codegen は `NextCursorField: "next_cursor"` を出力し、schema、runtime
   projection、result codec は同じ spelling を使います。
-- `ContinueWith` は cursor を runtime 内に保持し、互換性のある直前の page が一つだけ存在する場合に限って引数なしの continuation action を公開します。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
+- `ContinueWith` は cursor を runtime 内に保持し、継続可能な live chain head が一つだけ存在する場合に限って引数なしの continuation action を公開します。正確な cursor lineage によって連続 page を進め、複数の live head は拒否します。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
 - semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
 
 method-backed `BindTo` tool では、生成 executor が runtime projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。
@@ -264,7 +264,7 @@ bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
-3. `ContinueWith` では、runtime は一意な直前の page に対してのみ空の action を公開し、実行前に cursor を bind します
+3. `ContinueWith` では、runtime は一意な live chain head に対してのみ空の action を公開し、実行前に cursor を bind します
 4. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
 5. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 

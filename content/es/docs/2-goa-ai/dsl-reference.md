@@ -757,7 +757,7 @@ Campos canónicos visibles para el modelo:
 - las ejecuciones acotadas exitosas deben establecer `planner.ToolResult.Bounds`
 - el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` codificado, los datos de plantilla de result-hint,
 los hooks y los eventos de stream
-- `ContinueWith` mantiene el cursor fuera del contrato del modelo y ofrece una acción sin argumentos solo mientras una única página anterior pueda continuar
+- `ContinueWith` mantiene el cursor fuera del contrato del modelo y ofrece una acción sin argumentos solo mientras una única cabeza activa de la cadena pueda continuar; la correspondencia exacta del cursor avanza las páginas secuenciales y se rechazan varias cabezas activas
 - `Cursor` directo expone el cursor opaco del proveedor en `next_cursor`
 
 ```go
@@ -825,7 +825,7 @@ Cuando se ejecuta una herramienta acotada:
 
 1. El runtime valida que una herramienta acotada exitosa devolvió `planner.ToolResult.Bounds`.
 2. El runtime fusiona esos bounds en el JSON emitido utilizando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`.
-3. Con `ContinueWith`, el cursor permanece en el runtime y la acción vacía se ofrece solo para una página anterior inequívoca.
+3. Con `ContinueWith`, el cursor permanece en el runtime y la acción vacía se ofrece solo para una cabeza activa inequívoca de la cadena.
 4. Con `Cursor` directo, `Bounds.NextCursor` se emite en `next_cursor` y el modelo proporciona ese valor opaco en la siguiente llamada.
 
 Las herramientas pueden incluir un título de visualización usando la función estándar del DSL `Title()`:
