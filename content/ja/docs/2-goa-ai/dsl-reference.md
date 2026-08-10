@@ -120,11 +120,11 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 
 ### 評価 DSL
 
-`goa.design/goa-ai/eval/dsl` は独立した top-level DSL です。`Suite` が生成
-scenario と calibration を所有し、`Scenario`、`Description`、`Input`、`Tags`、
-`Timeout` が immutable case data を定義します。`Calibration`、`Answer`、`Claim`、
-`Want` は semantic judge を検証します。hook と runtime contract は
-[生成型評価](evaluations/)を参照してください。
+`goa.design/goa-ai/eval/dsl` は application の Goa v3 design に評価 suite を追加
+します。`Suite` は生成 scenario を持ち、`Scenario`、`Description`、`Input`、
+`Tags`、`Timeout` が各 case を定義します。runner は ID と tag の選択、同時実行数
+の制限、回答を評価する前の 4 例による semantic judge の検証を担当します。
+hook と実行 contract は[生成型評価](evaluations/)を参照してください。
 
 ### ツール payload の例
 

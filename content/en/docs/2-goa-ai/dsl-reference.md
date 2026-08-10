@@ -106,10 +106,11 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 
 ### Evaluation DSL
 
-`goa.design/goa-ai/eval/dsl` is an independent top-level DSL. `Suite` owns
-generated scenarios and calibrations; `Scenario`, `Description`, `Input`,
-`Tags`, and `Timeout` define immutable case data; `Calibration`, `Answer`,
-`Claim`, and `Want` prove the semantic judge. See [Generated Evaluations](evaluations/)
+`goa.design/goa-ai/eval/dsl` adds evaluation suites to an application's Goa v3
+design. `Suite` owns generated scenarios; `Scenario`, `Description`, `Input`,
+`Tags`, and `Timeout` define each case. The runner owns exact ID and tag
+selection, bounded concurrency, and the four examples that verify a semantic
+judge before it evaluates answers. See [Generated Evaluations](evaluations/)
 for the generated hook and runtime contracts.
 
 ### Tool Payload Examples

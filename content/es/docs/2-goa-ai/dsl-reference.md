@@ -106,11 +106,12 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 
 ### DSL de evaluaciones
 
-`goa.design/goa-ai/eval/dsl` es un DSL de nivel superior independiente.
-`Suite` contiene escenarios y calibraciones; `Scenario`, `Description`,
-`Input`, `Tags` y `Timeout` definen casos inmutables; `Calibration`, `Answer`,
-`Claim` y `Want` prueban el juez semántico. Consulta [Evaluaciones generadas](evaluations/)
-para los contratos de hooks y runtime.
+`goa.design/goa-ai/eval/dsl` añade suites de evaluación al diseño Goa v3 de
+una aplicación. `Suite` contiene los escenarios generados; `Scenario`,
+`Description`, `Input`, `Tags` y `Timeout` definen cada caso. El runner se
+encarga de seleccionar IDs y etiquetas, limitar la concurrencia y verificar el
+juez semántico con cuatro ejemplos antes de evaluar respuestas. Consulta
+[Evaluaciones generadas](evaluations/) para los contratos de hooks y ejecución.
 
 ### Ejemplos de payload de herramientas
 
