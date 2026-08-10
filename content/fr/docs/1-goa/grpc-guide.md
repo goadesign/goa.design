@@ -338,6 +338,24 @@ func (s *chatService) Connect(ctx context.Context, stream chat.ConnectServerStre
 }
 ```
 
+### Mettre à niveau les anciens clients de streaming
+
+Les clients de streaming générés par les versions actuelles de Goa identifient le protocole
+dans les métadonnées de la requête et envoient une enveloppe typée lorsqu'une
+méthode définit `Payload` et `StreamingPayload`. Un serveur peut accepter
+temporairement les clients générés par le protocole précédent en ajoutant ces
+métadonnées au niveau de l'API, du service ou de la méthode :
+
+```go
+Meta("grpc:stream:compat", "v1")
+```
+
+Mettez d'abord les serveurs à niveau, puis les clients, et supprimez les
+métadonnées lorsque tous les clients utilisent le protocole actuel. Ce mode de
+compatibilité ne prend en charge que les anciens clients dont le payload unique
+contient des valeurs primitives ou des tableaux de valeurs primitives ; utilisez
+le protocole actuel pour les payloads d'objets, de maps ou d'unions.
+
 ---
 
 ## Gestion des erreurs

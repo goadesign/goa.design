@@ -442,6 +442,23 @@ var _ = API("calc", func() {
 
 ## Personalizzazione di OpenAPI
 
+Per impostazione predefinita Goa genera documenti OpenAPI 2.0 e 3.0. Per
+generare anche una descrizione OpenAPI 3.2.0, selezionala esplicitamente a
+livello di API:
+
+```go
+var _ = API("MyAPI", func() {
+    Meta("openapi:versions", "2.0", "3.0", "3.2")
+    Meta("openapi:path:3.2", "docs/openapi")
+})
+```
+
+Le versioni selezionate vengono scritte sia in JSON sia in YAML. L'esempio
+precedente genera `gen/docs/openapi.json` e `gen/docs/openapi.yaml` per
+OpenAPI 3.2; senza la sostituzione del percorso, Goa scrive
+`gen/http/openapi3.2.json` e `gen/http/openapi3.2.yaml`. La selezione delle
+versioni non modifica il codice di servizio generato.
+
 ```go
 var _ = API("MyAPI", func() {
     // Control generation
