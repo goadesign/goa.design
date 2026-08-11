@@ -188,7 +188,10 @@ but should not belong to a session.
 
 Generated agent packages include a `RegisterUsedToolsets` helper for local
 toolsets. Executors receive explicit run metadata and return a runtime-owned
-execution result:
+execution result. Each toolset specs package also exports one typed descriptor
+per tool (here `helpers.AnswerTool`) that pairs the tool identifier with its
+generated payload and result codecs, so decoding is compile-checked — no type
+assertions, no restating the name-to-codec pairing the design already fixed:
 
 ```go
 type HelpersExecutor struct{}
@@ -200,11 +203,15 @@ func (e *HelpersExecutor) Execute(
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		args, err := helpers.AnswerTool.Payload.FromJSON(call.Payload)
 		if err != nil {
 			return runtime.Executed(&planner.ToolResult{
-				Name:  call.Name,
-				Error: planner.NewToolError("invalid answer payload"),
+				Name: call.Name,
+				Failure: &planner.ToolFailure{
+					Kind:     planner.FailureInvalidCall,
+					Error:    planner.ToolErrorFromError(err),
+					Recovery: planner.RecoveryDirective{Action: planner.RecoveryCorrectCall},
+				},
 			}), nil
 		}
 		return runtime.Executed(&planner.ToolResult{
@@ -213,8 +220,12 @@ func (e *HelpersExecutor) Execute(
 		}), nil
 	default:
 		return runtime.Executed(&planner.ToolResult{
-			Name:  call.Name,
-			Error: planner.NewToolError("unknown tool"),
+			Name: call.Name,
+			Failure: &planner.ToolFailure{
+				Kind:     planner.FailureInvalidCall,
+				Error:    planner.NewToolError("unknown tool"),
+				Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+			},
 		}), nil
 	}
 }
@@ -378,10 +389,12 @@ normal tool result with a `RunLink` to the child run.
 ## What You Built
 
 - A design-first agent with schema-validated tools.
-- Generated payload/result codecs and model-facing JSON schemas.
+- Generated payload/result codecs, typed per-tool descriptors, and model-facing JSON schemas.
 - A typed direct completion contract.
 - A generated runtime client with sessionful and one-shot execution.
-- A path to model-backed planning, streaming UIs, and agent composition.
+- A path to model-backed planning, streaming UIs, agent composition, and
+  generated evaluation suites (declare a `Suite` in the design; see
+  [Evaluations](evaluations/)).
 
 For production, add the Temporal engine for durability, Mongo-backed stores for
 memory/session/run logs, Pulse for distributed streaming, and model middleware
@@ -397,4 +410,5 @@ for provider rate limits. The Goa design remains the source of truth.
 | [Runtime](runtime/) | Plan/execute loop, engines, memory stores |
 | [Toolsets](toolsets/) | Service-backed tools, transforms, executors |
 | [Agent Composition](agent-composition/) | Deep dive on agent-as-tool patterns |
+| [Evaluations](evaluations/) | Generated eval suites, evidence collection, LLM judge |
 | [Production](production/) | Temporal setup, streaming to UIs, rate limiting |
