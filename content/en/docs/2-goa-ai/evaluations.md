@@ -316,6 +316,21 @@ confirmation instead of completing. For tools without generated descriptors
 (registry-discovered toolsets), declare a bare `evidence.Tool` with the tool
 identifier and `evidence.Decoded` asserts.
 
+Bounded-result metadata is carried beside the typed result rather than inside
+the generated domain result type. Set `Tool.Bounds` when the scenario must
+assert the returned count, total count, truncation state, refinement hint, or
+continuation cursor:
+
+```go
+alarms := evidence.ExpectCall(ada.ListAlarmsTool, nil, nil)
+alarms.Bounds = func(bounds *agent.Bounds) error {
+    if bounds == nil || bounds.Truncated {
+        return errors.New("expected a complete alarm inventory")
+    }
+    return nil
+}
+```
+
 ## Run the suite
 
 ```go
