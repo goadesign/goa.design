@@ -240,6 +240,74 @@ The runner rejects malformed results before scoring them: a result must
 contain at least one check or claim, names and IDs must be unique, and
 artifacts need both a name and a URI.
 
+## Collect evidence and declare expectations
+
+Most hooks do the same two things: watch a run's stream events to record what
+the agent did, and compare that record against the scenario's expectations.
+The `eval/evidence` package owns both so every suite shares one
+implementation.
+
+An `evidence.Collector` consumes the runtime's stream events (tool starts and
+ends, assistant replies, workflow lifecycle, confirmation boundaries) and
+builds an `evidence.Evidence`: every tool call with its canonical JSON
+arguments and result, correlated by tool call ID and ordered causally (each
+parent tool immediately before the nested calls its child run made), the
+accumulated assistant answer, any pending confirmation, and the terminal
+workflow phase. Applications that expose goa-ai streams natively feed events
+straight in; applications that re-encode the stream over their own transport
+write a small adapter that maps their wire type back to stream events.
+
+```go
+collector := evidence.NewCollector()
+for !collector.Done() {
+    event, err := stream.Recv()
+    if err != nil {
+        return eval.Result{}, err
+    }
+    if err := collector.Consume(event); err != nil {
+        return eval.Result{}, err
+    }
+}
+ev, err := collector.Finish()
+```
+
+An `evidence.Expect` declares the deterministic expectations and converts the
+evidence into checks. Payload assertions are typed Go predicates over values
+decoded by the generated tool codecs — no JSON traversal by hand, and a
+design change that renames or retypes a field breaks the suite at compile
+time instead of silently never matching:
+
+```go
+expect := evidence.Expect{
+    Tools: []evidence.Tool{{
+        Name: helpers.Answer, // generated constant
+        Args: evidence.Decoded(helpers.AnswerPayloadCodec, func(p *helpers.AnswerPayload) error {
+            if p.Question == "" {
+                return errors.New("question must not be empty")
+            }
+            return nil
+        }),
+    }},
+    ForbidTools: []tools.Ident{admin.DeleteRecords},
+}
+return eval.Result{
+    Checks: expect.Checks(ev),
+    Claims: claims,
+    Output: ev.Answer,
+}, nil
+```
+
+`Expect` supports two trajectory modes. The default binds the declared tools
+as an in-order subsequence of the observed calls, leaving undeclared calls
+unconstrained — a run may retry a rejected call or split work across several
+calls of one tool. Setting `Exact: true` compares the complete causal
+trajectory call for call, so hidden retries and extra tools fail. Per-tool
+policies cover failure semantics: `FailureKind` requires a call to fail with
+exactly one classification, `ForbidFailureKinds` rejects protected failure
+classes across every attempt, and `RequireAllAttemptsSuccessful` rejects any
+failed or missing result. A `Confirmation` expectation asserts the run
+stopped at a pending operator confirmation instead of completing.
+
 ## Run the suite
 
 ```go
