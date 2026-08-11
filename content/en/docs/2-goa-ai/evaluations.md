@@ -226,8 +226,9 @@ A hook returns three kinds of information:
   activation time") rather than one long compound claim, so a failure points
   at the exact missing fact. Do not approximate answer meaning with regular
   expressions or keyword lists — that is what claims and the judge replace.
-  When a hook returns claims it must also set `Output`, the answer being
-  judged.
+  Claims are judged against `Output`, the answer under evaluation. An empty
+  `Output` — the run produced no answer — labels every claim `not_addressed`
+  and fails the scenario without consulting the judge.
 - **Artifacts** are optional links to saved evidence — logs, transcripts,
   protocol dumps — that help debug a failure.
 
@@ -236,8 +237,8 @@ be reached, a timeout, a broken test environment. "The agent answered but the
 answer is wrong" is a failed check or an unsupported claim, not an error.
 
 The runner rejects malformed results before scoring them: a result must
-contain at least one check or claim, names and IDs must be unique, claims
-require `Output`, and artifacts need both a name and a URI.
+contain at least one check or claim, names and IDs must be unique, and
+artifacts need both a name and a URI.
 
 ## Run the suite
 
