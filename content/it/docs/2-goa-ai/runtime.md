@@ -664,6 +664,33 @@ Un errore recuperabile viene riparato per primo; un batch finale riuscito o con
 errore terminale passa alla sintesi. Il runtime rifiuta chiamate agli strumenti
 restituite da un turno `SynthesisOnly`.
 
+Ogni `ToolFailure` recuperabile seleziona anche una `Recovery.Action`:
+
+- `correct_call` mantiene disponibile lo strumento che ha fallito e fornisce al
+  turno successivo del planner l'input rifiutato, i problemi di validazione
+  generati, le indicazioni sui campi e un esempio. Non richiede una chiamata
+  sostitutiva per ogni errore. Il planner può combinare il lavoro, effettuare un
+  numero qualsiasi di chiamate valide agli strumenti annunciati, attendere un
+  input o rispondere usando le prove già raccolte.
+- `replan` rimuove lo strumento che ha fallito dal turno successivo. Il planner
+  può usare un altro strumento annunciato, attendere un input o rispondere.
+- `finish` rimuove tutti gli strumenti e richiede una risposta finale basata
+  sulle prove disponibili.
+
+Il runtime registra il catalogo esatto mostrato durante un turno di recupero e
+rifiuta ogni chiamata eseguibile che non ne faccia parte, incluse le chiamate
+incorporate in una richiesta di input utente o esterno. I codec generati
+continuano a validare ogni payload e i limiti di strumenti, errori e tempo del
+run continuano a interrompere il lavoro non valido ripetuto. Se un turno di
+recupero attende un input, le prove dell'errore restano disponibili alla
+ripresa; la scelta di una chiamata o di una risposta finale le elimina.
+
+Gli input delle attività di recupero e il catalogo annunciato fanno parte della
+cronologia durevole del workflow. Un deployment che modifica questo contratto
+deve drenare o arrestare i vecchi worker e i workflow in esecuzione prima di
+avviare il nuovo gruppo di worker. Non è sicuro combinare versioni diverse dei
+worker attraverso questo limite.
+
 Quando `PlanResumeInput.Finalize` è impostato, i planner possono restituire
 strumenti terminali di bookkeeping; queste chiamate non vengono riprodotte in
 un turno successivo e devono completare durevolmente la finalizzazione.

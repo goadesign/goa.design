@@ -798,6 +798,30 @@ recoverable failure を先に修復し、成功した final batch または term
 含む final batch は synthesis に進みます。ランタイムは `SynthesisOnly` turn
 から返された tool call を拒否します。
 
+recoverable な `ToolFailure` は `Recovery.Action` も 1 つ選択します。
+
+- `correct_call` は失敗した tool を引き続き利用可能にし、拒否された input、
+  生成済み validation issue、field guidance、example を次の planner turn に
+  渡します。失敗 1 件につき replacement call 1 件を要求するものではありません。
+  planner は作業をまとめ、表示された tool を任意の回数だけ正しく呼び出し、
+  input を待つか、すでに集めた evidence から回答できます。
+- `replan` は失敗した tool を次の planner turn から除外します。planner は別の
+  表示済み tool を使うか、input を待つか、回答できます。
+- `finish` はすべての tool を除外し、利用可能な evidence に基づく最終回答を
+  要求します。
+
+ランタイムは recovery turn で表示した tool catalog を正確に記録し、その外側の
+実行可能な call をすべて拒否します。user または外部 input の要求に埋め込まれた
+call も対象です。生成済み codec は引き続きすべての payload を検証し、run の
+tool・failure・time limit は無効な作業の繰り返しを停止します。recovery turn が
+input を待つ場合、failure evidence は再開後も利用できます。tool call または最終
+回答を選ぶと、その evidence は消去されます。
+
+recovery activity の input と表示された catalog は、durable workflow history の
+一部です。この contract を変更する deployment では、新しい worker bundle を
+開始する前に、古い worker と実行中 workflow を drain または stop する必要が
+あります。この境界をまたいで worker version を混在させることは安全ではありません。
+
 `PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal
 bookkeeping tool を返せます。これらは後続プランナーターンには再生されず、
 finalization を永続的に完了する必要があります。

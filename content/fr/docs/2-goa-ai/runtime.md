@@ -845,6 +845,34 @@ reprise. Un échec récupérable est réparé d'abord ; un lot final réussi ou
 échec terminal passe à la synthèse. Le runtime rejette les appels d'outils
 renvoyés depuis un tour `SynthesisOnly`.
 
+Chaque `ToolFailure` récupérable sélectionne aussi une `Recovery.Action` :
+
+- `correct_call` garde l'outil en échec disponible et transmet au prochain tour
+  du planificateur l'entrée rejetée, les problèmes de validation générés, les
+  indications sur les champs et un exemple. Il n'impose pas un appel de
+  remplacement par échec. Le planificateur peut regrouper le travail, effectuer
+  autant d'appels valides que nécessaire aux outils annoncés, attendre une
+  entrée ou répondre avec les éléments déjà recueillis.
+- `replan` retire l'outil en échec du prochain tour. Le planificateur peut
+  utiliser un autre outil annoncé, attendre une entrée ou répondre.
+- `finish` retire tous les outils et exige une réponse finale fondée sur les
+  éléments disponibles.
+
+Le runtime enregistre le catalogue exact présenté pendant un tour de
+récupération et rejette tout appel exécutable qui n'en fait pas partie, y
+compris un appel intégré à une demande d'entrée utilisateur ou externe. Les
+codecs générés valident toujours chaque charge utile, et les limites d'outils,
+d'échecs et de temps arrêtent toujours les travaux invalides répétés. Si un
+tour de récupération attend une entrée, ses éléments d'échec restent
+disponibles à la reprise ; le choix d'un appel d'outil ou d'une réponse finale
+les efface.
+
+Les entrées d'activité de récupération et leur catalogue annoncé font partie de
+l'historique durable du workflow. Un déploiement qui modifie ce contrat doit
+drainer ou arrêter les anciens workers et les workflows en cours avant de
+démarrer le nouveau groupe de workers. Mélanger les versions de workers à cette
+frontière n'est pas sûr.
+
 Lorsque `PlanResumeInput.Finalize` est défini, les planificateurs peuvent
 renvoyer des outils terminaux de comptabilité ; ces appels ne sont pas rejoués
 dans un tour ultérieur et doivent terminer durablement la finalisation.
