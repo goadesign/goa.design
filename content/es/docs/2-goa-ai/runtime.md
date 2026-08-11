@@ -804,6 +804,34 @@ El runtime elige un único estado siguiente en este orden:
 
 Esto evita que la intención del planner se convierta en una segunda política de reintentos. Un fallo recuperable se repara primero; un lote final correcto o con fallo terminal pasa a síntesis. El runtime rechaza las llamadas a herramientas devueltas desde un turno `SynthesisOnly`.
 
+Cada `ToolFailure` recuperable también selecciona una `Recovery.Action`:
+
+- `correct_call` mantiene disponible la herramienta que falló y entrega al
+  siguiente turno del planner la entrada rechazada, los problemas de validación
+  generados, la guía de campos y un ejemplo. No exige una llamada de reemplazo
+  por cada fallo. El planner puede combinar trabajo, realizar cualquier número
+  de llamadas válidas a herramientas anunciadas, esperar una entrada o responder
+  con la evidencia ya recopilada.
+- `replan` elimina la herramienta que falló del siguiente turno del planner. El
+  planner puede usar otra herramienta anunciada, esperar una entrada o responder.
+- `finish` elimina todas las herramientas y exige una respuesta final basada en
+  la evidencia disponible.
+
+El runtime registra el catálogo exacto de herramientas mostrado en un turno de
+recuperación y rechaza cualquier llamada ejecutable que quede fuera de él,
+incluidas las llamadas incorporadas en una solicitud de entrada del usuario o
+de un sistema externo. Los codecs generados siguen validando cada payload, y
+los límites de herramientas, fallos y tiempo de la ejecución siguen deteniendo
+el trabajo inválido repetido. Si un turno de recuperación espera una entrada,
+su evidencia de fallo sigue disponible cuando la ejecución continúa; elegir
+una llamada o una respuesta final elimina esa evidencia.
+
+Las entradas de las actividades de recuperación y su catálogo anunciado forman
+parte del historial duradero del workflow. Un despliegue que cambie este
+contrato debe drenar o detener los workers antiguos y los workflows en curso
+antes de iniciar el nuevo conjunto de workers. No es seguro mezclar versiones
+de workers a través de este límite.
+
 Cuando `PlanResumeInput.Finalize` está presente, los planners pueden devolver herramientas terminales de bookkeeping; esas llamadas no se reproducen en un turno posterior del planner y deben terminar la finalización de forma duradera.
 
 Los planificadores también reciben un `PlannerContext` a través de `input.Agent` que expone servicios del runtime:

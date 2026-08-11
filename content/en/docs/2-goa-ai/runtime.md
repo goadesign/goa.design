@@ -852,6 +852,30 @@ The runtime chooses one next state in this order:
 
 This keeps planner intent from becoming a second retry policy. A recoverable failure is repaired first; a successful or terminally failed final batch proceeds to synthesis. The runtime rejects tool calls returned from a `SynthesisOnly` turn.
 
+Each recoverable `ToolFailure` also selects a `Recovery.Action`:
+
+- `correct_call` keeps the failed tool available and gives the next planner turn
+  the rejected input, generated validation issues, field guidance, and example.
+  It does not require one replacement call per failure. The planner may combine
+  work, make any number of valid calls to advertised tools, wait for input, or
+  answer from the evidence already collected.
+- `replan` removes the failed tool from the next planner turn. The planner may
+  use another advertised tool, wait for input, or answer.
+- `finish` removes all tools and requires a final answer from the available
+  evidence.
+
+The runtime records the exact tool catalog shown on a recovery turn and rejects
+every executable call outside it, including a call embedded in a request for
+user or external input. Generated codecs still validate every payload, and the
+run's tool, failure, and time limits still stop repeated invalid work. If a
+recovery turn waits for input, its failure evidence remains available when the
+run resumes; choosing a tool call or final answer clears that evidence.
+
+Recovery activity inputs and their advertised catalog are part of durable
+workflow history. A deployment that changes this contract must drain or stop
+old workers and running workflows before starting the new worker bundle. Mixed
+worker versions are not safe across this boundary.
+
 When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
 
 Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime services:
