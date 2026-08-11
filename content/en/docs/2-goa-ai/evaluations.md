@@ -272,22 +272,27 @@ ev, err := collector.Finish()
 ```
 
 An `evidence.Expect` declares the deterministic expectations and converts the
-evidence into checks. Payload assertions are typed Go predicates over values
-decoded by the generated tool codecs — no JSON traversal by hand, and a
+evidence into checks. Each generated toolset package exports one typed tool
+descriptor per tool (for example `helpers.AnswerTool`) pairing the tool
+identifier with its typed payload and result codecs. Build expectations from
+descriptors with `evidence.ExpectCall`: the pairing is fixed at generation
+time, assertions are typed Go predicates — no JSON traversal by hand — and a
 design change that renames or retypes a field breaks the suite at compile
 time instead of silently never matching:
 
 ```go
 expect := evidence.Expect{
-    Tools: []evidence.Tool{{
-        Name: helpers.Answer, // generated constant
-        Args: evidence.Decoded(helpers.AnswerPayloadCodec, func(p *helpers.AnswerPayload) error {
-            if p.Question == "" {
-                return errors.New("question must not be empty")
-            }
-            return nil
-        }),
-    }},
+    Tools: []evidence.Tool{
+        evidence.ExpectCall(helpers.AnswerTool,
+            func(p *helpers.AnswerPayload) error {
+                if p.Question == "" {
+                    return errors.New("question must not be empty")
+                }
+                return nil
+            },
+            nil, // result unconstrained
+        ),
+    },
     ForbidTools: []tools.Ident{admin.DeleteRecords},
 }
 return eval.Result{
@@ -302,11 +307,14 @@ as an in-order subsequence of the observed calls, leaving undeclared calls
 unconstrained — a run may retry a rejected call or split work across several
 calls of one tool. Setting `Exact: true` compares the complete causal
 trajectory call for call, so hidden retries and extra tools fail. Per-tool
-policies cover failure semantics: `FailureKind` requires a call to fail with
-exactly one classification, `ForbidFailureKinds` rejects protected failure
-classes across every attempt, and `RequireAllAttemptsSuccessful` rejects any
-failed or missing result. A `Confirmation` expectation asserts the run
-stopped at a pending operator confirmation instead of completing.
+policies cover failure semantics: `evidence.ExpectFailure` declares a call
+that must fail with exactly one classification, `ForbidFailureKinds` rejects
+protected failure classes across every attempt, and
+`RequireAllAttemptsSuccessful` rejects any failed or missing result.
+`evidence.ExpectConfirmation` asserts the run stopped at a pending operator
+confirmation instead of completing. For tools without generated descriptors
+(registry-discovered toolsets), declare a bare `evidence.Tool` with the tool
+identifier and `evidence.Decoded` asserts.
 
 ## Run the suite
 

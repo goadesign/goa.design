@@ -863,7 +863,10 @@ For each agent, Goa-AI emits a **specs package** and a **JSON catalog**:
 - `types.go` – payload/result Go structs
 - `codecs.go` – JSON codecs (encode/decode typed payloads/results, enforce
   closed-object keys, and produce structured validation issues)
-- `specs.go` – `[]tools.ToolSpec` entries with canonical tool ID, payload/result schemas, hints
+- `specs.go` – `[]tools.ToolSpec` entries with canonical tool ID,
+  payload/result schemas, hints, plus one typed `tools.TypedTool` descriptor
+  per tool (for example `SummarizeDocTool`) pairing the tool identifier with
+  its typed payload and result codecs
 
 **JSON catalog (`tool_schemas.json`):**
 
