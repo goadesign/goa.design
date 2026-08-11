@@ -1,73 +1,201 @@
 ---
 title: Generated Evaluations
-weight: 10
-description: "Define evaluation scenarios in Goa design, generate typed hooks, and produce trustworthy reports."
+weight: 6
+description: "Declare agent test scenarios in your Goa design, implement one typed hook per scenario, and get calibrated, model-graded reports."
 llm_optimized: true
 ---
 
-Goa-AI evaluations let a Goa application define stable scenarios in design and
-implement product-specific work in ordinary Go code. Goa-AI owns generation,
-scenario selection, bounded execution, semantic judging, and reports. Your
-application owns the system it calls, the account or facility it targets, the
-facts it checks, and the diagnostic artifacts it saves.
+**Your agent changed. Did its answers get worse?**
 
-## Define scenarios
+An evaluation (eval) is a repeatable test that runs your real agent and checks
+that the outcome is still correct. Evals are not unit tests: they call live
+systems and models, they can take minutes, and part of "is this correct?"
+requires reading a model-written answer rather than comparing exact values.
 
-Add the eval DSL to a design package in an application that already uses the Goa
-v3 DSL:
+Most teams hand-build this harness: a YAML file of test cases, a bespoke
+runner, and a pile of regular expressions trying to match model answers.
+Goa-AI generates the harness from the same design that defines your agent, and
+replaces answer-matching with claims graded by a calibrated model judge.
+
+Each part of an evaluation suite has exactly one owner:
+
+- **The design** describes every scenario: its name, what it tests, the shape
+  of its input, its tags, and its time limit.
+- **Generated code** turns that description into Go types and one interface
+  method per scenario. If the design and the application drift apart, the
+  build breaks — a test cannot silently disappear.
+- **Your application code** implements those methods: it calls the agent,
+  gathers evidence, and states what must be true.
+- **The runner** (from `goa.design/goa-ai/eval`) selects scenarios, limits how
+  many run at once, grades answers, and produces a JSON report.
+
+Six terms cover the whole feature:
+
+| Term | Meaning |
+|------|---------|
+| **Scenario** | One test case, such as "ask the chat agent to list every alarm" |
+| **Hook** | The Go method you write for one scenario; it runs the agent and returns what happened |
+| **Check** | A pass/fail fact your code verifies exactly, such as "every result page was fetched" |
+| **Claim** | A short English sentence that must be true of the model's answer |
+| **Judge** | A model-backed grader that labels each claim against the answer |
+| **Report** | The JSON summary of a run: what ran, what passed, why, and how long it took |
+
+Claims exist because answer wording changes from run to run, so exact string
+comparison cannot work. Checks exist because facts your code *can* verify
+exactly should never be delegated to a model.
+
+## Declare scenarios in the design
+
+The design declares the *shape* of each scenario input: which fields exist and
+what makes them valid. It never contains real values. Concrete user IDs,
+facilities, and prompts stay in application code, so the same design works in
+every environment.
 
 ```go
 package design
 
-import . "goa.design/goa-ai/eval/dsl"
+import (
+    . "goa.design/goa-ai/dsl"
+    . "goa.design/goa-ai/eval/dsl"
+    . "goa.design/goa/v3/dsl"
+)
 
-var _ = Suite("chat", func() {
-    Description("Exercises production Chat outcomes.")
-    Timeout("2m")
+var ChatEvalInput = Type("ChatEvalInput", func() {
+    Attribute("user_id", String, "User running the evaluation.", func() {
+        Format(FormatUUID)
+    })
+    Attribute("prompt", String, "User message.", func() {
+        MinLength(1)
+    })
+    Required("user_id", "prompt")
+})
 
-    Scenario("alarm_inventory", func() {
-        Description("Retrieves every alarm in a fixed window.")
-        Input("List every alarm in the requested window.")
-        Tags("production", "alarm")
-        Timeout("3m")
+var _ = Service("chat_agent", func() {
+    Agent("chat", "Answers product questions.", func() {
+        Suite("chat", func() {
+            Description("Exercises production Chat outcomes.")
+            Timeout("2m")
+
+            Scenario("alarm_inventory", func() {
+                Description("Retrieves every alarm in a fixed window.")
+                Input(ChatEvalInput)
+                Tags("production", "alarm")
+                Timeout("3m")
+            })
+
+            Scenario("health_check", func() {
+                Description("Verifies application-owned setup.")
+            })
+        })
     })
 })
 ```
 
-The application must also contain its normal Goa service design. The Goa CLI
-uses that design to identify the Goa version before loading extension DSLs.
+The rules:
 
-Suite, scenario, and tag IDs use `lower_snake_case`. Descriptions, scenario
-inputs, and positive suite timeouts are required. A scenario timeout replaces
-the suite timeout for that scenario.
+- Suite, scenario, and tag names use `lower_snake_case`. They become stable
+  identifiers in reports and command-line flags, so renaming one renames the
+  test everywhere.
+- Every suite and scenario needs a `Description`. Every suite needs a positive
+  `Timeout`; a scenario `Timeout` replaces the suite one for that scenario.
+- `Input` is optional. A scenario without `Input` generates a hook that
+  receives only a `context.Context`. `Input` accepts the same forms as tool
+  `Args`: a named Goa type, a primitive, an array or map, or an inline
+  function listing attributes. `OneOf` is not supported in evaluation inputs.
+- A suite can be declared at the top level of the design or inside an `Agent`.
+  Declaring it inside an agent additionally gives the generated package access
+  to that agent's tool contracts (explained below).
 
-Normal `goa gen` emits `gen/evals/<suite>/suite.go`:
+## Generate the Go code
+
+Importing `goa.design/goa-ai/eval/dsl` in the design registers the evaluation
+generator. Running the normal `goa gen` command then writes
+`gen/evals/<suite>/suite.go`:
 
 ```go
-type Hooks interface {
-    AlarmInventory(context.Context, string) (eval.Result, error)
+type ChatEvalInput struct {
+    UserID string
+    Prompt string
 }
 
-func New(hooks Hooks) eval.Suite
+type Hooks interface {
+    AlarmInventory(context.Context, *ChatEvalInput) (eval.Result, error)
+    HealthCheck(context.Context) (eval.Result, error)
+}
+
+type Inputs struct {
+    AlarmInventory *ChatEvalInput
+}
+
+func New(hooks Hooks, inputs Inputs) (eval.Suite, error)
 ```
 
-There is one method for each scenario. Adding a scenario therefore creates a
-compile-time obligation for the application that runs the suite. Generated
-code contains the final names, inputs, tags, and timeouts. It does not use
-reflection or runtime registration.
+`Hooks` has one method per scenario, so adding a scenario to the design breaks
+the build until the application implements it. `Inputs` has one field per
+scenario that declared an `Input`; the application fills these with real
+values. `New` checks every supplied value against the design rules (required
+fields, formats, lengths) and returns an error before any scenario can start.
 
-## Implement checks and claims
+### Tool contracts for agent suites
 
-Implement the generated interface on a normal application type:
+Agents declare their tools in the design too, so the generator knows exactly
+which tools an agent can call — including the tools of other agents it uses.
+When a suite is declared inside an `Agent`, its generated package includes:
+
+```go
+func MustToolContract(name tools.Ident) *tools.ToolSpec
+```
+
+Given a tool name, it returns that tool's generated contract: its schema and
+the codec that decodes its arguments and results. Use it in hooks to decode
+recorded tool calls and check their arguments exactly, without writing JSON
+handling by hand. It covers every tool the agent can reach at build time; it
+does not cover tools discovered at runtime, whose contracts the generator
+cannot know. Asking for a tool the agent cannot use panics, because that is a
+bug in the evaluation itself.
+
+## Create the runnable command
+
+Run `goa example` after `goa gen`:
+
+```bash
+goa example example.com/product/design
+```
+
+This creates `cmd/<suite>-evals/main.go` once and never overwrites it — the
+file belongs to the application from then on. Later design changes still
+update `gen/evals`: a changed hook signature fails compilation and a missing
+input value fails `New`, so the command cannot silently fall out of date.
+
+The generated file compiles immediately and contains a `TODO` at every place
+that needs application code: one empty hook per scenario, one input value per
+scenario that declares an `Input`, and the judge. It also comes with a working
+command line:
+
+- `--scenario <id>` runs one scenario; repeat the flag for several.
+- `--tag <tag>` runs every scenario carrying that tag; repeat for several.
+  Scenario and tag flags cannot be combined.
+- `--max-concurrency <n>` limits how many scenarios run at once (default 5).
+
+Every run writes the JSON report to standard output and exits non-zero when
+the suite fails. The command is a plain Go program, so it can run locally, in
+CI, or on a schedule. Applications that prefer `go test` can skip the command
+and call the generated `New` from a test instead.
+
+## Write the hooks
+
+Implement the generated interface on an ordinary type:
 
 ```go
 type hooks struct {
     client *Client
-    target Target
 }
 
-func (h *hooks) AlarmInventory(ctx context.Context, input string) (eval.Result, error) {
-    answer, evidence, err := h.client.Run(ctx, h.target, input)
+func (h *hooks) AlarmInventory(
+    ctx context.Context,
+    input *genevals.ChatEvalInput,
+) (eval.Result, error) {
+    answer, evidence, err := h.client.Run(ctx, input.UserID, input.Prompt)
     if err != nil {
         return eval.Result{}, err
     }
@@ -89,48 +217,79 @@ func (h *hooks) AlarmInventory(ctx context.Context, input string) (eval.Result, 
 }
 ```
 
-A check compares typed evidence with a fact your application can determine
-exactly. A claim is a short statement that must be supported by the model's
-answer. Use checks for tool names, IDs, counts, states, and other exact values.
-Use claims only for meaning that requires reading the answer.
+A hook returns three kinds of information:
 
-Return infrastructure and protocol failures as errors. A failed check must
-include a diagnostic. The runner rejects empty results, duplicate check or
-claim IDs, claims without an answer, malformed artifacts, and incomplete judge
-responses.
+- **Checks** are facts the code can verify exactly: tool names, IDs, counts,
+  states. A failed check must include a diagnostic explaining what went wrong.
+- **Claims** are sentences about the model's answer, judged later. Write one
+  claim per fact ("The answer names the alarm", "The answer gives the
+  activation time") rather than one long compound claim, so a failure points
+  at the exact missing fact. Do not approximate answer meaning with regular
+  expressions or keyword lists — that is what claims and the judge replace.
+  When a hook returns claims it must also set `Output`, the answer being
+  judged.
+- **Artifacts** are optional links to saved evidence — logs, transcripts,
+  protocol dumps — that help debug a failure.
 
-## Create a runner
+Use the returned error only for infrastructure problems: the agent could not
+be reached, a timeout, a broken test environment. "The agent answered but the
+answer is wrong" is a failed check or an unsupported claim, not an error.
 
-Concurrency is explicit and bounded:
+The runner rejects malformed results before scoring them: a result must
+contain at least one check or claim, names and IDs must be unique, claims
+require `Output`, and artifacts need both a name and a URI.
+
+## Run the suite
 
 ```go
-runner, err := eval.NewRunner(
-    judge.New(modelClient),
-    eval.RunnerConfig{MaxConcurrency: 5},
-)
+suite, err := genevals.New(&hooks{client: client}, genevals.Inputs{
+    AlarmInventory: &genevals.ChatEvalInput{
+        UserID: userID,
+        Prompt: "List every alarm in the requested window.",
+    },
+})
 if err != nil {
     return err
 }
-suite := genevals.New(hooks)
+
+runner, err := eval.NewRunner(judge.New(modelClient), eval.RunnerConfig{
+    MaxConcurrency: 5,
+    Reporter:       reporter,
+})
+if err != nil {
+    return err
+}
 report, err := runner.Run(ctx, suite)
 ```
 
-`MaxConcurrency` is required and must be positive. At most that many scenarios
-run at once. One scenario failure does not stop the others. Reports always use
-the suite's declaration order, regardless of completion order. Hook
-implementations and semantic judges must therefore support concurrent calls up
-to this limit.
+`MaxConcurrency` is required and must be positive: at most that many scenarios
+run at the same time. One scenario failing does not stop the others. The
+report always lists scenarios in the order the design declares them, no matter
+which finished first. Because scenarios run in parallel, hooks and the judge
+must be safe to call concurrently.
 
-Pass a nil judge when every hook returns deterministic checks and no semantic
-claims:
+The optional `Reporter` receives a callback when each scenario starts and when
+it finishes, so an application can print progress without scheduling anything
+itself. Every selected scenario gets exactly one finished callback — including
+scenarios that never started because the run was canceled (those have a zero
+start time and no started callback).
+
+Canceling the context stops new scenarios from starting and cancels the ones
+in flight through their own contexts; `Run` then returns the context error
+together with the partial report. Hooks must honor cancellation.
+
+Pass a nil judge only when no hook returns claims:
 
 ```go
 runner, err := eval.NewRunner(nil, eval.RunnerConfig{MaxConcurrency: 2})
 ```
 
-## Select scenarios
+If a hook returns a claim and the judge is nil, that scenario fails with an
+error saying a judge is required.
 
-The runner owns selection and validates it before any product or model call:
+### Select scenarios
+
+The runner validates every selection before calling the agent or a model:
 
 ```go
 report, err := runner.Run(ctx, suite)
@@ -138,37 +297,71 @@ report, err := runner.RunScenarios(ctx, suite, "alarm_inventory", "solar_analysi
 report, err := runner.RunTags(ctx, suite, "smoke", "alarm")
 ```
 
-`RunScenarios` runs exact IDs. `RunTags` runs every scenario carrying at least
-one requested tag. Both reject empty selections, empty values, duplicates, and
-unknown IDs or tags. Selected scenarios remain in suite declaration order.
+`RunScenarios` runs exact scenario names. `RunTags` runs every scenario
+carrying at least one of the given tags. Both reject empty selections, empty
+values, duplicates, and names or tags that do not exist, so a typo fails
+loudly instead of silently running nothing.
 
-## Semantic judging
+## How judging works
 
-`eval/judge` accepts a provider-neutral `model.Client`. Before any scenario
-runs, the runner checks the judge with four framework-owned examples:
+`eval/judge` builds a judge from any `model.Client`, the same model-client
+interface the rest of Goa-AI uses, so it works with any configured provider.
 
-- `entailed`: the answer establishes the claim;
-- `contradicted`: the answer establishes that the claim is false;
-- `not_addressed`: the answer discusses something else; and
-- `indeterminate`: conflicting information prevents a conclusion.
+For each scenario the judge receives the answer and the scenario's claims, and
+returns exactly one label and a short rationale per claim:
 
-All four labels must be returned correctly. This prevents a judge that always
-answers `entailed` from making every evaluation pass. A calibration failure
-stops the suite before it calls your application.
+- `entailed`: the answer establishes the claim is true;
+- `contradicted`: the answer establishes the claim is false;
+- `not_addressed`: the answer talks about something else;
+- `indeterminate`: the answer is too ambiguous or conflicting to decide.
 
-For scenario claims, the judge makes one tool-free structured-output request
-and returns exactly one label and rationale for each claim ID. Only `entailed`
-passes. Unknown fields, missing or duplicate IDs, unsupported labels, multiple
-JSON answers, and trailing JSON are errors. The judge never retries or repairs
-its output.
+Only `entailed` counts as passing.
+
+Before any scenario runs, the runner tests the judge with four fixed examples,
+one per label. This step is called calibration. A judge that cannot tell the
+labels apart — for example one that answers `entailed` for everything, which
+would make every evaluation pass — fails calibration and the suite stops
+before touching the application. Calibration runs under a two-minute deadline
+owned by the runner, so an unreachable or stalled model endpoint fails the
+suite with a clear error instead of blocking it forever.
+
+The judge is strict about its own protocol: missing or duplicate claim IDs,
+unknown labels, extra fields, and malformed responses are errors. It never
+retries or repairs a bad response, because a judge that edits its own output
+is no longer trustworthy evidence.
 
 ## Read the report
 
-`Report` and its nested values have stable JSON field names. Scenario duration
-includes the application call, result validation, and semantic judging.
+The report and everything in it use stable JSON field names, so tooling can
+depend on them. A scenario's duration covers the hook call, result validation,
+and judging.
 
-Selection and calibration failures are returned as errors and recorded on the
-suite report. Hook, validation, timeout, and judging failures are recorded on
-their scenario reports so the remaining scenarios can finish. After a run with
-no suite-level error, check `report.Passed`; a false value must make the calling
-test or CI command fail.
+Failures land at two levels:
+
+- **Suite-level** failures — an invalid selection, a calibration failure, or
+  cancellation — are returned as the error from `Run` and recorded on the
+  report's `error` field.
+- **Scenario-level** failures — a hook error, an invalid result, a timeout, or
+  a judging failure — are recorded on that scenario's report so the remaining
+  scenarios still finish.
+
+After a run without a suite-level error, check `report.Passed`: it is true
+only when every selected scenario passed all of its checks and claims. A false
+value must fail the calling command or CI job.
+
+## Upgrade from string-input suites
+
+Earlier versions passed a single string to every hook. Typed inputs replace
+that:
+
+- replace `Input("some literal")` with a Goa input type and move the literal
+  into the generated `Inputs` value;
+- use Goa v3 `Description` and `Timeout`, plus Goa-AI `Tags`; `eval/dsl` now
+  declares only `Suite`, `Scenario`, and `Input`;
+- update hooks from `(context.Context, string)` to their generated typed
+  signatures; and
+- update `New(hooks)` to `New(hooks, inputs)` and handle its validation error.
+
+Regenerate before compiling application code. Generated suite packages and
+application hooks live in one Go binary, so there is no version-mixing concern
+across a network: a mismatch is a compile error, not a runtime surprise.

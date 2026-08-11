@@ -61,6 +61,46 @@ or hand-maintained JSON schema required.
 
 ---
 
+### Generated Evaluations {#generated-evaluations}
+
+**Your agent changed. Did its answers get worse?**
+
+Evaluations are repeatable tests that run your real agent and check the outcome
+is still correct. Most teams hand-build that harness: YAML case files, a
+bespoke runner, and regular expressions trying to match model answers. Goa-AI
+generates the harness from the same design that defines the agent:
+
+```go
+Agent("chat", "Answers product questions.", func() {
+    Suite("chat", func() {
+        Description("Exercises production Chat outcomes.")
+        Timeout("2m")
+        Scenario("alarm_inventory", func() {
+            Description("Retrieves every alarm in a fixed window.")
+            Input(ChatEvalInput)          // typed, validated scenario input
+            Tags("production", "alarm")
+        })
+    })
+})
+```
+
+`goa gen` turns each scenario into a typed Go interface method — adding a
+scenario breaks the build until the application implements it. `goa example`
+creates a runnable `cmd/<suite>-evals` command once. Hooks return exact
+pass/fail checks plus plain-English claims about the model's answer; a
+model-backed judge grades each claim, but only after passing a calibration
+test proving it can tell correct from incorrect answers.
+
+**Benefits:**
+- **Design-owned scenarios** — Test cases live beside the agent they test, with typed, validated inputs
+- **No silent drift** — A scenario without an implementation is a compile error, not a skipped test
+- **No regex grading** — Plain-English claims judged by a calibrated model replace answer pattern-matching
+- **CI-ready** — Scenario and tag selection flags, bounded concurrency, stable JSON reports in design order
+
+→ Learn more in [Generated Evaluations](evaluations/)
+
+---
+
 ### Typed Direct Completions {#typed-direct-completions}
 
 **Not every structured interaction should be a tool call.**
@@ -235,6 +275,7 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | Feature | What You Get |
 |---------|--------------|
 | [Design-First Agents](#design-first-agents) | Define agents in DSL, generate type-safe code |
+| [Generated Evaluations](#generated-evaluations) | Design-declared test scenarios, typed hooks, calibrated model-graded reports |
 | [MCP Integration](mcp-integration/) | Native Model Context Protocol support |
 | [Tool Registries](#tool-registries) | Clustered discovery + public registry federation |
 | [Run Trees](#run-trees-composition) | Agents calling agents with full traceability |
@@ -256,12 +297,13 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | [Runtime](runtime/) | Runtime architecture, plan/execute loop, engines | ~2,400 |
 | [Toolsets](toolsets/) | Toolset types, execution models, transforms | ~2,300 |
 | [Agent Composition](agent-composition/) | Agent-as-tool, run trees, streaming topology | ~1,400 |
+| [Generated Evaluations](evaluations/) | Typed eval suites, scenario hooks, judge calibration, reports | ~2,600 |
 | [MCP Integration](mcp-integration/) | MCP servers, transports, generated wrappers | ~1,200 |
 | [Memory & Sessions](memory-sessions/) | Transcripts, memory stores, sessions, runs | ~1,600 |
 | [Production](production/) | Temporal setup, streaming UI, model integration | ~2,200 |
 | [Testing & Troubleshooting](testing/) | Testing agents, planners, tools, common errors | ~2,000 |
 
-**Total Section:** ~21,400 tokens
+**Total Section:** ~24,000 tokens
 
 ## Architecture
 

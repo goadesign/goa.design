@@ -107,8 +107,10 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 ### DSL de evaluaciones
 
 `goa.design/goa-ai/eval/dsl` añade suites de evaluación al diseño Goa v3 de
-una aplicación. `Suite` contiene los escenarios generados; `Scenario`,
-`Description`, `Input`, `Tags` y `Timeout` definen cada caso. El runner se
+una aplicación. `Suite` declara una suite en el nivel superior del diseño o
+dentro de `Agent`; `Scenario` declara un caso; `Input` declara el valor tipado
+que recibe el hook generado. `Description` y `Timeout` de Goa v3 junto con
+`Tags` de Goa-AI completan cada caso. El runner se
 encarga de seleccionar IDs y etiquetas, limitar la concurrencia y verificar el
 juez semántico con cuatro ejemplos antes de evaluar respuestas. Consulta
 [Evaluaciones generadas](evaluations/) para los contratos de hooks y ejecución.
