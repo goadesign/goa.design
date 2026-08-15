@@ -313,7 +313,7 @@ Temporal provides durable execution for your Goa-AI agents. Agent runs become Te
 | Tool call times out | Run fails (or manual handling) | Automatic retry with backoff |
 | Rate limit (429) | Run fails | Backs off, retries automatically |
 | Network partition | Partial progress lost | Resumes after reconnect |
-| Deploy during run | In-flight runs fail | Workers drain, new workers resume |
+| Deploy during run | In-flight runs fail | Existing workflows stay on retained compatible workers; new workflows use the promoted version |
 
 ### Installation
 
@@ -353,15 +353,19 @@ rt := runtime.New()
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
-    "go.temporal.io/sdk/client"
+    temporalclient "go.temporal.io/sdk/client"
+    "go.temporal.io/sdk/worker"
+    "go.temporal.io/sdk/workflow"
 
     // Your generated tool specs aggregate.
     // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
+const releaseBuildID = "git-sha-or-image-digest"
+
 temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
-    ClientOptions: &client.Options{
+    ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Required: enforce goa-ai's workflow boundary contract.
@@ -371,6 +375,16 @@ temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
+        Options: worker.Options{
+            DeploymentOptions: worker.DeploymentOptions{
+                UseVersioning: true,
+                Version: worker.WorkerDeploymentVersion{
+                    DeploymentName: "assistant",
+                    BuildID:        releaseBuildID,
+                },
+                DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
+            },
+        },
     },
 })
 if err != nil {
@@ -432,6 +446,76 @@ results by `ToolCallID` rather than repeating irreversible side effects.
 ### Worker Setup
 
 Workers poll task queues and execute workflows/activities. Workers are automatically started for each registered agent—no manual worker configuration needed in most cases.
+
+### Transparent Rollouts
+
+Temporal durability and transparent releases are separate guarantees. Temporal
+stores workflow history. Your deployment must keep compatible worker code and
+every required downstream service available while that history is still in
+use.
+
+The configuration above opts the worker into [Temporal Worker Deployment
+Versioning](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning).
+`releaseBuildID` must identify one immutable binary or container image. Never
+reuse a build ID for different workflow code or use a mutable tag such as
+`latest`.
+
+Release a worker version in this order:
+
+1. Start the new workers beside all retained worker versions.
+2. Wait for the new process to pass readiness and register successfully with
+   Temporal.
+3. Make the new Worker Deployment Version current. Temporal assigns new
+   workflows to it while existing workflows stay pinned to the version that
+   started them.
+4. If the worker process also serves an API, route normal API traffic only to
+   the current ready build. Keep old pods alive for Temporal without sending
+   new API requests to them. A separate API deployment is another valid design,
+   but it is not required.
+5. Remove an old version only after Temporal reports it drained. A stopped pod
+   is not proof that no workflow still needs that code.
+
+Each accepted user input starts one top-level Goa-AI workflow. Goa-AI ends that
+workflow when it requests human or external input and stores a private
+checkpoint under the completed run ID. The accepted answer starts a new
+workflow on the current worker version. The new version must therefore keep
+the saved checkpoint version, generated result codecs, and required tool names
+compatible. If that is impossible, migrate saved checkpoints before promoting
+the release. Worker versioning cannot translate incompatible stored values.
+
+The rest of the application must preserve availability during the same
+overlap:
+
+- A downstream Service must always have at least one ready endpoint. Use a
+  readiness-gated rolling replacement; a `Recreate` rollout introduces a gap.
+- Downstream APIs must accept calls from retained and current workers.
+- Database migrations must support both releases until the old version is
+  drained. Use an expand-then-contract sequence rather than replacing a schema
+  before old code stops using it.
+- If a process serves both API traffic and Temporal work, the traffic selector
+  must identify the current build independently from Temporal's access to
+  retained workers.
+
+Worker Deployment Versioning protects workflow replay. It does not protect a
+workflow from an unavailable dependency, an incompatible API, or an
+incompatible checkpoint.
+
+#### Release verification
+
+Do not call the release transparent until all of these checks pass:
+
+- A workflow started before promotion completes on its original build.
+- A new workflow starts and completes on the current build.
+- An external-input request created before promotion continues successfully as
+  a new workflow after promotion.
+- API traffic reaches only the current ready build.
+- Old workers stay ready until Temporal reports them drained.
+- Every downstream Service retains a ready endpoint throughout replacement.
+- The observation window contains no new workflow failures, container
+  restarts, or readiness gaps.
+
+The one-workflow-per-turn and cross-workflow event identity contract is covered
+in [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations).
 
 ### Best Practices
 

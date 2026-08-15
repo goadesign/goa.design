@@ -672,58 +672,56 @@ generic runtime stays honest across both Temporal and the in-memory engine.
 
 ---
 
-## Pause & Resume
+## External Input and Workflow Continuations
 
-Human-in-loop workflows can suspend and resume runs using the runtime's interrupt helpers:
+Each accepted user input starts one top-level workflow for that turn. The
+workflow ends with either that turn's final result or an external-input
+suspension. Nested agents still run as linked child workflows.
 
-```go
-import "goa.design/goa-ai/runtime/agent/interrupt"
+Clarifications, structured questions, external tool results, and confirmations
+end the current workflow successfully. The returned `RunOutput.Suspension`
+contains the request that the UI or external system must answer. No Temporal
+workflow remains open while a person is deciding.
 
-// Pause
-if err := rt.PauseRun(ctx, interrupt.PauseRequest{
-    RunID: "session-1-run-1",
-    Reason: "human_review",
-}); err != nil {
-    panic(err)
-}
-
-// Resume
-if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
-    RunID: "session-1-run-1",
-}); err != nil {
-    panic(err)
-}
-```
-
-Behind the scenes, pause/resume signals update the run store and emit `run_paused`/`run_resumed` hook events so UI layers stay in sync.
-
-### Providing External Tool Results
-
-Some awaits resume with **tool results supplied by an external actor** rather than by `ExecuteToolActivity` itself. Common examples are UI-owned tools such as structured questions, or bridge services that collect results from another system and then wake the run back up.
-
-Use `ProvideToolResults` with raw provided results:
+Before the workflow completes, Goa-AI stores its private checkpoint under the
+completed run ID. The application must atomically accept one answer so two
+concurrent requests cannot continue the same state. It then starts a new
+workflow with the predecessor run ID, a new run ID, a new turn ID, and one typed
+response:
 
 ```go
-err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
-    RunID: "run-123",
-    ID:    "await-1",
-    Results: []*api.ProvidedToolResult{
-        {
-            Name:       "chat.ask_question.ask_question",
-            ToolCallID: "toolcall-1",
-            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+next, err := client.Continue(
+    ctx,
+    "session-1",
+    previous.RunID,
+    "run-124",
+    "turn-2",
+    &api.PendingInputResponse{
+        Clarification: &api.ClarificationAnswer{
+            ID:     "clarify-device",
+            Answer: "Device ID is ABC-123",
         },
     },
-})
+)
 ```
 
-Contract:
+The application passes only the completed run ID and the typed answer. Goa-AI
+loads the checkpoint, validates its version and pending request, restores saved
+payloads through the current generated codecs, and resumes planning. The
+checkpoint remains private to the session store.
 
-- Callers provide the **raw canonical result JSON** plus optional `Bounds`, `Error`, and `RetryHint`.
-- Callers do **not** construct `api.ToolEvent`; that is the runtime's internal workflow envelope.
-- The runtime decodes the provided result using the registered tool spec, runs typed result materialization, attaches any server-only sidecars, appends the canonical `tool_result` to the transcript/run log, and only then resumes planning.
+When an answer completes a model-authored tool call from the earlier workflow,
+the new `tool_end` event has two distinct run identities:
 
-This keeps the await path conceptually aligned with the normal execution path: both flows converge on the same typed `planner.ToolResult` contract before publication.
+- its normal run ID names the new workflow that received the answer; and
+- `call_run_id` names the earlier workflow that emitted the matching
+  `tool_start`.
+
+Stream consumers must pair those events using `call_run_id` and the tool call
+ID. They must not search previous runs or assume the call and result belong to
+the same workflow. See [Transparent rollouts](../production/#transparent-rollouts)
+for the worker and deployment requirements that preserve this boundary during
+a release.
 
 ---
 
@@ -738,9 +736,11 @@ You can enable confirmation in two ways:
 - **Runtime (override/dynamic):** pass `runtime.WithToolConfirmation(...)` when constructing the runtime
   to require confirmation for additional tools or override design-time behavior.
 
-At execution time, the workflow emits an out-of-band confirmation request and only executes the tool
-after an explicit approval is provided. When denied, the runtime synthesizes a schema-compliant tool
-result so the transcript remains valid and the planner can react deterministically.
+At execution time, the workflow emits a confirmation request and completes with
+a suspension. The accepted decision starts a new workflow. That continuation
+executes the tool only when approved. When denied, the runtime synthesizes a
+schema-compliant tool result so the transcript remains valid and the planner can
+react deterministically.
 
 ### Confirmation protocol
 
@@ -765,17 +765,18 @@ Contract:
 - Confirmation overrides may customize the prompt and denied-result rendering, but they do not introduce a separate display-payload channel or change the meaning of `payload`.
 - Products that need a richer confirmation UI should materialize it in the application layer from the canonical payload plus application-owned reads.
 
-- **Provide decision** (via `ProvideConfirmation` on the runtime):
+- **Continuation response**:
 
   ```go
-  err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
-      RunID:       "run-123",
-      ID:         "await-1",
-      Approved:    true,              // or false
-      RequestedBy: "user:123",
-      Labels:      map[string]string{"source": "front-ui"},
-      Metadata:    map[string]any{"ticket_id": "INC-42"},
-  })
+  response := &api.PendingInputResponse{
+      Confirmation: &api.ConfirmationDecision{
+          ID:          "await-1",
+          Approved:    true, // or false
+          RequestedBy: "user:123",
+          Labels:      map[string]string{"source": "front-ui"},
+          Metadata:    map[string]any{"ticket_id": "INC-42"},
+      },
+  }
   ```
 
 ### Tool authorization events
@@ -797,7 +798,8 @@ The event is emitted immediately after the decision is received (before tool exe
 Notes:
 
 - Consumers should treat confirmation as a runtime protocol:
-  - Use the accompanying `RunPaused` reason (`await_confirmation`) to decide when to display a confirmation UI.
+  - Render the first pending item when its kind is `confirmation`, then submit
+    the decision through `Continue`.
   - Do not couple UI behavior to a specific confirmation tool name; treat it as an internal transport detail.
 - Confirmation templates (`PromptTemplate` and `DeniedResultTemplate`) are Go `text/template` strings
   executed with `missingkey=error`. In addition to the standard template functions (e.g. `printf`),
@@ -810,7 +812,8 @@ Notes:
 The runtime validates confirmation interactions at the boundary:
 
 - The confirmation `ID` matches the pending await identifier when provided.
-- The decision object is well-formed (non-empty `RunID`, boolean `Approved` value).
+- The continuation contains exactly one response variant and a well-formed
+  decision.
 
 ---
 
@@ -872,9 +875,11 @@ recovery turn waits for input, its failure evidence remains available when the
 run resumes; choosing a tool call or final answer clears that evidence.
 
 Recovery activity inputs and their advertised catalog are part of durable
-workflow history. A deployment that changes this contract must drain or stop
-old workers and running workflows before starting the new worker bundle. Mixed
-worker versions are not safe across this boundary.
+workflow history. Production deployments must use pinned Temporal Worker
+Deployment Versioning and retain each old worker version until Temporal reports
+it drained. Starting a new worker does not make it safe to replay an existing
+workflow on new code. A continuation is a new workflow and may use the current
+version after its saved checkpoint passes validation.
 
 When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
 
