@@ -121,22 +121,36 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 | Component | Description |
 |-----------|-------------|
 | **Service** | gRPC handlers for discovery and invocation |
-| **Store** | Persistence layer for toolset metadata (memory or MongoDB) |
+| **Catalog** | Redis-backed tool schemas, admission tokens, provider leases, and retirement history |
 | **Health Tracker** | Monitors provider liveness via ping/pong |
 | **Stream Manager** | Manages Pulse streams for tool call routing |
-| **Result Stream Manager** | Handles tool result delivery |
+| **Call Record Store** | Retains each call's request identity, provider assignment, deadline, publication state, and canonical terminal result |
 
 ### Tool Call Flow
 
 When `CallTool` is invoked, the registry performs these steps in sequence:
 
-1. **Schema validation**: The payload is validated against the tool's JSON Schema using the runtime toolregistry schema validator
-2. **Health check**: The registry checks if the toolset has responded to recent pings—unhealthy toolsets return `service_unavailable` immediately
-3. **Result stream creation**: A temporary Pulse stream is created with a unique `tool_use_id`, and the mapping is stored in Redis for cross-node result delivery
-4. **Request publishing**: The tool call is published to the toolset's request stream (`toolset:<name>:requests`)
-5. **Wait for result**: The gateway subscribes to the result stream and blocks until the provider responds or the 30-second timeout expires
+1. **Identity and schema validation**: The registry validates the payload and
+   derives one run-scoped `tool_use_id`. An exact retry attaches to the same
+   retained record.
+2. **Provider wait**: An unpublished call waits for the active toolset to have a
+   healthy provider, bounded by the call's existing execution deadline.
+3. **Atomic publication**: One Redis operation verifies that the selected
+   provider is still current and non-draining, then appends the request exactly
+   once. If a rollout changed providers after the health check, the unpublished
+   call selects the replacement and tries again within the same deadline.
+4. **Immutable execution**: Successful publication fixes the provider
+   assignment. The call can no longer move because an external effect may have
+   begun.
+5. **Result delivery**: `CallTool` returns the exact provider token,
+   result-stream identity, execution deadline, and retention deadline. The
+   executor reads that stream until the provider returns a terminal result or
+   the execution deadline settles the call.
 
-This design ensures that tool calls fail fast when providers are unhealthy, rather than waiting for timeouts.
+If the execution deadline expires before publication, the registry records
+`call_not_admitted`, which proves that the executor may choose another plan. A
+published call with an uncertain result returns `outcome_unknown` and may not be
+replaced.
 
 ## Provider Integration (Service-Side)
 
@@ -304,10 +318,15 @@ The registry exposes the following gRPC methods:
 
 | Method | Description |
 |--------|-------------|
-| `Register` | Register a toolset with the registry. Validates tool schemas, creates the request stream, and starts health tracking. Returns the stream ID for the provider to subscribe to. |
-| `Unregister` | Remove a toolset from the registry. Stops health pings and removes metadata, but does not destroy the underlying stream. |
-| `EmitToolResult` | Emit a tool execution result. Looks up the result stream from Redis (enabling cross-node delivery) and publishes the result. |
-| `Pong` | Respond to a health check ping. Updates the last-pong timestamp in the shared health map. |
+| `Register` | Add or renew one provider lease for the active tool contract. A different contract waits until the old leases end. |
+| `DrainProvider` | Make one provider lease unavailable for new calls while preserving its authority to finish calls it already owns. |
+| `ReleaseProvider` | Remove one exact provider lease after its process has settled accepted work. |
+| `Unregister` | Intentionally retire the exact active admission. This removes it from discovery and routing and permanently prevents the same admission token from returning; it is not a rollout operation. |
+| `Pong` | Record provider health for the exact current lease and health-check epoch. |
+| `ClaimToolCall` | Grant execution of a published request to one exact provider lease. |
+| `CompleteToolCall` | Commit the canonical terminal result for the claimed call and publish it to the result stream. |
+| `PublishToolOutputDelta` | Publish a bounded, best-effort progress fragment for a claimed call. |
+| `ReportToolCallOverload` | Record bounded retry control before a provider executes an overloaded call. |
 
 ### Discovery Operations
 
@@ -321,7 +340,8 @@ The registry exposes the following gRPC methods:
 
 | Method | Description |
 |--------|-------------|
-| `CallTool` | Invoke a tool through the registry gateway. Validates payload, checks health, routes to provider, and waits for result (30s timeout). |
+| `CallTool` | Validate and publish one run-scoped call. The call waits for provider health within its existing deadline, follows a replacement only before publication, and then returns its exact immutable execution reference. |
+| `RetryTool` | Republish the exact original admission after recorded provider overload. It never moves execution to a replacement provider. |
 
 ## Best Practices
 
@@ -330,13 +350,13 @@ The registry exposes the following gRPC methods:
 - **Use the same `Name`** for all nodes in a cluster—this determines the shared Pulse resource names
 - **Point to the same Redis** instance for state coordination
 - **Deploy behind a load balancer** for client connections—all nodes serve identical state
-- **Use MongoDB store** in production for persistence across restarts (in-memory store loses registrations on restart)
+- **Use durable Redis** for the catalog, call records, and Pulse streams so registry replicas and process restarts observe the same decisions
 
 ### Health Monitoring
 
 - **Set appropriate `PingInterval`** based on your latency requirements (default: 10s). Lower values detect failures faster but increase Redis traffic.
 - **Tune `MissedPingThreshold`** to balance between false positives and detection speed (default: 3). The staleness threshold is `(threshold + 1) × interval`.
-- **Monitor health state** via metrics or logs—unhealthy toolsets cause immediate `service_unavailable` errors rather than timeouts
+- **Monitor health state** via metrics or logs. Unpublished calls wait for provider recovery only until their existing execution deadline; they do not wait forever.
 
 ### Scaling
 

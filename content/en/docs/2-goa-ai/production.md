@@ -507,11 +507,14 @@ and releases its lease before the new admission can execute, so two different
 tool contracts never serve the same toolset at once.
 
 A valid `CallTool` request that finds an active toolset with no healthy provider
-waits without recording an admission decision. Provider recovery admits and
-publishes it normally, and the availability wait consumes the call's existing
-execution deadline. Caller cancellation ends only that transport attempt; an
-exact retry remains eligible for admission. Deadline expiry records the normal
-durable `call_not_admitted` decision.
+waits within its existing execution deadline. Request publication then verifies
+the selected provider in the same Redis operation that appends the call. If the
+old provider started draining after the health check, the unpublished call
+selects the replacement and tries again without extending its deadline. The
+provider assignment becomes permanent only when publication succeeds. Caller
+cancellation ends only that transport attempt; an exact retry can continue the
+unpublished call. Deadline expiry records the normal durable
+`call_not_admitted` decision.
 
 The registry owns provider health, not deployment intent. It cannot distinguish
 a rollout handoff from another provider outage, so the same bounded wait applies
