@@ -496,6 +496,34 @@ overlap:
   must identify the current build independently from Temporal's access to
   retained workers.
 
+#### Registry-backed tool providers
+
+Goa-AI tool providers also support readiness-gated rolling replacement. Provider
+replicas with the same generated schema and admission revision join the same
+registry admission and may overlap. When either value changes, the replacement
+provider stays alive and retries registration while the old admission remains
+authoritative. The old provider stops claiming calls, settles accepted work,
+and releases its lease before the new admission can execute, so two different
+tool contracts never serve the same toolset at once.
+
+A valid `CallTool` request that finds an active toolset with no healthy provider
+waits without recording an admission decision. Provider recovery admits and
+publishes it normally, and the availability wait consumes the call's existing
+execution deadline. Caller cancellation ends only that transport attempt; an
+exact retry remains eligible for admission. Deadline expiry records the normal
+durable `call_not_admitted` decision.
+
+The registry owns provider health, not deployment intent. It cannot distinguish
+a rollout handoff from another provider outage, so the same bounded wait applies
+to both. It does not inspect pod names or version strings and it does not ask the
+model to retry. This contract lets consumers use one rolling release policy for
+provider changes without allowing incompatible provider generations to overlap.
+
+Registry clients, servers, and providers must still use a compatible wire
+protocol during the release. If that envelope must change incompatibly, first
+release code that accepts both forms; the registry does not negotiate protocol
+versions during a rolling overlap.
+
 Worker Deployment Versioning protects workflow replay. It does not protect a
 workflow from an unavailable dependency, an incompatible API, or an
 incompatible checkpoint.
