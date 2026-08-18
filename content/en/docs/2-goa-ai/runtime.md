@@ -541,6 +541,12 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Stream sinks** (`stream.Sink`, for example Pulse or custom SSE/WebSocket) receive typed `stream.Event` values produced by the `stream.Subscriber`. A `StreamProfile` controls which event kinds are emitted.
 
+  The durable transcript preserves each selected provider response exactly.
+  When an assistant message contains a tool call, its text stays in that
+  transcript for provider replay but is not emitted as a user-facing assistant
+  answer. Tool and await events present the nonterminal step. Only assistant
+  messages without tool calls produce committed assistant-text events.
+
 - **Telemetry**: OTEL-aware logging, metrics, and tracing instrument workflows and activities end to end.
 
 ### Tool Call Display Hints (DisplayHint)
