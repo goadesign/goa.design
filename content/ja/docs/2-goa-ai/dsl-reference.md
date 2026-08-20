@@ -54,7 +54,6 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Cursor` | BoundedResult | 次ページの opaque cursor を格納する payload フィールド名を指定する（任意） |
 | `ContinueWith` | BoundedResult | 機械的な pagination を runtime が cursor を bind する sibling action に委譲する |
 | `NextCursor` | BoundedResult | 次ページ cursor を格納する result フィールド名を指定する（任意） |
-| `Idempotent` | Tool | run transcript 内で idempotent な tool としてマークし、同一呼び出しの de-duplication を可能にする |
 | `Tags` | Tool, Toolset | メタデータラベルを付与する |
 | `Meta` | Tool | `ToolSpec.Meta` に出力される、名前付きで不活性な設計メタデータを付与する |
 | `BindTo` | Tool | ツールをサービスメソッドにバインドする |
@@ -819,24 +818,6 @@ Tool("web_search", "Search the web", func() {
     Args(func() { /* ... */ })
 })
 ```
-
-### Idempotent
-
-`Idempotent()` は現在の tool が *run transcript 内で* idempotent であることを示します。設定されると、runtime/planner は同一引数の重複 tool call を冗長とみなし、transcript 内に successful result がすでにある場合は実行を避けられます。
-
-**コンテキスト**: `Tool` の内部
-
-**使う場面**
-
-run transcript の存続中、その tool result が引数の純粋関数である場合にだけ `Idempotent()` を使います。たとえば、stable identifier による documentation section の取得です。
-
-**使わない場面**
-
-result が変化する外部状態に依存し、tool payload に time/version parameter がない場合は idempotent にしないでください。たとえば `as_of` input のない “get current mode” や “get current status” snapshot です。
-
-**コード生成**
-
-`Idempotent()` でマークされた tool では、codegen は生成 `tools.ToolSpec.Tags` に tag `goa-ai.idempotency=transcript` を emit します。この tag は transcript-aware de-duplication を実装する runtime/planner が消費します。
 
 ### Confirmation
 
