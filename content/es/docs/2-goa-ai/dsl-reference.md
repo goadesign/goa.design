@@ -40,7 +40,6 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Cursor`                                                | BoundedResult            | Declara qué campo del payload lleva el cursor opaco de la página siguiente (opcional)                              |
 | `ContinueWith`                                          | BoundedResult            | Delega la paginación mecánica a una acción hermana cuyo cursor enlaza el runtime                                    |
 | `NextCursor`                                            | BoundedResult            | Declara el nombre del campo de resultado proyectado para el cursor de la página siguiente (opcional)               |
-| `Idempotent`                                            | Tool                     | Marca la herramienta como idempotente dentro de una transcripción de ejecución; habilita la de-duplicación segura entre transcripciones para llamadas idénticas |
 | `Tags`                                                  | Tool, Toolset            | Adjunta etiquetas de metadatos                                                                                     |
 | `Meta`                                                  | Tool                     | Adjunta metadatos de diseño inertes y con nombre, emitidos en `ToolSpec.Meta`                                      |
 | `BindTo`                                                | Tool                     | Vincula la herramienta a un método del servicio                                                                    |
@@ -839,33 +838,6 @@ Tool("web_search", "Search the web", func() {
     Args(func() { /* ... */ })
 })
 ```
-
-### Idempotent
-
-`Idempotent()` marca la herramienta actual como idempotente *dentro de una transcripción de ejecución*.
-Cuando se establece, los runtimes/planners pueden tratar las llamadas repetidas a la herramienta con argumentos idénticos
-como redundantes y evitar ejecutarlas una vez que ya exista un resultado exitoso en
-la transcripción.
-
-**Contexto**: Dentro de `Tool`
-
-**Cuándo usar**
-
-Usa `Idempotent()` solo cuando el resultado de la herramienta sea una función pura de sus argumentos
-durante el tiempo de vida de una transcripción de ejecución (por ejemplo, recuperar una sección de documentación
-por identificador estable).
-
-**Cuándo no usar**
-
-No marques herramientas como idempotentes cuando su resultado dependa de un estado externo cambiante
-pero el payload de la herramienta no lleve un parámetro de tiempo/versión (por ejemplo,
-"obtener modo actual" u "obtener estado actual" sin una entrada `as_of`).
-
-**Generación de código**
-
-Cuando una herramienta se marca como `Idempotent()`, codegen emite la etiqueta
-`goa-ai.idempotency=transcript` en las `tools.ToolSpec.Tags` generadas. Esta
-etiqueta es consumida por los runtimes/planners que implementan de-duplicación consciente de la transcripción.
 
 ### Confirmation
 
