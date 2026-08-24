@@ -381,6 +381,20 @@ defer temporalEng.Close()
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
 
+### Contrat des charges utiles Temporal
+
+La taille encodée cumulée des arguments d'un workflow ou d'une activité est
+limitée à `engine.MaxPayloadBytes` (1 Mio). Avant l'encodage, le convertisseur
+refuse également un graphe de valeurs de plus de 64 niveaux ou de plus de
+100 000 valeurs visitées. Il ne tronque jamais les données trop grandes.
+
+`planner.ToolResult` est une valeur interne au processus et ne peut pas
+traverser une frontière Temporal. Les workflows transportent à la place un
+`api.ToolEvent` contenant les octets JSON canoniques. Si un résultat d'outil
+valide peut dépasser 1 Mio, son exécuteur doit l'enregistrer dans le stockage
+de l'application et renvoyer une référence typée ; le runtime ne remplace pas
+silencieusement le résultat.
+
 ### Synchronisation et tentatives d'activité
 
 Utilisez le DSL pour les budgets d'exécution sémantiques : combien de temps l'exécution entière peut prendre, combien de temps un
@@ -432,6 +446,114 @@ résultats par `ToolCallID` plutôt que de répéter des effets secondaires irr�
 ### Configuration du travailleur
 
 Les travailleurs interrogent les files d’attente de tâches et exécutent des flux de travail/activités. Les travailleurs sont automatiquement démarrés pour chaque agent enregistré : aucune configuration manuelle n'est nécessaire dans la plupart des cas.
+
+### Déploiements transparents
+
+La durabilité Temporal et les versions transparentes sont deux garanties
+distinctes. Temporal conserve l'historique du workflow ; le déploiement doit
+maintenir le code de worker compatible et chaque service requis tant que cet
+historique reste actif.
+
+La configuration ci-dessus inscrit le worker dans le
+[versionnement des Worker Deployments de Temporal](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning).
+`releaseBuildID` doit désigner un binaire ou une image immuable. Ne réutilisez
+jamais un ID de build pour un code différent et n'utilisez pas un tag mutable
+tel que `latest`.
+
+Publiez une version de worker dans cet ordre :
+
+1. Démarrez les nouveaux workers à côté de toutes les versions conservées.
+2. Attendez que le nouveau processus soit prêt et correctement enregistré dans
+   Temporal.
+3. Rendez la nouvelle Worker Deployment Version courante. Temporal lui affecte
+   les nouveaux workflows, tandis que les workflows existants restent liés à
+   leur version d'origine.
+4. Si le même processus sert aussi une API, n'envoyez le trafic normal qu'au
+   build courant prêt. Gardez les anciens pods disponibles pour Temporal sans
+   leur envoyer de nouvelles requêtes API.
+5. Ne retirez une ancienne version qu'après que Temporal l'a déclarée drainée.
+   L'arrêt d'un pod ne prouve pas qu'aucun workflow n'a encore besoin de son
+   code.
+
+Chaque entrée utilisateur acceptée démarre un workflow Goa-AI de premier
+niveau. Lorsqu'une entrée humaine ou externe est requise, Goa-AI termine ce
+workflow et enregistre un point de reprise privé sous l'ID de l'exécution
+achevée. La réponse acceptée démarre un nouveau workflow sur la version
+courante. Cette version doit donc rester compatible avec la version du point
+de reprise, les codecs générés et les noms d'outils requis. Le versionnement
+des workers ne traduit pas des valeurs enregistrées incompatibles.
+
+Le reste de l'application doit rester disponible pendant le chevauchement :
+
+- chaque service en aval conserve au moins un endpoint prêt ; utilisez un
+  remplacement progressif soumis à la readiness, pas `Recreate` ;
+- les API en aval acceptent les appels des workers conservés et courants ;
+- les migrations de base de données prennent en charge les deux versions
+  jusqu'au drainage de l'ancienne ;
+- si un processus sert l'API et Temporal, le sélecteur de trafic distingue le
+  build courant de l'accès de Temporal aux anciens workers.
+
+#### Fournisseurs d'outils adossés au registre
+
+Les fournisseurs d'outils Goa-AI prennent également en charge un remplacement
+progressif soumis à la readiness. Des réplicas qui partagent le même schéma
+généré et la même révision d'admission peuvent se chevaucher. Si l'une de ces
+valeurs change, le nouveau fournisseur reste vivant et retente son
+enregistrement pendant que l'ancienne admission reste autoritaire. L'ancien
+cesse d'accepter des appels, termine le travail admis et libère son bail avant
+que le nouveau puisse exécuter ; deux contrats incompatibles ne servent donc
+jamais le même ensemble d'outils simultanément.
+
+Un `CallTool` valide qui trouve un ensemble actif sans fournisseur sain attend
+dans son délai d'exécution existant. La publication de la requête vérifie le
+fournisseur sélectionné dans la même opération Redis que l'ajout de l'appel. Si
+l'ancien fournisseur commence à se drainer, l'appel non publié sélectionne son
+remplaçant et réessaie sans prolonger son délai. L'affectation ne devient
+définitive qu'après la publication. L'annulation de l'appelant ne termine que
+cette tentative de transport ; une nouvelle tentative identique peut reprendre
+l'appel non publié. L'expiration enregistre la décision durable normale
+`call_not_admitted`.
+
+Les clients, serveurs et fournisseurs du registre doivent conserver un
+protocole wire compatible pendant la version. Pour une modification
+incompatible de cette enveloppe, publiez d'abord un code qui accepte les deux
+formes ; le registre ne négocie pas les versions du protocole.
+
+#### Changements de contrats générés
+
+Lorsque les agents, packages de complétion ou charges utiles persistées changent
+de manière incompatible, n'appliquez pas la procédure de versions mixtes.
+Régénérez tous les agents et complétions, drainez ou arrêtez le travail
+concerné, puis déployez ensemble le runtime, les workers et les appelants.
+Goa-AI n'offre aucun mode de double lecture pour ses contrats générés.
+
+Le runtime accepte uniquement le schéma exact
+`goa-ai.run-suspension.v4`. Les planificateurs qui attendent des questions, une
+clarification ou des outils externes conservent le `ModelToolCallID` du
+fournisseur ; le workflow attribue un `ToolCallID` d'exécution distinct avant
+d'enregistrer la suspension. Aucun autre schéma de suspension ne peut reprendre.
+Un changement futur doit inventorier et retirer le travail enregistré
+incompatible avant la version coordonnée ; n'ajoutez ni double lecteur ni
+déduction de champs.
+
+#### Vérification d'une version
+
+Une version n'est transparente que si :
+
+- un workflow démarré avant la promotion se termine sur son build d'origine ;
+- un nouveau workflow démarre et se termine sur le build courant ;
+- une demande d'entrée externe créée avant la promotion continue correctement
+  dans un nouveau workflow après la promotion ;
+- le trafic API atteint seulement le build courant prêt ;
+- les anciens workers restent prêts jusqu'à ce que Temporal les déclare
+  drainés ;
+- chaque service en aval conserve un endpoint prêt pendant le remplacement ;
+- aucune nouvelle panne de workflow, aucun redémarrage de conteneur et aucune
+  interruption de readiness n'apparaît pendant l'observation.
+
+Le contrat d'un workflow par tour et d'identité des événements entre workflows
+est décrit dans
+[Entrées externes et continuations de workflow](../runtime/#external-input-and-workflow-continuations).
 
 ### Meilleures pratiques
 

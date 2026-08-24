@@ -805,6 +805,10 @@ type ToolResult struct {
     Name          tools.Ident
     Result        any
     ServerData    rawjson.Message
+    ResultBytes   int
+    ResultOmitted bool
+    ResultOmittedReason string
+    Bounds        *agent.Bounds
     Failure       *ToolFailure
     Telemetry     *telemetry.ToolTelemetry
     ToolCallID    string

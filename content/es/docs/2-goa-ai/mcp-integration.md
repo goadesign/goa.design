@@ -15,8 +15,13 @@ La integración MCP sigue este flujo de trabajo:
 1. **Diseño del servicio**: Declare el servidor MCP a través del DSL MCP de Goa
 2. **Diseño del agente**: Haga referencia a esa suite mediante un conjunto de herramientas declarado con `FromMCP(...)` o `FromExternalMCP(...)`
 3. **Generación de código**: Produce el servidor MCP JSON-RPC (cuando está respaldado por Goa), además de helpers de registro en runtime y specs/codecs del conjunto de herramientas (propiedad de la suite)
-4. **Cableado en tiempo de ejecución**: Instancie un transporte `mcpruntime.Caller` (HTTP/SSE/stdio). Los helpers generados registran el conjunto de herramientas y adaptan los errores JSON-RPC a valores `planner.RetryHint`
-5. **Ejecución del planificador**: Los planificadores simplemente ponen en cola las llamadas a herramientas con cargas útiles JSON canónicas; el runtime las reenvía al caller MCP, persiste los resultados mediante hooks y expone telemetría estructurada
+4. **Cableado en tiempo de ejecución**: Instancie un transporte
+   `mcpruntime.Caller` (HTTP/SSE/stdio). Los helpers generados registran el
+   conjunto de herramientas y adaptan los errores JSON-RPC a valores
+   `planner.ToolFailure`
+5. **Ejecución del planificador**: Los planificadores construyen llamadas con
+   descriptores tipados generados; el runtime reenvía el JSON canónico al caller
+   MCP, registra los resultados y expone telemetría estructurada
 
 ---
 
@@ -234,25 +239,31 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 
 ## Flujo de ejecución de herramientas
 
-1. El planificador devuelve llamadas a herramientas que referencian herramientas MCP (la carga útil es `json.RawMessage`)
-2. El runtime detecta el registro del conjunto de herramientas MCP
-3. Reenvía la carga útil JSON canónica al caller MCP
-4. Invoca al caller MCP con el nombre de la herramienta y la carga útil
-5. El caller MCP gestiona el transporte (HTTP/SSE/stdio) y el protocolo JSON-RPC
-6. Decodifica el resultado utilizando el códec generado
-7. Devuelve `ToolResult` al planificador
+1. El planificador crea llamadas con descriptores tipados generados, o reenvía
+   llamadas validadas del modelo mediante `planner.ToolRequestFromModelCall`.
+2. El runtime valida el resultado completo del plan y asigna IDs de ejecución,
+   produciendo valores `runtime.ToolCall`.
+3. El runtime detecta el registro del conjunto de herramientas MCP.
+4. Reenvía el payload JSON canónico de la llamada del runtime al caller MCP.
+5. El caller MCP gestiona el transporte (HTTP/SSE/stdio) y el protocolo JSON-RPC.
+6. Decodifica el resultado mediante el codec generado.
+7. Devuelve `ToolResult` al planificador.
 
 ---
 
 ## Tratamiento de errores
 
-Los helpers generados adaptan los errores JSON-RPC a valores `planner.RetryHint`:
+Los helpers generados adaptan los errores JSON-RPC a valores
+`planner.ToolFailure`:
 
-- **Errores de validación** → `RetryHint` con orientación para los planificadores
-- **Errores de red** → Sugerencias de reintento con recomendaciones de backoff
-- **Errores del servidor** → Detalles del error preservados en los resultados de la herramienta
+- **Errores de validación** → fallos de llamada inválida con evidencia exacta
+  para corregirla
+- **Errores de red** → fallos de indisponibilidad o timeout con una acción
+  explícita de replanificación o finalización
+- **Errores del servidor** → causas estructuradas conservadas en el fallo
 
-Esto permite a los planificadores recuperarse de los errores MCP utilizando los mismos patrones de reintento que los conjuntos de herramientas nativos.
+Así, los conjuntos de herramientas MCP y los nativos comparten el mismo
+contrato de recuperación impuesto por el runtime.
 
 ---
 
@@ -350,24 +361,35 @@ Su planificador puede hacer referencia a herramientas MCP igual que a los conjun
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+    call, err := planner.NewToolRequest(
+        mcpspecs.SearchTool(),
+        &mcpspecs.SearchPayload{Query: "golang tutorials"},
+    )
+    if err != nil {
+        return nil, err
+    }
     return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{
-            {
-                Name:    "assistant.assistant-mcp.search",
-                Payload: []byte(`{"query": "golang tutorials"}`),
-            },
-        },
+        ToolCalls: []planner.ToolRequest{call},
     }, nil
 }
 ```
+
+Aquí `mcpspecs` es el paquete de specs generado para el conjunto de
+herramientas MCP. Para reenviar una llamada validada emitida por el modelo, use
+`planner.ToolRequestFromModelCall`; así se conserva su ID de correlación del
+proveedor.
 
 ---
 
 ## Mejores prácticas
 
-- **Deje que codegen gestione el registro**: Utilice el helper generado para registrar los conjuntos de herramientas MCP; evite el pegamento escrito a mano para que los códecs y las sugerencias de reintento permanezcan consistentes
+- **Deje que codegen gestione el registro**: Utilice el helper generado para
+  registrar los conjuntos de herramientas MCP; evite el pegamento escrito a
+  mano para mantener coherentes los codecs y la recuperación estructurada de
+  fallos
 - **Utilice callers tipados**: Prefiera los callers JSON-RPC generados por Goa cuando estén disponibles para obtener seguridad de tipos
-- **Gestione los errores con elegancia**: Asigne los errores MCP a valores `RetryHint` para ayudar a los planificadores a recuperarse
+- **Gestione los errores explícitamente**: Asigne los errores MCP a valores
+  `ToolFailure` con el tipo de fallo y la acción de recuperación correctos
 - **Supervise la telemetría**: Las llamadas MCP emiten eventos de telemetría estructurados; utilícelos para la observabilidad
 - **Elija el transporte adecuado**: Utilice HTTP para peticiones/respuestas simples, SSE para streaming y stdio para servidores basados en subprocesos
 

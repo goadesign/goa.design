@@ -132,9 +132,21 @@ func TestSearchToolExecutor(t *testing.T) {
         ToolCallID: "call-1",
     }
 
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"query": "test", "limit": 5}`),
+    request, err := planner.NewToolRequest(specs.SearchTool(), &specs.SearchPayload{
+        Query: "test",
+        Limit: 5,
+    })
+    require.NoError(t, err)
+
+    // executor は検証と実行 ID の割り当て後に動くため、生成 descriptor が
+    // 作った正規 payload bytes から runtime call を構築する。
+    call := &runtime.ToolCall{
+        Name:       request.Name,
+        Payload:    request.Payload,
+        RunID:      meta.RunID,
+        SessionID:  meta.SessionID,
+        TurnID:     meta.TurnID,
+        ToolCallID: meta.ToolCallID,
     }
 
     // Execute tool
@@ -143,7 +155,7 @@ func TestSearchToolExecutor(t *testing.T) {
     require.NotNil(t, result.ToolResult)
 
     // Assert on result
-    assert.Nil(t, result.ToolResult.Error)
+    assert.Nil(t, result.ToolResult.Failure)
     assert.NotNil(t, result.ToolResult.Result)
 
     // Unmarshal and verify typed result
@@ -153,31 +165,31 @@ func TestSearchToolExecutor(t *testing.T) {
 }
 ```
 
-### ツール検証と Retry Hint をテストする
+### ツールの検証と回復をテストする
 
-不正な入力に対して、ツールが適切な error と hint を返すことを検証します:
+不正な外部 JSON は生成 codec の境界でテストします。不正な model tool call は、
+planner や executor が受け取る前に拒否されます。
 
 ```go
-func TestToolValidationReturnsHint(t *testing.T) {
-    executor := &SearchExecutor{}
+func TestSearchPayloadRequiresQuery(t *testing.T) {
+    _, err := specs.SearchTool().Payload.FromJSON(
+        rawjson.Message(`{"limit":5}`),
+    )
+    require.Error(t, err)
 
-    // Invalid payload - missing required field
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"limit": 5}`), // missing "query"
-    }
-
-    result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
-    require.NoError(t, err) // Executor should not return error
-    require.NotNil(t, result.ToolResult)
-
-    // Should return ToolError with RetryHint
-    assert.NotNil(t, result.ToolResult.Error)
-    assert.NotNil(t, result.ToolResult.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
-    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
+    var validationErr *tools.ValidationError
+    require.ErrorAs(t, err, &validationErr)
+    assert.Equal(t, "query", validationErr.Issues()[0].Field)
 }
 ```
+
+executor の直接テストでは、生成された型付き descriptor を使って有効な
+`planner.ToolRequest` を作り、その名前と正規 payload bytes から
+`runtime.ToolCall` を構築して、runtime が付与する実行 ID を設定します。
+domain または provider の失敗は `ToolResult.Failure.Kind`、`Failure.Error`、
+`Failure.Recovery` で検証します。検証済み provider call の転送をテストする
+planner では、provider correlation ID を保持する
+`planner.ToolRequestFromModelCall` を使えます。
 
 ### エージェント合成をテストする
 
@@ -332,7 +344,7 @@ error: policy violation: max consecutive failed tool calls exceeded (3/3)
 **解決策:**
 
 1. **根本の tool error を修正**します。tool executor logs を確認してください。
-2. **retry hint を改善**して、プランナーが自己修正できるようにします。
+2. **構造化された failure contract を修正**し、`Failure.Recovery` が planner に正しい action と正確な correction evidence を渡すようにします。
 3. 一時的な失敗が想定されるなら **上限を増やします**:
 
 ```go
@@ -413,22 +425,26 @@ error: invalid payload: json: cannot unmarshal string into Go struct field Searc
 
 **解決策:**
 
-1. executor から **RetryHint を返し**、プランナーが自己修正できるようにします:
+1. 生成 codec をテストし、境界が正確な field issue を返すことを確認します:
 
 ```go
-if err != nil {
-    return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("invalid payload"),
-        RetryHint: &planner.RetryHint{
-            Reason:       planner.RetryReasonInvalidArguments,
-            Tool:         call.Name,
-            ExampleInput: map[string]any{"query": "example", "limit": 10},
-            Message:      "limit must be an integer",
-        },
-    }), nil
-}
+_, err := specs.SearchTool().Payload.FromJSON(
+    rawjson.Message(`{"query":"example","limit":"ten"}`),
+)
+var validationErr *tools.ValidationError
+require.ErrorAs(t, err, &validationErr)
+assert.Equal(t, "invalid_field_type", validationErr.Issues()[0].Constraint)
 ```
+
+provider がこの payload を返すと、検証済み model client は
+`model.OutputValidationError` を返します。planner/runtime は executor や service
+code が動く前に、それを `planner.OutputContractError` として公開します。対象の
+境界で `errors.As` を使って structured error を検証してください。
+`ToolFailure` は記録されません。
+
+`RecoveryCorrectCall` は別にテストします。schema 検証には合格するものの、
+executor または domain 境界が recoverable な `ToolFailure` を返す
+model-authored call を使います。
 
 2. expected type が明確になるように **tool description を改善**します。
 

@@ -435,6 +435,47 @@ effetti collaterali irreversibili.
 
 I worker eseguono il polling delle code di attività e l'esecuzione di flussi di lavoro/attività. I worker vengono avviati automaticamente per ogni agente registrato; nella maggior parte dei casi non è necessaria una configurazione manuale dei worker.
 
+### Rollout trasparenti
+
+Temporal riproduce la cronologia di un workflow con il codice del worker che lo
+esegue. In produzione usare la Worker Deployment Versioning di Temporal con
+build ID immutabili e mantenere ogni vecchia versione finché Temporal non
+segnala che è stata completamente drenata. Avviare un worker nuovo non rende
+sicuro riprodurre un workflow esistente con codice diverso.
+
+Le modifiche compatibili possono essere distribuite in modalità rolling solo
+quando preservano i nomi richiesti degli strumenti, i codec generati, i payload
+persistiti e la semantica delle attività. La disponibilità delle dipendenze e
+la compatibilità delle API restano responsabilità dell'applicazione: il
+versionamento dei worker protegge il replay, non un servizio a valle assente o
+incompatibile.
+
+#### Modifiche ai contratti generati
+
+Quando agenti generati, package di completion o payload runtime persistiti
+cambiano in modo incompatibile, rigenerare tutti gli agenti e le completion,
+drenare o arrestare il lavoro interessato e distribuire runtime, worker e
+chiamanti come un'unica release coordinata. Goa-AI non offre una modalità di
+lettura doppia per i contratti runtime generati.
+
+Il runtime accetta esclusivamente lo schema esatto
+`goa-ai.run-suspension.v4`. I planner che attendono domande, chiarimenti o
+strumenti esterni conservano il `ModelToolCallID` del provider; il workflow
+assegna il distinto `ToolCallID` del runtime prima di salvare la sospensione.
+Gli altri schemi di sospensione non vengono ripresi. Un futuro cambio di schema
+deve censire e ritirare il lavoro salvato incompatibile prima della release
+coordinata; non aggiungere un lettore doppio e non inferire campi.
+
+#### Verifica della release
+
+Prima di considerare trasparente una release, verificare che un workflow
+iniziato prima della promozione termini sulla build originale, che un nuovo
+workflow termini sulla build corrente e che una richiesta di input esterno
+creata prima della promozione continui come nuovo workflow. I vecchi worker
+devono restare pronti finché Temporal non li segnala drenati e la finestra di
+osservazione non deve mostrare nuovi errori, riavvii o intervalli senza
+endpoint pronti.
+
 ### Migliori pratiche
 
 - **Usare spazi dei nomi separati** per i diversi ambienti (dev, staging, prod)

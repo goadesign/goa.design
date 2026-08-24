@@ -186,9 +186,11 @@ ma non dovrebbe appartenere a una sessione.
 
 ## 6. Implementa un esecutore di strumenti
 
-I pacchetti agente generati includono un helper `RegisterUsedToolsets` per local
-set di strumenti. Gli esecutori ricevono metadati di esecuzione espliciti e restituiscono un runtime di proprietà
-risultato dell'esecuzione:
+I package generati includono `RegisterUsedToolsets` per i toolset locali. Gli
+executor ricevono metadati espliciti e restituiscono un risultato posseduto dal
+runtime. Ogni package delle specifiche espone inoltre un descrittore tipizzato
+per strumento, qui `helpers.AnswerTool`, che associa ID, codec del payload e
+codec del risultato senza ripetere manualmente il collegamento:
 
 ```go
 type HelpersExecutor struct{}
@@ -196,16 +198,13 @@ type HelpersExecutor struct{}
 func (e *HelpersExecutor) Execute(
 	ctx context.Context,
 	meta *runtime.ToolCallMeta,
-	call *planner.ToolRequest,
+	call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		args, err := helpers.AnswerTool().Payload.FromJSON(call.Payload)
 		if err != nil {
-			return runtime.Executed(&planner.ToolResult{
-				Name:  call.Name,
-				Error: planner.NewToolError("invalid answer payload"),
-			}), nil
+			return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
 		}
 		return runtime.Executed(&planner.ToolResult{
 			Name:   call.Name,
@@ -213,8 +212,12 @@ func (e *HelpersExecutor) Execute(
 		}), nil
 	default:
 		return runtime.Executed(&planner.ToolResult{
-			Name:  call.Name,
-			Error: planner.NewToolError("unknown tool"),
+			Name: call.Name,
+			Failure: &planner.ToolFailure{
+				Kind:     planner.FailureInvalidCall,
+				Error:    planner.NewToolError("unknown tool"),
+				Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+			},
 		}), nil
 	}
 }
