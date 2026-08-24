@@ -373,7 +373,7 @@ This becomes a `runtime.RunPolicy` attached to the agent's registration:
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
 - **Terminal tools**: Tools declared `TerminalRun()` automatically become bookkeeping and complete the run once they succeed—no follow-up `PlanResume` turn is scheduled. A terminal commit can therefore be admitted with no retrieval budget remaining. During forced finalization, the runtime admits only terminal bookkeeping calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds. Before execution, the runtime writes the exact `planner.TerminationReason` to `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Run labels, policy labels, planner output, and model output cannot choose or replace this value. Ordinary calls do not receive it.
 
-  `runtime.LimitReasonLabel` and `goa-ai.limit_reason` were removed in v0.77.2. Consumers of fixed-limit or planner-authored terminal calls, including `tool_failure`, must use `runtime.FinalizationReasonLabel`. Deploy those consumers and runtime workers together; mixed versions are unsupported. No saved session or run-history data needs migration.
+  Consumers of fixed-limit or planner-authored terminal calls, including `tool_failure`, use `runtime.FinalizationReasonLabel`. Deploy a change to this execution contract across consumers and runtime workers together.
 
 ### Runtime Policy Overrides
 
@@ -724,13 +724,15 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
+    nil, // optional workflow settings for the new run
 )
 ```
 
 The application passes only the completed run ID and the typed answer. Goa-AI
-loads the checkpoint, validates its version and pending request, restores saved
-payloads through the current generated codecs, and resumes planning. The
-checkpoint remains private to the session store.
+loads the checkpoint, requires the exact `goa-ai.run-suspension.v4` schema and
+pending request, restores saved payloads through the current generated codecs,
+and resumes planning. Other checkpoint versions are rejected rather than
+translated or inferred. The checkpoint remains private to the session store.
 
 When an answer completes a model-authored tool call from the earlier workflow,
 the new `tool_end` event has two distinct run identities:
@@ -813,7 +815,7 @@ This event is the canonical “who/when/what” record for a confirmed tool call
 - `tool_name`, `tool_call_id`
 - `approved` (true/false)
 - `summary` (deterministic runtime-rendered summary)
-- `approved_by` (copied from `interrupt.ConfirmationDecision.RequestedBy`, intended to be a stable principal identifier)
+- `approved_by` (copied from `api.ConfirmationDecision.RequestedBy`, intended to be a stable principal identifier)
 
 The event is emitted immediately after the decision is received (before tool execution when approved, and before the denied tool result is synthesized when denied).
 
@@ -880,7 +882,7 @@ The runtime chooses one next state in this order:
 | --- | --- |
 | A cap or deadline requires finalization | `Finalize` turn |
 | A successful `TerminalRun` tool completed | End immediately |
-| Any failed result has `AllowsRetry() == true` | Normal repair turn |
+| Any failed result has `AllowsToolTurn() == true` | Normal repair turn |
 | `SynthesizeAfterTools` is true | `SynthesisOnly` turn |
 | Otherwise | Normal continuation turn |
 

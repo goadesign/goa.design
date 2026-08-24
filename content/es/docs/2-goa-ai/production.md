@@ -436,6 +436,23 @@ canónicos por `ToolCallID` en lugar de repetir efectos laterales irreversibles.
 
 Los workers sondean colas de tareas y ejecutan workflows/actividades. Los workers se inician automáticamente para cada agente registrado —en la mayoría de los casos no se necesita configuración manual de workers—.
 
+### Cambios del contrato generado
+
+Cuando cambien de forma incompatible los agentes generados, los paquetes de
+completion o los payloads persistidos del runtime, regenera todos los agentes y
+las completions, drena o detén el trabajo afectado y despliega conjuntamente el
+runtime, los workers y los llamadores. Goa-AI no ofrece lectura dual para los
+contratos generados del runtime.
+
+El runtime acepta únicamente el esquema exacto
+`goa-ai.run-suspension.v4`. Los planificadores que esperan preguntas,
+aclaraciones o herramientas externas conservan el `ModelToolCallID` del
+proveedor; el workflow asigna el `ToolCallID` independiente del runtime antes
+de guardar la suspensión. Las suspensiones con otros esquemas no se reanudan.
+Antes de cambiar este esquema en el futuro, inventaría y retira el trabajo
+guardado incompatible durante el despliegue coordinado; no añadas un lector
+dual ni deduzcas campos ausentes.
+
 ### Buenas prácticas
 
 - **Utiliza namespaces separados** para entornos distintos (dev, staging, prod)

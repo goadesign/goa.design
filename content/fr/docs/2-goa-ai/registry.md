@@ -121,22 +121,38 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 | Composant | Description |
 |-----------|-------------|
 | **Service** | Gestionnaires gRPC pour la découverte et l’invocation |
-| **Magasin** | Couche de persistance pour les métadonnées du jeu d'outils (mémoire ou MongoDB) |
-| ** Suivi de la santé ** | Surveille la vivacité du fournisseur via ping/pong |
+| **Catalogue** | Schémas d'outils, jetons d'admission, baux de fournisseurs et historique des retraits stockés dans Redis |
+| **Suivi de la santé** | Surveille la vivacité du fournisseur via ping/pong |
 | **Gestionnaire de flux** | Gère les flux Pulse pour le routage des appels d'outils |
-| **Gestionnaire de flux de résultats** | Gère la livraison des résultats de l’outil |
+| **Magasin des appels** | Conserve l'identité de la requête, l'affectation au fournisseur, les échéances, l'état de publication et le résultat terminal canonique |
 
 ### Flux d'appels d'outils
 
 Lorsque `CallTool` est appelé, le registre effectue ces étapes dans l'ordre :
 
-1. **Validation du schéma** : la charge utile est validée par rapport au schéma JSON de l'outil à l'aide du validateur de schéma de registre d'outils d'exécution.
-2. **Bilan de santé** : le registre vérifie si l'ensemble d'outils a répondu aux pings récents. Les ensembles d'outils défectueux renvoient immédiatement `service_unavailable`.
-3. **Création de flux de résultats** : un flux Pulse temporaire est créé avec un `tool_use_id` unique et le mappage est stocké dans Redis pour la livraison des résultats entre nœuds.
-4. **Publication de demande** : l'appel d'outil est publié dans le flux de demande de l'ensemble d'outils (`toolset:<name>:requests`).
-5. **Attendez le résultat** : la passerelle s'abonne au flux de résultats et bloque jusqu'à ce que le fournisseur réponde ou que le délai d'attente de 30 secondes expire.
+1. **Validation de l'identité et du schéma** : le registre valide la charge
+   utile et dérive un `tool_use_id` unique dans l'exécution. Une nouvelle
+   tentative identique rejoint l'enregistrement conservé.
+2. **Attente d'un fournisseur** : un appel non publié attend qu'un fournisseur
+   sain serve l'ensemble d'outils actif, dans la limite de son échéance
+   d'exécution existante.
+3. **Publication atomique** : une seule opération Redis vérifie que le
+   fournisseur choisi est toujours courant et ne se draine pas, puis ajoute la
+   requête exactement une fois. Si un déploiement a changé de fournisseur après
+   le contrôle de santé, l'appel non publié choisit le remplaçant et réessaie
+   dans la même échéance.
+4. **Exécution immuable** : la publication réussie fixe l'affectation au
+   fournisseur. L'appel ne peut plus être déplacé, car un effet externe peut
+   avoir commencé.
+5. **Livraison du résultat** : `CallTool` renvoie le jeton exact du fournisseur,
+   l'identité du flux de résultat, l'échéance d'exécution et celle de
+   conservation. L'exécuteur lit ce flux jusqu'au résultat terminal ou jusqu'à
+   ce que l'échéance règle l'appel.
 
-Cette conception garantit que les appels d’outils échouent rapidement lorsque les fournisseurs ne sont pas opérationnels, plutôt que d’attendre des délais d’attente.
+Si l'échéance expire avant la publication, le registre enregistre la décision
+terminale canonique `call_not_admitted`. Si elle expire après la publication,
+le fournisseur conserve l'autorité nécessaire pour terminer l'appel déjà
+admis.
 
 ## Intégration du fournisseur (côté service)
 
@@ -304,10 +320,15 @@ Le registre expose les méthodes gRPC suivantes :
 
 | Méthode | Description |
 |--------|-------------|
-| `Register` | Enregistrez un ensemble d'outils auprès du registre. Valide les schémas d'outils, crée le flux de requêtes et démarre le suivi de l'état. Renvoie l'ID de flux auquel le fournisseur doit s'abonner. |
-| `Unregister` | Supprimez un ensemble d'outils du registre. Arrête les pings de santé et supprime les métadonnées, mais ne détruit pas le flux sous-jacent. |
-| `EmitToolResult` | Émettre un résultat d’exécution d’outil. Recherche le flux de résultats de Redis (permettant la livraison entre nœuds) et publie le résultat. |
-| `Pong` | Répondez à un ping de contrôle de santé. Met à jour l’horodatage du dernier pong dans la carte de santé partagée. |
+| `Register` | Ajoute ou renouvelle le bail d'un fournisseur pour le contrat actif. Un contrat différent attend la fin des anciens baux. |
+| `DrainProvider` | Rend un bail indisponible pour les nouveaux appels tout en conservant son autorité sur les appels déjà admis. |
+| `ReleaseProvider` | Retire le bail exact après que le processus a réglé le travail accepté. |
+| `Unregister` | Retire intentionnellement l'admission active exacte, la supprime de la découverte et du routage et empêche définitivement le retour du même jeton. Ce n'est pas une opération de déploiement. |
+| `Pong` | Enregistre la santé pour le bail et l'époque de contrôle exacts. |
+| `ClaimToolCall` | Accorde l'exécution d'une requête publiée à un bail exact. |
+| `CompleteToolCall` | Valide le résultat terminal canonique d'un appel réclamé et le publie dans le flux de résultat. |
+| `PublishToolOutputDelta` | Publie un fragment de progression limité et au mieux pour un appel réclamé. |
+| `ReportToolCallOverload` | Enregistre une commande de nouvelle tentative limitée avant l'exécution d'un appel en surcharge. |
 
 ### Opérations de découverte
 
@@ -321,7 +342,7 @@ Le registre expose les méthodes gRPC suivantes :
 
 | Méthode | Description |
 |--------|-------------|
-| `CallTool` | Appelez un outil via la passerelle de registre. Valide la charge utile, vérifie l’état, achemine vers le fournisseur et attend le résultat (délai d’expiration de 30 s). |
+| `CallTool` | Appelle un outil via le registre, rejoint une tentative identique, attend un fournisseur sain dans l'échéance existante, publie atomiquement puis renvoie l'identité exacte nécessaire pour lire le résultat. |
 
 ## Meilleures pratiques
 

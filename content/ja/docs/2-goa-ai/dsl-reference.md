@@ -33,7 +33,6 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Use` | Agent | ツールセットの利用（消費）を宣言する |
 | `Export` | Agent, Service | 他エージェント向けにツールセットを公開する |
 | `AgentToolset` | Use 引数 | 他エージェントが公開したツールセットを参照する |
-| `UseAgentToolset` | Agent | `AgentToolset` + `Use` のエイリアス |
 | `Passthrough` | Tool（Export 内） | 決定論的にサービスメソッドへフォワードする |
 | `DisableAgentDocs` | API | `AGENTS_QUICKSTART.md` の生成を無効にする |
 | **ツールセット関数** | | |
@@ -115,7 +114,7 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Attribute` | Args, Return, ServerData | スキーマフィールドを定義する（一般） |
 | `Field` | Args, Return, ServerData | proto フィールド番号付きで定義する（gRPC） |
 | `Required` | Schema | 必須フィールドを指定する |
-| `Example` | Schema | 明示的な例を付与する。authored top-level tool payload example は provider-native example と retry hint になる |
+| `Example` | Schema | 明示的な例を付与する。authored top-level tool payload example は provider-native example と構造化された修正情報になる |
 
 ### 評価 DSL
 
@@ -225,7 +224,9 @@ import (
 - plan/execute/resume ループ用のアクティビティハンドラ
 - デザインをランタイムに配線する登録ヘルパー
 
-`DisableAgentDocs()` で無効化しない限り、モジュールルートにコンテキスト付きの `AGENTS_QUICKSTART.md` が書き出されます。
+`DisableAgentDocs()` で無効化しない限り、モジュールルートのコンテキスト付き `AGENTS_QUICKSTART.md` は再生成されます。
+
+`goa example` は別の処理です。実行可能な `cmd/`、bootstrap、planner、example-executor の各ファイルを、まだ存在しない場合にだけ作成します。これらは application 所有で、後の実行でも上書きされません。`gen/` 配下の生成ファイルと `AGENTS_QUICKSTART.md` は、引き続き design から更新されます。
 
 ### クイックスタート例
 
@@ -292,21 +293,21 @@ var _ = Service("orchestrator", func() {
 - `gen/orchestrator/agents/chat/exports/<export>`: エクスポートされたツールセット（agent-as-tool）パッケージ
 - `Toolset(FromMCP(...))` が `Use` で参照された場合の MCP 対応登録ヘルパー
 
-### 型付きツール識別子
+### 型付きツール descriptor
 
-ツールセットごとの specs パッケージは、生成されるすべてのツールについて型付きのツール識別子（`tools.Ident`）を定義します:
+ツールセットごとの specs package は、型付き identifier と、その identifier を生成済み payload/result codec に対応付ける `<Tool>Tool()` descriptor を定義します:
 
 ```go
 const (
     Search tools.Ident = "orchestrator.search.search"
 )
 
-var Specs = []tools.ToolSpec{
-    { Name: Search, /* ... */ },
+func SearchTool() tools.TypedTool[*SearchPayload, *SearchResult] {
+    // Returns fresh generated specs and codecs.
 }
 ```
 
-ツールを参照する必要がある場所では、これらの定数を使用してください。
+プランナーが call を作る場合は `planner.NewToolRequest(SearchTool(), payload)` を使います。生成 accessor は毎回新しい copy を返すため、返された schema や example を変更しても、後の model request には影響しません。
 
 ### サービス所有の型付き Completion
 
@@ -330,15 +331,15 @@ completion 名は structured-output contract の一部です。1-64 文字の AS
 
 `goa gen` は `gen/<service>/completions` 配下に次を出力します:
 
-- 生成 result schema と型付き Go type
-- 生成 JSON codec と validation helper
-- 型付き `completion.Spec` 値
-- 生成 `Complete<Name>(ctx, client, req)` helper
-- 生成 `StreamComplete<Name>(ctx, client, req)` と `Decode<Name>Chunk(...)` helper
+- 型付き result 型と union 型
+- 非公開 schema と生成 codec
+- 公開 `Complete<Name>(ctx, client, req)` helper
+- 型付き `StreamComplete<Name>(ctx, client, req)` helper
+- root result に authored `Example(...)` がある場合の `<Name>Example()`
 
-unary helper は最終 assistant response を直接 decode します。streaming helper は raw `model.Streamer` surface に留まります。`completion_delta` chunk は preview 専用で、正規なのは最後の 1 つの `completion` chunk だけです。`Decode<Name>Chunk(...)` はその最終 payload だけを decode します。
+unary helper は受理された assistant response を直接 decode し、正確な provider response を `Response.ModelResponse` として公開します。streaming helper は `completion.Streamer[T]` を返します。`Recv` は preview fragment を返し、`Value()` は stream が正常終了して検証を通った後だけ利用できます。未検証 chunk 用の公開 decoder はありません。
 
-生成 completion helper は tool-enabled request と caller-supplied `StructuredOutput` を拒否します。structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` で明示的に失敗します。生成 schema は正規の service contract のままです。model adapter は provider-specific constrained decoding のために normalize できますが、宣言された contract を表現できない provider は拒否しなければなりません。
+生成 completion helper は tool-enabled request と caller-supplied `StructuredOutput` を拒否します。structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` で明示的に失敗します。不正な unary または streaming output は、correction model request を行わず、再試行不能な `planner.OutputContractError` を返します。生成 schema は正規の service contract のままです。model adapter は provider-specific constrained decoding のために normalize できますが、宣言された contract を表現できない provider は拒否しなければなりません。
 
 ### クロスプロセスのインライン合成
 
@@ -459,15 +460,6 @@ Agent("planner", func() {
 // Agent B uses Agent A's tools
 Agent("orchestrator", func() {
     Use(AgentToolset("service", "planner", "planning.tools"))
-})
-```
-
-**エイリアス**: `UseAgentToolset(service, agent, toolset)` は、`AgentToolset` と `Use` を 1 回の呼び出しにまとめたエイリアスです。新しいデザインでは `AgentToolset` を優先してください。エイリアスは、一部のコードベースでの可読性のために存在します。
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
 })
 ```
 
@@ -607,6 +599,8 @@ Tool("search", "Search documentation", func() {
     })
 })
 ```
+
+`Return` は、service method に result がない method-backed tool では省略できます。その場合 code generation は空の result `TypeSpec`、つまり result schema も result codec もない spec を生成します。executor は JSON 値を捏造せず、`&planner.ToolResult{Name: call.Name}` で成功を報告します。
 
 **型の再利用:**
 
@@ -803,6 +797,8 @@ result := &planner.ToolResult{
 }
 ```
 
+`agent.Bounds.NextCursor` の型は `*string` です。生成 tool spec が paging を宣言し、`Truncated` が true で、pointer の指す cursor が空でない場合だけ設定します。完全な result と paging しない bounded tool では nil のままにしてください。runtime はこの規則に違反する bounds を拒否します。
+
 bounded tool が実行されると:
 
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します。
@@ -825,7 +821,7 @@ Tool("web_search", "Search the web", func() {
 
 **コンテキスト**: `Tool` の内部
 
-生成時に Goa-AI は確認ポリシーを生成されたツールスペックに記録します。実行時にはワークフローが `AwaitConfirmation` を通じて確認要求を出し、明示的な承認が与えられた後にのみツールを実行します。
+生成時に Goa-AI は確認ポリシーを生成されたツールスペックに記録します。実行時には、確認要求を最初の pending item に含む `RunSuspension` でワークフローが終了します。呼び出し側が `AgentClient.Continue` で明示的な承認を送信した場合にのみ、継続ワークフローがツールを実行します。
 
 最小例:
 
@@ -843,7 +839,7 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 注記:
 
-- 確認の要求方法はランタイムが所有します。組み込みの確認プロトコルは専用の await（`AwaitConfirmation`）と決定 API（`ProvideConfirmation`）を使用します。期待される payload と実行フローはランタイムガイドを参照してください。
+- 確認の要求方法はランタイムが所有します。最初の pending item の kind が `confirmation` の場合に表示し、`api.PendingInputResponse{Confirmation: ...}` を `AgentClient.Continue` に渡します。期待される payload と実行フローはランタイムガイドを参照してください。
 - `PromptTemplate` と `DeniedResultTemplate` は Go の `text/template` 文字列であり、`missingkey=error` で実行されます。標準のテンプレート関数（例: `printf`）に加えて、Goa-AI は次を提供します:
   - `json v` → `v` を JSON エンコード（任意のポインタフィールドや構造化値の埋め込みに有用）
   - `quote s` → Go エスケープ済みの引用文字列を返す（`fmt.Sprintf("%q", s)` と同等）
@@ -1036,7 +1032,14 @@ Tool("get_alerts", "Get active alerts", func() {
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name == "get_time_series" && hasAnomalies(tr.Result) {
+        if tr.Name != specs.GetTimeSeries || tr.Failure != nil {
+            continue
+        }
+        result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
+        if err != nil {
+            return nil, err
+        }
+        if hasAnomalies(result) {
             input.Agent.AddReminder(reminder.Reminder{
                 ID:   "anomaly_detected",
                 Text: "Anomalies were detected in the time series. Highlight these to the user.",
@@ -1092,7 +1095,7 @@ Goa-AI のスケジューリング、可視性、予算、リトライ、終端�
 
 - 汎用的な許可・拒否と能力フィルタリングには `Tags` を使用する
 - 計上と終端動作には `Bookkeeping` と `TerminalRun` を使用する
-- 結果ごとの失敗処理には `RetryHint` を使用する
+- 結果ごとの失敗処理には `ToolFailure` とその `Recovery` action を使用する
 - バッチごとの遷移には `SynthesizeAfterTools` などのプランナーフィールドを使用する
 
 ### BindTo
@@ -1221,7 +1224,7 @@ Tool("set_step_status", "ステップのステータスを更新", func() {
 - bookkeeping 呼び出しの `MaxToolCalls` コストはゼロで、連続失敗カウンタも変更しません。
 - モデルが生成した各 tool-call batch は原子的です。予算対象の全呼び出しが収まる場合は batch 全体を受け入れ、収まらない場合は batch 全体を拒否します。provider response から個々の呼び出しを除去することはありません。
 - 呼び出しと結果は durable な stream/run-log event として、また provider transcript 内に残ります。成功した bookkeeping 結果だけが、将来の compact な `ToolOutputs` から除外されます。
-- 失敗した bookkeeping 結果は、`RetryHint.AllowsRetry()` が true を返す場合にのみ修復ターンへ進みます。
+- 失敗した bookkeeping 結果は `ToolFailure.Recovery` に従って次の planner turn へ進みます。同じ call を修正する、その tool を使わずに replan する、または終了します。
 - 未知のツールは予算対象として扱われます。DSL で `Bookkeeping()` として宣言された（またはランタイムの `ToolSpec` で bookkeeping としてマークされた）ツールのみが免除されます。
 - bookkeeping だけのターンは、同一ターン内で解決する必要があります（`TerminalRun()`、`FinalResponse`、`FinalToolResult`、await/pause）。
 
@@ -1466,7 +1469,7 @@ RunPolicy(func() {
 - `CompressAtTurns(n)` と `CompressAtMaxInputTokens(n)` は、いつ要約を実行するかを決めます。両方を設定した場合、どちらか一方の条件で圧縮が開始されます。
 - `KeepMaxTurns(n)` と `KeepMaxInputTokens(n)` は、要約後にどの最新の完全なターンを正確に残すかを決めます。両方を設定した場合、両方の上限が適用されます。
 
-トークン予算は、モデルごとに tokenization が異なるため、設定された履歴モデルで実行時に数えます。`KeepMaxInputTokens` はターンを切り詰めません。ランタイムは最新ターンから後ろ向きにたどり、予算に収まる完全なターンだけを保持します。
+token budget は tokenization が model 固有であるため、設定済み history model を通じて runtime が数えます。1 回の count には、保持する system message、候補となる完全な turn、現在 advertised されている tool が含まれます。`CompressAtMaxInputTokens` は exclusive です。request が threshold と同じなら収まり、それを超えると compression を開始します。`KeepMaxInputTokens` は turn を途中で切りません。runtime は最新 turn から逆向きに走査し、budget に収まる完全な turn だけを保持します。
 
 ```go
 RunPolicy(func() {
@@ -1488,7 +1491,7 @@ RunPolicy(func() {
 
 **HistoryModel の要件:**
 
-圧縮を使う場合、生成されるエージェント設定の `HistoryModel` フィールドに `model.Client` を渡す必要があります。ランタイムはこのクライアントを `ModelClassSmall` とともに使用して古いターンを要約し、トークン予算が設定されている場合は provider-visible request のトークン数も数えます。トークン予算による圧縮には、履歴モデルが exact count を返す `model.TokenCounter` を実装している必要があります。Bedrock アダプターは Bedrock の native `CountTokens` API でこれを実装しています:
+圧縮を使う場合、生成されるエージェント設定の `HistoryModel` field に `model.Client` を渡す必要があります。runtime はこの client を `ModelClassSmall` とともに使い、古い turn を要約し、token budget が設定されている場合は provider-visible request を count します。token-budget compression には正確な `model.TokenCounter` 対応が必要です。Bedrock は利用可能な場合 Runtime `CountTokens` を使いますが、structured-output request と Claude Opus 4.7、Sonnet 5、Mythos 5 では `model.ErrTokenCountingUnsupported` を返します。これらは AWS の別の Mantle endpoint を必要とします:
 
 ```go
 cfg := chat.ChatAgentConfig{

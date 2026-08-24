@@ -60,6 +60,14 @@ Goa-AI の高レベルなトランスクリプトのコントラクトは次の�
 
 **「ツール履歴」専用の API は存在しません**。履歴はトランスクリプトそのものです。
 
+model adapter は call をまたいで state を持ちません。provider-ready transcript 全体を各 `model.Request` に含める必要があり、run identifier を渡しても adapter が以前の message を読み込むことはありません。公開 model client は、planner code が観測する前に request と complete response を検証します。
+
+### 履歴の圧縮
+
+agent の `History(...)` policy は、古い turn を要約しながら bounded な正確な末尾を保持できます。`CompressAt...` value は要約を始める時点を、`KeepMax...` value は変更せず保持する最新の完全な turn を決めます。runtime は turn を途中で切りません。
+
+compression には設定済みの `HistoryModel` が必要です。token-based trigger と retention には、その model client による正確な token count も必要です。Bedrock Runtime は structured-output request を count できず、現在の一部 Claude model は AWS の別の Mantle endpoint を必要とします。完全な contract は [Runtime → History Policies](../runtime/#history-policies) と [DSL Reference → History](../dsl-reference/#history) を参照してください。
+
 ### プランナーと UI がどのように簡素化されるか
 
 - **プランナー**: `planner.PlanInput.Messages` と `planner.PlanResumeInput.Messages` で現在のトランスクリプトを受け取ります。追加の状態を持ち回らず、メッセージだけにもとづいて判断できます。
@@ -68,29 +76,13 @@ Goa-AI の高レベルなトランスクリプトのコントラクトは次の�
 
 ---
 
-## トランスクリプト台帳
+## run log からのトランスクリプト再生
 
-**トランスクリプト台帳 (transcript ledger)** は、モデルプロバイダーが要求する厳密な形式で会話履歴を保持する、プロバイダー精度の記録です。これにより、ワークフロー状態へプロバイダー SDK の型を漏らすことなく、決定論的なリプレイとプロバイダー忠実性を実現します。
-
-### プロバイダー忠実性
-
-モデルプロバイダー (Bedrock、OpenAI など) は、メッセージの順序や構造に厳しい要件を持ちます。台帳はこれらの制約を強制します。
-
-| プロバイダー要件 | 台帳の保証 |
-|------------------|------------|
-| アシスタントメッセージでは thinking が tool_use より前でなければならない | 台帳はパーツを thinking → text → tool_use の順で並べます |
-| ツール結果は対応する tool_use の後に続かなければならない | 台帳は tool_result を ToolUseID で関連付けます |
-| メッセージの交替 (assistant → user → assistant) | user 結果を追加する前に、アシスタント側をフラッシュします |
-
-Bedrock では特に、thinking を有効にしている場合:
-
-- tool_use を含むアシスタントメッセージは、**必ず** thinking ブロックで始まらなければなりません。
-- tool_result を含む user メッセージは、tool_use を宣言したアシスタントメッセージの直後に続かなければなりません。
-- ツール結果の数は、直前の tool_use の数を超えられません。
+runtime は provider-ready transcript への追加分を、順序付き run-log event として保存します。transcript event は `model.Message` slice を JSON encode したものです。replay は run-log 順にそれらの slice を append します。part の並べ替え、欠けた message の補完、変更可能な transcript object の公開は行いません。
 
 ### 順序要件
 
-台帳は、プロバイダーが要求する正規の順序でパーツを保存します。
+保存済み message は、provider が要求する part 順を保ちます。
 
 ```
 Assistant Message:
@@ -102,84 +94,43 @@ User Message:
   1. ToolResultPart(s) - tool results correlated via ToolUseID
 ```
 
-この順序は **神聖** です。台帳はパーツを並べ替えず、プロバイダーアダプターも同じ順序でプロバイダー固有のブロックに再エンコードします。
+provider adapter は同じ順序で part を provider-specific block へ再 encode します。
 
-### 台帳の自動メンテナンス
+### 公開 replay API
 
-ランタイムはトランスクリプト台帳を自動で維持します。手動で管理する必要はありません。
+`runtime/agent/transcript` package は次の run-log operation を公開します。
 
-1. **イベントキャプチャ**: run の進行に合わせて、ランタイムがメモリイベント (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) を順に永続化します。
+- `EncodeRunLogDelta(messages)` は、run の 1 地点で追加された `[]*model.Message` を受け取り、JSON payload を `rawjson.Message` として返します。encode failure は error です。
+- `DecodeRunLogDelta(payload)` は transcript run-log event の JSON payload を受け取り、保存されていた `[]*model.Message` を返します。不正 JSON は error です。
+- `ReplayRunLogEvents(events)` は、すでに順序付けされた `*runlog.Event` slice を受け取ります。transcript seed／append record 以外は skip し、decode した message slice を input 順に append して、message、transcript event が 1 つでもあったかを示す boolean、error を返します。
+- `BuildMessagesFromRunLog(ctx, store, runID)` は 1 run の `runlog.Store` を paging し、完全に順序付けされた `[]*model.Message` transcript を返します。store または run ID がない、list／decode が失敗する、transcript event がない場合は error です。
 
-2. **台帳の再構築**: `BuildMessagesFromEvents` 関数が、保存されたイベントからプロバイダー向けのメッセージを再構築します。
-
-```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **検証**: プロバイダーへ送る前に、ランタイムはメッセージ構造を検証できます。
+多くの application は runtime に transcript event を書かせ、provider-ready history が必要なときに `BuildMessagesFromRunLog` を使います。
 
 ```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runEventStore, runID)
+if err != nil {
+    return err
 }
 ```
 
-### 台帳 API
-
-高度なユースケースでは、台帳を直接操作できます。台帳は次の主要なメソッドを提供します。
-
-| メソッド | 説明 |
-|--------|-------------|
-| `NewLedger()` | 空の台帳を新規作成します |
-| `AppendThinking(part)` | 現在のアシスタントメッセージに thinking パートを追加します |
-| `AppendText(text)` | 現在のアシスタントメッセージに可視テキストを追加します |
-| `DeclareToolUse(id, name, args)` | 現在のアシスタントメッセージでツール呼び出しを宣言します |
-| `FlushAssistant()` | 現在のアシスタントメッセージを確定し、user 入力の準備をします |
-| `AppendUserToolResults(results)` | ツール結果を user メッセージとして追加します |
-| `BuildMessages()` | トランスクリプト全体を `[]*model.Message` として返します |
-
-**使用例:**
+message を構築または replay した後に validator を使います。
 
 ```go
-import "goa.design/goa-ai/runtime/agent/transcript"
-
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+if err := transcript.ValidatePlannerTranscript(messages); err != nil {
+    return err
+}
+if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
+    return err
+}
 ```
 
-**Note:** 多くのユーザーは台帳を直接操作する必要はありません。ランタイムがイベントキャプチャと再構築を通じて台帳を自動維持します。台帳 API は、カスタムプランナーやデバッグツールなどの高度なシナリオでのみ利用してください。
+`ValidatePlannerTranscript(messages)` は `[]*model.Message` を受け取り、assistant tool-call group の直後に user message が 1 つあり、そこに全 tool-call ID と正確に対応する result が 1 つずつ含まれる場合だけ `nil` を返します。`ValidateBedrock(messages, thinkingEnabled)` は Bedrock 固有の thinking rule を追加検査します。thinking が無効なら追加検査はしません。有効なら、tool call を含む各 assistant message が `ThinkingPart` で始まらない限り error です。どちらの validator も message を変更しません。
 
 ### これが重要な理由
 
 - **決定論的リプレイ**: 保存されたイベントから、デバッグ/監査/失敗ターンの再実行のために、まったく同じトランスクリプトを再構築できます。
-- **プロバイダー非依存の保存形式**: 台帳は JSON フレンドリーなパーツを保存し、プロバイダー SDK 依存を持ち込みません。
+- **プロバイダー非依存の保存形式**: run-log payload は provider SDK に依存せず `model.Message` JSON を保存します。
 - **プランナーの簡素化**: プランナーはプロバイダー制約を管理せずに、正しく並んだメッセージを受け取れます。
 - **検証**: 順序違反がプロバイダーに到達して不可解なエラーになる前に検出できます。
 
@@ -199,7 +150,7 @@ Goa-AI は会話状態を 3 つの層に分けて扱います。
 
 - **トランスクリプト** – ランにおけるメッセージとツール相互作用の完全な履歴:
   - `[]*model.Message` で表現されます
-  - `memory.Store` を通じて、順序付きのメモリイベントとして永続化されます
+  - `runlog.Store` の transcript seed／append event として永続化されます
 
 ### 実運用での SessionID と TurnID
 
@@ -248,10 +199,11 @@ type Store interface {
 
 ### ランログ (`runlog.Store`)
 
-粗粒度のランメタデータを永続化します。
+run の **正規で append-only な event log** を永続化します。runtime は run の実行中に hook event（start、phase change、tool、message、completion）を append し、caller は UI や診断のため cursor pagination で一覧できます。
 
-- `RunID`, `AgentID`, `SessionID`, `TurnID`
-- ステータス、タイムスタンプ、ラベル
+Temporal planner activity では、`PlanActivityInput.ToolOutputs` が call run ID、result run ID、tool-call ID を含む reference を運びます。planner activity は planner を呼ぶ前に、その reference を使って tool input、result body、server data、planner-visible metadata を run log から読み込みます。reference により、planner activity boundary をまたいで result body 全体を繰り返し渡さずに済みます。ただし、copy がほかに存在しないという意味ではありません。runtime の非公開 suspension checkpoint は、停止中の workflow を再開できるよう transcript と tool-output state を保持します。
+
+tool call には異なる 2 つの identifier があります。`ModelToolCallID` は provider transcript の ID で、model-generated call と model-visible result を対応付けます。`ToolCallID` は runtime execution ID で、activity、retry、run-log record、stream event に使います。停止された model-generated call は両方を保存します。一方を他方の代わりに使ったり、run の順番から導出したりしないでください。
 
 ```go
 type Store interface {
@@ -317,7 +269,7 @@ rt := runtime.New(
 設定すると次のようになります。
 
 - デフォルトのサブスクライバーが、メモリとランイベントを自動的に永続化します。
-- `memory.Store` からいつでもトランスクリプトを再構築でき、モデル再呼び出し、UI 表示、オフライン分析に利用できます。
+- `runlog.Store` からいつでも provider-ready transcript を再構築でき、モデル再呼び出し、UI 表示、オフライン分析に利用できます。
 
 ---
 
@@ -358,7 +310,7 @@ type Store interface {
 ### 検索とダッシュボード
 
 - `runlog.Store` を `RunID` + cursor でページングして audit/debug UI を構築します
-- `memory.Store` から選択したランのトランスクリプトをオンデマンドで読み込みます
+- `runlog.Store` から選択したランのトランスクリプトをオンデマンドで replay します
 
 ---
 

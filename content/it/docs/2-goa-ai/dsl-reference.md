@@ -11,8 +11,96 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 ## Riferimento rapido DSL
 
 
-| Funzione | Contesto | Descrizione || ------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Funzioni dell'agente** |                          |                                                                                                                    || `Agent` | Servizio | Definisce un agente basato su LLM || `Completion` | Servizio | Dichiara contratto di proprietà di tipo assistente diretto-output || `Use` | Agente | Dichiara il consumo del set di strumenti || `Export` | Agente, Servizio | Espone i set di strumenti ad altri agenti || `AgentToolset` | Utilizzare l'argomento | Set di strumenti di riferimento da un altro agente || `UseAgentToolset` | Agente | Alias ​​per AgentToolset + Usa || `Passthrough` | Strumento (in Esportazione) | Metodo di inoltro deterministico al servizio || `DisableAgentDocs` | API | Disabilita la generazione di AGENTS_QUICKSTART.md || **Funzioni del set di strumenti** |                          |                                                                                                                    || `Toolset` | Livello superiore | Dichiara un set di strumenti di proprietà del provider || `FromMCP` | Argomento del set di strumenti | Configura il set di strumenti supportato da MCP || `FromRegistry` | Argomento del set di strumenti | Configura il set di strumenti supportati dal registro || `Description` | Set di strumenti | Imposta la descrizione del set di strumenti || **Funzioni strumento** |                          |                                                                                                                    || `Tool` | Set di strumenti, Metodo | Definisce uno strumento richiamabile || `Args` | Strumento | Definisce lo schema dei parametri di input || `Return` | Strumento, Completamento | Definisce lo schema dei risultati visibili nel modello || `ServerData` | Strumento | Definisce lo schema dei dati solo del server (mai inviato ai fornitori di modelli) || `FromMethodResultField` | Dati server | Proietta i dati del server da un campo risultato del metodo di servizio associato || `AudienceTimeline` | Dati server | Contrassegna i dati del server come idonei per sequenza temporale/interfaccia utente (impostazione predefinita) || `AudienceInternal` | Dati server | Contrassegna i dati del server come allegato di composizione interna || `AudienceEvidence` | Dati server | Contrassegna i dati del server come provenienza o prova di controllo || `BoundedResult` | Strumento | Dichiara un contratto con risultati limitati di proprietà del runtime; il sub-DSL opzionale può dichiarare i campi del cursore di paging || `Cursor` | Risultato limitato | Dichiara quale campo del payload trasporta il cursore di paging (opzionale) || `NextCursor` | Risultato limitato | Dichiara il nome del campo del risultato previsto per il cursore della pagina successiva (facoltativo) || `Tags` | Strumento, set di strumenti | Allega etichette di metadati || `BindTo` | Strumento | Associa lo strumento al metodo del servizio || `Inject` | Strumento | Contrassegna i campi come inseriti dal runtime || `CallHintTemplate` | Strumento | Modello di visualizzazione per le invocazioni || `ResultHintTemplate` | Strumento | Modello di visualizzazione dei risultati || `ResultReminder` | Strumento | Promemoria di sistema statico dopo il risultato dello strumento || `Confirmation` | Strumento | Richiede una conferma esplicita fuori banda prima dell'esecuzione || `TerminalRun` | Strumento | Contrassegna il terminale dello strumento: l'esecuzione viene completata immediatamente dopo l'esecuzione (nessun turno di pianificazione successivo) || `Bookkeeping` | Strumento | Contrassegna lo strumento come contabilità: le chiamate non consumano il budget di recupero `MaxToolCalls` a livello di esecuzione e rimangono nascoste ai futuri turni di pianificazione per impostazione predefinita || **Funzioni politiche** |                          |                                                                                                                    || `RunPolicy` | Agente | Configura i vincoli di esecuzione || `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse || `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento || `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi || `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete || `Timing` | EseguiPolitica | Configurazione dettagliata del timeout || `Budget` | Tempi | Budget di gestione complessivo || `Plan` | Tempi | Timeout attività pianificatore || `Tools` | Tempi | Timeout attività strumento || `History` | EseguiPolitica | Gestione della cronologia delle conversazioni || `KeepRecentTurns` | Storia | Politica della finestra scorrevole || `CompressAtTurns` | Storia | Trigger per riepilogo assistito dal modello basato sui turni || `CompressAtMaxInputTokens` | Storia | Trigger per riepilogo basato sui token di input contati a runtime || `KeepMaxTurns` | Storia | Limite di mantenimento esatto per turni completi recenti || `KeepMaxInputTokens` | Storia | Limite di mantenimento esatto per token, conservando solo turni completi || `Cache` | EseguiPolitica | Richiedi configurazione della memorizzazione nella cache || `AfterSystem` | Cache | Punto di controllo dopo i messaggi di sistema || `AfterTools` | Cache | Punto di controllo dopo le definizioni degli strumenti || `InterruptsAllowed` | EseguiPolitica | Abilita pausa/riprendi || `OnMissingFields` | EseguiPolitica | Comportamento di convalida || **Funzioni MCP** |                          |                                                                                                                    || `MCP` | Servizio | Abilita il supporto MCP || `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP || `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP || `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa || `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea || `Resource` | Metodo | Contrassegna il metodo come risorsa MCP || `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile || `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico || `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt || `Notification` | Metodo | Contrassegna il metodo come mittente della notifica || `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione || `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti || **Funzioni di registro** |                          |                                                                                                                    || `Registry` | Livello superiore | Dichiara un'origine del registro || `URL` | Registro | Imposta l'endpoint del registro || `APIVersion` | Registro | Imposta la versione API || `Timeout` | Registro | Imposta il timeout HTTP || `Retry` | Registro | Configura la policy di ripetizione || `SyncInterval` | Registro | Imposta l'intervallo di aggiornamento del catalogo || `CacheTTL` | Registro | Imposta la durata della cache locale || `Federation` | Registro | Configura le importazioni del registro esterno || `Include` | Federazione | Modelli globali da importare || `Exclude` | Federazione | Modelli glob da saltare || `PublishTo` | Esporta | Configura la pubblicazione del registro || `Version` | Set di strumenti | Versione del set di strumenti del registro dei pin || **Funzioni dello schema** |                          |                                                                                                                    || `Attribute` | Argomenti, Ritorno, ServerData | Definisce il campo dello schema (uso generale) || `Field` | Argomenti, Ritorno, ServerData | Definisce il campo proto numerato (gRPC) || `Required` | Schema | Contrassegna i campi come obbligatori || `Example` | Schema | Allega un esempio esplicito; gli esempi di payload dello strumento di livello superiore vengono conservati nelle specifiche dello strumento generate e nei suggerimenti per i nuovi tentativi |
+| Funzione | Contesto | Descrizione |
+| ------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Funzioni dell'agente** |                          |                                                                                                                    |
+| `Agent` | Servizio | Definisce un agente basato su LLM |
+| `Completion` | Servizio | Dichiara contratto di proprietà di tipo assistente diretto-output |
+| `Use` | Agente | Dichiara il consumo del set di strumenti |
+| `Export` | Agente, Servizio | Espone i set di strumenti ad altri agenti |
+| `AgentToolset` | Utilizzare l'argomento | Set di strumenti di riferimento da un altro agente |
+| `Passthrough` | Strumento (in Esportazione) | Metodo di inoltro deterministico al servizio |
+| `DisableAgentDocs` | API | Disabilita la generazione di AGENTS_QUICKSTART.md |
+| **Funzioni del set di strumenti** |                          |                                                                                                                    |
+| `Toolset` | Livello superiore | Dichiara un set di strumenti di proprietà del provider |
+| `FromMCP` | Argomento del set di strumenti | Configura il set di strumenti supportato da MCP |
+| `FromRegistry` | Argomento del set di strumenti | Configura il set di strumenti supportati dal registro |
+| `Description` | Set di strumenti | Imposta la descrizione del set di strumenti |
+| **Funzioni strumento** |                          |                                                                                                                    |
+| `Tool` | Set di strumenti, Metodo | Definisce uno strumento richiamabile |
+| `Args` | Strumento | Definisce lo schema dei parametri di input |
+| `Return` | Strumento, Completamento | Definisce lo schema dei risultati visibili nel modello |
+| `ServerData` | Strumento | Definisce lo schema dei dati solo del server (mai inviato ai fornitori di modelli) |
+| `FromMethodResultField` | Dati server | Proietta i dati del server da un campo risultato del metodo di servizio associato |
+| `AudienceTimeline` | Dati server | Contrassegna i dati del server come idonei per sequenza temporale/interfaccia utente (impostazione predefinita) |
+| `AudienceInternal` | Dati server | Contrassegna i dati del server come allegato di composizione interna |
+| `AudienceEvidence` | Dati server | Contrassegna i dati del server come provenienza o prova di controllo |
+| `BoundedResult` | Strumento | Dichiara un contratto con risultati limitati di proprietà del runtime; il sub-DSL opzionale può dichiarare i campi del cursore di paging |
+| `Cursor` | Risultato limitato | Dichiara quale campo del payload trasporta il cursore di paging (opzionale) |
+| `ContinueWith` | Risultato limitato | Delega la paginazione meccanica a un'azione di continuazione correlata il cui cursore è associato dal runtime |
+| `NextCursor` | Risultato limitato | Dichiara il nome del campo del risultato previsto per il cursore della pagina successiva (facoltativo) |
+| `Tags` | Strumento, set di strumenti | Allega etichette di metadati |
+| `Meta` | Strumento | Allega metadati di progettazione inerti e denominati, emessi in `ToolSpec.Meta` |
+| `BindTo` | Strumento | Associa lo strumento al metodo del servizio |
+| `Inject` | Strumento | Contrassegna i campi come inseriti dal runtime |
+| `CallHintTemplate` | Strumento | Modello di visualizzazione per le invocazioni |
+| `ResultHintTemplate` | Strumento | Modello di visualizzazione dei risultati |
+| `ResultReminder` | Strumento | Promemoria di sistema statico dopo il risultato dello strumento |
+| `Confirmation` | Strumento | Richiede una conferma esplicita fuori banda prima dell'esecuzione |
+| `TerminalRun` | Strumento | Contrassegna il terminale dello strumento: l'esecuzione viene completata immediatamente dopo l'esecuzione (nessun turno di pianificazione successivo) |
+| `Bookkeeping` | Strumento | Contrassegna lo strumento come contabilità: le chiamate non consumano il budget di recupero `MaxToolCalls` a livello di esecuzione e rimangono nascoste ai futuri turni di pianificazione per impostazione predefinita |
+| **Funzioni politiche** |                          |                                                                                                                    |
+| `RunPolicy` | Agente | Configura i vincoli di esecuzione |
+| `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse |
+| `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento |
+| `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi |
+| `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete |
+| `Timing` | EseguiPolitica | Configurazione dettagliata del timeout |
+| `Budget` | Tempi | Budget di gestione complessivo |
+| `Plan` | Tempi | Timeout attività pianificatore |
+| `Tools` | Tempi | Timeout attività strumento |
+| `History` | EseguiPolitica | Gestione della cronologia delle conversazioni |
+| `KeepRecentTurns` | Storia | Politica della finestra scorrevole |
+| `CompressAtTurns` | Storia | Trigger per riepilogo assistito dal modello basato sui turni |
+| `CompressAtMaxInputTokens` | Storia | Trigger per riepilogo basato sui token di input contati a runtime |
+| `KeepMaxTurns` | Storia | Limite di mantenimento esatto per turni completi recenti |
+| `KeepMaxInputTokens` | Storia | Limite di mantenimento esatto per token, conservando solo turni completi |
+| `Cache` | EseguiPolitica | Richiedi configurazione della memorizzazione nella cache |
+| `AfterSystem` | Cache | Punto di controllo dopo i messaggi di sistema |
+| `AfterTools` | Cache | Punto di controllo dopo le definizioni degli strumenti |
+| `InterruptsAllowed` | EseguiPolitica | Abilita pausa/riprendi |
+| `OnMissingFields` | EseguiPolitica | Comportamento di convalida |
+| **Funzioni MCP** |                          |                                                                                                                    |
+| `MCP` | Servizio | Abilita il supporto MCP |
+| `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP |
+| `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP |
+| `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa |
+| `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea |
+| `Resource` | Metodo | Contrassegna il metodo come risorsa MCP |
+| `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile |
+| `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico |
+| `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt |
+| `Notification` | Metodo | Contrassegna il metodo come mittente della notifica |
+| `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione |
+| `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti |
+| **Funzioni di registro** |                          |                                                                                                                    |
+| `Registry` | Livello superiore | Dichiara un'origine del registro |
+| `URL` | Registro | Imposta l'endpoint del registro |
+| `APIVersion` | Registro | Imposta la versione API |
+| `Timeout` | Registro | Imposta il timeout HTTP |
+| `Retry` | Registro | Configura la policy di ripetizione |
+| `SyncInterval` | Registro | Imposta l'intervallo di aggiornamento del catalogo |
+| `CacheTTL` | Registro | Imposta la durata della cache locale |
+| `Federation` | Registro | Configura le importazioni del registro esterno |
+| `Include` | Federazione | Modelli globali da importare |
+| `Exclude` | Federazione | Modelli glob da saltare |
+| `PublishTo` | Esporta | Configura la pubblicazione del registro |
+| `Version` | Set di strumenti | Versione del set di strumenti del registro dei pin |
+| **Funzioni dello schema** |                          |                                                                                                                    |
+| `Attribute` | Argomenti, Ritorno, ServerData | Definisce il campo dello schema (uso generale) |
+| `Field` | Argomenti, Ritorno, ServerData | Definisce il campo proto numerato (gRPC) |
+| `Required` | Schema | Contrassegna i campi come obbligatori |
+| `Example` | Schema | Allega un esempio esplicito; gli esempi di payload dello strumento di livello superiore vengono conservati nelle specifiche dello strumento generate e come prove strutturate per la correzione |
 
 La tabella seguente precisa i contratti degli strumenti che influenzano il
 controllo dell'esecuzione:
@@ -245,23 +333,26 @@ I nomi di completamento fanno parte del contratto di output strutturato. Devono 
 Da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-` e devono
 iniziare con una lettera o una cifra.
 
-`goa gen` emette un pacchetto sotto `gen/<service>/completions` con:
+`goa gen` emette un package sotto `gen/<service>/completions` con:
 
-- schemi di risultati generati e tipi Go digitati
-- codec JSON generati e aiutanti di convalida
-- valori `completion.Spec` digitati
-- generati helper `Complete<Name>(ctx, client, req)`
-- generato `StreamComplete<Name>(ctx, client, req)` e `Decode<Name>Chunk(...)`
-aiutanti
+- tipi di risultato e unione tipizzati;
+- schemi privati e codec generati;
+- helper `Complete<Name>(ctx, client, req)`;
+- helper tipizzati `StreamComplete<Name>(ctx, client, req)`;
+- `<Name>Example()` quando il risultato radice ha un `Example(...)` dichiarato.
 
-Gli aiutanti unari decodificano direttamente la risposta finale dell'assistente. Aiutanti dello streaming
-rimanere sulla superficie grezza `model.Streamer`: i pezzi `completion_delta` sono
-solo in anteprima, esattamente un pezzo finale `completion` è canonico e
-`Decode<Name>Chunk(...)` decodifica solo il payload finale.
+Gli helper unary decodificano direttamente la risposta finale. Gli helper di
+streaming restituiscono `completion.Streamer[T]`: `Recv` espone frammenti
+`completion_delta` validi solo come anteprima, mentre `Value()` resta
+indisponibile fino alla chiusura pulita dello stream e alla validazione della
+risposta terminale. Non esiste un decoder pubblico per chunk non verificati.
 
 Gli aiutanti di completamento generati rifiutano le richieste abilitate allo strumento e fornite dal chiamante
 `StructuredOutput`. I provider che non implementano l'output strutturato falliscono
 esplicitamente con `model.ErrStructuredOutputUnsupported`.
+Un output non conforme al codec generato restituisce
+`planner.OutputContractError` e una risposta nil; non avvia una richiesta di
+correzione.
 Lo schema generato rimane il contratto di servizio canonico; gli adattatori del modello possono
 normalizzarlo per la decodifica vincolata specifica del provider, ma devono rifiutarlo
 fornitori che non possono rappresentare il contratto dichiarato.
@@ -387,15 +478,6 @@ Agent("planner", func() {
 // Agent B uses Agent A's tools
 Agent("orchestrator", func() {
     Use(AgentToolset("service", "planner", "planning.tools"))
-})
-```
-
-**Alias**: `UseAgentToolset(service, agent, toolset)` è un alias che combina `AgentToolset` con `Use` in un'unica chiamata. Preferisci `AgentToolset` nei nuovi design; l'alias esiste per la leggibilità in alcune basi di codice.
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
 })
 ```
 
@@ -767,9 +849,11 @@ esegue. Questo è destinato agli strumenti **sensibili all'operatore** (scrittur
 
 **Contesto**: All'interno di `Tool`
 
-Al momento della generazione, Goa-AI registra la politica di conferma nelle specifiche dello strumento generato. In fase di esecuzione, il
-il flusso di lavoro emette una richiesta di conferma utilizzando `AwaitConfirmation` ed esegue lo strumento solo dopo un
-viene fornita l'approvazione esplicita.
+Durante la generazione, Goa-AI registra la policy di conferma nella specifica
+dello strumento. Durante l'esecuzione il workflow emette una richiesta di
+conferma e termina con una sospensione; una risposta tipizzata accettata tramite
+`Continue` avvia un nuovo workflow, che esegue lo strumento soltanto dopo
+un'approvazione esplicita.
 
 Esempio minimo:
 
@@ -787,9 +871,10 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Note:
 
-- Il runtime possiede la modalità di richiesta di conferma. Il protocollo di conferma integrato utilizza un protocollo dedicato
-`AwaitConfirmation` attendono e viene chiamata una decisione `ProvideConfirmation`. Consulta la guida Runtime per
-payload attesi e flusso di esecuzione.
+- Il runtime possiede il protocollo di conferma. Il workflow emette una
+  sospensione con la richiesta pendente; l'applicazione invia una
+  `api.PendingInputResponse` tipizzata tramite `Continue`, che avvia un nuovo
+  workflow. Consulta la guida Runtime per payload e flusso di esecuzione.
 - I modelli di conferma (`PromptTemplate` e `DeniedResultTemplate`) sono stringhe Go `text/template`
 eseguito con `missingkey=error`. Oltre alle funzioni del modello standard (ad esempio `printf`),
 Goa-AI fornisce:
@@ -992,7 +1077,7 @@ Per i promemoria che dipendono dalle condizioni di runtime, utilizza invece l'AP
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name != "get_time_series" || tr.Error != nil {
+        if tr.Name != "get_time_series" || tr.Failure != nil {
             continue
         }
         result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
@@ -1056,7 +1141,7 @@ Mantieni canonici i contratti integrati:
 
 - usa `Tags` per filtri generici di autorizzazione e capacità;
 - usa `Bookkeeping` e `TerminalRun` per contabilità e comportamento terminale;
-- usa `RetryHint` per la gestione degli errori del singolo risultato;
+- usa `ToolFailure` e la relativa azione `Recovery` per gestire l'errore di un singolo risultato;
 - usa campi del planner come `SynthesizeAfterTools` per le transizioni del batch.
 
 ### Associa a
@@ -1186,7 +1271,7 @@ Tool("set_step_status", "Update step status", func() {
 - Le chiamate di bookkeeping hanno costo zero per `MaxToolCalls` e non modificano il contatore degli errori consecutivi.
 - Ogni batch di tool call prodotto dal modello è atomico. Il runtime ammette tutto il batch se tutte le chiamate con budget rientrano nel limite, altrimenti rifiuta tutto il batch. Non rimuove mai singole chiamate dalla risposta del provider.
 - Chiamate e risultati restano eventi durevoli nello stream e nel run log, oltre che nella trascrizione del provider. Solo i risultati bookkeeping riusciti vengono omessi dai futuri `ToolOutputs` compatti.
-- Un risultato bookkeeping fallito apre un turno di riparazione solo quando `RetryHint.AllowsRetry()` restituisce true.
+- Un risultato bookkeeping fallito apre un turno dello strumento solo quando `ToolFailure.AllowsToolTurn()` restituisce true.
 - Gli strumenti sconosciuti vengono trattati come preventivati; sono esenti solo gli strumenti dichiarati `Bookkeeping()` nel DSL (o contrassegnati in contabilità sul runtime `ToolSpec`).
 - Un turno esclusivamente contabile deve risolversi nello stesso turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult` o attendere/pausa).
 

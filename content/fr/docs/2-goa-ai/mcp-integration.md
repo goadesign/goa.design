@@ -15,7 +15,9 @@ L'intégration MCP suit ce flux de travail :
 1. **Conception de services** : Déclarez le serveur MCP via MCP DSL de Goa
 2. **Conception d'agent** : référencez cette suite via un ensemble d'outils déclaré avec `FromMCP(...)` ou `FromExternalMCP(...)`.
 3. **Génération de code** : produit le serveur MCP JSON-RPC (lorsqu'il est soutenu par Goa), ainsi que des aides à l'enregistrement d'exécution et des spécifications/codecs appartenant à l'ensemble d'outils pour la suite.
-4. **Câblage d'exécution** : instanciez un transport `mcpruntime.Caller` (HTTP/SSE/stdio). Les assistants générés enregistrent l'ensemble d'outils et adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint`.
+4. **Câblage d'exécution** : instanciez un transport `mcpruntime.Caller`
+   (HTTP/SSE/stdio). Les fonctions générées enregistrent l'ensemble d'outils et
+   adaptent les erreurs JSON-RPC en valeurs `planner.ToolFailure`.
 5. **Exécution du planificateur** : les planificateurs mettent simplement en file d'attente les appels d'outils avec les charges utiles canoniques JSON ; le moteur d'exécution les transmet à l'appelant MCP, conserve les résultats via des hooks et exécute une télémétrie structurée
 
 ---
@@ -246,11 +248,17 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 
 ## Gestion des erreurs
 
-Les assistants générés adaptent les erreurs JSON-RPC en valeurs `planner.RetryHint` :
+Les fonctions générées adaptent les erreurs JSON-RPC en valeurs
+`planner.ToolFailure` :
 
-- **Erreurs de validation** → `RetryHint` avec conseils pour les planificateurs
-- **Erreurs réseau** → Réessayez les astuces avec les recommandations d'attente
-- **Erreurs de serveur** → Détails de l'erreur conservés dans les résultats de l'outil
+- **Erreurs de validation** → échecs d'appel invalide accompagnés d'informations
+  précises pour la correction
+- **Erreurs réseau** → échecs d'indisponibilité ou de délai avec une action
+  explicite de replanification ou de finalisation
+- **Erreurs du serveur** → causes structurées conservées dans l'échec
+
+Les ensembles d'outils MCP et natifs partagent ainsi le même contrat de
+récupération appliqué par le runtime.
 
 Cela permet aux planificateurs de récupérer des erreurs MCP en utilisant les mêmes modèles de tentatives que les ensembles d'outils natifs.
 
@@ -365,9 +373,13 @@ func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*plan
 
 ## Meilleures pratiques
 
-- **Laissez codegen gérer l'enregistrement** : utilisez l'assistant généré pour enregistrer les ensembles d'outils MCP ; évitez la colle manuscrite afin que les codecs et les conseils de nouvelle tentative restent cohérents
+- **Laissez codegen gérer l'enregistrement** : utilisez la fonction générée
+  pour enregistrer les ensembles d'outils MCP ; évitez le câblage manuscrit
+  afin que les codecs et la récupération structurée restent cohérents
 - **Utilisez des appelants tapés** : préférez les appelants JSON-RPC générés par Goa lorsqu'ils sont disponibles pour la sécurité du type
-- **Gérez les erreurs avec élégance** : mappez les erreurs MCP aux valeurs `RetryHint` pour aider les planificateurs à récupérer
+- **Classez explicitement les erreurs** : mappez les erreurs MCP vers
+  `ToolFailure` et choisissez une action `RecoveryDirective` que le runtime
+  peut appliquer
 - **Surveiller la télémétrie** : les appels MCP émettent des événements de télémétrie structurés ; utilisez-les pour l'observabilité
 - **Choisissez le bon transport** : utilisez HTTP pour une requête/réponse simple, SSE pour le streaming, stdio pour les serveurs basés sur des sous-processus.
 

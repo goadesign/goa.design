@@ -19,7 +19,6 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Use`                                                   | Agent                    | Declares toolset consumption                                                                                       |
 | `Export`                                                | Agent, Service           | Exposes toolsets to other agents                                                                                   |
 | `AgentToolset`                                          | Use argument             | References toolset from another agent                                                                              |
-| `UseAgentToolset`                                       | Agent                    | Alias for AgentToolset + Use                                                                                       |
 | `Passthrough`                                           | Tool (in Export)         | Deterministic forwarding to service method                                                                         |
 | `DisableAgentDocs`                                      | API                      | Disables AGENTS_QUICKSTART.md generation                                                                           |
 | **Toolset Functions**                                   |                          |                                                                                                                    |
@@ -479,15 +478,6 @@ Agent("orchestrator", func() {
 })
 ```
 
-**Alias**: `UseAgentToolset(service, agent, toolset)` is an alias that combines `AgentToolset` with `Use` in a single call. Prefer `AgentToolset` in new designs; the alias exists for readability in some codebases.
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
-})
-```
-
 ### Passthrough
 
 `Passthrough(toolName, target, methodName)` defines deterministic forwarding for an exported tool to a Goa service method. This bypasses the planner entirely.
@@ -897,9 +887,11 @@ executes. This is intended for **operator-sensitive** tools (writes, deletes, co
 
 **Context**: Inside `Tool`
 
-At generation time, Goa-AI records confirmation policy in the generated tool spec. At runtime, the
-workflow emits a confirmation request using `AwaitConfirmation` and executes the tool only after an
-explicit approval is provided.
+At generation time, Goa-AI records confirmation policy in the generated tool
+spec. At runtime, the workflow ends with a `RunSuspension` whose first pending
+item contains the confirmation request. The continuation workflow executes the
+tool only after the caller submits an explicit approval through
+`AgentClient.Continue`.
 
 Minimal example:
 
@@ -917,9 +909,10 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Notes:
 
-- The runtime owns how confirmation is requested. The built-in confirmation protocol uses a dedicated
-`AwaitConfirmation` await and a `ProvideConfirmation` decision call. See the Runtime guide for the
-expected payloads and execution flow.
+- The runtime owns how confirmation is requested. Render the first pending item
+  when its kind is `confirmation`, then pass an
+  `api.PendingInputResponse{Confirmation: ...}` to `AgentClient.Continue`.
+  See the Runtime guide for the expected payloads and execution flow.
 - Confirmation templates (`PromptTemplate` and `DeniedResultTemplate`) are Go `text/template` strings
 executed with `missingkey=error`. In addition to the standard template functions (e.g. `printf`),
 Goa-AI provides:

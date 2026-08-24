@@ -240,6 +240,12 @@ activity boundary. They do not mean that no second copy exists: the runtime's
 private suspension checkpoint still contains transcript and tool-output state
 so a suspended workflow can resume.
 
+Tool calls have two different identifiers. `ModelToolCallID` is the provider
+transcript ID that pairs a model-authored call with its model-visible result.
+`ToolCallID` is the runtime execution ID used by activities, retries, run-log
+records, and stream events. A suspended model-authored call stores both; never
+substitute one for the other or derive either from run order.
+
 ```go
 type Store interface {
     Append(ctx context.Context, e *runlog.Event) error

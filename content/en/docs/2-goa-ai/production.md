@@ -554,13 +554,12 @@ all agents and completions, drain or stop affected work, and deploy the runtime,
 workers, and callers as one coordinated release. Goa-AI does not provide a
 dual-read mode for generated runtime contracts.
 
-Goa-AI v0.77.3 accepts only `goa-ai.run-suspension.v4`. Planners that wait for
-questions, clarification, or external tools preserve the provider's
-`ModelToolCallID`; the workflow assigns the runtime `ToolCallID` before it saves
-the suspension. Regenerate consumers and deploy all affected workers together.
-V3 suspensions do not resume on v4 workers, and mixed worker versions are
-unsupported. Historical completed-session records remain stored unchanged, and
-no database migration is required.
+The runtime accepts only the exact `goa-ai.run-suspension.v4` schema. Planners
+that wait for questions, clarification, or external tools preserve the
+provider's `ModelToolCallID`; the workflow assigns the separate runtime
+`ToolCallID` before it saves the suspension. Other suspension schemas do not
+resume. A future schema change must inventory and retire incompatible saved
+work before the coordinated release; do not add a dual reader or infer fields.
 
 #### Release verification
 
