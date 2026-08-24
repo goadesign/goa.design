@@ -106,22 +106,30 @@ Expected shape:
 
 ```text
 RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
 Completion draft_task: ...
 Completion stream draft_task: ...
 ```
 
-`goa gen` creates generated contracts. `goa example` creates application-owned
-scaffold:
+When the design has an authored payload example and either an authored result
+example or no result, the scaffold planner demonstrates that tool. If no tool
+has a usable example, it returns the greeting instead.
+
+`goa gen` always refreshes generated contracts and
+`AGENTS_QUICKSTART.md` (unless `DisableAgentDocs()` is set). `goa example`
+creates application-owned files only when they do not already exist:
 
 - `gen/`: generated code. Do not edit this directory by hand.
-- `cmd/orchestrator/main.go`: runnable example entry point.
-- `internal/agents/bootstrap/bootstrap.go`: runtime construction and agent registration.
-- `internal/agents/chat/planner/planner.go`: stub planner to replace.
+- `cmd/orchestrator/main.go`: runnable example entry point (create-once).
+- `internal/agents/bootstrap/bootstrap.go`: runtime construction and agent registration (create-once).
+- `internal/agents/chat/planner/planner.go`: stub planner to replace (create-once).
+- `internal/agents/chat/toolsets/helpers/execute.go`: example executor (create-once).
 - `gen/orchestrator/completions/`: typed direct-completion helpers.
+- `AGENTS_QUICKSTART.md`: regenerated implementation guide at the module root.
 
-Regenerate after DSL changes. Re-run `goa example` when you want scaffold
-updates, then keep application edits in `cmd/` and `internal/`.
+Each create-once file states that the application owns later edits. Rerunning
+`goa example` does not overwrite it. Update application scaffolds manually, or
+delete a file before rerunning if you intentionally want a fresh stub.
 
 ---
 
@@ -141,8 +149,12 @@ returning terminal bookkeeping tools. The runtime executes only
 requires them to succeed before the run is considered closed.
 
 The generated example starts with a stub planner so this flow is visible before
-you connect a model. A real planner follows the same contract; it just delegates
-the decision to a model client.
+you connect a model. When a tool has an authored payload example, `PlanStart`
+constructs the call with `planner.NewToolRequest(gentool.<Tool>Tool(), args)`.
+`PlanResume` checks `ToolOutput.Failure` and formats the successful canonical
+tool JSON into the final assistant message. A no-result tool succeeds with an
+empty result. A real planner follows the same contract; it delegates the
+semantic decision to a model client.
 
 ---
 
@@ -199,20 +211,13 @@ type HelpersExecutor struct{}
 func (e *HelpersExecutor) Execute(
 	ctx context.Context,
 	meta *runtime.ToolCallMeta,
-	call *planner.ToolRequest,
+	call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.AnswerTool.Payload.FromJSON(call.Payload)
+		args, err := helpers.AnswerTool().Payload.FromJSON(call.Payload)
 		if err != nil {
-			return runtime.Executed(&planner.ToolResult{
-				Name: call.Name,
-				Failure: &planner.ToolFailure{
-					Kind:     planner.FailureInvalidCall,
-					Error:    planner.ToolErrorFromError(err),
-					Recovery: planner.RecoveryDirective{Action: planner.RecoveryCorrectCall},
-				},
-			}), nil
+			return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
 		}
 		return runtime.Executed(&planner.ToolResult{
 			Name:   call.Name,
@@ -284,20 +289,21 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if len(summary.ToolCalls) > 0 {
 		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
 	}
+	final := summary.FinalResponse()
+	if final == nil {
+		return nil, errors.New("model stream ended without a canonical response")
+	}
 	return &planner.PlanResult{
-		FinalResponse: &planner.FinalResponse{
-			Message: &model.Message{
-				Role:  model.ConversationRoleAssistant,
-				Parts: []model.Part{model.TextPart{Text: summary.Text}},
-			},
-		},
+		FinalResponse: final,
 		Streamed: true,
 	}, nil
 }
 ```
 
-Use `in.Agent.ModelClient("default")` when you need raw stream control and pair
-it with `planner.ConsumeStream`. Choose one stream owner per planner turn.
+Use `in.Agent.ModelClient("default")` when you need to drain the validated
+stream yourself with `planner.ConsumeStream(ctx, stream)`. Choose one stream
+owner per planner turn. Provider constructors return opaque clients whose
+responses are validated before planner code receives them.
 
 ---
 
@@ -355,8 +361,9 @@ fmt.Println(resp.Value.Name)
 
 Completion names are part of the structured-output contract: 1-64 ASCII
 characters, letters/digits/`_`/`-`, starting with a letter or digit. Streaming
-completion helpers expose preview `completion_delta` chunks and decode only the
-final canonical `completion` chunk.
+completion helpers return `completion.Streamer[T]`: read preview fragments with
+`Recv`, drain to `io.EOF`, and then read the accepted typed value with
+`Value()`. There is no public decoder for unchecked chunks.
 
 ---
 

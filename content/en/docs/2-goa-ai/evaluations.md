@@ -396,8 +396,11 @@ loudly instead of silently running nothing.
 
 ## How judging works
 
-`eval/judge` builds a judge from any `model.Client`, the same model-client
-interface the rest of Goa-AI uses, so it works with any configured provider.
+`eval/judge` builds a judge from any validated `model.Client`, the same opaque
+client the rest of Goa-AI uses, so it works with any configured provider. Tests
+that need a deterministic judge client should implement `model.Provider` and
+pass it through `model.NewClient`; application code cannot implement
+`model.Client` directly.
 
 For each scenario the judge receives the answer and the scenario's claims, and
 returns exactly one label and a short rationale per claim:
@@ -457,3 +460,13 @@ that:
 Regenerate before compiling application code. Generated suite packages and
 application hooks live in one Go binary, so there is no version-mixing concern
 across a network: a mismatch is a compile error, not a runtime surprise.
+
+## Remote Judge Models
+
+Evaluation suites use the same opaque validated `model.Client` as planners. If
+the judge model runs in another process, expose the provider with
+`gateway.NewServer` and connect with `gateway.NewRemoteClient` or
+`gateway.NewCountingRemoteClient`. The counting client is required when an
+evaluation policy needs exact input-token counts. See
+[Remote Model Gateways](./runtime/#remote-model-gateways) for the transport and
+validation contract.
