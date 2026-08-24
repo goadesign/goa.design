@@ -44,18 +44,24 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-When a planner calls this tool with invalid arguments - say, an empty `code`
-string or `language: "cobol"` - Goa-AI rejects the call at the typed boundary and
-returns a structured retry hint. Your planner can use that hint to ask a precise
-follow-up question or retry with corrected arguments. No ad-hoc string parsing
-or hand-maintained JSON schema required.
+When planner code builds this call with `planner.NewToolRequest`, generated
+encoding errors return directly to the planner. When a model emits
+schema-invalid arguments - say, an empty `code` string or
+`language: "cobol"` - the validated model client returns
+`model.OutputValidationError`; the planner/runtime surfaces
+`planner.OutputContractError` before executor or service code runs.
+
+`ToolFailure` and `RecoveryCorrectCall` apply later: a model-authored call must
+first pass validation and be admitted, then its executor or domain boundary
+must return a recoverable failure. The runtime uses that failure to guide the
+next planner turn without ad-hoc string parsing or hand-maintained JSON schema.
 
 **Benefits:**
 - **Single source of truth** — The DSL defines behavior, types, and documentation
 - **Compile-time safety** — Catch mismatched payloads before runtime
 - **Auto-generated clients** — Type-safe tool invocations without manual wiring
 - **Consistent patterns** — Every agent follows the same structure
-- **Repairable tool calls** — Validation errors produce structured retry hints with feedback
+- **Repairable execution failures** — Admitted model-authored calls can return typed failure details and recovery directives
 
 → Learn more in the [DSL Reference](dsl-reference/) and [Quickstart](quickstart/)
 
@@ -129,14 +135,14 @@ Completion names are part of the structured-output contract. They must be
 1-64 ASCII characters, may contain letters, digits, `_`, and `-`, and must
 start with a letter or digit.
 
-Codegen emits `gen/<service>/completions/` with the JSON schema, typed codecs,
-and generated helpers that request provider-enforced structured output and
-decode the final assistant response through the generated codec. Streaming
-helpers stay on the raw `model.Streamer` surface: `completion_delta` chunks are
-preview-only, exactly one final `completion` chunk is canonical, and generated
-`Decode<Name>Chunk(...)` helpers decode only that final payload. Providers that
-do not implement structured output fail explicitly with
-`model.ErrStructuredOutputUnsupported`.
+Codegen emits `gen/<service>/completions/` with private schema and codec
+details plus public typed helpers. Unary helpers return the accepted typed
+value. Streaming helpers return `completion.Streamer[T]`: `Recv` yields
+preview-only `completion_delta` fragments, and `Value()` returns the typed
+result only after the provider closes a valid stream. Providers that do not
+implement structured output fail explicitly with
+`model.ErrStructuredOutputUnsupported`; malformed output fails with a
+non-retryable `planner.OutputContractError`.
 
 **Benefits:**
 - **One contract surface** — Reuse Goa types, validations, and `OneOf` for direct assistant output
@@ -205,10 +211,14 @@ Goa-AI uses **Temporal** for durable execution. Agent runs become workflows; too
 rt := runtime.New()
 
 // Production: Temporal for durability
-eng, _ := temporal.NewWorker(temporal.Options{
+eng, err := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
+if err != nil {
+    panic(err)
+}
+defer eng.Close()
 rt := runtime.New(runtime.WithEngine(eng))
 ```
 
@@ -216,7 +226,9 @@ rt := runtime.New(runtime.WithEngine(eng))
 - **No wasted inference** — Failed tools retry without re-calling the LLM
 - **Crash recovery** — Restart workers anytime; runs resume from last checkpoint
 - **Rate limit handling** — Exponential backoff absorbs API throttling
-- **Deployment-safe** — Rolling deploys don't lose in-flight work
+- **Version-aware deployment** — Follow the
+  [Production rollout contract](production/#transparent-rollouts) for compatible
+  rolling releases and incompatible generated changes
 
 → Setup guide and retry configuration in [Production](production/#temporal-setup)
 
@@ -337,7 +349,12 @@ Goa-AI ships first-class adapters for four LLM providers:
 - **AWS Bedrock** (`features/model/bedrock`)
 - **Google Vertex AI** (`features/model/vertex`) — a native Gemini adapter plus a pure-construction helper for Claude models hosted on Vertex (which delegates translation and error classification to `features/model/anthropic`)
 
-All four implement the same `model.Client` interface used by planners. Applications register model clients with the runtime using `rt.RegisterModel("provider-id", client)` and refer to them by ID from planners and generated agent configs, so swapping providers is a configuration change rather than a redesign.
+All four expose the same opaque `model.Client` used by planners. Applications
+register model clients with the runtime using
+`rt.RegisterModel("provider-id", client)` and refer to them by ID from planners
+and generated agent configs, so swapping providers is a configuration change
+rather than a redesign. Goa-AI validates every request and complete response
+before application code can observe it.
 
 Gemini 3-class models attach an opaque thought signature to tool-call
 (`functionCall`) parts to authenticate the reasoning that produced them. The
@@ -348,11 +365,19 @@ whether or not the configured model uses this feature. See
 
 Adding a new provider follows the same pattern:
 
-1. Implement `model.Client` for your provider by mapping its SDK types onto `model.Request`, `model.Response`, and streaming `model.Chunk`s.
-2. Optionally wrap the client with shared middleware (for example, `features/model/middleware.NewAdaptiveRateLimiter`) for adaptive rate limiting and metrics.
-3. Call `rt.RegisterModel("my-provider", client)` before registering agents, then reference `"my-provider"` from your planners or agent configs.
+1. Implement `model.Provider` by mapping the provider SDK onto
+   `model.Request`, `model.Response`, and raw transport chunks.
+2. Construct the validated client with `model.NewClient(provider)`. Install
+   provider middleware with `model.WrapClient`; external packages cannot
+   implement or bypass `model.Client`.
+3. Call `rt.RegisterModel("my-provider", client)`, then reference
+   `"my-provider"` from planners or agent configs.
 
-Because planners and the runtime depend only on `model.Client`, new providers plug in without changes to your Goa designs or generated agent code.
+Because planners and the runtime depend only on the validated `model.Client`,
+new providers plug in without changes to Goa designs or generated agent code.
+See [Runtime → LLM Integration](runtime/#llm-integration) for request and
+response limits, provider capability differences, remote model gateways, and
+coordinated upgrade requirements.
 
 ## Quick Example
 

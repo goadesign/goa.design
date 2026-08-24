@@ -101,7 +101,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Attribute`                                             | Args, Return, ServerData | Defines schema field (general use)                                                                                 |
 | `Field`                                                 | Args, Return, ServerData | Defines numbered proto field (gRPC)                                                                                |
 | `Required`                                              | Schema                   | Marks fields as required                                                                                           |
-| `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and retry hints |
+| `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and structured correction evidence |
 
 ### Evaluation DSL
 
@@ -215,7 +215,13 @@ Running `goa gen` produces:
 - Activity handlers for plan/execute/resume loops
 - Registration helpers that wire the design into the runtime
 
-A contextual `AGENTS_QUICKSTART.md` is written at the module root unless disabled via `DisableAgentDocs()`.
+A contextual `AGENTS_QUICKSTART.md` is regenerated at the module root unless
+disabled via `DisableAgentDocs()`.
+
+`goa example` is separate. It creates runnable `cmd/`, bootstrap, planner, and
+example-executor files only when they do not already exist. Those files belong
+to the application and are never overwritten on later runs. Generated files
+under `gen/` and `AGENTS_QUICKSTART.md` continue to refresh from the design.
 
 ### Quickstart Example
 
@@ -282,21 +288,25 @@ Running `goa gen example.com/assistant/design` produces:
 - `gen/orchestrator/agents/chat/exports/<export>`: exported toolsets (agent-as-tool) packages
 - MCP-aware registration helpers when an MCP-backed toolset is referenced via `Use`
 
-### Typed Tool Identifiers
+### Typed Tool Descriptors
 
-Each per-toolset specs package defines typed tool identifiers (`tools.Ident`) for every generated tool:
+Each per-toolset specs package defines a typed identifier and a `<Tool>Tool()`
+descriptor that pairs that identifier with generated payload/result codecs:
 
 ```go
 const (
     Search tools.Ident = "orchestrator.search.search"
 )
 
-var Specs = []tools.ToolSpec{
-    { Name: Search, /* ... */ },
+func SearchTool() tools.TypedTool[*SearchPayload, *SearchResult] {
+    // Returns fresh generated specs and codecs.
 }
 ```
 
-Use these constants anywhere you need to reference tools.
+Construct planner-authored calls with
+`planner.NewToolRequest(SearchTool(), payload)`. Generated accessors return
+fresh copies, so mutating one returned schema or example cannot change later
+model requests.
 
 ### Service-Owned Typed Completions
 
@@ -324,21 +334,23 @@ start with a letter or digit.
 
 `goa gen` emits a package under `gen/<service>/completions` with:
 
-- generated result schemas and typed Go types
-- generated JSON codecs and validation helpers
-- typed `completion.Spec` values
-- generated `Complete<Name>(ctx, client, req)` helpers
-- generated `StreamComplete<Name>(ctx, client, req)` and `Decode<Name>Chunk(...)`
-helpers
+- typed result and union types
+- private schemas and generated codecs
+- public `Complete<Name>(ctx, client, req)` helpers
+- typed `StreamComplete<Name>(ctx, client, req)` helpers
+- `<Name>Example()` when the root result has an authored `Example(...)`
 
-Unary helpers decode the final assistant response directly. Streaming helpers
-stay on the raw `model.Streamer` surface: `completion_delta` chunks are
-preview-only, exactly one final `completion` chunk is canonical, and
-`Decode<Name>Chunk(...)` decodes only that final payload.
+Unary helpers decode the accepted assistant response directly and expose the
+exact provider response as `Response.ModelResponse`. Streaming helpers return
+`completion.Streamer[T]`: `Recv` yields preview fragments, while `Value()`
+becomes available only after clean end-of-stream and validation. There is no
+public decoder for unchecked chunks.
 
 Generated completion helpers reject tool-enabled requests and caller-supplied
 `StructuredOutput`. Providers that do not implement structured output fail
-explicitly with `model.ErrStructuredOutputUnsupported`.
+explicitly with `model.ErrStructuredOutputUnsupported`. Invalid unary or
+streamed output returns a non-retryable `planner.OutputContractError` without a
+correction model request.
 The generated schema remains the canonical service contract; model adapters may
 normalize it for provider-specific constrained decoding, but they must reject
 providers that cannot represent the declared contract.
@@ -615,6 +627,11 @@ Tool("search", "Search documentation", func() {
 })
 ```
 
+`Return` is optional for method-backed tools whose service method has no
+result. Code generation then emits an empty result `TypeSpec`: no result schema
+and no result codec. The executor reports successful completion with
+`&planner.ToolResult{Name: call.Name}` and does not invent a JSON value.
+
 **Reusing types:**
 
 ```go
@@ -849,6 +866,11 @@ result := &planner.ToolResult{
     },
 }
 ```
+
+`agent.Bounds.NextCursor` has type `*string`. Set it only when the generated
+tool spec declares paging, `Truncated` is true, and the pointed-to cursor is
+non-empty. Leave it nil for complete results and non-paged bounded tools; the
+runtime rejects bounds that violate these rules.
 
 When a bounded tool executes:
 
@@ -1107,7 +1129,7 @@ For reminders that depend on runtime conditions, use the planner API instead:
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name != "get_time_series" || tr.Error != nil {
+        if tr.Name != specs.GetTimeSeries || tr.Failure != nil {
             continue
         }
         result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
@@ -1169,7 +1191,7 @@ Keep the built-in contracts canonical:
 
 - use `Tags` for generic allow/deny and capability filtering,
 - use `Bookkeeping` and `TerminalRun` for accounting and terminal behavior,
-- use `RetryHint` for per-result failure handling,
+- use `ToolFailure` and its `Recovery` action for per-result failure handling,
 - use planner fields such as `SynthesizeAfterTools` for per-batch transitions.
 
 ### BindTo
@@ -1316,7 +1338,9 @@ Tool("set_step_status", "Update step status", func() {
 - Bookkeeping calls contribute zero cost to `MaxToolCalls` and do not change the consecutive-failure counter.
 - Each model-authored tool-call batch is atomic. The runtime admits the whole batch when all budgeted calls fit, or rejects the whole batch when they do not. It never removes individual calls from the provider response.
 - Calls and results remain durable stream/run-log events and remain in the provider transcript. Successful bookkeeping results are omitted only from compact future `ToolOutputs`.
-- A failed bookkeeping result enters a repair turn only when `RetryHint.AllowsRetry()` returns true.
+- A failed bookkeeping result enters another planner turn according to
+  `ToolFailure.Recovery`: correct the same call, replan without that tool, or
+  finish.
 - Unknown tools are treated as budgeted; only tools declared `Bookkeeping()` in the DSL (or marked bookkeeping on the runtime `ToolSpec`) are exempt.
 - A bookkeeping-only turn must resolve in the same turn (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, or await/pause).
 
@@ -1567,7 +1591,13 @@ Compression summarizes older turns using a model while keeping a bounded exact t
 - `CompressAtTurns(n)` and `CompressAtMaxInputTokens(n)` decide when summarization runs. If both are set, either trigger may start compression.
 - `KeepMaxTurns(n)` and `KeepMaxInputTokens(n)` decide which newest complete turns remain exact after summarization. If both are set, both retention caps apply.
 
-Token budgets are counted at runtime through the configured history model because tokenization is model-specific. `KeepMaxInputTokens` never truncates a turn; the runtime walks backward from the newest turn and keeps only complete turns that fit the budget.
+Token budgets are counted at runtime through the configured history model
+because tokenization is model-specific. One count includes preserved system
+messages, candidate complete turns, and the currently advertised tools.
+`CompressAtMaxInputTokens` is exclusive: a request exactly at the threshold
+fits; a larger request triggers compression. `KeepMaxInputTokens` never
+truncates a turn; the runtime walks backward from the newest turn and keeps only
+complete turns that fit.
 
 ```go
 RunPolicy(func() {
@@ -1593,7 +1623,14 @@ At least one `CompressAt...` trigger and at least one `KeepMax...` retention bud
 
 **HistoryModel Requirement:**
 
-When using compression, you must supply a `model.Client` via the generated `HistoryModel` field on the agent config. The runtime uses this client with `ModelClassSmall` to summarize older turns and, when a token budget is configured, to count the provider-visible request. Token-budget compression requires the history model to implement `model.TokenCounter` with exact counts; the Bedrock adapter does this with Bedrock's native `CountTokens` API.
+When using compression, you must supply a `model.Client` via the generated
+`HistoryModel` field on the agent config. The runtime uses this client with
+`ModelClassSmall` to summarize older turns and, when a token budget is
+configured, to count the provider-visible request. Token-budget compression
+requires exact `model.TokenCounter` support. Bedrock uses Runtime `CountTokens`
+where available, but returns `model.ErrTokenCountingUnsupported` for
+structured-output requests and for Claude Opus 4.7, Sonnet 5, and Mythos 5,
+which require AWS's separate Mantle endpoint.
 
 ```go
 // Generated agent config includes HistoryModel when compression is configured.
