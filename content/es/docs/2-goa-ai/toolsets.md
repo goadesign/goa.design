@@ -281,8 +281,9 @@ Cuando se ejecuta una herramienta acotada:
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
 2. El runtime fusiona esos bounds en el JSON emitido usando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`
 3. Con `ContinueWith`, el runtime ofrece la acción vacía solo cuando una única cabeza activa de la cadena puede continuar y enlaza el cursor antes de ejecutar
-4. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
-5. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
+4. Si otra herramienta del mismo lote paralelo requiere recuperación `finish`, la herramienta fallida no puede volver a ejecutarse y no puede iniciarse nuevo trabajo de dominio. Las acciones de continuación siguen disponibles para las consultas exitosas que ya devolvieron un cursor de página siguiente. Sin una acción de ese tipo, la finalización comienza inmediatamente
+5. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
+6. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
 
 ```go
 // En un suscriptor de stream

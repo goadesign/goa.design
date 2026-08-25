@@ -315,9 +315,13 @@ When a bounded tool executes:
    and retained query fields before execution. Exact cursor lineage advances
    sequential pages. Parallel source invocations remain valid; multiple live
    heads make the no-argument continuation unavailable
-4. For direct `Cursor`, the runtime projects the opaque cursor into
+4. If another tool in the same parallel batch requires `finish` recovery, the
+   failed tool cannot run again and no new domain work can start. Continuation
+   actions remain available for successful queries that already returned a
+   next-page cursor. Without such an action, finalization starts immediately
+5. For direct `Cursor`, the runtime projects the opaque cursor into
    `next_cursor` and the model supplies it on the next call
-5. Stream subscribers and finalizers access bounds for UI display, logging, or
+6. Stream subscribers and finalizers access bounds for UI display, logging, or
    policy decisions
 
 ```go

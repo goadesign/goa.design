@@ -280,8 +280,9 @@ Lorsqu'un outil limité s'exécute :
 1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
 3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une tête de chaîne active non ambiguë et associe le curseur avant l'exécution
-4. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
-5. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
+4. Si un autre outil du même lot parallèle nécessite une récupération `finish`, l'outil en échec ne peut pas être relancé et aucun nouveau travail métier ne peut commencer. Les actions de continuation restent disponibles pour les requêtes réussies qui ont déjà renvoyé un curseur de page suivante. Sans une telle action, la finalisation commence immédiatement
+5. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
+6. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 
 ```go
 // In a stream subscriber

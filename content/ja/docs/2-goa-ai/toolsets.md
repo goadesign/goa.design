@@ -269,8 +269,9 @@ bounded tool が実行されると:
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
 3. `ContinueWith` では、runtime は一意な live chain head に対してのみ空の action を公開し、実行前に cursor を bind します
-4. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
-5. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
+4. 同じ parallel batch の別の tool が `finish` recovery を要求した場合、failed tool は再実行できず、新しい domain work も開始できません。next-page cursor を既に返した successful query の continuation action は引き続き利用できます。そのような action がない場合は、直ちに finalization が始まります
+5. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
+6. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 
 ```go
 // In a stream subscriber
