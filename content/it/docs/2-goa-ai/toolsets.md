@@ -289,8 +289,9 @@ When a bounded tool executes:
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into emitted JSON using the model-facing JSON field names generated from `BoundedResult(...)`
 3. Con `ContinueWith`, il runtime offre l'azione vuota solo per una singola testa di catena attiva non ambigua e associa il cursor prima dell'esecuzione
-4. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
-5. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
+4. Se un altro strumento nello stesso batch parallelo richiede il recovery `finish`, lo strumento fallito non può essere eseguito di nuovo e non può iniziare nuovo lavoro di dominio. Le azioni di continuazione restano disponibili per le query riuscite che hanno già restituito un cursor della pagina successiva. Senza tale azione, la finalizzazione inizia immediatamente
+5. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
+6. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
 
 ```go
 // In un sottoscrittore di flusso
