@@ -53,7 +53,7 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 | `RunPolicy` | Agente | Configura i vincoli di esecuzione |
 | `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse |
 | `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento |
-| `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi |
+| `MaxRecoveryTurns` | DefaultCaps | Numero massimo di nuove chiamate al pianificatore dopo un output rifiutato |
 | `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete |
 | `Timing` | EseguiPolitica | Configurazione dettagliata del timeout |
 | `Budget` | Tempi | Budget di gestione complessivo |
@@ -277,7 +277,7 @@ var _ = Service("orchestrator", func() {
         RunPolicy(func() {
             DefaultCaps(
                 MaxToolCalls(8),
-                MaxConsecutiveFailedToolCalls(3),
+                MaxRecoveryTurns(3),
             )
             TimeBudget("2m")
         })
@@ -1313,7 +1313,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -1336,14 +1336,14 @@ Agent("chat", "Conversational runner", func() {
 RunPolicy(func() {
     DefaultCaps(
         MaxToolCalls(8),
-        MaxConsecutiveFailedToolCalls(3),
+        MaxRecoveryTurns(3),
     )
 })
 ```
 
 **MaxToolCalls(n)**: imposta il numero massimo di invocazioni di strumenti a budget consentite per esecuzione. Gli strumenti dichiarati `Bookkeeping()` sono esenti da questo limite e non contano ai fini di `n`. Quando il budget è esaurito, il runtime interrompe la pianificazione delle chiamate preventivate e finalizza l'esecuzione del pianificatore con motivo di terminazione `tool_cap`.
 
-**MaxConsecutiveFailedToolCalls(n)**: imposta il numero massimo di chiamate consecutive allo strumento non riuscite prima dell'interruzione. Impedisce cicli infiniti di tentativi.
+**MaxRecoveryTurns(n)**: imposta il numero massimo di nuove chiamate al pianificatore dopo il rifiuto del risultato di uno strumento o di una risposta del modello. Il lavoro riuscito di uno strumento con budget reimposta questo limite. La chiamata finale dopo l'esaurimento non conta in `n`.
 
 ### Budget temporale
 
@@ -1626,7 +1626,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         Timing(func() {
             Budget("5m")

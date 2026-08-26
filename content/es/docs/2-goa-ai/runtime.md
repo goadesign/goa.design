@@ -357,7 +357,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -367,7 +367,7 @@ Agent("chat", "Conversational runner", func() {
 
 Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 
-- **Límites**: `MaxToolCalls` es el total de llamadas a herramientas presupuestadas por ejecución. Las herramientas declaradas `Bookkeeping()` no consumen presupuesto de recuperación ni cambian `MaxConsecutiveFailedToolCalls`. Los lotes creados por el modelo siguen siendo atómicos: las llamadas de bookkeeping añaden coste cero, pero el runtime nunca elimina llamadas individuales para hacer caber un lote mixto. Los resultados correctos de bookkeeping no entran en los `ToolOutputs` compactos futuros.
+- **Límites**: `MaxToolCalls` limita el total de llamadas a herramientas con presupuesto por ejecución. `MaxRecoveryTurns` limita las nuevas llamadas al planificador después de rechazar el resultado de una herramienta o una respuesta del modelo. Una llamada correcta a una herramienta con presupuesto reinicia este límite. Las herramientas `Bookkeeping()` no consumen ninguno de estos presupuestos.
 - **Presupuesto de tiempo**: `TimeBudget` – presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (solo runtime) – ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` – opt-in para pausa/reanudación.
 - **Comportamiento ante campos faltantes**: `OnMissingFields` – rige lo que ocurre cuando la validación indica que faltan campos.
@@ -397,7 +397,7 @@ En algunos entornos puedes querer endurecer o relajar las políticas sin cambiar
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -409,7 +409,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Campo | Descripción |
 | --- | --- |
 | `MaxToolCalls` | Máximo total de llamadas a herramientas por ejecución |
-| `MaxConsecutiveFailedToolCalls` | Fallos consecutivos antes de abortar |
+| `MaxRecoveryTurns` | Nuevas llamadas al planificador después de una salida rechazada |
 | `TimeBudget` | Presupuesto de reloj de pared para la ejecución |
 | `FinalizerGrace` | Ventana reservada para finalización |
 | `InterruptsAllowed` | Habilitar la capacidad de pausa/reanudación |

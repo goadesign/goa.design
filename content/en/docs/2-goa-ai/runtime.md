@@ -357,7 +357,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -367,7 +367,7 @@ Agent("chat", "Conversational runner", func() {
 
 This becomes a `runtime.RunPolicy` attached to the agent's registration:
 
-- **Caps**: `MaxToolCalls` is the total budgeted tool calls per run. Tools declared `Bookkeeping()` consume no retrieval budget and do not change `MaxConsecutiveFailedToolCalls`. Model-authored batches stay atomic: bookkeeping calls add zero cost, but the runtime never removes individual calls to make a mixed batch fit. Successful bookkeeping results stay out of compact future `ToolOutputs`.
+- **Caps**: `MaxToolCalls` is the total budgeted tool calls per run. `MaxRecoveryTurns` limits replacement planner calls after rejected tool or model output. A successful budgeted tool call starts a fresh recovery allowance. Tools declared `Bookkeeping()` consume neither budget. Model-authored batches stay atomic: bookkeeping calls add zero cost, but the runtime never removes individual calls to make a mixed batch fit. Successful bookkeeping results stay out of compact future `ToolOutputs`.
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
@@ -381,9 +381,9 @@ In some environments you may want to tighten or relax policies without changing 
 
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
-    MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
-    InterruptsAllowed:             true,
+    MaxToolCalls:      3,
+    MaxRecoveryTurns:  1,
+    InterruptsAllowed: true,
 })
 ```
 
@@ -394,12 +394,26 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Field | Description |
 | --- | --- |
 | `MaxToolCalls` | Maximum total tool calls per run |
-| `MaxConsecutiveFailedToolCalls` | Consecutive failures before abort |
+| `MaxRecoveryTurns` | Replacement planner calls after rejected tool or model output |
 | `TimeBudget` | Wall-clock budget for the run |
 | `FinalizerGrace` | Reserved window for finalization |
 | `InterruptsAllowed` | Enable pause/resume capability |
 
 Only non-zero fields are applied (and `InterruptsAllowed` when `true`). This allows selective overrides without affecting other policy settings.
+
+`MaxRecoveryTurns` counts only replacement attempts. If the allowance is
+exhausted, the runtime may make one separate finalization call so the run can
+return or persist a terminal outcome.
+
+### Recovering a Rejected Model Answer
+
+A planner that rejects one completed model answer can return
+`planner.NewRecoverableModelOutputError`. The error includes the rejected
+`FinalResponse` and clear correction text. The workflow records the rejected
+answer and its token usage, then spends one recovery turn on a replacement
+answer with tools disabled. Ordinary `OutputContractError` values remain
+terminal because they do not promise that another model call can correct the
+output.
 
 **Use Cases**:
 - Temporary backoffs during provider throttling

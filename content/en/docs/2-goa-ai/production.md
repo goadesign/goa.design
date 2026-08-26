@@ -418,7 +418,7 @@ planner attempt may run, and how long a tool attempt may run.
 ```go
 Agent("operator", "Production operations agent", func() {
     RunPolicy(func() {
-        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        DefaultCaps(MaxToolCalls(20), MaxRecoveryTurns(3))
         Timing(func() {
             Budget("5m")
             Plan("45s")

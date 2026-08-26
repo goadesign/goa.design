@@ -359,7 +359,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -369,7 +369,7 @@ Agent("chat", "Conversational runner", func() {
 
 Celui-ci devient un `runtime.RunPolicy` attaché à l'inscription de l'agent :
 
-- **Caps** : `MaxToolCalls` est le nombre total d'appels budgétisés par exécution. Les outils déclarés `Bookkeeping()` ne consomment aucun budget de récupération et ne modifient pas `MaxConsecutiveFailedToolCalls`. Les lots produits par le modèle restent atomiques : les appels comptables ont un coût nul, mais le runtime ne retire jamais un appel individuel pour faire tenir un lot mixte. Les résultats comptables réussis restent hors des futurs `ToolOutputs` compacts.
+- **Caps** : `MaxToolCalls` limite le nombre total d'appels d'outils budgétisés par exécution. `MaxRecoveryTurns` limite les nouveaux appels au planificateur après le rejet d'un résultat d'outil ou d'une réponse du modèle. Un appel d'outil budgétisé réussi réinitialise cette allocation. Les outils déclarés `Bookkeeping()` ne consomment aucun de ces budgets.
 - **Budget temps** : `TimeBudget` – budget d'horloge murale pour la course. `FinalizerGrace` (exécution uniquement) – fenêtre réservée en option pour la finalisation.
 - **Interruptions** : `InterruptsAllowed` – option pour la pause/reprise.
 - **Comportement des champs manquants** : `OnMissingFields` – régit ce qui se passe lorsque la validation indique des champs manquants.
@@ -396,7 +396,7 @@ Dans certains environnements, vous souhaiterez peut-être renforcer ou assouplir
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -408,7 +408,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Champ | Description |
 | --- | --- |
 | `MaxToolCalls` | Nombre total maximum d'appels d'outils par exécution |
-| `MaxConsecutiveFailedToolCalls` | Échecs consécutifs avant l'abandon |
+| `MaxRecoveryTurns` | Nouveaux appels au planificateur après un résultat rejeté |
 | `TimeBudget` | Budget horloger pour la course |
 | `FinalizerGrace` | Fenêtre réservée à la finalisation |
 | `InterruptsAllowed` | Activer la fonctionnalité pause/reprise |

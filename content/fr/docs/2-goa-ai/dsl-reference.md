@@ -53,7 +53,7 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `RunPolicy`                                             | Agent                    | Configure les contraintes d'exécution                                                                                   |
 | `DefaultCaps`                                           | Exécuter la politique                | Fixe les limites des ressources                                                                                               |
 | `MaxToolCalls`                                          | Caps par défaut              | Nombre maximal d'appels d'outils                                                                                           |
-| `MaxConsecutiveFailedToolCalls`                         | Caps par défaut              | Nombre maximum d'échecs consécutifs                                                                                       |
+| `MaxRecoveryTurns`                                     | Caps par défaut              | Nombre maximal de nouveaux appels au planificateur après un résultat rejeté                                               |
 | `TimeBudget`                                            | Exécuter la politique                | Limite d'horloge murale simple                                                                                            |
 | `Timing`                                                | Exécuter la politique                | Configuration précise du délai d'attente                                                                                 |
 | `Budget`                                                | Timing                   | Budget global d'exécution                                                                                                 |
@@ -267,7 +267,7 @@ var _ = Service("orchestrator", func() {
         RunPolicy(func() {
             DefaultCaps(
                 MaxToolCalls(8),
-                MaxConsecutiveFailedToolCalls(3),
+                MaxRecoveryTurns(3),
             )
             TimeBudget("2m")
         })
@@ -1315,7 +1315,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -1338,14 +1338,14 @@ Agent("chat", "Conversational runner", func() {
 RunPolicy(func() {
     DefaultCaps(
         MaxToolCalls(8),
-        MaxConsecutiveFailedToolCalls(3),
+        MaxRecoveryTurns(3),
     )
 })
 ```
 
 **MaxToolCalls(n)** : définit le nombre maximum d'appels d'outils budgétisés autorisés par exécution. Les outils déclarés `Bookkeeping()` sont exemptés de ce plafond et ne comptent pas pour `n`. Lorsque le budget est épuisé, le runtime arrête la planification des appels budgétisés et finalise l'exécution via le planificateur avec le motif de fin `tool_cap`.
 
-**MaxConsecutiveFailedToolCalls(n)** : définit le nombre maximal d'appels d'outils consécutifs ayant échoué avant l'abandon. Empêche les boucles de tentatives infinies.
+**MaxRecoveryTurns(n)** : définit le nombre maximal de nouveaux appels au planificateur après le rejet d'un résultat d'outil ou d'une réponse du modèle. Un travail d'outil budgétisé réussi réinitialise cette allocation. L'appel final effectué après épuisement ne compte pas dans `n`.
 
 ### TempsBudget
 
@@ -1635,7 +1635,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         Timing(func() {
             Budget("5m")
