@@ -138,7 +138,7 @@ Pour les outils exportés qui doivent contourner entièrement le planificateur e
 | Outils de journalisation/audit | ✓ | | Outils nécessitant un raisonnement LLM
 | Outils nécessitant un raisonnement LLM | | ✓ | | Outils nécessitant un raisonnement LLM | ✓ | | Outils nécessitant un raisonnement LLM
 | Outils nécessitant un raisonnement LLM
-| Outils pouvant nécessiter des tentatives avec indices | | ✓ |
+| Outils dont l'échec peut permettre une correction | | ✓ |
 
 ### Déclaration DSL
 
@@ -202,6 +202,11 @@ Le moteur d'exécution maintient cette arborescence à l'aide de :
 - `run.Handle` - une poignée légère avec `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID`
 - Les agents en tant qu'outils et les enregistrements de jeux d'outils qui **créent toujours de véritables exécutions enfant** pour les agents imbriqués (pas de hacks cachés en ligne)
 
+Les IDs des workflows enfants Temporal contiennent l'ID exact de l'appel
+d'outil attribué par le runtime. Les appels parallèles au même agent imbriqué
+restent ainsi distincts ; une version qui modifie cette dérivation n'est pas
+compatible avec les workflows enfants déjà en cours.
+
 ---
 
 ## Agent-as-Tool et RunLink
@@ -250,10 +255,7 @@ defer cancel()
 activeRunID := "run-123"
 for {
     select {
-    case evt, ok := <-events:
-        if !ok {
-            return
-        }
+    case evt := <-events:
         if evt.Type() == stream.EventRunStreamEnd && evt.RunID() == activeRunID {
             return
         }
@@ -356,6 +358,35 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 | Métriques/facturation | `MetricsProfile()` | Événements minimaux pour l'agrégation |
 | Audit | `DefaultProfile()` | Enregistrement complet avec champs de corrélation par exécution |
 | Tableaux de bord en temps réel | Personnalisé (workflow + usage) | Suivi de l'état et des coûts uniquement |
+
+---
+
+## Erreurs de validation et récupération
+
+Les appels d'outils du modèle qui ne respectent pas le schéma n'entrent pas
+dans le mécanisme de récupération. Le client de modèle validé les refuse sous
+la forme `model.OutputValidationError`, puis le planificateur ou le runtime
+renvoie `planner.OutputContractError` avant l'exécution de tout exécuteur ou
+code de service. Pour les appels créés par le planificateur avec
+`planner.NewToolRequest`, les erreurs d'encodage sont renvoyées directement au
+code du planificateur.
+
+### Origine des informations de récupération
+
+Un `ToolFailure` ne peut apparaître qu'après qu'un appel produit par le modèle
+a réussi la validation et que le runtime l'a admis. Son exécuteur ou la
+frontière du domaine peut alors renvoyer un échec récupérable accompagné de
+problèmes de champs structurés. Lorsque cet échec sélectionne
+`RecoveryCorrectCall`, le runtime fournit au tour suivant du planificateur
+l'entrée originale produite par le modèle et l'exemple généré. Un appel qui ne
+provient pas du modèle ne peut pas demander la correction du même appel.
+
+### Conséquences pratiques
+
+- Les interfaces utilisateur peuvent afficher les problèmes de champs et les
+  exemples provenant des échecs récupérables admis.
+- Les planificateurs peuvent poser une question ciblée et effectuer un appel
+  corrigé lorsque `RecoveryCorrectCall` l'autorise.
 
 Les applications choisissent le profil lors du câblage des puits et des ponts (par exemple, Pulse, SSE, WebSocket) :
 - Les interfaces de dialogue en ligne restent propres et structurées (cartes imbriquées pilotées par `child_run_linked`)

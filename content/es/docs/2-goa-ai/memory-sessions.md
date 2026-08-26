@@ -245,6 +245,24 @@ Tipos clave:
 
 Persiste el **log canónico, append-only** de eventos de ejecución. El runtime añade eventos hook mientras se ejecuta el run, y los consumidores paginan con un cursor opaco para UI y diagnóstico.
 
+En las actividades de planificación de Temporal,
+`PlanActivityInput.ToolOutputs` transporta referencias que contienen el ID de
+la ejecución de la llamada, el ID de la ejecución del resultado y el ID de la
+llamada a herramienta. La actividad usa esas referencias para cargar del run
+log la entrada, el resultado, los datos solo para el servidor y los metadatos
+visibles para el planificador antes de invocarlo. Así no se repiten resultados
+completos en la frontera de la actividad. El checkpoint privado de suspensión
+del runtime conserva además el estado de la transcripción y de las salidas para
+que un workflow suspendido pueda reanudarse.
+
+Las llamadas a herramientas tienen dos identificadores distintos.
+`ModelToolCallID` es el ID de la transcripción del proveedor que asocia una
+llamada creada por el modelo con el resultado que verá el modelo. `ToolCallID`
+es el ID de ejecución del runtime usado por las actividades, los reintentos,
+los registros del run log y los eventos del stream. Una llamada creada por el
+modelo y suspendida guarda ambos: nunca sustituyas uno por otro ni los deduzcas
+del orden de ejecución.
+
 ```go
 type Store interface {
     Append(ctx context.Context, e *runlog.Event) error

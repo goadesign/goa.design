@@ -1,7 +1,7 @@
 ---
 title: ツールセット
 weight: 4
-description: "Goa-AI におけるツールセットの種類、実行モデル、検証、再試行ヒント、ツールカタログについて学びます。"
+description: "Goa-AI におけるツールセットの種類、実行モデル、検証、構造化された失敗回復、ツールカタログについて学びます。"
 llm_optimized: true
 aliases:
 ---
@@ -84,11 +84,14 @@ Tool("summarize", "Summarize multiple documents", func() {
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
-        args, _ := specs.UnmarshalSummarizePayload(call.Payload)
+        args, err := specs.SummarizeTool().Payload.FromJSON(call.Payload)
+        if err != nil {
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+        }
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
         return runtime.Executed(&planner.ToolResult{
@@ -97,8 +100,12 @@ func (e *Executor) Execute(
         }), nil
     }
     return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("unknown tool"),
+        Name: call.Name,
+        Failure: &planner.ToolFailure{
+            Kind:     planner.FailureInvalidCall,
+            Error:    planner.NewToolError("unknown tool"),
+            Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+        },
     }), nil
 }
 ```
@@ -228,16 +235,13 @@ bounded tool は強い contract です。service は truncation を実装し、�
 executor は truncation を実装し、bounds metadata を populate します:
 
 ```go
-func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.ListDevicesTool().Payload.FromJSON(call.Payload)
     if err != nil {
-        return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("invalid payload"),
-        }), nil
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
     }
 
-    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, nil)
     if err != nil {
         return nil, err
     }
@@ -265,8 +269,9 @@ bounded tool が実行されると:
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
 3. `ContinueWith` では、runtime は一意な live chain head に対してのみ空の action を公開し、実行前に cursor を bind します
-4. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
-5. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
+4. 同じ parallel batch の別の tool が `finish` recovery を要求した場合、failed tool は再実行できず、新しい domain work も開始できません。next-page cursor を既に返した successful query の continuation action は引き続き利用できます。そのような action がない場合は、直ちに finalization が始まります
+5. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
+6. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 
 ```go
 // In a stream subscriber
@@ -420,11 +425,12 @@ exec := usertools.NewChatUserToolsExec(
 
 サービス連携のツールセットは Temporal のアクティビティ（他の実行エンジンでも同等の仕組み）として実行されます：
 
-1. プランナーが `PlanResult` にツールコールを返す（ペイロードは `json.RawMessage`）
-2. ランタイムがツールコールごとに `ExecuteToolActivity` をスケジュールする
-3. アクティビティが生成済みコーデックでペイロードをデコードし、検証やヒント付けを行う
-4. 正規 JSON を渡して、ツールセット登録の `Execute(ctx, planner.ToolRequest)` を呼ぶ
-5. 生成済み result コーデックで結果を再エンコードする
+1. 検証済み model client は、schema に違反する provider call を planner が受け取る前に拒否します。planner が作る call は `planner.NewToolRequest` を使い、encode 失敗をその場で返します。
+2. planner は生成済み tool 名、正規 payload bytes、任意の provider call ID を持つ、schema 検証済みの `ToolCalls []planner.ToolRequest` を返します。
+3. runtime は plan 全体を検証し、各実行 ID を割り当てて `ExecuteToolActivity` を schedule します。
+4. activity は受理済み payload を decode します。ここでの失敗は correction 用の evidence ではなく、内部 invariant error です。
+5. activity は正規 JSON と runtime が割り当てた実行 ID を含む `Execute(ctx, meta, *runtime.ToolCall)` を呼びます。
+6. activity は生成済み result codec で結果を再 encode します。
 
 ### インライン実行（Agent-as-Tool）
 
@@ -432,7 +438,7 @@ Agent-as-Tool のツールセットは、プランナー視点では「インラ
 
 1. ランタイムがツールセット登録の `Inline=true` を検出する
 2. `engine.WorkflowContext` を `ctx` に注入し、ツールセットの `Execute` がプロバイダ側エージェントを子ワークフローとして開始できるようにする（子ランは独自の `RunID` を持つ）
-3. 親の `RunID` と `ToolCallID` を含むツールメタデータ、および正規 JSON ペイロードとともに `Execute(ctx, call)` を呼ぶ
+3. 親の `RunID` と `ToolCallID` を含む tool metadata、および正規 JSON payload とともに `Execute(ctx, meta, *runtime.ToolCall)` を呼ぶ
 4. 生成済み agent-tool エクゼキュータが、ツールペイロードからネストしたエージェントメッセージ（system + user）を組み立て、プロバイダ側エージェントを子ランとして実行する
 5. 子ラン側で plan/execute/resume ループを完走し、`RunOutput` とツールイベントが親 `planner.ToolResult` に集約される（結果ペイロード、集約テレメトリ、`ChildrenCount`、子ランへの `RunLink` を含む）
 6. ストリーム購読者が親ツールコールの `tool_start` / `tool_end` に加え、`child_run_linked` のリンクイベントも発行するため、UI は単一のセッションストリームを消費しながらネストされたエージェントカードを構築できる
@@ -447,15 +453,21 @@ reg := runtime.ToolsetRegistration{
     Execute: runtime.ToolCallExecutorFunc(func(
         ctx context.Context,
         meta *runtime.ToolCallMeta,
-        call *planner.ToolRequest,
+        call *runtime.ToolCall,
     ) (*runtime.ToolExecutionResult, error) {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("externally provided"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.NewToolError("externally provided"),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }),
-    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         // 決定論的な server-only sidecar をここで付与します。
         result.ServerData = buildServerData(call, result)
         return nil
@@ -466,7 +478,7 @@ reg := runtime.ToolsetRegistration{
 契約:
 
 - `ResultMaterializer` は、**通常の実行パス** と **外部提供結果による await パス** の両方で実行されます。
-- ランタイムが hooks、workflow 境界、呼び出し側向けに JSON をエンコードする前に、元の型付き `planner.ToolRequest` と型付き `planner.ToolResult` を受け取ります。
+- runtime が hooks、workflow 境界、呼び出し側向けに JSON を encode する前に、runtime が割り当てた実行 ID を含む検証済み `runtime.ToolCall` と型付き `planner.ToolResult` を受け取ります。
 - `result.ServerData` を付与したり、結果の意味的な形を決定論的に正規化したりする用途に使います。
 - 純粋かつ決定論的である必要があります。workflow コード内で動く場合、I/O を行ってはいけません。
 
@@ -492,27 +504,28 @@ if err := chat.RegisterUsedToolsets(ctx, rt,
 **エクゼキュータ例：**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
-        args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
+        args, err := profilesspecs.UpsertTool().Payload.FromJSON(call.Payload)
         if err != nil {
-            return runtime.Executed(&planner.ToolResult{
-                Name:  call.Name,
-                Error: planner.NewToolError("invalid payload"),
-            }), nil
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
         }
 
-        // Optional transforms if emitted by codegen
-        mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
+        // tool と bound method が互換な別型を使う場合に生成される。
+        mp := profilesspecs.InitUpsertMethodPayload(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
             return runtime.Executed(&planner.ToolResult{
-                Name:  call.Name,
-                Error: planner.ToolErrorFromError(err),
+                Name: call.Name,
+                Failure: &planner.ToolFailure{
+                    Kind:     planner.FailureUnavailable,
+                    Error:    planner.ToolErrorFromError(err),
+                    Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+                },
             }), nil
         }
-        tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
+        tr := profilesspecs.InitUpsertToolResult(methodRes)
         return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: tr,
@@ -520,8 +533,12 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
 
     default:
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("unknown tool"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureInvalidCall,
+                Error:    planner.NewToolError("unknown tool"),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
 }
@@ -548,7 +565,7 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
 すべてのツールエクゼキュータは、`ToolCallMeta` を明示パラメータとして受け取ります：
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     // Access run context directly from meta
     log.Printf("Executing tool in run %s, session %s, turn %s",
         meta.RunID, meta.SessionID, meta.TurnID)
@@ -560,7 +577,8 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
     ))
     defer span.End()
 
-    // ... tool implementation
+    typedResult := buildTypedResult()
+    return runtime.Executed(&planner.ToolResult{Name: call.Name, Result: typedResult}), nil
 }
 ```
 
@@ -626,10 +644,10 @@ Goa-AI は、サービス連携のツール実行に **Temporal Activities** を
 
 ツールが `BindTo` を介して Goa メソッドに紐づくと、コード生成はツールの Args / Return とメソッドの Payload / Result を解析します。形状が互換なら、Goa は型安全な transform ヘルパを生成します：
 
-- `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
-- `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
+- `Init<Tool>MethodPayload(in <ToolPayload>) <MethodPayload>` は生成された tool payload を bound Goa method payload に変換します。
+- `Init<Tool>ToolResult(in <MethodResult>) <ToolResult>` は bound Goa method result を生成された tool result に変換します。
 
-Transforms はツールセットのオーナー・パッケージ（例: `gen/<service>/toolsets/<toolset>/transforms.go`）に生成され、Goa の GoTransform を使って安全にフィールドをマッピングします。transform が生成されない場合は、エクゼキュータ側で明示的なマッパーを書いてください。
+Transforms はツールセットのオーナー・パッケージ（例: `gen/<service>/toolsets/<toolset>/transforms.go`）に生成され、Goa の GoTransform を使って安全にフィールドをマッピングします。各 helper の戻り値は 1 つで、生成された Go 型参照が pointer/value の正確な signature を決めます。transform が生成されない場合は、executor 側で明示的な mapper を書いてください。
 
 ---
 
@@ -645,93 +663,104 @@ spec, _ := rt.ToolSpec(searchspecs.Search)
 schemas, _ := rt.ToolSchema(searchspecs.Search)
 ```
 
-エクスポートされたツールセット（agent-as-tool）については、Goa-AI は **agenttools** パッケージも生成します：
+エクスポートされたツールセット（agent-as-tool）については、Goa-AI は `gen/<service>/agents/<agent>/exports/<export>` 配下に export package を生成します:
 
 - 型付きツール ID
 - エイリアスの payload / result 型
 - コーデック
-- ヘルパービルダ（例：`New<Search>Call`）
+- 各 tool ID と payload/result codec を組み合わせる型付き `<Tool>Tool()` descriptor。`planner.NewToolRequest` に渡して使います。
 
 ---
 
-## ツール検証とリトライヒント
+## ツールの検証と回復
 
-Goa-AI は **Goa の設計時検証** と **構造化されたツールエラーモデル** を組み合わせ、LLM プランナーが **不正なツールコールを自動的に修復** するための強力な手段を提供します。
+Goa-AI は **Goa の設計時検証** と **構造化された tool failure model** を組み合わせ、LLM planner が受理済み tool call の失敗から安全に回復できるようにします。
 
-### 中核型：ToolError と RetryHint
+### 中核型: ToolError と ToolFailure
 
-**ToolError**（`runtime/agent/toolerrors.ToolError` のエイリアス）：
+**ToolError**（`runtime/agent/toolerrors.ToolError` の alias）:
 
-- `Message string`：人間可読な要約
-- `Cause *ToolError`：任意のネスト原因（リトライや agent-as-tool hop を跨いだチェーンを保持）
-- コンストラクタ：`planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
+- `Message string`: 人が読める要約
+- `Cause *ToolError`: retry や agent-as-tool hop をまたいで chain を保持する任意の原因
+- constructor: `planner.NewToolError(msg)`、`planner.NewToolErrorWithCause(msg, cause)`、`planner.ToolErrorFromError(err)`、`planner.ToolErrorf(format, args...)`
 
-**RetryHint**：プランナー、ランタイム、ポリシーエンジンが利用する型付きの
-失敗ガイダンスです。ヒントが常にリトライを許可するとは限りません。
-`AllowsRetry()` を呼び出してください。
+**ToolFailure** は失敗の分類と、次に許可する planner transition を分けて保持します:
 
 ```go
-type RetryHint struct {
-    Reason             RetryReason
-    Tool               tools.Ident
-    RestrictToTool     bool
-    MissingFields      []string
-    ExampleInput       map[string]any
-    PriorInput         map[string]any
-    ClarifyingQuestion string
-    Message            string
+type ToolFailure struct {
+    Kind     FailureKind
+    Error    *ToolError
+    Recovery RecoveryDirective
+}
+
+type RecoveryDirective struct {
+    Action      RecoveryAction
+    Issues      []*tools.FieldIssue
+    PriorInput  rawjson.Message
+    ExampleJSON rawjson.Message
 }
 ```
 
-よく使う `RetryReason` の値：
+failure kind には invalid call、domain rejection、unavailability、rate limit、
+timeout、malformed result、internal error があります。回復 action は次の 3 つです:
 
-- `invalid_arguments`：ペイロードが検証に失敗（スキーマ / 型）
-- `missing_fields`：必須フィールドが欠落
-- `malformed_response`：ツールがデコードできないデータを返した
-- `timeout`, `rate_limited`, `tool_unavailable`：実行 / インフラ起因の問題
+- `RecoveryCorrectCall`: 失敗した tool を利用可能なままにし、構造化された correction evidence を渡す
+- `RecoveryReplan`: 次の planner turn から失敗した tool を除く
+- `RecoveryFinish`: すでに集めた evidence に基づく finalization だけを許可する
 
-`RetryReasonTimeout` は現在の run では終端なので、`hint.AllowsRetry()` は
-false を返します。その他の定義済み reason はすべて true を返します。この
-メソッドが正規の判定です。`RestrictToTool`、メッセージ文面、ヒントの存在だけ
-からリトライ可否を推測しないでください。
-
-**ToolResult** はエラーとヒントを運びます：
+`ToolResult` は型付き result または 1 つの構造化 failure を持ちます:
 
 ```go
 type ToolResult struct {
-    Name          tools.Ident
-    Result        any
-    Error         *ToolError
-    RetryHint     *RetryHint
-    Telemetry     *telemetry.ToolTelemetry
-    ToolCallID    string
-    ChildrenCount int
-    RunLink       *run.Handle
+    Name                tools.Ident
+    Result              any
+    ServerData          rawjson.Message
+    ResultBytes         int
+    ResultOmitted       bool
+    ResultOmittedReason string
+    Bounds              *agent.Bounds
+    Failure             *ToolFailure
+    Telemetry           *telemetry.ToolTelemetry
+    ToolCallID          string
+    ChildrenCount       int
+    RunLink             *run.Handle
 }
 ```
 
-### 不正なツールコールの自動修復
+### 受理済み tool failure から回復する
 
-推奨パターンは次のとおりです：
+推奨パターンは次のとおりです:
 
-1. **強いペイロードスキーマでツールを設計する**（Goa design）
-2. **検証失敗を隠したり panic しない**：`ToolError` + `RetryHint` として表面化する
-3. **プランナーにヒント解釈を教える**：`ToolResult.Error` と `ToolResult.RetryHint` を読み、可能ならペイロードを修復して適切にリトライする
+1. **強い payload schema で tool を設計する**（Goa design）
+2. **executor の decode failure は invariant error として扱う**。model が出した不正 payload と planner の encode failure は実行前に停止するためです
+3. **受理後の domain failure は `ToolFailure` として返す**。schema では表せない cross-field rule や business rule に有効な payload が違反した場合、model-authored call は correction を要求できます
+4. **planner は `ToolOutput.Failure` を読む**。runtime は `Recovery` action に従い、同じ tool を残すか、除いて replan するか、run を終了するかを決めます
 
-**エクゼキュータ例：**
+検証済み model client は生成 codec を使い、unknown field、JSON type mismatch、
+schema constraint violation を planner や executor が動く前に拒否します。これらは
+`ToolFailure` ではなく output-contract error です。次の例は代わりに、schema
+検証を通過した model-authored call が、payload schema では表せない domain rule
+`validateUpsertRule` に違反する場合を扱います。`RecoveryCorrectCall` の場合、
+workflow は provider call と登録済み tool spec から prior input と example を
+導出し、executor が設定した `PriorInput` と `ExampleJSON` は使いません。
+
+**executor 例:**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := spec.UnmarshalUpsertPayload(call.Payload)
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := spec.UpsertTool().Payload.FromJSON(call.Payload)
     if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
+    if err := validateUpsertRule(args); err != nil {
         return runtime.Executed(&planner.ToolResult{
             Name: call.Name,
-            Error: planner.NewToolError("invalid payload"),
-            RetryHint: &planner.RetryHint{
-                Reason:        planner.RetryReasonInvalidArguments,
-                Tool:          call.Name,
-                RestrictToTool: true,
-                Message:       "Payload did not match the expected schema.",
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureInvalidCall,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryCorrectCall,
+                },
             },
         }), nil
     }
@@ -739,8 +768,14 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
     res, err := client.Upsert(ctx, args)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }
 
@@ -748,38 +783,15 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
 }
 ```
 
-**プランナー側ロジック例：**
-
-```go
-func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolOutputs) == 0 {
-        return &planner.PlanResult{}, nil
-    }
-
-    last := in.ToolOutputs[len(in.ToolOutputs)-1]
-    if last.Error != nil && last.RetryHint.AllowsRetry() {
-        hint := last.RetryHint
-
-        switch hint.Reason {
-        case planner.RetryReasonMissingFields, planner.RetryReasonInvalidArguments:
-            return &planner.PlanResult{
-                Await: &planner.Await{
-                    Clarification: &planner.AwaitClarification{
-                        ID:               "fix-" + string(hint.Tool),
-                        Question:         hint.ClarifyingQuestion,
-                        MissingFields:    hint.MissingFields,
-                        RestrictToTool:   hint.Tool,
-                        ExampleInput:     hint.ExampleInput,
-                        ClarifyingPrompt: hint.Message,
-                    },
-                },
-            }, nil
-        }
-    }
-
-    return &planner.PlanResult{/* FinalResponse, next ToolCalls, ... */}, nil
-}
-```
+`PlanResumeInput.ToolOutputs` は各 call の workflow-safe な形、つまり正規
+payload/result bytes と `Failure` を持ちます。`RecoveryCorrectCall` では field
+issue、prior input、example JSON により次の planner turn が call を修正できます。
+`RecoveryReplan` はその turn から失敗した tool を除き、`RecoveryFinish` は
+finalization だけを許可します。runtime がこの transition を強制するため、
+planner が error text から推測する必要はありません。`RecoveryCorrectCall` を
+使えるのは provider-authored call だけです。runtime-created continuation には
+model-authored input がないため、execution payload を公開せず replan または
+finish します。
 
 ---
 
@@ -798,8 +810,27 @@ Goa-AI エージェントは、Goa デザインから **単一の権威あるツ
 **Specs パッケージ（`gen/<service>/agents/<agent>/specs/...`）：**
 
 - `types.go`：payload / result の Go 構造体
-- `codecs.go`：JSON コーデック（型付き payload / result の encode / decode）
-- `specs.go`：正規ツール ID、payload / result スキーマ、ヒントを持つ `[]tools.ToolSpec`
+- `codecs.go`: 型付き payload / result を encode/decode し、closed object の key を強制して structured validation issue を生成する JSON codec
+- `specs.go`: 正規 tool ID、payload/result schema、hint を持つ `[]tools.ToolSpec` と、tool ID を型付き payload/result codec に結び付ける tool ごとの `tools.TypedTool` descriptor（例: `SummarizeDocTool`）
+
+生成 spec accessor は毎回新しい copy を返します。返された schema、example、
+codec wrapper を application が変更しても、後続 model request には影響しません。
+通常の payload は `<Tool>Tool().Payload.FromJSON(...)` で decode し、injected field
+を持つ tool は生成された `Decode<Tool>(payload, meta, labels)` helper を使います。
+spec 内部を共有 runtime state として保持したり変更したりしないでください。
+
+### Result を持たない tool
+
+Goa service method に result がない method-backed tool では、result schema と
+result codec を持たない空の `TypeSpec` が生成されます。executor は架空の
+payload を作らず、次のように成功を返します:
+
+```go
+return runtime.Executed(&planner.ToolResult{Name: call.Name}), nil
+```
+
+生成された型付き descriptor は result に空の `tools.JSONCodec[any]` を使います。
+`PlanResume` は空の result bytes を持つ成功として受け取ります。
 
 **JSON カタログ（`tool_schemas.json`）：**
 
@@ -907,16 +938,23 @@ server-data entry には生成 schema と codec が含まれるため、subscrib
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
-    args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
+    args, err := specs.GetTimeSeriesTool().Payload.FromJSON(call.Payload)
+    if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
 
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureUnavailable,
+                Error:    planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
 
@@ -949,8 +987,8 @@ method-backed tool は、生成 provider と result materializer を通じて se
 ```go
 reg := runtime.ToolsetRegistration{
     Name:  "orchestrator.metrics",
-    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         if len(result.ServerData) != 0 {
             return nil
         }
@@ -996,9 +1034,9 @@ server-data は次の場合に使います:
 ## ベストプラクティス
 
 - **検証はプランナーではなくデザインに置く**：Goa の属性 DSL（`Required`, `MinLength`, `Enum` など）を使う
-- **エクゼキュータは ToolError + RetryHint を返す**：panic や素の `error` より構造化エラーを優先
-- **ヒントは短く、しかし実行可能に**：欠落/無効なフィールド、短い明確化質問、小さな `ExampleInput` に集中
-- **プランナーにヒント読解を教える**：`RetryHint` 処理をプランナーのファーストクラスにする
+- **executor は `ToolFailure` を返す**: plain error や panic ではなく、原因を保持して正確な recovery action を選ぶ
+- **correction evidence を正確に保つ**: 生成された field issue、正規 prior input、schema に適合する JSON example を使う
+- **planner に failure を読ませる**: `ToolOutput.Failure` の処理を planner の first-class な動作にする
 - **サービス内で再検証しない**：Goa-AI はツール境界で検証される前提
 
 ---

@@ -58,6 +58,25 @@ The high-level transcript contract in Goa-AI is:
 
 There is **no separate "tool history" API**; the transcript is the history.
 
+Model adapters are stateless across calls. The complete provider-ready
+transcript must be present in each `model.Request`; a run identifier does not
+cause an adapter to load earlier messages. Public model clients validate the
+request and complete response before planner code can observe them.
+
+### History Compression
+
+An agent's `History(...)` policy may summarize older turns while keeping a
+bounded exact tail. `CompressAt...` values decide when summarization starts;
+`KeepMax...` values decide which newest whole turns remain unchanged. The
+runtime never truncates a turn.
+
+Compression requires a configured `HistoryModel`. Token-based triggers and
+retention also require exact token counting from that model client. Bedrock
+Runtime cannot count structured-output requests, and some current Claude
+models require AWS's separate Mantle endpoint. See [Runtime → History
+Policies](../runtime/#history-policies) and [DSL Reference →
+History](../dsl-reference/#history) for the complete contract.
+
 ### How This Simplifies Planners and UIs
 
 - **Planners**: Receive the current transcript in `planner.PlanInput.Messages` and `planner.PlanResumeInput.Messages`. Can decide what to do based purely on the messages, without threading extra state.
@@ -66,28 +85,16 @@ There is **no separate "tool history" API**; the transcript is the history.
 
 ---
 
-## Transcript Ledger
+## Run-Log Transcript Replay
 
-The **transcript ledger** is a provider-precise record that maintains conversation history in the exact format required by model providers. It ensures deterministic replay and provider fidelity without leaking provider SDK types into workflow state.
-
-### Provider Fidelity
-
-Different model providers (Bedrock, OpenAI, etc.) have strict requirements about message ordering and structure. The ledger enforces these constraints:
-
-| Provider Requirement | Ledger Guarantee |
-|---------------------|------------------|
-| Thinking must precede tool_use in assistant messages | Ledger orders parts: thinking → text → tool_use |
-| Tool results must follow their corresponding tool_use | Ledger correlates tool_result via ToolUseID |
-| Message alternation (assistant → user → assistant) | Ledger flushes assistant before appending user results |
-
-For Bedrock specifically, when thinking is enabled:
-- Assistant messages containing tool_use **must** start with a thinking block
-- User messages with tool_result must immediately follow the assistant message declaring the tool_use
-- Tool result count cannot exceed the prior tool_use count
+The runtime stores provider-ready transcript additions as ordered run-log
+events. A transcript event contains a JSON-encoded slice of `model.Message`
+values. Replay appends those slices in run-log order; it does not reorder parts,
+invent missing messages, or expose a mutable transcript object.
 
 ### Ordering Requirements
 
-The ledger stores parts in the canonical order required by providers:
+Stored messages keep the part order required by providers:
 
 ```
 Assistant Message:
@@ -99,84 +106,63 @@ User Message:
   1. ToolResultPart(s) - tool results correlated via ToolUseID
 ```
 
-This ordering is **sacred** — the ledger never reorders parts, and provider adapters re-encode them into provider-specific blocks in the same sequence.
+Provider adapters re-encode these parts into provider-specific blocks in the
+same sequence.
 
-### Automatic Ledger Maintenance
+### Public Replay API
 
-The runtime automatically maintains the transcript ledger. You do not need to manage it manually:
+The `runtime/agent/transcript` package exposes these run-log operations:
 
-1. **Event Capture**: As the run progresses, the runtime persists memory events (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) in order
+- `EncodeRunLogDelta(messages)` accepts the `[]*model.Message` values added at
+  one point in a run and returns their JSON payload as `rawjson.Message`.
+  Encoding failures are returned as errors.
+- `DecodeRunLogDelta(payload)` accepts one JSON payload from a transcript
+  run-log event and returns the `[]*model.Message` values stored in it. Invalid
+  JSON is returned as an error.
+- `ReplayRunLogEvents(events)` accepts an already ordered slice of
+  `*runlog.Event`. It skips events that are not transcript seed or append
+  records, appends the decoded message slices in input order, and returns the
+  messages, a boolean that reports whether any transcript event was found, and
+  an error.
+- `BuildMessagesFromRunLog(ctx, store, runID)` pages through a `runlog.Store`
+  for one run and returns its complete ordered `[]*model.Message` transcript.
+  It returns an error when the store or run ID is missing, listing or decoding
+  fails, or the run has no transcript events.
 
-2. **Ledger Reconstruction**: The `BuildMessagesFromEvents` function rebuilds provider-ready messages from stored events:
+Most applications let the runtime write transcript events and use
+`BuildMessagesFromRunLog` when they need the provider-ready history:
 
 ```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **Validation**: Before sending to providers, the runtime can validate message structure:
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runEventStore, runID)
+if err != nil {
+    return err
 }
 ```
 
-### Ledger API
-
-For advanced use cases, you can interact with the ledger directly. The ledger provides these key methods:
-
-| Method | Description |
-|--------|-------------|
-| `NewLedger()` | Creates a new empty ledger |
-| `AppendThinking(part)` | Appends a thinking part to the current assistant message |
-| `AppendText(text)` | Appends visible text to the current assistant message |
-| `DeclareToolUse(id, name, args)` | Declares a tool invocation in the current assistant message |
-| `FlushAssistant()` | Finalizes the current assistant message and prepares for user input |
-| `AppendUserToolResults(results)` | Appends tool results as a user message |
-| `BuildMessages()` | Returns the complete transcript as `[]*model.Message` |
-
-**Example usage:**
+Use the validators after constructing or replaying messages:
 
 ```go
-import "goa.design/goa-ai/runtime/agent/transcript"
-
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+if err := transcript.ValidatePlannerTranscript(messages); err != nil {
+    return err
+}
+if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
+    return err
+}
 ```
 
-**Note:** Most users don't need to interact with the ledger directly. The runtime automatically maintains the ledger through event capture and reconstruction. Use the ledger API only for advanced scenarios like custom planners or debugging tools.
+`ValidatePlannerTranscript(messages)` accepts `[]*model.Message` and returns
+`nil` only when every assistant tool-call group is followed immediately by one
+user message containing exactly one matching result for every tool-call ID.
+`ValidateBedrock(messages, thinkingEnabled)` checks Bedrock's additional
+thinking rule. It performs no additional check when thinking is disabled. When
+thinking is enabled, it returns an error unless each assistant message
+containing a tool call begins with a `ThinkingPart`. Neither validator changes
+the messages.
 
 ### Why This Matters
 
 - **Deterministic Replay**: Stored events can rebuild the exact transcript for debugging, auditing, or re-running failed turns
-- **Provider Agnostic Storage**: The ledger stores JSON-friendly parts without provider SDK dependencies
+- **Provider Agnostic Storage**: Run-log payloads store `model.Message` JSON without provider SDK dependencies
 - **Simplified Planners**: Planners receive correctly ordered messages without managing provider constraints
 - **Validation**: Catch ordering violations before they reach the provider and cause cryptic errors
 
@@ -196,7 +182,7 @@ Goa-AI separates conversation state into three layers:
 
 - **Transcript** – the full history of messages and tool interactions for a run:
   - Represented as `[]*model.Message`
-  - Persisted via `memory.Store` as ordered memory events
+  - Persisted as transcript seed and append events in `runlog.Store`
 
 ### SessionID & TurnID in Practice
 
@@ -244,6 +230,21 @@ Key types:
 ### Run Log (`runlog.Store`)
 
 Persists the **canonical, append-only event log** for runs. The runtime appends hook events as the run executes (start/phase changes/tools/messages/completion) and callers can list them using cursor pagination for UIs and diagnostics.
+
+For Temporal planner activities, `PlanActivityInput.ToolOutputs` carries
+references containing the call run ID, result run ID, and tool-call ID. The
+planner activity uses those references to load the tool input, result body,
+server data, and planner-visible metadata from this run log before invoking the
+planner. References avoid repeating full result bodies across the planner
+activity boundary. They do not mean that no second copy exists: the runtime's
+private suspension checkpoint still contains transcript and tool-output state
+so a suspended workflow can resume.
+
+Tool calls have two different identifiers. `ModelToolCallID` is the provider
+transcript ID that pairs a model-authored call with its model-visible result.
+`ToolCallID` is the runtime execution ID used by activities, retries, run-log
+records, and stream events. A suspended model-authored call stores both; never
+substitute one for the other or derive either from run order.
 
 ```go
 type Store interface {
@@ -307,7 +308,7 @@ rt := runtime.New(
 
 Once configured:
 - Default subscribers persist memory and run events automatically
-- You can rebuild transcripts from `memory.Store` at any time to re-call models, power UIs, or run offline analysis
+- You can rebuild provider-ready transcripts from `runlog.Store` at any time to re-call models, power UIs, or run offline analysis
 
 ---
 
@@ -348,7 +349,7 @@ type Store interface {
 ### Search and Dashboards
 
 - Page through `runlog.Store` by `RunID` for audit/debug UIs
-- Load transcripts from `memory.Store` on demand for selected runs
+- Replay transcripts from `runlog.Store` on demand for selected runs
 
 ---
 

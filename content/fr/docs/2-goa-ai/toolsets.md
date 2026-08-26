@@ -1,7 +1,7 @@
 ---
 title: Ensembles d'outils
 weight: 4
-description: "Learn about toolset types, execution models, validation, retry hints, and tool catalogs in Goa-AI."
+description: "Découvrez les types d'ensembles d'outils, leurs modèles d'exécution, la validation, la récupération structurée et les catalogues dans Goa-AI."
 llm_optimized: true
 aliases:
 ---
@@ -84,11 +84,14 @@ Pour les implémentations en ligne, vous écrivez directement la logique de l'ex
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
-        args, _ := specs.UnmarshalSummarizePayload(call.Payload)
+        args, err := specs.SummarizeTool().Payload.FromJSON(call.Payload)
+        if err != nil {
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+        }
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
         return runtime.Executed(&planner.ToolResult{
@@ -97,8 +100,12 @@ func (e *Executor) Execute(
         }), nil
     }
     return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("unknown tool"),
+        Name: call.Name,
+        Failure: &planner.ToolFailure{
+            Kind:     planner.FailureInvalidCall,
+            Error:    planner.NewToolError("unknown tool"),
+            Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+        },
     }), nil
 }
 
@@ -239,16 +246,13 @@ Les outils limités sont un contrat dur : les services implémentent la troncat
 Les exécuteurs implémentent la troncature et remplissent les métadonnées des limites :
 
 ```go
-func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.ListDevicesTool().Payload.FromJSON(call.Payload)
     if err != nil {
-        return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("invalid payload"),
-        }), nil
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
     }
 
-    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, args.Cursor)
+    devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, nil)
     if err != nil {
         return nil, err
     }
@@ -276,8 +280,9 @@ Lorsqu'un outil limité s'exécute :
 1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
 3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une tête de chaîne active non ambiguë et associe le curseur avant l'exécution
-4. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
-5. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
+4. Si un autre outil du même lot parallèle nécessite une récupération `finish`, l'outil en échec ne peut pas être relancé et aucun nouveau travail métier ne peut commencer. Les actions de continuation restent disponibles pour les requêtes réussies qui ont déjà renvoyé un curseur de page suivante. Sans une telle action, la finalisation commence immédiatement
+5. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
+6. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 
 ```go
 // In a stream subscriber
@@ -428,11 +433,19 @@ Utilisez `Inject` pour les champs qui :
 
 Les ensembles d'outils basés sur des services s'exécutent via des activités Temporal (ou équivalentes dans d'autres moteurs) :
 
-1. Le planificateur renvoie les appels d'outil dans `PlanResult` (la charge utile est `json.RawMessage`)
-2. Le temps d'exécution planifie `ExecuteToolActivity` pour chaque appel d'outil
-3. L'activité décode la charge utile via le codec généré pour la validation/indices
-4. Appelle le `Execute(ctx, planner.ToolRequest)` de l'enregistrement du jeu d'outils avec le JSON canonique
-5. Réencode le résultat avec le codec de résultat généré
+1. Le client de modèle validé refuse les appels du fournisseur qui ne
+   respectent pas le schéma avant qu'ils atteignent le planificateur. Les
+   appels créés par le planificateur utilisent `planner.NewToolRequest`, qui
+   renvoie directement les erreurs d'encodage.
+2. Le planificateur renvoie des `ToolCalls []planner.ToolRequest` valides avec
+   le nom généré, les octets canoniques et, facultativement, l'ID du fournisseur.
+3. Le runtime valide tout le plan, attribue les IDs d'exécution et planifie
+   `ExecuteToolActivity`.
+4. L'activité décode la charge utile déjà admise. Une erreur est une violation
+   d'invariant interne, pas une information de correction.
+5. L'activité appelle `Execute(ctx, meta, *runtime.ToolCall)` avec le JSON
+   canonique et l'ID d'exécution attribué.
+6. Elle réencode le résultat avec le codec généré.
 
 ### Exécution en ligne (agent en tant qu'outil)
 
@@ -440,7 +453,8 @@ Les ensembles d'outils Agent en tant qu'outil s'exécutent en ligne du point de 
 
 1. Le moteur d'exécution détecte `Inline=true` lors de l'enregistrement du jeu d'outils
 2. Il injecte le `engine.WorkflowContext` dans `ctx` afin que la fonction `Execute` de l'ensemble d'outils puisse démarrer l'agent fournisseur en tant que workflow enfant avec son propre `RunID`.
-3. Il appelle le jeu d'outils `Execute(ctx, call)` avec la charge utile canonique JSON et les métadonnées de l'outil (y compris les parents `RunID` et `ToolCallID`).
+3. Il appelle `Execute(ctx, meta, *runtime.ToolCall)` avec la charge utile JSON
+   canonique et les métadonnées (notamment les `RunID` et `ToolCallID` parents).
 4. L'exécuteur agent-outil généré crée des messages d'agent imbriqués (système + utilisateur) à partir de la charge utile de l'outil et exécute l'agent fournisseur en tant qu'exécution enfant.
 5. L'agent imbriqué exécute une boucle complète de planification/exécution/reprise lors de sa propre exécution ; ses événements `RunOutput` et d'outil sont regroupés dans un `planner.ToolResult` parent qui transporte la charge utile du résultat, la télémétrie agrégée, l'enfant `ChildrenCount` et un `RunLink` pointant vers l'exécution enfant
 6. Les abonnés au flux émettent à la fois `tool_start` / `tool_end` pour l'appel de l'outil parent et un événement de lien `child_run_linked` afin que UIs puisse créer des cartes d'agent imbriquées tout en consommant un seul flux de session.
@@ -455,15 +469,21 @@ reg := runtime.ToolsetRegistration{
     Execute: runtime.ToolCallExecutorFunc(func(
         ctx context.Context,
         meta *runtime.ToolCallMeta,
-        call *planner.ToolRequest,
+        call *runtime.ToolCall,
     ) (*runtime.ToolExecutionResult, error) {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("externally provided"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.NewToolError("externally provided"),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }),
-    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         // Attach deterministic, server-only sidecars here.
         result.ServerData = buildServerData(call, result)
         return nil
@@ -474,7 +494,9 @@ reg := runtime.ToolsetRegistration{
 Contracter:
 
 - `ResultMaterializer` s'exécute à la fois sur le **chemin d'exécution normal** et sur le **chemin d'attente de résultat fourni en externe**.
-- Il reçoit le `planner.ToolRequest` typé d'origine plus le `planner.ToolResult` typé, avant que le runtime ne code JSON pour les hooks, les limites de flux de travail ou les appelants.
+- Il reçoit le `runtime.ToolCall` validé, avec son ID d'exécution attribué par
+  le runtime, ainsi que le `planner.ToolResult` typé avant l'encodage JSON pour
+  les hooks, les frontières de workflow ou les appelants.
 - Utilisez-le pour attacher `result.ServerData` ou pour normaliser la forme du résultat sémantique de manière déterministe.
 - Gardez-le pur et déterministe ; lorsqu'il s'exécute dans le code du workflow, il ne doit pas effectuer d'E/S.
 
@@ -504,27 +526,28 @@ fonction, appelant de registre, etc.) et reçoit des métadonnées explicites pa
 **Exemple d'exécuteur testamentaire :**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
-        args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
+        args, err := profilesspecs.UpsertTool().Payload.FromJSON(call.Payload)
         if err != nil {
-            return runtime.Executed(&planner.ToolResult{
-                Name: call.Name,
-                Error: planner.NewToolError("invalid payload"),
-            }), nil
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
         }
         
-        // Optional transforms if emitted by codegen
-        mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
+        // Generated when the tool and bound method use compatible distinct types.
+        mp := profilesspecs.InitUpsertMethodPayload(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
             return runtime.Executed(&planner.ToolResult{
-                Name:  call.Name,
-                Error: planner.ToolErrorFromError(err),
+                Name: call.Name,
+                Failure: &planner.ToolFailure{
+                    Kind:     planner.FailureUnavailable,
+                    Error:    planner.ToolErrorFromError(err),
+                    Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+                },
             }), nil
         }
-        tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
+        tr := profilesspecs.InitUpsertToolResult(methodRes)
         return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: tr,
@@ -532,8 +555,12 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
         
     default:
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("unknown tool"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureInvalidCall,
+                Error:    planner.NewToolError("unknown tool"),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
 }
@@ -560,7 +587,7 @@ Les exécuteurs d'outils reçoivent des métadonnées explicites par appel via `
 Tous les exécuteurs d'outils reçoivent `ToolCallMeta` comme paramètre explicite :
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     // Access run context directly from meta
     log.Printf("Executing tool in run %s, session %s, turn %s", 
         meta.RunID, meta.SessionID, meta.TurnID)
@@ -662,58 +689,66 @@ Pour les ensembles d'outils exportés (agent-as-tool), Goa-AI génère des packa
 - ID d'outil saisis
 - Types de charge utile/résultat d'alias
 - Codecs
-- Constructeurs auxiliaires (par exemple, `New<Search>Call`)
+- Un descripteur typé `<Tool>Tool()` par outil, qui associe l'ID aux codecs de
+  charge utile et de résultat ; transmettez-le à `planner.NewToolRequest`
 
 ---
 
-## Conseils pour la validation des outils et les nouvelles tentatives
+## Validation des outils et récupération
 
-Goa-AI combine **les validations au moment de la conception de Goa** avec un **modèle d'erreur d'outil structuré** pour offrir aux planificateurs de LLM un moyen puissant de **réparer automatiquement les appels d'outils non valides**.
+Goa-AI combine **les validations du design Goa** avec un **modèle d'échec
+d'outil structuré**. Les charges utiles non valides sont refusées avant
+l'exécution ; après l'admission d'un appel valide, un échec du domaine peut
+indiquer au runtime si le planificateur doit corriger l'appel, replanifier sans
+cet outil ou terminer.
 
-### Types de base : ToolError et RetryHint
+### Types principaux : ToolError et ToolFailure
 
 **ToolError** (alias de `runtime/agent/toolerrors.ToolError`) :
 - `Message string` – résumé lisible par l’homme
 - `Cause *ToolError` – cause imbriquée facultative (préserve les chaînes entre les tentatives et les sauts d'agent en tant qu'outil)
 - Constructeurs : `planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
 
-**RetryHint** – indication d'échec typée utilisée par le planificateur, le
-runtime et le moteur de politique. Une indication n'autorise pas toujours une
-nouvelle tentative ; appelez `AllowsRetry()` :
+**ToolFailure** sépare la classification de l'échec de la prochaine transition
+légale du planificateur :
 
 ```go
-type RetryHint struct {
-    Reason             RetryReason
-    Tool               tools.Ident
-    RestrictToTool     bool
-    MissingFields      []string
-    ExampleInput       map[string]any
-    PriorInput         map[string]any
-    ClarifyingQuestion string
-    Message            string
+type ToolFailure struct {
+    Kind     FailureKind
+    Error    *ToolError
+    Recovery RecoveryDirective
+}
+
+type RecoveryDirective struct {
+    Action      RecoveryAction
+    Issues      []*tools.FieldIssue
+    PriorInput  rawjson.Message
+    ExampleJSON rawjson.Message
 }
 ```
 
-Valeurs `RetryReason` courantes :
-- `invalid_arguments` – échec de la validation de la charge utile (schéma/type)
-- `missing_fields` – les champs obligatoires sont manquants
-- `malformed_response` – l'outil a renvoyé des données qui n'ont pas pu être décodées
-- `timeout`, `rate_limited`, `tool_unavailable` – problèmes d’exécution/infra
+Les classes d'échec couvrent les appels invalides, les refus du domaine,
+l'indisponibilité, les limites de débit, les délais, les résultats mal formés
+et les erreurs internes. Trois actions de récupération sont explicites :
 
-`RetryReasonTimeout` est terminal pour l'exécution courante :
-`hint.AllowsRetry()` renvoie false. Toutes les autres raisons définies renvoient
-true. Cette méthode est la distinction canonique ; ne déduisez pas la
-possibilité de reprise de `RestrictToTool`, du texte du message ou de la seule
-présence d'une indication.
+- `RecoveryCorrectCall` conserve l'outil en échec et fournit des informations
+  structurées pour corriger l'appel.
+- `RecoveryReplan` retire cet outil du tour suivant du planificateur.
+- `RecoveryFinish` n'autorise plus que la finalisation à partir des éléments
+  déjà recueillis.
 
-**ToolResult** contient des erreurs et des astuces :
+`ToolResult` transporte soit un résultat typé, soit un échec structuré :
 
 ```go
 type ToolResult struct {
     Name          tools.Ident
     Result        any
-    Error         *ToolError
-    RetryHint     *RetryHint
+    ServerData    rawjson.Message
+    ResultBytes   int
+    ResultOmitted bool
+    ResultOmittedReason string
+    Bounds        *agent.Bounds
+    Failure       *ToolFailure
     Telemetry     *telemetry.ToolTelemetry
     ToolCallID    string
     ChildrenCount int
@@ -721,28 +756,50 @@ type ToolResult struct {
 }
 ```
 
-### Réparation automatique des appels d'outils invalides
+### Récupérer après un échec d'outil admis
 
-Le modèle recommandé :
+Le modèle recommandé est le suivant :
 
-1. **Outils de conception avec des schémas de charge utile solides** (conception Goa)
-2. **Laissez les exécuteurs/outils faire apparaître les échecs de validation** sous la forme `ToolError` + `RetryHint` au lieu de paniquer ou de cacher les erreurs
-3. **Apprenez à votre planificateur** à inspecter `ToolResult.Error` et `ToolResult.RetryHint`, à réparer la charge utile lorsque cela est possible et à réessayer l'appel à l'outil si nécessaire.
+1. **Définissez des schémas de charge utile stricts** dans le design Goa.
+2. **Traitez les erreurs de décodage de l'exécuteur comme des violations
+   d'invariant**, car les charges utiles invalides du modèle et les erreurs
+   d'encodage du planificateur s'arrêtent avant l'exécution.
+3. **Renvoyez `ToolFailure` pour les échecs du domaine après admission** : un
+   appel du modèle peut demander une correction lorsqu'une charge utile valide
+   enfreint une règle métier ou portant sur plusieurs champs.
+4. **Apprenez au planificateur à examiner `ToolOutput.Failure`**. Le runtime
+   applique l'action `Recovery` : conserver l'outil, le retirer pour
+   replanifier ou terminer l'exécution.
 
-**Exemple d'exécuteur testamentaire :**
+Le client de modèle validé s'appuie sur les codecs générés pour refuser les
+champs inconnus, les types JSON incompatibles et les violations du schéma
+avant le planificateur ou l'exécuteur. Ces erreurs relèvent du contrat de
+sortie et ne sont pas des valeurs `ToolFailure`.
+
+L'exemple suivant commence au contraire par un appel produit par le modèle,
+admis et décodé, qui enfreint `validateUpsertRule`, une règle de domaine que le
+schéma ne peut pas exprimer. Pour `RecoveryCorrectCall`, le workflow dérive
+l'entrée antérieure et l'exemple depuis l'appel du fournisseur et la
+spécification enregistrée ; il ignore `PriorInput` et `ExampleJSON` fournis par
+l'exécuteur.
+
+**Exemple d'exécuteur :**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := spec.UnmarshalUpsertPayload(call.Payload)
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := spec.UpsertTool().Payload.FromJSON(call.Payload)
     if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
+    if err := validateUpsertRule(args); err != nil {
         return runtime.Executed(&planner.ToolResult{
             Name: call.Name,
-            Error: planner.NewToolError("invalid payload"),
-            RetryHint: &planner.RetryHint{
-                Reason:        planner.RetryReasonInvalidArguments,
-                Tool:          call.Name,
-                RestrictToTool: true,
-                Message:       "Payload did not match the expected schema.",
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureInvalidCall,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryCorrectCall,
+                },
             },
         }), nil
     }
@@ -750,8 +807,14 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
     res, err := client.Upsert(ctx, args)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }
 
@@ -759,38 +822,15 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
 }
 ```
 
-**Exemple de logique de planificateur :**
-
-```go
-func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolOutputs) == 0 {
-        return &planner.PlanResult{}, nil
-    }
-
-    last := in.ToolOutputs[len(in.ToolOutputs)-1]
-    if last.Error != nil && last.RetryHint.AllowsRetry() {
-        hint := last.RetryHint
-
-        switch hint.Reason {
-        case planner.RetryReasonMissingFields, planner.RetryReasonInvalidArguments:
-            return &planner.PlanResult{
-                Await: &planner.Await{
-                    Clarification: &planner.AwaitClarification{
-                        ID:               "fix-" + string(hint.Tool),
-                        Question:         hint.ClarifyingQuestion,
-                        MissingFields:    hint.MissingFields,
-                        RestrictToTool:   hint.Tool,
-                        ExampleInput:     hint.ExampleInput,
-                        ClarifyingPrompt: hint.Message,
-                    },
-                },
-            }, nil
-        }
-    }
-
-    return &planner.PlanResult{/* FinalResponse, next ToolCalls, ... */}, nil
-}
-```
+`PlanResumeInput.ToolOutputs` contient la forme compatible avec le workflow de
+chaque appel : octets canoniques de la charge utile et du résultat, ainsi que
+`Failure`. Pour `RecoveryCorrectCall`, les problèmes de champs, l'entrée
+antérieure et l'exemple permettent au tour suivant de corriger l'appel.
+`RecoveryReplan` retire l'outil en échec et `RecoveryFinish` ne permet plus que
+la finalisation. Le runtime applique ces transitions ; le planificateur ne les
+déduit jamais du texte d'une erreur. Seuls les appels provenant du fournisseur
+peuvent utiliser `RecoveryCorrectCall`. Une continuation créée par le runtime
+n'a pas d'entrée produite par le modèle et doit replanifier ou terminer.
 
 ---
 
@@ -919,16 +959,23 @@ décoder les octets canoniques JSON sans envoyer ces octets aux fournisseurs de 
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
-    args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
+    args, err := specs.GetTimeSeriesTool().Payload.FromJSON(call.Payload)
+    if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
     
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureUnavailable,
+                Error:    planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
     
@@ -963,8 +1010,8 @@ chemins d’exécution et d’attente de résultats fournis en externe :
 ```go
 reg := runtime.ToolsetRegistration{
     Name:  "orchestrator.metrics",
-    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         if len(result.ServerData) != 0 {
             return nil
         }
@@ -1009,9 +1056,14 @@ Utilisez les données du serveur lorsque :
 ## Meilleures pratiques
 
 - **Mettez les validations dans la conception, pas dans les planificateurs** – Utilisez l'attribut DSL de Goa (`Required`, `MinLength`, `Enum`, etc.)
-- **Retour ToolError + RetryHint des exécuteurs** – Préférez les erreurs structurées aux paniques ou aux retours `error` simples
-- **Gardez des conseils concis mais exploitables** – Concentrez-vous sur les champs manquants/invalides, une courte question de clarification et une petite carte `ExampleInput`
-- **Apprenez aux planificateurs à lire les astuces** – Faites de la gestion du `RetryHint` une partie de première classe de votre planificateur
+- **Renvoyez `ToolFailure` depuis les exécuteurs** – Conservez la cause de
+  l'erreur et choisissez l'action de récupération exacte au lieu d'une erreur
+  simple ou d'une panique
+- **Conservez des informations de correction exactes** – Utilisez les problèmes
+  de champs générés, l'entrée antérieure canonique et un exemple JSON conforme
+  au schéma
+- **Apprenez aux planificateurs à lire les échecs** – Faites du traitement de
+  `ToolOutput.Failure` une partie essentielle du planificateur
 - **Évitez de revalider les services internes** – Goa-AI suppose que la validation se produit à la limite de l'outil
 
 ---

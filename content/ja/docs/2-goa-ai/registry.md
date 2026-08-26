@@ -119,22 +119,22 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 | コンポーネント | 説明 |
 |-----------|-------------|
 | **Service** | discovery と invocation のための gRPC handler |
-| **Store** | toolset metadata の persistence layer (memory または MongoDB) |
+| **Catalog** | Redis-backed の tool schema、admission token、provider lease、retirement history |
 | **Health Tracker** | ping/pong による provider liveness の監視 |
 | **Stream Manager** | tool call routing 用 Pulse streams の管理 |
-| **Result Stream Manager** | tool result delivery の処理 |
+| **Call Record Store** | 各 call の request identity、provider assignment、deadline、publication state、正規 terminal result を保持 |
 
 ### ツール呼び出しフロー
 
 `CallTool` が呼ばれると、registry は次を順番に実行します:
 
-1. **Schema validation**: runtime toolregistry schema validator を使い、payload を tool の JSON Schema に対して検証します
-2. **Health check**: toolset が最近の ping に応答したか確認します。unhealthy な toolset は即座に `service_unavailable` を返します
-3. **Result stream creation**: 一意な `tool_use_id` を持つ一時的な Pulse stream を作成し、cross-node result delivery のために mapping を Redis に保存します
-4. **Request publishing**: tool call を toolset request stream (`toolset:<name>:requests`) に publish します
-5. **Wait for result**: gateway は result stream を subscribe し、provider 応答または 30 秒 timeout まで block します
+1. **Identity と schema validation**: registry は payload を検証し、run 内で一意な `tool_use_id` を 1 つ導出します。完全に同じ retry は、保持済みの同じ record へ接続します。
+2. **Provider wait**: 未 publish の call は active toolset に healthy provider が現れるまで、既存の execution deadline を上限として待ちます。
+3. **Atomic publication**: 1 回の Redis operation で、選んだ provider が現在も active かつ non-draining であることを確認してから request を正確に 1 回 append します。health check 後に rollout が provider を変更した場合、未 publish の call は同じ deadline 内で replacement を選び直します。
+4. **Immutable execution**: publish に成功すると provider assignment が固定されます。外部 effect が始まった可能性があるため、その後 call を移動できません。
+5. **Result delivery**: `CallTool` は正確な provider token、result-stream identity、execution deadline、retention deadline を返します。executor は provider が terminal result を返すか execution deadline が call を確定するまで、その stream を読みます。
 
-この設計により、provider が unhealthy な場合は timeout を待つのではなく fail fast します。
+publish 前に execution deadline が切れた場合、registry は `call_not_admitted` を記録します。これは executor が別の plan を選べることを証明します。publish 済み call の結果が不明な場合は `outcome_unknown` を返し、replacement へ移せません。
 
 ## Provider 統合 (サービス側)
 
@@ -303,10 +303,15 @@ registry は次の gRPC method を公開します:
 
 | Method | 説明 |
 |--------|-------------|
-| `Register` | toolset を registry に登録します。tool schema を検証し、request stream を作成し、health tracking を開始します。provider が subscribe する stream ID を返します。 |
-| `Unregister` | toolset を registry から削除します。health ping を停止し metadata を削除しますが、基盤 stream は破棄しません。 |
-| `EmitToolResult` | tool execution result を emit します。Redis から result stream を lookup し (cross-node delivery を可能にする)、result を publish します。 |
-| `Pong` | health check ping に応答します。共有 health map の last-pong timestamp を更新します。 |
+| `Register` | active tool contract に対する 1 つの provider lease を追加または更新します。別 contract は古い lease が終了するまで待ちます。 |
+| `DrainProvider` | 1 つの provider lease を新規 call に使えなくし、すでに所有する call を完了する権限は保ちます。 |
+| `ReleaseProvider` | process が受理済み work を確定した後、正確な provider lease を削除します。 |
+| `Unregister` | 正確な active admission を意図して廃止します。discovery と routing から削除し、同じ admission token が戻ることを永久に防ぎます。rollout 操作ではありません。 |
+| `Pong` | 正確な current lease と health-check epoch に対して provider health を記録します。 |
+| `ClaimToolCall` | publish 済み request の実行権限を、正確に 1 つの provider lease に付与します。 |
+| `CompleteToolCall` | claim 済み call の正規 terminal result を commit し、result stream へ publish します。 |
+| `PublishToolOutputDelta` | claim 済み call の bounded な best-effort progress fragment を publish します。 |
+| `ReportToolCallOverload` | provider が overloaded call を実行する前に、bounded retry control を記録します。 |
 
 ### Discovery Operations
 
@@ -320,7 +325,8 @@ registry は次の gRPC method を公開します:
 
 | Method | 説明 |
 |--------|-------------|
-| `CallTool` | registry gateway 経由で tool を invoke します。payload を検証し、health を check し、provider へ route し、result を待ちます (30s timeout)。 |
+| `CallTool` | run 内で一意な call を検証して publish します。call は既存 deadline 内で provider health を待ち、publish 前だけ replacement に追随し、その後は正確で不変な execution reference を返します。 |
+| `RetryTool` | provider overload が記録された後、元の admission をそのまま再 publish します。replacement provider へ実行を移しません。 |
 
 ## ベストプラクティス
 
@@ -329,13 +335,13 @@ registry は次の gRPC method を公開します:
 - **すべての node で同じ `Name` を使う**: これが共有 Pulse resource name を決めます
 - **同じ Redis instance を指す**: state coordination のため
 - **load balancer の背後にデプロイする**: すべての node が同一 state を返します
-- **本番では MongoDB store を使う**: restart をまたいで metadata を保持します (in-memory store は restart で registration を失います)
+- **catalog、call record、Pulse stream には durable Redis を使う**: registry replica と process restart が同じ決定を観測できるようにします
 
 ### ヘルス監視
 
 - **適切な `PingInterval` を設定する**: latency 要件に合わせます (default: 10s)。小さくすると failure 検出は速くなりますが Redis traffic が増えます。
 - **`MissedPingThreshold` を調整する**: false positive と検出速度の balance を取ります (default: 3)。staleness threshold は `(threshold + 1) × interval` です。
-- **health state を監視する**: unhealthy toolset は timeout ではなく即座に `service_unavailable` error を起こします
+- **health state を監視する**: 未 publish の call は provider recovery を既存 execution deadline までだけ待ち、無期限には待ちません
 
 ### スケーリング
 

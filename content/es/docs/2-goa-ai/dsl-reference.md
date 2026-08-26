@@ -19,7 +19,6 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Use`                                                   | Agent                    | Declara el consumo de un toolset                                                                                   |
 | `Export`                                                | Agent, Service           | Expone toolsets a otros agentes                                                                                    |
 | `AgentToolset`                                          | Argumento de Use         | Referencia a un toolset de otro agente                                                                             |
-| `UseAgentToolset`                                       | Agent                    | Alias de AgentToolset + Use                                                                                        |
 | `Passthrough`                                           | Tool (dentro de Export)  | Reenvío determinista al método del servicio                                                                        |
 | `DisableAgentDocs`                                      | API                      | Desactiva la generación de AGENTS_QUICKSTART.md                                                                    |
 | **Funciones de Toolset**                                |                          |                                                                                                                    |
@@ -40,7 +39,6 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Cursor`                                                | BoundedResult            | Declara qué campo del payload lleva el cursor opaco de la página siguiente (opcional)                              |
 | `ContinueWith`                                          | BoundedResult            | Delega la paginación mecánica a una acción hermana cuyo cursor enlaza el runtime                                    |
 | `NextCursor`                                            | BoundedResult            | Declara el nombre del campo de resultado proyectado para el cursor de la página siguiente (opcional)               |
-| `Idempotent`                                            | Tool                     | Marca la herramienta como idempotente dentro de una transcripción de ejecución; habilita la de-duplicación segura entre transcripciones para llamadas idénticas |
 | `Tags`                                                  | Tool, Toolset            | Adjunta etiquetas de metadatos                                                                                     |
 | `Meta`                                                  | Tool                     | Adjunta metadatos de diseño inertes y con nombre, emitidos en `ToolSpec.Meta`                                      |
 | `BindTo`                                                | Tool                     | Vincula la herramienta a un método del servicio                                                                    |
@@ -102,7 +100,7 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Attribute`                                             | Args, Return, ServerData | Define un campo del esquema (uso general)                                                                          |
 | `Field`                                                 | Args, Return, ServerData | Define un campo proto numerado (gRPC)                                                                              |
 | `Required`                                              | Esquema                  | Marca los campos como obligatorios                                                                                 |
-| `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos raíz de payload de herramienta declarados se convierten en ejemplos nativos del proveedor y pistas de reintento |
+| `Example`                                               | Esquema                  | Adjunta un ejemplo explícito; los ejemplos raíz de payload de herramienta declarados se convierten en ejemplos nativos del proveedor y evidencia estructurada de corrección |
 
 ### DSL de evaluaciones
 
@@ -327,21 +325,25 @@ comenzar con una letra o un dígito.
 
 `goa gen` emite un paquete en `gen/<service>/completions` con:
 
-- esquemas de resultado generados y tipos Go tipados
-- codecs JSON generados y helpers de validación
-- valores tipados `completion.Spec`
-- helpers `Complete<Name>(ctx, client, req)` generados
-- helpers `StreamComplete<Name>(ctx, client, req)` y `Decode<Name>Chunk(...)`
-generados
+- tipos de resultado y de unión tipados
+- esquemas privados y codecs generados
+- helpers públicos `Complete<Name>(ctx, client, req)`
+- helpers tipados `StreamComplete<Name>(ctx, client, req)`
+- `<Name>Example()` cuando el resultado raíz tiene un `Example(...)` escrito
 
-Los helpers unary decodifican la respuesta final del asistente directamente. Los helpers
-de streaming se mantienen sobre la superficie cruda `model.Streamer`: los chunks
-`completion_delta` son solo vista previa, exactamente un chunk final `completion` es
-canónico, y `Decode<Name>Chunk(...)` decodifica solo ese payload final.
+Los helpers unarios decodifican directamente la respuesta aceptada del asistente
+y exponen la respuesta exacta del proveedor mediante `Response.ModelResponse`.
+Los helpers de streaming devuelven `completion.Streamer[T]`: `Recv` entrega
+fragmentos de previsualización y `Value()` solo está disponible después de que
+el stream termine correctamente y se valide. No hay un decodificador público
+para chunks sin comprobar.
 
 Los helpers de completion generados rechazan las solicitudes con herramientas habilitadas y
 las `StructuredOutput` suministradas por el llamador. Los proveedores que no implementan
 salida estructurada fallan explícitamente con `model.ErrStructuredOutputUnsupported`.
+Una salida unaria o en streaming no válida devuelve un
+`planner.OutputContractError` no reintentable sin realizar una petición de
+corrección al modelo.
 El esquema generado sigue siendo el contrato de servicio canónico; los adaptadores de modelo
 pueden normalizarlo para la decodificación restringida específica del proveedor, pero deben rechazar
 los proveedores que no puedan representar el contrato declarado.
@@ -467,15 +469,6 @@ Agent("planner", func() {
 // Agent B uses Agent A's tools
 Agent("orchestrator", func() {
     Use(AgentToolset("service", "planner", "planning.tools"))
-})
-```
-
-**Alias**: `UseAgentToolset(service, agent, toolset)` es un alias que combina `AgentToolset` con `Use` en una sola llamada. Prefiere `AgentToolset` en diseños nuevos; el alias existe para mejorar la legibilidad en algunas bases de código.
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
 })
 ```
 
@@ -840,33 +833,6 @@ Tool("web_search", "Search the web", func() {
 })
 ```
 
-### Idempotent
-
-`Idempotent()` marca la herramienta actual como idempotente *dentro de una transcripción de ejecución*.
-Cuando se establece, los runtimes/planners pueden tratar las llamadas repetidas a la herramienta con argumentos idénticos
-como redundantes y evitar ejecutarlas una vez que ya exista un resultado exitoso en
-la transcripción.
-
-**Contexto**: Dentro de `Tool`
-
-**Cuándo usar**
-
-Usa `Idempotent()` solo cuando el resultado de la herramienta sea una función pura de sus argumentos
-durante el tiempo de vida de una transcripción de ejecución (por ejemplo, recuperar una sección de documentación
-por identificador estable).
-
-**Cuándo no usar**
-
-No marques herramientas como idempotentes cuando su resultado dependa de un estado externo cambiante
-pero el payload de la herramienta no lleve un parámetro de tiempo/versión (por ejemplo,
-"obtener modo actual" u "obtener estado actual" sin una entrada `as_of`).
-
-**Generación de código**
-
-Cuando una herramienta se marca como `Idempotent()`, codegen emite la etiqueta
-`goa-ai.idempotency=transcript` en las `tools.ToolSpec.Tags` generadas. Esta
-etiqueta es consumida por los runtimes/planners que implementan de-duplicación consciente de la transcripción.
-
 ### Confirmation
 
 `Confirmation(dsl)` declara que una herramienta debe ser aprobada explícitamente fuera de banda antes de
@@ -874,9 +840,11 @@ ejecutarse. Está destinada a herramientas **sensibles para el operador** (escri
 
 **Contexto**: Dentro de `Tool`
 
-En tiempo de generación, Goa-AI registra la política de confirmación en la tool spec generada. En tiempo de ejecución, el
-workflow emite una solicitud de confirmación usando `AwaitConfirmation` y ejecuta la herramienta solo después de que se
-proporcione una aprobación explícita.
+En tiempo de generación, Goa-AI registra la política de confirmación en la tool
+spec generada. En tiempo de ejecución, el workflow termina con un
+`RunSuspension` cuyo primer elemento pendiente contiene la solicitud. El
+workflow de continuación ejecuta la herramienta solo después de que el llamador
+envíe una aprobación explícita mediante `AgentClient.Continue`.
 
 Ejemplo mínimo:
 
@@ -894,9 +862,11 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Notas:
 
-- El runtime posee cómo se solicita la confirmación. El protocolo de confirmación integrado utiliza un
-`AwaitConfirmation` dedicado y una llamada de decisión `ProvideConfirmation`. Consulta la guía de Runtime para los
-payloads esperados y el flujo de ejecución.
+- El runtime posee cómo se solicita la confirmación. Muestra el primer elemento
+  pendiente cuando su tipo sea `confirmation` y pasa un
+  `api.PendingInputResponse{Confirmation: ...}` a `AgentClient.Continue`.
+  Consulta la guía de Runtime para los payloads esperados y el flujo de
+  ejecución.
 - Las plantillas de confirmación (`PromptTemplate` y `DeniedResultTemplate`) son cadenas de `text/template` de Go
 ejecutadas con `missingkey=error`. Además de las funciones de plantilla estándar (p. ej., `printf`),
 Goa-AI provee:
@@ -1102,7 +1072,7 @@ Para recordatorios que dependen de condiciones en tiempo de ejecución, usa la A
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name != "get_time_series" || tr.Error != nil {
+        if tr.Name != "get_time_series" || tr.Failure != nil {
             continue
         }
         result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
@@ -1166,7 +1136,7 @@ Mantén canónicos los contratos integrados:
 
 - usa `Tags` para filtrado genérico de allow/deny y capacidades,
 - usa `Bookkeeping` y `TerminalRun` para contabilidad y comportamiento terminal,
-- usa `RetryHint` para el tratamiento de fallos por resultado,
+- usa `ToolFailure` y su acción `Recovery` para tratar cada resultado fallido,
 - usa campos del planner como `SynthesizeAfterTools` para transiciones por lote.
 
 ### BindTo
@@ -1288,7 +1258,9 @@ Tool("set_step_status", "Update step status", func() {
 - Las llamadas de bookkeeping aportan coste cero a `MaxToolCalls` y no cambian el contador de fallos consecutivos.
 - Cada lote de llamadas a herramientas creado por el modelo es atómico. El runtime admite el lote completo cuando caben todas las llamadas presupuestadas o rechaza el lote completo cuando no caben. Nunca elimina llamadas individuales de la respuesta del proveedor.
 - Las llamadas y resultados permanecen como eventos duraderos del stream/run log y en la transcripción del proveedor. Los resultados correctos de bookkeeping se omiten únicamente de los `ToolOutputs` compactos futuros.
-- Un resultado de bookkeeping fallido entra en un turno de reparación solo cuando `RetryHint.AllowsRetry()` devuelve true.
+- Un resultado de bookkeeping fallido entra en otro turno del planificador
+  según `ToolFailure.Recovery`: corrige la misma llamada, replanifica sin esa
+  herramienta o finaliza.
 - Las herramientas desconocidas se tratan como presupuestadas; solo las herramientas declaradas `Bookkeeping()` en el DSL (o marcadas como bookkeeping en la `ToolSpec` del runtime) quedan exentas.
 - Un turno solo de bookkeeping debe resolverse en el mismo turno (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, o await/pausa).
 

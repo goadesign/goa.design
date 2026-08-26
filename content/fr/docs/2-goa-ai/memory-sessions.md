@@ -58,6 +58,27 @@ Le contrat de transcription de haut niveau dans Goa-AI est :
 
 Il n'y a **pas d'API séparée pour l'historique de l'outil** ; la transcription est l'historique.
 
+Les adaptateurs de modèles ne conservent aucun état entre les appels. Chaque
+`model.Request` doit contenir la transcription complète prête pour le
+fournisseur ; un ID d'exécution ne leur demande pas de charger les messages
+antérieurs. Les clients publics valident la requête et la réponse complète
+avant que le planificateur puisse les observer.
+
+### Compression de l'historique
+
+La politique `History(...)` d'un agent peut résumer les anciens tours tout en
+conservant une fin exacte et limitée. Les valeurs `CompressAt...` déterminent
+le début de la compression ; les valeurs `KeepMax...` déterminent les tours
+complets les plus récents qui restent inchangés. Le runtime ne tronque jamais
+un tour.
+
+La compression exige un `HistoryModel` configuré. Les déclencheurs et limites
+fondés sur les jetons exigent aussi le comptage exact de ce client. Bedrock
+Runtime ne peut pas compter les requêtes avec sortie structurée, et certains
+modèles Claude actuels exigent l'endpoint Mantle distinct d'AWS. Consultez
+[Runtime → Politiques d'historique](../runtime/#history-policies) et
+[Référence DSL → History](../dsl-reference/#history).
+
 ### Comment cela simplifie les planificateurs et les interfaces utilisateur
 
 - **Les planificateurs** : Reçoivent la transcription actuelle dans `planner.PlanInput.Messages` et `planner.PlanResumeInput.Messages`. Ils peuvent décider de ce qu'il faut faire en se basant uniquement sur les messages, sans passer par un état supplémentaire.
@@ -66,28 +87,19 @@ Il n'y a **pas d'API séparée pour l'historique de l'outil** ; la transcription
 
 ---
 
-## Registre des transcriptions
+## Relecture de la transcription depuis le journal d'exécution
 
-Le **registre de transcription** est un enregistrement précis du fournisseur qui conserve l'historique des conversations dans le format exact requis par les fournisseurs de modèles. Il garantit une relecture déterministe et la fidélité du fournisseur sans que les types de SDK du fournisseur ne s'infiltrent dans l'état du flux de travail.
-
-### Fidélité du fournisseur
-
-Les différents fournisseurs de modèles (Bedrock, OpenAI, etc.) ont des exigences strictes concernant l'ordre et la structure des messages. Le grand livre applique ces contraintes :
-
-| Le grand livre applique ces contraintes : - Exigence du fournisseur - Garantie du grand livre - Exigence du fournisseur - Garantie du grand livre - Garantie du grand livre
-|---------------------|------------------|
-| La pensée doit précéder l'utilisation de l'outil dans les messages de l'assistant. Le grand livre ordonne les parties : pensée → texte → utilisation de l'outil
-| Les résultats de l'outil doivent suivre l'utilisation de l'outil correspondant | Le grand livre établit une corrélation entre le résultat de l'outil et l'utilisation de l'outil par le biais de la ToolUseID
-| Alternance de messages (assistant → utilisateur → assistant) | Le grand livre efface l'assistant avant d'ajouter les résultats de l'utilisateur |
-
-Pour Bedrock en particulier, lorsque la réflexion est activée :
-- Les messages de l'assistant contenant tool_use **doivent** commencer par un bloc de réflexion
-- Les messages de l'utilisateur contenant le résultat de l'outil doivent suivre immédiatement le message de l'assistant déclarant l'utilisation de l'outil
-- Le nombre de résultats d'outils ne peut pas dépasser le nombre d'utilisations d'outils précédentes
+Le runtime enregistre les ajouts à la transcription prête pour le fournisseur
+sous forme d'événements ordonnés dans le journal d'exécution. Un événement de
+transcription contient une tranche de valeurs `model.Message` encodée en JSON.
+La relecture ajoute ces tranches dans l'ordre du journal ; elle ne réorganise
+pas les parties, n'invente pas de message absent et n'expose pas de
+transcription mutable.
 
 ### Exigences en matière d'ordre
 
-Le grand livre stocke les pièces dans l'ordre canonique requis par les fournisseurs :
+Les messages enregistrés conservent l'ordre des parties exigé par les
+fournisseurs :
 
 ```
 Assistant Message:
@@ -99,84 +111,63 @@ User Message:
   1. ToolResultPart(s) - tool results correlated via ToolUseID
 ```
 
-Cet ordre est **sacré** - le grand livre ne réorganise jamais les pièces, et les adaptateurs des fournisseurs les réencodent dans des blocs spécifiques aux fournisseurs dans le même ordre.
+Les adaptateurs réencodent les parties dans leurs blocs spécifiques en
+conservant cette séquence.
 
-### Maintenance automatique du grand livre
+### API publique de relecture
 
-Le moteur d'exécution maintient automatiquement le grand livre des transcriptions. Vous n'avez pas besoin de le gérer manuellement :
+Le package `runtime/agent/transcript` expose ces opérations sur le journal :
 
-1. **Capture d'événements** : Au fur et à mesure de l'exécution, le moteur d'exécution conserve les événements de mémoire (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) dans l'ordre suivant
+- `EncodeRunLogDelta(messages)` reçoit les `[]*model.Message` ajoutés à un
+  instant de l'exécution et renvoie leur charge utile JSON sous forme de
+  `rawjson.Message`. Les erreurs d'encodage sont renvoyées.
+- `DecodeRunLogDelta(payload)` décode la charge utile d'un événement et renvoie
+  les `[]*model.Message` enregistrés. Un JSON invalide produit une erreur.
+- `ReplayRunLogEvents(events)` reçoit une tranche déjà ordonnée de
+  `*runlog.Event`. Il ignore les événements autres que les graines et ajouts de
+  transcription, concatène les messages dans l'ordre d'entrée et renvoie les
+  messages, un booléen indiquant si un événement de transcription a été trouvé
+  et une erreur.
+- `BuildMessagesFromRunLog(ctx, store, runID)` parcourt les pages du
+  `runlog.Store` pour une exécution et renvoie toute sa transcription ordonnée.
+  Il échoue si le magasin ou l'ID manque, si la lecture ou le décodage échoue ou
+  si l'exécution ne possède aucun événement de transcription.
 
-2. **Reconstruction du ledger** : La fonction `BuildMessagesFromEvents` reconstruit les messages prêts pour le fournisseur à partir des événements stockés :
+La plupart des applications laissent le runtime écrire les événements puis
+utilisent `BuildMessagesFromRunLog` pour obtenir l'historique prêt pour le
+fournisseur :
 
 ```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **Validation** : Avant l'envoi aux fournisseurs, le runtime peut valider la structure du message :
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runEventStore, runID)
+if err != nil {
+    return err
 }
 ```
 
-### API du grand livre
-
-Pour les cas d'utilisation avancés, vous pouvez interagir directement avec le grand livre. Le grand livre fournit ces méthodes clés :
-
-| Méthode | Description
-|--------|-------------|
-`NewLedger()` | Crée un nouveau grand livre vide `NewLedger()` | Crée un nouveau grand livre vide `NewLedger()` | Crée un nouveau grand livre vide
-| `AppendThinking(part)` | Ajoute une partie pensante au message de l'assistant en cours |
-`AppendText(text)` | Ajoute un texte visible au message de l'assistant en cours
-`DeclareToolUse(id, name, args)` | Déclare une invocation d'outil dans le message de l'assistant en cours |
-`FlushAssistant()` | Finalise le message de l'assistant en cours et prépare l'entrée de l'utilisateur
-| `AppendUserToolResults(results)` | Ajoute les résultats de l'outil dans le message de l'utilisateur
-| `BuildMessages()` | Retourne la transcription complète sous la forme `[]*model.Message` | `BuildMessages()` | `BuildMessages()` `[]*model.Message`
-
-**Exemple d'utilisation:**
+Validez les messages après leur construction ou leur relecture :
 
 ```go
-import "goa.design/goa-ai/runtime/agent/transcript"
-
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+if err := transcript.ValidatePlannerTranscript(messages); err != nil {
+    return err
+}
+if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
+    return err
+}
 ```
 
-**Note:** La plupart des utilisateurs n'ont pas besoin d'interagir directement avec le grand livre. Le runtime maintient automatiquement le grand livre à travers la capture et la reconstruction d'événements. N'utilisez l'API du grand livre que pour des scénarios avancés tels que des planificateurs personnalisés ou des outils de débogage.
+`ValidatePlannerTranscript(messages)` n'accepte que les transcriptions où
+chaque groupe d'appels d'outils de l'assistant est immédiatement suivi d'un
+message utilisateur contenant exactement un résultat correspondant à chaque
+ID. `ValidateBedrock(messages, thinkingEnabled)` ajoute la règle Bedrock :
+lorsque le raisonnement est actif, tout message de l'assistant qui contient un
+appel d'outil doit commencer par un `ThinkingPart`. Aucun validateur ne modifie
+les messages.
 
 ### Pourquoi c'est important
 
 - **Relecture déterministe** : Les événements stockés peuvent reconstruire la transcription exacte à des fins de débogage, d'audit ou de réexécution des échecs
-- **Stockage indépendant du fournisseur** : Le grand livre stocke des parties compatibles avec JSON sans dépendre des SDK des fournisseurs
+- **Stockage indépendant du fournisseur** : les charges utiles du journal
+  conservent le JSON de `model.Message` sans dépendre des SDK
 - **Des planificateurs simplifiés** : Les planificateurs reçoivent des messages correctement ordonnés sans avoir à gérer les contraintes des fournisseurs
 - **Validation** : Les violations de l'ordre sont détectées avant qu'elles n'atteignent le fournisseur et ne provoquent des erreurs cryptiques
 
@@ -255,6 +246,14 @@ type Store interface {
 `runlog.Page` contient :
 - `Events` (ordonnés du plus ancien au plus récent)
 - `NextCursor` (vide lorsqu'il n'y a plus d'événements)
+
+Les appels d'outils possèdent deux identifiants distincts.
+`ModelToolCallID` est l'ID de transcription du fournisseur qui associe un appel
+produit par le modèle à son résultat visible par le modèle. `ToolCallID` est
+l'ID d'exécution du runtime utilisé par les activités, les tentatives, le
+journal d'exécution et les événements de flux. Un appel produit par le modèle
+et suspendu conserve les deux ; ne remplacez jamais l'un par l'autre et ne les
+déduisez pas de l'ordre d'exécution.
 
 ---
 

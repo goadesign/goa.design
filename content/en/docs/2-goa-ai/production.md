@@ -29,7 +29,11 @@ Every model provider enforces rate limits. Exceed them and your requests fail wi
 
 ### Overview
 
-The `features/model/middleware` package provides an **AIMD-style adaptive rate limiter** that sits at the model client boundary. It estimates token costs, blocks callers until capacity is available, and automatically adjusts its tokens-per-minute budget in response to rate limiting signals from providers.
+The `features/model/middleware` package provides an **AIMD-style adaptive rate
+limiter** beneath the validated model client. It asks the provider for the exact
+input-token count, blocks callers until that capacity is available, and adjusts
+its input-tokens-per-minute budget in response to provider throttling. It never
+estimates tokens and does not meter output quotas.
 
 ### AIMD Strategy
 
@@ -51,41 +55,38 @@ Create a single limiter per process and wrap your model client:
 ```go
 import (
     "context"
-    "os"
 
-    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
+    rt := runtime.New()
 
-    // Create the adaptive rate limiter
-    // Parameters: context, rmap (nil for local), key, initialTPM, maxTPM
-    limiter := middleware.NewAdaptiveRateLimiter(
-        ctx,
-        nil,     // nil = process-local limiter
-        "",      // key (unused when rmap is nil)
-        60000,   // initial tokens per minute
-        120000,  // maximum tokens per minute
-    )
-
-    // Create your underlying model client
-    modelClient, err := openai.New(openai.Options{
-        APIKey:       os.Getenv("OPENAI_API_KEY"),
-        DefaultModel: "gpt-5-mini",
-        HighModel:    "gpt-5",
-        SmallModel:   "gpt-5-nano",
+    // Vertex Gemini exposes the exact CountTokens operation required by the limiter.
+    modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+        ProjectID:    "my-gcp-project",
+        Location:     "us-central1",
+        DefaultModel: "gemini-2.5-flash",
     })
     if err != nil {
         panic(err)
     }
 
-    // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(modelClient)
+    limiter := middleware.NewAdaptiveRateLimiter(
+        ctx,
+        nil,     // process-local limiter
+        "",      // unused for a process-local limiter
+        60000,   // initial input tokens per minute
+        120000,  // maximum input tokens per minute
+    )
 
-    rt := runtime.New()
+    rateLimitedClient, err := limiter.Middleware()(modelClient)
+    if err != nil {
+        panic(err)
+    }
+
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -108,59 +109,72 @@ func main() {
     ctx := context.Background()
 
     // Create a Pulse replicated map backed by Redis
-    rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
+    rm, err := rmap.Join(ctx, "rate-limits", redisClient)
     if err != nil {
         panic(err)
     }
+    defer rm.Close()
 
-    // Create cluster-aware limiter
-    // All processes sharing this map and key coordinate their budgets
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // shared key for this model
+        "vertex:gemini",  // shared key for this model family
         60000,            // initial TPM
         120000,           // max TPM
     )
 
-    // Wrap your client as before
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient, err := limiter.Middleware()(vertexClient)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-When using cluster-aware limiting:
+While replicated-map reads and writes succeed:
 - **Backoff propagates globally**: When any process receives `ErrRateLimited`, all processes reduce their budget
 - **Probing is coordinated**: Successful requests increment the shared budget
 - **Automatic reconciliation**: Processes watch for external changes and update their local limiters
 
-### Token Estimation
+Passing a nil map or empty key deliberately creates a process-local limiter.
+When both are set, the shared key is absent, and the middleware cannot seed it,
+the limiter also falls back to process-local operation. After startup, shared
+backoff/probe update errors do not fail model calls; that process keeps its
+local adaptive budget until a later replicated-map event reconciles it. Monitor
+Redis availability if cluster-wide coordination is required.
 
-The limiter estimates request cost using a simple heuristic:
-- Counts characters in text parts and string tool results
-- Converts to tokens using ~3 characters per token
-- Adds a 500-token buffer for system prompts and provider overhead
+### Exact Token Counting
 
-This estimation is intentionally conservative to avoid under-counting.
+The limiter calls the wrapped client's `CountTokens` operation before reserving
+capacity. It requires `Exact=true` and never estimates.
+
+Vertex Gemini exposes a native count operation. Bedrock uses Runtime
+`CountTokens` where supported, but returns
+`model.ErrTokenCountingUnsupported` for structured-output requests and for
+models such as Claude Opus 4.7, Sonnet 5, and Mythos 5 that require the separate
+AWS Mantle endpoint. A remote gateway preserves counting only when constructed
+with `gateway.NewCountingRemoteClient`. OpenAI has no native token counter.
+
+Wrapping a client succeeds even when counting is unsupported. The first
+`Complete` or `Stream` call then returns
+`model.ErrTokenCountingUnsupported` before inference.
+
+The limiter probes upward after a successful unary call or clean stream end. It
+backs off after a terminal `model.ErrRateLimited`. Opening or closing a stream
+without reaching a terminal outcome does not alter capacity.
 
 ### Integration with Runtime
 
 Wire rate-limited clients into the Goa-AI runtime:
 
 ```go
-// Create limiters for each model you use
-claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
-gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
-
-// Wrap underlying clients
-claudeClient := claudeLimiter.Middleware()(bedrockClient)
-gptClient := gptLimiter.Middleware()(openaiClient)
-
-// Configure runtime with rate-limited clients
-rt := runtime.New(runtime.WithEngine(temporalEng))
-if err := rt.RegisterModel("claude", claudeClient); err != nil {
+vertexLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+limitedVertex, err := vertexLimiter.Middleware()(vertexClient)
+if err != nil {
     panic(err)
 }
-if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+
+rt := runtime.New(runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
 ```
@@ -191,18 +205,10 @@ if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
 
 ### Monitoring
 
-Track rate limiter behavior with metrics and logs:
-
-```go
-// The limiter logs backoff events at WARN level
-// Monitor for sustained throttling by tracking:
-// - Wait time distribution (how long requests queue)
-// - Backoff frequency (how often 429s occur)
-// - Current TPM vs. initial TPM
-
-// Example: export current capacity to Prometheus
-currentTPM := limiter.CurrentTPM()
-```
+Measure model-call latency and terminal `model.ErrRateLimited` errors in the
+telemetry around the wrapped client. Also monitor Redis when using a replicated
+map, because the middleware intentionally keeps model calls running with a
+process-local budget if shared-state initialization or updates fail.
 
 ### Best Practices
 
@@ -356,10 +362,6 @@ import (
     temporalclient "go.temporal.io/sdk/client"
     "go.temporal.io/sdk/worker"
     "go.temporal.io/sdk/workflow"
-
-    // Your generated tool specs aggregate.
-    // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
-    specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
 const releaseBuildID = "git-sha-or-image-digest"
@@ -368,10 +370,6 @@ temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // Required: enforce goa-ai's workflow boundary contract.
-        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
-        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
-        DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
@@ -394,6 +392,23 @@ defer temporalEng.Close()
 
 rt := runtime.New(runtime.WithEngine(temporalEng))
 ```
+
+Do not set `ClientOptions.DataConverter`. The Temporal engine rejects a custom
+converter and installs Goa-AI's bounded converter itself so every worker and
+client uses the same persisted contract.
+
+### Temporal Payload Contract
+
+Every workflow or activity argument list has an aggregate encoded limit of
+`engine.MaxPayloadBytes` (1 MiB). Before encoding, the converter also rejects a
+value graph deeper than 64 levels or larger than 100,000 visited values. It
+does not truncate oversized data.
+
+`planner.ToolResult` is an in-process value and cannot cross a Temporal
+boundary. Workflows carry `api.ToolEvent` with canonical JSON bytes instead.
+When a valid tool result can exceed 1 MiB, the tool executor must save it in
+application-owned storage and return a typed reference; the runtime does not
+silently replace the result.
 
 ### Timing and Activity Retries
 
@@ -480,8 +495,8 @@ workflow when it requests human or external input and stores a private
 checkpoint under the completed run ID. The accepted answer starts a new
 workflow on the current worker version. The new version must therefore keep
 the saved checkpoint version, generated result codecs, and required tool names
-compatible. If that is impossible, migrate saved checkpoints before promoting
-the release. Worker versioning cannot translate incompatible stored values.
+compatible for a transparent release. Worker versioning cannot translate
+incompatible stored values.
 
 The rest of the application must preserve availability during the same
 overlap:
@@ -530,6 +545,21 @@ versions during a rolling overlap.
 Worker Deployment Versioning protects workflow replay. It does not protect a
 workflow from an unavailable dependency, an incompatible API, or an
 incompatible checkpoint.
+
+#### Generated contract changes
+
+When generated agents, completion packages, or persisted runtime payloads
+change incompatibly, do not apply the mixed-version procedure above. Regenerate
+all agents and completions, drain or stop affected work, and deploy the runtime,
+workers, and callers as one coordinated release. Goa-AI does not provide a
+dual-read mode for generated runtime contracts.
+
+The runtime accepts only the exact `goa-ai.run-suspension.v4` schema. Planners
+that wait for questions, clarification, or external tools preserve the
+provider's `ModelToolCallID`; the workflow assigns the separate runtime
+`ToolCallID` before it saves the suspension. Other suspension schemas do not
+resume. A future schema change must inventory and retire incompatible saved
+work before the coordinated release; do not add a dual reader or infer fields.
 
 #### Release verification
 

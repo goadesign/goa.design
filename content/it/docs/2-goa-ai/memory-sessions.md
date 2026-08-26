@@ -58,6 +58,26 @@ Il contratto di trascrizione di alto livello in Goa-AI è:
 
 Non esiste un'API separata per la "cronologia degli strumenti"; la trascrizione è la cronologia.
 
+Gli adattatori dei modelli non conservano stato tra una chiamata e l'altra. Ogni
+`model.Request` deve contenere la trascrizione completa pronta per il provider;
+un identificatore di run non induce l'adattatore a caricare i messaggi
+precedenti. I client pubblici dei modelli validano richiesta e risposta
+completa prima che il codice del planner possa osservarle.
+
+### Compressione della cronologia
+
+La policy `History(...)` di un agente può riassumere i turni meno recenti
+mantenendo una coda esatta e limitata. I valori `CompressAt...` stabiliscono
+quando avviare il riepilogo; i valori `KeepMax...` stabiliscono quali turni
+completi più recenti restano invariati. Il runtime non tronca mai un turno.
+
+La compressione richiede un `HistoryModel` configurato. I criteri basati sui
+token richiedono inoltre il conteggio esatto fornito dal relativo client del
+modello. Bedrock Runtime non può contare richieste con structured output e
+alcuni modelli Claude correnti richiedono l'endpoint Mantle separato di AWS.
+Vedere [Runtime → Policy della cronologia](../runtime/#history-policies) e
+[Riferimento DSL → History](../dsl-reference/#history).
+
 ### Come questo semplifica i pianificatori e le interfacce utente
 
 - **Pianificatori**: Ricevono la trascrizione corrente in `planner.PlanInput.Messages` e `planner.PlanResumeInput.Messages`. Possono decidere cosa fare basandosi esclusivamente sui messaggi, senza dover ricorrere a uno stato aggiuntivo.
@@ -66,28 +86,17 @@ Non esiste un'API separata per la "cronologia degli strumenti"; la trascrizione 
 
 ---
 
-## Registro di trascrizione
+## Replay della trascrizione dal run log
 
-Il **transcript ledger** è un record preciso del fornitore che mantiene la cronologia delle conversazioni nel formato esatto richiesto dai fornitori di modelli. Assicura un replay deterministico e la fedeltà del fornitore senza far trapelare i tipi di SDK del fornitore nello stato del flusso di lavoro.
-
-### Fedeltà del fornitore
-
-I diversi fornitori di modelli (Bedrock, OpenAI, ecc.) hanno requisiti rigorosi per quanto riguarda l'ordine e la struttura dei messaggi. Il libro mastro fa rispettare questi vincoli:
-
-| Requisiti del fornitore | Garanzia del libro mastro |
-|---------------------|------------------|
-| Il pensiero deve precedere l'uso dello strumento nei messaggi degli assistenti | Il ledger ordina le parti: pensiero → testo → uso dello strumento |
-| I risultati dell'utensile devono seguire il corrispondente utilizzo dell'utensile | Il libro mastro correla il risultato dell'utensile tramite ToolUseID |
-| Alternanza di messaggi (assistente → utente → assistente) | Ledger lava l'assistente prima di aggiungere i risultati dell'utente |
-
-Per Bedrock in particolare, quando il pensiero è abilitato:
-- I messaggi dell'assistente contenenti tool_use **devono** iniziare con un blocco di riflessione
-- I messaggi utente con tool_result devono seguire immediatamente il messaggio assistente che dichiara il tool_use
-- Il numero di risultati dello strumento non può superare il numero di utilizzi dello strumento precedente
+Il runtime salva le aggiunte alla trascrizione pronte per il provider come
+eventi ordinati nel run log. Un evento contiene una slice di `model.Message`
+codificata in JSON. Il replay accoda queste slice nell'ordine del run log: non
+riordina le parti, non inventa messaggi mancanti e non espone un oggetto
+trascrizione modificabile.
 
 ### Requisiti di ordinamento
 
-Il libro mastro memorizza i pezzi nell'ordine canonico richiesto dai fornitori:
+I messaggi salvati mantengono l'ordine delle parti richiesto dai provider:
 
 ```
 Assistant Message:
@@ -99,84 +108,57 @@ User Message:
   1. ToolResultPart(s) - tool results correlated via ToolUseID
 ```
 
-Questo ordine è **sacro**: il libro mastro non riordina mai le parti e gli adattatori dei provider le ricodificano in blocchi specifici del provider nella stessa sequenza.
+Gli adattatori ricodificano queste parti nei blocchi specifici del provider
+senza cambiarne la sequenza.
 
-### Manutenzione automatica del libro mastro
+### API pubblica di replay
 
-Il runtime mantiene automaticamente il registro delle trascrizioni. Non è necessario gestirlo manualmente:
+Il package `runtime/agent/transcript` espone queste operazioni sul run log:
 
-1. **Cattura eventi**: Durante l'avanzamento della corsa, il runtime conserva gli eventi di memoria (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) in modo da
+- `EncodeRunLogDelta(messages)` codifica in `rawjson.Message` i
+  `[]*model.Message` aggiunti in un punto del run.
+- `DecodeRunLogDelta(payload)` decodifica un payload di un evento di
+  trascrizione e restituisce i messaggi salvati.
+- `ReplayRunLogEvents(events)` riceve una slice già ordinata di
+  `*runlog.Event`, ignora gli eventi che non sono seed o append della
+  trascrizione e accoda i messaggi nell'ordine di input.
+- `BuildMessagesFromRunLog(ctx, store, runID)` pagina un `runlog.Store` e
+  restituisce la trascrizione completa e ordinata. Restituisce un errore se
+  store o run ID mancano, se l'elenco o la decodifica falliscono oppure se il
+  run non contiene eventi di trascrizione.
 
-2. **Ricostruzione del registro**: La funzione `BuildMessagesFromEvents` ricostruisce i messaggi pronti per il provider a partire dagli eventi memorizzati:
+Nella maggior parte delle applicazioni il runtime scrive gli eventi e
+`BuildMessagesFromRunLog` ricostruisce la cronologia pronta per il provider:
 
 ```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **Validazione**: Prima dell'invio ai provider, il runtime può convalidare la struttura del messaggio:
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runEventStore, runID)
+if err != nil {
+    return err
 }
 ```
 
-### API del libro mastro
-
-Per casi d'uso avanzati, è possibile interagire direttamente con il libro mastro. Il libro mastro fornisce questi metodi chiave:
-
-| Metodo | Descrizione |
-|--------|-------------|
-| `NewLedger()` | Crea un nuovo libro mastro vuoto |
-| `AppendThinking(part)` | Aggiunge una parte pensante al messaggio dell'assistente corrente |
-| `AppendText(text)` | Aggiunge un testo visibile al messaggio dell'assistente corrente |
-| `DeclareToolUse(id, name, args)` | Dichiara l'invocazione di uno strumento nel messaggio assistente corrente |
-| `FlushAssistant()` | Finalizza il messaggio assistente corrente e si prepara per l'input dell'utente |
-| `AppendUserToolResults(results)` | Applica i risultati dello strumento come messaggio utente |
-| `BuildMessages()` | Restituisce la trascrizione completa come `[]*model.Message` |
-
-**Esempio di utilizzo:**
+Usare i validatori dopo aver costruito o riprodotto i messaggi:
 
 ```go
-import "goa.design/goa-ai/runtime/agent/transcript"
-
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+if err := transcript.ValidatePlannerTranscript(messages); err != nil {
+    return err
+}
+if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
+    return err
+}
 ```
 
-**Nota:** La maggior parte degli utenti non ha bisogno di interagire direttamente con il libro mastro. Il runtime mantiene automaticamente il libro mastro attraverso la cattura e la ricostruzione degli eventi. Utilizzare l'API del libro mastro solo per scenari avanzati, come pianificatori personalizzati o strumenti di debug.
+`ValidatePlannerTranscript(messages)` accetta `[]*model.Message` solo quando
+ogni gruppo di chiamate dell'assistente è seguito immediatamente da un
+messaggio utente con esattamente un risultato corrispondente per ogni ID.
+`ValidateBedrock(messages, thinkingEnabled)` aggiunge la regola di Bedrock:
+quando il thinking è abilitato, ogni messaggio dell'assistente con una chiamata
+deve iniziare con `ThinkingPart`. Nessun validatore modifica i messaggi.
 
 ### Perché è importante
 
 - **Riproduzione deterministica**: Gli eventi memorizzati possono ricostruire l'esatta trascrizione per il debugging, l'auditing o la ripetizione di turni falliti
-- **Magazzino agnostico dei fornitori**: Il libro mastro memorizza parti JSON-friendly senza dipendenze dall'SDK del provider
+- **Archiviazione indipendente dal provider**: i payload del run log contengono JSON di `model.Message` senza dipendenze dagli SDK dei provider
 - **Piani semplificati**: I pianificatori ricevono messaggi ordinati correttamente senza gestire i vincoli dei provider
 - **Validazione**: Cattura le violazioni dell'ordine prima che raggiungano il provider e causino errori criptici
 
@@ -245,6 +227,20 @@ Tipi chiave:
 
 Conserva il **log canonico, append-only** degli eventi di esecuzione. Il runtime aggiunge eventi hook durante l’esecuzione e i consumer paginano tramite cursor opaco per UI e diagnostica.
 
+Per le attività planner di Temporal, `PlanActivityInput.ToolOutputs` contiene
+riferimenti con il run ID della chiamata, il run ID del risultato e l'ID della
+chiamata. L'attività usa questi riferimenti per caricare dal run log input,
+risultato, server-data e metadati visibili al planner. I riferimenti evitano di
+ripetere corpi completi al confine dell'attività; il checkpoint privato della
+sospensione conserva comunque lo stato necessario alla continuazione.
+
+Le chiamate hanno due identificatori distinti. `ModelToolCallID` è l'ID della
+trascrizione del provider che associa una chiamata prodotta dal modello al suo
+risultato visibile al modello. `ToolCallID` è l'ID di esecuzione del runtime
+usato da attività, retry, record del run log ed eventi di stream. Una chiamata
+prodotta dal modello e sospesa conserva entrambi: non sostituirli tra loro e non
+derivarli dall'ordine dei run.
+
 ```go
 type Store interface {
     Append(ctx context.Context, e *runlog.Event) error
@@ -307,7 +303,7 @@ rt := runtime.New(
 
 Una volta configurati:
 - I subscriber predefiniti persistono memoria ed eventi di esecuzione automaticamente
-- È possibile ricostruire le trascrizioni da `memory.Store` in qualsiasi momento per richiamare i modelli, alimentare le UI o eseguire analisi offline
+- È possibile ricostruire in qualsiasi momento trascrizioni pronte per il provider da `runlog.Store`, per richiamare i modelli, alimentare le UI o svolgere analisi offline
 
 ---
 

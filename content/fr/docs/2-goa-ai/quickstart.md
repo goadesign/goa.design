@@ -141,9 +141,14 @@ runtime n'exécute que des outils `TerminalRun()` dans ce chemin
 (`TerminalRun()` implique la comptabilité) et exige leur succès avant de
 considérer l'exécution comme fermée.
 
-L'exemple généré commence par un planificateur de stub afin que ce flux soit visible avant
-vous connectez un modèle. Un vrai planificateur suit le même contrat ; ça délègue simplement
-la décision à un client modèle.
+L'exemple généré commence avec un planificateur factice afin de montrer ce flux
+avant la connexion d'un modèle. Lorsqu'un outil possède un exemple de charge
+utile, `PlanStart` construit l'appel avec
+`planner.NewToolRequest(gentool.<Tool>Tool(), args)`. `PlanResume` examine
+`ToolOutput.Failure` et transforme le JSON canonique d'un résultat réussi en
+message final de l'assistant. Un outil sans résultat réussit avec un résultat
+vide. Un vrai planificateur suit le même contrat et délègue la décision
+sémantique à un client de modèle.
 
 ---
 
@@ -187,9 +192,13 @@ mais ne doit pas appartenir à une session.
 
 ## 6. Implémenter un exécuteur d'outils
 
-Les packages d'agents générés incluent un assistant `RegisterUsedToolsets` pour les
-ensembles d'outils. Les exécuteurs reçoivent des métadonnées d'exécution explicites et renvoient un fichier appartenant au runtime
-résultat de l'exécution :
+Les packages d'agents générés incluent une fonction `RegisterUsedToolsets` pour
+les ensembles d'outils locaux. Les exécuteurs reçoivent des métadonnées
+d'exécution explicites et renvoient un résultat possédé par le runtime. Chaque
+package de spécifications expose aussi un descripteur typé par outil — ici
+`helpers.AnswerTool` — qui associe l'identifiant aux codecs générés de charge
+utile et de résultat. Le décodage est ainsi vérifié à la compilation, sans
+assertion de type ni association nom-codec répétée à la main :
 
 ```go
 type HelpersExecutor struct{}
@@ -197,16 +206,13 @@ type HelpersExecutor struct{}
 func (e *HelpersExecutor) Execute(
 	ctx context.Context,
 	meta *runtime.ToolCallMeta,
-	call *planner.ToolRequest,
+	call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		args, err := helpers.AnswerTool().Payload.FromJSON(call.Payload)
 		if err != nil {
-			return runtime.Executed(&planner.ToolResult{
-				Name:  call.Name,
-				Error: planner.NewToolError("invalid answer payload"),
-			}), nil
+			return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
 		}
 		return runtime.Executed(&planner.ToolResult{
 			Name:   call.Name,
@@ -214,8 +220,12 @@ func (e *HelpersExecutor) Execute(
 		}), nil
 	default:
 		return runtime.Executed(&planner.ToolResult{
-			Name:  call.Name,
-			Error: planner.NewToolError("unknown tool"),
+			Name: call.Name,
+			Failure: &planner.ToolFailure{
+				Kind:     planner.FailureInvalidCall,
+				Error:    planner.NewToolError("unknown tool"),
+				Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+			},
 		}), nil
 	}
 }
@@ -274,20 +284,22 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if len(summary.ToolCalls) > 0 {
 		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
 	}
+	final := summary.FinalResponse()
+	if final == nil {
+		return nil, errors.New("model stream ended without a canonical response")
+	}
 	return &planner.PlanResult{
-		FinalResponse: &planner.FinalResponse{
-			Message: &model.Message{
-				Role:  model.ConversationRoleAssistant,
-				Parts: []model.Part{model.TextPart{Text: summary.Text}},
-			},
-		},
+		FinalResponse: final,
 		Streamed: true,
 	}, nil
 }
 ```
 
-Utilisez `in.Agent.ModelClient("default")` lorsque vous avez besoin d'un contrôle de flux brut et d'une association
-avec `planner.ConsumeStream`. Choisissez un propriétaire de flux par tour de planificateur.
+Utilisez `in.Agent.ModelClient("default")` lorsque vous devez lire vous-même le
+flux validé avec `planner.ConsumeStream(ctx, stream)`. Choisissez un seul
+propriétaire du flux par tour du planificateur. Les constructeurs de
+fournisseurs renvoient des clients opaques dont les réponses sont validées
+avant d'atteindre le planificateur.
 
 ---
 

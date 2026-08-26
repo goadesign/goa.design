@@ -19,7 +19,6 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Use`                                                   | Agent                    | Déclare la consommation de l'ensemble d'outils                                                                                       |
 | `Export`                                                | Agent, Service           | Expose les ensembles d'outils à d'autres agents                                                                                   |
 | `AgentToolset`                                          | Utiliser des arguments             | Jeu d’outils de références d’un autre agent                                                                              |
-| `UseAgentToolset`                                       | Agent                    | Alias ​​pour AgentToolset + Utilisation                                                                                       |
 | `Passthrough`                                           | Outil (en Export)         | Méthode de transfert déterministe vers le service                                                                         |
 | `DisableAgentDocs`                                      | API                      | Désactive la génération AGENTS_QUICKSTART.md                                                                           |
 | **Fonctions de l'ensemble d'outils**                                   |                          |                                                                                                                    |
@@ -40,7 +39,6 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Cursor`                                                | Résultat délimité            | Déclare quel champ de charge utile porte le curseur opaque de la page suivante (facultatif)                                       |
 | `ContinueWith`                                          | Résultat délimité            | Délègue la pagination mécanique à une action associée dont le curseur est lié par le runtime                                      |
 | `NextCursor`                                            | Résultat délimité            | Déclare le nom du champ de résultat projeté pour le curseur de la page suivante (facultatif)                                      |
-| `Idempotent`                                            | Outil                     | Marque l’outil comme idempotent dans une transcription d’exécution ; permet une déduplication sécurisée des transcriptions croisées pour des appels identiques |
 | `Tags`                                                  | Outil, ensemble d'outils            | Attache des étiquettes de métadonnées                                                                                           |
 | `Meta`                                                  | Outil                     | Attache des métadonnées de conception inertes et nommées, émises dans `ToolSpec.Meta`                                           |
 | `BindTo`                                                | Outil                     | Lie l'outil à la méthode de service                                                                                       |
@@ -102,7 +100,7 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `Attribute`                                             | Args, retour, ServerData | Définit le champ de schéma (usage général)                                                                                 |
 | `Field`                                                 | Args, retour, ServerData | Définit le champ proto numéroté (gRPC)                                                                                |
 | `Required`                                              | Schéma                   | Marque les champs comme requis                                                                                           |
-| `Example`                                               | Schéma                   | Joint un exemple explicite ; les exemples de payload d'outil racine déclarés deviennent des exemples natifs fournisseur et des conseils de nouvelle tentative |
+| `Example`                                               | Schéma                   | Joint un exemple explicite ; les exemples de payload d'outil racine déclarés deviennent des exemples natifs fournisseur et des éléments de correction structurés |
 
 ### DSL d'évaluation
 
@@ -285,21 +283,26 @@ L’exécution de `goa gen example.com/assistant/design` produit :
 - `gen/orchestrator/agents/chat/exports/<export>` : packages d'ensembles d'outils exportés (agent-as-tool)
 - Aides à l'enregistrement compatibles MCP lorsqu'un ensemble d'outils soutenu par MCP est référencé via `Use`
 
-### Identificateurs d'outils typés
+### Descripteurs d'outils typés
 
-Chaque package de spécifications par ensemble d'outils définit des identifiants d'outil typés (`tools.Ident`) pour chaque outil généré :
+Chaque package de spécifications d'un ensemble d'outils définit un identifiant
+typé et une fonction `<Tool>Tool()` qui associe cet identifiant aux codecs
+générés de la charge utile et du résultat :
 
 ```go
 const (
     Search tools.Ident = "orchestrator.search.search"
 )
 
-var Specs = []tools.ToolSpec{
-    { Name: Search, /* ... */ },
+func SearchTool() tools.TypedTool[*SearchPayload, *SearchResult] {
+    // Renvoie de nouvelles spécifications et de nouveaux codecs.
 }
 ```
 
-Utilisez ces constantes partout où vous avez besoin de référencer des outils.
+Construisez les appels créés par le planificateur avec
+`planner.NewToolRequest(SearchTool(), payload)`. Les fonctions générées
+renvoient de nouvelles copies : modifier le schéma ou l'exemple d'une valeur
+renvoyée ne peut donc pas changer les requêtes de modèle suivantes.
 
 ### Complétions typées appartenant au service
 
@@ -327,21 +330,23 @@ commencez par une lettre ou un chiffre.
 
 `goa gen` émet un package sous `gen/<service>/completions` avec :
 
-- schémas de résultats générés et types Go saisis
-- codecs JSON générés et aides à la validation
-- valeurs `completion.Spec` saisies
-- assistants `Complete<Name>(ctx, client, req)` générés
-- généré `StreamComplete<Name>(ctx, client, req)` et `Decode<Name>Chunk(...)`
-aides
+- les types Go de résultat et d'union ;
+- les schémas privés et codecs générés du résultat ;
+- les fonctions `Complete<Name>(ctx, client, req)` ;
+- les fonctions typées `StreamComplete<Name>(ctx, client, req)` ;
+- `<Name>Example()` lorsque le résultat racine possède un `Example(...)`.
 
-Les assistants unaires décodent directement la réponse finale de l'assistant. Aides au streaming
-rester sur la surface brute `model.Streamer` : les morceaux `completion_delta` sont
-en aperçu uniquement, exactement un dernier morceau `completion` est canonique, et
-`Decode<Name>Chunk(...)` décode uniquement cette charge utile finale.
+Les fonctions unaires décodent la réponse finale. Les fonctions en continu
+renvoient `completion.Streamer[T]` : `Recv` fournit les fragments
+`completion_delta` réservés à l'aperçu, tandis que `Value()` n'est disponible
+qu'après une fin de flux propre et la validation. Aucun décodeur public ne
+permet d'accepter un fragment non vérifié.
 
 Les assistants d'achèvement générés rejettent les demandes activées par l'outil et fournies par l'appelant
 `StructuredOutput`. Les fournisseurs qui n’implémentent pas de sortie structurée échouent
-explicitement avec `model.ErrStructuredOutputUnsupported`.
+explicitement avec `model.ErrStructuredOutputUnsupported`. Une sortie unaire
+ou en continu invalide renvoie `planner.OutputContractError`, non récupérable,
+sans effectuer de requête de correction auprès du modèle.
 Le schéma généré reste le contrat de service canonique ; les adaptateurs de modèle peuvent
 le normaliser pour le décodage contraint spécifique au fournisseur, mais ils doivent le rejeter
 prestataires qui ne peuvent pas représenter le contrat déclaré.
@@ -467,15 +472,6 @@ Agent("planner", func() {
 // Agent B uses Agent A's tools
 Agent("orchestrator", func() {
     Use(AgentToolset("service", "planner", "planning.tools"))
-})
-```
-
-**Alias** : `UseAgentToolset(service, agent, toolset)` est un alias qui combine `AgentToolset` avec `Use` en un seul appel. Préférez `AgentToolset` dans les nouveaux designs ; l'alias existe pour des raisons de lisibilité dans certaines bases de code.
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
 })
 ```
 
@@ -840,33 +836,6 @@ Tool("web_search", "Search the web", func() {
 })
 ```
 
-### Idempotent
-
-`Idempotent()` marque l'outil actuel comme idempotent *dans une transcription d'exécution*.
-Lorsqu'ils sont définis, les environnements d'exécution/planificateurs peuvent traiter les appels d'outils répétés avec des arguments identiques
-comme redondants et évitez de les exécuter une fois qu'un résultat positif existe déjà dans
-la transcription.
-
-**Contexte** : À l'intérieur de `Tool`
-
-**Quand utiliser**
-
-Utilisez `Idempotent()` uniquement lorsque le résultat de l'outil est une pure fonction de ses arguments
-pendant toute la durée de vie d'une transcription d'exécution (par exemple, la récupération d'une documentation
-section par identifiant stable).
-
-**Quand ne pas utiliser**
-
-Ne marquez pas les outils idempotents lorsque leur résultat dépend d'un changement d'état externe
-mais la charge utile de l'outil ne comporte pas de paramètre heure/version (par exemple,
-instantanés « obtenir le mode actuel » ou « obtenir l'état actuel » sans entrée `as_of`).
-
-**Génération de code**
-
-Lorsqu'un outil est marqué `Idempotent()`, codegen émet la balise
-`goa-ai.idempotency=transcript` dans le `tools.ToolSpec.Tags` généré. Ceci
-La balise est consommée par les environnements d'exécution/planificateurs qui implémentent la déduplication prenant en compte la transcription.
-
 ### Confirmation
 
 `Confirmation(dsl)` déclare qu'un outil doit être explicitement approuvé hors bande avant d'être
@@ -874,9 +843,11 @@ exécute. Ceci est destiné aux outils **sensibles à l'opérateur** (écritures
 
 **Contexte** : À l'intérieur de `Tool`
 
-Au moment de la génération, Goa-AI enregistre la stratégie de confirmation dans la spécification de l'outil générée. Au moment de l'exécution, le
-Le workflow émet une demande de confirmation à l'aide de `AwaitConfirmation` et exécute l'outil uniquement après un
-une approbation explicite est fournie.
+Lors de la génération, Goa-AI enregistre la stratégie de confirmation dans la
+spécification d'outil générée. À l'exécution, le workflow se termine avec un
+`RunSuspension` dont le premier élément en attente contient la demande. Le
+workflow de continuation n'exécute l'outil qu'après l'envoi d'une approbation
+explicite via `AgentClient.Continue`.
 
 Exemple minimal :
 
@@ -894,9 +865,10 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Remarques :
 
-- Le runtime est propriétaire de la manière dont la confirmation est demandée. Le protocole de confirmation intégré utilise un
-`AwaitConfirmation` attend et un appel de décision `ProvideConfirmation`. Consultez le guide d'exécution pour le
-charges utiles attendues et flux d’exécution.
+- Le runtime détermine comment la confirmation est demandée. Affichez le premier
+  élément en attente lorsque son type est `confirmation`, puis transmettez un
+  `api.PendingInputResponse{Confirmation: ...}` à `AgentClient.Continue`.
+  Consultez le guide d'exécution pour les charges utiles et le flux attendus.
 - Les modèles de confirmation (`PromptTemplate` et `DeniedResultTemplate`) sont des chaînes Go `text/template`
 exécuté avec `missingkey=error`. En plus des fonctions de modèle standard (par exemple `printf`),
 Goa-AI fournit :
@@ -1102,7 +1074,7 @@ Pour les rappels qui dépendent des conditions d'exécution, utilisez plutôt le
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name != "get_time_series" || tr.Error != nil {
+        if tr.Name != "get_time_series" || tr.Failure != nil {
             continue
         }
         result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
@@ -1167,7 +1139,8 @@ Conservez les contrats intégrés comme sources canoniques :
 
 - utilisez `Tags` pour les filtrages génériques d'autorisation et de capacité ;
 - utilisez `Bookkeeping` et `TerminalRun` pour la comptabilisation et la fin d'exécution ;
-- utilisez `RetryHint` pour le traitement des échecs de chaque résultat ;
+- utilisez `ToolFailure` et son action `Recovery` pour le traitement des échecs
+  de chaque résultat ;
 - utilisez les champs du planificateur tels que `SynthesizeAfterTools` pour les transitions de lot.
 
 ### Lier à
@@ -1298,7 +1271,9 @@ Tool("set_step_status", "Update step status", func() {
 - Les appels de comptabilité ont un coût nul pour `MaxToolCalls` et ne modifient pas le compteur d'échecs consécutifs.
 - Chaque lot d'appels produit par le modèle est atomique. Le runtime admet tout le lot si tous les appels budgétisés tiennent dans le budget, sinon il rejette tout le lot. Il ne retire jamais un appel individuel de la réponse du fournisseur.
 - Les appels et résultats restent des événements durables du flux et du journal d'exécution, ainsi que dans la transcription du fournisseur. Seuls les résultats comptables réussis sont omis des futurs `ToolOutputs` compacts.
-- Un résultat comptable en échec ouvre un tour de réparation uniquement lorsque `RetryHint.AllowsRetry()` renvoie true.
+- Un résultat comptable en échec ouvre un autre tour du planificateur selon
+  `ToolFailure.Recovery` : corriger le même appel, replanifier sans cet outil ou
+  terminer.
 - Les outils inconnus sont traités comme budgétisés ; seuls les outils déclarés `Bookkeeping()` dans le DSL (ou la comptabilité marquée sur le runtime `ToolSpec`) sont exonérés.
 - Un tour de comptabilité uniquement doit être résolu au cours du même tour (`TerminalRun()`, `FinalResponse`, `FinalToolResult` ou attente/pause).
 
