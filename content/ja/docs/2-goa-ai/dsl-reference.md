@@ -69,7 +69,7 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `RunPolicy` | Agent | 実行制約を設定する |
 | `DefaultCaps` | RunPolicy | リソース制限を設定する |
 | `MaxToolCalls` | DefaultCaps | 最大ツール呼び出し回数 |
-| `MaxConsecutiveFailedToolCalls` | DefaultCaps | 最大連続失敗回数 |
+| `MaxRecoveryTurns` | DefaultCaps | 拒否された出力の後にプランナーを再実行できる最大回数 |
 | `TimeBudget` | RunPolicy | 単純なウォールクロック制限 |
 | `Timing` | RunPolicy | 詳細なタイムアウト設定 |
 | `Budget` | Timing | 実行全体の予算 |
@@ -277,7 +277,7 @@ var _ = Service("orchestrator", func() {
         RunPolicy(func() {
             DefaultCaps(
                 MaxToolCalls(8),
-                MaxConsecutiveFailedToolCalls(3),
+                MaxRecoveryTurns(3),
             )
             TimeBudget("2m")
         })
@@ -1281,7 +1281,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -1304,14 +1304,14 @@ Agent("chat", "Conversational runner", func() {
 RunPolicy(func() {
     DefaultCaps(
         MaxToolCalls(8),
-        MaxConsecutiveFailedToolCalls(3),
+        MaxRecoveryTurns(3),
     )
 })
 ```
 
 **MaxToolCalls(n)**: *予算対象のツール* について許可する最大呼び出し回数。超過した場合、ランタイムは中断します。DSL で `Bookkeeping()` として宣言されたツールはこの上限から免除され、`RemainingToolCalls` を消費しません。そのため、構造化されたステータス更新、進捗マーカー、終端コミットツールは常に実行可能です。
 
-**MaxConsecutiveFailedToolCalls(n)**: アボートするまでの最大連続失敗回数。無限の再試行ループを防ぎます。
+**MaxRecoveryTurns(n)**: ツール結果またはモデル回答が拒否された後に、プランナーを再実行できる最大回数を設定します。予算対象ツールが成功すると、この回数はリセットされます。上限到達後の最終処理呼び出しは `n` に含まれません。
 
 ### TimeBudget
 
@@ -1590,7 +1590,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         Timing(func() {
             Budget("5m")

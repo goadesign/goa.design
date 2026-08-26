@@ -82,7 +82,7 @@ var _ = Service("orchestrator", func() {
 			})
 		})
 		RunPolicy(func() {
-			DefaultCaps(MaxToolCalls(2), MaxConsecutiveFailedToolCalls(1))
+			DefaultCaps(MaxToolCalls(2), MaxRecoveryTurns(1))
 			TimeBudget("15s")
 		})
 	})

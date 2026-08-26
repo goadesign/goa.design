@@ -55,7 +55,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `RunPolicy`                                             | Agent                    | Configures execution constraints                                                                                   |
 | `DefaultCaps`                                           | RunPolicy                | Sets resource limits                                                                                               |
 | `MaxToolCalls`                                          | DefaultCaps              | Maximum tool invocations                                                                                           |
-| `MaxConsecutiveFailedToolCalls`                         | DefaultCaps              | Maximum consecutive failures                                                                                       |
+| `MaxRecoveryTurns`                                     | DefaultCaps              | Maximum replacement planner calls after rejected output                                                            |
 | `TimeBudget`                                            | RunPolicy                | Simple wall-clock limit                                                                                            |
 | `Timing`                                                | RunPolicy                | Fine-grained timeout configuration                                                                                 |
 | `Budget`                                                | Timing                   | Overall run budget                                                                                                 |
@@ -267,7 +267,7 @@ var _ = Service("orchestrator", func() {
         RunPolicy(func() {
             DefaultCaps(
                 MaxToolCalls(8),
-                MaxConsecutiveFailedToolCalls(3),
+                MaxRecoveryTurns(3),
             )
             TimeBudget("2m")
         })
@@ -1372,7 +1372,7 @@ The commit tool can be admitted with no retrieval budget remaining. Once it succ
 
 **Available Policy Functions:**
 
-- `DefaultCaps` – resource limits (tool calls, consecutive failures)
+- `DefaultCaps` – independent limits for tool calls and replacement planner calls
 - `TimeBudget` – simple wall-clock limit for the entire run
 - `Timing` – fine-grained timeouts for budget, planning, and tool activities (advanced)
 - `History` – conversation history management (sliding window or compression)
@@ -1384,7 +1384,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -1407,14 +1407,18 @@ Agent("chat", "Conversational runner", func() {
 RunPolicy(func() {
     DefaultCaps(
         MaxToolCalls(8),
-        MaxConsecutiveFailedToolCalls(3),
+        MaxRecoveryTurns(3),
     )
 })
 ```
 
 **MaxToolCalls(n)**: Sets the maximum number of budgeted tool invocations allowed per run. Tools declared `Bookkeeping()` are exempt from this cap and do not count toward `n`. When the budget is exhausted, the runtime stops scheduling budgeted calls and finalizes the run through the planner with termination reason `tool_cap`.
 
-**MaxConsecutiveFailedToolCalls(n)**: Sets the maximum consecutive failed tool calls before abort. Prevents infinite retry loops.
+**MaxRecoveryTurns(n)**: Sets the maximum number of replacement planner calls
+the runtime may schedule after rejected tool or model output. Successful
+budgeted tool work starts a fresh allowance. The terminal finalization call
+used after exhaustion is not a replacement attempt and does not count toward
+`n`. When omitted, the runtime allows three recovery turns.
 
 ### TimeBudget
 
@@ -1708,7 +1712,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         Timing(func() {
             Budget("5m")

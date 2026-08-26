@@ -345,7 +345,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -355,7 +355,7 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **Caps**: `MaxToolCalls` は run あたりの予算対象 tool call 総数です。DSL で `Bookkeeping()` として宣言されたツールは retrieval budget を消費せず、`MaxConsecutiveFailedToolCalls` も変更しません。モデルが生成した batch は原子的なままです。bookkeeping call のコストはゼロですが、mixed batch を収めるために個々の call を除去することはありません。成功した bookkeeping 結果は将来の compact な `ToolOutputs` に入りません。
+- **上限**: `MaxToolCalls` は実行ごとの予算対象ツール呼び出し総数を制限します。`MaxRecoveryTurns` は、ツール結果またはモデル回答が拒否された後にプランナーを再実行できる回数を制限します。予算対象ツールが成功すると、この回数はリセットされます。`Bookkeeping()` ツールはいずれの予算も消費しません。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
 - **Terminal tools**: DSL で `TerminalRun()` として宣言されたツールは自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受け入れられます。強制 finalization 中、ランタイムは terminal bookkeeping call だけを受け入れ、残りの hard deadline 内で実行し、すべての terminal effect が成功した場合にのみ run を閉じます。
@@ -368,7 +368,7 @@ Agent("chat", "Conversational runner", func() {
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -380,7 +380,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Field | 説明 |
 | --- | --- |
 | `MaxToolCalls` | run あたりの*予算対象*ツール呼び出し総数の上限（`Bookkeeping()` ツールは免除） |
-| `MaxConsecutiveFailedToolCalls` | 連続失敗回数の上限 |
+| `MaxRecoveryTurns` | 拒否された出力の後にプランナーを再実行できる回数 |
 | `TimeBudget` | run の wall-clock 予算 |
 | `FinalizerGrace` | 最終化のための予約ウィンドウ |
 | `InterruptsAllowed` | pause/resume を有効化する |

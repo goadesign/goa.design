@@ -329,7 +329,7 @@ error: policy violation: max consecutive failed tool calls exceeded (3/3)
 3. **Augmentez la limite** si des pannes transitoires sont attendues :
 ```go
 RunPolicy(func() {
-    DefaultCaps(MaxConsecutiveFailedToolCalls(5))
+    DefaultCaps(MaxRecoveryTurns(5))
 })
 ```
 

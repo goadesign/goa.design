@@ -252,7 +252,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -262,7 +262,7 @@ Agent("chat", "Conversational runner", func() {
 
 Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 
-- **Caps**: `MaxToolCalls` è il totale delle chiamate con budget per run. Gli strumenti dichiarati `Bookkeeping()` non consumano budget di retrieval e non modificano `MaxConsecutiveFailedToolCalls`. I batch prodotti dal modello restano atomici: le chiamate bookkeeping hanno costo zero, ma il runtime non rimuove singole chiamate per far rientrare un batch misto. I risultati bookkeeping riusciti restano fuori dai futuri `ToolOutputs` compatti.
+- **Limiti**: `MaxToolCalls` limita il numero totale di chiamate agli strumenti con budget per ogni esecuzione. `MaxRecoveryTurns` limita le nuove chiamate al pianificatore dopo il rifiuto del risultato di uno strumento o di una risposta del modello. Una chiamata riuscita a uno strumento con budget reimposta questo limite. Gli strumenti `Bookkeeping()` non consumano nessuno dei due budget.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
 - **Completamento terminale del run**: gli strumenti dichiarati `TerminalRun()` diventano automaticamente bookkeeping e chiudono il run dopo una chiamata riuscita, senza un turno `PlanResume` successivo. Un commit terminale può quindi essere ammesso senza budget di retrieval residuo. Durante la finalizzazione forzata, il runtime ammette solo chiamate terminali di bookkeeping, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce.
@@ -275,7 +275,7 @@ In alcuni ambienti si può desiderare di rendere più rigide o meno rigide le po
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -287,7 +287,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Campo | Descrizione |
 | --- | --- |
 | `MaxToolCalls` | Chiamate massime agli strumenti *con budget* per esecuzione (gli strumenti `Bookkeeping()` sono esenti) |
-| `MaxConsecutiveFailedToolCalls` | Fallimenti consecutivi prima di interrompere l'esecuzione |
+| `MaxRecoveryTurns` | Nuove chiamate al pianificatore dopo un output rifiutato |
 | `TimeBudget` | Budget del wall-clock per la corsa |
 | `FinalizerGrace` | Finestra riservata per la finalizzazione |
 | `InterruptsAllowed` | Abilita la funzionalità di pausa/ripresa |

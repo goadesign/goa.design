@@ -317,19 +317,20 @@ error: bookkeeping-only tool batch requires a terminal tool or terminal planner 
 
 **Symptom:**
 ```
-error: policy violation: max consecutive failed tool calls exceeded (3/3)
+error: policy violation: recovery turn cap exceeded
 ```
 
-**Cause:** Multiple consecutive tool calls failed.
+**Cause:** The planner used every allowed replacement call after rejected tool
+or model output.
 
 **Solutions:**
 
-1. **Fix the underlying tool errors** - check tool executor logs
-2. **Improve retry hints** so the planner can self-correct
-3. **Increase the limit** if transient failures are expected:
+1. **Fix rejected tool output** - check tool executor logs and recovery details
+2. **Fix rejected model output** - return precise correction text from the output validator
+3. **Increase the replacement allowance** when the agent legitimately needs more correction attempts:
 ```go
 RunPolicy(func() {
-    DefaultCaps(MaxConsecutiveFailedToolCalls(5))
+    DefaultCaps(MaxRecoveryTurns(5))
 })
 ```
 
