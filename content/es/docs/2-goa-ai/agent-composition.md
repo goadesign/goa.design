@@ -203,7 +203,13 @@ El runtime mantiene este árbol usando:
 - `run.Handle` - un manejador ligero con `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID`
 - Ayudantes de agente como herramienta y registros de conjunto de herramientas que **siempre crean ejecuciones hijo reales** para agentes anidados (sin hacks ocultos en línea)
 
-Antes de ejecutar un planificador hijo, `storage.Store.StartChildRun` guarda juntos el vínculo con el padre, los metadatos del hijo y su primer registro. Un reintento con los mismos valores devuelve los registros originales; un reintento que cambia el padre, la identidad del hijo, las etiquetas o el payload falla con un conflicto.
+Antes de ejecutar un planificador hijo, `storage.Store.StartChildRun` guarda
+juntos el vínculo con el padre, los metadatos del hijo y su primer registro.
+Para un padre sin sesión, `StartOneShotChildRun` realiza la misma operación sin
+inventar una sesión. La primera llamada exige que el padre exista, no tenga
+sesión y siga activo. Un reintento exacto sigue siendo válido después de que el
+padre termine porque el vínculo ya está guardado; un reintento modificado o un
+nuevo hijo después de ese final se rechaza.
 
 Si el registro de la herramienta del padre renderiza un prompt para el hijo, el
 runtime prepara ese prompt en una activity antes de iniciar el workflow hijo.
@@ -213,6 +219,11 @@ workflow. El workflow obtiene la identidad de la ejecución hija, sesión, padre
 herramienta y etiquetas de la llamada original ya registrada, en lugar de
 aceptar esa identidad de la activity. El replay usa así el texto original y
 nunca lee del almacenamiento una versión posterior del prompt.
+
+Los IDs de los workflows hijos de Temporal incluyen el ID exacto de la llamada
+a herramienta asignado por el runtime. Así, las llamadas paralelas al mismo
+agente anidado siguen siendo distintas; una versión que cambie esta derivación
+no es compatible con los workflows hijos que ya están en curso.
 
 ---
 

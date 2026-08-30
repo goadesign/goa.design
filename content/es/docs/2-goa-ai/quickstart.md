@@ -82,7 +82,7 @@ var _ = Service("orchestrator", func() {
 			})
 		})
 		RunPolicy(func() {
-			DefaultCaps(MaxToolCalls(2), MaxConsecutiveFailedToolCalls(1))
+			DefaultCaps(MaxToolCalls(2), MaxRecoveryTurns(1))
 			TimeBudget("15s")
 		})
 	})
@@ -197,7 +197,11 @@ El scaffold local generado acepta un `storage.Store` y el comando de ejemplo usa
 
 Los paquetes de agente generados incluyen un helper `RegisterUsedToolsets` para
 los toolsets locales. Los ejecutores reciben metadatos explícitos de ejecución
-y devuelven un resultado de ejecución propiedad del runtime:
+y devuelven un resultado de ejecución propiedad del runtime. Cada paquete de
+specs de un toolset también exporta un descriptor tipado por herramienta (aquí,
+`helpers.AnswerTool`) que asocia el identificador con sus codecs de payload y
+resultado. Así, el compilador comprueba la decodificación sin aserciones de tipo
+ni asociaciones entre nombres y codecs repetidas a mano:
 
 ```go
 type HelpersExecutor struct{}
@@ -205,16 +209,13 @@ type HelpersExecutor struct{}
 func (e *HelpersExecutor) Execute(
 	ctx context.Context,
 	meta *runtime.ToolCallMeta,
-	call *planner.ToolRequest,
+	call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		args, err := helpers.AnswerTool().Payload.FromJSON(call.Payload)
 		if err != nil {
-			return runtime.Executed(&planner.ToolResult{
-				Name:  call.Name,
-				Error: planner.NewToolError("invalid answer payload"),
-			}), nil
+			return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
 		}
 		return runtime.Executed(&planner.ToolResult{
 			Name:   call.Name,
@@ -222,8 +223,12 @@ func (e *HelpersExecutor) Execute(
 		}), nil
 	default:
 		return runtime.Executed(&planner.ToolResult{
-			Name:  call.Name,
-			Error: planner.NewToolError("unknown tool"),
+			Name: call.Name,
+			Failure: &planner.ToolFailure{
+				Kind:     planner.FailureInvalidCall,
+				Error:    planner.NewToolError("unknown tool"),
+				Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+			},
 		}), nil
 	}
 }

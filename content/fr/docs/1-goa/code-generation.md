@@ -22,9 +22,11 @@ go install goa.design/goa/v3/cmd/goa@latest
 ```
 
 {{< alert title="Tester une version préliminaire de la génération" color="info" >}}
-Les versions préliminaires sont facultatives. Fixez le module Goa et la commande
-`goa` à la version exacte indiquée dans le
-[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+Les versions préliminaires sont facultatives. Fixez le module Goa et la
+commande `goa` au même commit. Le travail actuel se trouve sur la
+[branche préliminaire `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+au commit
+[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
 Régénérez l'intégralité du répertoire `gen/`, ne mélangez jamais une sortie
 stable avec une sortie préliminaire, puis compilez et testez l'application
 complète. Coordonnez les mises à jour du client et du serveur lorsque le guide
@@ -546,14 +548,20 @@ Goa valide les données aux limites du système :
 
 ### Règles de pointeur pour les champs de structure
 
-| Propriétés de la structure : charge utile/résultat, corps de la demande (serveur), corps de la réponse (serveur), etc
-|------------|---------------|----------------------|---------------------|
-| Requise OU par défaut | Directe (-) | Pointeur (*) | Directe (-) | Non requise, pas de défaut | Pointeur (*) | Pointeur (*) | Directe (-)
-| Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*)
+Les types de service représentent des valeurs déjà validées. Les types de
+transport décodés doivent aussi conserver l'absence d'un champ entrant.
 
-Types spéciaux :
-- **Objets (structs)** : Toujours utiliser des pointeurs
-- **Tableaux et cartes** : N'utilisent jamais de pointeurs (ce sont déjà des types de référence)
+| Champ | Type de service | Entrée de transport décodée | Sortie de transport encodée |
+|---|---|---|---|
+| Primitif requis ou avec valeur par défaut | Valeur | Pointeur lorsque la présence doit être validée | Valeur |
+| Primitif facultatif sans valeur par défaut | Pointeur | Pointeur | Pointeur |
+| Objet | Pointeur | Pointeur | Pointeur |
+| Tableau ou map | Valeur | Valeur | Valeur |
+
+Une entrée décodée est une requête côté serveur ou une réponse côté client.
+Les primitifs gRPC requis utilisent la présence proto3 et sont donc des
+pointeurs dans les structs protobuf ; les structs de service gardent des
+valeurs.
 
 Exemple :
 ```go
@@ -564,6 +572,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` utilise des pointeurs pour les éléments primitifs et leurs
+alias uniquement dans les corps HTTP et JSON-RPC entrants afin de refuser
+`[null]`. Le service et les réponses générées utilisent des slices de valeurs.
 
 ### Traitement des valeurs par défaut
 
@@ -636,9 +648,9 @@ Les fonctions de rappel publiées restent adaptées aux plugins qui modifient de
 valeurs ou des fichiers générés. Un plugin qui déclare un nom au niveau d'un
 paquet doit utiliser la phase de planification de la fabrique afin que Goa
 puisse réserver ce nom avec toutes les autres déclarations avant le rendu.
-Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
 et le
-[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
 pour le contrat détaillé des plugins et les étapes de migration.
 
 ---

@@ -91,11 +91,11 @@ No toda interacción estructurada debería modelarse como una llamada a herramie
 
 `goa gen` emite `gen/<service>/completions` con:
 
-- esquemas de resultado y tipos de resultado/union tipados
-- codecs JSON generados y helpers de validación
-- valores `completion.Spec` tipados
+- tipos de resultado y de unión tipados
+- esquemas de resultado privados y codecs generados
 - helpers generados `Complete<Name>(ctx, client, req)`
-- helpers generados `StreamComplete<Name>(ctx, client, req)` y `Decode<Name>Chunk(chunk)`
+- helpers tipados `StreamComplete<Name>(ctx, client, req)`
+- `<Name>Example()` cuando el resultado raíz tiene un `Example(...)` escrito
 
 Los servicios pueden declarar completions sin declarar ningún `Agent(...)`. El andamiaje de quickstart/ejemplo de agente solo se emite para servicios que realmente poseen agentes.
 
@@ -115,7 +115,17 @@ if err != nil {
 fmt.Println(resp.Value.Name)
 ```
 
-Las completions en streaming permanecen sobre la superficie cruda `model.Streamer` y decodifican únicamente el chunk canónico final `completion`:
+Toda salida estructurada `model.StructuredOutput` de bajo nivel necesita un
+nombre no vacío. Los helpers generados lo derivan del DSL validado de la
+completion. La completion unaria realiza exactamente una llamada al modelo. Un
+JSON inválido devuelve un `planner.OutputContractError` no reintentable y una
+respuesta nil; nunca inicia una petición de corrección. Cuando tiene éxito,
+`resp.ModelResponse` contiene la respuesta exacta del proveedor y el uso de
+tokens.
+
+Las completions en streaming devuelven `completion.Streamer[T]`. `Recv` expone
+fragmentos de previsualización, mientras `Value()` no está disponible hasta
+que termina el stream y la respuesta terminal coincide con la completion final:
 
 ```go
 stream, err := taskcompletion.StreamCompleteDraftFromTranscript(ctx, modelClient, &model.Request{
@@ -137,14 +147,14 @@ for {
     if err != nil {
         panic(err)
     }
-    value, ok, err := taskcompletion.DecodeDraftFromTranscriptChunk(chunk)
-    if err != nil {
-        panic(err)
-    }
-    if ok {
-        fmt.Println(value.Name)
-    }
+    // Render preview completion_delta chunks here when useful.
+    _ = chunk
 }
+value, ok := stream.Value()
+if !ok {
+    panic("completion stream ended without a typed value")
+}
+fmt.Println(value.Name)
 ```
 
 Los helpers de completion tipados son intencionadamente estrictos:
@@ -152,9 +162,15 @@ Los helpers de completion tipados son intencionadamente estrictos:
 - Los helpers unarios aceptan únicamente peticiones unarias.
 - Los nombres de completion se validan en la frontera del DSL: 1-64 caracteres ASCII, solo letras/dígitos/`_`/`-`, y deben empezar por una letra o un dígito.
 - Los helpers unarios y de streaming rechazan las peticiones con herramientas habilitadas y cualquier `StructuredOutput` proporcionado por el llamador.
-- Los proveedores de streaming emiten fragmentos de previsualización `completion_delta*` más exactamente un único chunk canónico `completion`, o rechazan la petición explícitamente.
-- `Decode<Name>Chunk` ignora los chunks de previsualización y decodifica únicamente el `completion` final.
-- Los flujos de completion permanecen en la ruta directa `model.Streamer`; no los encamines a través de los helpers de streaming del planificador, que son para el texto de la transcripción del asistente y los eventos de ejecución de herramientas.
+- Los proveedores de streaming pueden emitir previsualizaciones
+  `completion_delta*` y exactamente una `completion` final, o rechazar la
+  petición explícitamente.
+- El wrapper tipado solo publica `Value()` después de un fin de stream limpio y
+  una validación completa. No existe un decodificador público que acepte un
+  chunk sin comprobar.
+- Los streams de completion usan directamente su wrapper tipado generado; los
+  helpers de streaming del planificador son para texto de transcripción del
+  asistente y llamadas a herramientas.
 - Los proveedores que no implementan salida estructurada exponen `model.ErrStructuredOutputUnsupported`.
 - Los esquemas generados son canónicos y neutrales frente al proveedor; los adaptadores de proveedor pueden normalizarlos a un subconjunto soportado, pero deben fallar explícitamente cuando no puedan preservar el contrato declarado.
 
@@ -244,12 +260,26 @@ if err := rt.Seal(ctx); err != nil {
 
 ## Bucle Plan → Ejecutar → Reanudar
 
-1. El motor acepta un workflow para el agente.
-2. La primera activity registra la identidad y el primer registro permanente mediante `StartRootRun`, `StartChildRun` o `StartOneShotRun`. Una ejecución con sesión solo continúa si la sesión está activa.
-3. El runtime llama a `PlanStart` con los mensajes actuales y un `run.Context` que contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
-4. Programa las llamadas a herramientas devueltas por el planificador usando los codecs generados.
-5. Llama a `PlanResume` con los resultados visibles para el planificador. El bucle continúa hasta una respuesta final, un resultado final o una herramienta `TerminalRun` correcta.
-6. El almacén guarda registros inmutables mientras cambia la ejecución. Los hooks y streams emiten pensamientos, herramientas, esperas, uso y vínculos entre ejecuciones. Un almacén de memoria opcional conserva la transcripción.
+1. El motor acepta un workflow para el agente, en memoria o en Temporal.
+2. La primera actividad guarda la identidad y el primer registro permanente
+   mediante `StartRootRun`, `StartChildRun`, `StartOneShotRun` o
+   `StartOneShotChildRun`. Todo workflow aceptado guarda `RunStarted`.
+3. El runtime llama a `PlanStart` con los mensajes y un `run.Context` que
+   contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
+4. Programa las llamadas a herramientas devueltas por el planificador usando
+   los codecs generados.
+5. Llama a `PlanResume` con las salidas que siguen visibles para el
+   planificador. Las herramientas con presupuesto son visibles por defecto. Un
+   fallo de bookkeeping programa otro turno según `ToolFailure.Recovery.Action`:
+   corrección, replanificación sin esa herramienta o finalización. El bucle se
+   repite hasta que el planificador devuelve una respuesta final, un resultado
+   de herramienta final o una herramienta `TerminalRun` correcta completa la
+   ejecución. Si los límites o deadlines fuerzan la finalización, el
+   planificador puede cerrar mediante herramientas terminales de bookkeeping
+   en vez de prosa. La ejecución avanza por los valores de `run.Phase`
+   (`prompted`, `planning`, `executing_tools`, `synthesizing` y fases
+   terminales).
+6. Los hooks y los suscriptores de stream emiten eventos (pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, workflow, enlaces agente-ejecución) y, cuando están configurados, persisten entradas de transcripción y metadatos de ejecución.
 
 ---
 ## Fases de ejecución
@@ -344,7 +374,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -354,11 +384,28 @@ Agent("chat", "Conversational runner", func() {
 
 Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 
-- **Límites**: `MaxToolCalls` es el total de llamadas a herramientas presupuestadas por ejecución. Las herramientas declaradas `Bookkeeping()` no consumen presupuesto de recuperación ni cambian `MaxConsecutiveFailedToolCalls`. Los lotes creados por el modelo siguen siendo atómicos: las llamadas de bookkeeping añaden coste cero, pero el runtime nunca elimina llamadas individuales para hacer caber un lote mixto. Los resultados correctos de bookkeeping no entran en los `ToolOutputs` compactos futuros.
+- **Límites**: `MaxToolCalls` limita el total de llamadas a herramientas con presupuesto por ejecución. `MaxRecoveryTurns` limita las nuevas llamadas al planificador después de rechazar el resultado de una herramienta o una respuesta del modelo. Una llamada correcta a una herramienta con presupuesto reinicia este límite. Las herramientas `Bookkeeping()` no consumen ninguno de estos presupuestos.
 - **Presupuesto de tiempo**: `TimeBudget` – presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (solo runtime) – ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` – opt-in para pausa/reanudación.
 - **Comportamiento ante campos faltantes**: `OnMissingFields` – rige lo que ocurre cuando la validación indica que faltan campos.
-- **Herramientas terminales**: Las herramientas declaradas `TerminalRun()` se convierten automáticamente en bookkeeping y completan la ejecución al tener éxito, sin programar un turno `PlanResume` posterior. Por tanto, un commit terminal puede admitirse sin presupuesto de recuperación restante. Durante la finalización forzada, el runtime admite solo llamadas terminales de bookkeeping, las ejecuta dentro de la ventana restante del hard deadline y cierra la ejecución solo si todos los efectos laterales terminales tienen éxito.
+- **Herramientas terminales**: Las herramientas declaradas `TerminalRun()` se
+  convierten automáticamente en bookkeeping y completan la ejecución al tener
+  éxito, sin programar un turno `PlanResume` posterior. Por tanto, un commit
+  terminal puede admitirse sin presupuesto de recuperación restante. Durante
+  la finalización forzada, el runtime admite solo llamadas terminales de
+  bookkeeping, las ejecuta dentro de la ventana restante del hard deadline y
+  cierra la ejecución solo si todos los efectos laterales terminales tienen
+  éxito. Antes de ejecutarlas, el runtime escribe el
+  `planner.TerminationReason` exacto en
+  `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Las
+  etiquetas de ejecución y política, la salida del planificador y la del modelo
+  no pueden elegir ni reemplazar este valor. Las llamadas ordinarias no lo
+  reciben.
+
+  Los consumidores de llamadas terminales creadas por límites fijos o por el
+  planificador, incluido `tool_failure`, usan
+  `runtime.FinalizationReasonLabel`. Despliega cualquier cambio de este
+  contrato de ejecución conjuntamente en consumidores y workers del runtime.
 
 ### Overrides de política en runtime
 
@@ -367,7 +414,7 @@ En algunos entornos puedes querer endurecer o relajar las políticas sin cambiar
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -379,7 +426,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Campo | Descripción |
 | --- | --- |
 | `MaxToolCalls` | Máximo total de llamadas a herramientas por ejecución |
-| `MaxConsecutiveFailedToolCalls` | Fallos consecutivos antes de abortar |
+| `MaxRecoveryTurns` | Nuevas llamadas al planificador después de una salida rechazada |
 | `TimeBudget` | Presupuesto de reloj de pared para la ejecución |
 | `FinalizerGrace` | Ventana reservada para finalización |
 | `InterruptsAllowed` | Habilitar la capacidad de pausa/reanudación |
@@ -394,11 +441,16 @@ Solo se aplican los campos distintos de cero (y `InterruptsAllowed` cuando es `t
 
 ### Etiquetas y motores de políticas
 
-Goa-AI se integra con motores de políticas enchufables a través de `policy.Engine`. Las políticas reciben metadatos de herramientas (IDs, tags), contexto de ejecución (SessionID, TurnID, etiquetas) e información `RetryHint` tras fallos de herramientas.
+Goa-AI se integra con motores de políticas enchufables mediante
+`policy.Engine`. Las políticas reciben metadatos de herramientas (IDs, tags),
+el contexto de ejecución (SessionID, TurnID, etiquetas) y el `ToolFailure`
+estructurado después de una ejecución fallida.
 
 Las etiquetas fluyen hacia:
 - `run.Context.Labels` – disponibles para los planificadores durante una ejecución
-- entrada de actividad de herramienta (`api.ToolInput.Labels`) – clonadas en las ejecuciones de herramientas despachadas para que las actividades observen los mismos metadatos con alcance de ejecución, salvo que el planificador sobrescriba las etiquetas para una llamada concreta
+- entrada de actividad de herramienta (`api.ToolInput.Labels`) – clonadas en
+  las ejecuciones despachadas; las llamadas de finalización también reciben el
+  motivo propiedad del runtime en `runtime.FinalizationReasonLabel`
 - **El almacén del runtime** (`storage.Store`) añade registros inmutables por `RunID`. Los métodos de ciclo de vida guardan el estado, checkpoint o cancelación junto con su registro correspondiente.
 - finalización terminal e instantáneas – las etiquetas de inicio vuelven a salir al final de la ejecución en `hooks.RunCompletedEvent.Labels` y `run.Snapshot.Labels`, de modo que los hooks de finalización y los lectores de `GetRunSnapshot` recuperan la identidad de la ejecución sin seguimiento fuera de banda
 
@@ -425,7 +477,10 @@ out, err := client.Run(ctx, "session-1", messages,
 )
 ```
 
-El runtime bloquea los turnos de reparación restringidos a una herramienta cuando un retry hint fija `RestrictToTool`, de modo que el siguiente turno del planificador solo ve la herramienta que necesita un payload corregido. Esto mantiene la reparación de validación enfocada y evita que el modelo se desvíe hacia herramientas no relacionadas.
+Esta es una política del llamador para toda la ejecución. Los fallos de
+herramienta usan otro contrato: `ToolFailure.Recovery.Action` selecciona corrección,
+replanificación o finalización, y el runtime impone el catálogo resultante en
+el siguiente turno.
 
 ---
 
@@ -535,7 +590,11 @@ inicio del workflow.
 
 ## Memoria, streaming, telemetría
 
-- **El bus de hooks** publica eventos de hook estructurados para todo el ciclo de vida del agente: inicio/finalización de la ejecución, cambios de fase, `prompt_rendered`, programación/resultados/actualizaciones de herramientas, notas del planificador y bloques de pensamiento, esperas, retry hints y enlaces agente-como-herramienta.
+- **El bus de hooks** publica eventos de hook estructurados para todo el ciclo
+  de vida del agente: inicio/finalización, cambios de fase, `prompt_rendered`,
+  programación/resultados/actualizaciones de herramientas, notas y bloques de
+  pensamiento del planificador, esperas, directivas de recuperación de
+  `ToolFailure` y enlaces agente-como-herramienta.
 
 - **Los almacenes de memoria** (`memory.Store`) se suscriben y añaden eventos de memoria duraderos (mensajes de usuario/asistente, llamadas a herramientas, resultados de herramientas, notas del planificador, pensamiento) por `(agentID, RunID)`.
 
@@ -695,6 +754,11 @@ reintentos que Temporal.
 - `StartOneShot` y `OneShotRun` son explícitamente sin sesión. No requieren ni crean una sesión y no emiten eventos de stream con alcance de sesión
 - El host crea las sesiones antes de enviar trabajo con sesión. Los runtimes de agentes no crean, terminan ni eliminan sesiones
 - El motor acepta un workflow raíz antes de que su primera activity guarde la ejecución. El runtime no crea un registro `pending` antes de esa aceptación
+- Repetir un inicio con el mismo ID de ejecución y exactamente la misma
+  solicitud devuelve el workflow aceptado mientras el motor conserve un
+  historial consultable. Reusar el ID con otra entrada se rechaza. Después de
+  la retención del historial, la identidad permanente del comando pertenece al
+  servicio del producto, no a Goa-AI
 - Los inicios raíz, hijo y one-shot usan operaciones de almacenamiento distintas. El inicio hijo guarda el vínculo con el padre; el inicio one-shot guarda metadatos completos sin sesión
 - El primer motivo de cancelación no cambia. Un reintento exacto tiene éxito y otro motivo para la misma ejecución produce un conflicto
 - La suspensión y la finalización guardan el nuevo estado junto con el registro correspondiente, que no puede modificarse después
@@ -709,7 +773,8 @@ hasta que el almacenamiento del runtime las acepta. Si el historial del motor
 ya está cerrado pero la ejecución guardada sigue activa, un operador puede
 llamar a `Runtime.RepairRunCompletion(ctx, runID)`. El comando comprueba el
 estado final del motor y envía la suspensión o el registro final ausente a un
-método de reparación. El almacén lo escribe solo si la ejecución sigue activa;
+método de reparación: `RepairRunSuspension` o `RepairRunTerminal`. El almacén
+lo escribe solo si la ejecución sigue activa;
 si el workflow guardó antes otro registro final, ese registro conserva la
 autoridad.
 
@@ -721,24 +786,23 @@ que ya tuvo éxito no cambia el resultado guardado.
 
 ---
 
-## Entrada externa y continuaciones de workflows
+## Entrada externa y continuaciones de workflow
 
-Cada entrada aceptada del usuario inicia un workflow de nivel superior para ese
-turno. El workflow termina con el resultado final del turno o con una suspensión
-que solicita entrada externa. Los agentes anidados siguen ejecutándose como
-workflows hijos vinculados.
+Cada entrada aceptada inicia un workflow de nivel superior. El workflow termina
+con un resultado final o con un `api.RunSuspension` que contiene las solicitudes
+pendientes visibles y un checkpoint privado. Ningún workflow permanece abierto
+mientras una persona o un sistema externo prepara la respuesta.
 
-Las aclaraciones, preguntas estructuradas, resultados de herramientas externas
-y confirmaciones terminan correctamente el workflow actual. El
-`RunOutput.Suspension` devuelto contiene la solicitud que debe responder la UI o
-el sistema externo. Ningún workflow de Temporal permanece abierto mientras una
-persona decide.
+El servicio propietario debe aceptar una sola respuesta de forma atómica. A
+continuación inicia un nuevo workflow con el ID de la ejecución completada, un
+nuevo ID de ejecución, un nuevo ID de turno y una
+`api.PendingInputResponse` que satisface el primer elemento pendiente:
 
-Antes de terminar, Goa-AI guarda su checkpoint privado bajo el ID de la
-ejecución completada. La aplicación debe aceptar una sola respuesta de forma
-atómica para que dos solicitudes concurrentes no continúen el mismo estado.
-Después inicia otro workflow con el ID de la ejecución anterior, un nuevo ID de
-ejecución, un nuevo ID de turno y una respuesta tipada:
+Si la aceptación de la respuesta debe guardarse junto con datos del producto,
+llama primero a `PrepareContinuation`, confirma ambos cambios de forma atómica
+y pasa exactamente el valor preparado a `StartContinuation`. Usa `Continue`
+solo cuando no haya una escritura de la aplicación entre la validación y el
+envío al motor.
 
 ```go
 next, err := client.Continue(
@@ -747,13 +811,36 @@ next, err := client.Continue(
     previous.RunID,
     "run-124",
     "turn-2",
-    &api.PendingInputResponse{
-        Clarification: &api.ClarificationAnswer{
-            ID:     "clarify-device",
-            Answer: "Device ID is ABC-123",
+    response,
+    nil, // opciones opcionales del nuevo workflow
+)
+```
+
+La continuación restaura los mensajes, la política, las etiquetas, el
+presupuesto de tiempo activo restante y la procedencia exacta de llamadas y
+resultados. Los llamadores no pueden reemplazar esos valores.
+
+### Proporcionar resultados externos de herramientas
+
+Algunas esperas se reanudan con **resultados de herramientas proporcionados por un actor externo** en lugar de por `ExecuteToolActivity` directamente. Ejemplos habituales son las herramientas controladas por la UI, como las preguntas estructuradas, o los servicios puente que recopilan resultados de otro sistema y luego despiertan la ejecución.
+
+Construye una respuesta tipada y pásala a `AgentClient.Continue`:
+
+```go
+response := &api.PendingInputResponse{
+    ToolResults: &api.ToolResultsSet{
+        ID: "await-1",
+        Results: []*api.ProvidedToolResult{
+            {
+                Name:       "chat.ask_question.ask_question",
+                ToolCallID: pending.Await.ExternalTools.Items[0].ToolCallID,
+                Success: &api.ProvidedToolSuccess{
+                    Result: rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+                },
+            },
         },
     },
-)
+}
 ```
 
 La aplicación solo pasa el ID de la ejecución completada y la respuesta tipada.
@@ -765,6 +852,18 @@ El único formato aceptado es `goa-ai.run-suspension.v7`. Goa-AI rechaza todas
 las versiones anteriores en lugar de adivinar cómo traducirlas. Antes de
 aceptar continuaciones con el nuevo runtime, el host debe migrar o eliminar las
 ejecuciones suspendidas que usen un formato anterior.
+
+- Los llamadores proporcionan exactamente uno de estos valores: `Success`, con
+  el **JSON de resultado canónico en bruto** y `Bounds` opcional, o `Failure`,
+  con `Kind`, `Message`, `Action` e `Issues` opcionales.
+- Los llamadores **no** construyen `api.ToolEvent`; ese es el sobre interno del workflow del runtime.
+- Para un resultado correcto, el runtime lo decodifica usando la especificación
+  registrada de la herramienta, ejecuta la materialización tipada, adjunta
+  cualquier sidecar solo del servidor y añade el `tool_result` canónico a la
+  transcripción y al run log.
+- Para un fallo, el runtime combina los hechos externos con la llamada esperada
+  y los metadatos registrados para construir un `planner.ToolFailure`
+  canónico. Solo entonces reanuda la planificación.
 
 Cuando una respuesta completa una llamada de herramienta creada por el modelo
 en el workflow anterior, el nuevo evento `tool_end` incluye dos identidades:
@@ -801,7 +900,7 @@ En tiempo de ejecución, la confirmación se implementa como un protocolo dedica
     "id": "...",
     "title": "...",
     "prompt": "...",
-    "tool_name": "atlas.commands.change_setpoint",
+  "tool_name": "facility.commands.change_setpoint",
     "tool_call_id": "toolcall-1",
     "payload": { "...": "canonical tool arguments (JSON)" }
   }
@@ -813,17 +912,18 @@ Contrato:
 - Los overrides de confirmación pueden personalizar el prompt y el renderizado del resultado denegado, pero no introducen un canal separado de payload de visualización ni cambian el significado de `payload`.
 - Los productos que necesiten una UI de confirmación más rica deben materializarla en la capa de aplicación a partir del payload canónico y de lecturas propias de la aplicación.
 
-- **Proporcionar decisión** (a través de `ProvideConfirmation` en el runtime):
+- **Respuesta de continuación**:
 
   ```go
-  err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
-      RunID:       "run-123",
-      ID:         "await-1",
-      Approved:    true,              // or false
-      RequestedBy: "user:123",
-      Labels:      map[string]string{"source": "front-ui"},
-      Metadata:    map[string]any{"ticket_id": "INC-42"},
-  })
+  response := &api.PendingInputResponse{
+      Confirmation: &api.ConfirmationDecision{
+          ID:          "await-1",
+          Approved:    true, // or false
+          RequestedBy: "user:123",
+          Labels:      map[string]string{"source": "front-ui"},
+          Metadata:    map[string]any{"ticket_id": "INC-42"},
+      },
+  }
   ```
 
 ### Eventos de autorización de herramienta
@@ -838,14 +938,15 @@ Este evento es el registro canónico "quién/cuándo/qué" para una llamada de h
 - `tool_name`, `tool_call_id`
 - `approved` (true/false)
 - `summary` (resumen determinista renderizado por el runtime)
-- `approved_by` (copiado de `interrupt.ConfirmationDecision.RequestedBy`, pensado como identificador de principal estable)
+- `approved_by` (copiado de `api.ConfirmationDecision.RequestedBy`, pensado como identificador de principal estable)
 
 El evento se emite inmediatamente tras recibirse la decisión (antes de la ejecución de la herramienta cuando se aprueba, y antes de sintetizar el resultado denegado cuando se rechaza).
 
 Notas:
 
 - Los consumidores deben tratar la confirmación como un protocolo de runtime:
-  - Usa el motivo `RunPaused` que la acompaña (`await_confirmation`) para decidir cuándo mostrar una UI de confirmación.
+  - Muestra el primer elemento pendiente cuando su tipo sea `confirmation` y
+    envía la decisión con `AgentClient.Continue`.
   - No acoples el comportamiento de la UI a un nombre específico de herramienta de confirmación; trátalo como un detalle interno de transporte.
 - Las plantillas de confirmación (`PromptTemplate` y `DeniedResultTemplate`) son cadenas Go `text/template` ejecutadas con `missingkey=error`. Además de las funciones de plantilla estándar (por ejemplo, `printf`), Goa-AI proporciona:
   - `json v` → codifica `v` como JSON (útil para campos puntero opcionales o incrustar valores estructurados).
@@ -855,8 +956,9 @@ Notas:
 
 El runtime valida las interacciones de confirmación en la frontera:
 
-- El `ID` de confirmación coincide con el identificador de espera pendiente cuando se proporciona.
-- El objeto de decisión está bien formado (`RunID` no vacío, valor booleano `Approved`).
+- El `ID` de confirmación coincide con el identificador del elemento pendiente.
+- La continuación contiene exactamente una variante de respuesta y una decisión
+  bien formada.
 
 ---
 
@@ -881,7 +983,7 @@ Estos contratos son independientes:
 | `ToolSpec.Meta` | Una herramienta, para cada ejecución | Anotaciones generadas e inertes cuyas semánticas pertenecen al consumidor identificado; los metadatos por sí solos no cambian el runtime. |
 | `ToolSpec.Bookkeeping` | Una herramienta, para cada ejecución | La llamada es un registro de control duradero cuyo éxito no necesita otro turno del planner. No consume presupuesto de recuperación ni de fallos consecutivos. |
 | `ToolSpec.TerminalRun` | Una herramienta, para cada ejecución | La ejecución correcta finaliza por sí misma la ejecución e implica automáticamente bookkeeping. |
-| `RetryHint.AllowsRetry()` | Un resultado fallido | Se permite otro intento de herramienta en esta ejecución. Una sugerencia de timeout clasifica un fallo terminal y devuelve false. |
+| `ToolFailure.Recovery.Action` | Un resultado fallido | Selecciona la corrección con la misma herramienta, la replanificación sin ella o la finalización. |
 | `PlanResult.SynthesizeAfterTools` | Un lote seleccionado | Si el lote no tiene un fallo recuperable, el siguiente turno del planner debe responder. |
 | `PlanResumeInput.SynthesisOnly` | Una actividad del planner | Devuelve una respuesta final; las llamadas a herramientas no son válidas. |
 | `PlanResumeInput.Finalize` | Finalización forzada por el runtime | Un límite o deadline ha prohibido el trabajo normal. |
@@ -892,7 +994,7 @@ El runtime elige un único estado siguiente en este orden:
 | --- | --- |
 | Un límite o deadline exige finalización | Turno `Finalize` |
 | Se completó una herramienta `TerminalRun` correcta | Finaliza inmediatamente |
-| Algún resultado fallido tiene `AllowsRetry() == true` | Turno normal de reparación |
+| Algún resultado fallido tiene `AllowsToolTurn() == true` | Turno normal de recuperación |
 | `SynthesizeAfterTools` es true | Turno `SynthesisOnly` |
 | En otro caso | Turno normal de continuación |
 
@@ -949,11 +1051,15 @@ Los planificadores también reciben un `PlannerContext` a través de `input.Agen
 - `features/stream/pulse` – helpers de sink/subscriber de Pulse
 - `features/model/{anthropic,bedrock,openai}` – adaptadores de cliente de modelo para planificadores
 - `features/model/middleware` – middlewares compartidos de `model.Client` (por ejemplo, limitación de velocidad adaptativa)
-- `features/policy/basic` – motor de políticas simple con listas de allow/block y gestión de retry hints
+- `features/policy/basic` – motor de políticas simple con listas de allow/block y tratamiento de `ToolFailure`
 
 ### Throughput y rate limiting del cliente de modelo
 
-Goa-AI incluye un limitador de velocidad adaptativo y agnóstico del proveedor en `features/model/middleware`. Envuelve cualquier `model.Client`, estima los tokens por petición, encola a los llamadores usando un cubo de tokens y ajusta su presupuesto efectivo de tokens por minuto usando una estrategia aditiva-incremental/multiplicativa-decremental (AIMD) cuando los proveedores reportan throttling.
+Goa-AI incluye un limitador de velocidad adaptativo y agnóstico del proveedor
+en `features/model/middleware`. Envuelve cualquier `model.Client`, exige el
+recuento exacto de tokens de entrada, encola a los llamadores y ajusta su
+presupuesto efectivo de tokens por minuto mediante AIMD cuando el proveedor
+reporta throttling. No estima tokens ni mide cuotas de salida.
 
 ```go
 import (
@@ -964,9 +1070,12 @@ import (
 )
 
 awsClient := bedrockruntime.NewFromConfig(cfg)
-bed, _ := bedrock.New(awsClient, bedrock.Options{
+bed, err := bedrock.New(awsClient, bedrock.Options{
     DefaultModel: "us.anthropic.claude-4-5-sonnet-20251120-v1:0",
 })
+if err != nil {
+    panic(err)
+}
 
 rl := mdlmw.NewAdaptiveRateLimiter(
     ctx,
@@ -975,13 +1084,23 @@ rl := mdlmw.NewAdaptiveRateLimiter(
     80_000,              // initial TPM
     1_000_000,           // max TPM
 )
-limited := rl.Middleware()(bed)
+limited, err := rl.Middleware()(bed)
+if err != nil {
+    panic(err)
+}
 
 rt := runtime.New(runtimeStore)
 if err := rt.RegisterModel("bedrock", limited); err != nil {
     panic(err)
 }
 ```
+
+La construcción del middleware no comprueba el soporte de recuento. Si el
+proveedor o la solicitud no se puede contar exactamente, la primera llamada
+`Complete` o `Stream` devuelve `model.ErrTokenCountingUnsupported` antes de la
+inferencia. Vertex Gemini permite el recuento exacto; Bedrock solo admite las
+solicitudes y modelos aceptados por Runtime `CountTokens`, y OpenAI no tiene un
+contador nativo.
 
 ---
 

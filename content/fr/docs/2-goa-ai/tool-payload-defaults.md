@@ -7,65 +7,95 @@ llm_optimized: true
 aliases:
 ---
 
-Goa-AI generates **typed tool payload structs**, **JSON Schemas**, and **codecs** from your Goa design. This page documents a critical behavior: **how default values are applied for tool payloads**, and why this is coupled to pointer vs value field shapes.
+Goa-AI génère à partir de votre design Goa des **structures typées pour les charges utiles d'outils**, des **schémas JSON** et des **codecs**. Cette page décrit un comportement essentiel : **l'application des valeurs par défaut aux charges utiles d'outils**, et la raison pour laquelle elle dépend de la représentation des champs par pointeur ou par valeur.
 
-This is implemented to match Goa’s own HTTP pattern: **decode-body → transform**.
+Cette implémentation suit le modèle HTTP de Goa : **décodage du corps → transformation**.
 
-## Summary
+## Résumé
 
-- **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.
-- **Transform helper → final payload** using Goa’s `codegen.GoTransform`.
-- For **tool payloads**, the final payload struct is generated with Goa-style default semantics so that optional primitives with defaults can become **values** (non-pointers) and `GoTransform` can inject defaults deterministically.
+- **Décoder le JSON dans un type auxiliaire** dont les champs sont des pointeurs (la forme « decode-body ») afin que le codec distingue une valeur **absente** d'une valeur **nulle**.
+- **Transformer le type auxiliaire en charge utile finale** avec `codegen.GoTransform` de Goa.
+- Pour les **charges utiles d'outils**, la structure finale respecte la sémantique des valeurs par défaut de Goa : les primitives facultatives assorties d'une valeur par défaut peuvent devenir des **valeurs** (et non des pointeurs), ce qui permet à `GoTransform` d'injecter les valeurs par défaut de manière déterministe.
 
-If these contexts do not match, the generator can emit invalid nil checks or invalid assignments and the generated code will not compile.
+Si ces contextes ne correspondent pas, le générateur peut produire des tests de nil ou des affectations invalides, et le code généré ne compile pas.
 
-## The two shapes
+## Les deux représentations
 
-### 1) JSON decode-body helper (pointer fields)
+### 1) Type auxiliaire de décodage JSON (champs pointeurs)
 
-Incoming JSON is decoded into a helper struct whose primitive fields are pointers:
+Le JSON entrant est décodé dans une structure auxiliaire dont les champs primitifs sont des pointeurs :
 
-- missing field → `nil`
-- provided field → non-nil pointer
+- champ absent → `nil`
+- champ fourni → pointeur non nil
 
-This is the shape used for:
+Cette représentation sert à :
 
-- required-field checks
-- validation error attribution
-- “did the caller provide this field?”
+- vérifier les champs obligatoires ;
+- attribuer précisément les erreurs de validation ;
+- déterminer si l'appelant a fourni un champ.
 
-### 2) Final tool payload type (default-aware)
+### 2) Type final de la charge utile (avec valeurs par défaut)
 
-The final tool payload type is what adapters and executors consume.
+Le type final de la charge utile est celui que consomment les adaptateurs et les exécuteurs.
 
-For payloads, defaulted optional primitives are emitted as **values** so defaults can be applied deterministically during transformation.
+Pour les charges utiles, les primitives facultatives assorties d'une valeur par défaut sont générées sous forme de **valeurs**, afin que la transformation applique les valeurs par défaut de manière déterministe.
 
-## How defaults are applied
+## Application des valeurs par défaut
 
-Defaults are applied during **helper → payload transformation**:
+Les valeurs par défaut sont appliquées pendant la **transformation du type auxiliaire vers la charge utile** :
 
-- The helper contains `nil` pointers for missing fields.
-- The target payload has default-aware field shapes.
-- Goa’s `codegen.GoTransform` emits code that:
-  - copies values when helper pointers are non-nil
-  - assigns default literals when helper pointers are nil (and a default exists)
+- le type auxiliaire contient des pointeurs `nil` pour les champs absents ;
+- la charge utile cible utilise des représentations compatibles avec les valeurs par défaut ;
+- `codegen.GoTransform` de Goa génère le code qui :
+  - copie les valeurs lorsque les pointeurs du type auxiliaire ne sont pas nil ;
+  - affecte les littéraux par défaut lorsque ces pointeurs sont nil et qu'une valeur par défaut existe.
 
-## Generator maintainer contract (do not break this)
+## Validation à la frontière et erreurs de contrat
 
-When changing codegen that touches any of the following:
+Les codecs d'outils générés constituent la frontière entre le JSON produit par
+le modèle et les valeurs typées Goa-AI. Ils ne se contentent pas d'appeler
+`json.Unmarshal` :
 
-- tool payload type materialization
-- decode-body helper generation
-- adapter transforms (tool payload → service method payload)
+- les charges utiles et résultats qui sont des objets fermés refusent les
+  champs inconnus ;
+- un champ inconnu produit un problème structuré `unknown_field` qui indique
+  les clés autorisées à cet emplacement ;
+- une incompatibilité de type JSON produit un problème structuré
+  `invalid_field_type` contenant les noms générés des types JSON attendu et
+  observé ;
+- les codecs de résultats limités n'acceptent que les champs sémantiques du
+  résultat et les champs limités canoniques de Goa-AI (`returned`, `total`,
+  `truncated`, `refinement_hint` et, facultativement, `next_cursor`).
 
-you must keep default semantics consistent across:
+Un appel produit par le modèle qui ne respecte pas ce contrat est refusé avant
+d'atteindre le planificateur ou l'exécuteur. Le client de modèle validé renvoie
+`model.OutputValidationError`, puis le planificateur ou le runtime présente
+l'échec sous forme de `planner.OutputContractError`, sans lancer de requête de
+correction. Pour un appel construit par le planificateur,
+`planner.NewToolRequest` renvoie directement l'erreur d'encodage.
 
-- the tool payload type generation, and
-- any transforms that read tool payload fields.
+La récupération structurée commence seulement après l'admission d'une charge
+utile valide. Si l'exécuteur ou la frontière du domaine refuse ensuite
+l'opération, il peut renvoyer un `ToolFailure` avec une `RecoveryDirective`.
+Le runtime applique alors cette directive au tour suivant du planificateur.
 
-If you mismatch them, Goa’s transform generator can emit uncompilable code such as:
+## Contrat des mainteneurs du générateur (à préserver)
 
-- `if in.Field != nil { ... }` when `Field` is a value
-- `out.Field = "x"` when `Field` is a `*T`
+Toute modification du générateur qui touche l'un des éléments suivants :
+
+- matérialisation du type de charge utile d'outil ;
+- génération du type auxiliaire de décodage ;
+- métadonnées de clés des objets fermés et enrichissement de la validation ;
+- transformations des adaptateurs (charge utile d'outil → charge utile de méthode de service) ;
+
+doit conserver une sémantique cohérente des valeurs par défaut entre :
+
+- la génération du type de charge utile d'outil ;
+- les codecs et transformations générés qui lisent ses champs.
+
+Dans le cas contraire, le générateur de transformations de Goa peut produire du code qui ne compile pas, par exemple :
+
+- `if in.Field != nil { ... }` lorsque `Field` est une valeur ;
+- `out.Field = "x"` lorsque `Field` est un `*T`.
 
 

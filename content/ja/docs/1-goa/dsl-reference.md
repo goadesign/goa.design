@@ -70,6 +70,38 @@ var Team = Type("Team", func() {
 })
 ```
 
+すべての item が存在する必要がある場合は `ArrayOfRequired` を使います。primitive、
+primitive alias、object のいずれにも適用されます。受信 JSON／JSON-RPC array の
+`null` は拒否されますが、`""`、`0`、`false` は有効な item です。
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` は、必ず一つだけ branch を選ぶ選択肢を宣言します。caller が branch を
+選ばなければならない場合は、その `OneOf` attribute を required にします。
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+required `OneOf` は、branch 未選択、value が nil の typed wrapper、nil の message、
+byte slice、`Any` を拒否します。nil ではない empty message は有効です。生成された
+constructor、setter、accessor、`Kind` method は branch storage を非公開にし、選択を
+一つに保ちます。
+
 #### マップ
 
 マップは、型安全性を備えたキーと値の関連付けを提供します：

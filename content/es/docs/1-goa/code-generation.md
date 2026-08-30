@@ -22,9 +22,11 @@ go install goa.design/goa/v3/cmd/goa@latest
 ```
 
 {{< alert title="Probar una versión preliminar de la generación" color="info" >}}
-Las versiones preliminares son opcionales. Fije tanto el módulo de Goa como el
-comando `goa` a la versión exacta indicada en la
-[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+Las versiones preliminares son opcionales. Fije el módulo de Goa y el comando
+`goa` al mismo commit. El trabajo actual está en la
+[rama preliminar `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+en el commit
+[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
 Vuelva a generar todo el directorio `gen/`, no mezcle nunca resultados estables
 y preliminares y, a continuación, compile y pruebe la aplicación completa.
 Coordine las actualizaciones de cliente y servidor cuando la guía identifique
@@ -546,14 +548,19 @@ Goa valida los datos en los límites del sistema:
 
 ### Reglas de puntero para campos Struct
 
-| Propiedades | Carga útil/Resultado | Cuerpo de la solicitud (servidor) | Cuerpo de la respuesta (servidor) |
-|------------|---------------|----------------------|---------------------|
-| Requerido o con valor por defecto | Directo (-) | Puntero (*) | Directo (-) |
-| No requerido, sin valor por defecto | Puntero (*) | Puntero (*) | Puntero (*) |
+Los tipos de servicio representan valores ya validados. Los tipos de transporte
+decodificados también deben conservar si un campo entrante estaba ausente.
 
-Tipos especiales:
-- **Objetos (structs)**: Utilice siempre punteros
-- **Arrays y Mapas**: Nunca utilizar punteros (ya son tipos de referencia)
+| Campo | Tipo de servicio | Entrada de transporte decodificada | Salida de transporte codificada |
+|---|---|---|---|
+| Primitivo requerido o con valor por defecto | Valor | Puntero cuando se valida la presencia | Valor |
+| Primitivo opcional sin valor por defecto | Puntero | Puntero | Puntero |
+| Objeto | Puntero | Puntero | Puntero |
+| Array o mapa | Valor | Valor | Valor |
+
+La entrada decodificada es una solicitud en el servidor o una respuesta en el
+cliente. Los campos primitivos requeridos de gRPC usan presencia proto3 y son
+punteros en los structs protobuf; los structs del servicio conservan valores.
 
 Ejemplo:
 ```go
@@ -564,6 +571,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` usa punteros para elementos primitivos y alias primitivos
+solo en cuerpos HTTP y JSON-RPC entrantes, para rechazar `[null]`. El servicio y
+las respuestas generadas usan slices de valores.
 
 ### Manejo de valores por defecto
 
@@ -637,9 +648,9 @@ que editan valores o archivos generados. Un plugin que declara un nombre a
 nivel de paquete debe usar la fase de planificación de la factoría para que Goa
 pueda reservar ese nombre junto con todas las demás declaraciones antes de
 renderizar. Consulte la
-[arquitectura de generación de código](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
 y la
-[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
 para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---

@@ -8,6 +8,11 @@ aliases:
 
 Goa-AI は、MCP (Model Context Protocol) サーバーをエージェントへ統合するためのファーストクラスのサポートを提供します。MCP ツールセットにより、エージェントは外部 MCP サーバーのツールを、生成されたラッパーと caller 経由で利用できます。
 
+handwritten caller が現在実装するのは MCP `2025-06-18` の tool contract
+です。session を初期化し、server の tools capability を必須とし、`tools/call`
+を呼びます。このページは prompts や resources を含む MCP 全体の実装を示すもの
+ではありません。
+
 ## 概要
 
 MCP 統合は次の流れです:
@@ -15,8 +20,8 @@ MCP 統合は次の流れです:
 1. **サービス設計**: Goa の MCP DSL で MCP サーバーを宣言する
 2. **エージェント設計**: `FromMCP(...)` または `FromExternalMCP(...)` で宣言したツールセットとして、その suite を参照する
 3. **コード生成**: Goa-backed の場合は MCP JSON-RPC サーバーを生成し、suite 用のランタイム登録 helper とツールセット所有の specs/codecs も生成する
-4. **ランタイム配線**: HTTP または stdio の `mcpruntime.Caller` を作成する。生成 helper がツールセットを登録し、JSON-RPC エラーを `planner.RetryHint` に変換する
-5. **プランナー実行**: プランナーは正規 JSON payload のツール呼び出しを enqueue するだけでよい。ランタイムが MCP caller へ転送し、hook で結果を永続化し、構造化 telemetry を表面化する
+4. **ランタイム配線**: `mcpruntime.Caller` transport（HTTP/SSE/stdio）を作成する。生成 helper が toolset を登録し、JSON-RPC error を `planner.ToolFailure` に変換する
+5. **プランナー実行**: プランナーは生成済みの型付き tool descriptor で call を構築する。runtime が正規 JSON を MCP caller へ転送し、result を記録し、構造化 telemetry を公開する
 
 ---
 
@@ -136,7 +141,7 @@ type CallRequest struct {
 }
 
 type CallResponse struct {
-    Content           []string
+    Content           []ContentBlock
     StructuredContent json.RawMessage
 }
 ```
@@ -159,8 +164,9 @@ caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-HTTP caller は作成時に MCP initialize handshake を行います。ツール応答は
-JSON と HTTP event stream の両方を受け付けるため、別の SSE caller は不要です。
+HTTP caller は作成時に MCP initialize handshake を行います。各 JSON-RPC 2.0
+message を設定済み endpoint への HTTP `POST` として送ります。tool response は
+JSON または HTTP event stream で受信でき、別の SSE caller は不要です。
 
 ### Stdio Caller
 
@@ -220,11 +226,11 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 
 ## ツール実行フロー
 
-1. プランナーが MCP ツールを参照するツール呼び出しを返します (payload は `json.RawMessage`)
-2. ランタイムが MCP ツールセット登録を検出します
-3. 正規 JSON payload を MCP caller へ転送します
-4. ツール名と payload で MCP caller を呼び出します
-5. MCP caller が HTTP または stdio トランスポートと JSON-RPC プロトコルを扱います
+1. プランナーが生成済み MCP tool descriptor から構築した call を返すか、検証済み model call を `planner.ToolRequestFromModelCall` で転送します
+2. runtime が planner result 全体を検証して execution ID を割り当て、`runtime.ToolCall` value を作ります
+3. runtime が MCP toolset 登録を検出します
+4. runtime call の正規 JSON payload を MCP caller へ転送します
+5. MCP caller がトランスポート (HTTP/SSE/stdio) と JSON-RPC プロトコルを扱います
 6. 生成 codec で結果をデコードします
 7. `ToolResult` をプランナーへ返します
 
@@ -232,13 +238,17 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 
 ## エラー処理
 
-生成 helper は JSON-RPC エラーを `planner.RetryHint` 値へ変換します:
+生成 helper は JSON-RPC error を `planner.ToolFailure` value へ変換します:
 
-- **バリデーションエラー** → プランナー向けのガイダンス付き `RetryHint`
-- **ネットワークエラー** → バックオフ推奨を含む retry hint
-- **サーバーエラー** → エラー詳細をツール結果に保持
+- **validation error** → 正確な修正情報を持つ invalid-call failure
+- **network error** → 明示的な replan または finish action を持つ unavailable／timeout failure
+- **server error** → 構造化された cause を failure に保持
 
-これにより、プランナーはネイティブツールセットと同じ retry パターンで MCP エラーから回復できます。
+これにより MCP toolset と native toolset は、同じ強制 recovery contract を使います。
+
+tool が返した failure は `ToolFailure` になります。完了した planner result が
+不正な場合は `OutputContractError` となり、別の model request を行わず拒否され、
+tool failure として提示されません。
 
 ---
 
@@ -341,24 +351,28 @@ func main() {
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+    call, err := planner.NewToolRequest(
+        mcpspecs.SearchTool(),
+        &mcpspecs.SearchPayload{Query: "golang tutorials"},
+    )
+    if err != nil {
+        return nil, err
+    }
     return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{
-            {
-                Name:    "assistant.assistant-mcp.search",
-                Payload: []byte(`{"query": "golang tutorials"}`),
-            },
-        },
+        ToolCalls: []planner.ToolRequest{call},
     }, nil
 }
 ```
+
+ここで `mcpspecs` は MCP toolset の生成 specs package です。検証済みの model-generated tool call を転送する場合は、provider correlation ID を保持するため `planner.ToolRequestFromModelCall` を使います。
 
 ---
 
 ## ベストプラクティス
 
-- **登録は codegen に任せる**: MCP ツールセット登録には生成 helper を使い、codec と retry hint の一貫性を保つ
+- **登録は codegen に任せる**: MCP toolset 登録には生成 helper を使い、codec と構造化 failure recovery の一貫性を保つ
 - **型付き caller を使う**: 利用できる場合は型安全のため Goa 生成 JSON-RPC caller を優先する
-- **エラーを穏当に扱う**: MCP エラーを `RetryHint` 値へ map し、プランナーが回復できるようにする
+- **error を明示的に扱う**: MCP error を、正しい failure kind と recovery action を持つ `ToolFailure` value へ map する
 - **telemetry を監視する**: MCP 呼び出しは構造化 telemetry イベントを発行するため、可観測性に活用する
 - **適切な transport を選ぶ**: リモートサーバーには HTTP、サブプロセス型サーバーには stdio を使う。HTTP caller は JSON と event-stream の応答を受け付ける
 

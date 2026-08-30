@@ -22,9 +22,11 @@ go install goa.design/goa/v3/cmd/goa@latest
 ```
 
 {{< alert title="Provare una versione preliminare della generazione" color="info" >}}
-Le versioni preliminari sono facoltative. Fissare sia il modulo Goa sia il
-comando `goa` alla versione esatta indicata nella
-[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+Le versioni preliminari sono facoltative. Fissare il modulo Goa e il comando
+`goa` allo stesso commit. Il lavoro corrente si trova nel
+[branch preliminare `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+al commit
+[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
 Rigenerare l'intera directory `gen/`, senza mai mescolare output stabile e
 preliminare, quindi compilare e provare l'intera applicazione. Coordinare gli
 aggiornamenti di client e server quando la guida segnala una modifica al formato
@@ -546,14 +548,19 @@ Goa convalida i dati ai confini del sistema:
 
 ### Regole sui puntatori per i campi delle strutture
 
-| Proprietà | Payload/Risultato | Corpo della richiesta (Server) | Corpo della risposta (Server) |
-|------------|---------------|----------------------|---------------------|
-| Richiesto O Predefinito | Diretto (-) | Puntatore (*) | Diretto (-) |
-non richiesto, nessun valore predefinito | Puntatore (*) | Puntatore (*) | Puntatore (*) | Puntatore (*) |
+I tipi di servizio rappresentano valori già convalidati. I tipi di trasporto
+decodificati devono anche conservare l'assenza di un campo in ingresso.
 
-Tipi speciali:
-- **Oggetti (strutture)**: Usare sempre i puntatori
-- **Array e mappe**: Non utilizzare mai i puntatori (sono già tipi di riferimento)
+| Campo | Tipo di servizio | Input di trasporto decodificato | Output di trasporto codificato |
+|---|---|---|---|
+| Primitivo richiesto o con valore predefinito | Valore | Puntatore quando va convalidata la presenza | Valore |
+| Primitivo facoltativo senza valore predefinito | Puntatore | Puntatore | Puntatore |
+| Oggetto | Puntatore | Puntatore | Puntatore |
+| Array o mappa | Valore | Valore | Valore |
+
+L'input decodificato è una richiesta sul server o una risposta sul client. I
+primitivi gRPC richiesti usano la presenza proto3 e sono puntatori negli struct
+protobuf; gli struct di servizio mantengono valori.
 
 Esempio:
 ```go
@@ -564,6 +571,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` usa puntatori per elementi primitivi e alias primitivi solo
+nei body HTTP e JSON-RPC in ingresso, per rifiutare `[null]`. Il servizio e le
+risposte generate usano slice di valori.
 
 ### Gestione dei valori predefiniti
 
@@ -636,9 +647,9 @@ Le callback pubblicate restano adatte ai plugin che modificano valori o file
 generati. Un plugin che dichiara un nome a livello di pacchetto deve usare la
 fase di pianificazione della factory, così Goa può riservare quel nome insieme a
 tutte le altre dichiarazioni prima del rendering. Consultare
-[l'architettura della generazione di codice](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+[l'architettura della generazione di codice](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
 e la
-[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
 per il contratto dettagliato dei plugin e i passaggi di migrazione.
 
 ---

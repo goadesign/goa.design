@@ -57,6 +57,27 @@ Le contrat de transcription de haut niveau dans Goa-AI est :
 
 Il n'y a **pas d'API séparée pour l'historique de l'outil** ; la transcription est l'historique.
 
+Les adaptateurs de modèles ne conservent aucun état entre les appels. Chaque
+`model.Request` doit contenir la transcription complète prête pour le
+fournisseur ; un ID d'exécution ne leur demande pas de charger les messages
+antérieurs. Les clients publics valident la requête et la réponse complète
+avant que le planificateur puisse les observer.
+
+### Compression de l'historique
+
+La politique `History(...)` d'un agent peut résumer les anciens tours tout en
+conservant une fin exacte et limitée. Les valeurs `CompressAt...` déterminent
+le début de la compression ; les valeurs `KeepMax...` déterminent les tours
+complets les plus récents qui restent inchangés. Le runtime ne tronque jamais
+un tour.
+
+La compression exige un `HistoryModel` configuré. Les déclencheurs et limites
+fondés sur les jetons exigent aussi le comptage exact de ce client. Bedrock
+Runtime ne peut pas compter les requêtes avec sortie structurée, et certains
+modèles Claude actuels exigent l'endpoint Mantle distinct d'AWS. Consultez
+[Runtime → Politiques d'historique](../runtime/#history-policies) et
+[Référence DSL → History](../dsl-reference/#history).
+
 ### Comment cela simplifie les planificateurs et les interfaces utilisateur
 
 - **Les planificateurs** : Reçoivent la transcription actuelle dans `planner.PlanInput.Messages` et `planner.PlanResumeInput.Messages`. Ils peuvent décider de ce qu'il faut faire en se basant uniquement sur les messages, sans passer par un état supplémentaire.
@@ -94,6 +115,13 @@ sont déjà chargés, `ReplayRunLogEvents` effectue la même projection. Les
 adaptateurs de fournisseur préservent l’ordre des parties ;
 `ValidatePlannerTranscript` et `ValidateBedrock` permettent de vérifier une
 transcription à la frontière appropriée.
+
+`ValidatePlannerTranscript` exige que chaque groupe d’appels d’outil de
+l’assistant soit suivi immédiatement d’un seul message utilisateur contenant
+exactement un résultat pour chaque identifiant d’appel. Lorsque le raisonnement
+est activé, `ValidateBedrock` exige en plus que chaque message de l’assistant
+qui appelle un outil commence par un `ThinkingPart`. Aucun validateur ne
+modifie les messages.
 
 Ces enregistrements servent à la reprise et à l’inspection des workflows. Ils ne
 remplacent pas la transcription détenue par le produit pour l’historique du
@@ -177,6 +205,14 @@ rt := runtime.New(store, runtime.WithEngine(eng))
 ```
 
 Dans une application monoprocessus, `store` peut être un adaptateur local. Dans une application distribuée, un service unique possède la base de données et expose des méthodes typées ; les workers implémentent `storage.Store` en appelant ce service. Des services distincts n’écrivent pas directement dans les mêmes collections.
+
+Les appels d'outils possèdent deux identifiants distincts.
+`ModelToolCallID` est l'ID de transcription du fournisseur qui associe un appel
+produit par le modèle à son résultat visible par le modèle. `ToolCallID` est
+l'ID d'exécution du runtime utilisé par les activités, les tentatives, le
+journal d'exécution et les événements de flux. Un appel produit par le modèle
+et suspendu conserve les deux ; ne remplacez jamais l'un par l'autre et ne les
+déduisez pas de l'ordre d'exécution.
 
 ---
 

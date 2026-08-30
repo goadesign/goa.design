@@ -8,6 +8,11 @@ aliases:
 
 Goa-AI provides first-class support for integrating MCP (Model Context Protocol) servers into your agents. MCP toolsets allow agents to consume tools from external MCP servers through generated wrappers and callers.
 
+The handwritten callers currently implement the MCP `2025-06-18` tool
+contract. They initialize a session, require the server's tools capability, and
+invoke `tools/call`. This page does not claim support for the complete MCP
+surface such as prompts or resources.
+
 ## Overview
 
 MCP integration follows this workflow:
@@ -15,8 +20,12 @@ MCP integration follows this workflow:
 1. **Service design**: Declare the MCP server via Goa's MCP DSL
 2. **Agent design**: Reference that suite via a toolset declared with `FromMCP(...)` or `FromExternalMCP(...)`
 3. **Code generation**: Produces the MCP JSON-RPC server (when Goa-backed) plus runtime registration helpers and toolset-owned specs/codecs for the suite
-4. **Runtime wiring**: Instantiate an HTTP or stdio `mcpruntime.Caller`. Generated helpers register the toolset and adapt JSON-RPC errors into `planner.RetryHint` values
-5. **Planner execution**: Planners simply enqueue tool calls with canonical JSON payloads; the runtime forwards them to the MCP caller, persists results via hooks, and surfaces structured telemetry
+4. **Runtime wiring**: Instantiate an `mcpruntime.Caller` transport
+   (HTTP/SSE/stdio). Generated helpers register the toolset and adapt JSON-RPC
+   errors into `planner.ToolFailure` values
+5. **Planner execution**: Planners construct calls with generated typed tool
+   descriptors; the runtime forwards canonical JSON to the MCP caller, records
+   results, and surfaces structured telemetry
 
 ---
 
@@ -136,7 +145,7 @@ type CallRequest struct {
 }
 
 type CallResponse struct {
-    Content           []string
+    Content           []ContentBlock
     StructuredContent json.RawMessage
 }
 ```
@@ -159,9 +168,10 @@ caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
 })
 ```
 
-The HTTP caller performs the MCP initialize handshake on creation. It accepts
-tool responses encoded as JSON or as an HTTP event stream; a separate SSE
-caller is not needed.
+The HTTP caller performs the MCP initialize handshake on creation. It sends
+each JSON-RPC 2.0 message as an HTTP `POST` to the configured endpoint. Tool
+responses may be JSON or an HTTP event stream; a separate SSE caller is not
+needed.
 
 ### Stdio Caller
 
@@ -221,11 +231,14 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 
 ## Tool Execution Flow
 
-1. Planner returns tool calls referencing MCP tools (payload is `json.RawMessage`)
-2. Runtime detects MCP toolset registration
-3. Forwards canonical JSON payload to MCP caller
-4. Invokes MCP caller with tool name and payload
-5. MCP caller handles the HTTP or stdio transport and JSON-RPC protocol
+1. Planner returns tool calls constructed from the generated MCP tool
+   descriptors, or forwards validated model calls with
+   `planner.ToolRequestFromModelCall`
+2. Runtime validates the complete planner result and assigns execution IDs,
+   producing `runtime.ToolCall` values
+3. Runtime detects MCP toolset registration
+4. Forwards the runtime call's canonical JSON payload to the MCP caller
+5. MCP caller handles transport (HTTP/SSE/stdio) and JSON-RPC protocol
 6. Decodes result using generated codec
 7. Returns `ToolResult` to planner
 
@@ -233,13 +246,18 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 
 ## Error Handling
 
-Generated helpers adapt JSON-RPC errors into `planner.RetryHint` values:
+Generated helpers adapt JSON-RPC errors into `planner.ToolFailure` values:
 
-- **Validation errors** → `RetryHint` with guidance for planners
-- **Network errors** → Retry hints with backoff recommendations
-- **Server errors** → Error details preserved in tool results
+- **Validation errors** → invalid-call failures with exact correction evidence
+- **Network errors** → unavailable or timeout failures with an explicit
+  replanning or finish action
+- **Server errors** → structured causes preserved in the failure
 
-This allows planners to recover from MCP errors using the same retry patterns as native toolsets.
+This gives MCP and native toolsets the same enforced recovery contract.
+
+Failures returned by a tool become `ToolFailure`. An invalid completed planner
+result becomes `OutputContractError` instead; it is rejected without another
+model request and is not presented as a tool failure.
 
 ---
 
@@ -342,24 +360,33 @@ Your planner can reference MCP tools just like native toolsets:
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+    call, err := planner.NewToolRequest(
+        mcpspecs.SearchTool(),
+        &mcpspecs.SearchPayload{Query: "golang tutorials"},
+    )
+    if err != nil {
+        return nil, err
+    }
     return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{
-            {
-                Name:    "assistant.assistant-mcp.search",
-                Payload: []byte(`{"query": "golang tutorials"}`),
-            },
-        },
+        ToolCalls: []planner.ToolRequest{call},
     }, nil
 }
 ```
+
+Here `mcpspecs` is the generated specs package for the MCP toolset. When
+forwarding a validated model-emitted tool call instead, use
+`planner.ToolRequestFromModelCall` so its provider correlation ID is preserved.
 
 ---
 
 ## Best Practices
 
-- **Let codegen manage registration**: Use the generated helper to register MCP toolsets; avoid hand-written glue so codecs and retry hints stay consistent
+- **Let codegen manage registration**: Use the generated helper to register MCP
+  toolsets; avoid hand-written glue so codecs and structured failure recovery
+  stay consistent
 - **Use typed callers**: Prefer Goa-generated JSON-RPC callers when available for type safety
-- **Handle errors gracefully**: Map MCP errors to `RetryHint` values to help planners recover
+- **Handle errors explicitly**: Map MCP errors to `ToolFailure` values with the
+  correct failure kind and recovery action
 - **Monitor telemetry**: MCP calls emit structured telemetry events; use them for observability
 - **Choose the right transport**: Use HTTP for remote servers and stdio for subprocess-based servers. The HTTP caller accepts JSON and event-stream responses
 

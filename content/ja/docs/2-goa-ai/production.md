@@ -29,7 +29,7 @@ aliases:
 
 ### 概要
 
-`features/model/middleware` パッケージは、モデルクライアント境界に挿入する **AIMD（Additive Increase / Multiplicative Decrease）スタイルの適応型レートリミッター**を提供します。トークンコストを見積もり、キャパシティが利用可能になるまで呼び出し元をブロックし、プロバイダーからのレート制限シグナルに応じて tokens-per-minute バジェットを自動調整します。
+`features/model/middleware` package は、検証済み model client の下に置く **AIMD（Additive Increase / Multiplicative Decrease）スタイルの適応型 rate limiter** を提供します。provider に正確な input-token count を問い合わせ、その capacity が利用可能になるまで caller を block し、provider の throttling に応じて input-tokens-per-minute budget を調整します。token を推定せず、output quota は計量しません。
 
 ### AIMD 戦略
 
@@ -51,41 +51,38 @@ aliases:
 ```go
 import (
     "context"
-    "os"
 
-    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
+    rt := runtime.New(runtimeStore) // host が所有する runtime storage
 
-    // Create the adaptive rate limiter
-    // Parameters: context, rmap (nil for local), key, initialTPM, maxTPM
-    limiter := middleware.NewAdaptiveRateLimiter(
-        ctx,
-        nil,     // nil = process-local limiter
-        "",      // key (unused when rmap is nil)
-        60000,   // initial tokens per minute
-        120000,  // maximum tokens per minute
-    )
-
-    // Create your underlying model client
-    modelClient, err := openai.New(openai.Options{
-        APIKey:       os.Getenv("OPENAI_API_KEY"),
-        DefaultModel: "gpt-5-mini",
-        HighModel:    "gpt-5",
-        SmallModel:   "gpt-5-nano",
+    // Vertex Gemini exposes the exact CountTokens operation required by the limiter.
+    modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+        ProjectID:    "my-gcp-project",
+        Location:     "us-central1",
+        DefaultModel: "gemini-2.5-flash",
     })
     if err != nil {
         panic(err)
     }
 
-    // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(modelClient)
+    limiter := middleware.NewAdaptiveRateLimiter(
+        ctx,
+        nil,     // process-local limiter
+        "",      // unused for a process-local limiter
+        60000,   // initial input tokens per minute
+        120000,  // maximum input tokens per minute
+    )
 
-    rt := runtime.New(runtimeStore)
+    rateLimitedClient, err := limiter.Middleware()(modelClient)
+    if err != nil {
+        panic(err)
+    }
+
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -108,59 +105,57 @@ func main() {
     ctx := context.Background()
 
     // Create a Pulse replicated map backed by Redis
-    rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
+    rm, err := rmap.Join(ctx, "rate-limits", redisClient)
     if err != nil {
         panic(err)
     }
+    defer rm.Close()
 
-    // Create cluster-aware limiter
-    // All processes sharing this map and key coordinate their budgets
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // shared key for this model
+        "vertex:gemini",  // shared key for this model family
         60000,            // initial TPM
         120000,           // max TPM
     )
 
-    // Wrap your client as before
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient, err := limiter.Middleware()(vertexClient)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-クラスタ対応制限を使うと:
+replicated-map の read／write が成功している間:
 - **バックオフがグローバルに伝播**: どれか 1 つのプロセスが `ErrRateLimited` を受けると、全プロセスがバジェットを減らします
 - **プロービングが協調される**: 成功リクエストが共有バジェットを増やします
 - **自動リコンシリエーション**: 外部変更を監視し、ローカルリミッターを更新します
 
-### トークン見積もり
+nil map または空 key を渡すと、意図して process-local limiter を作ります。両方を設定したものの shared key がなく、middleware が seed できない場合も process-local operation へ fallback します。startup 後に shared backoff／probe update が失敗しても model call 自体は失敗しません。その process は後続の replicated-map event で reconcile されるまで、local adaptive budget を使い続けます。cluster-wide coordination が必要なら Redis availability を監視してください。
 
-リミッターは単純なヒューリスティックでリクエストコストを見積もります:
-- テキストパートと文字列ツール結果の文字数を数える
-- おおよそ「3 文字 ≒ 1 トークン」でトークン数に換算する
-- システムプロンプトやプロバイダーオーバーヘッドとして 500 トークンのバッファを加算する
+### 正確な token count
 
-この見積もりは、過少カウントを避けるために意図的に保守的です。
+limiter は capacity を予約する前に、wrapped client の `CountTokens` operation を呼びます。`Exact=true` を要求し、推定はしません。
+
+Vertex Gemini は native count operation を公開します。Bedrock は対応箇所で Runtime `CountTokens` を使いますが、structured-output request と、別の AWS Mantle endpoint を必要とする Claude Opus 4.7、Sonnet 5、Mythos 5 などでは `model.ErrTokenCountingUnsupported` を返します。remote gateway が counting を保つのは `gateway.NewCountingRemoteClient` で構築した場合だけです。OpenAI には native token counter がありません。
+
+counting 非対応の client も wrap 自体は成功します。最初の `Complete` または `Stream` call が inference 前に `model.ErrTokenCountingUnsupported` を返します。
+
+limiter は成功した unary call または正常な stream end の後に上向き probe を行い、terminal `model.ErrRateLimited` の後に backoff します。terminal outcome に到達せず stream を開閉した場合は capacity を変更しません。
 
 ### ランタイムとの統合
 
 レート制限したクライアントを Goa-AI runtime に配線します。
 
 ```go
-// Create limiters for each model you use
-claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
-gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
-
-// Wrap underlying clients
-claudeClient := claudeLimiter.Middleware()(bedrockClient)
-gptClient := gptLimiter.Middleware()(openaiClient)
-
-// Configure runtime with rate-limited clients
-rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
-if err := rt.RegisterModel("claude", claudeClient); err != nil {
+vertexLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+limitedVertex, err := vertexLimiter.Middleware()(vertexClient)
+if err != nil {
     panic(err)
 }
-if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
 ```
@@ -191,18 +186,7 @@ if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
 
 ### 監視
 
-メトリクスとログでレートリミッターの挙動を追跡します。
-
-```go
-// The limiter logs backoff events at WARN level
-// Monitor for sustained throttling by tracking:
-// - Wait time distribution (how long requests queue)
-// - Backoff frequency (how often 429s occur)
-// - Current TPM vs. initial TPM
-
-// Example: export current capacity to Prometheus
-currentTPM := limiter.CurrentTPM()
-```
+wrapped client 周辺の telemetry で model-call latency と terminal `model.ErrRateLimited` error を測定します。replicated map を使う場合は Redis も監視します。shared-state initialization や update が失敗すると、middleware は意図して process-local budget で model call を続行するためです。
 
 ### ベストプラクティス
 
@@ -314,7 +298,7 @@ Temporal は Goa-AI エージェントに耐久実行を提供します。エー
 | ツール呼び出しがタイムアウト | run 失敗（または手動対処） | バックオフ付き自動リトライ |
 | レート制限（429） | run 失敗 | バックオフして自動リトライ |
 | ネットワーク分断 | 進捗が部分的に失われる | 再接続後に再開 |
-| run 中にデプロイ | 実行中 run が失敗 | ワーカーをドレインし、新ワーカーが再開 |
+| run 中にデプロイ | 実行中 run が失敗 | 既存 workflow は保持された互換 worker を使い続け、新規 workflow は昇格済み version を使う |
 
 ### インストール
 
@@ -360,10 +344,6 @@ import (
     temporalclient "go.temporal.io/sdk/client"
     "go.temporal.io/sdk/worker"
     "go.temporal.io/sdk/workflow"
-
-    // Your generated tool specs aggregate.
-    // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
-    specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
 const releaseBuildID = "git-sha-or-image-digest"
@@ -372,10 +352,6 @@ temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // Required: enforce goa-ai's workflow boundary contract.
-        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
-        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
-        DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
@@ -412,9 +388,28 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 checkpoint、record が統合された `storage.Store` contract を満たしていなければ
 なりません。storage owner と、それを呼ぶすべての worker をまとめて deploy
 します。旧 split-store writer と新 integrated-store writer を同時に動かしては
-いけません。Goa-AI は database migration の手順を規定しません。host
-application が、自身の database と deployment environment に合う conversion、
-verification、backup、recovery を所有します。
+いけません。
+
+traffic のない状態で、temporary database job または pod から disposable migration
+program を実行します。この program は host application が所有し、通常 release には
+含めず、cutover の検証後に削除します。
+
+1. runtime database を backup し、writer がないことを確認します。
+2. verification mode で migration を実行し、拒否された record をすべて修正します。
+3. conversion を適用し、schema、index、session、run metadata、v7 checkpoint、
+   immutable record を検証します。
+4. storage owner と全 worker をまとめて deploy し、migration program を削除します。
+
+conversion 開始後の rollback は database 全体の restore です。partial conversion の
+database に旧 writer を接続してはいけません。
+
+`ClientOptions.DataConverter` を設定しないでください。Temporal engine は custom converter を拒否し、すべての worker と client が同じ永続 contract を使うよう Goa-AI の bounded converter を自ら install します。
+
+### Temporal payload contract
+
+workflow または activity の各 argument list には、encode 後の aggregate limit `engine.MaxPayloadBytes`（1 MiB）があります。converter は encode 前に、depth が 64 level を超える value graph または visited value が 100,000 を超える graph も拒否します。oversized data を truncate しません。
+
+`planner.ToolResult` は in-process value で、Temporal boundary を越えられません。workflow は代わりに正規 JSON byte を持つ `api.ToolEvent` を運びます。有効な tool result が 1 MiB を超え得る場合、tool executor は application-owned storage に保存し、型付き reference を返さなければなりません。runtime が黙って result を置き換えることはありません。
 
 ### Timing と Activity Retry
 
@@ -428,7 +423,7 @@ DSL は semantic run budget、つまり run 全体にどれだけ時間を使え
 ```go
 Agent("operator", "Production operations agent", func() {
     RunPolicy(func() {
-        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        DefaultCaps(MaxToolCalls(20), MaxRecoveryTurns(3))
         Timing(func() {
             Budget("5m")
             Plan("45s")
@@ -467,6 +462,61 @@ temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
 ### ワーカーのセットアップ
 
 ワーカーは task queue をポーリングし、workflow/activity を実行します。登録された各エージェントに対してワーカーは自動的に開始されるため、ほとんどのケースで手動設定は不要です。
+
+### 透過的なロールアウト
+
+Temporal の durability と透過的な release は別の保証です。Temporal は workflow history を保存します。deployment は、その history が使われている間、互換性のある worker code と必要な downstream service を利用可能に保たなければなりません。
+
+上の設定は worker を [Temporal Worker Deployment Versioning](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning) に参加させます。`releaseBuildID` は 1 つの immutable binary または container image を識別しなければなりません。異なる workflow code に build ID を再利用したり、`latest` のような mutable tag を使ったりしないでください。
+
+worker version は次の順序で release します。
+
+1. 保持中の全 worker version と並べて新 worker を起動する。
+2. 新 process が readiness を通過し、Temporal への registration に成功するまで待つ。
+3. 新しい Worker Deployment Version を current にする。Temporal は新規 workflow をそこへ割り当て、既存 workflow は開始時の version に pinned されたままにする。
+4. worker process が API も提供する場合、通常の API traffic は current ready build だけへ route する。古い pod は Temporal 用に生かすが、新規 API request は送らない。API deployment を分ける設計も有効だが必須ではない。
+5. Temporal が drained と報告した後だけ古い version を削除する。pod が停止したことは、その code を必要とする workflow がない証明にはならない。
+
+受理された各 user input は top-level Goa-AI workflow を 1 つ開始します。Goa-AI は human または external input を要求すると workflow を終了し、completed run ID の下に非公開 checkpoint を保存します。受理された answer は current worker version で新しい workflow を開始します。そのため透過的 release では、新 version が保存済み checkpoint version、生成 result codec、必要な tool 名との互換性を保つ必要があります。Worker Versioning は互換性のない保存値を変換できません。
+
+application の残りの部分も、同じ overlap 中に availability を保つ必要があります。
+
+- downstream Service には常に 1 つ以上の ready endpoint が必要です。readiness-gated rolling replacement を使います。`Recreate` rollout は gap を作ります。
+- downstream API は retained worker と current worker の両方からの call を受け付けなければなりません。
+- database migration は古い version が drained になるまで両 release を支える必要があります。古い code が schema を使わなくなる前に置き換えず、expand-then-contract sequence を使います。
+- 1 process が API traffic と Temporal work の両方を提供する場合、traffic selector は Temporal が retained worker へ到達する仕組みとは別に current build を識別しなければなりません。
+
+#### registry-backed tool provider
+
+Goa-AI tool provider も readiness-gated rolling replacement に対応します。同じ生成 schema と admission revision を持つ provider replica は同じ registry admission に参加し、overlap できます。どちらかが変わる場合、old admission が authority を持つ間、replacement provider は生存したまま registration を retry します。old provider は新しい call の claim を止め、受理済み work を確定し、lease を release してから new admission が実行可能になります。そのため、異なる 2 つの tool contract が同じ toolset を同時に提供することはありません。
+
+active toolset に healthy provider がないとき、有効な `CallTool` request は既存 execution deadline 内で待ちます。request publication は、call を append する同じ Redis operation で選択 provider を検証します。health check 後に old provider が draining を始めた場合、未 publish の call は deadline を延長せず replacement を選び直します。provider assignment が永久に固定されるのは publication 成功時だけです。caller cancellation が終了させるのはその transport attempt だけで、完全に同じ retry は未 publish call を続行できます。deadline expiry は通常の durable `call_not_admitted` decision を記録します。
+
+registry が所有するのは provider health であり deployment intent ではありません。rollout handoff と別の provider outage を区別できないため、同じ bounded wait が両方に適用されます。pod 名や version string を調べず、model に retry を求めません。この contract により、互換性のない provider generation の overlap を許さず、consumer は provider change に 1 つの rolling release policy を使えます。
+
+release 中も registry client、server、provider は互換 wire protocol を使う必要があります。envelope を互換性なく変更する必要がある場合、まず両形式を受理する code を release してください。registry は rolling overlap 中に protocol version を negotiate しません。
+
+Worker Deployment Versioning は workflow replay を保護します。dependency が利用不能、API が非互換、checkpoint が非互換な場合から workflow を保護するものではありません。
+
+#### 生成 contract の変更
+
+生成 agent、completion package、永続 runtime payload を互換性なく変更する場合、上記の mixed-version 手順を適用しません。全 agent と completion を再生成し、影響を受ける work を drain または停止して、runtime、worker、caller を 1 回の coordinated release で deploy します。Goa-AI は生成 runtime contract の dual-read mode を提供しません。
+
+runtime が受理するのは、正確な `goa-ai.run-suspension.v7` schema だけです。question、clarification、external tool を待つ planner は provider の `ModelToolCallID` を保持し、workflow は停止データを保存する前に別の runtime `ToolCallID` を割り当てます。ほかの suspension schema は resume しません。将来 schema を変更する場合、coordinated release の前に互換性のない保存済み work を調査して廃止します。dual reader を追加したり field を推測したりしてはいけません。
+
+#### release の検証
+
+次の check がすべて通るまで release を透過的とみなさないでください。
+
+- promotion 前に開始した workflow が元の build で完了する。
+- 新しい workflow が current build で開始して完了する。
+- promotion 前に作られた external-input request が、promotion 後に新しい workflow として正常に続行する。
+- API traffic が current ready build だけに到達する。
+- Temporal が drained と報告するまで old worker が ready のままである。
+- replacement 中、各 downstream Service に ready endpoint が残る。
+- observation window に新しい workflow failure、container restart、readiness gap がない。
+
+1 turn につき 1 workflow と cross-workflow event identity の contract は [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations) を参照してください。
 
 ### ベストプラクティス
 
@@ -965,5 +1015,3 @@ User: What should I do next?
 - トランスクリプト永続化のために [Memory & Sessions](./memory-sessions/) を読む
 - agent-as-tool パターンとして [Agent Composition](./agent-composition/) を読む
 - ツール実行モデルとして [Toolsets](./toolsets/) を読む
-
-

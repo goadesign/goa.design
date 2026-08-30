@@ -44,6 +44,12 @@ var _ = Service("divider", func() {
 })
 ```
 
+Un errore a livello API è una definizione riutilizzabile e un luogo in cui
+dichiarare le mappature di trasporto predefinite. Non significa che tutti i
+metodi di tutti i servizi restituiscano quell'errore. Un servizio o un metodo
+deve selezionarlo con `Error("invalid_argument")` affinché l'endpoint generato
+possa restituirlo.
+
 ### Errori a livello di servizio
 
 Gli errori a livello di servizio sono disponibili per tutti i metodi di un servizio:

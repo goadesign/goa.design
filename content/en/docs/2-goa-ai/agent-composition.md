@@ -239,6 +239,10 @@ original recorded tool call instead of accepting identity from the activity.
 Replay therefore uses the original rendered text and never reads a possibly
 newer prompt from storage.
 
+Temporal child workflow IDs include the exact runtime tool-call ID. This keeps
+parallel calls to the same nested agent distinct; a release that changes this
+derivation is not compatible with already-running child workflows.
+
 ---
 
 ## Agent-as-Tool and RunLink
@@ -398,31 +402,28 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 
 ---
 
-## Validation Errors and Retry Hints
+## Validation Errors and Recovery
 
-Tool calls often fail due to missing fields, invalid enum values, or wrong JSON shapes.
-Goa‑AI surfaces these failures as **structured retry hints** so planners and UIs can
-ask precise follow‑up questions without parsing error strings.
+Schema-invalid model tool calls do not enter recovery. The validated model
+client rejects them as `model.OutputValidationError`, and the planner/runtime
+surfaces `planner.OutputContractError` before executor or service code runs.
+Planner-authored calls built with `planner.NewToolRequest` return encoding
+failures directly to planner code.
 
-### Where Retry Hints Come From
+### Where Recovery Evidence Comes From
 
-Goa‑AI produces `RetryHint` from validation failures in two places:
-
-1. **Decode‑time (tool codecs)**  
-   Generated tool codecs validate tool input JSON before execution. When validation
-   fails, the error carries structured field issues (missing fields, constraints, allowed
-   values) which the runtime converts into a `RetryHint`.
-
-2. **Execution‑time (tool providers / services)**  
-   When a tool provider calls a bound service method, the method may return a Goa
-   validation error (e.g., missing required fields or invalid lengths). Providers should
-   include structured field issues in the tool result error so consumers can build the
-   same `RetryHint` deterministically.
+`ToolFailure` begins only after a model-authored call passes validation and the
+runtime admits it. Its executor or domain boundary may then return a recoverable
+failure with structured field issues. When that failure selects
+`RecoveryCorrectCall`, the runtime supplies the original model-authored input
+and generated example to the next planner turn. Calls without model provenance
+cannot request same-call correction.
 
 ### Practical Effect
 
-- UIs can render “missing fields” prompts and show example payloads.
-- Planners can ask a single, targeted clarifying question and retry with correct input.
+- UIs can render field issues and examples from admitted recoverable failures.
+- Planners can ask a targeted question and make a corrected call when
+  `RecoveryCorrectCall` permits it.
 
 Applications choose the profile when wiring sinks and bridges (e.g., Pulse, SSE, WebSocket) so:
 - Chat UIs stay clean and structured (nested agent cards driven by `child_run_linked`)

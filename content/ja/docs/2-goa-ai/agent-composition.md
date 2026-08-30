@@ -204,7 +204,7 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 - `run.Handle` – `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID` を持つ軽量ハンドル
 - ネストされたエージェントでは **常に実際の子ラン** を作成する agent-as-tool ヘルパーとツールセット登録（隠れたインラインハックはしない）
 
-子プランナーを実行する前に、`storage.Store.StartChildRun` は親へのリンク、子のメタデータ、子の最初の記録をまとめて保存します。同じ値で再試行すると元の記録が返り、親、子の識別情報、ラベル、payload のいずれかを変更した再試行は競合として失敗します。
+子プランナーを実行する前に、`storage.Store.StartChildRun` は親へのリンク、子のメタデータ、子の最初の記録をまとめて保存します。session を持たない親には `StartOneShotChildRun` が同じ操作を行い、session を作りません。最初の呼び出しでは、親が存在し、session を持たず、まだ実行中であることが必要です。リンクがすでに保存されていれば、親の終了後も完全に同じ再試行は成功します。内容を変えた再試行や、親の終了後に新しい子を作る呼び出しは拒否されます。
 
 親の tool registration が child 用の prompt を描画する場合、runtime は child
 workflow を開始する前に activity でその prompt を準備します。activity は成功か
@@ -213,6 +213,8 @@ message と prompt render event だけが含まれます。workflow は activity
 を受け取らず、記録済みの元の tool call から child run、session、parent、tool、label
 の identity を導出します。そのため replay は元の描画済み text を使い、storage
 から新しい prompt version を読みません。
+
+Temporal の子 workflow ID には、ランタイムが割り当てた正確な tool-call ID が含まれます。これにより、同じネスト先エージェントを並列に呼び出しても区別できます。この導出方法を変更するリリースは、すでに実行中の子 workflow と互換性がありません。
 
 ---
 
@@ -375,6 +377,21 @@ sub, err := stream.NewSubscriberWithProfile(sink, toolsOnlyProfile)
 - チャット UI はクリーンで構造化されたまま（`child_run_linked` によるネストカード）
 - デバッグコンソールは同じセッションストリームで詳細を可視化
 - メトリクスパイプラインは使用量とステータスを集計するのに十分な情報のみを取得
+
+---
+
+## 検証エラーと回復
+
+スキーマに適合しないモデル生成ツール呼び出しは、回復処理へ進みません。検証済みモデルクライアントが `model.OutputValidationError` として拒否し、プランナー／ランタイムは executor やサービスコードを実行する前に `planner.OutputContractError` として公開します。`planner.NewToolRequest` で作ったプランナー生成呼び出しのエンコード失敗は、プランナーコードへ直接返ります。
+
+### 回復に使う情報の出所
+
+`ToolFailure` が始まるのは、モデル生成呼び出しが検証を通過し、ランタイムに受理された後だけです。その executor またはドメイン境界は、構造化されたフィールド問題を含む回復可能な失敗を返せます。失敗が `RecoveryCorrectCall` を選んだ場合、ランタイムは元のモデル生成入力と生成済み example を次のプランナーターンへ渡します。モデル由来でない呼び出しは、同一呼び出しの修正を要求できません。
+
+### 実際の効果
+
+- UI は、受理後に発生した回復可能な失敗のフィールド問題と example を表示できます。
+- `RecoveryCorrectCall` が許可する場合、プランナーは対象を絞った質問を行い、修正した呼び出しを作れます。
 
 ---
 

@@ -58,6 +58,14 @@ Goa-AI の高レベルなトランスクリプトのコントラクトは次の�
 
 **「ツール履歴」専用の API は存在しません**。履歴はトランスクリプトそのものです。
 
+model adapter は call をまたいで state を持ちません。provider-ready transcript 全体を各 `model.Request` に含める必要があり、run identifier を渡しても adapter が以前の message を読み込むことはありません。公開 model client は、planner code が観測する前に request と complete response を検証します。
+
+### 履歴の圧縮
+
+agent の `History(...)` policy は、古い turn を要約しながら bounded な正確な末尾を保持できます。`CompressAt...` value は要約を始める時点を、`KeepMax...` value は変更せず保持する最新の完全な turn を決めます。runtime は turn を途中で切りません。
+
+compression には設定済みの `HistoryModel` が必要です。token-based trigger と retention には、その model client による正確な token count も必要です。Bedrock Runtime は structured-output request を count できず、現在の一部 Claude model は AWS の別の Mantle endpoint を必要とします。完全な contract は [Runtime → History Policies](../runtime/#history-policies) と [DSL Reference → History](../dsl-reference/#history) を参照してください。
+
 ### プランナーと UI がどのように簡素化されるか
 
 - **プランナー**: `planner.PlanInput.Messages` と `planner.PlanResumeInput.Messages` で現在のトランスクリプトを受け取ります。追加の状態を持ち回らず、メッセージだけにもとづいて判断できます。
@@ -90,6 +98,12 @@ if err != nil {
 `ReplayRunLogEvents` が同じ変換を行います。プロバイダーアダプターはパーツの順序を保持し、
 `ValidatePlannerTranscript` と `ValidateBedrock` は適切な境界でトランスクリプトを検証します。
 
+`ValidatePlannerTranscript` は、assistant の各 tool call group の直後に、すべての
+tool call ID と一対一で対応する result を含む user message が一つだけあることを
+要求します。thinking が有効な場合、`ValidateBedrock` は tool を呼ぶ各 assistant
+message が `ThinkingPart` で始まることも要求します。どちらの validator も message
+を変更しません。
+
 これらのランタイム記録は、workflow の復旧と調査のためのものです。
 チャット履歴、評価、検索、保持期間、顧客データの削除に使う、
 プロダクト所有のトランスクリプトを置き換えるものではありません。
@@ -110,7 +124,7 @@ Goa-AI は会話状態を 3 つの層に分けて扱います。
 
 - **トランスクリプト** – ランにおけるメッセージとツール相互作用の完全な履歴:
   - `[]*model.Message` で表現されます
-  - `memory.Store` を通じて、順序付きのメモリイベントとして永続化されます
+  - `storage.Store` の transcript seed／append record として永続化されます
 
 ### 実運用での SessionID と TurnID
 

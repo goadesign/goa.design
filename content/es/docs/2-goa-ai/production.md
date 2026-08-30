@@ -29,7 +29,11 @@ Todos los proveedores de modelos aplican límites de tasa. Supéralos y tus peti
 
 ### Visión general
 
-El paquete `features/model/middleware` proporciona un **limitador de tasa adaptativo estilo AIMD** que se sitúa en la frontera del cliente de modelo. Estima el coste en tokens, bloquea a los llamadores hasta que hay capacidad disponible y ajusta automáticamente su presupuesto de tokens por minuto en respuesta a las señales de limitación de tasa de los proveedores.
+El paquete `features/model/middleware` proporciona un **limitador de tasa
+adaptativo estilo AIMD** bajo el cliente de modelo validado. Pide al proveedor
+el recuento exacto de tokens de entrada, bloquea a los llamadores hasta que haya
+capacidad y ajusta su presupuesto de tokens de entrada por minuto cuando el
+proveedor limita el tráfico. Nunca estima tokens ni mide cuotas de salida.
 
 ### Estrategia AIMD
 
@@ -51,41 +55,31 @@ Crea un único limitador por proceso y envuelve tu cliente de modelo:
 ```go
 import (
     "context"
-    "os"
 
-    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
+    rt := runtime.New(runtimeStore) // almacenamiento del runtime propiedad del host
 
-    // Create the adaptive rate limiter
-    // Parameters: context, rmap (nil for local), key, initialTPM, maxTPM
-    limiter := middleware.NewAdaptiveRateLimiter(
-        ctx,
-        nil,     // nil = process-local limiter
-        "",      // key (unused when rmap is nil)
-        60000,   // initial tokens per minute
-        120000,  // maximum tokens per minute
-    )
-
-    // Create your underlying model client
-    modelClient, err := openai.New(openai.Options{
-        APIKey:       os.Getenv("OPENAI_API_KEY"),
-        DefaultModel: "gpt-5-mini",
-        HighModel:    "gpt-5",
-        SmallModel:   "gpt-5-nano",
+    // Vertex Gemini proporciona el recuento exacto que exige el limitador.
+    modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+        ProjectID:    "my-gcp-project",
+        Location:     "us-central1",
+        DefaultModel: "gemini-2.5-flash",
     })
     if err != nil {
         panic(err)
     }
 
-    // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(modelClient)
+    limiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+    rateLimitedClient, err := limiter.Middleware()(modelClient)
+    if err != nil {
+        panic(err)
+    }
 
-    rt := runtime.New(runtimeStore)
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -108,59 +102,65 @@ func main() {
     ctx := context.Background()
 
     // Crea un mapa replicado de Pulse respaldado por Redis
-    rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
+    rm, err := rmap.Join(ctx, "rate-limits", redisClient)
     if err != nil {
         panic(err)
     }
+    defer rm.Close()
 
     // Crea un limitador consciente del clúster
     // Todos los procesos que compartan este mapa y clave coordinan sus presupuestos
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // clave compartida para este modelo
+        "vertex:gemini",  // clave compartida para esta familia de modelos
         60000,            // TPM inicial
         120000,           // TPM máximo
     )
 
     // Envuelve tu cliente como antes
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient, err := limiter.Middleware()(vertexClient)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-Cuando se utiliza limitación consciente del clúster:
+Mientras las lecturas y escrituras del mapa replicado funcionen:
 - **El backoff se propaga globalmente**: cuando cualquier proceso recibe `ErrRateLimited`, todos los procesos reducen su presupuesto
 - **El sondeo se coordina**: las peticiones exitosas incrementan el presupuesto compartido
 - **Reconciliación automática**: los procesos vigilan los cambios externos y actualizan sus limitadores locales
 
-### Estimación de tokens
+Un mapa nulo o una clave vacía crea deliberadamente un limitador local al
+proceso. Si el estado compartido no se puede iniciar o actualizar, las llamadas
+al modelo siguen usando el presupuesto adaptativo local hasta que un evento
+posterior del mapa vuelva a sincronizarlo. Supervisa Redis cuando necesites
+coordinación entre procesos.
 
-El limitador estima el coste de la petición mediante una heurística simple:
-- Cuenta los caracteres en las partes de texto y en los resultados de herramientas de tipo cadena
-- Convierte a tokens usando ~3 caracteres por token
-- Añade un búfer de 500 tokens para prompts de sistema y sobrecostes del proveedor
+### Recuento exacto de tokens
 
-Esta estimación es intencionadamente conservadora para evitar subestimar.
+El limitador llama a `CountTokens` en el cliente envuelto antes de reservar
+capacidad. Exige `Exact=true` y nunca estima.
+
+Vertex Gemini proporciona una operación nativa. Bedrock devuelve
+`model.ErrTokenCountingUnsupported` cuando no puede contar exactamente, y
+OpenAI no ofrece un contador nativo. Envolver un cliente sin soporte funciona,
+pero su primera llamada `Complete` o `Stream` devuelve ese error antes de la
+inferencia.
 
 ### Integración con el runtime
 
 Conecta los clientes con tasa limitada al runtime de Goa-AI:
 
 ```go
-// Create limiters for each model you use
-claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
-gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
-
-// Wrap underlying clients
-claudeClient := claudeLimiter.Middleware()(bedrockClient)
-gptClient := gptLimiter.Middleware()(openaiClient)
-
-// Configure runtime with rate-limited clients
-rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
-if err := rt.RegisterModel("claude", claudeClient); err != nil {
+vertexLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+limitedVertex, err := vertexLimiter.Middleware()(vertexClient)
+if err != nil {
     panic(err)
 }
-if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
 ```
@@ -191,18 +191,9 @@ if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
 
 ### Monitorización
 
-Sigue el comportamiento del limitador de tasa con métricas y logs:
-
-```go
-// El limitador registra los eventos de backoff en nivel WARN
-// Monitoriza el estrangulamiento sostenido siguiendo:
-// - Distribución del tiempo de espera (cuánto se encolan las peticiones)
-// - Frecuencia de backoff (con qué frecuencia ocurren los 429)
-// - TPM actual vs. TPM inicial
-
-// Ejemplo: exporta la capacidad actual a Prometheus
-currentTPM := limiter.CurrentTPM()
-```
+Mide la latencia de las llamadas al modelo y los errores terminales
+`model.ErrRateLimited` en la telemetría del cliente envuelto. Supervisa también
+Redis cuando uses un mapa replicado.
 
 ### Buenas prácticas
 
@@ -409,10 +400,20 @@ almacenamiento. Antes de que el nuevo runtime escriba, los metadatos, checkpoint
 y registros existentes deben cumplir el contrato integrado de `storage.Store`.
 Despliega juntos al propietario del almacenamiento y a todos los workers que lo
 llaman. Los escritores antiguos de almacenes separados y los nuevos escritores
-integrados no deben solaparse. Goa-AI no prescribe un procedimiento de
-migración; la aplicación host es responsable de la conversión, la verificación,
-la copia de seguridad y la recuperación para su base de datos y su entorno de
-despliegue.
+integrados no deben solaparse.
+
+Realiza la conversión sin tráfico con un programa de migración desechable en un
+job o pod temporal de la base de datos. La aplicación host posee ese programa;
+no forma parte del release normal y se elimina tras verificar el cambio.
+
+1. Crea y verifica una copia de seguridad y confirma que no haya writers.
+2. Ejecuta la migración en modo de verificación y corrige cada registro rechazado.
+3. Aplica la conversión y verifica esquema, índices, sesiones, metadatos,
+   checkpoints v7 y registros inmutables.
+4. Despliega juntos al propietario y a todos los workers, y elimina el programa.
+
+Una vez iniciada la conversión, el rollback restaura la copia completa. No
+ejecutes writers antiguos sobre una base parcialmente convertida.
 
 ### Tiempos y reintentos de actividad
 
@@ -429,7 +430,7 @@ herramienta, hook y almacenamiento.
 ```go
 Agent("operator", "Production operations agent", func() {
     RunPolicy(func() {
-        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        DefaultCaps(MaxToolCalls(20), MaxRecoveryTurns(3))
         Timing(func() {
             Budget("5m")
             Plan("45s")
@@ -474,6 +475,23 @@ canónicos por `ToolCallID` en lugar de repetir efectos laterales irreversibles.
 ### Configuración de workers
 
 Los workers sondean colas de tareas y ejecutan workflows/actividades. Los workers se inician automáticamente para cada agente registrado —en la mayoría de los casos no se necesita configuración manual de workers—.
+
+### Cambios del contrato generado
+
+Cuando cambien de forma incompatible los agentes generados, los paquetes de
+completion o los payloads persistidos del runtime, regenera todos los agentes y
+las completions, drena o detén el trabajo afectado y despliega conjuntamente el
+runtime, los workers y los llamadores. Goa-AI no ofrece lectura dual para los
+contratos generados del runtime.
+
+El runtime acepta únicamente el esquema exacto
+`goa-ai.run-suspension.v7`. Los planificadores que esperan preguntas,
+aclaraciones o herramientas externas conservan el `ModelToolCallID` del
+proveedor; el workflow asigna el `ToolCallID` independiente del runtime antes
+de guardar la suspensión. Las suspensiones con otros esquemas no se reanudan.
+Antes de cambiar este esquema en el futuro, inventaría y retira el trabajo
+guardado incompatible durante el despliegue coordinado; no añadas un lector
+dual ni deduzcas campos ausentes.
 
 ### Buenas prácticas
 

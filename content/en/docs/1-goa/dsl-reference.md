@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Use `ArrayOfRequired` when every item must be present. This matters for
+primitive values and primitive aliases as well as objects: an incoming JSON or
+JSON-RPC array containing `null` is rejected, while zero values such as `""`,
+`0`, and `false` remain valid items.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` declares alternatives where exactly one branch may be selected. Mark
+the `OneOf` attribute required when the caller must select a branch.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+A required `OneOf` rejects no selected branch, a typed branch wrapper whose
+value is nil, and a selected nil message, byte slice, or `Any` value. A selected
+nonnil empty message remains valid. Generated constructors, setters, accessors,
+and `Kind` methods keep the branch storage private and enforce one selected
+branch.
+
 #### Maps
 
 Maps provide key-value associations with type safety:

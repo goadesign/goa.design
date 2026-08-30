@@ -44,14 +44,16 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-プランナーがこのツールを不正な引数で呼び出した場合、たとえば `code` が空文字だったり `language: "cobol"` だったりすると、Goa-AI は型付き境界で呼び出しを拒否し、構造化された retry hint を返します。プランナーはその hint を使って、正確な追加質問をしたり、修正した引数で再試行したりできます。手作業の文字列パースや、手で保守する JSON schema は不要です。
+プランナーコードが `planner.NewToolRequest` でこの呼び出しを組み立てる場合、生成されたエンコード処理のエラーはプランナーへ直接返ります。モデルがスキーマに適合しない引数（たとえば空の `code` や `language: "cobol"`）を生成した場合、検証済みモデルクライアントは `model.OutputValidationError` を返し、プランナー／ランタイムは executor やサービスコードを実行する前に `planner.OutputContractError` として公開します。
+
+`ToolFailure` と `RecoveryCorrectCall` が適用されるのは、その後です。モデルが生成した呼び出しが検証を通過して実行対象として受理され、executor またはドメイン境界が回復可能な失敗を返した場合に限ります。ランタイムはその失敗を使い、手作業の文字列パースや手で保守する JSON schema なしで、次のプランナーターンを導きます。
 
 **メリット:**
 - **単一の真実の情報源** — DSL が振る舞い、型、ドキュメントを定義
 - **コンパイル時の安全性** — 実行前に payload の不整合を検出
 - **自動生成クライアント** — 手配線なしで型安全なツール呼び出し
 - **一貫したパターン** — すべてのエージェントが同じ構造に従う
-- **修復可能なツール呼び出し** — 検証エラーが feedback 付きの構造化 retry hint を生成
+- **修復可能な実行失敗** — 受理済みのモデル生成呼び出しは、型付きの失敗詳細と回復指示を返せる
 
 → 詳細は [DSL Reference](dsl-reference/) と [Quickstart](quickstart/) を参照してください。
 
@@ -81,7 +83,7 @@ var _ = Service("tasks", func() {
 
 completion 名は structured-output contract の一部です。1-64 文字の ASCII で、英字、数字、`_`、`-` を使え、先頭は英字または数字でなければなりません。
 
-codegen は `gen/<service>/completions/` に JSON schema、型付き codec、provider-enforced structured output を要求して最終アシスタント応答を生成 codec で decode する helper を出力します。streaming helper は raw `model.Streamer` surface に留まります。`completion_delta` chunk は preview 専用で、正規なのは最後の 1 つの `completion` chunk だけです。生成 `Decode<Name>Chunk(...)` helper はその最終 payload だけを decode します。structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` で明示的に失敗します。
+codegen は `gen/<service>/completions/` に、非公開の schema／codec の詳細と公開の型付き helper を出力します。unary helper は検証済みの型付き値を返します。streaming helper は `completion.Streamer[T]` を返し、`Recv` は preview 専用の `completion_delta` fragment を返し、`Value()` は provider が有効な stream を閉じた後にだけ型付き結果を返します。structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` で明示的に失敗し、不正な出力は再試行不能な `planner.OutputContractError` になります。
 
 **メリット:**
 - **1 つの契約面** — 直接 assistant output にも Goa 型、validation、`OneOf` を再利用
@@ -150,10 +152,14 @@ Goa-AI は **Temporal** による耐久実行を採用します。エージェ�
 rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
-eng, _ := temporal.NewWorker(temporal.Options{
+eng, err := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
+if err != nil {
+    panic(err)
+}
+defer eng.Close()
 rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
@@ -161,7 +167,7 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 - **推論の無駄を削減** — ツール失敗は LLM を再呼び出しせずにリトライ
 - **クラッシュリカバリ** — ワーカーを再起動しても最後のチェックポイントから再開
 - **レート制限耐性** — 指数バックオフで API スロットリングを吸収
-- **安全なデプロイ** — ローリングデプロイでも進行中の作業を失わない
+- **バージョンを考慮したデプロイ** — 互換性のあるローリングリリースと、互換性のない生成契約変更については [Production のロールアウト契約](production/#transparent-rollouts) に従う
 
 → セットアップとリトライ設定は [Production](production/#temporal-setup) を参照してください。
 
@@ -281,17 +287,17 @@ Goa-AI は 4 つの LLM プロバイダ向けにファーストクラスのア�
 - **AWS Bedrock** (`features/model/bedrock`)
 - **Google Vertex AI** (`features/model/vertex`) — ネイティブの Gemini アダプタに加え、Vertex 上でホストされる Claude モデル向けの純粋なコンストラクタヘルパーを提供（翻訳とエラー分類は `features/model/anthropic` に委譲）
 
-4 つはいずれも、プランナーが利用する同一の `model.Client` インターフェースを実装します。アプリケーションは `rt.RegisterModel("provider-id", client)` でモデルクライアントを登録し、プランナーや生成されたエージェント設定から ID で参照します。プロバイダ差し替えは設計変更ではなく設定変更になります。
+4 つはいずれも、プランナーが利用する同一の不透明な `model.Client` を公開します。アプリケーションは `rt.RegisterModel("provider-id", client)` でモデルクライアントを登録し、プランナーや生成されたエージェント設定から ID で参照します。プロバイダ差し替えは設計変更ではなく設定変更になります。Goa-AI は、アプリケーションコードが観測する前にすべてのリクエストと完全なレスポンスを検証します。
 
 Gemini 3 世代のモデルは、ツール呼び出し（`functionCall`）パートに、その呼び出しを生んだ推論を認証する不透明な thought signature を付与します。ランタイムはこのシグネチャの捕捉と再付与を完全にランタイム側で行い、プランナー向けの型には一切公開しません。そのため、設定されたモデルがこの機能を使うかどうかにかかわらず、プランナーコードは同一です。詳細は [Runtime → LLM 統合](./runtime/#llm-統合) を参照してください。
 
 新しいプロバイダを追加する手順も同様です。
 
-1. プロバイダ SDK の型を `model.Request` / `model.Response` / ストリーミング `model.Chunk` にマッピングして `model.Client` を実装する。
-2. 必要に応じて共有ミドルウェア（例: `features/model/middleware.NewAdaptiveRateLimiter`）でレート制限とメトリクスを付与する。
-3. エージェント登録前に `rt.RegisterModel("my-provider", client)` を呼び出し、プランナーやエージェント設定から `"my-provider"` を参照する。
+1. プロバイダ SDK を `model.Request`、`model.Response`、raw transport chunk へ対応付ける `model.Provider` を実装する。
+2. `model.NewClient(provider)` で検証済みクライアントを構築する。プロバイダ用 middleware は `model.WrapClient` で追加する。外部パッケージは `model.Client` を実装したり検証を迂回したりできない。
+3. `rt.RegisterModel("my-provider", client)` を呼び出し、プランナーやエージェント設定から `"my-provider"` を参照する。
 
-プランナーとランタイムは `model.Client` のみに依存するため、新しいプロバイダは Goa の設計や生成コードの変更なしに追加できます。
+プランナーとランタイムは検証済みの `model.Client` のみに依存するため、新しいプロバイダは Goa の設計や生成コードの変更なしに追加できます。リクエスト／レスポンスの上限、プロバイダ能力の違い、remote model gateway、協調アップグレードの要件については [Runtime → LLM 統合](runtime/#llm-integration) を参照してください。
 
 ## クイック例
 
@@ -348,4 +354,3 @@ var _ = Service("calculator", func() {
 DSL の全体像は [DSL Reference](dsl-reference/) を参照してください。
 
 ランタイムアーキテクチャは [Runtime](runtime/) を参照してください。
-

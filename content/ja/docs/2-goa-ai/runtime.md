@@ -105,11 +105,11 @@ func main() {
 
 `goa gen` は `gen/<service>/completions` に次を出力します:
 
-- result schema と型付き result/union 型
-- 生成 JSON codec と validation helper
-- 型付き `completion.Spec` 値
+- 型付き result 型と union 型
+- 非公開 result schema と生成 codec
 - 生成 `Complete<Name>(ctx, client, req)` helper
-- 生成 `StreamComplete<Name>(ctx, client, req)` と `Decode<Name>Chunk(chunk)` helper
+- 型付き `StreamComplete<Name>(ctx, client, req)` helper
+- root result に authored `Example(...)` がある場合の `<Name>Example()`
 
 service は `Agent(...)` を宣言しなくても completion を宣言できます。agent quickstart/example scaffold は、実際に agent を所有する service にだけ出力されます。
 
@@ -129,7 +129,9 @@ if err != nil {
 fmt.Println(resp.Value.Name)
 ```
 
-streaming completion は raw `model.Streamer` surface に留まり、最後の正規 `completion` chunk だけを decode します:
+low-level `model.StructuredOutput` には必ず空でない名前が必要です。生成 helper は検証済み completion DSL から名前を導出します。unary completion は model call を正確に 1 回行います。不正 JSON は再試行不能な `planner.OutputContractError` と nil response を返し、correction request は行いません。成功時の `resp.ModelResponse` には正確な provider response と token usage が入ります。
+
+streaming completion は `completion.Streamer[T]` を返します。`Recv` は preview fragment を公開し、`Value()` は stream が終了して terminal response が final completion と一致するまで利用できません:
 
 ```go
 stream, err := taskcompletion.StreamCompleteDraftFromTranscript(ctx, modelClient, &model.Request{
@@ -151,14 +153,14 @@ for {
     if err != nil {
         panic(err)
     }
-    value, ok, err := taskcompletion.DecodeDraftFromTranscriptChunk(chunk)
-    if err != nil {
-        panic(err)
-    }
-    if ok {
-        fmt.Println(value.Name)
-    }
+    // Render preview completion_delta chunks here when useful.
+    _ = chunk
 }
+value, ok := stream.Value()
+if !ok {
+    panic("completion stream ended without a typed value")
+}
+fmt.Println(value.Name)
 ```
 
 型付き completion helper は意図的に厳格です:
@@ -166,9 +168,9 @@ for {
 - unary helper は unary request だけを受け付けます。
 - completion 名は DSL 境界で検証されます。1-64 文字の ASCII、英字/数字/`_`/`-` のみ、先頭は英字または数字です。
 - unary と streaming helper は tool-enabled request と caller-supplied `StructuredOutput` を拒否します。
-- streaming provider は `completion_delta*` preview fragment と正確に 1 つの正規 `completion` chunk を emit するか、request を明示的に拒否します。
-- `Decode<Name>Chunk` は preview chunk を無視し、最後の `completion` だけを decode します。
-- completion stream は direct `model.Streamer` path に留まります。assistant transcript text/tool execution event 用の planner streaming helper には通さないでください。
+- streaming provider は `completion_delta*` preview と正確に 1 つの final `completion` を emit するか、request を明示的に拒否します。
+- 型付き wrapper は clean end-of-stream と完全な validation の後だけ `Value()` を公開します。未検証 chunk を受け付ける公開 decoder はありません。
+- completion stream は生成された型付き wrapper を直接使います。planner streaming helper は assistant transcript text と tool call 用です。
 - structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` を表面化します。
 - 生成 schema は正規かつ provider-neutral です。provider adapter は対応 subset へ normalize できますが、宣言された contract を保てない場合は明示的に失敗しなければなりません。
 
@@ -258,12 +260,15 @@ if err := rt.Seal(ctx); err != nil {
 
 ## Plan → Execute → Resume ループ
 
-1. engine が agent workflow を受理します。
-2. 最初の activity が `StartRootRun`、`StartChildRun`、`StartOneShotRun` のいずれかで run identity と最初の変更不可 record を保存します。sessionful run は session が active の場合だけ続行します。
-3. runtime が現在の messages と、`RunID`、`SessionID`、`TurnID`、labels、policy caps を持つ `run.Context` を `PlanStart` に渡します。
+1. engine が agent workflow を in-memory または Temporal で受理します。
+2. 最初の activity が `StartRootRun`、`StartChildRun`、`StartOneShotRun`、
+   `StartOneShotChildRun` のいずれかで run identity と最初の変更不可 record を
+   保存します。受理されたすべての workflow が `RunStarted` を保存します。
+3. runtime が messages と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
+   を持つ `run.Context` を `PlanStart` に渡します。
 4. planner が返した tool calls を generated codecs で実行します。
-5. planner-visible results を `PlanResume` に渡します。final response、final tool result、または成功した `TerminalRun` tool まで繰り返します。
-6. run の変化に合わせて store が変更不可 records を保存します。hooks と streams は thoughts、tool events、awaits、usage、run links を発行します。任意の memory store が transcript を保存します。
+5. プランナーから見えるまま残った tool output を添えて `PlanResume` を呼び出します。予算対象 tool は既定で可視です。失敗した bookkeeping tool は `ToolFailure.Recovery.Action` に従い、call の修正、その tool を除いた replanning、finalization のいずれかとして次の planner turn を schedule します。planner が final response、final tool result を返すか、成功した `TerminalRun` tool が run を完了するまで loop します。cap や deadline が finalization を強制した場合、planner は prose ではなく terminal bookkeeping tool で閉じられます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / terminal phase）を遷移します。
+6. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 
 ---
 ## Run フェーズ
@@ -357,7 +362,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -367,11 +372,13 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **Caps**: `MaxToolCalls` は run あたりの予算対象 tool call 総数です。DSL で `Bookkeeping()` として宣言されたツールは retrieval budget を消費せず、`MaxConsecutiveFailedToolCalls` も変更しません。モデルが生成した batch は原子的なままです。bookkeeping call のコストはゼロですが、mixed batch を収めるために個々の call を除去することはありません。成功した bookkeeping 結果は将来の compact な `ToolOutputs` に入りません。
+- **上限**: `MaxToolCalls` は実行ごとの予算対象ツール呼び出し総数を制限します。`MaxRecoveryTurns` は、ツール結果またはモデル回答が拒否された後にプランナーを再実行できる回数を制限します。予算対象ツールが成功すると、この回数はリセットされます。`Bookkeeping()` ツールはいずれの予算も消費しません。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
-- **Terminal tools**: DSL で `TerminalRun()` として宣言されたツールは自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受け入れられます。強制 finalization 中、ランタイムは terminal bookkeeping call だけを受け入れ、残りの hard deadline 内で実行し、すべての terminal effect が成功した場合にのみ run を閉じます。
+- **Terminal tools**: DSL で `TerminalRun()` として宣言された tool は自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受理されます。強制 finalization 中、runtime は terminal bookkeeping call だけを受理し、残りの hard deadline 内で実行し、すべての terminal side effect が成功した場合にのみ run を閉じます。実行前に runtime は正確な `planner.TerminationReason` を `runtime.FinalizationReasonLabel`（`goa-ai.finalization_reason`）へ書き込みます。run label、policy label、planner output、model output はこの値を選択したり置き換えたりできません。通常 call には渡されません。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
+
+  `tool_failure` を含む fixed-limit または planner-generated terminal call の consumer は `runtime.FinalizationReasonLabel` を使います。この execution contract の変更は consumer と runtime worker にまとめて deploy してください。
 
 ### ランタイムポリシーのオーバーライド
 
@@ -380,7 +387,7 @@ Agent("chat", "Conversational runner", func() {
 ```go
 err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
     MaxToolCalls:                  3,
-    MaxConsecutiveFailedToolCalls: 1,
+    MaxRecoveryTurns: 1,
     InterruptsAllowed:             true,
 })
 ```
@@ -392,7 +399,7 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 | Field | 説明 |
 | --- | --- |
 | `MaxToolCalls` | run あたりの*予算対象*ツール呼び出し総数の上限（`Bookkeeping()` ツールは免除） |
-| `MaxConsecutiveFailedToolCalls` | 連続失敗回数の上限 |
+| `MaxRecoveryTurns` | 拒否された出力の後にプランナーを再実行できる回数 |
 | `TimeBudget` | run の wall-clock 予算 |
 | `FinalizerGrace` | 最終化のための予約ウィンドウ |
 | `InterruptsAllowed` | pause/resume を有効化する |
@@ -408,12 +415,14 @@ err := rt.OverridePolicy(chat.AgentID, runtime.RunPolicy{
 
 ### ラベルとポリシーエンジン
 
-Goa-AI は `policy.Engine` を介してプラガブルなポリシーエンジンと統合します。ポリシーは、ツールのメタデータ（ID、タグ）、run コンテキスト（SessionID、TurnID、labels）、そしてツール失敗後の `RetryHint` 情報を受け取ります。
+Goa-AI は `policy.Engine` を介して pluggable policy engine と統合します。policy は tool metadata（ID、tag）、run context（SessionID、TurnID、label）、実行失敗後の構造化 `ToolFailure` を受け取ります。
 
 ラベルは次に流れます。
 
 - `run.Context.Labels` – run 中にプランナーが参照可能
-- ツールアクティビティ入力（`api.ToolInput.Labels`）– dispatch 済みのツール実行へクローンされ、プランナーが特定の呼び出しで上書きしない限り、ツールアクティビティは同じ run スコープ metadata を参照できます
+- ツールアクティビティ入力（`api.ToolInput.Labels`）– dispatch 済みの tool
+  execution へ clone されます。terminal finalization call は runtime 所有の reason も
+  `runtime.FinalizationReasonLabel` で受け取ります
 - **Runtime store** (`storage.Store`) は `RunID` ごとに変更不可 records を追加します。lifecycle methods は status、checkpoint、cancellation change と対応する record を一つの操作で保存します。
 - 終端完了とスナップショット – 開始時のラベルは run の最後に `hooks.RunCompletedEvent.Labels` と `run.Snapshot.Labels` として戻ってくるため、完了フックや `GetRunSnapshot` のリーダーは帯域外の追跡なしに run のアイデンティティを取得できます
 
@@ -440,7 +449,7 @@ out, err := client.Run(ctx, "session-1", messages,
 )
 ```
 
-retry hint が `RestrictToTool` を設定した repair turn では、runtime は restricted-tool を latch します。次の planner turn は修正が必要な tool だけを見ます。これにより validation repair が focused になり、無関係な tool へ drift することを防ぎます。
+これは run 全体に適用する caller policy です。tool failure は別の contract を使います。`ToolFailure.Recovery.Action` が correction、failed tool を除いた replanning、finish のどれかを選択し、runtime は次の planner turn に適用する tool catalog を強制します。
 
 ---
 
@@ -537,7 +546,7 @@ workflow start request を変えることはありません。
 
 ## メモリ、ストリーミング、テレメトリ
 
-- **Hook bus** は、run の開始/完了、フェーズ変更、`prompt_rendered`、ツールのスケジューリング/結果/更新、プランナーノートと思考ブロック、await、retry hints、agent-as-tool links など、エージェントライフサイクル全体の構造化フックイベントを publish します。
+- **Hook bus** は、run の開始/完了、フェーズ変更、`prompt_rendered`、ツールのスケジューリング/結果/更新、プランナーノートと思考ブロック、await、`ToolFailure` の recovery directive、agent-as-tool link など、エージェントライフサイクル全体の構造化 hook event を publish します。
 
 - **Memory stores**（`memory.Store`）は、`(agentID, RunID)` ごとに耐久化されるメモリイベント（ユーザー/アシスタントメッセージ、ツール呼び出し、ツール結果、プランナーノート、思考）を購読し追記します。
 
@@ -675,11 +684,15 @@ retry policy を使います。
 - `StartOneShot` と `OneShotRun` は明示的にセッションレスです。セッションを要求/作成せず、セッションスコープのストリームイベントも発行しません。
 - host は session を使う work を送る前に session を作成します。agent runtime は session を作成、終了、削除しません。
 - engine は root workflow を受理した後、最初の activity で run を保存します。runtime は受理前に `pending` record を作成しません。
+- 同じ run ID と完全に同じ request で start を繰り返すと、engine history を query
+  できる間は受理済み workflow が返ります。異なる input で ID を再利用すると拒否されます。
+  history retention 後の permanent command identity は product service が所有し、
+  Goa-AI は保証しません。
 - root、child、one-shot の開始には別々の storage operation を使います。child は親への link を保存し、one-shot は session なしで完全な metadata を保存します。
 - 最初の cancellation reason は変更できません。完全に同じ再試行は成功し、同じ run に別の reason を指定すると conflict になります。
 - suspension と終了は、新しい status と対応する変更不可の record をまとめて保存します。
 - エージェントは最初の run の前に登録されなければなりません。ランタイムは、エンジンワーカーの決定性を保つため、最初の run 送信後の登録を `ErrRegistrationClosed` で拒否します。
-- ツール実行者は、`context.Context` から値を“釣る”のではなく、呼び出しごとの明示メタデータ（`ToolCallMeta`）を受け取ります。
+- tool executor は `context.Context` から値を“釣る”のではなく、call ごとの明示 metadata（`ToolCallMeta`）を受け取ります。その label には clone された run／policy label が入り、call が terminal finalization を実行する場合だけ `runtime.FinalizationReasonLabel` も入ります。
 - 暗黙のフォールバックには依存しません。すべてのドメイン識別子（run / session / turn / correlation）は明示的に渡します。
 
 ### 欠けた最終記録を修復する
@@ -688,7 +701,8 @@ retry policy を使います。
 書き込みを再試行します。engine history がすでに閉じているのに保存済み run が
 active のままの場合、operator は `Runtime.RepairRunCompletion(ctx, runID)` を
 呼べます。この command は engine の最終状態を確認し、修復専用の store operation に
-欠けた suspension または terminal record を渡します。store は run がまだ active な場合だけ
+欠けた suspension または terminal record を渡します。この operation は
+`RepairRunSuspension` または `RepairRunTerminal` です。store は run がまだ active な場合だけ
 それを保存します。workflow が先に別の最終記録を保存していれば、その記録が優先されます。
 
 run の一覧や snapshot の method は読み取り専用で、この修復を行いません。
@@ -698,22 +712,18 @@ failure として保存されません。成功済みの修復を繰り返して
 
 ---
 
-## 外部入力と workflow の継続
+## 外部入力と workflow continuation
 
-受理された user input ごとに、その turn の top-level workflow が一つ
-開始されます。workflow は、その turn の最終結果または外部入力を求める
-suspension で終了します。入れ子の agent は、リンクされた child workflow
-として引き続き実行されます。
+受理された各 user input は、その turn の top-level workflow を 1 つ開始します。workflow は、その turn の final result または external-input suspension のどちらかで終了します。nested agent は引き続き linked child workflow として動きます。
 
-clarification、structured question、外部 tool result、confirmation は、現在の
-workflow を正常に終了させます。返された `RunOutput.Suspension` には、UI または
-外部システムが回答する request が含まれます。人が判断している間、Temporal
-workflow は開いたままになりません。
+clarification、structured question、external tool result、confirmation は、現在の workflow を正常終了させます。返される `RunOutput.Suspension` には UI または external system が回答すべき request が入ります。人が判断している間、Temporal workflow は開いたままになりません。
 
-workflow が終了する前に、Goa-AI は完了した run ID の下に非公開 checkpoint を
-保存します。同じ状態を二つの同時 request が継続できないように、application は
-一つの回答だけを atomic に受理する必要があります。その後、前の run ID、新しい
-run ID、新しい turn ID、型付き response を使って新しい workflow を開始します。
+workflow が完了する前に、Goa-AI は completed run ID の下に非公開 checkpoint を保存します。application は 1 つの answer を原子的に受理し、2 つの concurrent request が同じ state を続行できないようにしなければなりません。その後、predecessor run ID、新しい run ID、新しい turn ID、1 つの型付き response を使って新 workflow を開始します。
+
+answer の受理と product data を同じ transaction で保存する必要がある場合は、まず
+`PrepareContinuation` を呼び、両方の変更を atomic に確定し、exact prepared value
+を `StartContinuation` に渡します。validation と engine submission の間に
+application write がない場合だけ `Continue` を使います。
 
 ```go
 next, err := client.Continue(
@@ -762,7 +772,7 @@ Goa-AI は、書き込み・削除・コマンド実行などのセンシティ�
 - **設計時（一般的）**: ツール DSL 内で `Confirmation(...)` を宣言します。Codegen はポリシーを `tools.ToolSpec.Confirmation` に格納します。
 - **ランタイム（上書き/動的）**: ランタイム構築時に `runtime.WithToolConfirmation(...)` を渡し、追加ツールに確認を要求したり設計時の挙動を上書きしたりできます。
 
-実行時には、workflow がアウトオブバンドの確認要求を発行し、明示的な承認が与えられた後にのみツールを実行します。拒否された場合、ランタイムはスキーマ準拠のツール結果を合成し、トランスクリプトの整合性（決定性）を保ったままプランナーが反応できるようにします。
+実行時には workflow が confirmation request を emit し、suspension とともに完了します。受理された decision は新 workflow を開始します。その continuation は approved の場合だけ tool を実行します。denied の場合、runtime は schema-compliant tool result を合成し、transcript を有効なままにして planner が決定論的に反応できるようにします。
 
 ### 確認プロトコル
 
@@ -775,7 +785,7 @@ Goa-AI は、書き込み・削除・コマンド実行などのセンシティ�
   "id": "...",
   "title": "...",
   "prompt": "...",
-  "tool_name": "atlas.commands.change_setpoint",
+  "tool_name": "facility.commands.change_setpoint",
   "tool_call_id": "toolcall-1",
   "payload": { "...": "canonical tool arguments (JSON)" }
 }
@@ -787,17 +797,18 @@ Goa-AI は、書き込み・削除・コマンド実行などのセンシティ�
 - 確認のオーバーライドは prompt や拒否結果のレンダリングをカスタマイズできますが、表示専用の別 payload チャネルを導入したり、`payload` の意味を変えたりしてはいけません。
 - よりリッチな確認 UI が必要なプロダクトでは、アプリケーション層で正規 payload とアプリケーション所有の読み取り結果からその表示を materialize してください。
 
-- **決定の提供**（ランタイムの `ProvideConfirmation` を通して）:
+- **Continuation response**:
 
 ```go
-err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
-    RunID:       "run-123",
-    ID:         "await-1",
-    Approved:    true,              // or false
-    RequestedBy: "user:123",
-    Labels:      map[string]string{"source": "front-ui"},
-    Metadata:    map[string]any{"ticket_id": "INC-42"},
-})
+response := &api.PendingInputResponse{
+    Confirmation: &api.ConfirmationDecision{
+        ID:          "await-1",
+        Approved:    true, // or false
+        RequestedBy: "user:123",
+        Labels:      map[string]string{"source": "front-ui"},
+        Metadata:    map[string]any{"ticket_id": "INC-42"},
+    },
+}
 ```
 
 ### ツール承認イベント
@@ -812,14 +823,14 @@ err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
 - `tool_name`, `tool_call_id`
 - `approved` (true/false)
 - `summary` (ランタイムが決定論的にレンダリングする要約)
-- `approved_by` (`interrupt.ConfirmationDecision.RequestedBy` からコピーされる安定 principal ID)
+- `approved_by` (`api.ConfirmationDecision.RequestedBy` からコピーされる安定 principal ID)
 
 イベントは決定受信直後に発行されます（承認時はツール実行前、拒否時は拒否結果の合成前）。
 
 注意:
 
 - コンシューマは確認を「ランタイムプロトコル」として扱うべきです。
-  - 付随する `RunPaused` の理由（`await_confirmation`）を見て、確認 UI を出すべきタイミングを判断します。
+  - pending item の kind が `confirmation` の場合に最初の item を表示し、`Continue` で decision を送信します。
   - 確認 UI の挙動を特定の確認ツール名に結びつけないでください（内部トランスポート詳細として扱います）。
 - 確認テンプレート（`PromptTemplate` と `DeniedResultTemplate`）は Go の `text/template` 文字列で、`missingkey=error` で実行されます。標準関数（例: `printf`）に加えて、Goa-AI は次を提供します。
   - `json v` → `v` を JSON エンコード（オプショナルポインタや構造値の埋め込みに便利）
@@ -830,7 +841,7 @@ err := rt.ProvideConfirmation(ctx, interrupt.ConfirmationDecision{
 ランタイムは境界で確認操作をバリデートします。
 
 - 提供された確認 `ID` が、保留中の await 識別子と一致すること
-- decision オブジェクトが整形されていること（空でない `RunID`、真偽値の `Approved`）
+- continuation に正確に 1 つの response variant と well-formed decision が含まれること
 
 ---
 
@@ -849,6 +860,8 @@ type Planner interface {
 post-tool transition が含まれます。`PlanResumeInput` は、プランナーが呼ばれた
 理由を示します。
 
+planner-generated request には domain intent だけを含めます。`planner.NewToolRequest(typedTool, payload)` で encode してください。検証済み provider call を転送する場合は `planner.ToolRequestFromModelCall(call)` を使い、provider correlation ID を runtime execution ID に変えず保持します。runtime は execution ID の割り当てや tool event の publish より前に plan 全体を検証します。
+
 これらの契約は別々です。
 
 | 契約 | スコープ | 意味 |
@@ -857,7 +870,7 @@ post-tool transition が含まれます。`PlanResumeInput` は、プランナ�
 | `ToolSpec.Meta` | すべての run における 1 つの tool | 名前付きコンシューマが意味を所有する、不活性な生成アノテーション。メタデータだけでは runtime 動作は変わらない。 |
 | `ToolSpec.Bookkeeping` | すべての run における 1 つの tool | 成功後に別の planner turn を必要としない durable な制御記録。retrieval と連続失敗の budget を消費しない。 |
 | `ToolSpec.TerminalRun` | すべての run における 1 つの tool | 成功そのものが run を終了し、自動的に bookkeeping を含む。 |
-| `RetryHint.AllowsRetry()` | 1 つの失敗 result | この run で別の tool attempt が許可される。timeout hint は terminal failure を表し false を返す。 |
+| `ToolFailure.Recovery.Action` | 1 つの失敗 result | 同一 tool の修正、failed tool を除いた replanning、finalization のいずれかを選ぶ。 |
 | `PlanResult.SynthesizeAfterTools` | 選択された 1 batch | recoverable failure がなければ、次の planner turn は回答しなければならない。 |
 | `PlanResumeInput.SynthesisOnly` | 1 planner activity | 最終回答を返す。tool call は無効。 |
 | `PlanResumeInput.Finalize` | runtime が強制する終了 | cap または deadline により通常作業が禁止されている。 |
@@ -868,7 +881,7 @@ post-tool transition が含まれます。`PlanResumeInput` は、プランナ�
 | --- | --- |
 | cap または deadline が finalization を要求 | `Finalize` turn |
 | `TerminalRun` tool が成功 | 即時終了 |
-| 失敗 result のいずれかで `AllowsRetry() == true` | 通常の repair turn |
+| 失敗 result のいずれかで `AllowsToolTurn() == true` | 通常の repair turn |
 | `SynthesizeAfterTools` が true | `SynthesisOnly` turn |
 | その他 | 通常の continuation turn |
 
@@ -896,10 +909,7 @@ tool・failure・time limit は無効な作業の繰り返しを停止します�
 input を待つ場合、failure evidence は再開後も利用できます。tool call または最終
 回答を選ぶと、その evidence は消去されます。
 
-recovery activity の input と表示された catalog は、durable workflow history の
-一部です。この contract を変更する deployment では、新しい worker bundle を
-開始する前に、古い worker と実行中 workflow を drain または stop する必要が
-あります。この境界をまたいで worker version を混在させることは安全ではありません。
+recovery activity の input と表示された catalog は durable workflow history の一部です。production deployment は pinned Temporal Worker Deployment Versioning を使い、Temporal が drained と報告するまで各 old worker version を保持しなければなりません。新 worker の起動は、既存 workflow を新 code で replay してよい根拠にはなりません。continuation は新 workflow なので、保存済み checkpoint の validation を通過した後なら current version を使えます。
 
 `PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal
 bookkeeping tool を返せます。これらは後続プランナーターンには再生されず、
@@ -908,7 +918,7 @@ finalization を永続的に完了する必要があります。
 プランナーは `input.Agent` 経由でランタイムサービスを提供する `PlannerContext` も受け取ります。
 
 - `AdvertisedToolDefinitions()` - このターンでモデルに見えている、runtime がフィルタ済みのツール定義を取得する
-- `ModelClient(id string)` - provider-agnostic な生のモデルクライアントを取得する
+- `ModelClient(id string)` - provider-agnostic な検証済みモデルクライアントを取得する
 - `PlannerModelClient(id string)` - planner ターン専用で runtime-owned なイベント発行を行うモデルクライアントを取得する
 - `RenderPrompt(ctx, id, data)` - 現在の run scope で prompt 内容を解決・描画する
 - `AddReminder(r reminder.Reminder)` - run スコープの system reminder を登録する
@@ -923,13 +933,14 @@ finalization を永続的に完了する必要があります。
 - `features/memory/mongo` – durable memory store
 - `features/prompt/mongo` – Mongo-backed prompt override store
 - `features/stream/pulse` – Pulse sink/subscriber helpers
-- `features/model/{anthropic,bedrock,openai}` – モデルクライアントアダプター（プランナー向け）
-- `features/model/middleware` – 共有 `model.Client` ミドルウェア（例: 適応型レート制限）
-- `features/policy/basic` – allow/block リストと retry hint を扱う簡易ポリシーエンジン
+- `features/model/{anthropic,bedrock,openai,vertex}` – 検証済み model client を返す provider adapter
+- `features/model/gateway` – remote provider server と検証済み transport client
+- `features/model/middleware` – client validation の下に install する provider middleware（正確な token count を使う adaptive rate limiter など）
+- `features/policy/basic` – allow/block list と `ToolFailure` を扱う簡易 policy engine
 
 ### モデルクライアントのスループット & レート制限
 
-Goa-AI は `features/model/middleware` に provider-agnostic な適応型レートリミッターを提供します。これは任意の `model.Client` をラップし、リクエストごとのトークンを推定し、トークンバケットで呼び出しをキューイングし、プロバイダがスロットリングを返したときに AIMD（additive-increase/multiplicative-decrease）戦略で実効 TPM 予算を調整します。
+Goa-AI は `features/model/middleware` に adaptive input-token limiter を提供します。wrapped client に正確な request token count を問い合わせ、call 前にその capacity を予約し、provider が throttling を報告したときに実効 input-tokens-per-minute budget を調整します。
 
 ```go
 import (
@@ -940,18 +951,24 @@ import (
 )
 
 awsClient := bedrockruntime.NewFromConfig(cfg)
-bed, _ := bedrock.New(awsClient, bedrock.Options{
+bed, err := bedrock.New(awsClient, bedrock.Options{
     DefaultModel: "us.anthropic.claude-4-5-sonnet-20251120-v1:0",
 })
+if err != nil {
+    panic(err)
+}
 
 rl := mdlmw.NewAdaptiveRateLimiter(
     ctx,
     throughputMap,       // *rmap.Map joined earlier (nil for process-local)
     "bedrock:sonnet",    // key for this model family
-    80_000,              // initial TPM
-    1_000_000,           // max TPM
+    80_000,              // initial input tokens per minute
+    1_000_000,           // maximum input tokens per minute
 )
-limited := rl.Middleware()(bed)
+limited, err := rl.Middleware()(bed)
+if err != nil {
+    panic(err)
+}
 
 rt := runtime.New(runtimeStore)
 if err := rt.RegisterModel("bedrock", limited); err != nil {
@@ -959,22 +976,30 @@ if err := rt.RegisterModel("bedrock", limited); err != nil {
 }
 ```
 
+middleware construction は token-count 対応を検査しません。選択 provider または request を正確に count できない場合、最初の `Complete` または `Stream` call が inference 前に `model.ErrTokenCountingUnsupported` を返します。Vertex Gemini は正確な count に対応します。Bedrock は Runtime `CountTokens` が受理する request／model だけに対応し、OpenAI には native counter がありません。
+
+limiter が計量するのは input token だけです。unary success または clean stream end で上向き probe を行い、unary または terminal streaming の rate-limit error で backoff します。単に stream を開閉しただけでは success とみなしません。
+
 ---
 
 ## LLM 統合
 
 Goa-AI のプランナーは、**provider-agnostic なインターフェース**を通じて大規模言語モデルと対話します。この設計により、プランナーコードを変えずに、AWS Bedrock、OpenAI、Google Vertex AI（Gemini / Claude-on-Vertex）、カスタムエンドポイントなどのプロバイダーを切り替えられます。
 
-### `model.Client` インターフェース
+### 検証済み model client
 
-すべての LLM 呼び出しは `model.Client` を通ります。
+planner と model の対話はすべて opaque な `model.Client` を通ります。
 
 ```go
-type Client interface {
-    Complete(ctx context.Context, req *Request) (*Response, error)
-    Stream(ctx context.Context, req *Request) (Streamer, error)
-}
+resp, err := client.Complete(ctx, req)
+stream, err := client.Stream(ctx, req) // *model.ValidatedStream
 ```
+
+provider integration は raw transport response／chunk を生成する `model.Provider` を実装します。Goa-AI は `model.NewClient(provider)` で `model.Client` を構築し、その provider の前後で request と complete response を検証します。external package は `model.Client` を実装できず、raw provider chunk を planner に公開できません。
+
+provider call 前には tool name／schema、message part、thinking option、structured-output metadata、request の dynamic value を検証します。request と unary response は 16 MiB、visited value は 100,000 個までで、nested dynamic metadata の depth は 64 までです。streaming では chunk と terminal response に 1 つの累積 budget を適用します。limit 超過では操作全体を拒否し、model data の切り詰め、修復、coercion は行いません。
+
+`ValidatedStream` は `io.EOF` まで drain する必要があります。完了した場合だけ `Response()` が受理済み canonical response を返します。不完全、不正、または矛盾する stream は error となり、受理済み response はありません。
 
 ### プロバイダーアダプター
 
@@ -996,24 +1021,35 @@ modelClient, err := bedrock.New(awsClient, bedrock.Options{
     MaxTokens:    4096,
     Temperature:  0.7,
 })
+if err != nil {
+    panic(err)
+}
 ```
 
 **OpenAI**
 
 ```go
-import "goa.design/goa-ai/features/model/openai"
+import (
+    "os"
 
-modelClient, err := openai.New(openai.Options{
-    APIKey:       apiKey,
+    "goa.design/goa-ai/runtime/agent/runtime"
+)
+
+rt := runtime.New(runtimeStore) // host が所有する runtime storage
+modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
+    APIKey:       os.Getenv("OPENAI_API_KEY"),
     DefaultModel: "gpt-5-mini",
     HighModel:    "gpt-5",
     SmallModel:   "gpt-5-nano",
 })
+if err != nil {
+    panic(err)
+}
 ```
 
 **Google Vertex AI（Gemini / Claude-on-Vertex）**
 
-`features/model/vertex` パッケージは、いずれも `model.Client` を満たす 2 つの
+`features/model/vertex` パッケージは、いずれも `model.Client` を返す 2 つの
 コンストラクタを提供します。ネイティブの Gemini アダプタと、Vertex 上でホスト
 される Claude モデルに Anthropic アダプタを向ける純粋なコンストラクタヘルパー
 です。
@@ -1055,6 +1091,30 @@ Gemini 3 世代のモデルは、ツール呼び出しの背後にある推論�
 で再付与します。`planner.ToolRequest` にシグネチャフィールドはありません。
 プランナーコードがシグネチャの存在を意識する必要はありません。
 
+### provider capability の違い
+
+共有 request type は provider-neutral ですが、各 adapter は provider API が保持できない組み合わせを拒否します。
+
+| Provider | call 前または call 中に強制される契約 |
+| --- | --- |
+| OpenAI | structured output は strict schema projection を使い、tool と併用できない。重複する `oneOf` branch は広げず拒否する。strict schema は property 5,000 個、enum value 1,000 個、object 10 level、name／enum 合計 120,000 文字までで、fine-tuned model は追加の非対応 keyword を拒否する。thinking request は temperature を拒否する。 |
+| Anthropic | 対応する現行 Claude model は native structured output を使う。adaptive thinking は tool と通常の forced choice を許すが、旧 manual thinking は forced `any`／named-tool choice を拒否する。現行世代は deprecated sampling parameter を省略する。stream は全 content block を閉じ、stop reason を報告しなければならない。 |
+| Bedrock | Claude 4.5／4.6 は native `OutputConfig` を使い、それ以外の Claude model は private forced tool 1 つを使って同じ契約で result を検証する。event-stream exception は provider error kind を保持する。Runtime `CountTokens` は別 Mantle endpoint が必要な model と structured-output request を拒否する。 |
+| Vertex Gemini | Gemini 3 は thinking level を使い、数値 thinking budget と明示的な thinking disable を拒否し、API-valid temperature を転送する。tool-call thought signature は runtime が保持・replay する。stream は candidate が正確に 1 つで finish reason が必要。 |
+
+Claude Opus 4.7+、Sonnet 5+、Haiku 5+、Fable、Mythos では、Anthropic／Bedrock adapter は model が拒否する `temperature`、`top_p`、`top_k` を省略します。旧 Claude 世代には構成済み sampling value を引き続き渡します。
+
+provider adapter は conversation history に関して stateless です。各 request は provider-ready な `Messages` transcript 全体を含める必要があり、`RunID` を渡しても adapter が以前の message を load することはありません。
+
+主な sentinel error は次のとおりです。
+
+- adapter が要求された output contract を表現できない場合の `model.ErrStructuredOutputUnsupported`
+- provider の正確な token count を利用できない場合の `model.ErrTokenCountingUnsupported`
+- provider が model output なしで閉じた場合の `model.ErrEmptyStream`
+- retry 可能な provider throttling の `model.ErrRateLimited`
+
+`*planner.OutputContractError` は sentinel ではなく structured error です。`errors.As` で検出し、origin から不正な model、planner、tool output を区別します。別 request によって contract violation を隠してはならないため、retry 不可です。
+
 ### 正規メッセージメタデータと引用の再生
 
 `model.Message.Meta` には、応答を正確に再生するために必要なプロバイダー生成
@@ -1077,15 +1137,16 @@ Vertex は、正規パートに各プロバイダーのプロトコルで必須�
 プランナーはランタイムの `PlannerContext` 経由でモデルクライアントを取得します。
 現在は、統合スタイルが明示的に 2 つあります。
 
-- `PlannerModelClient(id)` は planner ターン専用の streaming と runtime-owned なイベント発行に使う
-- `ModelClient(id)` は生の transport アクセスが必要で、`planner.ConsumeStream` と組み合わせるか `PlannerEvents` を自前で発行したいときに使う
+- `PlannerModelClient(id)` は planner scope の streaming と runtime-owned event emission に使う
+- `ModelClient(id)` は検証済み model に直接 access し、返された stream を `planner.ConsumeStream` で drain するときに使う
 
 #### PlannerModelClient（推奨）
 
 `PlannerContext.PlannerModelClient(id)` は、`AssistantChunk`、
 `PlannerThinkingBlock`、`UsageDelta` の発行を担う planner ターン専用の
 クライアントを返します。`Stream(...)` は基盤となる provider stream を
-drain し、`planner.StreamSummary` を返します。
+drain し、`planner.StreamSummary` を返します。`PlannerModelClient` が許す
+`Complete` または `Stream` は、その planner turn につき正確に 1 回です。
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
@@ -1118,16 +1179,11 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
 }
 ```
 
-これは最も安全な統合スタイルです。planner 専用クライアントは生の
-`model.Streamer` を公開しないため、`planner.ConsumeStream` と誤って
-組み合わせることがありません。また、`sum.FinalResponse()` はその呼び出しで
-捕捉したプロバイダーの正確な応答を選択します。テキストだけのメッセージを
-再構築すると、thinking、引用、シグネチャ、メタデータ、メッセージ境界が
-失われます。
+planner-scoped client 自身が検証済み stream を drain／summary 化するため、最も簡単な統合方法です。`sum.FinalResponse()` はその invocation で捕捉した provider response を正確に選びます。text-only message を再構築すると thinking、citation、signature、metadata、message boundary が失われます。
 
-#### 生の Client + ConsumeStream
+#### 検証済み Client + ConsumeStream
 
-生の `model.Client` が必要な場合は `PlannerContext.ModelClient` から取得し、
+`model.Client` への直接 access が必要な場合は `PlannerContext.ModelClient` から取得し、
 `planner.ConsumeStream` と組み合わせます。
 
 ```go
@@ -1140,25 +1196,72 @@ req := &model.Request{
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
-streamer, err := mc.Stream(ctx, req)
+stream, err := mc.Stream(ctx, req)
 if err != nil {
     return nil, err
 }
-sum, err := planner.ConsumeStream(ctx, streamer, req, input.Events)
+sum, err := planner.ConsumeStream(ctx, stream)
 if err != nil {
     return nil, err
 }
+if len(sum.ToolCalls) > 0 {
+    return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
+}
+final := sum.FinalResponse()
+if final == nil {
+    return nil, errors.New("model stream ended without a canonical response")
+}
+return &planner.PlanResult{
+    FinalResponse: final,
+    Streamed:      true,
+}, nil
 ```
 
-この helper は stream を drain し、assistant / thinking / usage の
-イベントを発行しつつ、集約済みのテキストとツール呼び出しを含む
-`StreamSummary` を返します。
+この helper は stream を drain し、累積 text と tool call を持つ `StreamSummary` を返すだけです。runtime の model-invocation journal が、受理済み presentation／usage event を後で publish します。
 
-生の client 経路は、stream 消費を完全に制御したい場合、early-stop の
-独自挙動が必要な場合、または `PlannerEvents` を明示的に扱いたい場合に
-使います。`PlannerModelClient.Stream(...)` と
-`planner.ConsumeStream` を混在させず、planner ターンごとに stream owner
-を 1 つ選んでください。
+生成 tool definition は `model.ToolDefinitionFromSpec` を使い、生成 payload decoder を保持します。caller-authored tool は `model.AdvertisedToolInputFromSchema` を使います。どちらも unknown tool／invalid payload を planner code が provider tool call として受け取る前に拒否します。
+
+planner logic が検証済み preview chunk を調べる場合や、1 planner turn で複数 model call を行う場合に direct client path を使います。選択した stream はすべて terminal result まで drain してください。早く close しても受理済み response にはなりません。返す `PlanResult` は、選んだ 1 つの exact result、つまり summary の complete `ToolCalls` set または `FinalResponse()` のどちらかを転送しなければなりません。runtime は modified、mixed、ambiguous result を拒否します。`PlannerModelClient.Stream(...)` と `planner.ConsumeStream` は混用せず、planner turn ごとに stream owner を 1 つにします。
+
+### remote model gateway
+
+`features/model/gateway` は validation を弱めず、model request を別 deployment の provider process に送ります。server は raw `model.Provider` に対して動くため、provider-side middleware は transport より前に実行されます。
+
+```go
+server, err := gateway.NewServer(
+    gateway.WithProvider(provider),
+    gateway.WithUnary(unaryMiddleware...),
+    gateway.WithStream(streamMiddleware...),
+)
+```
+
+consumer は transport function から検証済み client を構築します。
+
+```go
+client, err := gateway.NewRemoteClient(completeRemote, streamRemote)
+countingClient, err := gateway.NewCountingRemoteClient(
+    completeRemote,
+    streamRemote,
+    countRemote,
+)
+```
+
+remote endpoint が exact token count を実装するときだけ `NewCountingRemoteClient` を使います。`NewRemoteClient` は推測せず、count request に対して意図的に `model.ErrTokenCountingUnsupported` を返します。
+
+### history policy
+
+history compression では、summary 開始条件と exact recent history の保持量を分けます。
+
+- `CompressAtTurns` と `CompressAtMaxInputTokens` は OR 条件。
+- `KeepMaxTurns` と `KeepMaxInputTokens` はどちらも summary 後に残す最新の complete turn を制限し、runtime は turn の途中で切らない。
+- token policy には client の `CountTokens` が exact count を返す `HistoryModel` が必要。count には保持する system message、candidate turn、現在 advertise している tool が含まれる。
+- `CompressAtMaxInputTokens` は exclusive。request が threshold と同値なら収まり、それを超えた場合だけ compression を開始する。
+
+Bedrock Runtime は structured-output request を count できません。Claude Opus 4.7、Sonnet 5、Mythos 5 は AWS の別 Mantle count endpoint を必要とするため、Bedrock adapter はこれらで `model.ErrTokenCountingUnsupported` を返します。生成 agent config の `HistoryCompression` により、design default を変えず deployment ごとに上書きできます。
+
+### 生成 system の協調 release
+
+compatible release は透過的に rollout できます。incompatible な生成 contract 変更には coordinated drain と cutover が必要です。checkpoint version、generated codec、required tool name、worker retention の要件は [production rollout contract](../production/#transparent-rollouts) を参照してください。
 
 ### Bedrock メッセージ順序の検証
 
@@ -1175,7 +1278,7 @@ bedrock: invalid message ordering with thinking enabled (run=xxx, model=yyy):
 bedrock: assistant message with tool_use must start with thinking
 ```
 
-この検証により、トランスクリプト ledger の再構築がプロバイダー準拠のメッセージ列を生成することを保証します。
+この検証は provider call 前に実行されます。stream validation は別の境界です。不完全な content block、署名のない reasoning、stop reason の欠落は、planner code が受理済み response を得る前に output-contract error となります。
 
 ---
 

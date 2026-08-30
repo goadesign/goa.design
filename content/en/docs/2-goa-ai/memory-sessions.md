@@ -66,6 +66,25 @@ The high-level transcript contract in Goa-AI is:
 
 There is **no separate "tool history" API**; the transcript is the history.
 
+Model adapters are stateless across calls. The complete provider-ready
+transcript must be present in each `model.Request`; a run identifier does not
+cause an adapter to load earlier messages. Public model clients validate the
+request and complete response before planner code can observe them.
+
+### History Compression
+
+An agent's `History(...)` policy may summarize older turns while keeping a
+bounded exact tail. `CompressAt...` values decide when summarization starts;
+`KeepMax...` values decide which newest whole turns remain unchanged. The
+runtime never truncates a turn.
+
+Compression requires a configured `HistoryModel`. Token-based triggers and
+retention also require exact token counting from that model client. Bedrock
+Runtime cannot count structured-output requests, and some current Claude
+models require AWS's separate Mantle endpoint. See [Runtime → History
+Policies](../runtime/#history-policies) and [DSL Reference →
+History](../dsl-reference/#history) for the complete contract.
+
 ### How This Simplifies Planners and UIs
 
 - **Planners**: Receive the current transcript in `planner.PlanInput.Messages` and `planner.PlanResumeInput.Messages`. Can decide what to do based purely on the messages, without threading extra state.
@@ -100,6 +119,12 @@ are already loaded, `ReplayRunLogEvents` performs the same projection. Provider
 adapters preserve part order, and `ValidatePlannerTranscript` or
 `ValidateBedrock` can check a transcript at the relevant boundary.
 
+`ValidatePlannerTranscript` requires every assistant tool-call group to be
+followed immediately by one user message containing exactly one matching
+result for every tool-call ID. `ValidateBedrock` adds one rule when thinking is
+enabled: each assistant message containing a tool call must begin with a
+`ThinkingPart`. Neither validator changes the messages.
+
 These runtime records support workflow replay and inspection. They do not
 replace the product-owned transcript used for chat history, ratings, search,
 retention, or customer-facing deletion.
@@ -120,7 +145,7 @@ Goa-AI separates conversation state into three layers:
 
 - **Transcript** – the full history of messages and tool interactions for a run:
   - Represented as `[]*model.Message`
-  - Persisted via `memory.Store` as ordered memory events
+  - Persisted as transcript seed and append records in `storage.Store`
 
 ### SessionID & TurnID in Practice
 
@@ -196,6 +221,21 @@ implementation owns all runtime writes for:
   and for identifying which prompt versions influenced a run
 
 The runtime requires this dependency:
+
+For Temporal planner activities, `PlanActivityInput.ToolOutputs` carries
+references containing the call run ID, result run ID, and tool-call ID. The
+planner activity uses those references to load the tool input, result body,
+server data, and planner-visible metadata from this run log before invoking the
+planner. References avoid repeating full result bodies across the planner
+activity boundary. They do not mean that no second copy exists: the runtime's
+private suspension checkpoint still contains transcript and tool-output state
+so a suspended workflow can resume.
+
+Tool calls have two different identifiers. `ModelToolCallID` is the provider
+transcript ID that pairs a model-authored call with its model-visible result.
+`ToolCallID` is the runtime execution ID used by activities, retries, run-log
+records, and stream events. A suspended model-authored call stores both; never
+substitute one for the other or derive either from run order.
 
 ```go
 store := newRuntimeStore()

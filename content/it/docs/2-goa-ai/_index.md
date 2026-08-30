@@ -44,20 +44,69 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-Quando un pianificatore chiama questo strumento con argomenti non validi, ad esempio un `code` vuoto
-stringa o `language: "cobol"` - Goa-AI rifiuta la chiamata al limite digitato e
-restituisce un suggerimento strutturato per il nuovo tentativo. Il tuo pianificatore può utilizzare questo suggerimento per chiedere una risposta precisa
-domanda successiva o riprovare con gli argomenti corretti. Nessuna analisi delle stringhe ad hoc
-o è richiesto uno schema JSON gestito manualmente.
+Quando il codice del planner costruisce questa chiamata con
+`planner.NewToolRequest`, gli errori di codifica generati vengono restituiti
+direttamente al planner. Quando un modello emette argomenti non conformi allo
+schema, per esempio una stringa `code` vuota o `language: "cobol"`, il client
+del modello validato restituisce `model.OutputValidationError`; il
+planner/runtime espone `planner.OutputContractError` prima che venga eseguito
+il codice dell'executor o del servizio.
+
+`ToolFailure` e `RecoveryCorrectCall` si applicano in un momento successivo:
+una chiamata prodotta dal modello deve prima superare la validazione ed essere
+ammessa, quindi il suo executor o il confine di dominio deve restituire un
+errore recuperabile. Il runtime usa quell'errore per guidare il turno
+successivo del planner, senza analisi ad hoc delle stringhe né schemi JSON
+gestiti manualmente.
 
 **Vantaggi:**
 - **Fonte unica della verità**: il DSL definisce comportamento, tipologie e documentazione
 - **Sicurezza in fase di compilazione**: rileva i payload non corrispondenti prima del runtime
 - **Client generati automaticamente**: invocazioni di strumenti indipendenti dai tipi senza cablaggio manuale
 - **Modelli coerenti**: ogni agente segue la stessa struttura
-- **Chiamate di strumenti riparabili**: gli errori di convalida producono suggerimenti strutturati per nuovi tentativi con feedback
+- **Errori di esecuzione riparabili**: le chiamate del modello già ammesse possono restituire dettagli tipizzati dell'errore e direttive di recupero
 
 → Scopri di più nelle sezioni [DSL Reference](dsl-reference/) e [Quickstart](quickstart/)
+
+---
+
+### Valutazioni generate {#generated-evaluations}
+
+**L'agente è cambiato. Le sue risposte sono peggiorate?**
+
+Le valutazioni sono test ripetibili che eseguono l'agente reale e verificano
+che il risultato resti corretto. Goa-AI genera l'infrastruttura di valutazione
+dallo stesso design che definisce l'agente:
+
+```go
+Agent("chat", "Answers product questions.", func() {
+    Suite("chat", func() {
+        Description("Exercises production Chat outcomes.")
+        Timeout("2m")
+        Scenario("alarm_inventory", func() {
+            Description("Retrieves every alarm in a fixed window.")
+            Input(ChatEvalInput)          // typed, validated scenario input
+            Tags("production", "alarm")
+        })
+    })
+})
+```
+
+`goa gen` trasforma ogni scenario in un metodo di interfaccia Go tipizzato:
+aggiungere uno scenario interrompe la compilazione finché l'applicazione non lo
+implementa. `goa example` crea una volta il comando eseguibile
+`cmd/<suite>-evals`. Gli hook restituiscono verifiche esatte pass/fail e
+affermazioni in linguaggio naturale sulla risposta; un giudice basato su
+modello valuta ogni affermazione solo dopo aver superato un test di
+calibrazione.
+
+**Vantaggi:**
+- **Scenari posseduti dal design**: casi di test accanto all'agente, con input tipizzati e validati
+- **Nessuna deriva silenziosa**: uno scenario senza implementazione è un errore di compilazione
+- **Nessuna valutazione con espressioni regolari**: affermazioni chiare valutate da un modello calibrato
+- **Pronto per la CI**: selezione per scenario e tag, concorrenza limitata e report JSON stabili nell'ordine del design
+
+→ Scopri di più in [Valutazioni generate](evaluations/)
 
 ---
 
@@ -89,14 +138,14 @@ I nomi di completamento fanno parte del contratto di output strutturato. Devono 
 Da 1 a 64 caratteri ASCII, possono contenere lettere, cifre, `_` e `-` e devono
 iniziare con una lettera o una cifra.
 
-Codegen emette `gen/<service>/completions/` con lo schema JSON, codec digitati,
-e generato aiutanti che richiedono output strutturato imposto dal provider e
-decodificare la risposta finale dell'assistente attraverso il codec generato. Streaming
-gli aiutanti rimangono sulla superficie grezza `model.Streamer`: i pezzi `completion_delta` sono
-solo in anteprima, esattamente un blocco finale `completion` è canonico e generato
-Gli helper `Decode<Name>Chunk(...)` decodificano solo il payload finale. Fornitori che
-non implementare l'output strutturato in modo esplicito con
-`model.ErrStructuredOutputUnsupported`.
+Codegen emette `gen/<service>/completions/` con schema e codec privati e helper
+pubblici tipizzati. Gli helper unary restituiscono il valore tipizzato
+accettato. Gli helper di streaming restituiscono `completion.Streamer[T]`:
+`Recv` produce frammenti `completion_delta` validi solo come anteprima e
+`Value()` restituisce il risultato tipizzato soltanto dopo che il provider ha
+chiuso uno stream valido. I provider che non implementano lo structured output
+falliscono esplicitamente con `model.ErrStructuredOutputUnsupported`; un output
+malformato fallisce con un `planner.OutputContractError` non riprovabile.
 
 **Vantaggi:**
 - **Una superficie contrattuale**: riutilizza tipi Goa, convalide e `OneOf` per l'output dell'assistente diretto
@@ -176,7 +225,7 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 - **Nessuna inferenza sprecata**: gli strumenti non riusciti riprovano senza richiamare LLM
 - **Recupero da crash**: riavvia i lavoratori in qualsiasi momento; le corse riprendono dall'ultimo checkpoint
 - **Gestione dei limiti di velocità**: il backoff esponenziale assorbe la limitazione delle API
-- **Distribuzione sicura**: le distribuzioni ripetute non perdono il lavoro in volo
+- **Distribuzione consapevole delle versioni**: seguire il [contratto di rollout in produzione](production/#transparent-rollouts) per release rolling compatibili e modifiche generate incompatibili
 
 → Guida all'installazione e riprovare la configurazione in [Production](production/#temporal-setup)
 
@@ -232,16 +281,38 @@ Più nodi del registro con lo stesso nome formano automaticamente un cluster tra
 
 ## Riepilogo delle caratteristiche principali
 
-| Caratteristica | Cosa ottieni ||---------|--------------|
-| [Design-First Agents](#design-first-agents) | Definire agenti in DSL, generare codice indipendente dai tipi || [MCP Integration](mcp-integration/) | Supporto del protocollo di contesto del modello nativo || [Tool Registries](#tool-registries) | Discovery in cluster + federazione del registro pubblico || [Run Trees](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa || [Structured Streaming](#structured-streaming) | Eventi tipizzati in tempo reale per interfaccia utente e osservabilità || [Temporal Durability](#temporal-durability) | Esecuzione con tolleranza agli errori che sopravvive ai guasti || [Typed Contracts](dsl-reference/) | Sicurezza di tipo end-to-end per tutte le operazioni dell'utensile || [Typed Direct Completions](#typed-direct-completions) | Risposte finali strutturate dell'assistente con codec e aiutanti generati || [Bounded Results & Server Data](toolset/#server-data) | Risultati del modello efficiente in termini di token più dati solo server per interfacce utente e audit || [Human-in-the-Loop](runtime/#pause--resume) | Pausa, ripresa, risultati di strumenti esterni e conferma applicata dal runtime || [Bookkeeping & Terminal Tools](dsl-reference/#bookkeeping) | Strumenti di avanzamento/stato che non consumano il budget di recupero e possono terminare le esecuzioni in modo atomico || [Prompt Overrides](production/#prompt-overrides-with-mongo-store) | Specifiche del prompt di base più sostituzioni e provenienza supportate da Mongo |
-| [Archiviazione del runtime](memory-sessions/#runtime-store-storagestore) | Un unico archivio di proprietà dell’applicazione per stato delle esecuzioni, checkpoint di continuazione e record immutabili |
+| Funzionalità | Cosa offre |
+|---|---|
+| [Agenti design-first](#design-first-agents) | Agenti dichiarati nel DSL e codice generato tipizzato |
+| [Valutazioni generate](#generated-evaluations) | Scenari dichiarati nel design, hook tipizzati e report valutati da un giudice calibrato |
+| [Integrazione MCP](mcp-integration/) | Supporto nativo del Model Context Protocol |
+| [Registri degli strumenti](#tool-registries) | Individuazione in cluster e federazione con registri pubblici |
+| [Alberi dei run](#run-trees-composition) | Agenti che chiamano altri agenti con tracciabilità completa |
+| [Streaming strutturato](#structured-streaming) | Eventi tipizzati in tempo reale per UI e osservabilità |
+| [Durabilità Temporal](#temporal-durability) | Esecuzione resistente agli errori |
+| [Contratti tipizzati](dsl-reference/) | Sicurezza dei tipi end-to-end per le operazioni degli strumenti |
+| [Completion dirette tipizzate](#typed-direct-completions) | Risposte finali strutturate con codec e helper generati |
+| [Risultati limitati e server-data](toolsets/#server-data) | Risultati compatti per il modello e dati solo server per UI e audit |
+| [Input umano](runtime/#external-input-and-workflow-continuations) | Continuazioni tipizzate, risultati esterni e conferme applicate dal runtime |
+| [Strumenti bookkeeping e terminali](dsl-reference/#bookkeeping) | Record di stato senza costo di retrieval e commit terminali atomici |
+| [Override dei prompt](production/#prompt-overrides-with-mongo-store) | Prompt baseline, override Mongo con scope e provenienza |
 
 ## Guide alla documentazione
 
-| Guida | Descrizione | ~Gettoni ||-------|-------------|---------|
-| [Quickstart](quickstart/) | Installazione e primo agente | ~2.700 || [DSL Reference](dsl-reference/) | DSL completo: agenti, set di strumenti, policy, MCP | ~3.600 || [Runtime](runtime/) | Architettura runtime, ciclo di pianificazione/esecuzione, motori | ~2.400 || [Toolsets](toolset/) | Tipi di set di strumenti, modelli di esecuzione, trasformazioni | ~2.300 || [Agent Composition](agent-composition/) | Agente come strumento, alberi di esecuzione, topologia di streaming | ~1.400 || [MCP Integration](mcp-integration/) | Server MCP, trasporti, wrapper generati | ~1.200 || [Memory & Sessions](memory-sessions/) | Trascrizioni, archivi di memoria, sessioni, corse | ~1.600 || [Production](production/) | Configurazione temporale, interfaccia utente in streaming, integrazione del modello | ~2.200 || [Testing & Troubleshooting](testing/) | Agenti di test, pianificatori, strumenti, errori comuni | ~2.000 |
+| Guida | Descrizione | ~Token |
+|---|---|---|
+| [Quickstart](quickstart/) | Installazione e primo agente | ~2.700 |
+| [Riferimento DSL](dsl-reference/) | DSL completo: agenti, toolset, policy, MCP | ~3.600 |
+| [Runtime](runtime/) | Architettura, ciclo plan/execute e engine | ~2.400 |
+| [Toolset](toolsets/) | Tipi, modelli di esecuzione e trasformazioni | ~2.300 |
+| [Composizione degli agenti](agent-composition/) | Agent-as-tool, alberi dei run e streaming | ~1.400 |
+| [Valutazioni generate](evaluations/) | Suite tipizzate, hook, calibrazione e report | ~2.600 |
+| [Integrazione MCP](mcp-integration/) | Server MCP, trasporti e wrapper generati | ~1.200 |
+| [Memoria e sessioni](memory-sessions/) | Trascrizioni, store, sessioni e run | ~1.600 |
+| [Produzione](production/) | Temporal, streaming UI e modelli | ~2.200 |
+| [Test e risoluzione dei problemi](testing/) | Test di agenti, planner e strumenti | ~2.000 |
 
-**Sezione totale:** ~21.400 token
+**Totale sezione:** ~24.000 token
 
 ## Architettura
 
@@ -251,8 +322,13 @@ Goa-AI segue una pipeline **definisci → genera → esegui** che trasforma i pr
 
 **Panoramica dei livelli:**
 
-| Strato | Scopo ||-------|---------|
-| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegue il ciclo di pianificazione/esecuzione con applicazione delle policy, archiviazione obbligatoria del runtime fornita dall’applicazione, memoria di prodotto facoltativa e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega provider di modelli (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), archivi di memoria di prodotto e prompt, streaming (Pulse) e registri |
+| Livello | Scopo |
+|---|---|
+| **DSL** | Dichiara agenti, strumenti, policy e integrazioni esterne in codice Go versionato |
+| **Codegen** | Genera specifiche, codec, workflow e client del registro tipizzati; non modificare mai `gen/` |
+| **Runtime** | Esegue il ciclo plan/execute con policy, storage del runtime obbligatorio di proprietà dell'host, memoria di prodotto facoltativa e streaming |
+| **Engine** | Sostituisce il backend: in memoria per lo sviluppo, Temporal per la durabilità |
+| **Funzionalità** | Integra provider di modelli, Mongo, Pulse e registri |
 
 **Punti chiave di integrazione:**
 

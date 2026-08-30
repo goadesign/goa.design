@@ -19,7 +19,6 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Use`                                                   | Agent                    | Declares toolset consumption                                                                                       |
 | `Export`                                                | Agent, Service           | Exposes toolsets to other agents                                                                                   |
 | `AgentToolset`                                          | Use argument             | References toolset from another agent                                                                              |
-| `UseAgentToolset`                                       | Agent                    | Alias for AgentToolset + Use                                                                                       |
 | `Passthrough`                                           | Tool (in Export)         | Deterministic forwarding to service method                                                                         |
 | `DisableAgentDocs`                                      | API                      | Disables AGENTS_QUICKSTART.md generation                                                                           |
 | **Toolset Functions**                                   |                          |                                                                                                                    |
@@ -40,7 +39,6 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Cursor`                                                | BoundedResult            | Declares which payload field carries an opaque next-page cursor (optional)                                         |
 | `ContinueWith`                                          | BoundedResult            | Delegates mechanical pagination to a sibling continuation action whose cursor is bound by the runtime              |
 | `NextCursor`                                            | BoundedResult            | Declares the projected result field name for the next-page cursor (optional)                                       |
-| `Idempotent`                                            | Tool                     | Marks tool as idempotent within a run transcript; enables safe cross-transcript de-duplication for identical calls |
 | `Tags`                                                  | Tool, Toolset            | Attaches metadata labels                                                                                           |
 | `Meta`                                                  | Tool                     | Attaches inert, named design metadata emitted in `ToolSpec.Meta`                                                   |
 | `BindTo`                                                | Tool                     | Binds tool to service method                                                                                       |
@@ -55,7 +53,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `RunPolicy`                                             | Agent                    | Configures execution constraints                                                                                   |
 | `DefaultCaps`                                           | RunPolicy                | Sets resource limits                                                                                               |
 | `MaxToolCalls`                                          | DefaultCaps              | Maximum tool invocations                                                                                           |
-| `MaxConsecutiveFailedToolCalls`                         | DefaultCaps              | Maximum consecutive failures                                                                                       |
+| `MaxRecoveryTurns`                                     | DefaultCaps              | Maximum replacement planner calls after rejected output                                                            |
 | `TimeBudget`                                            | RunPolicy                | Simple wall-clock limit                                                                                            |
 | `Timing`                                                | RunPolicy                | Fine-grained timeout configuration                                                                                 |
 | `Budget`                                                | Timing                   | Overall run budget                                                                                                 |
@@ -97,7 +95,7 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `Attribute`                                             | Args, Return, ServerData | Defines schema field (general use)                                                                                 |
 | `Field`                                                 | Args, Return, ServerData | Defines numbered proto field (gRPC)                                                                                |
 | `Required`                                              | Schema                   | Marks fields as required                                                                                           |
-| `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and retry hints |
+| `Example`                                               | Schema                   | Attaches an explicit example; authored top-level tool payload examples become provider-native examples and structured correction evidence |
 
 ### Evaluation DSL
 
@@ -211,7 +209,13 @@ Running `goa gen` produces:
 - Activity handlers for plan/execute/resume loops
 - Registration helpers that wire the design into the runtime
 
-A contextual `AGENTS_QUICKSTART.md` is written at the module root unless disabled via `DisableAgentDocs()`.
+A contextual `AGENTS_QUICKSTART.md` is regenerated at the module root unless
+disabled via `DisableAgentDocs()`.
+
+`goa example` is separate. It creates runnable `cmd/`, bootstrap, planner, and
+example-executor files only when they do not already exist. Those files belong
+to the application and are never overwritten on later runs. Generated files
+under `gen/` and `AGENTS_QUICKSTART.md` continue to refresh from the design.
 
 ### Quickstart Example
 
@@ -262,7 +266,7 @@ var _ = Service("orchestrator", func() {
         RunPolicy(func() {
             DefaultCaps(
                 MaxToolCalls(8),
-                MaxConsecutiveFailedToolCalls(3),
+                MaxRecoveryTurns(3),
             )
             TimeBudget("2m")
         })
@@ -278,21 +282,25 @@ Running `goa gen example.com/assistant/design` produces:
 - `gen/orchestrator/agents/chat/exports/<export>`: exported toolsets (agent-as-tool) packages
 - MCP-aware registration helpers when an MCP-backed toolset is referenced via `Use`
 
-### Typed Tool Identifiers
+### Typed Tool Descriptors
 
-Each per-toolset specs package defines typed tool identifiers (`tools.Ident`) for every generated tool:
+Each per-toolset specs package defines a typed identifier and a `<Tool>Tool()`
+descriptor that pairs that identifier with generated payload/result codecs:
 
 ```go
 const (
     Search tools.Ident = "orchestrator.search.search"
 )
 
-var Specs = []tools.ToolSpec{
-    { Name: Search, /* ... */ },
+func SearchTool() tools.TypedTool[*SearchPayload, *SearchResult] {
+    // Returns fresh generated specs and codecs.
 }
 ```
 
-Use these constants anywhere you need to reference tools.
+Construct planner-authored calls with
+`planner.NewToolRequest(SearchTool(), payload)`. Generated accessors return
+fresh copies, so mutating one returned schema or example cannot change later
+model requests.
 
 ### Service-Owned Typed Completions
 
@@ -320,21 +328,23 @@ start with a letter or digit.
 
 `goa gen` emits a package under `gen/<service>/completions` with:
 
-- generated result schemas and typed Go types
-- generated JSON codecs and validation helpers
-- typed `completion.Spec` values
-- generated `Complete<Name>(ctx, client, req)` helpers
-- generated `StreamComplete<Name>(ctx, client, req)` and `Decode<Name>Chunk(...)`
-helpers
+- typed result and union types
+- private schemas and generated codecs
+- public `Complete<Name>(ctx, client, req)` helpers
+- typed `StreamComplete<Name>(ctx, client, req)` helpers
+- `<Name>Example()` when the root result has an authored `Example(...)`
 
-Unary helpers decode the final assistant response directly. Streaming helpers
-stay on the raw `model.Streamer` surface: `completion_delta` chunks are
-preview-only, exactly one final `completion` chunk is canonical, and
-`Decode<Name>Chunk(...)` decodes only that final payload.
+Unary helpers decode the accepted assistant response directly and expose the
+exact provider response as `Response.ModelResponse`. Streaming helpers return
+`completion.Streamer[T]`: `Recv` yields preview fragments, while `Value()`
+becomes available only after clean end-of-stream and validation. There is no
+public decoder for unchecked chunks.
 
 Generated completion helpers reject tool-enabled requests and caller-supplied
 `StructuredOutput`. Providers that do not implement structured output fail
-explicitly with `model.ErrStructuredOutputUnsupported`.
+explicitly with `model.ErrStructuredOutputUnsupported`. Invalid unary or
+streamed output returns a non-retryable `planner.OutputContractError` without a
+correction model request.
 The generated schema remains the canonical service contract; model adapters may
 normalize it for provider-specific constrained decoding, but they must reject
 providers that cannot represent the declared contract.
@@ -460,15 +470,6 @@ Agent("planner", func() {
 // Agent B uses Agent A's tools
 Agent("orchestrator", func() {
     Use(AgentToolset("service", "planner", "planning.tools"))
-})
-```
-
-**Alias**: `UseAgentToolset(service, agent, toolset)` is an alias that combines `AgentToolset` with `Use` in a single call. Prefer `AgentToolset` in new designs; the alias exists for readability in some codebases.
-
-```go
-// Equivalent to Use(AgentToolset("service", "planner", "planning.tools"))
-Agent("orchestrator", func() {
-    UseAgentToolset("service", "planner", "planning.tools")
 })
 ```
 
@@ -611,6 +612,11 @@ Tool("search", "Search documentation", func() {
 })
 ```
 
+`Return` is optional for method-backed tools whose service method has no
+result. Code generation then emits an empty result `TypeSpec`: no result schema
+and no result codec. The executor reports successful completion with
+`&planner.ToolResult{Name: call.Name}` and does not invent a JSON value.
+
 **Reusing types:**
 
 ```go
@@ -651,7 +657,7 @@ Each `ServerData` entry declares an audience that downstream consumers use to ro
 Set the audience inside the `ServerData` DSL block:
 
 ```go
-ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
+ServerData("metrics.time_series.chart_points", TimeSeriesServerData, func() {
     AudienceInternal()
     FromMethodResultField("chart_sidecar")
 })
@@ -683,7 +689,7 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -711,7 +717,7 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    ServerData("atlas.metrics", TimeSeriesServerData)
+    ServerData("metrics.query", TimeSeriesServerData)
 })
 ```
 
@@ -846,6 +852,11 @@ result := &planner.ToolResult{
 }
 ```
 
+`agent.Bounds.NextCursor` has type `*string`. Set it only when the generated
+tool spec declares paging, `Truncated` is true, and the pointed-to cursor is
+non-empty. Leave it nil for complete results and non-paged bounded tools; the
+runtime rejects bounds that violate these rules.
+
 When a bounded tool executes:
 
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`.
@@ -864,33 +875,6 @@ Tool("web_search", "Search the web", func() {
 })
 ```
 
-### Idempotent
-
-`Idempotent()` marks the current tool as idempotent *within a run transcript*.
-When set, runtimes/planners may treat repeated tool calls with identical arguments
-as redundant and avoid executing them once a successful result already exists in
-the transcript.
-
-**Context**: Inside `Tool`
-
-**When to use**
-
-Use `Idempotent()` only when the tool result is a pure function of its arguments
-for the lifetime of a run transcript (for example, retrieving a documentation
-section by stable identifier).
-
-**When not to use**
-
-Do not mark tools idempotent when their result depends on changing external state
-but the tool payload does not carry a time/version parameter (for example,
-“get current mode” or “get current status” snapshots without an `as_of` input).
-
-**Code generation**
-
-When a tool is marked `Idempotent()`, codegen emits the tag
-`goa-ai.idempotency=transcript` into the generated `tools.ToolSpec.Tags`. This
-tag is consumed by runtimes/planners that implement transcript-aware de-duplication.
-
 ### Confirmation
 
 `Confirmation(dsl)` declares that a tool must be explicitly approved out-of-band before it
@@ -898,9 +882,11 @@ executes. This is intended for **operator-sensitive** tools (writes, deletes, co
 
 **Context**: Inside `Tool`
 
-At generation time, Goa-AI records confirmation policy in the generated tool spec. At runtime, the
-workflow emits a confirmation request using `AwaitConfirmation` and executes the tool only after an
-explicit approval is provided.
+At generation time, Goa-AI records confirmation policy in the generated tool
+spec. At runtime, the workflow ends with a `RunSuspension` whose first pending
+item contains the confirmation request. The continuation workflow executes the
+tool only after the caller submits an explicit approval through
+`AgentClient.Continue`.
 
 Minimal example:
 
@@ -918,9 +904,10 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 Notes:
 
-- The runtime owns how confirmation is requested. The built-in confirmation protocol uses a dedicated
-`AwaitConfirmation` await and a `ProvideConfirmation` decision call. See the Runtime guide for the
-expected payloads and execution flow.
+- The runtime owns how confirmation is requested. Render the first pending item
+  when its kind is `confirmation`, then pass an
+  `api.PendingInputResponse{Confirmation: ...}` to `AgentClient.Continue`.
+  See the Runtime guide for the expected payloads and execution flow.
 - Confirmation templates (`PromptTemplate` and `DeniedResultTemplate`) are Go `text/template` strings
 executed with `missingkey=error`. In addition to the standard template functions (e.g. `printf`),
 Goa-AI provides:
@@ -1130,7 +1117,7 @@ For reminders that depend on runtime conditions, use the planner API instead:
 func (p *MyPlanner) PlanResume(ctx context.Context, input *planner.PlanResumeInput) (*planner.PlanResult, error) {
     // Add a dynamic reminder based on tool results
     for _, tr := range input.ToolOutputs {
-        if tr.Name != "get_time_series" || tr.Error != nil {
+        if tr.Name != specs.GetTimeSeries || tr.Failure != nil {
             continue
         }
         result, err := specs.UnmarshalGetTimeSeriesResult(tr.Result)
@@ -1192,7 +1179,7 @@ Keep the built-in contracts canonical:
 
 - use `Tags` for generic allow/deny and capability filtering,
 - use `Bookkeeping` and `TerminalRun` for accounting and terminal behavior,
-- use `RetryHint` for per-result failure handling,
+- use `ToolFailure` and its `Recovery` action for per-result failure handling,
 - use planner fields such as `SynthesizeAfterTools` for per-batch transitions.
 
 ### BindTo
@@ -1339,7 +1326,9 @@ Tool("set_step_status", "Update step status", func() {
 - Bookkeeping calls contribute zero cost to `MaxToolCalls` and do not change the consecutive-failure counter.
 - Each model-authored tool-call batch is atomic. The runtime admits the whole batch when all budgeted calls fit, or rejects the whole batch when they do not. It never removes individual calls from the provider response.
 - Calls and results remain durable stream/run-log events and remain in the provider transcript. Successful bookkeeping results are omitted only from compact future `ToolOutputs`.
-- A failed bookkeeping result enters a repair turn only when `RetryHint.AllowsRetry()` returns true.
+- A failed bookkeeping result enters another planner turn according to
+  `ToolFailure.Recovery`: correct the same call, replan without that tool, or
+  finish.
 - Unknown tools are treated as budgeted; only tools declared `Bookkeeping()` in the DSL (or marked bookkeeping on the runtime `ToolSpec`) are exempt.
 - A bookkeeping-only turn must resolve in the same turn (`TerminalRun()`, `FinalResponse`, `FinalToolResult`, or await/pause).
 
@@ -1367,7 +1356,7 @@ The commit tool can be admitted with no retrieval budget remaining. Once it succ
 
 **Available Policy Functions:**
 
-- `DefaultCaps` – resource limits (tool calls, consecutive failures)
+- `DefaultCaps` – independent limits for tool calls and replacement planner calls
 - `TimeBudget` – simple wall-clock limit for the entire run
 - `Timing` – fine-grained timeouts for budget, planning, and tool activities (advanced)
 - `History` – conversation history management (sliding window or compression)
@@ -1379,7 +1368,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         TimeBudget("2m")
         InterruptsAllowed(true)
@@ -1402,14 +1391,18 @@ Agent("chat", "Conversational runner", func() {
 RunPolicy(func() {
     DefaultCaps(
         MaxToolCalls(8),
-        MaxConsecutiveFailedToolCalls(3),
+        MaxRecoveryTurns(3),
     )
 })
 ```
 
 **MaxToolCalls(n)**: Sets the maximum number of budgeted tool invocations allowed per run. Tools declared `Bookkeeping()` are exempt from this cap and do not count toward `n`. When the budget is exhausted, the runtime stops scheduling budgeted calls and finalizes the run through the planner with termination reason `tool_cap`.
 
-**MaxConsecutiveFailedToolCalls(n)**: Sets the maximum consecutive failed tool calls before abort. Prevents infinite retry loops.
+**MaxRecoveryTurns(n)**: Sets the maximum number of replacement planner calls
+the runtime may schedule after rejected tool or model output. Successful
+budgeted tool work starts a fresh allowance. The terminal finalization call
+used after exhaustion is not a replacement attempt and does not count toward
+`n`. When omitted, the runtime allows three recovery turns.
 
 ### TimeBudget
 
@@ -1590,7 +1583,13 @@ Compression summarizes older turns using a model while keeping a bounded exact t
 - `CompressAtTurns(n)` and `CompressAtMaxInputTokens(n)` decide when summarization runs. If both are set, either trigger may start compression.
 - `KeepMaxTurns(n)` and `KeepMaxInputTokens(n)` decide which newest complete turns remain exact after summarization. If both are set, both retention caps apply.
 
-Token budgets are counted at runtime through the configured history model because tokenization is model-specific. `KeepMaxInputTokens` never truncates a turn; the runtime walks backward from the newest turn and keeps only complete turns that fit the budget.
+Token budgets are counted at runtime through the configured history model
+because tokenization is model-specific. One count includes preserved system
+messages, candidate complete turns, and the currently advertised tools.
+`CompressAtMaxInputTokens` is exclusive: a request exactly at the threshold
+fits; a larger request triggers compression. `KeepMaxInputTokens` never
+truncates a turn; the runtime walks backward from the newest turn and keeps only
+complete turns that fit.
 
 ```go
 RunPolicy(func() {
@@ -1616,7 +1615,14 @@ At least one `CompressAt...` trigger and at least one `KeepMax...` retention bud
 
 **HistoryModel Requirement:**
 
-When using compression, you must supply a `model.Client` via the generated `HistoryModel` field on the agent config. The runtime uses this client with `ModelClassSmall` to summarize older turns and, when a token budget is configured, to count the provider-visible request. Token-budget compression requires the history model to implement `model.TokenCounter` with exact counts; the Bedrock adapter does this with Bedrock's native `CountTokens` API.
+When using compression, you must supply a `model.Client` via the generated
+`HistoryModel` field on the agent config. The runtime uses this client with
+`ModelClassSmall` to summarize older turns and, when a token budget is
+configured, to count the provider-visible request. Token-budget compression
+requires exact `model.TokenCounter` support. Bedrock uses Runtime `CountTokens`
+where available, but returns `model.ErrTokenCountingUnsupported` for
+structured-output requests and for Claude Opus 4.7, Sonnet 5, and Mythos 5,
+which require AWS's separate Mantle endpoint.
 
 ```go
 // Generated agent config includes HistoryModel when compression is configured.
@@ -1703,7 +1709,7 @@ Agent("chat", "Conversational runner", func() {
     RunPolicy(func() {
         DefaultCaps(
             MaxToolCalls(8),
-            MaxConsecutiveFailedToolCalls(3),
+            MaxRecoveryTurns(3),
         )
         Timing(func() {
             Budget("5m")

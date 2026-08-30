@@ -1,7 +1,7 @@
 ---
 title: Toolsets
 weight: 4
-description: "Learn about toolset types, execution models, validation, retry hints, and tool catalogs in Goa-AI."
+description: "Learn about toolset types, execution models, validation, structured failure recovery, and tool catalogs in Goa-AI."
 llm_optimized: true
 aliases:
 ---
@@ -84,11 +84,14 @@ For inline implementations, you write the executor logic directly:
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case specs.Summarize:
-        args, _ := specs.UnmarshalSummarizePayload(call.Payload)
+        args, err := specs.SummarizeTool().Payload.FromJSON(call.Payload)
+        if err != nil {
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+        }
         // Custom logic: fetch multiple docs, combine, summarize
         summary := e.summarizeDocuments(ctx, args.DocIDs)
         return runtime.Executed(&planner.ToolResult{
@@ -97,8 +100,12 @@ func (e *Executor) Execute(
         }), nil
     }
     return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("unknown tool"),
+        Name: call.Name,
+        Failure: &planner.ToolFailure{
+            Kind:     planner.FailureInvalidCall,
+            Error:    planner.NewToolError("unknown tool"),
+            Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+        },
     }), nil
 }
 
@@ -134,6 +141,13 @@ which projection. Dropping the schema-without-root-example or parsed example
 input prevents provider adapters from sending native `input_examples`, even
 though the generated tool spec was correct.
 
+The validated model client still needs an executable input validator. Build
+local generated tools with `model.ToolDefinitionFromSpec`, which retains the
+generated payload decoder. Use `model.AdvertisedToolInputFromSchema` for a
+caller-authored schema. `model.ToolInputFromContract` reconstructs projections
+after a gateway or proxy hop; it does not replace the generated decoder on the
+planner-facing side.
+
 ### Bounded Tool Results
 
 Some tools naturally return large lists, graphs, or time-series windows. You can mark these as **bounded views** so that services remain responsible for trimming while the runtime enforces and surfaces the contract.
@@ -147,6 +161,7 @@ type Bounds struct {
     Returned       int    // Number of items in the bounded view
     Total          *int   // Best-effort total before truncation (optional)
     Truncated      bool   // Whether any caps were applied (length, window, depth)
+    NextCursor     *string // Non-empty opaque cursor for the next page (optional)
     RefinementHint string // Guidance on how to narrow the query when truncated
 }
 ```
@@ -156,6 +171,7 @@ type Bounds struct {
 | `Returned` | Count of items actually present in the result |
 | `Total` | Best-effort count of total items before truncation (nil if unknown) |
 | `Truncated` | True if any caps were applied (pagination, depth limits, size limits) |
+| `NextCursor` | Non-empty opaque cursor for the next page; valid only for a paging-enabled tool when `Truncated` is true |
 | `RefinementHint` | Human-readable guidance for narrowing the query (e.g., "Add a date filter to reduce results") |
 
 #### Service Responsibility for Trimming
@@ -252,19 +268,18 @@ Bounded tools are a hard contract: services implement truncation and populate bo
 **Contract:**
 
 - `Bounds.Returned` and `Bounds.Truncated` must always be set on successful bounded tool results.
-- `Bounds.Total`, `Bounds.NextCursor`, and `Bounds.RefinementHint` are optional and should only be set when known.
-  Provider code sets `Bounds.NextCursor` to the opaque provider cursor.
+- `Bounds.Total` and `Bounds.RefinementHint` are optional and should only be set when known.
+- `Bounds.NextCursor` is optional, but when present it must point to a non-empty
+  string, the generated tool spec must declare paging, and `Bounds.Truncated`
+  must be true. Provider code sets it to the opaque cursor for the next page.
 
 Executors implement truncation and populate bounds metadata:
 
 ```go
-func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := specs.UnmarshalListDevicesPayload(call.Payload)
+func (e *DeviceExecutor) Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := specs.ListDevicesTool().Payload.FromJSON(call.Payload)
     if err != nil {
-        return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("invalid payload"),
-        }), nil
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
     }
 
     devices, total, nextCursor, truncated, err := e.repo.QueryDevices(ctx, args.SiteID, nil)
@@ -300,9 +315,13 @@ When a bounded tool executes:
    and retained query fields before execution. Exact cursor lineage advances
    sequential pages. Parallel source invocations remain valid; multiple live
    heads make the no-argument continuation unavailable
-4. For direct `Cursor`, the runtime projects the opaque cursor into
+4. If another tool in the same parallel batch requires `finish` recovery, the
+   failed tool cannot run again and no new domain work can start. Continuation
+   actions remain available for successful queries that already returned a
+   next-page cursor. Without such an action, finalization starts immediately
+5. For direct `Cursor`, the runtime projects the opaque cursor into
    `next_cursor` and the model supplies it on the next call
-5. Stream subscribers and finalizers access bounds for UI display, logging, or
+6. Stream subscribers and finalizers access bounds for UI display, logging, or
    policy decisions
 
 ```go
@@ -477,11 +496,20 @@ Use `Inject` for fields that:
 
 Service-backed toolsets execute via Temporal activities (or equivalent in other engines):
 
-1. Planner returns tool calls in `PlanResult` (payload is `json.RawMessage`)
-2. Runtime schedules `ExecuteToolActivity` for each tool call
-3. Activity decodes payload via generated codec for validation/hints
-4. Calls the toolset registration's `Execute(ctx, planner.ToolRequest)` with canonical JSON
-5. Re-encodes the result with the generated result codec
+1. The validated model client rejects schema-invalid provider calls before
+   planner code receives them. Planner-authored calls use
+   `planner.NewToolRequest`, which returns encoding failures directly.
+2. The planner returns schema-valid `ToolCalls []planner.ToolRequest` with a
+   generated tool name, canonical payload bytes, and an optional provider call
+   ID.
+3. The runtime validates the whole plan, assigns each execution ID, and
+   schedules `ExecuteToolActivity`.
+4. The activity decodes the already admitted payload. A decode failure is an
+   internal invariant error, not correction evidence.
+5. The activity calls the toolset registration's
+   `Execute(ctx, meta, *runtime.ToolCall)` with canonical JSON and the
+   runtime-assigned execution ID.
+6. The activity re-encodes the result with the generated result codec.
 
 ### Inline Execution (Agent-as-Tool)
 
@@ -489,7 +517,8 @@ Agent-as-tool toolsets execute inline from the planner's perspective while the r
 
 1. The runtime detects `Inline=true` on the toolset registration
 2. It injects the `engine.WorkflowContext` into `ctx` so the toolset's `Execute` function can start the provider agent as a child workflow with its own `RunID`
-3. It calls the toolset's `Execute(ctx, call)` with canonical JSON payload and tool metadata (including parent `RunID` and `ToolCallID`)
+3. It calls the toolset's `Execute(ctx, meta, *runtime.ToolCall)` with canonical
+   JSON payload and tool metadata (including parent `RunID` and `ToolCallID`)
 4. The generated agent-tool executor builds nested agent messages (system + user) from the tool payload and runs the provider agent as a child run
 5. The nested agent executes a full plan/execute/resume loop in its own run; its `RunOutput` and tool events are aggregated into a parent `planner.ToolResult` that carries the result payload, aggregated telemetry, child `ChildrenCount`, and a `RunLink` pointing at the child run
 6. Stream subscribers emit both `tool_start` / `tool_end` for the parent tool call and a `child_run_linked` link event so UIs can build nested agent cards while consuming a single session stream
@@ -504,15 +533,21 @@ reg := runtime.ToolsetRegistration{
     Execute: runtime.ToolCallExecutorFunc(func(
         ctx context.Context,
         meta *runtime.ToolCallMeta,
-        call *planner.ToolRequest,
+        call *runtime.ToolCall,
     ) (*runtime.ToolExecutionResult, error) {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("externally provided"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.NewToolError("externally provided"),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }),
-    Specs: []tools.ToolSpec{specs.SpecAskQuestion},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecAskQuestion()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         // Attach deterministic, server-only sidecars here.
         result.ServerData = buildServerData(call, result)
         return nil
@@ -523,7 +558,9 @@ reg := runtime.ToolsetRegistration{
 Contract:
 
 - `ResultMaterializer` runs on both the **normal execution path** and the **externally provided-result await path**.
-- It receives the original typed `planner.ToolRequest` plus the typed `planner.ToolResult`, before the runtime encodes JSON for hooks, workflow boundaries, or callers.
+- It receives the validated `runtime.ToolCall`, including its runtime-assigned
+  execution ID, plus the typed `planner.ToolResult` before the runtime encodes
+  JSON for hooks, workflow boundaries, or callers.
 - Use it to attach `result.ServerData` or to normalize the semantic result shape in a deterministic way.
 - Keep it pure and deterministic; when it runs inside workflow code it must not perform I/O.
 
@@ -553,27 +590,28 @@ function, registry caller, etc.) and receives explicit per-call metadata via
 **Executor Example:**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     switch call.Name {
     case "orchestrator.profiles.upsert":
-        args, err := profilesspecs.UnmarshalUpsertPayload(call.Payload)
+        args, err := profilesspecs.UpsertTool().Payload.FromJSON(call.Payload)
         if err != nil {
-            return runtime.Executed(&planner.ToolResult{
-                Name: call.Name,
-                Error: planner.NewToolError("invalid payload"),
-            }), nil
+            return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
         }
         
-        // Optional transforms if emitted by codegen
-        mp, _ := profilesspecs.ToMethodPayload_Upsert(args)
+        // Generated when the tool and bound method use compatible distinct types.
+        mp := profilesspecs.InitUpsertMethodPayload(args)
         methodRes, err := client.Upsert(ctx, mp)
         if err != nil {
             return runtime.Executed(&planner.ToolResult{
-                Name:  call.Name,
-                Error: planner.ToolErrorFromError(err),
+                Name: call.Name,
+                Failure: &planner.ToolFailure{
+                    Kind:     planner.FailureUnavailable,
+                    Error:    planner.ToolErrorFromError(err),
+                    Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+                },
             }), nil
         }
-        tr, _ := profilesspecs.ToToolReturn_Upsert(methodRes)
+        tr := profilesspecs.InitUpsertToolResult(methodRes)
         return runtime.Executed(&planner.ToolResult{
             Name:   call.Name,
             Result: tr,
@@ -581,8 +619,12 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
         
     default:
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.NewToolError("unknown tool"),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureInvalidCall,
+                Error:    planner.NewToolError("unknown tool"),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
 }
@@ -609,7 +651,7 @@ Tool executors receive explicit per-call metadata via `ToolCallMeta` rather than
 All tool executors receive `ToolCallMeta` as an explicit parameter:
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
     // Access run context directly from meta
     log.Printf("Executing tool in run %s, session %s, turn %s", 
         meta.RunID, meta.SessionID, meta.TurnID)
@@ -688,10 +730,16 @@ This capability is essential for building robust, production-grade agentic syste
 
 When a tool is bound to a Goa method via `BindTo`, code generation analyzes the tool Arg/Return and the method Payload/Result. If the shapes are compatible, Goa emits type-safe transform helpers:
 
-- `ToMethodPayload_<Tool>(in <ToolArgs>) (<MethodPayload>, error)`
-- `ToToolReturn_<Tool>(in <MethodResult>) (<ToolReturn>, error)`
+- `Init<Tool>MethodPayload(in <ToolPayload>) <MethodPayload>` converts the
+  generated tool payload into the bound Goa method payload.
+- `Init<Tool>ToolResult(in <MethodResult>) <ToolResult>` converts the bound Goa
+  method result into the generated tool result.
 
-Transforms are emitted under the toolset owner package (for example `gen/<service>/toolsets/<toolset>/transforms.go`) and use Goa's GoTransform to safely map fields. If a transform isn't emitted, write an explicit mapper in the executor.
+Transforms are emitted under the toolset owner package (for example
+`gen/<service>/toolsets/<toolset>/transforms.go`) and use Goa's GoTransform to
+safely map fields. Each helper has one return value; generated Go type
+references determine its exact pointer/value signature. If a transform isn't
+emitted, write an explicit mapper in the executor.
 
 ---
 
@@ -711,55 +759,61 @@ For exported toolsets (agent-as-tool), Goa-AI generates export packages under `g
 - Typed tool IDs
 - Alias payload/result types
 - Codecs
-- Helper builders (e.g., `New<Search>Call`)
+- One typed `<Tool>Tool()` descriptor pairing each tool ID with its payload and
+  result codecs; pass it to `planner.NewToolRequest`
 
 ---
 
-## Tool Validation and Retry Hints
+## Tool Validation and Recovery
 
 Goa-AI combines **Goa's design-time validations** with a **structured tool error model** to give LLM planners a powerful way to **repair invalid tool calls automatically**.
 
-### Core Types: ToolError and RetryHint
+### Core Types: ToolError and ToolFailure
 
 **ToolError** (alias to `runtime/agent/toolerrors.ToolError`):
 - `Message string` – human-readable summary
 - `Cause *ToolError` – optional nested cause (preserves chains across retries and agent-as-tool hops)
 - Constructors: `planner.NewToolError(msg)`, `planner.NewToolErrorWithCause(msg, cause)`, `planner.ToolErrorFromError(err)`, `planner.ToolErrorf(format, args...)`
 
-**RetryHint** – typed failure guidance used by the planner, runtime, and policy engine. A hint is not always permission to retry; call `AllowsRetry()`:
+**ToolFailure** keeps failure classification separate from the next legal
+planner transition:
 
 ```go
-type RetryHint struct {
-    Reason             RetryReason
-    Tool               tools.Ident
-    RestrictToTool     bool
-    MissingFields      []string
-    ExampleInput       map[string]any
-    PriorInput         map[string]any
-    ClarifyingQuestion string
-    Message            string
+type ToolFailure struct {
+    Kind     FailureKind
+    Error    *ToolError
+    Recovery RecoveryDirective
+}
+
+type RecoveryDirective struct {
+    Action      RecoveryAction
+    Issues      []*tools.FieldIssue
+    PriorInput  rawjson.Message
+    ExampleJSON rawjson.Message
 }
 ```
 
-Common `RetryReason` values:
-- `invalid_arguments` – payload failed validation (schema/type)
-- `missing_fields` – required fields are missing
-- `malformed_response` – tool returned data that could not be decoded
-- `timeout`, `rate_limited`, `tool_unavailable` – execution/infra issues
+Failure kinds include invalid calls, domain rejection, unavailability, rate
+limits, timeouts, malformed results, and internal errors. Recovery has three
+explicit actions:
 
-`RetryReasonTimeout` is terminal for the current run, so
-`hint.AllowsRetry()` returns false. Every other defined reason returns true.
-This method is the canonical distinction; do not infer retryability from
-`RestrictToTool`, message text, or the mere presence of a hint.
+- `RecoveryCorrectCall` keeps the failed tool available and supplies structured
+  correction evidence.
+- `RecoveryReplan` removes the failed tool from the next planner turn.
+- `RecoveryFinish` allows only finalization from evidence already collected.
 
-**ToolResult** carries errors and hints:
+`ToolResult` carries either a typed result or one structured failure:
 
 ```go
 type ToolResult struct {
     Name          tools.Ident
     Result        any
-    Error         *ToolError
-    RetryHint     *RetryHint
+    ServerData    rawjson.Message
+    ResultBytes   int
+    ResultOmitted bool
+    ResultOmittedReason string
+    Bounds        *agent.Bounds
+    Failure       *ToolFailure
     Telemetry     *telemetry.ToolTelemetry
     ToolCallID    string
     ChildrenCount int
@@ -767,36 +821,46 @@ type ToolResult struct {
 }
 ```
 
-### Auto-Repairing Invalid Tool Calls
+### Recovering from Admitted Tool Failures
 
 The recommended pattern:
 
 1. **Design tools with strong payload schemas** (Goa design)
-2. **Let generated codecs and executors surface validation failures** as structured validation errors or `ToolError` + `RetryHint` instead of panicking or hiding errors
-3. **Teach your planner** to inspect `ToolResult.Error` and `ToolResult.RetryHint`, repair the payload when possible, and retry the tool call if appropriate
+2. **Treat executor decode failures as invariant errors** because model-emitted
+   invalid payloads and planner encoding failures stop before execution
+3. **Return `ToolFailure` for domain failures after admission** so a
+   model-authored call may request correction when a valid payload violates a
+   cross-field or business rule
+4. **Teach your planner** to inspect `ToolOutput.Failure`; the runtime uses its
+   `Recovery` action to decide whether the same tool remains available, is
+   removed for replanning, or the run must finish
 
-Generated tool codecs reject closed-object contract violations before executor
-logic runs. Unknown fields become structured `unknown_field` issues with the
-allowed keys for that object path, and JSON type mismatches become
-`invalid_field_type` issues with generated expected/actual JSON type metadata.
-The runtime converts those validation issues into restricted retry hints so the
-next planner turn repairs the same tool call instead of choosing a different
-tool or guessing from a plain decoder string.
+The validated model client uses generated codecs to reject unknown fields, JSON
+type mismatches, and schema constraints before planner or executor code runs.
+Those failures are output-contract errors, not `ToolFailure` values. The example
+below instead starts with an admitted model-authored call whose decoded payload
+violates `validateUpsertRule`, a domain rule that the payload schema cannot
+express. When that failure requests `RecoveryCorrectCall`, the workflow derives
+the prior input and example from the provider call and registered tool
+specification; it ignores executor-authored `PriorInput` and `ExampleJSON`.
 
 **Example Executor:**
 
 ```go
-func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.ToolRequest) (*runtime.ToolExecutionResult, error) {
-    args, err := spec.UnmarshalUpsertPayload(call.Payload)
+func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.ToolCall) (*runtime.ToolExecutionResult, error) {
+    args, err := spec.UpsertTool().Payload.FromJSON(call.Payload)
     if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
+    if err := validateUpsertRule(args); err != nil {
         return runtime.Executed(&planner.ToolResult{
             Name: call.Name,
-            Error: planner.NewToolError("invalid payload"),
-            RetryHint: &planner.RetryHint{
-                Reason:        planner.RetryReasonInvalidArguments,
-                Tool:          call.Name,
-                RestrictToTool: true,
-                Message:       "Payload did not match the expected schema.",
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureInvalidCall,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryCorrectCall,
+                },
             },
         }), nil
     }
@@ -804,8 +868,14 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
     res, err := client.Upsert(ctx, args)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:  planner.FailureUnavailable,
+                Error: planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{
+                    Action: planner.RecoveryReplan,
+                },
+            },
         }), nil
     }
 
@@ -813,38 +883,15 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *planner.Tool
 }
 ```
 
-**Example Planner Logic:**
-
-```go
-func (p *MyPlanner) PlanResume(ctx context.Context, in *planner.PlanResumeInput) (*planner.PlanResult, error) {
-    if len(in.ToolOutputs) == 0 {
-        return &planner.PlanResult{}, nil
-    }
-
-    last := in.ToolOutputs[len(in.ToolOutputs)-1]
-    if last.Error != nil && last.RetryHint.AllowsRetry() {
-        hint := last.RetryHint
-
-        switch hint.Reason {
-        case planner.RetryReasonMissingFields, planner.RetryReasonInvalidArguments:
-            return &planner.PlanResult{
-                Await: &planner.Await{
-                    Clarification: &planner.AwaitClarification{
-                        ID:               "fix-" + string(hint.Tool),
-                        Question:         hint.ClarifyingQuestion,
-                        MissingFields:    hint.MissingFields,
-                        RestrictToTool:   hint.Tool,
-                        ExampleInput:     hint.ExampleInput,
-                        ClarifyingPrompt: hint.Message,
-                    },
-                },
-            }, nil
-        }
-    }
-
-    return &planner.PlanResult{/* FinalResponse, next ToolCalls, ... */}, nil
-}
-```
+`PlanResumeInput.ToolOutputs` contains the workflow-safe form of each call:
+canonical payload/result bytes plus `Failure`. For `RecoveryCorrectCall`, field
+issues, prior input, and example JSON let the next planner turn correct the
+call. `RecoveryReplan` removes the failed tool from that next turn.
+`RecoveryFinish` permits only finalization. The runtime enforces these
+transitions; planners do not infer them from error text. Only provider-authored
+calls can use `RecoveryCorrectCall`. Runtime-created continuations have no
+model-authored input and must replan or finish instead of exposing their
+execution payload.
 
 ---
 
@@ -867,6 +914,25 @@ For each agent, Goa-AI emits a **specs package** and a **JSON catalog**:
   payload/result schemas, hints, plus one typed `tools.TypedTool` descriptor
   per tool (for example `SummarizeDocTool`) pairing the tool identifier with
   its typed payload and result codecs
+
+Generated spec accessors return fresh copies. Application mutation of one
+returned schema, example, or codec wrapper cannot alter later model requests.
+Use `<Tool>Tool().Payload.FromJSON(...)` for ordinary payloads and the generated
+`Decode<Tool>(payload, meta, labels)` helper for tools with injected fields.
+Do not retain or mutate spec internals as shared runtime state.
+
+### No-Result Tools
+
+A method-backed tool whose Goa service method has no result generates an empty
+result `TypeSpec`: no schema and no result codec. Its executor reports success
+without inventing a payload:
+
+```go
+return runtime.Executed(&planner.ToolResult{Name: call.Name}), nil
+```
+
+The generated typed descriptor uses an empty `tools.JSONCodec[any]` for that
+result. `PlanResume` observes successful completion with empty result bytes.
 
 **JSON catalog (`tool_schemas.json`):**
 
@@ -939,7 +1005,7 @@ Tool("get_time_series", "Get time series data", func() {
         Required("summary", "count")
     })
     // Server-data: full-fidelity data for observers (e.g., UIs)
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -949,7 +1015,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-The `kind` parameter (e.g., `"atlas.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
+The `kind` parameter (e.g., `"metrics.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
 The audience declares routing intent:
 
 - `AudienceTimeline()` for observer-facing timeline/UI payloads.
@@ -977,16 +1043,23 @@ decode canonical JSON bytes without sending those bytes to model providers.
 func (e *Executor) Execute(
     ctx context.Context,
     meta *runtime.ToolCallMeta,
-    call *planner.ToolRequest,
+    call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
-    args, _ := specs.UnmarshalGetTimeSeriesPayload(call.Payload)
+    args, err := specs.GetTimeSeriesTool().Payload.FromJSON(call.Payload)
+    if err != nil {
+        return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
+    }
     
     // Fetch full data
     fullData, err := e.dataService.GetTimeSeries(ctx, args.DeviceID, args.StartTime, args.EndTime)
     if err != nil {
         return runtime.Executed(&planner.ToolResult{
-            Name:  call.Name,
-            Error: planner.ToolErrorFromError(err),
+            Name: call.Name,
+            Failure: &planner.ToolFailure{
+                Kind:     planner.FailureUnavailable,
+                Error:    planner.ToolErrorFromError(err),
+                Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+            },
         }), nil
     }
     
@@ -1001,7 +1074,7 @@ func (e *Executor) Execute(
     // Build full-fidelity server-data for UIs
     // Generated server-data codecs are named from the tool and kind, for example:
     // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
-    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err
     }
@@ -1021,8 +1094,8 @@ execution and externally provided-result await paths:
 ```go
 reg := runtime.ToolsetRegistration{
     Name:  "orchestrator.metrics",
-    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries},
-    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *planner.ToolRequest, result *planner.ToolResult) error {
+    Specs: []tools.ToolSpec{specs.SpecGetTimeSeries()},
+    ResultMaterializer: func(ctx context.Context, meta runtime.ToolCallMeta, call *runtime.ToolCall, result *planner.ToolResult) error {
         if len(result.ServerData) != 0 {
             return nil
         }
@@ -1067,9 +1140,12 @@ Avoid server-data when:
 ## Best Practices
 
 - **Put validations in the design, not in planners** – Use Goa's attribute DSL (`Required`, `MinLength`, `Enum`, etc.)
-- **Return ToolError + RetryHint from executors** – Prefer structured errors over panics or plain `error` returns
-- **Keep hints concise but actionable** – Focus on which fields are missing/invalid, a short clarifying question, and a small `ExampleInput` map
-- **Teach planners to read hints** – Make `RetryHint` handling a first-class part of your planner
+- **Return `ToolFailure` from executors** – Preserve the error cause and choose
+  the exact recovery action instead of returning a plain error or panic
+- **Keep correction evidence exact** – Use generated field issues, canonical
+  prior input, and a schema-compliant JSON example
+- **Teach planners to read failures** – Make `ToolOutput.Failure` handling a
+  first-class part of the planner
 - **Avoid re-validating inside services** – Goa-AI assumes validation happens at the tool boundary
 
 ---

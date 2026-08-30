@@ -22,8 +22,10 @@ go install goa.design/goa/v3/cmd/goa@latest
 
 {{< alert title="Testing a generation preview" color="info" >}}
 Pre-release versions are opt-in. Pin both the Goa module and the `goa` command
-to the exact version named by the
-[preview upgrade guide](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+to the same preview commit. The current work is on the
+[`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
+at
+[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
 Regenerate the complete `gen/` directory, never mix stable and preview output,
 then compile and test the complete application. Coordinate client and server
 updates when the guide identifies a wire change. To return to stable, pin the
@@ -541,14 +543,23 @@ Goa validates data at system boundaries:
 
 ### Pointer Rules for Struct Fields
 
-| Properties | Payload/Result | Request Body (Server) | Response Body (Server) |
-|------------|---------------|----------------------|---------------------|
-| Required OR Default | Direct (-) | Pointer (*) | Direct (-) |
-| Not Required, No Default | Pointer (*) | Pointer (*) | Pointer (*) |
+Service types and transport types answer different questions. A service type
+represents a value after validation. A decoded transport type must also record
+whether an incoming field was absent so generated validation can reject a
+missing required value without rejecting an explicit zero value.
 
-Special types:
-- **Objects (structs)**: Always use pointers
-- **Arrays and Maps**: Never use pointers (already reference types)
+| Field | Service type | Decoded transport input | Encoded transport output |
+|---|---|---|---|
+| Required primitive or primitive with a default | Value | Pointer when presence must be validated | Value |
+| Optional primitive without a default | Pointer | Pointer | Pointer |
+| Object | Pointer | Pointer | Pointer |
+| Array or map | Value | Value | Value |
+
+Decoded transport input means a request on the server and a response on the
+client. Encoded transport output means a request on the client and a response
+on the server. gRPC required primitive fields use proto3 presence and therefore
+generate pointers in protobuf Go structs. Goa service structs keep their
+existing value layout.
 
 Example:
 ```go
@@ -559,6 +570,11 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` applies the same presence rule to array elements. Incoming
+HTTP and JSON-RPC bodies use pointers for primitive elements and primitive
+aliases so `[null]` can be rejected. Valid input becomes an ordinary value slice
+in the service layer, and generated response bodies remain value slices.
 
 ### Default Value Handling
 
@@ -631,9 +647,9 @@ Released callbacks remain appropriate for plugins that edit generated values or
 files. A plugin that declares a package-level name must use the factory planning
 phase so Goa can reserve that name with every other declaration before
 rendering. See the
-[Code Generation Architecture](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+[Code Generation Architecture](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
 and the
-[preview upgrade guide](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+[preview upgrade guide](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
 for the detailed plugin contract and migration steps.
 
 ---

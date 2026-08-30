@@ -79,7 +79,7 @@ var _ = Service("orchestrator", func() {
 			})
 		})
 		RunPolicy(func() {
-			DefaultCaps(MaxToolCalls(2), MaxConsecutiveFailedToolCalls(1))
+			DefaultCaps(MaxToolCalls(2), MaxRecoveryTurns(1))
 			TimeBudget("15s")
 		})
 	})
@@ -102,20 +102,24 @@ go run ./cmd/orchestrator
 
 ```text
 RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
 Completion draft_task: ...
 Completion stream draft_task: ...
 ```
 
-`goa gen` は生成契約を作成します。`goa example` はアプリケーション所有の scaffold を作成します:
+デザインに payload example があり、さらに result example があるか result 自体がない場合、scaffold planner はそのツールを実演します。利用可能な example を持つツールがなければ、代わりに greeting を返します。
+
+`goa gen` は生成契約と `AGENTS_QUICKSTART.md`（`DisableAgentDocs()` を設定した場合を除く）を常に更新します。`goa example` は、まだ存在しないアプリケーション所有ファイルだけを作成します:
 
 - `gen/`: 生成コード。このディレクトリを手で編集しないでください。
-- `cmd/orchestrator/main.go`: 実行可能なサンプルのエントリポイント。
-- `internal/agents/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録。
-- `internal/agents/chat/planner/planner.go`: 置き換え用のスタブプランナー。
+- `cmd/orchestrator/main.go`: 実行可能なサンプルのエントリポイント（初回のみ作成）。
+- `internal/agents/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録（初回のみ作成）。
+- `internal/agents/chat/planner/planner.go`: 置き換え用のスタブプランナー（初回のみ作成）。
+- `internal/agents/chat/toolsets/helpers/execute.go`: example executor（初回のみ作成）。
 - `gen/orchestrator/completions/`: 型付き直接 completion の helper。
+- `AGENTS_QUICKSTART.md`: module root に再生成される実装ガイド。
 
-DSL を変更したら再生成してください。scaffold の更新が必要なときは `goa example` を再実行し、アプリケーション側の編集は `cmd/` と `internal/` に置きます。
+初回のみ作成される各ファイルには、その後の編集をアプリケーションが所有することが明記されます。`goa example` を再実行しても上書きされません。scaffold は手作業で更新するか、新しい stub が必要な場合に意図してファイルを削除してから再実行してください。
 
 ---
 
@@ -134,7 +138,7 @@ terminal bookkeeping ツールを返して run を閉じることができます
 ランタイムは `TerminalRun()` ツールだけを実行します（`TerminalRun()` は
 bookkeeping を暗黙に含みます）。それらが成功してから run を閉じたものとして扱います。
 
-生成された例はスタブプランナーから始まるため、モデルを接続する前にこの流れを確認できます。実際のプランナーも同じ契約に従い、判断部分をモデルクライアントへ委譲するだけです。
+生成された例はスタブプランナーから始まるため、モデルを接続する前にこの流れを確認できます。ツールに payload example がある場合、`PlanStart` は `planner.NewToolRequest(gentool.<Tool>Tool(), args)` で呼び出しを構築します。`PlanResume` は `ToolOutput.Failure` を確認し、成功時の正規ツール JSON を最終 assistant message に整形します。result のないツールは空の result で成功します。実際のプランナーも同じ契約に従い、意味上の判断をモデルクライアントへ委譲します。
 
 ---
 
@@ -179,7 +183,7 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 
 ## 6. ツール executor を実装する
 
-生成されたエージェントパッケージには、ローカルツールセット用の `RegisterUsedToolsets` helper が含まれます。executor は明示的な run メタデータを受け取り、ランタイム所有の実行結果を返します:
+生成されたエージェントパッケージには、ローカルツールセット用の `RegisterUsedToolsets` helper が含まれます。executor は明示的な run メタデータを受け取り、ランタイム所有の実行結果を返します。各ツールセットの specs package は、ツール識別子と生成済み payload/result codec を組にした型付き descriptor（ここでは `helpers.AnswerTool`）も公開します。これにより decode はコンパイル時に検査され、type assertion や、デザインですでに固定された名前と codec の対応付けを繰り返す必要がありません:
 
 ```go
 type HelpersExecutor struct{}
@@ -187,16 +191,13 @@ type HelpersExecutor struct{}
 func (e *HelpersExecutor) Execute(
 	ctx context.Context,
 	meta *runtime.ToolCallMeta,
-	call *planner.ToolRequest,
+	call *runtime.ToolCall,
 ) (*runtime.ToolExecutionResult, error) {
 	switch call.Name {
 	case helpers.Answer:
-		args, err := helpers.UnmarshalAnswerPayload(call.Payload)
+		args, err := helpers.AnswerTool().Payload.FromJSON(call.Payload)
 		if err != nil {
-			return runtime.Executed(&planner.ToolResult{
-				Name:  call.Name,
-				Error: planner.NewToolError("invalid answer payload"),
-			}), nil
+			return nil, fmt.Errorf("decode admitted %s payload: %w", call.Name, err)
 		}
 		return runtime.Executed(&planner.ToolResult{
 			Name:   call.Name,
@@ -204,8 +205,12 @@ func (e *HelpersExecutor) Execute(
 		}), nil
 	default:
 		return runtime.Executed(&planner.ToolResult{
-			Name:  call.Name,
-			Error: planner.NewToolError("unknown tool"),
+			Name: call.Name,
+			Failure: &planner.ToolFailure{
+				Kind:     planner.FailureInvalidCall,
+				Error:    planner.NewToolError("unknown tool"),
+				Recovery: planner.RecoveryDirective{Action: planner.RecoveryReplan},
+			},
 		}), nil
 	}
 }
@@ -258,19 +263,18 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if len(summary.ToolCalls) > 0 {
 		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
 	}
+	final := summary.FinalResponse()
+	if final == nil {
+		return nil, errors.New("model stream ended without a canonical response")
+	}
 	return &planner.PlanResult{
-		FinalResponse: &planner.FinalResponse{
-			Message: &model.Message{
-				Role:  model.ConversationRoleAssistant,
-				Parts: []model.Part{model.TextPart{Text: summary.Text}},
-			},
-		},
+		FinalResponse: final,
 		Streamed: true,
 	}, nil
 }
 ```
 
-生のストリーム制御が必要な場合は `in.Agent.ModelClient("default")` を使い、`planner.ConsumeStream` と組み合わせます。プランナーターンごとにストリームの所有者は 1 つだけにしてください。
+検証済み stream を自分で drain する必要がある場合は `in.Agent.ModelClient("default")` を使い、`planner.ConsumeStream(ctx, stream)` と組み合わせます。プランナーターンごとにストリームの所有者は 1 つだけにしてください。provider constructor は不透明な client を返し、その response は planner code が受け取る前に検証されます。
 
 ---
 
@@ -321,7 +325,7 @@ if err != nil {
 fmt.Println(resp.Value.Name)
 ```
 
-completion 名は structured-output 契約の一部です。1-64 文字の ASCII、英字/数字/`_`/`-` のみ、先頭は英字または数字でなければなりません。ストリーミング completion helper はプレビュー用の `completion_delta` chunk を公開し、正規の最後の `completion` chunk だけをデコードします。
+completion 名は structured-output 契約の一部です。1-64 文字の ASCII、英字/数字/`_`/`-` のみ、先頭は英字または数字でなければなりません。streaming completion helper は `completion.Streamer[T]` を返します。`Recv` で preview fragment を読み、`io.EOF` まで drain した後、`Value()` で検証済みの型付き値を取得します。未検証 chunk を decode する公開 API はありません。
 
 ---
 
@@ -351,10 +355,10 @@ Agent("coordinator", "Delegates specialist work", func() {
 ## 作ったもの
 
 - スキーマ検証付きツールを持つ design-first エージェント。
-- 生成された payload/result codec と、モデル向け JSON Schema。
+- 生成された payload/result codec、ツールごとの型付き descriptor、モデル向け JSON Schema。
 - 型付き直接 completion 契約。
 - セッション付き実行と one-shot 実行を備えた生成ランタイムクライアント。
-- モデル連携プランニング、ストリーミング UI、エージェント合成へ進む道筋。
+- モデル連携プランニング、ストリーミング UI、エージェント合成、生成 evaluation suite へ進む道筋（デザインで `Suite` を宣言します。詳細は [Evaluations](evaluations/)）。
 
 プロダクションでは、耐久実行のための Temporal engine、ホスト所有の単一ランタイムストア、必要に応じてプロダクト所有のメモリストア、分散ストリーミングのための Pulse、プロバイダのレート制限に対応するモデルミドルウェアを追加します。Goa design が引き続き唯一の定義元です。
 
@@ -368,4 +372,5 @@ Agent("coordinator", "Delegates specialist work", func() {
 | [Runtime](runtime/) | plan/execute ループ、エンジン、メモリストア |
 | [Toolsets](toolsets/) | サービス実装ツール、変換、executor |
 | [Agent Composition](agent-composition/) | agent-as-tool パターンの詳細 |
+| [Evaluations](evaluations/) | 生成 eval suite、evidence collection、LLM judge |
 | [Production](production/) | Temporal セットアップ、UI へのストリーミング、レート制限 |

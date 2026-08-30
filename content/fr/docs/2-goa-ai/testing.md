@@ -132,9 +132,21 @@ func TestSearchToolExecutor(t *testing.T) {
         ToolCallID: "call-1",
     }
     
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"query": "test", "limit": 5}`),
+    request, err := planner.NewToolRequest(specs.SearchTool(), &specs.SearchPayload{
+        Query: "test",
+        Limit: 5,
+    })
+    require.NoError(t, err)
+
+    // Executors run after validation and execution-ID assignment. Build the
+    // runtime call from the valid bytes produced by the generated descriptor.
+    call := &runtime.ToolCall{
+        Name:       request.Name,
+        Payload:    request.Payload,
+        RunID:      meta.RunID,
+        SessionID:  meta.SessionID,
+        TurnID:     meta.TurnID,
+        ToolCallID: meta.ToolCallID,
     }
     
     // Execute tool
@@ -143,7 +155,7 @@ func TestSearchToolExecutor(t *testing.T) {
     require.NotNil(t, result.ToolResult)
     
     // Assert on result
-    assert.Nil(t, result.ToolResult.Error)
+    assert.Nil(t, result.ToolResult.Failure)
     assert.NotNil(t, result.ToolResult.Result)
     
     // Unmarshal and verify typed result
@@ -153,31 +165,33 @@ func TestSearchToolExecutor(t *testing.T) {
 }
 ```
 
-### Conseils de validation et de nouvelle tentative de l'outil de test
+### Tester la validation et la récupération des outils
 
-Vérifiez que les outils renvoient des erreurs et des conseils appropriés en cas de saisie non valide :
+Testez le JSON externe mal formé à la frontière du codec généré. Les appels
+d'outils invalides du modèle sont refusés avant que le planificateur ou
+l'exécuteur ne les reçoive :
 
 ```go
-func TestToolValidationReturnsHint(t *testing.T) {
-    executor := &SearchExecutor{}
-    
-    // Invalid payload - missing required field
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"limit": 5}`), // missing "query"
-    }
-    
-    result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
-    require.NoError(t, err) // Executor should not return error
-    require.NotNil(t, result.ToolResult)
-    
-    // Should return ToolError with RetryHint
-    assert.NotNil(t, result.ToolResult.Error)
-    assert.NotNil(t, result.ToolResult.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
-    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
+func TestSearchPayloadRequiresQuery(t *testing.T) {
+    _, err := specs.SearchTool().Payload.FromJSON(
+        rawjson.Message(`{"limit":5}`),
+    )
+    require.Error(t, err)
+
+    var validationErr *tools.ValidationError
+    require.ErrorAs(t, err, &validationErr)
+    assert.Equal(t, "query", validationErr.Issues()[0].Field)
 }
 ```
+
+Les tests directs de l'exécuteur doivent créer un `planner.ToolRequest` valide
+avec le descripteur typé généré, puis construire un `runtime.ToolCall` à partir
+de son nom et de ses octets canoniques, en ajoutant les IDs que le runtime
+attribuerait. Vérifiez les échecs du domaine ou du fournisseur avec
+`ToolResult.Failure.Kind`, `Failure.Error` et `Failure.Recovery`. Un test du
+planificateur qui transmet précisément un appel validé du fournisseur peut
+utiliser `planner.ToolRequestFromModelCall` pour conserver son ID de
+corrélation.
 
 ### Composition de l'agent de test
 
@@ -353,7 +367,7 @@ error: policy violation: max consecutive failed tool calls exceeded (3/3)
 3. **Augmentez la limite** si des pannes transitoires sont attendues :
 ```go
 RunPolicy(func() {
-    DefaultCaps(MaxConsecutiveFailedToolCalls(5))
+    DefaultCaps(MaxRecoveryTurns(5))
 })
 ```
 
@@ -422,21 +436,26 @@ error: invalid payload: json: cannot unmarshal string into Go struct field Searc
 
 **Solutions :**
 
-1. **Renvoie un RetryHint** de l'exécuteur afin que le planificateur puisse s'auto-corriger :
+1. **Testez le codec généré** afin que la frontière indique précisément le
+   champ en cause :
 ```go
-if err != nil {
-    return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("invalid payload"),
-        RetryHint: &planner.RetryHint{
-            Reason:       planner.RetryReasonInvalidArguments,
-            Tool:         call.Name,
-            ExampleInput: map[string]any{"query": "example", "limit": 10},
-            Message:      "limit must be an integer",
-        },
-    }), nil
-}
+_, err := specs.SearchTool().Payload.FromJSON(
+    rawjson.Message(`{"query":"example","limit":"ten"}`),
+)
+var validationErr *tools.ValidationError
+require.ErrorAs(t, err, &validationErr)
+assert.Equal(t, "invalid_field_type", validationErr.Issues()[0].Constraint)
 ```
+
+Lorsque le fournisseur émet cette charge utile, le client de modèle validé
+renvoie `model.OutputValidationError`. Le planificateur ou le runtime la
+présente sous la forme `planner.OutputContractError` avant l'exécution de tout
+exécuteur ou code de service. Utilisez `errors.As` pour vérifier cette erreur
+structurée à la frontière testée ; aucun `ToolFailure` n'est enregistré.
+
+Testez `RecoveryCorrectCall` séparément avec un appel produit par le modèle qui
+respecte le schéma, puis dont l'exécuteur ou la frontière du domaine renvoie un
+`ToolFailure` récupérable.
 
 2. **Améliorer les descriptions des outils** pour clarifier les types attendus.
 

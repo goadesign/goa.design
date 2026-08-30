@@ -19,7 +19,14 @@ go install goa.design/goa/v3/cmd/goa@latest
 ```
 
 {{< alert title="コード生成プレビューを試す" color="info" >}}
-プレリリース版は明示的に選択した場合だけ使用されます。Goa モジュールと `goa` コマンドの両方を、[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)に記載された同じバージョンに固定してください。`gen/` ディレクトリ全体を生成し直し、安定版とプレビュー版の生成コードを混在させず、アプリケーション全体をコンパイルしてテストします。ガイドに通信形式の変更が記載されている場合は、クライアントとサーバーを同時に更新してください。安定版へ戻すときも、モジュールとコマンドを同じ安定版に固定し、すべてをもう一度生成します。
+プレリリース版は明示的に選択した場合だけ使用されます。Goa モジュールと `goa`
+コマンドを同じ commit に固定してください。現在の作業は
+[`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
+の
+[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595)
+です。`gen/` ディレクトリ全体を生成し直し、安定版とプレビュー版の生成コードを
+混在させず、アプリケーション全体をコンパイルしてテストします。ガイドに通信形式の
+変更が記載されている場合は、クライアントとサーバーを同時に更新してください。
 {{< /alert >}}
 
 ### コマンド
@@ -523,14 +530,19 @@ Goaはシステム境界でデータを検証する：
 
 ### 構造体フィールドのポインタルール
 
-| プロパティ | ペイロード/結果 | リクエストボディ（サーバー） | レスポンスボディ（サーバー） |
-|------------|---------------|----------------------|---------------------|
-| 必須 OR デフォルトあり | 直接値（-） | ポインタ（*） | 直接値（-） |
-| 必須ではない & デフォルトなし | ポインタ（*） | ポインタ（*） | ポインタ（*） |
+service type は validation 済みの value を表します。decode 済み transport type は、
+受信 field が欠けていたかどうかも保持します。
 
-特殊型：
-- **オブジェクト（構造体）**：常にポインターを使用
-- **配列とマップ**：ポインターは使わない（すでに参照型になっている）
+| Field | Service type | Decoded transport input | Encoded transport output |
+|---|---|---|---|
+| 必須 primitive または default 付き primitive | Value | presence を検証するときは pointer | Value |
+| default のない任意 primitive | Pointer | Pointer | Pointer |
+| Object | Pointer | Pointer | Pointer |
+| Array または map | Value | Value | Value |
+
+decoded input は server の request と client の response です。gRPC の必須 primitive
+field は proto3 presence を使うため protobuf Go struct では pointer になりますが、
+service struct は value のままです。
 
 例
 ```go
@@ -541,6 +553,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` は、受信 HTTP／JSON-RPC body だけで primitive element と
+primitive alias を pointer にして `[null]` を拒否します。service と生成 response
+body は value slice のままです。
 
 ### デフォルト値の処理
 
@@ -609,4 +625,4 @@ var _ = Service("calc", func() {
 - 横断的な関心事（ロギング、メトリクス）
 - 設定ファイルの生成
 
-生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)と[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)を参照してください。
+生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)と[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)を参照してください。

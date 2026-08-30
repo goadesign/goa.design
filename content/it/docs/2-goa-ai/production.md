@@ -29,7 +29,12 @@ Ogni fornitore di modelli applica limiti di velocità. Se li superate, le vostre
 
 ### Panoramica
 
-Il pacchetto `features/model/middleware` fornisce un limitatore di velocità adattativo in stile **AIMD** che si colloca al confine del client del modello. Stima i costi dei token, blocca i chiamanti finché non è disponibile la capacità e regola automaticamente il suo budget di token al minuto in risposta ai segnali di limitazione della velocità da parte dei provider.
+Il pacchetto `features/model/middleware` fornisce un limitatore di velocità
+adattativo in stile **AIMD** sotto il client del modello convalidato. Chiede al
+provider il conteggio esatto dei token di input, blocca i chiamanti finché non è
+disponibile quella capacità e regola il budget di token di input al minuto
+quando il provider applica il throttling. Non stima mai i token e non misura le
+quote di output.
 
 ### Strategia AIMD
 
@@ -51,41 +56,31 @@ Creare un singolo limitatore per processo e avvolgere il client del modello:
 ```go
 import (
     "context"
-    "os"
 
-    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
+    rt := runtime.New(runtimeStore) // storage del runtime fornito dall'host
 
-    // Create the adaptive rate limiter
-    // Parameters: context, rmap (nil for local), key, initialTPM, maxTPM
-    limiter := middleware.NewAdaptiveRateLimiter(
-        ctx,
-        nil,     // nil = process-local limiter
-        "",      // key (unused when rmap is nil)
-        60000,   // initial tokens per minute
-        120000,  // maximum tokens per minute
-    )
-
-    // Create your underlying model client
-    modelClient, err := openai.New(openai.Options{
-        APIKey:       os.Getenv("OPENAI_API_KEY"),
-        DefaultModel: "gpt-5-mini",
-        HighModel:    "gpt-5",
-        SmallModel:   "gpt-5-nano",
+    // Vertex Gemini fornisce il conteggio esatto richiesto dal limitatore.
+    modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+        ProjectID:    "my-gcp-project",
+        Location:     "us-central1",
+        DefaultModel: "gemini-2.5-flash",
     })
     if err != nil {
         panic(err)
     }
 
-    // Wrap with rate limiting middleware
-    rateLimitedClient := limiter.Middleware()(modelClient)
+    limiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+    rateLimitedClient, err := limiter.Middleware()(modelClient)
+    if err != nil {
+        panic(err)
+    }
 
-    rt := runtime.New(runtimeStore)
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -108,59 +103,64 @@ func main() {
     ctx := context.Background()
 
     // Create a Pulse replicated map backed by Redis
-    rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
+    rm, err := rmap.Join(ctx, "rate-limits", redisClient)
     if err != nil {
         panic(err)
     }
+    defer rm.Close()
 
     // Create cluster-aware limiter
     // All processes sharing this map and key coordinate their budgets
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // shared key for this model
+        "vertex:gemini",  // chiave condivisa per questa famiglia di modelli
         60000,            // initial TPM
         120000,           // max TPM
     )
 
-    // Wrap your client as before
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient, err := limiter.Middleware()(vertexClient)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-Quando si usa la limitazione consapevole del cluster:
+Finché le letture e scritture della mappa replicata riescono:
 - **Il backoff si propaga a livello globale**: Quando un processo riceve `ErrRateLimited`, tutti i processi riducono il loro budget
 - **Il probing è coordinato**: Le richieste riuscite incrementano il budget condiviso
 - **Riconciliazione automatica**: I processi osservano le modifiche esterne e aggiornano i loro limitatori locali
 
-### Stima dei gettoni
+Una mappa nil o una chiave vuota crea deliberatamente un limitatore locale al
+processo. Se lo stato condiviso non può essere inizializzato o aggiornato, le
+chiamate al modello continuano con il budget adattativo locale finché un evento
+successivo della mappa non lo sincronizza. Monitora Redis quando serve il
+coordinamento tra processi.
 
-Il limitatore stima il costo della richiesta utilizzando una semplice euristica:
-- Conta i caratteri nelle parti di testo e nei risultati degli strumenti di stringa
-- Converte in token utilizzando ~3 caratteri per token
-- Aggiunge un buffer di 500 token per le richieste del sistema e l'overhead del provider
+### Conteggio esatto dei token
 
-Questa stima è intenzionalmente conservativa per evitare un conteggio insufficiente.
+Il limitatore chiama `CountTokens` sul client avvolto prima di riservare
+capacità. Richiede `Exact=true` e non effettua stime.
+
+Vertex Gemini fornisce un'operazione nativa. Bedrock restituisce
+`model.ErrTokenCountingUnsupported` quando non può contare esattamente, mentre
+OpenAI non offre un contatore nativo. Un client senza supporto può essere
+avvolto, ma la prima chiamata `Complete` o `Stream` restituisce quell'errore
+prima dell'inferenza.
 
 ### Integrazione con il runtime
 
 Cablare i client a velocità limitata nel runtime di Goa-AI:
 
 ```go
-// Create limiters for each model you use
-claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
-gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
-
-// Wrap underlying clients
-claudeClient := claudeLimiter.Middleware()(bedrockClient)
-gptClient := gptLimiter.Middleware()(openaiClient)
-
-// Configure runtime with rate-limited clients
-rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
-if err := rt.RegisterModel("claude", claudeClient); err != nil {
+vertexLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+limitedVertex, err := vertexLimiter.Middleware()(vertexClient)
+if err != nil {
     panic(err)
 }
-if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
 ```
@@ -191,18 +191,9 @@ if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
 
 ### Monitoraggio
 
-Traccia il comportamento del limitatore di velocità con metriche e registri:
-
-```go
-// The limiter logs backoff events at WARN level
-// Monitor for sustained throttling by tracking:
-// - Wait time distribution (how long requests queue)
-// - Backoff frequency (how often 429s occur)
-// - Current TPM vs. initial TPM
-
-// Example: export current capacity to Prometheus
-currentTPM := limiter.CurrentTPM()
-```
+Misura la latenza delle chiamate al modello e gli errori terminali
+`model.ErrRateLimited` nella telemetria del client avvolto. Monitora anche Redis
+quando usi una mappa replicata.
 
 ### Migliori pratiche
 
@@ -409,9 +400,20 @@ storage. Prima che il nuovo runtime scriva, metadati, checkpoint e record
 esistenti devono rispettare il contratto integrato di `storage.Store`.
 Distribuisci insieme il proprietario dello storage e tutti i worker che lo
 chiamano. I vecchi writer degli storage separati e i nuovi writer dello storage
-integrato non devono sovrapporsi. Goa-AI non prescrive una procedura di
-migrazione; l’applicazione host possiede conversione, verifica, backup e
-ripristino per il proprio database e ambiente di distribuzione.
+integrato non devono sovrapporsi.
+
+Eseguire la conversione senza traffico con un programma di migrazione monouso
+in un job o pod temporaneo del database. L’applicazione host possiede quel
+programma; non fa parte del release normale e va eliminato dopo la verifica.
+
+1. Creare e verificare un backup e confermare che non vi siano writer.
+2. Eseguire la migrazione in modalità verifica e correggere ogni record rifiutato.
+3. Applicare la conversione e verificare schema, indici, sessioni, metadati,
+   checkpoint v7 e record immutabili.
+4. Distribuire insieme proprietario e worker, quindi eliminare il programma.
+
+Dopo l’avvio della conversione, il rollback ripristina il backup completo. Non
+eseguire writer precedenti su un database convertito solo in parte.
 
 ### Timing e retry delle attività
 
@@ -426,7 +428,7 @@ cronologia e dai retry delle singole activity di planner, tool, hook e storage.
 ```go
 Agent("operator", "Production operations agent", func() {
     RunPolicy(func() {
-        DefaultCaps(MaxToolCalls(20), MaxConsecutiveFailedToolCalls(3))
+        DefaultCaps(MaxToolCalls(20), MaxRecoveryTurns(3))
         Timing(func() {
             Budget("5m")
             Plan("45s")
@@ -470,6 +472,47 @@ effetti collaterali irreversibili.
 ### Configurazione del lavoratore
 
 I worker eseguono il polling delle code di attività e l'esecuzione di flussi di lavoro/attività. I worker vengono avviati automaticamente per ogni agente registrato; nella maggior parte dei casi non è necessaria una configurazione manuale dei worker.
+
+### Rollout trasparenti
+
+Temporal riproduce la cronologia di un workflow con il codice del worker che lo
+esegue. In produzione usare la Worker Deployment Versioning di Temporal con
+build ID immutabili e mantenere ogni vecchia versione finché Temporal non
+segnala che è stata completamente drenata. Avviare un worker nuovo non rende
+sicuro riprodurre un workflow esistente con codice diverso.
+
+Le modifiche compatibili possono essere distribuite in modalità rolling solo
+quando preservano i nomi richiesti degli strumenti, i codec generati, i payload
+persistiti e la semantica delle attività. La disponibilità delle dipendenze e
+la compatibilità delle API restano responsabilità dell'applicazione: il
+versionamento dei worker protegge il replay, non un servizio a valle assente o
+incompatibile.
+
+#### Modifiche ai contratti generati
+
+Quando agenti generati, package di completion o payload runtime persistiti
+cambiano in modo incompatibile, rigenerare tutti gli agenti e le completion,
+drenare o arrestare il lavoro interessato e distribuire runtime, worker e
+chiamanti come un'unica release coordinata. Goa-AI non offre una modalità di
+lettura doppia per i contratti runtime generati.
+
+Il runtime accetta esclusivamente lo schema esatto
+`goa-ai.run-suspension.v7`. I planner che attendono domande, chiarimenti o
+strumenti esterni conservano il `ModelToolCallID` del provider; il workflow
+assegna il distinto `ToolCallID` del runtime prima di salvare la sospensione.
+Gli altri schemi di sospensione non vengono ripresi. Un futuro cambio di schema
+deve censire e ritirare il lavoro salvato incompatibile prima della release
+coordinata; non aggiungere un lettore doppio e non inferire campi.
+
+#### Verifica della release
+
+Prima di considerare trasparente una release, verificare che un workflow
+iniziato prima della promozione termini sulla build originale, che un nuovo
+workflow termini sulla build corrente e che una richiesta di input esterno
+creata prima della promozione continui come nuovo workflow. I vecchi worker
+devono restare pronti finché Temporal non li segnala drenati e la finestra di
+osservazione non deve mostrare nuovi errori, riavvii o intervalli senza
+endpoint pronti.
 
 ### Migliori pratiche
 

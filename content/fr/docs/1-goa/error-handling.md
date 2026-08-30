@@ -44,6 +44,12 @@ var _ = Service("divider", func() {
 })
 ```
 
+Une erreur au niveau de l'API est une définition réutilisable et un emplacement
+pour déclarer les correspondances de transport par défaut. Elle ne signifie pas
+que chaque méthode de chaque service renvoie cette erreur. Un service ou une
+méthode doit la sélectionner avec `Error("invalid_argument")` pour que le point
+de terminaison généré puisse la renvoyer.
+
 ### Erreurs au niveau du service
 
 Les erreurs au niveau du service sont disponibles pour toutes les méthodes d'un service :

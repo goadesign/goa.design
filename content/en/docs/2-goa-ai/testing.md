@@ -50,67 +50,62 @@ func TestChatAgent(t *testing.T) {
 }
 ```
 
-### Testing Planners with Mock Model Clients
+### Testing Planners with Fake Providers
 
-Isolate planner logic by mocking the model client:
+`model.Client` is framework-owned and cannot be implemented by application test
+doubles. Implement `model.Provider`, then construct the same validated client
+used in production:
 
 ```go
-type MockModelClient struct {
-    responses []model.Message
-    callCount int
+type FakeProvider struct {
+    response *model.Response
 }
 
-func (m *MockModelClient) Complete(ctx context.Context, req *model.Request) (*model.Response, error) {
-    if m.callCount >= len(m.responses) {
-        return nil, fmt.Errorf("no more mock responses")
-    }
-    resp := &model.Response{
-        Content: []model.Message{m.responses[m.callCount]},
-    }
-    m.callCount++
-    return resp, nil
+func (p *FakeProvider) Complete(context.Context, *model.Request) (*model.Response, error) {
+    return p.response, nil
 }
 
-func (m *MockModelClient) Stream(ctx context.Context, req *model.Request) (model.Streamer, error) {
-    // Return a mock streamer for streaming tests
-    return &MockStreamer{response: m.responses[m.callCount]}, nil
+func (p *FakeProvider) Stream(context.Context, *model.Request) (model.Streamer, error) {
+    return nil, model.ErrStreamingUnsupported
 }
 
-func TestPlannerWithMockClient(t *testing.T) {
-    mockClient := &MockModelClient{
-        responses: []model.Message{
-            {
-                Role: model.ConversationRoleAssistant,
-                Parts: []model.Part{
-                    model.TextPart{Text: "I'll search for that."},
-                    model.ToolUsePart{
-                        ID:    "call-1",
-                        Name:  "search",
-                        Input: json.RawMessage(`{"query": "test"}`),
-                    },
-                },
-            },
-        },
-    }
-    
-    planner := &MyPlanner{client: mockClient}
-    
-    input := &planner.PlanInput{
+func TestValidatedModelResponse(t *testing.T) {
+    provider := &FakeProvider{response: &model.Response{
+        Content: []model.Message{{
+            Role: model.ConversationRoleAssistant,
+            Parts: []model.Part{model.TextPart{Text: "Hello."}},
+        }},
+        StopReason: "stop",
+    }}
+    client, err := model.NewClient(provider)
+    require.NoError(t, err)
+
+    resp, err := client.Complete(context.Background(), &model.Request{
         Messages: []*model.Message{{
             Role:  model.ConversationRoleUser,
-            Parts: []model.Part{model.TextPart{Text: "Search for test"}},
+            Parts: []model.Part{model.TextPart{Text: "Hello"}},
         }},
-    }
-    
-    result, err := planner.PlanStart(context.Background(), input)
+    })
     require.NoError(t, err)
-    
-    // Assert planner returned tool calls
-    assert.NotNil(t, result.ToolCalls)
-    assert.Len(t, result.ToolCalls, 1)
-    assert.Equal(t, "search", string(result.ToolCalls[0].Name))
+    assert.Len(t, resp.Content, 1)
 }
 ```
+
+For planner unit tests that do not need model validation, inject deterministic
+planner inputs and typed tool requests directly. Use a fake provider when the
+test must prove request validation, tool-payload decoding, output bounds, or
+stream termination behavior.
+
+Streaming fakes must emit a complete valid chunk sequence and then return
+`io.EOF`; only then does `ValidatedStream.Response()` expose the accepted
+response. To test rejection, return malformed provider output and assert the
+boundary error. Generated completion tests should assert
+`planner.OutputContractError` and a nil response when output violates the
+generated codec.
+
+Rate-limiter and token-budget history tests need a fake provider that also
+implements exact `model.TokenCounter`. A non-counting fake should produce
+`model.ErrTokenCountingUnsupported`, not an estimated result.
 
 ### Testing Tools in Isolation
 
@@ -132,9 +127,21 @@ func TestSearchToolExecutor(t *testing.T) {
         ToolCallID: "call-1",
     }
     
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"query": "test", "limit": 5}`),
+    request, err := planner.NewToolRequest(specs.SearchTool(), &specs.SearchPayload{
+        Query: "test",
+        Limit: 5,
+    })
+    require.NoError(t, err)
+
+    // Executors run after validation and execution-ID assignment. Build the
+    // runtime call from the valid bytes produced by the generated descriptor.
+    call := &runtime.ToolCall{
+        Name:       request.Name,
+        Payload:    request.Payload,
+        RunID:      meta.RunID,
+        SessionID:  meta.SessionID,
+        TurnID:     meta.TurnID,
+        ToolCallID: meta.ToolCallID,
     }
     
     // Execute tool
@@ -143,7 +150,7 @@ func TestSearchToolExecutor(t *testing.T) {
     require.NotNil(t, result.ToolResult)
     
     // Assert on result
-    assert.Nil(t, result.ToolResult.Error)
+    assert.Nil(t, result.ToolResult.Failure)
     assert.NotNil(t, result.ToolResult.Result)
     
     // Unmarshal and verify typed result
@@ -153,31 +160,31 @@ func TestSearchToolExecutor(t *testing.T) {
 }
 ```
 
-### Testing Tool Validation and Retry Hints
+### Testing Tool Validation and Recovery
 
-Verify that tools return proper errors and hints for invalid input:
+Test malformed external JSON at the generated codec boundary. Invalid model
+tool calls are rejected before planner or executor code receives them:
 
 ```go
-func TestToolValidationReturnsHint(t *testing.T) {
-    executor := &SearchExecutor{}
-    
-    // Invalid payload - missing required field
-    call := &planner.ToolRequest{
-        Name:    specs.Search,
-        Payload: json.RawMessage(`{"limit": 5}`), // missing "query"
-    }
-    
-    result, err := executor.Execute(context.Background(), &runtime.ToolCallMeta{}, call)
-    require.NoError(t, err) // Executor should not return error
-    require.NotNil(t, result.ToolResult)
-    
-    // Should return ToolError with RetryHint
-    assert.NotNil(t, result.ToolResult.Error)
-    assert.NotNil(t, result.ToolResult.RetryHint)
-    assert.Equal(t, planner.RetryReasonMissingFields, result.ToolResult.RetryHint.Reason)
-    assert.Contains(t, result.ToolResult.RetryHint.MissingFields, "query")
+func TestSearchPayloadRequiresQuery(t *testing.T) {
+    _, err := specs.SearchTool().Payload.FromJSON(
+        rawjson.Message(`{"limit":5}`),
+    )
+    require.Error(t, err)
+
+    var validationErr *tools.ValidationError
+    require.ErrorAs(t, err, &validationErr)
+    assert.Equal(t, "query", validationErr.Issues()[0].Field)
 }
 ```
+
+Direct executor tests should create a valid `planner.ToolRequest` with the
+generated typed descriptor, then construct a `runtime.ToolCall` from its name
+and canonical payload bytes and assign the execution IDs the runtime would add.
+Assert domain or provider failures through `ToolResult.Failure.Kind`,
+`Failure.Error`, and `Failure.Recovery`. Planner tests that specifically forward
+a validated provider call may use `planner.ToolRequestFromModelCall` to preserve
+its provider correlation ID.
 
 ### Testing Agent Composition
 
@@ -350,19 +357,20 @@ error: bookkeeping-only tool batch requires a terminal tool or terminal planner 
 
 **Symptom:**
 ```
-error: policy violation: max consecutive failed tool calls exceeded (3/3)
+error: policy violation: recovery turn cap exceeded
 ```
 
-**Cause:** Multiple consecutive tool calls failed.
+**Cause:** The planner used every allowed replacement call after rejected tool
+or model output.
 
 **Solutions:**
 
-1. **Fix the underlying tool errors** - check tool executor logs
-2. **Improve retry hints** so the planner can self-correct
-3. **Increase the limit** if transient failures are expected:
+1. **Fix rejected tool output** - check executor logs and ensure `Failure.Recovery` gives the planner the correct action and correction evidence
+2. **Fix rejected model output** - return precise correction text from the output validator
+3. **Increase the replacement allowance** when the agent legitimately needs more correction attempts:
 ```go
 RunPolicy(func() {
-    DefaultCaps(MaxConsecutiveFailedToolCalls(5))
+    DefaultCaps(MaxRecoveryTurns(5))
 })
 ```
 
@@ -431,21 +439,25 @@ error: invalid payload: json: cannot unmarshal string into Go struct field Searc
 
 **Solutions:**
 
-1. **Return a RetryHint** from the executor so the planner can self-correct:
+1. **Test the generated codec** so the boundary reports exact field issues:
 ```go
-if err != nil {
-    return runtime.Executed(&planner.ToolResult{
-        Name:  call.Name,
-        Error: planner.NewToolError("invalid payload"),
-        RetryHint: &planner.RetryHint{
-            Reason:       planner.RetryReasonInvalidArguments,
-            Tool:         call.Name,
-            ExampleInput: map[string]any{"query": "example", "limit": 10},
-            Message:      "limit must be an integer",
-        },
-    }), nil
-}
+_, err := specs.SearchTool().Payload.FromJSON(
+    rawjson.Message(`{"query":"example","limit":"ten"}`),
+)
+var validationErr *tools.ValidationError
+require.ErrorAs(t, err, &validationErr)
+assert.Equal(t, "invalid_field_type", validationErr.Issues()[0].Constraint)
 ```
+
+When a provider emits this payload, the validated model client returns
+`model.OutputValidationError`. The planner/runtime surfaces it as
+`planner.OutputContractError` before executor or service code runs. Use
+`errors.As` to assert the structured error at the boundary under test; no
+`ToolFailure` is recorded.
+
+Test `RecoveryCorrectCall` separately with a model-authored call that passes
+schema validation and whose executor or domain boundary returns a recoverable
+`ToolFailure`.
 
 2. **Improve tool descriptions** to clarify expected types.
 

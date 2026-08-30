@@ -93,6 +93,13 @@ transcripción en el orden guardado. Si los registros ya están cargados,
 conservan el orden de las partes; `ValidatePlannerTranscript` y
 `ValidateBedrock` permiten validar una transcripción en el límite adecuado.
 
+`ValidatePlannerTranscript` exige que cada grupo de llamadas a herramientas
+del asistente vaya seguido inmediatamente por un único mensaje de usuario con
+exactamente un resultado para cada ID de llamada. Cuando el razonamiento está
+habilitado, `ValidateBedrock` exige además que cada mensaje del asistente que
+llame a una herramienta comience con un `ThinkingPart`. Ningún validador
+modifica los mensajes.
+
 Estos registros permiten reproducir e inspeccionar workflows. No reemplazan la
 transcripción propiedad del producto para el historial de chat, valoraciones,
 búsqueda, retención o eliminación de datos de clientes.

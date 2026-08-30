@@ -44,20 +44,68 @@ Agent("assistant", "A helpful coding assistant", func() {
 })
 ```
 
-Lorsqu'un planificateur appelle cet outil avec des arguments non valides (par exemple, un `code` vide)
-chaîne ou `language: "cobol"` - Goa-AI rejette l'appel à la limite saisie et
-renvoie un indice de nouvelle tentative structuré. Votre planificateur peut utiliser cet indice pour demander un
-question complémentaire ou réessayez avec des arguments corrigés. Pas d'analyse de chaîne ad hoc
-ou un schéma JSON entretenu à la main est requis.
+Lorsque le code du planificateur construit cet appel avec
+`planner.NewToolRequest`, les erreurs d'encodage générées lui sont renvoyées
+directement. Lorsque le modèle émet des arguments qui ne respectent pas le
+schéma — par exemple un `code` vide ou `language: "cobol"` — le client de
+modèle validé renvoie `model.OutputValidationError`, puis le planificateur ou
+le runtime renvoie `planner.OutputContractError` avant l'exécution de tout
+exécuteur ou code de service.
+
+`ToolFailure` et `RecoveryCorrectCall` interviennent plus tard : l'appel produit
+par le modèle doit d'abord réussir la validation et être admis, puis son
+exécuteur ou la frontière du domaine doit renvoyer un échec récupérable. Le
+runtime utilise cet échec pour guider le tour suivant du planificateur, sans
+analyse de chaînes ad hoc ni schéma JSON maintenu à la main.
 
 **Avantages:**
 - **Source unique de vérité** — Le DSL définit le comportement, les types et la documentation
 - **Sécurité au moment de la compilation** — Détectez les charges utiles incompatibles avant l'exécution
 - **Clients générés automatiquement** — Appels d'outils de type sécurisé sans câblage manuel
 - **Modèles cohérents** — Chaque agent suit la même structure
-- **Appels d'outils réparables** — Les erreurs de validation produisent des conseils de nouvelle tentative structurés avec commentaires
+- **Échecs d'exécution réparables** — Les appels du modèle qui ont été admis peuvent renvoyer des détails d'échec et des directives de récupération typés
 
 → Apprenez-en davantage dans la [Référence DSL](dsl-reference/) et le [Démarrage rapide](quickstart/)
+
+---
+
+### Évaluations générées {#generated-evaluations}
+
+**Votre agent a changé. Ses réponses se sont-elles dégradées ?**
+
+Les évaluations exécutent votre agent réel de manière reproductible et
+vérifient que le résultat reste correct. Au lieu de maintenir des fichiers YAML,
+un runner spécifique et des expressions régulières, Goa-AI génère le dispositif
+d'évaluation depuis le design qui définit déjà l'agent :
+
+```go
+Agent("chat", "Answers product questions.", func() {
+    Suite("chat", func() {
+        Description("Exercises production Chat outcomes.")
+        Timeout("2m")
+        Scenario("alarm_inventory", func() {
+            Description("Retrieves every alarm in a fixed window.")
+            Input(ChatEvalInput)          // typed, validated scenario input
+            Tags("production", "alarm")
+        })
+    })
+})
+```
+
+`goa gen` transforme chaque scénario en méthode d'interface Go typée : ajouter
+un scénario casse la compilation jusqu'à son implémentation. `goa example`
+crée une fois une commande `cmd/<suite>-evals`. Les hooks renvoient des
+vérifications exactes et des affirmations en langage naturel sur la réponse ;
+un modèle juge évalue les affirmations seulement après une calibration qui
+prouve qu'il distingue les réponses correctes des réponses incorrectes.
+
+**Avantages :**
+- **Scénarios possédés par le design** — Cas de test et entrées typées et validées à côté de l'agent
+- **Aucune dérive silencieuse** — Un scénario sans implémentation est une erreur de compilation
+- **Aucune notation par expression régulière** — Des affirmations évaluées par un juge calibré remplacent la comparaison du texte
+- **Prêt pour la CI** — Sélection par scénario ou tag, concurrence limitée et rapports JSON stables dans l'ordre du design
+
+→ En savoir plus dans [Évaluations générées](evaluations/)
 
 ---
 
@@ -89,14 +137,15 @@ Les noms de réalisation font partie du contrat de sortie structurée. Ils doive
 1 à 64 caractères ASCII, peuvent contenir des lettres, des chiffres, `_` et `-`, et doivent
 commencez par une lettre ou un chiffre.
 
-Codegen émet `gen/<service>/completions/` avec le schéma JSON, des codecs typés,
-et des assistants générés qui demandent une sortie structurée imposée par le fournisseur et
-décoder la réponse finale de l'assistant via le codec généré. Diffusion en continu
-les assistants restent sur la surface brute `model.Streamer` : les morceaux `completion_delta` sont
-en aperçu uniquement, exactement un dernier morceau `completion` est canonique et généré
-Les assistants `Decode<Name>Chunk(...)` décodent uniquement cette charge utile finale. Les fournisseurs qui
-ne pas implémenter la sortie structurée échouer explicitement avec
-`model.ErrStructuredOutputUnsupported`.
+Le générateur écrit `gen/<service>/completions/`, avec les détails privés du
+schéma et du codec ainsi que les fonctions typées publiques. Les fonctions
+unaires renvoient la valeur typée acceptée. Les fonctions en continu renvoient
+un `completion.Streamer[T]` : `Recv` fournit des fragments
+`completion_delta` réservés à l'aperçu, et `Value()` ne renvoie le résultat
+typé qu'après la fermeture d'un flux valide par le fournisseur. Un fournisseur
+sans sortie structurée échoue explicitement avec
+`model.ErrStructuredOutputUnsupported`; une sortie mal formée échoue avec
+`planner.OutputContractError`, qui n'est pas récupérable.
 
 **Avantages:**
 - **Une surface contractuelle** — Réutilisez les types Goa, les validations et `OneOf` pour la sortie directe de l'assistant
@@ -165,10 +214,14 @@ Goa-AI utilise **Temporal** pour une exécution durable. Les exécutions d'agent
 rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
-eng, _ := temporal.NewWorker(temporal.Options{
+eng, err := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
+if err != nil {
+    panic(err)
+}
+defer eng.Close()
 rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
@@ -176,7 +229,10 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 - **Aucune inférence inutile** — Les outils ayant échoué réessayent sans rappeler le LLM
 - **Récupération après incident** — Redémarrez les travailleurs à tout moment ; les exécutions reprennent depuis le dernier point de contrôle
 - **Gestion des limites de débit** — L'intervalle exponentiel absorbe la limitation de API
-- **Déploiement sécurisé** : les déploiements continus ne perdent pas le travail en vol
+- **Déploiement tenant compte des versions** — Suivez le
+  [contrat de déploiement en production](production/#transparent-rollouts)
+  pour les versions compatibles déployées progressivement et les changements
+  générés incompatibles
 
 → Guide d'installation et réessayez la configuration dans [Production](production/#temporal-setup)
 
@@ -235,6 +291,7 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 | Fonctionnalité | Ce que vous obtenez |
 |---------|--------------|
 | [Agents axés sur la conception](#design-first-agents) | Définir des agents dans DSL, générer du code de type sécurisé |
+| [Évaluations générées](#generated-evaluations) | Scénarios déclarés dans le design, hooks typés et rapports évalués par un modèle calibré |
 | [Intégration MCP](mcp-integration/) | Prise en charge native de Model Context Protocol |
 | [Registres d'outils](#tool-registries) | Découverte en cluster + fédération de registre public |
 | [Exécuter des arbres](#run-trees-composition) | Agents appelant des agents avec une traçabilité complète |
@@ -257,12 +314,13 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 | [Exécution](runtime/) | Architecture d'exécution, boucle de planification/exécution, moteurs | ~2,400 |
 | [Jeux d'outils](toolsets/) | Types d'ensembles d'outils, modèles d'exécution, transformations | ~2,300 |
 | [Composition d'agent](agent-composition/) | Agent en tant qu'outil, arborescences d'exécution, topologie de streaming | ~1,400 |
+| [Évaluations générées](evaluations/) | Suites typées, hooks de scénarios, calibration du juge et rapports | ~2,600 |
 | [Intégration MCP](mcp-integration/) | Serveurs MCP, transports, wrappers générés | ~1,200 |
 | [Mémoire et sessions](memory-sessions/) | Transcriptions, mémoires, sessions, exécutions | ~1,600 |
 | [Production](production/) | Configuration Temporal, streaming UI, intégration de modèles | ~2,200 |
 | [Test et dépannage](testing/) | Agents de test, planificateurs, outils, erreurs courantes | ~2,000 |
 
-**Section totale :** ~21 400 jetons
+**Section totale :** ~24 000 jetons
 
 ## Architecture
 
@@ -296,7 +354,12 @@ Goa-AI fournit des adaptateurs de première classe pour quatre fournisseurs LLM�
 - **AWS Bedrock** (`features/model/bedrock`)
 - **Google Vertex AI** (`features/model/vertex`) — un adaptateur Gemini natif plus un constructeur de pure construction pour les modèles Claude hébergés sur Vertex (qui délègue la traduction et la classification des erreurs à `features/model/anthropic`)
 
-Tous les quatre implémentent la même interface `model.Client` utilisée par les planificateurs. Les applications enregistrent les clients modèles avec le runtime à l'aide de `rt.RegisterModel("provider-id", client)` et y font référence par ID à partir des planificateurs et des configurations d'agent générées, de sorte que l'échange de fournisseurs est un changement de configuration plutôt qu'une refonte.
+Tous les quatre exposent le même `model.Client` opaque utilisé par les
+planificateurs. Les applications enregistrent les clients avec
+`rt.RegisterModel("provider-id", client)` puis les référencent par ID :
+changer de fournisseur devient un changement de configuration. Goa-AI valide
+chaque requête et chaque réponse complète avant que le code d'application
+puisse les observer.
 
 Les modèles de la génération Gemini 3 attachent une thought signature opaque
 aux parties d'appel d'outil (`functionCall`) afin d'authentifier le
@@ -308,11 +371,20 @@ identique, que le modèle configuré utilise ou non cette fonctionnalité. Voir
 
 L'ajout d'un nouveau fournisseur suit le même schéma :
 
-1. Implémentez `model.Client` pour votre fournisseur en mappant ses types de SDK sur `model.Request`, `model.Response` et en diffusant des `model.Chunk`.
-2. Encapsulez éventuellement le client avec un middleware partagé (par exemple, `features/model/middleware.NewAdaptiveRateLimiter`) pour une limitation de débit et des métriques adaptatives.
-3. Appelez `rt.RegisterModel("my-provider", client)` avant d’enregistrer des agents, puis référencez `"my-provider"` à partir de vos planificateurs ou configurations d’agent.
+1. Implémentez `model.Provider` en adaptant le SDK à `model.Request`,
+   `model.Response` et aux fragments de transport bruts.
+2. Construisez le client validé avec `model.NewClient(provider)`. Installez le
+   middleware avec `model.WrapClient` ; un package externe ne peut ni
+   implémenter ni contourner `model.Client`.
+3. Appelez `rt.RegisterModel("my-provider", client)`, puis référencez
+   `"my-provider"` dans les planificateurs ou configurations d'agent.
 
-Étant donné que les planificateurs et le temps d'exécution dépendent uniquement de `model.Client`, les nouveaux fournisseurs se connectent sans modifier vos conceptions Goa ou le code d'agent généré.
+Les planificateurs et le runtime ne dépendant que du `model.Client` validé, un
+nouveau fournisseur ne nécessite aucune modification du design Goa ou du code
+d'agent généré. Consultez
+[Runtime → Intégration LLM](runtime/#llm-integration) pour les limites, les
+capacités des fournisseurs, les passerelles distantes et les mises à niveau
+coordonnées.
 
 ## Exemple rapide
 

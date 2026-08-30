@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Use `ArrayOfRequired` cuando todos los elementos deban estar presentes. Se
+aplica a valores primitivos, alias primitivos y objetos: un array JSON o
+JSON-RPC entrante que contenga `null` se rechaza, mientras que `""`, `0` y
+`false` siguen siendo elementos válidos.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` declara alternativas donde debe seleccionarse exactamente una rama.
+Marque el atributo `OneOf` como requerido cuando el caller deba seleccionar
+una rama.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+Un `OneOf` requerido rechaza una selección ausente, un wrapper tipado con valor
+nil y un mensaje, slice de bytes o `Any` nil. Un mensaje vacío no nil sigue
+siendo válido. Los constructores, setters, accessors y `Kind` generados
+mantienen privada la rama y garantizan una sola selección.
+
 #### Mapas
 
 Los mapas proporcionan asociaciones clave-valor con seguridad de tipo:

@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Utilisez `ArrayOfRequired` lorsque chaque élément doit être présent. Cette règle
+s'applique aux primitives, à leurs alias et aux objets : un tableau JSON ou
+JSON-RPC entrant contenant `null` est refusé, tandis que `""`, `0` et `false`
+restent des éléments valides.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` déclare des alternatives dont une seule branche peut être sélectionnée.
+Marquez l'attribut `OneOf` comme requis lorsque l'appelant doit choisir une
+branche.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+Un `OneOf` requis refuse l'absence de branche, un wrapper typé dont la valeur
+est nil et un message, une slice d'octets ou une valeur `Any` nil. Un message
+vide non nil reste valide. Les constructeurs, setters, accessors et méthodes
+`Kind` générés gardent la branche privée et imposent une seule sélection.
+
 #### Cartes
 
 Les cartes fournissent des associations clé-valeur avec une sécurité de type :

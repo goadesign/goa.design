@@ -57,6 +57,26 @@ Il contratto di trascrizione di alto livello in Goa-AI è:
 
 Non esiste un'API separata per la "cronologia degli strumenti"; la trascrizione è la cronologia.
 
+Gli adattatori dei modelli non conservano stato tra una chiamata e l'altra. Ogni
+`model.Request` deve contenere la trascrizione completa pronta per il provider;
+un identificatore di run non induce l'adattatore a caricare i messaggi
+precedenti. I client pubblici dei modelli validano richiesta e risposta
+completa prima che il codice del planner possa osservarle.
+
+### Compressione della cronologia
+
+La policy `History(...)` di un agente può riassumere i turni meno recenti
+mantenendo una coda esatta e limitata. I valori `CompressAt...` stabiliscono
+quando avviare il riepilogo; i valori `KeepMax...` stabiliscono quali turni
+completi più recenti restano invariati. Il runtime non tronca mai un turno.
+
+La compressione richiede un `HistoryModel` configurato. I criteri basati sui
+token richiedono inoltre il conteggio esatto fornito dal relativo client del
+modello. Bedrock Runtime non può contare richieste con structured output e
+alcuni modelli Claude correnti richiedono l'endpoint Mantle separato di AWS.
+Vedere [Runtime → Policy della cronologia](../runtime/#history-policies) e
+[Riferimento DSL → History](../dsl-reference/#history).
+
 ### Come questo semplifica i pianificatori e le interfacce utente
 
 - **Pianificatori**: Ricevono la trascrizione corrente in `planner.PlanInput.Messages` e `planner.PlanResumeInput.Messages`. Possono decidere cosa fare basandosi esclusivamente sui messaggi, senza dover ricorrere a uno stato aggiuntivo.
@@ -93,6 +113,13 @@ trascrizione nel loro ordine di archiviazione. Se i record sono già caricati,
 mantengono l’ordine delle parti; `ValidatePlannerTranscript` e
 `ValidateBedrock` consentono di verificare una trascrizione al confine
 appropriato.
+
+`ValidatePlannerTranscript` richiede che ogni gruppo di chiamate a strumenti
+dell’assistente sia seguito immediatamente da un solo messaggio utente con
+esattamente un risultato per ogni ID di chiamata. Quando il ragionamento è
+abilitato, `ValidateBedrock` richiede inoltre che ogni messaggio dell’assistente
+che chiama uno strumento inizi con un `ThinkingPart`. Nessun validatore modifica
+i messaggi.
 
 Questi record servono al recupero e all’ispezione dei workflow. Non sostituiscono
 la trascrizione di proprietà del prodotto usata per cronologia chat,
