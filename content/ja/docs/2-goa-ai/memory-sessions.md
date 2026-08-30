@@ -149,7 +149,7 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 
 ---
 
-## プロダクトメモリとランタイムストレージ
+## プロダクトメモリとランタイムストレージ {#runtime-store}
 
 Goa-AI は、所有者が異なる二種類の永続データを分けます。
 
@@ -182,13 +182,14 @@ rt := runtime.New(store, runtime.WithEngine(eng))
 
 ---
 
-## ライフサイクル変更と記録をまとめて保存する
+## ライフサイクル変更と記録をまとめて保存する {#store-lifecycle-changes-and-records-together}
 
 各メソッドは状態と、それを示す記録を一つの操作で保存します。
 
 - `StartRootRun` はルートランのメタデータと最初の記録を保存します。
 - `StartChildRun` は親リンク、子のメタデータ、最初の記録を保存します。
 - `StartOneShotRun` はセッションなしランと最初の記録を保存します。
+- `StartOneShotChildRun` はセッションなし親へのリンクと子の開始をまとめて保存します。
 - `RecordRunCancellation` は最初のキャンセル理由と記録を保存します。
 - `RecordRunSuspension` は非公開チェックポイント、一時停止状態、記録を保存します。
 - `RecordRunTerminal` は最終状態と記録を保存します。
@@ -204,6 +205,17 @@ workflow activity は複数回実行されることがあります。完全に�
 record を使って同じ変更を繰り返すと conflict になります。
 
 最初の書き込みで確定した値を変えると conflict になります。store は新旧を推測せず、最初の値を上書きしません。最初の cancellation reason も変更不可です。
+
+### Continuation の開始
+
+continuation には、存在し、status が `suspended` の predecessor run が必要です。
+successor は predecessor と同じ session、agent、parent run identity を使う必要が
+あります。store は successor を作成する transaction の中でこの四つを検証します。
+一致しない場合、successor の開始や親リンクを一切書く前に操作を拒否します。
+
+successor の `RunStarted` record が `PredecessorRunID` を保存します。`RunMeta` は
+この関係を重複して持ちません。reader は関係を確定した record から continuation
+history を復元します。
 
 ### 開始順序
 

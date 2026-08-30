@@ -551,17 +551,21 @@ Goa valide les données aux limites du système :
 Les types de service représentent des valeurs déjà validées. Les types de
 transport décodés doivent aussi conserver l'absence d'un champ entrant.
 
-| Champ | Type de service | Entrée de transport décodée | Sortie de transport encodée |
+| Champ | Type de service | Corps HTTP/JSON-RPC | Requête ou réponse protobuf |
 |---|---|---|---|
-| Primitif requis ou avec valeur par défaut | Valeur | Pointeur lorsque la présence doit être validée | Valeur |
+| Primitif requis ou avec valeur par défaut | Valeur | Pointeur au décodage pour valider la présence ; valeur à l'encodage | Pointeur pour les champs singuliers dont la présence doit être conservée |
 | Primitif facultatif sans valeur par défaut | Pointeur | Pointeur | Pointeur |
 | Objet | Pointeur | Pointeur | Pointeur |
 | Tableau ou map | Valeur | Valeur | Valeur |
 
-Une entrée décodée est une requête côté serveur ou une réponse côté client.
-Les primitifs gRPC requis utilisent la présence proto3 et sont donc des
-pointeurs dans les structs protobuf ; les structs de service gardent des
-valeurs.
+Pour HTTP et JSON-RPC, une entrée décodée est une requête côté serveur ou une
+réponse côté client. Les requêtes encodées par le client et les réponses
+encodées par le serveur utilisent des valeurs. Dans les structs protobuf, les
+booléens, nombres, strings, enums et leurs alias singuliers requis sont des
+pointeurs dans les requêtes comme dans les réponses. La validation distingue
+ainsi un champ absent d'une valeur zéro explicite. Les slices d'octets restent
+des slices, les messages restent des pointeurs et les structs de service
+conservent leur structure.
 
 Exemple :
 ```go

@@ -395,6 +395,12 @@ Les données du produit restent la propriété du service produit. Par exemple, 
 
 Le stockage doit valider chaque changement de cycle de vie avec l’enregistrement correspondant. Une nouvelle tentative identique de l’activité de stockage renvoie le premier résultat. Une tentative qui modifie l’identité de l’exécution, le payload, le point de reprise, l’état ou le motif d’annulation échoue avec un conflit. Consultez [Mémoire et sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) pour le contrat complet.
 
+Le démarrage d'une continuation exige une exécution précédente suspendue qui
+existe et possède la même session, le même agent et la même exécution parente.
+La transaction rejette toute différence avant d'écrire le démarrage du
+successeur ou un lien parent. L'enregistrement `RunStarted` du successeur
+conserve `PredecessorRunID` ; `RunMeta` ne duplique pas cette relation.
+
 Le remplacement de `session.Store` et `runlog.Store` est une modification
 coordonnée du stockage. Avant que le nouveau runtime écrive, les métadonnées,
 points de reprise et enregistrements existants doivent respecter le contrat

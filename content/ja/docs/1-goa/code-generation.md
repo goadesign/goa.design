@@ -533,16 +533,19 @@ Goaはシステム境界でデータを検証する：
 service type は validation 済みの value を表します。decode 済み transport type は、
 受信 field が欠けていたかどうかも保持します。
 
-| Field | Service type | Decoded transport input | Encoded transport output |
+| Field | Service type | HTTP／JSON-RPC body | Protobuf request または response |
 |---|---|---|---|
-| 必須 primitive または default 付き primitive | Value | presence を検証するときは pointer | Value |
+| 必須 primitive または default 付き primitive | Value | validation のために decode するときは pointer、encode するときは value | presence を保持する必要がある singular field は pointer |
 | default のない任意 primitive | Pointer | Pointer | Pointer |
 | Object | Pointer | Pointer | Pointer |
 | Array または map | Value | Value | Value |
 
-decoded input は server の request と client の response です。gRPC の必須 primitive
-field は proto3 presence を使うため protobuf Go struct では pointer になりますが、
-service struct は value のままです。
+HTTP と JSON-RPC では、decode 済み input は server の request または client の
+response です。client が encode する request と server が encode する response は
+value を使います。protobuf Go struct では、必須の singular boolean、number、string、
+enum とその alias は request と response の両方で pointer になります。これにより、
+validation は field の欠落と明示的な zero value を区別できます。byte slice は slice、
+message は pointer のままで、service struct は従来の構造を保ちます。
 
 例
 ```go

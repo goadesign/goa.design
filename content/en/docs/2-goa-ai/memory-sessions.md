@@ -173,7 +173,7 @@ permanently delete the session only after all of its runs have finished.
 
 ---
 
-## Product Memory vs Runtime Storage
+## Product Memory vs Runtime Storage {#runtime-store}
 
 Goa-AI keeps two kinds of durable data separate because they have different
 owners:
@@ -249,7 +249,7 @@ Different services must not write the runtime collections directly.
 
 ---
 
-## Store Lifecycle Changes and Records Together
+## Store Lifecycle Changes and Records Together {#store-lifecycle-changes-and-records-together}
 
 Each lifecycle method stores the run state and the records that prove that
 state in one operation:
@@ -287,6 +287,18 @@ A repeat that changes any value fixed by the first write is a conflict. The
 store must not guess which value is newer or overwrite the first value.
 Cancellation follows the same rule: the first reason is permanent, an exact
 repeat succeeds, and a different reason fails.
+
+### Continuation starts
+
+A continuation start requires an existing predecessor run in `suspended`
+status. The successor must repeat the predecessor's session, agent, and parent
+run identity. The store checks all four facts inside the same transaction that
+would create the successor. A mismatch is rejected before the successor start
+or any parent link is written.
+
+The successor's `RunStarted` record stores `PredecessorRunID`. `RunMeta` does
+not duplicate that relationship. Readers reconstruct continuation history from
+the records that established it.
 
 ### Start ordering
 

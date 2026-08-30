@@ -20,7 +20,7 @@ MCP 統合は次の流れです:
 1. **サービス設計**: Goa の MCP DSL で MCP サーバーを宣言する
 2. **エージェント設計**: `FromMCP(...)` または `FromExternalMCP(...)` で宣言したツールセットとして、その suite を参照する
 3. **コード生成**: Goa-backed の場合は MCP JSON-RPC サーバーを生成し、suite 用のランタイム登録 helper とツールセット所有の specs/codecs も生成する
-4. **ランタイム配線**: `mcpruntime.Caller` transport（HTTP/SSE/stdio）を作成する。生成 helper が toolset を登録し、JSON-RPC error を `planner.ToolFailure` に変換する
+4. **ランタイム配線**: HTTP または stdio の `mcpruntime.Caller` を作成する。HTTP caller は JSON response または HTTP event stream を受け取る。生成 helper が toolset を登録し、JSON-RPC error を `planner.ToolFailure` に変換する
 5. **プランナー実行**: プランナーは生成済みの型付き tool descriptor で call を構築する。runtime が正規 JSON を MCP caller へ転送し、result を記録し、構造化 telemetry を公開する
 
 ---
@@ -43,6 +43,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 
     Method("search", func() {
         Payload(func() {
@@ -230,7 +233,7 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 2. runtime が planner result 全体を検証して execution ID を割り当て、`runtime.ToolCall` value を作ります
 3. runtime が MCP toolset 登録を検出します
 4. runtime call の正規 JSON payload を MCP caller へ転送します
-5. MCP caller がトランスポート (HTTP/SSE/stdio) と JSON-RPC プロトコルを扱います
+5. MCP caller は HTTP または stdio を使い、JSON-RPC protocol を処理します。HTTP response は JSON または event stream です
 6. 生成 codec で結果をデコードします
 7. `ToolResult` をプランナーへ返します
 
@@ -269,6 +272,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 
     Method("search", func() {
         Payload(func() {

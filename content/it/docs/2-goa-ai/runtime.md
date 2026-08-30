@@ -301,7 +301,7 @@ Il runtime emette eventi `RunPhaseChanged` per le fasi **non terminali** (ad ese
 
 Le fasi sono distinte da `run.Status`:
 
-- **Status** (`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`) è lo stato del ciclo di vita a grana grossa memorizzato in metadati di esecuzione durevoli Non esiste uno stato `pending` prima dell’ammissione.
+- **Status** (`running`, `suspended`, `completed`, `failed`, `canceled`) è lo stato del ciclo di vita a grana grossa memorizzato nei metadati durevoli dell'esecuzione. Non esiste uno stato `pending` prima dell’ammissione.
 - **Phase** fornisce una visibilità a grana più fine del ciclo di esecuzione, destinata alle superfici di streaming/UX
 
 ### Eventi di ciclo di vita: cambi di fase vs completamento
@@ -593,7 +593,9 @@ Goa-AI mantiene il contratto pubblico del runtime indipendente dal motore:
 
 - `RunPolicy.Timing.Plan` e `RunPolicy.Timing.Tools` sono budget semantici per tentativo
 - `runtime.WithTiming(...)` sostituisce tali budget semantici per una run
-- `runtime.WithWorker(...)` serve al posizionamento in coda, non alla regolazione del motore di workflow
+- I client generati usano la coda predefinita dell'agente. Passa
+  `runtime.WithTaskQueue("orchestrator.chat")` a una chiamata `Start` o `Run`
+  quando una singola esecuzione deve usare un'altra coda
 
 Se si usa l'adattatore Temporal e occorre regolare l'attesa in coda o la
 liveness, queste impostazioni vanno configurate direttamente sul motore
@@ -632,7 +634,8 @@ motore in memoria.
 
 Il runtime registra una sola activity tipizzata chiamata `runtime.store`. Ogni
 `StorageActivityCommand` imposta esattamente uno tra `Append`, `RootStart`,
-`ChildStart`, `OneShotStart`, `Cancellation`, `Suspension` e `Terminal`. Il
+`ChildStart`, `OneShotStart`, `OneShotChildStart`, `Cancellation`, `Suspension`
+e `Terminal`. Il
 `StorageActivityResult` restituito imposta esattamente il campo corrispondente e
 nessun altro. Uno storage personalizzato restituisce `storage.ContractError`
 quando ripetere lo stesso comando non può riuscire. Gli errori temporanei del
@@ -730,6 +733,7 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
+    nil, // impostazioni workflow facoltative per la nuova esecuzione
 )
 ```
 

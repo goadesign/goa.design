@@ -169,7 +169,7 @@ Les sessions se terminent explicitement (par exemple lors de la suppression d’
 
 ---
 
-## Mémoire produit et stockage du runtime
+## Mémoire produit et stockage du runtime {#runtime-store}
 
 Goa-AI sépare deux catégories de données durables parce qu’elles ont des propriétaires différents :
 
@@ -216,13 +216,14 @@ déduisez pas de l'ordre d'exécution.
 
 ---
 
-## Enregistrer ensemble les changements de cycle de vie et leurs preuves
+## Enregistrer ensemble les changements de cycle de vie et leurs preuves {#store-lifecycle-changes-and-records-together}
 
 Chaque méthode de cycle de vie enregistre l’état et l’enregistrement correspondant dans la même opération :
 
 - `StartRootRun` enregistre les métadonnées d’une exécution racine et son premier enregistrement.
 - `StartChildRun` enregistre le lien parent, les métadonnées de l’enfant et son premier enregistrement.
 - `StartOneShotRun` enregistre une exécution sans session et son premier enregistrement.
+- `StartOneShotChildRun` enregistre ensemble le lien vers le parent sans session et le démarrage de l'enfant.
 - `RecordRunCancellation` enregistre le premier motif d’annulation et son enregistrement.
 - `RecordRunSuspension` enregistre le point de reprise privé, l’état suspendu et son enregistrement.
 - `RecordRunTerminal` enregistre l’état final et son enregistrement.
@@ -241,6 +242,18 @@ changement de cycle de vie avec un autre enregistrement produit un conflit,
 même si l’état et les autres champs du cycle de vie sont identiques.
 
 Toute valeur différente de la première écriture produit un conflit. Le stockage ne choisit pas la valeur la plus récente et n’écrase pas la première. Le premier motif d’annulation est permanent : une répétition exacte réussit, un motif différent échoue.
+
+### Démarrage d'une continuation
+
+Une continuation exige une exécution précédente existante dont le statut est
+`suspended`. Le successeur doit reprendre la même session, le même agent et la
+même exécution parente. Le stockage vérifie ces quatre faits dans la transaction
+qui créerait le successeur. Toute différence est rejetée avant d'écrire le
+démarrage du successeur ou un lien vers le parent.
+
+L'enregistrement `RunStarted` du successeur conserve `PredecessorRunID`.
+`RunMeta` ne duplique pas cette relation. Les lecteurs reconstruisent
+l'historique des continuations à partir des enregistrements qui l'ont établi.
 
 ### Ordre de démarrage
 

@@ -293,7 +293,7 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | [Run Trees](#run-trees-composition) | Agents calling agents with full traceability |
 | [Structured Streaming](#structured-streaming) | Real-time typed events for UIs and observability |
 | [Temporal Durability](#temporal-durability) | Fault-tolerant execution that survives failures |
-| [Runtime Storage](memory-sessions/#runtime-store-storagestore) | One host-owned store for run state, continuation checkpoints, and records that never change after insertion |
+| [Runtime Storage](memory-sessions/#runtime-store) | One host-owned store for run state, continuation checkpoints, and records that never change after insertion |
 | [Typed Contracts](dsl-reference/) | End-to-end type safety for all tool operations |
 | [Typed Direct Completions](#typed-direct-completions) | Structured final assistant answers with generated codecs and helpers |
 | [Bounded Results & Server Data](toolsets/#server-data) | Token-efficient model results plus server-only data for UIs and audit |

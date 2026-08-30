@@ -244,6 +244,11 @@ Usa `runtime/agent/storage/inmem` para probar planificadores y workflows. Compru
 - el primer motivo de cancelación es permanente y un motivo posterior diferente produce un conflicto;
 - la suspensión guarda juntos el checkpoint, el estado suspendido y el registro correspondiente;
 - la finalización guarda juntos el estado final y el registro correspondiente;
+- el inicio de una continuación exige un predecesor suspendido existente con la
+  misma sesión, el mismo agente y la misma ejecución padre;
+- una continuación que no coincide no escribe el inicio del sucesor ni un
+  vínculo padre, y un sucesor aceptado guarda `PredecessorRunID` en `RunStarted`,
+  no en `RunMeta`;
 - una sesión terminada impide el trabajo del planificador y las herramientas, pero registra como cancelado un workflow ya aceptado;
 - la purga falla mientras haya una ejecución activa y, una vez terminadas todas, elimina los metadatos, checkpoints y registros de la sesión terminada.
 

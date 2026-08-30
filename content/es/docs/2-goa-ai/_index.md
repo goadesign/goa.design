@@ -225,7 +225,7 @@ Múltiples nodos de registro con el mismo nombre forman automáticamente un clú
 | [Árboles de ejecución](#run-trees-composition) | Agentes que llaman a agentes con trazabilidad completa |
 | [Streaming estructurado](#structured-streaming) | Eventos tipados en tiempo real para UIs y observabilidad |
 | [Durabilidad con Temporal](#temporal-durability) | Ejecución tolerante a fallos que sobrevive a las caídas |
-| [Almacenamiento del runtime](memory-sessions/#runtime-store-storagestore) | Un único almacén propiedad de la aplicación para el estado de las ejecuciones, los checkpoints de continuación y los registros inmutables |
+| [Almacenamiento del runtime](memory-sessions/#runtime-store) | Un único almacén propiedad de la aplicación para el estado de las ejecuciones, los checkpoints de continuación y los registros inmutables |
 | [Contratos tipados](dsl-reference/) | Seguridad de tipos de extremo a extremo para todas las operaciones de herramientas |
 | [Completions Directas Tipadas](#typed-direct-completions) | Respuestas finales estructuradas del asistente con codecs y helpers generados |
 | [Resultados acotados y datos del servidor](toolsets/#server-data) | Resultados del modelo eficientes en tokens más datos solo del servidor para UIs y auditoría |

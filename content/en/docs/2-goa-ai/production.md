@@ -419,6 +419,12 @@ parent link and child start together. Their first call requires a running
 sessionless parent, while an exact retry remains valid after that parent
 finishes.
 
+A continuation start requires an existing suspended predecessor with the same
+session, agent, and parent run identity. The storage transaction rejects a
+mismatch before it writes the successor start or a parent link. The successor's
+`RunStarted` record stores `PredecessorRunID`; `RunMeta` does not duplicate that
+relationship.
+
 The move from `session.Store` plus `runlog.Store` is a coordinated storage
 change. Before the new runtime writes, existing run metadata, checkpoints, and
 records must satisfy the integrated `storage.Store` contract. Deploy the

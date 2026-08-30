@@ -246,6 +246,11 @@ production implementation against the same contract, including these cases:
 - suspension stores the checkpoint, suspended status, and matching record
   together;
 - terminal completion stores the final status and matching record together;
+- a continuation start requires an existing suspended predecessor with the same
+  session, agent, and parent run identity;
+- a continuation mismatch leaves no successor start or parent link, and a
+  successful successor records `PredecessorRunID` in `RunStarted` rather than
+  `RunMeta`;
 - an ended session prevents planner and tool work but still records an accepted
   workflow as canceled;
 - purge fails while a run is active, then removes the ended session's run

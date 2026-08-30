@@ -297,7 +297,7 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 | [Exécuter des arbres](#run-trees-composition) | Agents appelant des agents avec une traçabilité complète |
 | [Diffusion structurée](#structured-streaming) | Événements typés en temps réel pour UIs et observabilité |
 | [Durabilité Temporal](#temporal-durability) | Exécution tolérante aux pannes qui survit aux échecs |
-| [Stockage du runtime](memory-sessions/#runtime-store-storagestore) | Un stockage unique appartenant à l’application pour l’état des exécutions, les points de reprise et les enregistrements immuables |
+| [Stockage du runtime](memory-sessions/#runtime-store) | Un stockage unique appartenant à l’application pour l’état des exécutions, les points de reprise et les enregistrements immuables |
 | [Contrats tapés](dsl-reference/) | Sécurité de type de bout en bout pour toutes les opérations sur les outils |
 | [Remplissions directes saisies](#typed-direct-completions) | Réponses structurées de l'assistant final avec codecs et assistants générés |
 | [Résultats limités et données du serveur](toolsets/#server-data) | Résultats de modèles efficaces en jetons ainsi que données serveur uniquement pour UIs et audit |

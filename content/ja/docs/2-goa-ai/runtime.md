@@ -303,7 +303,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
 
 フェーズは `run.Status` とは異なります。
 
-- **Status**（`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`）は、耐久化された run メタデータに格納される粗い粒度のライフサイクル状態です。 engine 受理前の `pending` 状態はありません。
+- **Status**（`running`, `suspended`, `completed`, `failed`, `canceled`）は、耐久化された run メタデータに格納される粗い粒度のライフサイクル状態です。engine 受理前の `pending` 状態はありません。
 - **Phase** は、ストリーミング/UX 向けに実行ループをより細かく可視化するものです。
 
 ### ライフサイクルイベント: フェーズ遷移 vs 終端完了
@@ -619,7 +619,9 @@ Goa-AI は公開ランタイム契約をエンジン非依存に保ちます:
 
 - `RunPolicy.Timing.Plan` と `RunPolicy.Timing.Tools` はセマンティックな「試行ごとの予算」
 - `runtime.WithTiming(...)` は run ごとにそれらのセマンティック予算を上書きする
-- `runtime.WithWorker(...)` はキュー配置のためのもので、ワークフローエンジン調整ではない
+- 生成 client は agent の default task queue を使います。一つの `Start` または
+  `Run` だけ別の queue を使う場合は
+  `runtime.WithTaskQueue("orchestrator.chat")` を渡します
 
 Temporal アダプタを使っていて、キュー待ちや liveness を調整したい
 場合は、それらを Temporal エンジン側で設定します:
@@ -657,8 +659,8 @@ if err != nil {
 
 runtime は `runtime.store` という型付き activity を 1 つだけ登録します。各
 `StorageActivityCommand` は `Append`、`RootStart`、`ChildStart`、
-`OneShotStart`、`Cancellation`、`Suspension`、`Terminal` のうち 1 つだけを
-設定します。返される `StorageActivityResult` も同じ field だけを設定します。
+`OneShotStart`、`OneShotChildStart`、`Cancellation`、`Suspension`、`Terminal`
+のうち 1 つだけを設定します。返される `StorageActivityResult` も同じ field だけを設定します。
 同じ command を再試行しても成功しない場合、custom store は
 `storage.ContractError` を返します。一時的な database error や network error
 は通常の error のままなので再試行できます。`runtime.WithStorageActivityTimeout`
@@ -738,6 +740,7 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
+    nil, // 新しい run の任意 workflow 設定
 )
 ```
 

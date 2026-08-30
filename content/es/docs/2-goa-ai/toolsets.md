@@ -1019,7 +1019,7 @@ func (e *Executor) Execute(
 
     // Construye server-data de fidelidad completa para las UIs
     // Los codecs de server-data generados se nombran a partir de la herramienta y el kind, por ejemplo:
-    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
+    // specs.GetTimeSeriesMetricsTimeSeriesServerDataCodec.ToJSON(...)
     serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err

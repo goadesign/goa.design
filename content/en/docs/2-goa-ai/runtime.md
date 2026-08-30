@@ -325,7 +325,7 @@ The runtime emits `RunPhaseChanged` hook events for **non-terminal** phases (e.g
 
 Phases are distinct from `run.Status`:
 
-- **Status** (`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`) is the coarse-grained lifecycle state stored in durable run metadata. There is no pre-admission `pending` state
+- **Status** (`running`, `suspended`, `completed`, `failed`, `canceled`) is the coarse-grained lifecycle state stored in durable run metadata. There is no pre-admission `pending` state
 - **Phase** provides finer-grained visibility into the execution loop, intended for streaming/UX surfaces
 
 ### Lifecycle events: phase changes vs terminal completion
@@ -728,7 +728,9 @@ Goa-AI keeps the public runtime contract engine-agnostic:
 
 - `RunPolicy.Timing.Plan` and `RunPolicy.Timing.Tools` are semantic attempt budgets
 - `runtime.WithTiming(...)` overrides those semantic budgets for a run
-- `runtime.WithWorker(...)` is for queue placement, not workflow-engine tuning
+- Generated clients use the agent's default task queue. Pass
+  `runtime.WithTaskQueue("orchestrator.chat")` to one `Start` or `Run` call when
+  that run must use a different queue
 
 If you use the Temporal adapter and need queue-wait or liveness tuning, configure
 it on the Temporal engine itself:
@@ -765,7 +767,8 @@ generic runtime stays honest across both Temporal and the in-memory engine.
 
 The runtime registers one typed activity named `runtime.store`. Every
 `StorageActivityCommand` sets exactly one of `Append`, `RootStart`,
-`ChildStart`, `OneShotStart`, `Cancellation`, `Suspension`, or `Terminal`.
+`ChildStart`, `OneShotStart`, `OneShotChildStart`, `Cancellation`, `Suspension`,
+or `Terminal`.
 The returned `StorageActivityResult` sets exactly the matching field and no
 other field. Custom stores return `storage.ContractError` when repeating the
 same command cannot succeed. Temporary database and network failures remain

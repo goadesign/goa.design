@@ -314,7 +314,7 @@ Le runtime émet des événements hook `RunPhaseChanged` pour les phases **non t
 
 Les phases sont distinctes de `run.Status` :
 
-- **Le statut** (`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`) correspond à l'état du cycle de vie à granularité grossière stocké dans les métadonnées d'exécution durables. Il n’existe aucun état `pending` avant l’admission.
+- **Le statut** (`running`, `suspended`, `completed`, `failed`, `canceled`) correspond à l'état du cycle de vie à granularité grossière stocké dans les métadonnées d'exécution durables. Il n’existe aucun état `pending` avant l’admission.
 - **Phase** offre une visibilité plus fine sur la boucle d'exécution, destinée aux surfaces de streaming/UX
 
 ### Événements du cycle de vie : changements de phase ou achèvement du terminal
@@ -697,7 +697,9 @@ Goa-AI maintient le contrat d'exécution public indépendant du moteur :
 
 - `RunPolicy.Timing.Plan` et `RunPolicy.Timing.Tools` sont des budgets de tentatives sémantiques
 - `runtime.WithTiming(...)` remplace ces budgets sémantiques pour une exécution
-- `runtime.WithWorker(...)` est destiné au placement de file d'attente et non au réglage du moteur de flux de travail
+- Les clients générés utilisent la file d'attente par défaut de l'agent. Passez
+  `runtime.WithTaskQueue("orchestrator.chat")` à un appel `Start` ou `Run`
+  lorsqu'une exécution doit utiliser une autre file
 
 Si vous utilisez l'adaptateur Temporal et avez besoin d'un réglage de l'attente en file d'attente ou de l'activité, configurez
 sur le moteur Temporal lui-même :
@@ -734,8 +736,8 @@ le temps d'exécution générique reste honnête à la fois sur Temporal et sur 
 
 Le runtime enregistre une seule activité typée appelée `runtime.store`. Chaque
 `StorageActivityCommand` définit exactement l’un des champs `Append`,
-`RootStart`, `ChildStart`, `OneShotStart`, `Cancellation`, `Suspension` ou
-`Terminal`. Le `StorageActivityResult` renvoyé définit exactement le champ
+`RootStart`, `ChildStart`, `OneShotStart`, `OneShotChildStart`, `Cancellation`,
+`Suspension` ou `Terminal`. Le `StorageActivityResult` renvoyé définit exactement le champ
 correspondant et aucun autre. Un stockage personnalisé renvoie
 `storage.ContractError` lorsque répéter la même commande ne peut pas réussir.
 Les pannes temporaires de base de données ou de réseau restent des erreurs
@@ -839,6 +841,7 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
+    nil, // paramètres de workflow facultatifs pour la nouvelle exécution
 )
 ```
 

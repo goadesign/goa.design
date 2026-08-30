@@ -20,7 +20,7 @@ L'integrazione MCP segue questo flusso di lavoro:
 1. **Progettazione del servizio**: Dichiarare il server MCP tramite il DSL MCP di Goa
 2. **Progettazione dell'agente**: Fare riferimento alla suite con un toolset dichiarato tramite `FromMCP(...)` o `FromExternalMCP(...)`
 3. **Generazione del codice**: Produce il server MCP JSON-RPC (quando è generato da Goa), oltre agli helper di registrazione a runtime e alle specs/codecs di proprietà del toolset (suite)
-4. **Cablaggio runtime**: Istanziare un trasporto `mcpruntime.Caller` (HTTP/SSE/stdio). Gli helper generati registrano il toolset e adattano gli errori JSON-RPC in valori `planner.ToolFailure`
+4. **Cablaggio runtime**: Istanziare un `mcpruntime.Caller` HTTP o stdio. Il caller HTTP accetta una risposta JSON o uno stream di eventi HTTP. Gli helper generati registrano il toolset e adattano gli errori JSON-RPC in valori `planner.ToolFailure`
 5. **Esecuzione del planner**: I planner costruiscono le chiamate con i descrittori tipizzati generati; il runtime inoltra il JSON canonico al chiamante MCP, registra i risultati ed espone telemetria strutturata
 
 ---
@@ -43,6 +43,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {
@@ -231,7 +234,7 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 2. Il runtime valida l'intero risultato e assegna gli ID di esecuzione, producendo valori `runtime.ToolCall`
 3. Il runtime rileva la registrazione del toolset MCP
 4. Inoltra il payload JSON canonico della chiamata runtime al chiamante MCP
-5. Il chiamante MCP gestisce il trasporto (HTTP/SSE/stdio) e il protocollo JSON-RPC
+5. Il caller MCP usa HTTP o stdio e gestisce il protocollo JSON-RPC. Una risposta HTTP può essere JSON o uno stream di eventi
 6. Decodifica il risultato utilizzando il codec generato
 7. Restituisce `ToolResult` al pianificatore
 
@@ -271,6 +274,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {

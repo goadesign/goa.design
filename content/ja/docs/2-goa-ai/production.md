@@ -383,6 +383,11 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 
 ストアは各ライフサイクル変更と対応する記録をまとめて確定しなければなりません。storage activity の完全に同じ再試行は最初の結果を返します。ランの識別情報、payload、checkpoint、状態、キャンセル理由のいずれかを変更した再試行は競合として失敗します。完全な契約は [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) を参照してください。
 
+continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
+suspended predecessor が必要です。transaction は identity の不一致を、successor
+の開始や親リンクを書く前に拒否します。successor の `RunStarted` record が
+`PredecessorRunID` を保存し、`RunMeta` はこの関係を重複して持ちません。
+
 `session.Store` と `runlog.Store` からの変更は、storage 全体を協調して
 切り替える必要があります。新 runtime が書き込む前に、既存の run metadata、
 checkpoint、record が統合された `storage.Store` contract を満たしていなければ

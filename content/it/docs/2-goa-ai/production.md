@@ -395,6 +395,12 @@ I dati del prodotto restano di proprietà del servizio del prodotto. Per esempio
 
 L’archivio deve salvare ogni cambiamento del ciclo di vita insieme al record corrispondente. Un retry identico dell’activity di storage restituisce il primo risultato. Un tentativo che cambia identità dell’esecuzione, payload, checkpoint, stato o motivo di annullamento fallisce con un conflitto. Consulta [Memoria e sessioni](../memory-sessions/#store-lifecycle-changes-and-records-together) per il contratto completo.
 
+L'avvio di una continuazione richiede un'esecuzione precedente sospesa che
+esista e abbia la stessa sessione, lo stesso agente e la stessa esecuzione padre.
+La transazione rifiuta una differenza prima di scrivere l'avvio del successore o
+un collegamento al padre. Il record `RunStarted` del successore conserva
+`PredecessorRunID`; `RunMeta` non duplica questa relazione.
+
 Il passaggio da `session.Store` e `runlog.Store` è una modifica coordinata dello
 storage. Prima che il nuovo runtime scriva, metadati, checkpoint e record
 esistenti devono rispettare il contratto integrato di `storage.Store`.

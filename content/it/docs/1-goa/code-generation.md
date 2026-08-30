@@ -551,16 +551,20 @@ Goa convalida i dati ai confini del sistema:
 I tipi di servizio rappresentano valori già convalidati. I tipi di trasporto
 decodificati devono anche conservare l'assenza di un campo in ingresso.
 
-| Campo | Tipo di servizio | Input di trasporto decodificato | Output di trasporto codificato |
+| Campo | Tipo di servizio | Body HTTP/JSON-RPC | Richiesta o risposta protobuf |
 |---|---|---|---|
-| Primitivo richiesto o con valore predefinito | Valore | Puntatore quando va convalidata la presenza | Valore |
+| Primitivo richiesto o con valore predefinito | Valore | Puntatore durante la decodifica per convalidare la presenza; valore durante la codifica | Puntatore per i campi singoli la cui presenza deve essere conservata |
 | Primitivo facoltativo senza valore predefinito | Puntatore | Puntatore | Puntatore |
 | Oggetto | Puntatore | Puntatore | Puntatore |
 | Array o mappa | Valore | Valore | Valore |
 
-L'input decodificato è una richiesta sul server o una risposta sul client. I
-primitivi gRPC richiesti usano la presenza proto3 e sono puntatori negli struct
-protobuf; gli struct di servizio mantengono valori.
+Per HTTP e JSON-RPC, l'input decodificato è una richiesta sul server o una
+risposta sul client. Le richieste codificate dal client e le risposte codificate
+dal server usano valori. Negli struct protobuf, booleani, numeri, stringhe, enum
+e relativi alias singoli richiesti sono puntatori sia nelle richieste sia nelle
+risposte. La convalida distingue così un campo omesso da un valore zero
+esplicito. Le slice di byte restano slice, i messaggi restano puntatori e gli
+struct di servizio mantengono la propria struttura.
 
 Esempio:
 ```go

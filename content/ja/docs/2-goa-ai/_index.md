@@ -231,7 +231,7 @@ var CorpRegistry = Registry("corp", func() {
 | [Run Trees](#run-trees-composition) | エージェントがエージェントを呼ぶ構成を完全に追跡 |
 | [Structured Streaming](#structured-streaming) | UI と観測のためのリアルタイム型付きイベント |
 | [Temporal Durability](#temporal-durability) | 障害に強い、耐久実行 |
-| [ランタイムストレージ](memory-sessions/#runtime-store-storagestore) | 実行状態、継続用チェックポイント、変更不可の実行記録を一つにまとめる、ホスト所有のストア |
+| [ランタイムストレージ](memory-sessions/#runtime-store) | 実行状態、継続用チェックポイント、変更不可の実行記録を一つにまとめる、ホスト所有のストア |
 | [Typed Contracts](dsl-reference/) | ツール操作のエンドツーエンド型安全性 |
 | [Typed Direct Completions](#typed-direct-completions) | 生成 codec と helper を備えた構造化された最終アシスタント応答 |
 | [Bounded Results & Server Data](toolsets/#server-data) | token 効率のよいモデル結果と、UI/監査向けの server-only data |

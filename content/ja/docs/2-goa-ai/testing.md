@@ -246,6 +246,11 @@ func TestAgentComposition(t *testing.T) {
 - 最初のキャンセル理由は変更できず、異なる理由を後から書くと競合になる
 - 一時停止がチェックポイント、一時停止状態、対応する記録をまとめて保存する
 - 終了が最終状態と対応する記録をまとめて保存する
+- continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
+  suspended predecessor が必要である
+- continuation の identity が一致しない場合は successor の開始も親リンクも書かれず、
+  受理された successor は `RunMeta` ではなく `RunStarted` に
+  `PredecessorRunID` を保存する
 - 終了済みセッションではプランナーやツールを実行せず、すでに受理されたワークフローはキャンセルとして記録する
 - 実行中のランがある間は purge が失敗し、すべて終了した後に終了済みセッションのメタデータ、チェックポイント、記録を削除する
 

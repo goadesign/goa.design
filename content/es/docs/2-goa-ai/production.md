@@ -395,6 +395,12 @@ Los datos del producto siguen perteneciendo al servicio del producto. Por ejempl
 
 El almacén debe confirmar cada cambio de ciclo de vida junto con su registro correspondiente. Un reintento idéntico de la activity de almacenamiento devuelve el primer resultado. Un reintento que cambie la identidad de la ejecución, el payload, el checkpoint, el estado o el motivo de cancelación falla con un conflicto. Consulta [Memoria y sesiones](../memory-sessions/#store-lifecycle-changes-and-records-together) para ver el contrato completo.
 
+El inicio de una continuación exige un predecesor suspendido existente con la
+misma sesión, el mismo agente y la misma ejecución padre. La transacción rechaza
+cualquier diferencia antes de escribir el inicio del sucesor o un vínculo
+padre. El registro `RunStarted` del sucesor guarda `PredecessorRunID`; `RunMeta`
+no duplica esa relación.
+
 El cambio desde `session.Store` y `runlog.Store` es un cambio coordinado del
 almacenamiento. Antes de que el nuevo runtime escriba, los metadatos, checkpoints
 y registros existentes deben cumplir el contrato integrado de `storage.Store`.

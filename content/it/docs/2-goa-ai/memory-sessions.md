@@ -166,7 +166,7 @@ Le sessioni terminano esplicitamente (ad esempio quando si elimina una conversaz
 
 ---
 
-## Memoria del prodotto e archiviazione del runtime
+## Memoria del prodotto e archiviazione del runtime {#runtime-store}
 
 Goa-AI separa due tipi di dati duraturi perché hanno proprietari diversi:
 
@@ -199,13 +199,14 @@ In un’applicazione a processo singolo, `store` può essere un adattatore local
 
 ---
 
-## Salvare insieme cambiamenti di ciclo di vita e record
+## Salvare insieme cambiamenti di ciclo di vita e record {#store-lifecycle-changes-and-records-together}
 
 Ogni metodo salva stato e record corrispondente nella stessa operazione:
 
 - `StartRootRun` salva metadati radice e primo record.
 - `StartChildRun` salva collegamento al padre, metadati del figlio e primo record.
 - `StartOneShotRun` salva un’esecuzione senza sessione e il primo record.
+- `StartOneShotChildRun` salva insieme il collegamento al padre senza sessione e l'avvio del figlio.
 - `RecordRunCancellation` salva il primo motivo di annullamento e il record.
 - `RecordRunSuspension` salva checkpoint privato, stato sospeso e record.
 - `RecordRunTerminal` salva stato finale e record.
@@ -220,6 +221,19 @@ Per ogni avvio, annullamento, sospensione e completamento, lo storage ricorda
 anche il record esatto scelto dalla prima scrittura riuscita. Ripetere il
 cambiamento del ciclo di vita con un record diverso produce un conflitto, anche
 quando lo stato e gli altri campi del ciclo di vita coincidono.
+
+### Avvio di una continuazione
+
+Una continuazione richiede un'esecuzione precedente esistente con stato
+`suspended`. Il successore deve usare la stessa sessione, lo stesso agente e la
+stessa esecuzione padre. Lo storage verifica questi quattro dati nella stessa
+transazione che creerebbe il successore. Se un dato non coincide, rifiuta
+l'operazione prima di scrivere l'avvio del successore o un collegamento al
+padre.
+
+Il record `RunStarted` del successore conserva `PredecessorRunID`. `RunMeta` non
+duplica questa relazione. I reader ricostruiscono la cronologia delle
+continuazioni dai record che l'hanno stabilita.
 
 ### Ordine di avvio
 

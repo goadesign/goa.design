@@ -20,9 +20,10 @@ MCP integration follows this workflow:
 1. **Service design**: Declare the MCP server via Goa's MCP DSL
 2. **Agent design**: Reference that suite via a toolset declared with `FromMCP(...)` or `FromExternalMCP(...)`
 3. **Code generation**: Produces the MCP JSON-RPC server (when Goa-backed) plus runtime registration helpers and toolset-owned specs/codecs for the suite
-4. **Runtime wiring**: Instantiate an `mcpruntime.Caller` transport
-   (HTTP/SSE/stdio). Generated helpers register the toolset and adapt JSON-RPC
-   errors into `planner.ToolFailure` values
+4. **Runtime wiring**: Instantiate an HTTP or stdio `mcpruntime.Caller`. The
+   HTTP caller accepts either a JSON response or an HTTP event stream. Generated
+   helpers register the toolset and adapt JSON-RPC errors into
+   `planner.ToolFailure` values
 5. **Planner execution**: Planners construct calls with generated typed tool
    descriptors; the runtime forwards canonical JSON to the MCP caller, records
    results, and surfaces structured telemetry
@@ -47,6 +48,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {
@@ -238,7 +242,8 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
    producing `runtime.ToolCall` values
 3. Runtime detects MCP toolset registration
 4. Forwards the runtime call's canonical JSON payload to the MCP caller
-5. MCP caller handles transport (HTTP/SSE/stdio) and JSON-RPC protocol
+5. The MCP caller uses HTTP or stdio and handles the JSON-RPC protocol. An HTTP
+   response may be JSON or an event stream
 6. Decodes result using generated codec
 7. Returns `ToolResult` to planner
 
@@ -278,6 +283,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {

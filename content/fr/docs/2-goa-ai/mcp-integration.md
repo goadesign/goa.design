@@ -20,9 +20,10 @@ L'intégration MCP suit ce flux de travail :
 1. **Conception de services** : Déclarez le serveur MCP via MCP DSL de Goa
 2. **Conception d'agent** : référencez cette suite via un ensemble d'outils déclaré avec `FromMCP(...)` ou `FromExternalMCP(...)`.
 3. **Génération de code** : produit le serveur MCP JSON-RPC (lorsqu'il est soutenu par Goa), ainsi que des aides à l'enregistrement d'exécution et des spécifications/codecs appartenant à l'ensemble d'outils pour la suite.
-4. **Câblage d'exécution** : instanciez un transport `mcpruntime.Caller`
-   (HTTP/SSE/stdio). Les fonctions générées enregistrent l'ensemble d'outils et
-   adaptent les erreurs JSON-RPC en valeurs `planner.ToolFailure`.
+4. **Câblage d'exécution** : instanciez un `mcpruntime.Caller` HTTP ou stdio.
+   L'appelant HTTP accepte une réponse JSON ou un flux d'événements HTTP. Les
+   fonctions générées enregistrent l'ensemble d'outils et adaptent les erreurs
+   JSON-RPC en valeurs `planner.ToolFailure`.
 5. **Exécution du planificateur** : les planificateurs construisent les appels avec les descripteurs typés générés ; le runtime transmet le JSON canonique à l'appelant MCP, enregistre les résultats et expose une télémétrie structurée
 
 ---
@@ -45,6 +46,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {
@@ -233,7 +237,8 @@ caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
 2. Le runtime valide le résultat complet du planificateur et attribue les identifiants d'exécution, ce qui produit des valeurs `runtime.ToolCall`
 3. Le runtime détecte l'enregistrement de l'ensemble d'outils MCP
 4. Il transmet la charge utile JSON canonique de l'appel du runtime à l'appelant MCP
-5. L'appelant MCP gère le transport (HTTP/SSE/stdio) et le protocole JSON-RPC
+5. L'appelant MCP utilise HTTP ou stdio et gère le protocole JSON-RPC. Une
+   réponse HTTP peut être du JSON ou un flux d'événements
 6. Décode le résultat à l'aide du codec généré
 7. Renvoie `ToolResult` au planificateur
 
@@ -276,6 +281,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {

@@ -548,18 +548,20 @@ represents a value after validation. A decoded transport type must also record
 whether an incoming field was absent so generated validation can reject a
 missing required value without rejecting an explicit zero value.
 
-| Field | Service type | Decoded transport input | Encoded transport output |
+| Field | Service type | HTTP/JSON-RPC body | Protobuf request or response |
 |---|---|---|---|
-| Required primitive or primitive with a default | Value | Pointer when presence must be validated | Value |
+| Required primitive or primitive with a default | Value | Pointer when decoded for validation; value when encoded | Pointer for singular fields whose presence must be preserved |
 | Optional primitive without a default | Pointer | Pointer | Pointer |
 | Object | Pointer | Pointer | Pointer |
 | Array or map | Value | Value | Value |
 
-Decoded transport input means a request on the server and a response on the
-client. Encoded transport output means a request on the client and a response
-on the server. gRPC required primitive fields use proto3 presence and therefore
-generate pointers in protobuf Go structs. Goa service structs keep their
-existing value layout.
+For HTTP and JSON-RPC, decoded input means a request on the server or a response
+on the client. Encoded client requests and server responses use values. In
+protobuf Go structs, required singular booleans, numbers, strings, enums, and
+their aliases are pointers in both requests and responses so validation can
+distinguish an omitted field from an explicit zero value. Byte slices remain
+slices, messages remain pointers, and Goa service structs keep their existing
+layout.
 
 Example:
 ```go

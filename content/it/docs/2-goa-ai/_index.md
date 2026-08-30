@@ -290,6 +290,7 @@ Più nodi del registro con lo stesso nome formano automaticamente un cluster tra
 | [Alberi dei run](#run-trees-composition) | Agenti che chiamano altri agenti con tracciabilità completa |
 | [Streaming strutturato](#structured-streaming) | Eventi tipizzati in tempo reale per UI e osservabilità |
 | [Durabilità Temporal](#temporal-durability) | Esecuzione resistente agli errori |
+| [Storage del runtime](memory-sessions/#runtime-store) | Un unico storage dell'host per stato delle esecuzioni, checkpoint di continuazione e record immutabili |
 | [Contratti tipizzati](dsl-reference/) | Sicurezza dei tipi end-to-end per le operazioni degli strumenti |
 | [Completion dirette tipizzate](#typed-direct-completions) | Risposte finali strutturate con codec e helper generati |
 | [Risultati limitati e server-data](toolsets/#server-data) | Risultati compatti per il modello e dati solo server per UI e audit |

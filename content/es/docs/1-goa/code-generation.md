@@ -551,16 +551,21 @@ Goa valida los datos en los límites del sistema:
 Los tipos de servicio representan valores ya validados. Los tipos de transporte
 decodificados también deben conservar si un campo entrante estaba ausente.
 
-| Campo | Tipo de servicio | Entrada de transporte decodificada | Salida de transporte codificada |
+| Campo | Tipo de servicio | Cuerpo HTTP/JSON-RPC | Solicitud o respuesta protobuf |
 |---|---|---|---|
-| Primitivo requerido o con valor por defecto | Valor | Puntero cuando se valida la presencia | Valor |
+| Primitivo requerido o con valor por defecto | Valor | Puntero al decodificar para validar; valor al codificar | Puntero para campos singulares cuya presencia debe conservarse |
 | Primitivo opcional sin valor por defecto | Puntero | Puntero | Puntero |
 | Objeto | Puntero | Puntero | Puntero |
 | Array o mapa | Valor | Valor | Valor |
 
-La entrada decodificada es una solicitud en el servidor o una respuesta en el
-cliente. Los campos primitivos requeridos de gRPC usan presencia proto3 y son
-punteros en los structs protobuf; los structs del servicio conservan valores.
+En HTTP y JSON-RPC, la entrada decodificada es una solicitud en el servidor o
+una respuesta en el cliente. Las solicitudes codificadas por el cliente y las
+respuestas codificadas por el servidor usan valores. En los structs protobuf,
+los booleanos, números, strings, enums y sus alias singulares requeridos son
+punteros tanto en solicitudes como en respuestas. Así la validación distingue
+un campo omitido de un valor cero explícito. Los slices de bytes siguen siendo
+slices, los mensajes siguen siendo punteros y los structs de servicio conservan
+su estructura.
 
 Ejemplo:
 ```go

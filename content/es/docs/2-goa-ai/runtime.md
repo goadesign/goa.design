@@ -314,7 +314,7 @@ El runtime emite eventos de hook `RunPhaseChanged` para fases **no terminales** 
 
 Las fases son distintas de `run.Status`:
 
-- **Estado** (`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`) es el estado del ciclo de vida de grano grueso almacenado en los metadatos duraderos de la ejecución No existe un estado `pending` anterior a la admisión.
+- **Estado** (`running`, `suspended`, `completed`, `failed`, `canceled`) es el estado del ciclo de vida de grano grueso almacenado en los metadatos duraderos de la ejecución. No existe un estado `pending` anterior a la admisión.
 - **Fase** proporciona una visibilidad más fina del bucle de ejecución, pensada para superficies de streaming/UX
 
 ### Eventos de ciclo de vida: cambios de fase vs finalización terminal
@@ -689,7 +689,9 @@ Goa-AI mantiene el contrato público del runtime agnóstico frente al motor:
 
 - `RunPolicy.Timing.Plan` y `RunPolicy.Timing.Tools` son presupuestos semánticos por intento
 - `runtime.WithTiming(...)` sustituye esos presupuestos semánticos para una ejecución
-- `runtime.WithWorker(...)` sirve para la colocación en cola, no para ajustar el motor de workflow
+- Los clientes generados usan la cola predeterminada del agente. Pasa
+  `runtime.WithTaskQueue("orchestrator.chat")` a una llamada de `Start` o `Run`
+  cuando esa ejecución deba usar otra cola
 
 Si usas el adaptador de Temporal y necesitas ajustar la espera en cola o la liveness, configúralo en el propio motor de Temporal:
 
@@ -724,8 +726,8 @@ Esta separación mantiene la mecánica del workflow detrás de la frontera de Te
 
 El runtime registra una sola activity tipada llamada `runtime.store`. Cada
 `StorageActivityCommand` establece exactamente uno de estos campos: `Append`,
-`RootStart`, `ChildStart`, `OneShotStart`, `Cancellation`, `Suspension` o
-`Terminal`. El `StorageActivityResult` devuelto establece exactamente el campo
+`RootStart`, `ChildStart`, `OneShotStart`, `OneShotChildStart`, `Cancellation`,
+`Suspension` o `Terminal`. El `StorageActivityResult` devuelto establece exactamente el campo
 correspondiente y ningún otro. Los almacenes personalizados devuelven
 `storage.ContractError` cuando repetir el mismo comando no puede funcionar. Los
 fallos temporales de base de datos o red siguen siendo errores normales y se

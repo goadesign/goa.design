@@ -1650,6 +1650,9 @@ Service("calculator", func() {
     Description("Calculator MCP server")
     
     MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("add", func() {
         Payload(func() {
@@ -1676,6 +1679,9 @@ Service("calculator", func() {
 Service("calculator", func() {
     // Specify protocol version as an option
     MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 })
 ```
 
@@ -1761,6 +1767,9 @@ Method("readme", func() {
 ```go
 Service("assistant", func() {
     MCP("assistant-mcp", "1.0")
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
@@ -1775,6 +1784,9 @@ var _ = Service("assistant", func() {
     Description("MCP server example")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",

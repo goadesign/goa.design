@@ -234,6 +234,11 @@ Usa `runtime/agent/storage/inmem` per i test di pianificatori e workflow. Verifi
 - il primo motivo di annullamento è permanente e un motivo successivo diverso produce un conflitto;
 - la sospensione salva insieme checkpoint, stato sospeso e record corrispondente;
 - il completamento salva insieme stato finale e record corrispondente;
+- l'avvio di una continuazione richiede un'esecuzione precedente sospesa che
+  esista e abbia la stessa sessione, lo stesso agente e la stessa esecuzione padre;
+- una continuazione non corrispondente non scrive né l'avvio del successore né
+  un collegamento al padre, mentre un successore accettato conserva
+  `PredecessorRunID` in `RunStarted`, non in `RunMeta`;
 - una sessione terminata impedisce il lavoro di pianificatore e strumenti, ma registra come annullato un workflow già accettato;
 - l’eliminazione fallisce mentre è attiva un’esecuzione e, al termine di tutte le esecuzioni, rimuove metadati, checkpoint e record della sessione terminata.
 

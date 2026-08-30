@@ -247,6 +247,11 @@ Utilisez `runtime/agent/storage/inmem` pour les tests de planificateurs et de wo
 - le premier motif d’annulation est permanent et un motif ultérieur différent produit un conflit ;
 - la suspension enregistre ensemble le point de reprise, l’état suspendu et l’enregistrement correspondant ;
 - la fin enregistre ensemble l’état final et l’enregistrement correspondant ;
+- le démarrage d'une continuation exige une exécution précédente suspendue qui
+  existe et possède la même session, le même agent et la même exécution parente ;
+- une continuation qui ne correspond pas n'écrit ni démarrage du successeur ni
+  lien parent, et un successeur accepté conserve `PredecessorRunID` dans
+  `RunStarted`, pas dans `RunMeta` ;
 - une session terminée empêche le planificateur et les outils de travailler, mais enregistre comme annulé un workflow déjà accepté ;
 - la purge échoue tant qu’une exécution est active, puis supprime les métadonnées, points de reprise et enregistrements de la session terminée une fois toutes les exécutions achevées.
 
