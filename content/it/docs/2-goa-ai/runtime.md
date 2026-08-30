@@ -533,7 +533,12 @@ workflow.
 
 - i **Memory Store** (`memory.Store`) sottoscrivono e aggiungono eventi di memoria durevoli (messaggi di utenti/assistenti, chiamate agli strumenti, risultati degli strumenti, note del pianificatore, riflessioni) per `(agentID, RunID)`.
 
-- i **Run event stores** (`storage.Store`) aggiungono il log canonico degli eventi hook per `RunID` per UI audit/debug e introspezione.
+- **Lo storage del runtime** (`storage.Store`) è unico e appartiene
+  all'applicazione host. Per ogni `RunID` aggiunge record che non possono
+  cambiare dopo l'inserimento, destinati alle UI di audit e debug e alla
+  consultazione delle esecuzioni. I suoi metodi del ciclo di vita salvano stato,
+  checkpoint o modifica dell'annullamento insieme al record immutabile
+  corrispondente in una sola operazione.
 
 - gli **Stream sinks** (`stream.Sink`, ad esempio Pulse o SSE/WebSocket personalizzati) ricevono i valori `stream.Event` tipizzati prodotti dallo `stream.Subscriber`. Un `StreamProfile` controlla quali tipi di eventi vengono emessi.
 

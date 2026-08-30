@@ -557,7 +557,10 @@ workflow start request を変えることはありません。
 
 - **Memory stores**（`memory.Store`）は、`(agentID, RunID)` ごとに耐久化されるメモリイベント（ユーザー/アシスタントメッセージ、ツール呼び出し、ツール結果、プランナーノート、思考）を購読し追記します。
 
-- **Run event stores**（`storage.Store`）は、`RunID` ごとに hook イベントのカノニカルログを追記し、audit/debug UI と run の introspection に利用できます。
+- **Runtime store**（`storage.Store`）は一つだけで、host application が所有します。
+  `RunID` ごとに、挿入後は変更できない record を追加し、audit/debug UI と run の
+  調査に使います。lifecycle method は、status、checkpoint、または cancellation の
+  変更と、それに対応する変更不可 record を 1 回の操作で保存します。
 
 - **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別を制御します。
 

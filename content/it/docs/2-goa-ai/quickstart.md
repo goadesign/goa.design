@@ -71,6 +71,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -105,24 +106,30 @@ e i contratti di runtime vengono generati da questo progetto.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Forma prevista:
 
 ```text
-RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
-Completion draft_task: ...
-Completion stream draft_task: ...
+RunID: demo-chat-run
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+La riga `Completion delta` è un prefisso JSON trasmesso in streaming. Il punto
+esatto in cui si interrompe può variare, ma il valore finale trasmesso è
+completo e corrisponde all'esempio dichiarato.
 
 `goa gen` crea i contratti generati. `goa example` crea proprietà dell'applicazione
 impalcatura:
 
 - `gen/`: codice generato. Non modificare questa directory manualmente.
 - `cmd/orchestrator/main.go`: punto di ingresso di esempio eseguibile.
-- `internal/agents/bootstrap/bootstrap.go`: costruzione del runtime e registrazione dell'agente.
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: costruzione del runtime e registrazione dell'agente.
 - `internal/agents/chat/planner/planner.go`: pianificatore stub da sostituire.
 - `gen/orchestrator/completions/`: helper digitati per il completamento diretto.
 
@@ -286,13 +293,12 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if len(summary.ToolCalls) > 0 {
 		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
 	}
+	final := summary.FinalResponse()
+	if final == nil {
+		return nil, errors.New("model stream ended without a canonical response")
+	}
 	return &planner.PlanResult{
-		FinalResponse: &planner.FinalResponse{
-			Message: &model.Message{
-				Role:  model.ConversationRoleAssistant,
-				Parts: []model.Part{model.TextPart{Text: summary.Text}},
-			},
-		},
+		FinalResponse: final,
 		Streamed: true,
 	}, nil
 }

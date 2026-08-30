@@ -613,7 +613,13 @@ peut donc pas modifier la requête exacte de démarrage du workflow.
 
 - **Les magasins de mémoire** (`memory.Store`) s'abonnent et ajoutent des événements de mémoire durables (messages utilisateur/assistant, appels d'outils, résultats d'outils, notes de planificateur, réflexion) par `(agentID, RunID)`.
 
-- **Exécuter les magasins d'événements** (`storage.Store`) ajoutez le journal des événements de hook canonique par `RunID` pour l'audit/débogage de UIs et exécutez l'introspection.
+- **Le stockage du runtime** (`storage.Store`) est unique et appartient à
+  l'application hôte. Il ajoute, pour chaque `RunID`, des enregistrements qui ne
+  peuvent plus changer après leur insertion, afin d'alimenter les interfaces
+  d'audit et de débogage et la consultation des exécutions. Ses méthodes de cycle
+  de vie enregistrent l'état, le point de reprise ou la modification
+  d'annulation avec l'enregistrement immuable correspondant en une seule
+  opération.
 
 - Les **récepteurs de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs `stream.Event` typées produites par le `stream.Subscriber`. Un `StreamProfile` contrôle quels types d'événements sont émis.
 
@@ -1329,7 +1335,7 @@ Les planificateurs obtiennent des clients modèles via le `PlannerContext` du ru
 deux styles d'intégration explicites :
 
 - `PlannerModelClient(id)` pour le streaming à l'échelle du planificateur avec émission d'événements appartenant au runtime
-- `ModelClient(id)` lorsque vous avez besoin d'un accès au transport brut et que vous l'associerez à `planner.ConsumeStream` ou émettrez `PlannerEvents` vous-même
+- `ModelClient(id)` lorsque vous avez besoin d'un accès direct au modèle validé et que vous drainez le flux renvoyé avec `planner.ConsumeStream`
 
 #### PlannerModelClient (recommandé)
 
@@ -1377,10 +1383,11 @@ capturée pour cette invocation ; reconstruire un message uniquement textuel
 supprimerait le raisonnement, les citations, les signatures, les métadonnées et
 les frontières des messages.
 
-#### Client brut + ConsumeStream
+#### Client validé + ConsumeStream
 
-Lorsque vous avez besoin du `model.Client` brut, récupérez-le sur `PlannerContext.ModelClient`
-et associez-le à `planner.ConsumeStream` :
+Lorsque vous avez besoin d'accéder directement au `model.Client`, récupérez-le
+sur `PlannerContext.ModelClient` et associez son flux validé à
+`planner.ConsumeStream` :
 
 ```go
 mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
@@ -1392,23 +1399,40 @@ req := &model.Request{
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
-streamer, err := mc.Stream(ctx, req)
+stream, err := mc.Stream(ctx, req)
 if err != nil {
     return nil, err
 }
-sum, err := planner.ConsumeStream(ctx, streamer, req, input.Events)
+sum, err := planner.ConsumeStream(ctx, stream)
 if err != nil {
     return nil, err
 }
+if len(sum.ToolCalls) > 0 {
+    return &planner.PlanResult{ToolCalls: sum.ToolCalls}, nil
+}
+final := sum.FinalResponse()
+if final == nil {
+    return nil, errors.New("model stream ended without a canonical response")
+}
+return &planner.PlanResult{
+    FinalResponse: final,
+    Streamed:      true,
+}, nil
 ```
 
-Cet assistant draine le flux, émet des événements d'assistant/réflexion/utilisation et
-renvoie un `StreamSummary` avec du texte et des appels d'outils accumulés.
+Ce helper se contente de drainer le flux et renvoie un `StreamSummary` avec le
+texte et les appels d'outils accumulés. Le journal des invocations du modèle du
+runtime publie ensuite les événements de présentation et d'utilisation acceptés.
 
-Utilisez le chemin client brut lorsque vous avez besoin d'un contrôle total sur la consommation de flux, que vous souhaitez
-comportement d'arrêt anticipé personnalisé ou si vous souhaitez gérer explicitement `PlannerEvents`. Ne
-mélanger `PlannerModelClient.Stream(...)` avec `planner.ConsumeStream` ; choisissez-en un
-propriétaire du flux par tour du planificateur.
+Utilisez le client direct lorsque le planificateur doit examiner des fragments
+de prévisualisation validés ou effectuer plusieurs appels au modèle pendant un
+même tour. Drainez chaque flux sélectionné jusqu'à son résultat terminal : une
+fermeture anticipée ne produit pas de réponse acceptée. Le `PlanResult` renvoyé
+doit transmettre un seul résultat exact : l'ensemble complet des `ToolCalls` du
+résumé ou son `FinalResponse()`. Le runtime rejette les résultats modifiés,
+mélangés ou ambigus. Ne combinez pas `PlannerModelClient.Stream(...)` avec
+`planner.ConsumeStream` ; choisissez un seul propriétaire du flux par tour du
+planificateur.
 
 ### Validation de l'ordre des messages Bedrock
 

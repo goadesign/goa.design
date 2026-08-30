@@ -68,6 +68,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -100,17 +101,23 @@ var _ = Service("orchestrator", func() {
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 期待される出力の形:
 
 ```text
-RunID: orchestrator-chat-...
+RunID: demo-chat-run
 Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
-Completion draft_task: ...
-Completion stream draft_task: ...
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+`Completion delta` の行は、streaming された JSON の prefix です。区切られる位置は
+変わることがありますが、最後に streaming される値は完全で、宣言した example と
+一致します。
 
 デザインに payload example があり、さらに result example があるか result 自体がない場合、scaffold planner はそのツールを実演します。利用可能な example を持つツールがなければ、代わりに greeting を返します。
 
@@ -118,7 +125,7 @@ Completion stream draft_task: ...
 
 - `gen/`: 生成コード。このディレクトリを手で編集しないでください。
 - `cmd/orchestrator/main.go`: 実行可能なサンプルのエントリポイント（初回のみ作成）。
-- `internal/agents/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録（初回のみ作成）。
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録（初回のみ作成）。
 - `internal/agents/chat/planner/planner.go`: 置き換え用のスタブプランナー（初回のみ作成）。
 - `internal/agents/chat/toolsets/helpers/execute.go`: example executor（初回のみ作成）。
 - `gen/orchestrator/completions/`: 型付き直接 completion の helper。

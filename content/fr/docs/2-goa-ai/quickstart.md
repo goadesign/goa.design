@@ -72,6 +72,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -106,24 +107,30 @@ et les contrats d'exécution sont générés à partir de cette conception.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Forme attendue :
 
 ```text
-RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
-Completion draft_task: ...
-Completion stream draft_task: ...
+RunID: demo-chat-run
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+La ligne `Completion delta` est un préfixe JSON transmis en streaming. Son point
+de coupure exact peut varier, mais la valeur finale transmise est complète et
+correspond à l'exemple déclaré.
 
 `goa gen` crée des contrats générés. `goa example` crée des applications appartenant
 échafaudage :
 
 - `gen/` : code généré. Ne modifiez pas ce répertoire à la main.
 - `cmd/orchestrator/main.go` : exemple de point d’entrée exécutable.
-- `internal/agents/bootstrap/bootstrap.go` : construction du runtime et enregistrement des agents.
+- `internal/agents/orchestrator/bootstrap/bootstrap.go` : construction du runtime et enregistrement des agents.
 - `internal/agents/chat/planner/planner.go` : planificateur de stub à remplacer.
 - `gen/orchestrator/completions/` : assistants de saisie semi-automatique typés.
 

@@ -70,6 +70,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -104,17 +105,22 @@ and runtime contracts are generated from this design.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Expected shape:
 
 ```text
-RunID: orchestrator-chat-...
+RunID: demo-chat-run
 Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
-Completion draft_task: ...
-Completion stream draft_task: ...
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+The `Completion delta` line is a streamed JSON prefix. Its exact cutoff may
+vary, but the final streamed value is complete and matches the declared example.
 
 When the design has an authored payload example and either an authored result
 example or no result, the scaffold planner demonstrates that tool. If no tool
@@ -126,7 +132,7 @@ creates application-owned files only when they do not already exist:
 
 - `gen/`: generated code. Do not edit this directory by hand.
 - `cmd/orchestrator/main.go`: runnable example entry point (create-once).
-- `internal/agents/bootstrap/bootstrap.go`: runtime construction and agent registration (create-once).
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: runtime construction and agent registration (create-once).
 - `internal/agents/chat/planner/planner.go`: stub planner to replace (create-once).
 - `internal/agents/chat/toolsets/helpers/execute.go`: example executor (create-once).
 - `gen/orchestrator/completions/`: typed direct-completion helpers.
