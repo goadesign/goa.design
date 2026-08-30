@@ -6,7 +6,10 @@ llm_optimized: true
 aliases:
 ---
 
-La generación de código de Goa transforma su diseño en código listo para la producción. En lugar de un simple andamiaje, Goa genera implementaciones de servicios completas y ejecutables que siguen las mejores prácticas y mantienen la coherencia en toda la API.
+La generación de código de Goa transforma su diseño en contratos de servicio,
+transportes, clientes y documentación listos para producción. `goa example` crea
+el cableado inicial ejecutable, mientras que su aplicación aporta la lógica de
+negocio.
 
 
 
@@ -17,6 +20,17 @@ La generación de código de Goa transforma su diseño en código listo para la 
 ```bash
 go install goa.design/goa/v3/cmd/goa@latest
 ```
+
+{{< alert title="Probar una versión preliminar de la generación" color="info" >}}
+Las versiones preliminares son opcionales. Fije tanto el módulo de Goa como el
+comando `goa` a la versión exacta indicada en la
+[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+Vuelva a generar todo el directorio `gen/`, no mezcle nunca resultados estables
+y preliminares y, a continuación, compile y pruebe la aplicación completa.
+Coordine las actualizaciones de cliente y servidor cuando la guía identifique
+un cambio en el formato intercambiado. Para volver a la versión estable, fije
+juntos el módulo y el comando estables y vuelva a generar todo.
+{{< /alert >}}
 
 ### Comandos
 
@@ -94,6 +108,12 @@ Goa crea un `main.go` temporal que:
 - Las expresiones validadas pasan a los generadores de código
 - Las plantillas se renderizan para producir archivos de código
 - La salida se escribe en el directorio `gen/`
+
+Goa resuelve los paquetes, las declaraciones, los nombres, las importaciones,
+las rutas de los campos y las ramas conocidas a partir del diseño completo y
+validado antes de renderizar. Las plantillas escriben directamente esas
+decisiones. Los programas generados solo se ramifican según los valores que
+reciben durante la ejecución.
 
 ---
 
@@ -383,6 +403,7 @@ Generar tipos en un paquete compartido:
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +414,19 @@ gen/
 └── types/
     └── common_type.go
 ```
+
+`struct:pkg:path` da al tipo definido por el autor una única declaración en el
+paquete generado seleccionado, y cada uso generado importa esa declaración. El
+nombre del paquete Go es el último segmento de la ruta en minúsculas. Si el tipo
+reubicado contiene otro tipo definido por el autor, esa dependencia también debe
+declarar un `struct:pkg:path` explícito, normalmente el mismo paquete. Los tipos
+anidados creados por el compilador permanecen junto al tipo definido por el
+autor al que pertenecen.
+
+Una declaración definida por el autor se reutiliza entre servicios y entre usos
+como carga útil, resultado y error. Cuando ese tipo exacto es un error
+personalizado, Goa añade los métodos de error junto a la misma declaración en vez
+de generar un segundo tipo.
 
 ### Personalización de campos
 
@@ -597,6 +631,16 @@ Casos de uso comunes del plugin:
 - Reglas de validación personalizadas
 - Cuestiones transversales (registro, métricas)
 - Generación de archivos de configuración
+
+Las funciones de callback publicadas siguen siendo adecuadas para los plugins
+que editan valores o archivos generados. Un plugin que declara un nombre a
+nivel de paquete debe usar la fase de planificación de la factoría para que Goa
+pueda reservar ese nombre junto con todas las demás declaraciones antes de
+renderizar. Consulte la
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+y la
+[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---
 

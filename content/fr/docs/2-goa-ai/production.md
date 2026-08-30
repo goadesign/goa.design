@@ -85,7 +85,7 @@ func main() {
     // Wrap with rate limiting middleware
     rateLimitedClient := limiter.Middleware()(modelClient)
 
-    rt := runtime.New()
+    rt := runtime.New(runtimeStore)
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -156,7 +156,7 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 if err := rt.RegisterModel("claude", claudeClient); err != nil {
     panic(err)
 }
@@ -246,7 +246,7 @@ import (
 
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
-    Database:   "aura",
+    Database:   "assistant",
     Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
@@ -259,6 +259,7 @@ if err != nil {
 }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(temporalEng),
     runtime.WithPromptStore(promptStore),
 )
@@ -346,22 +347,26 @@ Goa-AI résume le backend d'exécution derrière l'interface `Engine`. Échangez
 **Moteur en mémoire** (développement) :
 ```go
 // Default: no external dependencies
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 ```
 
 **Moteur Temporal** (production) :
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
-    "go.temporal.io/sdk/client"
+    temporalclient "go.temporal.io/sdk/client"
+    "go.temporal.io/sdk/worker"
+    "go.temporal.io/sdk/workflow"
 
     // Your generated tool specs aggregate.
     // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
+const releaseBuildID = "git-sha-or-image-digest"
+
 temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
-    ClientOptions: &client.Options{
+    ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
         // Required: enforce goa-ai's workflow boundary contract.
@@ -371,6 +376,16 @@ temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
+        Options: worker.Options{
+            DeploymentOptions: worker.DeploymentOptions{
+                UseVersioning: true,
+                Version: worker.WorkerDeploymentVersion{
+                    DeploymentName: "assistant",
+                    BuildID:        releaseBuildID,
+                },
+                DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
+            },
+        },
     },
 })
 if err != nil {
@@ -378,13 +393,37 @@ if err != nil {
 }
 defer temporalEng.Close()
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 ```
+
+### Propriété du stockage du runtime
+
+`runtime.New` exige un seul `storage.Store`. En production, un service unique de l’application doit posséder la base de données qui contient l’état des sessions, les métadonnées des exécutions, les points de reprise et les enregistrements immuables. Les workers d’agents appellent ce propriétaire par une API typée ; ils n’ouvrent pas de connexions distinctes vers ses collections.
+
+Les données du produit restent la propriété du service produit. Par exemple, un service de chat conserve ses transcriptions, évaluations et champs de recherche même si un autre service possède le stockage du runtime Goa-AI.
+
+Le stockage doit valider chaque changement de cycle de vie avec l’enregistrement correspondant. Une nouvelle tentative identique de l’activité de stockage renvoie le premier résultat. Une tentative qui modifie l’identité de l’exécution, le payload, le point de reprise, l’état ou le motif d’annulation échoue avec un conflit. Consultez [Mémoire et sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) pour le contrat complet.
+
+Le remplacement de `session.Store` et `runlog.Store` est une modification
+coordonnée du stockage. Avant que le nouveau runtime écrive, les métadonnées,
+points de reprise et enregistrements existants doivent respecter le contrat
+intégré de `storage.Store`. Déployez ensemble le propriétaire du stockage et
+tous les workers qui l’appellent. Les anciens writers des stockages séparés et
+les nouveaux writers du stockage intégré ne doivent pas se chevaucher. Goa-AI
+n’impose pas une procédure de migration ; l’application hôte possède la
+conversion, la vérification, la sauvegarde et la récupération adaptées à sa
+base de données et à son environnement de déploiement.
 
 ### Synchronisation et tentatives d'activité
 
 Utilisez le DSL pour les budgets d'exécution sémantiques : combien de temps l'exécution entière peut prendre, combien de temps un
 la tentative du planificateur peut s'exécuter et la durée pendant laquelle une tentative d'outil peut s'exécuter.
+
+Goa-AI démarre chaque workflow d’agent une seule fois. Il ne redémarre pas le
+workflow complet après un échec, car une tentative précédente peut déjà avoir
+appelé des outils ou enregistré un résultat final. La durabilité vient de la
+relecture de l’historique et des nouvelles tentatives de chaque activité de
+planification, d’outil, de hook et de stockage.
 
 ```go
 Agent("operator", "Production operations agent", func() {
@@ -549,6 +588,7 @@ Pour diffuser toutes les exécutions via un récepteur global (par exemple, Puls
 
 ```go
 rt := runtime.New(
+    runtimeStore,
     runtime.WithStream(pulseSink), // or your custom sink
 )
 ```
@@ -632,6 +672,7 @@ s, err := pulseSink.NewSink(pulseSink.Options{
 if err != nil { log.Fatal(err) }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(s),
 )

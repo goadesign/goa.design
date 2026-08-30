@@ -9,22 +9,21 @@ aliases:
 Esta guía cubre el modelo de transcripción de Goa-AI, la persistencia de la memoria y cómo modelar conversaciones de varios turnos y flujos de trabajo de larga duración.
 
 ## Por qué son importantes las transcripciones
+Goa-AI trata la **transcripción** como la fuente de verdad de la conversación visible para el modelo: una secuencia ordenada de mensajes e interacciones con herramientas suficiente para:
 
-Goa-AI trata la **transcripción** como la única fuente de verdad para una ejecución: una secuencia ordenada de mensajes e interacciones de herramientas que es suficiente para:
+- Reconstruir los payloads del proveedor (Bedrock/OpenAI) para cada llamada al modelo
+- Dirigir los planners, incluidos reintentos y reparación de herramientas
+- Alimentar las interfaces de usuario con un historial exacto
 
-- Reconstruir las cargas útiles del proveedor (Bedrock/OpenAI) para cada llamada al modelo
-- Controlar los planificadores (incluidos los reintentos y la reparación de herramientas)
-- Alimentar las interfaces de usuario con un historial preciso
+Como la transcripción es autoritativa para la entrada del modelo, no necesitas gestionar manualmente:
 
-Dado que la transcripción es fidedigna, no es necesario gestionarla manualmente:
-- Listas separadas de llamadas y resultados de herramientas anteriores
-- Estructuras ad hoc de "estado de la conversación
-- Copias por turno de mensajes anteriores entre usuario y asistente
+- Listas separadas de llamadas y resultados anteriores
+- Estructuras ad hoc de estado de conversación
+- Copias por turno de mensajes anteriores
 
-Usted persiste y pasa **sólo la transcripción**; Goa-AI y sus adaptadores de proveedor reconstruyen todo lo que necesitan a partir de eso.
+Para el historial de conversación persistes y pasas **solo la transcripción**; Goa-AI y sus adaptadores reconstruyen de ella la entrada del proveedor. El estado de la ejecución, la cancelación, los checkpoints de continuación y los registros inmutables pertenecen al almacén separado del runtime descrito más abajo.
 
 ---
-
 ## Mensajes y Partes
 
 En el límite del modelo, Goa-AI utiliza valores `model.Message` para representar la transcripción. Cada mensaje tiene un rol (`user`, `assistant`) y una lista ordenada de **partes**:
@@ -66,119 +65,37 @@ No hay **una API separada de "historial de herramientas "**; la transcripción e
 
 ---
 
-## Libro de transcripciones
+## Reproducción de la transcripción del runtime
 
-El **libro de transcripciones** es un registro preciso del proveedor que mantiene el historial de la conversación en el formato exacto requerido por los proveedores del modelo. Garantiza la repetición determinista y la fidelidad del proveedor sin filtrar tipos del SDK del proveedor al estado del flujo de trabajo.
+El runtime guarda cambios canónicos de `model.Message` en los registros
+ordenados de la ejecución. `transcript_messages_seeded` contiene los mensajes
+que ya existían antes de comenzar la ejecución;
+`transcript_messages_appended` contiene los mensajes aceptados mientras se
+ejecutaba. Los registros iniciales reconstruyen la entrada del modelo, pero no
+se publican como una nueva respuesta del asistente.
 
-### Fidelidad del proveedor
-
-Los distintos proveedores de modelos (Bedrock, OpenAI, etc.) tienen requisitos estrictos sobre el orden y la estructura de los mensajes. El libro mayor hace cumplir estas restricciones:
-
-| Requisito del Proveedor | Garantía del Ledger |
-|---------------------|------------------|
-| El pensamiento debe preceder al uso de la herramienta en los mensajes del asistente
-| Los resultados de la herramienta deben seguir a su correspondiente uso de la herramienta
-| Alternancia de mensajes (asistente → usuario → asistente)
-
-Para Bedrock específicamente, cuando el pensamiento está habilitado:
-- Los mensajes del asistente que contengan tool_use **deben** comenzar con un bloque de pensamiento
-- Los mensajes de usuario con tool_result deben seguir inmediatamente al mensaje del asistente que declara el tool_use
-- El número de resultados de la herramienta no puede superar el número de tool_use anteriores
-
-### Requisitos de ordenación
-
-El libro mayor almacena las piezas en el orden canónico requerido por los proveedores:
-
-```
-Assistant Message:
-  1. ThinkingPart(s)  - provider reasoning (text + signature or redacted bytes)
-  2. TextPart(s)      - visible assistant text
-  3. ToolUsePart(s)   - tool invocations (ID, name, args)
-
-User Message:
-  1. ToolResultPart(s) - tool results correlated via ToolUseID
-```
-
-Este orden es **sagrado** - el ledger nunca reordena las partes, y los adaptadores de proveedor las recodifican en bloques específicos de proveedor en la misma secuencia.
-
-### Mantenimiento automático del libro mayor
-
-El runtime mantiene automáticamente el ledger de transcripciones. No es necesario gestionarlo manualmente:
-
-1. **Captura de eventos**: A medida que avanza la ejecución, el tiempo de ejecución persiste los eventos de memoria (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) para
-
-2. **Reconstrucción del libro mayor**: La función `BuildMessagesFromEvents` reconstruye los mensajes listos para el proveedor a partir de los eventos almacenados:
-
-```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **Validación**: Antes de enviar a los proveedores, el tiempo de ejecución puede validar la estructura del mensaje:
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
-}
-```
-
-### Ledger API
-
-Para casos de uso avanzados, puede interactuar con el libro mayor directamente. El libro mayor proporciona estos métodos clave:
-
-| Método Descripción
-|--------|-------------|
-`NewLedger()` Crea un nuevo libro mayor vacío
-| `AppendThinking(part)` | Añade una parte pensante al mensaje del asistente actual | | `AppendText(text)` | Crea un nuevo libro mayor vacío
-| `AppendText(text)` | Añade texto visible al mensaje actual del asistente | `DeclareToolUse(id, name, args)` | Crea un nuevo libro mayor vacío
-| `DeclareToolUse(id, name, args)` | Declara una invocación a una herramienta en el mensaje del asistente actual |
-| `FlushAssistant()` | Finaliza el mensaje del asistente actual y se prepara para la entrada del usuario | `AppendUserToolResults(results)` | Declara una invocación a una herramienta en el mensaje del asistente actual
-| `AppendUserToolResults(results)` | Añade los resultados de la herramienta como un mensaje de usuario |
-| `BuildMessages()` | Devuelve la transcripción completa como `[]*model.Message` |
-
-**Ejemplo de uso:**
+Usa la función pública de reproducción cuando la recuperación o la inspección
+necesite la secuencia exacta de mensajes preparada para el proveedor:
 
 ```go
 import "goa.design/goa-ai/runtime/agent/transcript"
 
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runtimeStore, runID)
+if err != nil {
+    return err
+}
 ```
 
-**Nota:** La mayoría de los usuarios no necesitan interactuar con el libro mayor directamente. El tiempo de ejecución mantiene automáticamente el libro mayor a través de la captura y reconstrucción de eventos. Utilice la API del libro mayor sólo para escenarios avanzados como planificadores personalizados o herramientas de depuración.
+`BuildMessagesFromRunLog` pagina mediante
+`storage.Store.ListRunRecords` y reproduce solo los registros canónicos de
+transcripción en el orden guardado. Si los registros ya están cargados,
+`ReplayRunLogEvents` realiza la misma proyección. Los adaptadores de proveedor
+conservan el orden de las partes; `ValidatePlannerTranscript` y
+`ValidateBedrock` permiten validar una transcripción en el límite adecuado.
 
-### Why This Matters
-
-- **Reproducción determinista**: Los eventos almacenados pueden reconstruir la transcripción exacta para depuración, auditoría o reejecución de turnos fallidos
-- **Almacenamiento independiente del proveedor**: El libro mayor almacena partes JSON-friendly sin dependencias del SDK del proveedor
-- **Planificadores simplificados**: Los planificadores reciben mensajes correctamente ordenados sin gestionar las restricciones de los proveedores
-- **Validación**: Captura las violaciones de orden antes de que lleguen al proveedor y causen errores crípticos
+Estos registros permiten reproducir e inspeccionar workflows. No reemplazan la
+transcripción propiedad del producto para el historial de chat, valoraciones,
+búsqueda, retención o eliminación de datos de clientes.
 
 ---
 
@@ -203,10 +120,12 @@ Goa-AI separa el estado de la conversación en tres capas:
 Al llamar a un agente:
 
 ```go
-client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "chat-session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
+rt := runtime.New(store)
+client := chat.NewClient(rt)
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
@@ -219,117 +138,116 @@ Las sesiones se terminan explícitamente (por ejemplo, cuando se elimina una con
 
 ---
 
-## Almacén de memoria vs Almacén de ejecución
+## Memoria del producto y almacenamiento del runtime
 
-Los módulos de funciones de Goa-AI proporcionan almacenes complementarios:
+Goa-AI separa dos tipos de datos duraderos porque tienen propietarios distintos:
 
-### Almacén de Memoria (`memory.Store`)
+- **La memoria del producto** contiene la transcripción y los datos de la aplicación derivados de ella. El producto decide qué conserva, muestra, busca o elimina.
+- **El almacenamiento del runtime** contiene el estado que Goa-AI necesita para ejecutar y continuar las ejecuciones: estado de la sesión, metadatos de ejecución, checkpoints privados y registros inmutables.
 
-Persiste el historial de eventos por ejecución:
-- Mensajes de usuario/asistente
-- Llamadas a herramientas y resultados
-- Notas y pensamientos del planificador
+Por ejemplo, un servicio de chat puede guardar la conversación completa, las valoraciones y los campos de búsqueda en su propia base de datos. El almacén del runtime registra que `run-42` comenzó, qué ejecución hija inició, si se solicitó su cancelación y cómo terminó. No se convierte en la base de datos de transcripciones del chat.
+
+### Almacén de memoria (`memory.Store`)
+
+Conserva el historial de eventos de cada ejecución:
+
+- mensajes del usuario y del asistente
+- llamadas a herramientas y sus resultados
+- notas y razonamiento del planificador
+
+Estos eventos se convierten de nuevo en un `model.Transcript` y en los mensajes que recibe el proveedor. El producto es propietario de esta información visible para el modelo.
+
+### Almacén del runtime (`storage.Store`)
+
+El host proporciona una implementación de `storage.Store`. Esa única implementación es propietaria de todas las escrituras de runtime:
+
+- el alcance de la sesión y si está activa, terminada o eliminada permanentemente
+- la identidad de la ejecución, sus relaciones padre-hijo, etiquetas, decisión inicial y estado actual
+- los bytes privados necesarios para continuar una ejecución suspendida
+- los registros ordenados e inmutables usados para inspección y para identificar las versiones de prompts que influyeron en la ejecución
+
+El runtime requiere esta dependencia:
 
 ```go
-type Store interface {
-    LoadRun(ctx context.Context, agentID, runID string) (memory.Snapshot, error)
-    AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
-}
+store := newRuntimeStore()
+rt := runtime.New(store, runtime.WithEngine(eng))
 ```
 
-Tipos clave:
-- **`memory.Snapshot`** - vista inmutable del historial almacenado de una ejecución (`AgentID`, `RunID`, `Events []memory.Event`)
-- `memory.Event`** - entrada única persistente con `Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`, `thinking`), `Timestamp`, `Data` y `Labels`)
-
-### Run Log (`runlog.Store`)
-
-Persiste el **log canónico, append-only** de eventos de ejecución. El runtime añade eventos hook mientras se ejecuta el run, y los consumidores paginan con un cursor opaco para UI y diagnóstico.
-
-```go
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
-```
-
-`runlog.Page` contiene:
-- `Events` (ordenados de más antiguo a más reciente)
-- `NextCursor` (vacío cuando no hay más eventos)
+En una aplicación de un solo proceso, `store` puede ser un adaptador de base de datos local. En una aplicación distribuida, un único servicio debe ser propietario de la base de datos y exponer métodos tipados; los workers implementan `storage.Store` llamando a ese servicio. Servicios distintos no escriben directamente en las mismas colecciones.
 
 ---
 
-## Wiring Stores
+## Cambios de ciclo de vida y registros en una sola operación
 
-Con las implementaciones respaldadas por MongoDB:
+Cada método de ciclo de vida guarda el estado y el registro que lo demuestra en la misma operación:
 
-```go
-import (
-    memorymongo "goa.design/goa-ai/features/memory/mongo"
-    memorymongoclient "goa.design/goa-ai/features/memory/mongo/clients/mongo"
-    runlogmongo "goa.design/goa-ai/features/runlog/mongo"
-    runlogmongoclient "goa.design/goa-ai/features/runlog/mongo/clients/mongo"
-    "goa.design/goa-ai/runtime/agent/runtime"
-)
+- `StartRootRun` guarda los metadatos de una ejecución raíz y su primer registro.
+- `StartChildRun` guarda el vínculo con el padre, los metadatos del hijo y su primer registro.
+- `StartOneShotRun` guarda una ejecución sin sesión y su primer registro.
+- `RecordRunCancellation` guarda el primer motivo de cancelación y su registro.
+- `RecordRunSuspension` guarda el checkpoint privado, el estado suspendido y su registro.
+- `RecordRunTerminal` guarda el estado final y su registro.
 
-mongoClient := newMongoClient()
+Así no puede quedar una ejecución marcada como completa sin su registro de finalización, ni un checkpoint guardado mientras la ejecución aún aparece activa.
 
-memClient, err := memorymongoclient.New(memorymongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+Los registros ordinarios que no cambian el ciclo de vida usan `AppendRunRecord`. `ListRunRecords` y `ListSessionRunRecords` los leen. El cursor es una posición creada por el almacén que el cliente devuelve sin modificar para obtener la página siguiente.
 
-memStore, err := memorymongo.NewStore(memClient)
-if err != nil {
-    log.Fatal(err)
-}
+### Reintentos exactos
 
-runlogClient, err := runlogmongoclient.New(runlogmongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+Las activities de un workflow pueden ejecutarse más de una vez. Por eso, una repetición exacta tiene éxito y devuelve el identificador del registro original. Debe repetir exactamente identidad, fecha, etiquetas, clave y payload del evento, checkpoint, estado y motivo de cancelación.
 
-runEventStore, err := runlogmongo.NewStore(runlogClient)
-if err != nil {
-    log.Fatal(err)
-}
+Para cada inicio, cancelación, suspensión y finalización, el almacén también
+recuerda el registro exacto elegido por la primera escritura correcta. Repetir
+el cambio de ciclo de vida con otro registro produce un conflicto, aunque
+coincidan el estado y los demás campos del ciclo de vida.
 
-rt := runtime.New(
-    runtime.WithMemoryStore(memStore),
-    runtime.WithRunEventStore(runEventStore),
-)
-```
+Si cambia cualquier valor fijado por la primera escritura, el almacén devuelve un conflicto. No adivina qué valor es más reciente ni sobrescribe el primero. El primer motivo de cancelación también es permanente: una repetición exacta tiene éxito y un motivo diferente produce un conflicto.
 
-Una vez configurado:
-- Los suscriptores predeterminados persisten la memoria y los eventos de ejecución automáticamente
-- Puede reconstruir transcripciones de `memory.Store` en cualquier momento para volver a llamar modelos, potenciar interfaces de usuario o ejecutar análisis sin conexión
+### Orden de inicio
+
+Para una ejecución raíz, el motor acepta el workflow antes de escribir en el almacén. No existe un registro `pending` anterior a esa aceptación. La primera activity duradera llama a `StartRootRun`:
+
+- si la sesión está activa, guarda una ejecución en curso y continúa;
+- si la sesión terminó después de que el motor aceptara el workflow, guarda una ejecución cancelada y se detiene antes del planificador y las herramientas.
+
+Los workflows hijos usan `StartChildRun`, de modo que el vínculo con el padre y el inicio sean visibles juntos. El trabajo sin sesión usa `StartOneShotRun`: conserva metadatos y registros normales, pero no crea ni se une a una sesión.
+
+El resultado del inicio devuelve la decisión original, no el estado actual. Repetir el inicio después de que la ejecución haya terminado devuelve la misma decisión inicial.
 
 ---
 
-## Almacenes personalizados
+## Ciclo de vida y eliminación de sesiones
 
-Implementar las interfaces `memory.Store` y `runlog.Store` para backends personalizados:
+La administración de sesiones pertenece a la aplicación host, no a los workers. El host crea la sesión antes de enviar trabajo con sesión, la termina cuando ya no debe empezar trabajo nuevo y la elimina permanentemente solo cuando todas sus ejecuciones han llegado a un estado final.
 
-```go
-// Memory store
-type Store interface {
-    LoadRun(ctx context.Context, agentID, runID string) (memory.Snapshot, error)
-    AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
-}
+Terminar y eliminar son operaciones distintas:
 
-// Run log store
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
-```
+- **Terminar** impide nuevo trabajo de planificador o herramientas, pero permite que las ejecuciones existentes guarden sus registros finales.
+- **Purgar** elimina la sesión, ejecuciones, checkpoints y registros cuando todas han terminado. El identificador eliminado no se puede reutilizar, para que un reintento tardío no recree datos antiguos.
+
+La implementación en memoria de `runtime/agent/storage/inmem` ofrece `CreateSession`, `EndSession` y `PurgeSession` para ejemplos y pruebas. En producción, estas operaciones las implementa el servicio propietario de la base de datos del runtime.
+
+Las versiones de prompts se derivan de los registros `prompt_rendered` y de vínculo padre-hijo. El almacén no mantiene otra lista de referencias o identificadores hijos que pueda contradecir el historial.
 
 ---
+
+## Migración desde almacenes separados
+
+Este contrato rompe la API anterior. Se eliminan:
+
+- `session.Store` y `runlog.Store`
+- `runtime.WithSessionStore` y `runtime.WithRunEventStore`
+- los métodos de administración de sesiones del runtime, como `CreateSession`, `EndSession` y `PurgeSession`
+- los paquetes integrados `features/session/mongo` y `features/runlog/mongo`
+
+Implementa un único `runtime/agent/storage.Store` y pásalo como primer argumento de `runtime.New`. Mueve la creación, finalización y eliminación de sesiones al servicio host propietario de los datos. Si los workers viven en otros servicios, deben llamar al propietario mediante una API tipada y no importar su adaptador de base de datos.
+
+Antes de que el nuevo runtime escriba, los datos existentes deben cumplir el
+contrato del almacenamiento integrado. Los metadatos, checkpoints y registros
+deben admitir las operaciones de ciclo de vida anteriores, y los escritores
+antiguos de almacenes separados no deben solaparse con los nuevos. La aplicación
+host elige el procedimiento de conversión y recuperación para su base de datos y
+su entorno, y despliega juntos al propietario y a todos sus workers.
 
 ## Patrones comunes
 
@@ -337,17 +255,18 @@ type Store interface {
 
 - Utilizar un `SessionID` por sesión de chat
 - Iniciar una nueva ejecución por turno de usuario o por "tarea"
-- Persistir transcripciones por ejecución; utilizar metadatos de sesión para coser la conversación
+- Mantener la transcripción del producto en el servicio de chat; usar los registros del runtime para el estado, la continuación y la inspección
 
 ### Flujos de trabajo de larga duración
 
-- Utilizar una única ejecución por flujo de trabajo lógico (potencialmente con pausa/reanudación)
+- Usar una ejecución por cada workflow aceptado por el motor
+- Cuando una ejecución solicita entrada externa, su workflow termina; la respuesta inicia una nueva ejecución en la misma sesión a partir del checkpoint guardado
 - Utilizar `SessionID` para agrupar flujos de trabajo relacionados (por ejemplo, por ticket o incidente)
 - Confíe en los eventos `run.Phase` y `RunCompleted` para el seguimiento del estado
 
 ### Búsqueda y cuadros de mando
 
-- Paginar `runlog.Store` por `RunID` para UI de auditoría/debug
+- Paginar `storage.Store` por `RunID` para UI de auditoría/debug
 - Carga de transcripciones de `memory.Store` a petición para ejecuciones seleccionadas
 
 ---

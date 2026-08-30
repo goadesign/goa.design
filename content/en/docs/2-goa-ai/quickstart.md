@@ -152,15 +152,16 @@ Generated agent packages expose typed clients. Sessionful runs require an
 explicit session; one-shot runs are intentionally sessionless.
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -181,6 +182,11 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 Use `Run` or `Start` for conversational/sessionful work. Use `OneShotRun` or
 `StartOneShot` for request/response jobs that should be observable by `RunID`
 but should not belong to a session.
+
+The generated local scaffold accepts a `storage.Store` and uses
+`runtime/agent/storage/inmem` in the example command. A production application
+passes an adapter for the service that owns its runtime database. That service,
+not an agent worker, creates and ends sessions.
 
 ---
 
@@ -325,7 +331,7 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 For production UIs, publish to Pulse and subscribe to the session stream
@@ -381,7 +387,8 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-Each agent keeps its own planner, tools, policy, and run log. The parent sees a
+Each agent keeps its own planner, tools, and policy. The host runtime store
+records every root and child run, including the parent link. The parent sees a
 normal tool result with a `RunLink` to the child run.
 
 ---
@@ -396,9 +403,10 @@ normal tool result with a `RunLink` to the child run.
   generated evaluation suites (declare a `Suite` in the design; see
   [Evaluations](evaluations/)).
 
-For production, add the Temporal engine for durability, Mongo-backed stores for
-memory/session/run logs, Pulse for distributed streaming, and model middleware
-for provider rate limits. The Goa design remains the source of truth.
+For production, add the Temporal engine for durability, one host-owned runtime
+store, a product-owned memory store when needed, Pulse for distributed
+streaming, and model middleware for provider rate limits. The Goa design
+remains the source of truth.
 
 ---
 

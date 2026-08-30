@@ -79,12 +79,7 @@ Este documento proporciona una referencia completa de las funciones DSL de Goa-A
 | `Toolset(FromMCP(...))`                                 | Top-level                | Declara un toolset derivado de MCP respaldado por Goa                                                              |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level                | Declara un toolset MCP externo con esquemas en línea                                                               |
 | `Resource`                                              | Method                   | Marca el método como recurso MCP                                                                                   |
-| `WatchableResource`                                     | Method                   | Marca el método como recurso suscribible                                                                           |
 | `StaticPrompt`                                          | Service                  | Añade una plantilla de prompt estática                                                                             |
-| `DynamicPrompt`                                         | Method                   | Marca el método como generador de prompts                                                                          |
-| `Notification`                                          | Method                   | Marca el método como emisor de notificaciones                                                                      |
-| `Subscription`                                          | Method                   | Marca el método como manejador de suscripciones                                                                    |
-| `SubscriptionMonitor`                                   | Method                   | Monitor SSE para suscripciones                                                                                     |
 | **Funciones de Registry**                               |                          |                                                                                                                    |
 | `Registry`                                              | Top-level                | Declara una fuente de registry                                                                                     |
 | `URL`                                                   | Registry                 | Establece el endpoint del registry                                                                                 |
@@ -644,7 +639,7 @@ Los server-data tipo timeline suelen proyectarse en tarjetas, gráficos, tablas 
 
 **Parámetros:**
 
-- `kind`: Un identificador de cadena para el tipo de server-data (p. ej., `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`). Esto permite a los consumidores identificar y manejar distintas proyecciones de server-data apropiadamente.
+- `kind`: Un identificador de cadena para el tipo de server-data (p. ej., `"metrics.time_series"`, `"control.narrative"`, `"audit.evidence"`). Esto permite a los consumidores identificar y manejar distintas proyecciones de server-data apropiadamente.
 - `val`: La definición del esquema, siguiendo los mismos patrones que `Args` y `Return`: una función con llamadas `Attribute()`, un tipo de usuario de Goa o un tipo primitivo.
 
 **Enrutamiento por audiencia (`Audience`*):**
@@ -663,7 +658,7 @@ ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
     FromMethodResultField("chart_sidecar")
 })
 
-ServerData("aura.evidence", ArrayOf(Evidence), func() {
+ServerData("audit.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
     FromMethodResultField("evidence")
 })
@@ -1772,11 +1767,9 @@ Agent("helper", "", func() {
 `FromExternalMCP` requiere declaraciones `Tool(...)` en línea porque los esquemas del servidor
 externo no provienen del diseño local de Goa.
 
-### Resource y WatchableResource
+### Resource
 
 `Resource(name, uri, mimeType)` marca un método como proveedor de recurso MCP.
-
-`WatchableResource(name, uri, mimeType)` marca un método como recurso suscribible.
 
 **Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
 
@@ -1785,103 +1778,29 @@ Method("readme", func() {
     Result(String)
     Resource("readme", "file:///docs/README.md", "text/markdown")
 })
-
-Method("system_status", func() {
-    Result(func() {
-        Attribute("status", String, "Current system status")
-        Attribute("uptime", Int, "Uptime in seconds")
-        Required("status", "uptime")
-    })
-    WatchableResource("status", "status://system", "application/json")
-})
 ```
 
-### StaticPrompt y DynamicPrompt
+### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` añade una plantilla de prompt estática.
 
-`DynamicPrompt(name, description)` marca un método como generador de prompts dinámicos.
-
-**Contexto**: Dentro de `Service` (estático) o `Method` (dinámico)
+**Contexto**: Dentro de `Service`
 
 ```go
 Service("assistant", func() {
     MCP("assistant-mcp", "1.0")
     
-    // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
         "user", "Hello!")
-    
-    // Dynamic prompt
-    Method("code_review", func() {
-        Payload(func() {
-            Attribute("language", String, "Programming language")
-            Attribute("code", String, "Code to review")
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
 })
 ```
-
-### Notification y Subscription
-
-`Notification(name, description)` marca un método como emisor de notificaciones MCP.
-
-`Subscription(resourceName)` marca un método como manejador de suscripciones para un recurso watchable.
-
-**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
-
-```go
-Method("progress_update", func() {
-    Payload(func() {
-        Attribute("task_id", String, "Task identifier")
-        Attribute("progress", Int, "Progress percentage (0-100)")
-        Required("task_id", "progress")
-    })
-    Notification("progress", "Task progress notification")
-})
-
-Method("subscribe_status", func() {
-    Payload(func() {
-        Attribute("uri", String, "Resource URI to subscribe to")
-        Required("uri")
-    })
-    Result(String)
-    Subscription("status") // Links to WatchableResource named "status"
-})
-```
-
-### SubscriptionMonitor
-
-`SubscriptionMonitor(name)` marca el método actual como monitor de server-sent events (SSE) para las actualizaciones de suscripción. El método transmite eventos de cambio de suscripción a los clientes conectados.
-
-**Contexto**: Dentro de `Method` (el servicio debe tener MCP habilitado)
-
-```go
-Method("watch_subscriptions", func() {
-    StreamingResult(func() {
-        Attribute("resource", String, "Resource URI that changed")
-        Attribute("event", String, "Event type (created, updated, deleted)")
-        Required("resource", "event")
-    })
-    SubscriptionMonitor("subscriptions")
-})
-```
-
-**Cuándo usar SubscriptionMonitor:**
-
-- Cuando los clientes necesiten actualizaciones en tiempo real sobre los cambios de suscripción
-- Para implementar endpoints SSE que empujen eventos de suscripción
-- Al construir UIs reactivas que respondan a los cambios de recursos
 
 ### Ejemplo completo de servidor MCP
 
 ```go
 var _ = Service("assistant", func() {
-    Description("Full-featured MCP server example")
+    Description("MCP server example")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
@@ -1907,38 +1826,6 @@ var _ = Service("assistant", func() {
         Resource("readme", "file:///README.md", "text/markdown")
     })
     
-    Method("get_status", func() {
-        Result(func() {
-            Attribute("status", String)
-            Attribute("updated_at", String)
-        })
-        WatchableResource("status", "status://system", "application/json")
-    })
-    
-    Method("subscribe_status", func() {
-        Payload(func() { Attribute("uri", String) })
-        Result(String)
-        Subscription("status")
-    })
-    
-    Method("review_code", func() {
-        Payload(func() {
-            Attribute("language", String)
-            Attribute("code", String)
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
-    
-    Method("notify_progress", func() {
-        Payload(func() {
-            Attribute("task_id", String)
-            Attribute("progress", Int)
-            Required("task_id", "progress")
-        })
-        Notification("progress", "Task progress update")
-    })
 })
 ```
 

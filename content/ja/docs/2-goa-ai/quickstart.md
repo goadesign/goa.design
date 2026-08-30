@@ -143,15 +143,16 @@ bookkeeping を暗黙に含みます）。それらが成功してから run を
 生成されたエージェントパッケージは型付きクライアントを公開します。セッション付き run には明示的なセッションが必要です。one-shot run は意図的にセッションレスです。
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -170,6 +171,9 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 ```
 
 会話型/セッション付きの作業には `Run` または `Start` を使います。`RunID` で観測したいがセッションには属させたくないリクエスト/レスポンス型のジョブには、`OneShotRun` または `StartOneShot` を使います。
+
+
+生成されたローカル scaffold は `storage.Store` を受け取り、サンプルコマンドでは `runtime/agent/storage/inmem` を使います。プロダクションでは、ランタイムデータベースを所有するサービスへのアダプタを渡します。セッションを作成し終了するのはそのサービスであり、エージェントワーカーではありません。
 
 ---
 
@@ -282,21 +286,18 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 	case stream.AssistantReply:
 		fmt.Print(e.Data.Text)
 	case stream.ToolStart:
-		fmt.Printf("tool_start: %s
-", e.Data.ToolName)
+		fmt.Printf("tool_start: %s\n", e.Data.ToolName)
 	case stream.ToolEnd:
-		fmt.Printf("tool_end: %s
-", e.Data.ToolName)
+		fmt.Printf("tool_end: %s\n", e.Data.ToolName)
 	case stream.Workflow:
-		fmt.Printf("workflow: %s
-", e.Data.Phase)
+		fmt.Printf("workflow: %s\n", e.Data.Phase)
 	}
 	return nil
 }
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 本番 UI では Pulse へ publish し、セッションストリーム（`session/<session_id>`）を購読します。アクティブ run の `run_stream_end` を観測したらユーザー接続を閉じます。
@@ -343,7 +344,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-各エージェントは、自分のプランナー、ツール、ポリシー、run log を保持します。親は、子 run への `RunLink` を持つ通常のツール結果として結果を受け取ります。
+各エージェントはそれぞれのプランナー、ツール、ポリシーを持ちます。ホストのランタイムストアは、親へのリンクを含め、すべてのルートランと子ランを記録します。親には子ランへの `RunLink` を含む通常のツール結果が返ります。
 
 ---
 
@@ -355,7 +356,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 - セッション付き実行と one-shot 実行を備えた生成ランタイムクライアント。
 - モデル連携プランニング、ストリーミング UI、エージェント合成へ進む道筋。
 
-本番では、耐久性のために Temporal engine、memory/session/run log のために Mongo-backed store、分散ストリーミングのために Pulse、プロバイダーのレート制限のために model middleware を追加します。Goa デザインは引き続き真実の情報源です。
+プロダクションでは、耐久実行のための Temporal engine、ホスト所有の単一ランタイムストア、必要に応じてプロダクト所有のメモリストア、分散ストリーミングのための Pulse、プロバイダのレート制限に対応するモデルミドルウェアを追加します。Goa design が引き続き唯一の定義元です。
 
 ---
 

@@ -130,10 +130,7 @@ var DivByZero = Type("DivByZero", func() {
     Description("DivByZero is the error returned when using value 0 as divisor.")
     Field(1, "message", String, "Error message")
     Field(2, "dividend", Int, "Dividend that was used")
-    Field(3, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for multiple custom errors
-    })
-    Required("message", "dividend", "name")
+    Required("message", "dividend")
 })
 
 var _ = Service("divider", func() {
@@ -143,7 +140,23 @@ var _ = Service("divider", func() {
 })
 ```
 
-**Important**: When using custom types for multiple errors in the same method, you must specify which attribute contains the error name using `Meta("struct:error:name")`.
+One named error does not need a discriminator field. When one type backs more
+than one named error, add an error-name field to that type:
+
+```go
+var RequestError = Type("RequestError", func() {
+    ErrorName(1, "name", String, "Goa error name")
+    Field(2, "message", String, "Error message")
+    Required("name", "message")
+})
+```
+
+Set `Name` to the Goa error name before returning the value. Goa adds `Error`,
+`ErrorName`, and `GoaErrorName` methods only to the exact type passed to
+`Error`. Named types nested inside it remain ordinary types. If the exact type
+is also a payload or result, or uses `struct:pkg:path`, Goa emits it once and
+puts the error methods beside that declaration. `ErrorResult` remains Goa's
+built-in service error and is not emitted as an authored custom type.
 
 ### Error Properties
 
@@ -284,7 +297,6 @@ Using custom error types:
 func (s *dividerSvc) IntegralDivide(ctx context.Context, p *divider.IntOperands) (int, error) {
     if p.Divisor == 0 {
         return 0, &gendivider.DivByZero{
-            Name:     "DivByZero",
             Message:  "divisor cannot be zero",
             Dividend: p.Dividend,
         }

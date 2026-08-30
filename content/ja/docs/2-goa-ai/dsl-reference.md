@@ -93,12 +93,7 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `Toolset(FromMCP(...))` | Top-level | Goa バックエンドの MCP 由来ツールセットを宣言する |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level | インラインスキーマ付きの外部 MCP ツールセットを宣言する |
 | `Resource` | Method | メソッドを MCP リソースとして扱う |
-| `WatchableResource` | Method | メソッドを購読可能リソースとして扱う |
 | `StaticPrompt` | Service | 静的プロンプトテンプレートを追加する |
-| `DynamicPrompt` | Method | メソッドをプロンプト生成器として扱う |
-| `Notification` | Method | メソッドを通知送信器として扱う |
-| `Subscription` | Method | メソッドをサブスクリプションハンドラとして扱う |
-| `SubscriptionMonitor` | Method | サブスクリプション監視（SSE）を提供する |
 | **レジストリ関数** | | |
 | `Registry` | トップレベル | レジストリソースを宣言する |
 | `URL` | Registry | エンドポイントを設定する |
@@ -635,7 +630,7 @@ timeline server-data は、model-facing result を bounded で token 効率よ�
 
 **パラメータ:**
 
-- `kind`: server-data kind の文字列識別子 (例: `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`)。consumer が異なる server-data projection を識別して扱えるようにします。
+- `kind`: server-data kind の文字列識別子 (例: `"metrics.time_series"`, `"control.narrative"`, `"audit.evidence"`)。consumer が異なる server-data projection を識別して扱えるようにします。
 - `val`: `Args` と `Return` と同じ pattern に従う schema 定義。`Attribute()` を持つ関数、Goa user type、primitive type のいずれかです。
 
 **Audience routing (`Audience`*):**
@@ -654,7 +649,7 @@ ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
     FromMethodResultField("chart_sidecar")
 })
 
-ServerData("aura.evidence", ArrayOf(Evidence), func() {
+ServerData("audit.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
     FromMethodResultField("evidence")
 })
@@ -1712,11 +1707,9 @@ Agent("helper", "", func() {
 })
 ```
 
-### Resource と WatchableResource
+### Resource
 
 `Resource(name, uri, mimeType)` は、メソッドを MCP リソースプロバイダとしてマークします。
-
-`WatchableResource(name, uri, mimeType)` は、メソッドを購読可能リソースとしてマークします。
 
 **コンテキスト**: `Method` の内部（サービスは MCP が有効である必要があります）
 
@@ -1725,102 +1718,29 @@ Method("readme", func() {
     Result(String)
     Resource("readme", "file:///docs/README.md", "text/markdown")
 })
-
-Method("system_status", func() {
-    Result(func() {
-        Attribute("status", String, "Current system status")
-        Attribute("uptime", Int, "Uptime in seconds")
-        Required("status", "uptime")
-    })
-    WatchableResource("status", "status://system", "application/json")
-})
 ```
 
-### StaticPrompt と DynamicPrompt
+### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` は静的プロンプトテンプレートを追加します。
 
-`DynamicPrompt(name, description)` は、メソッドを動的プロンプト生成器としてマークします。
-
-**コンテキスト**: `Service`（静的）または `Method`（動的）
+**コンテキスト**: `Service` の内部
 
 ```go
 Service("assistant", func() {
     MCP("assistant", "1.0")
 
-    // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
         "user", "Hello!")
-
-    // Dynamic prompt
-    Method("code_review", func() {
-        Payload(func() {
-            Attribute("language", String, "Programming language")
-            Attribute("code", String, "Code to review")
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
 })
 ```
-
-### Notification と Subscription
-
-`Notification(name, description)` は、メソッドを MCP 通知送信者としてマークします。
-
-`Subscription(resourceName)` は、購読可能リソースのサブスクリプションハンドラとしてメソッドをマークします。
-
-**コンテキスト**: `Method` の内部（サービスは MCP が有効である必要があります）
-
-```go
-Method("progress_update", func() {
-    Payload(func() {
-        Attribute("task_id", String, "Task identifier")
-        Attribute("progress", Int, "Progress percentage (0-100)")
-        Required("task_id", "progress")
-    })
-    Notification("progress", "Task progress notification")
-})
-
-Method("subscribe_status", func() {
-    Payload(func() {
-        Attribute("uri", String, "Resource URI to subscribe to")
-        Required("uri")
-    })
-    Result(String)
-    Subscription("status") // Links to WatchableResource named "status"
-})
-```
-
-### SubscriptionMonitor
-
-`SubscriptionMonitor(name)` は、現在のメソッドをサブスクリプション更新の server-sent events（SSE）モニターとしてマークします。メソッドは購読変更イベントを接続クライアントへストリーミングします。
-
-**コンテキスト**: `Method` の内部（サービスは MCP が有効である必要があります）
-
-```go
-Method("watch_subscriptions", func() {
-    StreamingResult(func() {
-        Attribute("resource", String, "Resource URI that changed")
-        Attribute("event", String, "Event type (created, updated, deleted)")
-        Required("resource", "event")
-    })
-    SubscriptionMonitor("subscriptions")
-})
-```
-
-**SubscriptionMonitor を使う場面:**
-- クライアントがサブスクリプション変更のリアルタイム更新を必要とする
-- サブスクリプションイベントをプッシュする SSE エンドポイントを実装したい
-- リソース変更に反応するリアクティブ UI を構築したい
 
 ### 完全な MCP サーバ例
 
 ```go
 var _ = Service("assistant", func() {
-    Description("Full-featured MCP server example")
+    Description("MCP server example")
 
     MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
 
@@ -1846,38 +1766,6 @@ var _ = Service("assistant", func() {
         Resource("readme", "file:///README.md", "text/markdown")
     })
 
-    Method("get_status", func() {
-        Result(func() {
-            Attribute("status", String)
-            Attribute("updated_at", String)
-        })
-        WatchableResource("status", "status://system", "application/json")
-    })
-
-    Method("subscribe_status", func() {
-        Payload(func() { Attribute("uri", String) })
-        Result(String)
-        Subscription("status")
-    })
-
-    Method("review_code", func() {
-        Payload(func() {
-            Attribute("language", String)
-            Attribute("code", String)
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
-
-    Method("notify_progress", func() {
-        Payload(func() {
-            Attribute("task_id", String)
-            Attribute("progress", Int)
-            Required("task_id", "progress")
-        })
-        Notification("progress", "Task progress update")
-    })
 })
 ```
 

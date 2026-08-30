@@ -36,7 +36,7 @@ Dichiarati tramite `Toolset(FromMCP(service, suite))` e referenziati tramite `Us
 
 - La registrazione generata imposta `DecodeInExecutor=true` in modo che il JSON grezzo sia passato all'esecutore MCP
 - L'esecutore MCP decodifica utilizzando i propri codec
-- I wrapper generati gestiscono schemi/encoder JSON e trasporti (HTTP/SSE/stdio) con tentativi e tracciamento
+- I wrapper generati gestiscono schemi, encoder e trasporto HTTP o stdio con tentativi e tracciamento. HTTP accetta risposte JSON e flussi di eventi
 
 ### Quando utilizzare BindTo rispetto alle implementazioni in linea
 

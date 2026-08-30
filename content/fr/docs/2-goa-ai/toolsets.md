@@ -38,7 +38,7 @@ Serveurs MCP avec schémas d'outils en ligne.
 
 - L'enregistrement généré définit `DecodeInExecutor=true` afin que le JSON brut soit transmis à l'exécuteur MCP.
 - L'exécuteur MCP décode en utilisant ses propres codecs
-- Les wrappers générés gèrent les schémas/encodeurs et transports JSON (HTTP/SSE/stdio) avec tentatives et traçage
+- Les wrappers générés gèrent les schémas, les encodeurs et le transport HTTP ou stdio avec tentatives et traçage. HTTP accepte les réponses JSON et les flux d'événements
 
 ### Quand utiliser les implémentations BindTo vs Inline
 

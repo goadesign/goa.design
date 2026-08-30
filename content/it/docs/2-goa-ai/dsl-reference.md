@@ -12,7 +12,7 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 
 
 | Funzione | Contesto | Descrizione || ------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Funzioni dell'agente** |                          |                                                                                                                    || `Agent` | Servizio | Definisce un agente basato su LLM || `Completion` | Servizio | Dichiara contratto di proprietà di tipo assistente diretto-output || `Use` | Agente | Dichiara il consumo del set di strumenti || `Export` | Agente, Servizio | Espone i set di strumenti ad altri agenti || `AgentToolset` | Utilizzare l'argomento | Set di strumenti di riferimento da un altro agente || `UseAgentToolset` | Agente | Alias ​​per AgentToolset + Usa || `Passthrough` | Strumento (in Esportazione) | Metodo di inoltro deterministico al servizio || `DisableAgentDocs` | API | Disabilita la generazione di AGENTS_QUICKSTART.md || **Funzioni del set di strumenti** |                          |                                                                                                                    || `Toolset` | Livello superiore | Dichiara un set di strumenti di proprietà del provider || `FromMCP` | Argomento del set di strumenti | Configura il set di strumenti supportato da MCP || `FromRegistry` | Argomento del set di strumenti | Configura il set di strumenti supportati dal registro || `Description` | Set di strumenti | Imposta la descrizione del set di strumenti || **Funzioni strumento** |                          |                                                                                                                    || `Tool` | Set di strumenti, Metodo | Definisce uno strumento richiamabile || `Args` | Strumento | Definisce lo schema dei parametri di input || `Return` | Strumento, Completamento | Definisce lo schema dei risultati visibili nel modello || `ServerData` | Strumento | Definisce lo schema dei dati solo del server (mai inviato ai fornitori di modelli) || `FromMethodResultField` | Dati server | Proietta i dati del server da un campo risultato del metodo di servizio associato || `AudienceTimeline` | Dati server | Contrassegna i dati del server come idonei per sequenza temporale/interfaccia utente (impostazione predefinita) || `AudienceInternal` | Dati server | Contrassegna i dati del server come allegato di composizione interna || `AudienceEvidence` | Dati server | Contrassegna i dati del server come provenienza o prova di controllo || `BoundedResult` | Strumento | Dichiara un contratto con risultati limitati di proprietà del runtime; il sub-DSL opzionale può dichiarare i campi del cursore di paging || `Cursor` | Risultato limitato | Dichiara quale campo del payload trasporta il cursore di paging (opzionale) || `NextCursor` | Risultato limitato | Dichiara il nome del campo del risultato previsto per il cursore della pagina successiva (facoltativo) || `Idempotent` | Strumento | Contrassegna lo strumento come idempotente all'interno di una trascrizione dell'esecuzione; consente la deduplicazione sicura delle trascrizioni incrociate per chiamate identiche || `Tags` | Strumento, set di strumenti | Allega etichette di metadati || `BindTo` | Strumento | Associa lo strumento al metodo del servizio || `Inject` | Strumento | Contrassegna i campi come inseriti dal runtime || `CallHintTemplate` | Strumento | Modello di visualizzazione per le invocazioni || `ResultHintTemplate` | Strumento | Modello di visualizzazione dei risultati || `ResultReminder` | Strumento | Promemoria di sistema statico dopo il risultato dello strumento || `Confirmation` | Strumento | Richiede una conferma esplicita fuori banda prima dell'esecuzione || `TerminalRun` | Strumento | Contrassegna il terminale dello strumento: l'esecuzione viene completata immediatamente dopo l'esecuzione (nessun turno di pianificazione successivo) || `Bookkeeping` | Strumento | Contrassegna lo strumento come contabilità: le chiamate non consumano il budget di recupero `MaxToolCalls` a livello di esecuzione e rimangono nascoste ai futuri turni di pianificazione per impostazione predefinita || **Funzioni politiche** |                          |                                                                                                                    || `RunPolicy` | Agente | Configura i vincoli di esecuzione || `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse || `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento || `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi || `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete || `Timing` | EseguiPolitica | Configurazione dettagliata del timeout || `Budget` | Tempi | Budget di gestione complessivo || `Plan` | Tempi | Timeout attività pianificatore || `Tools` | Tempi | Timeout attività strumento || `History` | EseguiPolitica | Gestione della cronologia delle conversazioni || `KeepRecentTurns` | Storia | Politica della finestra scorrevole || `CompressAtTurns` | Storia | Trigger per riepilogo assistito dal modello basato sui turni || `CompressAtMaxInputTokens` | Storia | Trigger per riepilogo basato sui token di input contati a runtime || `KeepMaxTurns` | Storia | Limite di mantenimento esatto per turni completi recenti || `KeepMaxInputTokens` | Storia | Limite di mantenimento esatto per token, conservando solo turni completi || `Cache` | EseguiPolitica | Richiedi configurazione della memorizzazione nella cache || `AfterSystem` | Cache | Punto di controllo dopo i messaggi di sistema || `AfterTools` | Cache | Punto di controllo dopo le definizioni degli strumenti || `InterruptsAllowed` | EseguiPolitica | Abilita pausa/riprendi || `OnMissingFields` | EseguiPolitica | Comportamento di convalida || **Funzioni MCP** |                          |                                                                                                                    || `MCP` | Servizio | Abilita il supporto MCP || `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP || `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP || `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa || `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea || `Resource` | Metodo | Contrassegna il metodo come risorsa MCP || `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile || `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico || `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt || `Notification` | Metodo | Contrassegna il metodo come mittente della notifica || `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione || `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti || **Funzioni di registro** |                          |                                                                                                                    || `Registry` | Livello superiore | Dichiara un'origine del registro || `URL` | Registro | Imposta l'endpoint del registro || `APIVersion` | Registro | Imposta la versione API || `Timeout` | Registro | Imposta il timeout HTTP || `Retry` | Registro | Configura la policy di ripetizione || `SyncInterval` | Registro | Imposta l'intervallo di aggiornamento del catalogo || `CacheTTL` | Registro | Imposta la durata della cache locale || `Federation` | Registro | Configura le importazioni del registro esterno || `Include` | Federazione | Modelli globali da importare || `Exclude` | Federazione | Modelli glob da saltare || `PublishTo` | Esporta | Configura la pubblicazione del registro || `Version` | Set di strumenti | Versione del set di strumenti del registro dei pin || **Funzioni dello schema** |                          |                                                                                                                    || `Attribute` | Argomenti, Ritorno, ServerData | Definisce il campo dello schema (uso generale) || `Field` | Argomenti, Ritorno, ServerData | Definisce il campo proto numerato (gRPC) || `Required` | Schema | Contrassegna i campi come obbligatori || `Example` | Schema | Allega un esempio esplicito; gli esempi di payload dello strumento di livello superiore vengono conservati nelle specifiche dello strumento generate e nei suggerimenti per i nuovi tentativi |
+| **Funzioni dell'agente** |                          |                                                                                                                    || `Agent` | Servizio | Definisce un agente basato su LLM || `Completion` | Servizio | Dichiara contratto di proprietà di tipo assistente diretto-output || `Use` | Agente | Dichiara il consumo del set di strumenti || `Export` | Agente, Servizio | Espone i set di strumenti ad altri agenti || `AgentToolset` | Utilizzare l'argomento | Set di strumenti di riferimento da un altro agente || `UseAgentToolset` | Agente | Alias ​​per AgentToolset + Usa || `Passthrough` | Strumento (in Esportazione) | Metodo di inoltro deterministico al servizio || `DisableAgentDocs` | API | Disabilita la generazione di AGENTS_QUICKSTART.md || **Funzioni del set di strumenti** |                          |                                                                                                                    || `Toolset` | Livello superiore | Dichiara un set di strumenti di proprietà del provider || `FromMCP` | Argomento del set di strumenti | Configura il set di strumenti supportato da MCP || `FromRegistry` | Argomento del set di strumenti | Configura il set di strumenti supportati dal registro || `Description` | Set di strumenti | Imposta la descrizione del set di strumenti || **Funzioni strumento** |                          |                                                                                                                    || `Tool` | Set di strumenti, Metodo | Definisce uno strumento richiamabile || `Args` | Strumento | Definisce lo schema dei parametri di input || `Return` | Strumento, Completamento | Definisce lo schema dei risultati visibili nel modello || `ServerData` | Strumento | Definisce lo schema dei dati solo del server (mai inviato ai fornitori di modelli) || `FromMethodResultField` | Dati server | Proietta i dati del server da un campo risultato del metodo di servizio associato || `AudienceTimeline` | Dati server | Contrassegna i dati del server come idonei per sequenza temporale/interfaccia utente (impostazione predefinita) || `AudienceInternal` | Dati server | Contrassegna i dati del server come allegato di composizione interna || `AudienceEvidence` | Dati server | Contrassegna i dati del server come provenienza o prova di controllo || `BoundedResult` | Strumento | Dichiara un contratto con risultati limitati di proprietà del runtime; il sub-DSL opzionale può dichiarare i campi del cursore di paging || `Cursor` | Risultato limitato | Dichiara quale campo del payload trasporta il cursore di paging (opzionale) || `NextCursor` | Risultato limitato | Dichiara il nome del campo del risultato previsto per il cursore della pagina successiva (facoltativo) || `Idempotent` | Strumento | Contrassegna lo strumento come idempotente all'interno di una trascrizione dell'esecuzione; consente la deduplicazione sicura delle trascrizioni incrociate per chiamate identiche || `Tags` | Strumento, set di strumenti | Allega etichette di metadati || `BindTo` | Strumento | Associa lo strumento al metodo del servizio || `Inject` | Strumento | Contrassegna i campi come inseriti dal runtime || `CallHintTemplate` | Strumento | Modello di visualizzazione per le invocazioni || `ResultHintTemplate` | Strumento | Modello di visualizzazione dei risultati || `ResultReminder` | Strumento | Promemoria di sistema statico dopo il risultato dello strumento || `Confirmation` | Strumento | Richiede una conferma esplicita fuori banda prima dell'esecuzione || `TerminalRun` | Strumento | Contrassegna il terminale dello strumento: l'esecuzione viene completata immediatamente dopo l'esecuzione (nessun turno di pianificazione successivo) || `Bookkeeping` | Strumento | Contrassegna lo strumento come contabilità: le chiamate non consumano il budget di recupero `MaxToolCalls` a livello di esecuzione e rimangono nascoste ai futuri turni di pianificazione per impostazione predefinita || **Funzioni politiche** |                          |                                                                                                                    || `RunPolicy` | Agente | Configura i vincoli di esecuzione || `DefaultCaps` | EseguiPolitica | Imposta i limiti delle risorse || `MaxToolCalls` | DefaultCaps | Numero massimo di invocazioni dello strumento || `MaxConsecutiveFailedToolCalls` | DefaultCaps | Numero massimo di guasti consecutivi || `TimeBudget` | EseguiPolitica | Limite semplice dell'orologio da parete || `Timing` | EseguiPolitica | Configurazione dettagliata del timeout || `Budget` | Tempi | Budget di gestione complessivo || `Plan` | Tempi | Timeout attività pianificatore || `Tools` | Tempi | Timeout attività strumento || `History` | EseguiPolitica | Gestione della cronologia delle conversazioni || `KeepRecentTurns` | Storia | Politica della finestra scorrevole || `CompressAtTurns` | Storia | Trigger per riepilogo assistito dal modello basato sui turni || `CompressAtMaxInputTokens` | Storia | Trigger per riepilogo basato sui token di input contati a runtime || `KeepMaxTurns` | Storia | Limite di mantenimento esatto per turni completi recenti || `KeepMaxInputTokens` | Storia | Limite di mantenimento esatto per token, conservando solo turni completi || `Cache` | EseguiPolitica | Richiedi configurazione della memorizzazione nella cache || `AfterSystem` | Cache | Punto di controllo dopo i messaggi di sistema || `AfterTools` | Cache | Punto di controllo dopo le definizioni degli strumenti || `InterruptsAllowed` | EseguiPolitica | Abilita pausa/riprendi || `OnMissingFields` | EseguiPolitica | Comportamento di convalida || **Funzioni MCP** |                          |                                                                                                                    || `MCP` | Servizio | Abilita il supporto MCP || `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP || `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP || `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa || `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea || `Resource` | Metodo | Contrassegna il metodo come risorsa MCP || `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico || **Funzioni di registro** |                          |                                                                                                                    || `Registry` | Livello superiore | Dichiara un'origine del registro || `URL` | Registro | Imposta l'endpoint del registro || `APIVersion` | Registro | Imposta la versione API || `Timeout` | Registro | Imposta il timeout HTTP || `Retry` | Registro | Configura la policy di ripetizione || `SyncInterval` | Registro | Imposta l'intervallo di aggiornamento del catalogo || `CacheTTL` | Registro | Imposta la durata della cache locale || `Federation` | Registro | Configura le importazioni del registro esterno || `Include` | Federazione | Modelli globali da importare || `Exclude` | Federazione | Modelli glob da saltare || `PublishTo` | Esporta | Configura la pubblicazione del registro || `Version` | Set di strumenti | Versione del set di strumenti del registro dei pin || **Funzioni dello schema** |                          |                                                                                                                    || `Attribute` | Argomenti, Ritorno, ServerData | Definisce il campo dello schema (uso generale) || `Field` | Argomenti, Ritorno, ServerData | Definisce il campo proto numerato (gRPC) || `Required` | Schema | Contrassegna i campi come obbligatori || `Example` | Schema | Allega un esempio esplicito; gli esempi di payload dello strumento di livello superiore vengono conservati nelle specifiche dello strumento generate e nei suggerimenti per i nuovi tentativi |
 
 La tabella seguente precisa i contratti degli strumenti che influenzano il
 controllo dell'esecuzione:
@@ -564,7 +564,7 @@ I dati del server della sequenza temporale vengono in genere proiettati in sched
 
 **Parametri:**
 
-- `kind`: un identificatore di stringa per il tipo di dati del server (ad esempio, `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`). Ciò consente ai consumatori di identificare e gestire in modo appropriato le diverse proiezioni dei dati del server.
+- `kind`: un identificatore di stringa per il tipo di dati del server (ad esempio, `"metrics.time_series"`, `"control.narrative"`, `"audit.evidence"`). Ciò consente ai consumatori di identificare e gestire in modo appropriato le diverse proiezioni dei dati del server.
 - `val`: la definizione dello schema, seguendo gli stessi modelli di `Args` e `Return`: una funzione con chiamate `Attribute()`, un tipo di utente Goa o un tipo primitivo.
 
 **Instradamento del pubblico (`Audience`*):**
@@ -583,7 +583,7 @@ ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
     FromMethodResultField("chart_sidecar")
 })
 
-ServerData("aura.evidence", ArrayOf(Evidence), func() {
+ServerData("audit.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
     FromMethodResultField("evidence")
 })
@@ -1692,11 +1692,9 @@ Agent("helper", "", func() {
 `FromExternalMCP` richiede dichiarazioni `Tool(...)` in linea perché le dichiarazioni esterne
 gli schemi del server non provengono dal progetto Goa locale.
 
-### Risorsa e risorsa guardabile
+### Risorsa
 
 `Resource(name, uri, mimeType)` contrassegna un metodo come provider di risorse MCP.
-
-`WatchableResource(name, uri, mimeType)` contrassegna un metodo come risorsa sottoscrivibile.
 
 **Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
 
@@ -1705,103 +1703,29 @@ Method("readme", func() {
     Result(String)
     Resource("readme", "file:///docs/README.md", "text/markdown")
 })
-
-Method("system_status", func() {
-    Result(func() {
-        Attribute("status", String, "Current system status")
-        Attribute("uptime", Int, "Uptime in seconds")
-        Required("status", "uptime")
-    })
-    WatchableResource("status", "status://system", "application/json")
-})
 ```
 
-### StaticPrompt e DynamicPrompt
+### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` aggiunge un modello di prompt statico.
 
-`DynamicPrompt(name, description)` contrassegna un metodo come generatore di prompt dinamico.
-
-**Contesto**: All'interno di `Service` (statico) o `Method` (dinamico)
+**Contesto**: All'interno di `Service`
 
 ```go
 Service("assistant", func() {
     MCP("assistant-mcp", "1.0")
     
-    // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
         "user", "Hello!")
-    
-    // Dynamic prompt
-    Method("code_review", func() {
-        Payload(func() {
-            Attribute("language", String, "Programming language")
-            Attribute("code", String, "Code to review")
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
 })
 ```
-
-### Notifica e iscrizione
-
-`Notification(name, description)` contrassegna un metodo come mittente della notifica MCP.
-
-`Subscription(resourceName)` contrassegna un metodo come gestore di sottoscrizione per una risorsa guardabile.
-
-**Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
-
-```go
-Method("progress_update", func() {
-    Payload(func() {
-        Attribute("task_id", String, "Task identifier")
-        Attribute("progress", Int, "Progress percentage (0-100)")
-        Required("task_id", "progress")
-    })
-    Notification("progress", "Task progress notification")
-})
-
-Method("subscribe_status", func() {
-    Payload(func() {
-        Attribute("uri", String, "Resource URI to subscribe to")
-        Required("uri")
-    })
-    Result(String)
-    Subscription("status") // Links to WatchableResource named "status"
-})
-```
-
-### Monitoraggio abbonamenti
-
-`SubscriptionMonitor(name)` contrassegna il metodo corrente come monitoraggio degli eventi inviati dal server (SSE) per gli aggiornamenti della sottoscrizione. Il metodo trasmette gli eventi di modifica della sottoscrizione ai client connessi.
-
-**Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
-
-```go
-Method("watch_subscriptions", func() {
-    StreamingResult(func() {
-        Attribute("resource", String, "Resource URI that changed")
-        Attribute("event", String, "Event type (created, updated, deleted)")
-        Required("resource", "event")
-    })
-    SubscriptionMonitor("subscriptions")
-})
-```
-
-**Quando utilizzare SubscriptionMonitor:**
-
-- Quando i clienti necessitano di aggiornamenti in tempo reale sulle modifiche dell'abbonamento
-- Per implementare endpoint SSE che inviano eventi di sottoscrizione
-- Quando si creano interfacce utente reattive che rispondono alle modifiche delle risorse
 
 ### Esempio completo del server MCP
 
 ```go
 var _ = Service("assistant", func() {
-    Description("Full-featured MCP server example")
+    Description("MCP server example")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
     
@@ -1827,38 +1751,6 @@ var _ = Service("assistant", func() {
         Resource("readme", "file:///README.md", "text/markdown")
     })
     
-    Method("get_status", func() {
-        Result(func() {
-            Attribute("status", String)
-            Attribute("updated_at", String)
-        })
-        WatchableResource("status", "status://system", "application/json")
-    })
-    
-    Method("subscribe_status", func() {
-        Payload(func() { Attribute("uri", String) })
-        Result(String)
-        Subscription("status")
-    })
-    
-    Method("review_code", func() {
-        Payload(func() {
-            Attribute("language", String)
-            Attribute("code", String)
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
-    
-    Method("notify_progress", func() {
-        Payload(func() {
-            Attribute("task_id", String)
-            Attribute("progress", Int)
-            Required("task_id", "progress")
-        })
-        Notification("progress", "Task progress update")
-    })
 })
 ```
 

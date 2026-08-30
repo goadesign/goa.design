@@ -137,7 +137,7 @@ Goa-AI emette **eventi tipizzati** durante l'esecuzione: `assistant_reply` per i
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtime.WithStream(mySink))
+rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
 ```
 
 **Profili di flusso** filtrano gli eventi per diversi consumatori: `UserChatProfile()` per le interfacce utente degli utenti finali, `AgentDebugProfile()` per le visualizzazioni sviluppatore, `MetricsProfile()` per le pipeline di osservabilità. I sink integrati per Pulse (Redis Streams) consentono lo streaming distribuito tra servizi.
@@ -162,14 +162,14 @@ Goa-AI utilizza **Temporal** per un'esecuzione duratura. Le esecuzioni dell'agen
 
 ```go
 // Development: in-memory (no dependencies)
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
 eng, _ := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
 **Vantaggi:**
@@ -234,6 +234,7 @@ Più nodi del registro con lo stesso nome formano automaticamente un cluster tra
 
 | Caratteristica | Cosa ottieni ||---------|--------------|
 | [Design-First Agents](#design-first-agents) | Definire agenti in DSL, generare codice indipendente dai tipi || [MCP Integration](mcp-integration/) | Supporto del protocollo di contesto del modello nativo || [Tool Registries](#tool-registries) | Discovery in cluster + federazione del registro pubblico || [Run Trees](#run-trees-composition) | Agenti che chiamano agenti con tracciabilità completa || [Structured Streaming](#structured-streaming) | Eventi tipizzati in tempo reale per interfaccia utente e osservabilità || [Temporal Durability](#temporal-durability) | Esecuzione con tolleranza agli errori che sopravvive ai guasti || [Typed Contracts](dsl-reference/) | Sicurezza di tipo end-to-end per tutte le operazioni dell'utensile || [Typed Direct Completions](#typed-direct-completions) | Risposte finali strutturate dell'assistente con codec e aiutanti generati || [Bounded Results & Server Data](toolset/#server-data) | Risultati del modello efficiente in termini di token più dati solo server per interfacce utente e audit || [Human-in-the-Loop](runtime/#pause--resume) | Pausa, ripresa, risultati di strumenti esterni e conferma applicata dal runtime || [Bookkeeping & Terminal Tools](dsl-reference/#bookkeeping) | Strumenti di avanzamento/stato che non consumano il budget di recupero e possono terminare le esecuzioni in modo atomico || [Prompt Overrides](production/#prompt-overrides-with-mongo-store) | Specifiche del prompt di base più sostituzioni e provenienza supportate da Mongo |
+| [Archiviazione del runtime](memory-sessions/#runtime-store-storagestore) | Un unico archivio di proprietà dell’applicazione per stato delle esecuzioni, checkpoint di continuazione e record immutabili |
 
 ## Guide alla documentazione
 
@@ -251,14 +252,14 @@ Goa-AI segue una pipeline **definisci → genera → esegui** che trasforma i pr
 **Panoramica dei livelli:**
 
 | Strato | Scopo ||-------|---------|
-| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegui il ciclo di pianificazione/esecuzione con applicazione delle policy, persistenza della memoria e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega fornitori di modelli (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistenza (Mongo), streaming (Pulse) e registri |
+| **ADSL** | Dichiara agenti, strumenti, policy e integrazioni esterne nel codice Go controllato dalla versione || **Codegene** | Genera specifiche indipendenti dai tipi, codec, definizioni del flusso di lavoro e client del registro: non modificare mai `gen/` || **Durata** | Esegue il ciclo di pianificazione/esecuzione con applicazione delle policy, archiviazione obbligatoria del runtime fornita dall’applicazione, memoria di prodotto facoltativa e streaming di eventi || **Motore** | Backend di esecuzione dello scambio: in memoria per lo sviluppo, temporale per la durabilità della produzione || **Caratteristiche** | Collega provider di modelli (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), archivi di memoria di prodotto e prompt, streaming (Pulse) e registri |
 
 **Punti chiave di integrazione:**
 
 - **Clienti modello**: fornitori LLM astratti dietro un'interfaccia unificata; passare da OpenAI, Anthropic, Bedrock o Vertex AI (Gemini o Claude-on-Vertex) senza modificare il codice agente
 - **Registro**: scopri e richiama set di strumenti oltre i confini del processo; raggruppati tramite Redis per il ridimensionamento orizzontale
 - **Pulse Streaming**: bus di eventi in tempo reale per aggiornamenti dell'interfaccia utente, pipeline di osservabilità e comunicazione tra servizi
-- **Temporal Engine**: esecuzione duratura del flusso di lavoro con tentativi automatici, riproduzione e ripristino da arresto anomalo
+- **Temporal Engine**: esecuzione durevole con retry delle activity, replay e ripristino dopo un arresto anomalo
 
 ### Provider di modelli ed estensibilità {#model-providers}
 
@@ -299,7 +300,7 @@ import (
 
 var _ = Service("calculator", func() {
     Description("Calculator service with an AI assistant")
-    
+
     // Define a service method that the tool will bind to
     Method("add", func() {
         Description("Add two numbers")
@@ -310,7 +311,7 @@ var _ = Service("calculator", func() {
         })
         Result(Int)
     })
-    
+
     // Define the agent within the service
     Agent("assistant", "A helpful assistant agent", func() {
         // Use a toolset with tools bound to service methods
@@ -325,7 +326,7 @@ var _ = Service("calculator", func() {
                 BindTo("add")  // Bind to the service method
             })
         })
-        
+
         // Configure the agent's run policy
         RunPolicy(func() {
             DefaultCaps(MaxToolCalls(10))

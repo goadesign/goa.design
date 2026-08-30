@@ -36,7 +36,7 @@ aliases:
 
 - 生成される登録は `DecodeInExecutor=true` を設定し、生の JSON が MCP エクゼキュータへそのまま渡されます
 - MCP エクゼキュータは自身のコーデックでデコードします
-- 生成されるラッパは JSON スキーマ / エンコーダとトランスポート（HTTP/SSE/stdio）を、リトライとトレーシング付きで扱います
+- 生成されるラッパは JSON スキーマ、エンコーダ、HTTP または stdio トランスポートをリトライとトレーシング付きで扱います。HTTP は JSON と event-stream の応答を受け付けます
 
 ### BindTo とインライン実装の使い分け
 

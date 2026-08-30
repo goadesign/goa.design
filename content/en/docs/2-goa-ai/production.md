@@ -85,7 +85,7 @@ func main() {
     // Wrap with rate limiting middleware
     rateLimitedClient := limiter.Middleware()(modelClient)
 
-    rt := runtime.New()
+    rt := runtime.New(runtimeStore)
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -156,7 +156,7 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 if err := rt.RegisterModel("claude", claudeClient); err != nil {
     panic(err)
 }
@@ -246,7 +246,7 @@ import (
 
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
-    Database:   "aura",
+    Database:   "assistant",
     Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
@@ -259,6 +259,7 @@ if err != nil {
 }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(temporalEng),
     runtime.WithPromptStore(promptStore),
 )
@@ -346,7 +347,7 @@ Goa-AI abstracts the execution backend behind the `Engine` interface. Swap engin
 **In-Memory Engine** (development):
 ```go
 // Default: no external dependencies
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 ```
 
 **Temporal Engine** (production):
@@ -392,13 +393,51 @@ if err != nil {
 }
 defer temporalEng.Close()
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 ```
+
+### Runtime Storage Ownership
+
+`runtime.New` requires one `storage.Store`. In production, one host service must
+own the database that contains session state, run metadata, continuation
+checkpoints, and run records that cannot change after insertion. Agent workers
+call that owner through a typed API; they do not open separate connections to
+the owner's collections.
+Product data remains with the product service. For example, a chat service keeps
+its transcript, ratings, and search fields even when another service owns the
+Goa-AI runtime store.
+
+The store must commit each lifecycle change with its matching record. An
+identical storage-activity retry returns the first result. A retry that changes the run
+identity, payload, checkpoint, status, or cancellation reason fails as a
+conflict. See [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together)
+for the full contract.
+
+Every workflow accepted by the engine has a durable `RunStarted` record. If a
+session ended before an accepted root or child may begin work, the same start
+operation stores `RunStarted` followed by a canceled `RunCompleted`; the
+workflow does no planner or tool work. Sessionless child starts store the
+parent link and child start together. Their first call requires a running
+sessionless parent, while an exact retry remains valid after that parent
+finishes.
+
+The move from `session.Store` plus `runlog.Store` is a coordinated storage
+change. Before the new runtime writes, existing run metadata, checkpoints, and
+records must satisfy the integrated `storage.Store` contract. Deploy the
+storage owner and every worker that calls it together. Old split-store writers
+and new integrated-store writers must not overlap. Goa-AI does not prescribe a
+database migration procedure; the host owns conversion, verification, backup,
+and recovery for its database and deployment environment.
 
 ### Timing and Activity Retries
 
 Use the DSL for semantic run budgets: how long the whole run may take, how long a
 planner attempt may run, and how long a tool attempt may run.
+
+Goa-AI starts each agent workflow once. It does not restart the whole workflow
+after failure because an earlier attempt may already have called tools or saved
+a final lifecycle record. Durability comes from workflow-history replay and
+retries of individual planner, tool, hook, and storage activities.
 
 ```go
 Agent("operator", "Production operations agent", func() {
@@ -478,10 +517,12 @@ Release a worker version in this order:
 Each accepted user input starts one top-level Goa-AI workflow. Goa-AI ends that
 workflow when it requests human or external input and stores a private
 checkpoint under the completed run ID. The accepted answer starts a new
-workflow on the current worker version. The new version must therefore keep
-the saved checkpoint version, generated result codecs, and required tool names
-compatible. If that is impossible, migrate saved checkpoints before promoting
-the release. Worker versioning cannot translate incompatible stored values.
+workflow on the current worker version. The new version must therefore accept
+the saved checkpoint format, generated result codecs, and required tool names.
+The current runtime accepts only `goa-ai.run-suspension.v7`; earlier checkpoint
+versions are rejected. Migrate or remove older saved checkpoints before
+promoting the release. Worker versioning cannot translate incompatible stored
+values.
 
 The rest of the application must preserve availability during the same
 overlap:
@@ -489,9 +530,11 @@ overlap:
 - A downstream Service must always have at least one ready endpoint. Use a
   readiness-gated rolling replacement; a `Recreate` rollout introduces a gap.
 - Downstream APIs must accept calls from retained and current workers.
-- Database migrations must support both releases until the old version is
-  drained. Use an expand-then-contract sequence rather than replacing a schema
-  before old code stops using it.
+- Database migrations normally must support both releases until the old version
+  is drained. Use an expand-then-contract sequence rather than replacing a
+  schema before old code stops using it. The unified runtime-store migration
+  described above is deliberately different: it requires one coordinated
+  cutover and does not allow old and new writers to overlap.
 - If a process serves both API traffic and Temporal work, the traffic selector
   must identify the current build independently from Temporal's access to
   retained workers.
@@ -664,6 +707,7 @@ To stream all runs through a global sink (for example, Pulse), configure the run
 
 ```go
 rt := runtime.New(
+    runtimeStore,
     runtime.WithStream(pulseSink), // or your custom sink
 )
 ```
@@ -747,6 +791,7 @@ s, err := pulseSink.NewSink(pulseSink.Options{
 if err != nil { log.Fatal(err) }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(s),
 )

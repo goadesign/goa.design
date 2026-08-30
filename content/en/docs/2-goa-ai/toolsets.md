@@ -38,7 +38,7 @@ MCP servers with inline tool schemas.
 
 - Generated registration sets `DecodeInExecutor=true` so raw JSON is passed through to the MCP executor
 - MCP executor decodes using its own codecs
-- Generated wrappers handle JSON schemas/encoders and transports (HTTP/SSE/stdio) with retries and tracing
+- Generated wrappers handle JSON schemas, encoders, and HTTP or stdio transport with retries and tracing. HTTP accepts JSON and event-stream responses
 
 ### When to Use BindTo vs Inline Implementations
 

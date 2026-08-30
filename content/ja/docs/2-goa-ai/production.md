@@ -85,7 +85,7 @@ func main() {
     // Wrap with rate limiting middleware
     rateLimitedClient := limiter.Middleware()(modelClient)
 
-    rt := runtime.New()
+    rt := runtime.New(runtimeStore)
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -156,7 +156,7 @@ claudeClient := claudeLimiter.Middleware()(bedrockClient)
 gptClient := gptLimiter.Middleware()(openaiClient)
 
 // Configure runtime with rate-limited clients
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 if err := rt.RegisterModel("claude", claudeClient); err != nil {
     panic(err)
 }
@@ -246,8 +246,8 @@ import (
 
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
-    Database:   "aura",
-    Collection: "prompt_overrides", // 任意（既定は prompt_overrides）
+    Database:   "assistant",
+    Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
     panic(err)
@@ -259,6 +259,7 @@ if err != nil {
 }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(temporalEng),
     runtime.WithPromptStore(promptStore),
 )
@@ -348,7 +349,7 @@ Goa-AI は実行バックエンドを `Engine` インタフェースの背後に
 
 ```go
 // Default: no external dependencies
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 ```
 
 **Temporal エンジン**（本番）:
@@ -356,24 +357,38 @@ rt := runtime.New()
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
-    "go.temporal.io/sdk/client"
+    temporalclient "go.temporal.io/sdk/client"
+    "go.temporal.io/sdk/worker"
+    "go.temporal.io/sdk/workflow"
 
-    // 生成されたツール specs 集約。
-    // 生成パッケージは次を提供します: func Spec(tools.Ident) (*tools.ToolSpec, bool)
+    // Your generated tool specs aggregate.
+    // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
+const releaseBuildID = "git-sha-or-image-digest"
+
 temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
-    ClientOptions: &client.Options{
+    ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // 必須: goa-ai の workflow 境界コントラクトを強制します。
+        // Required: enforce goa-ai's workflow boundary contract.
         // Tool results and server-data cross workflow boundaries as canonical JSON bytes
         // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
+        Options: worker.Options{
+            DeploymentOptions: worker.DeploymentOptions{
+                UseVersioning: true,
+                Version: worker.WorkerDeploymentVersion{
+                    DeploymentName: "assistant",
+                    BuildID:        releaseBuildID,
+                },
+                DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
+            },
+        },
     },
 })
 if err != nil {
@@ -381,10 +396,32 @@ if err != nil {
 }
 defer temporalEng.Close()
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 ```
 
+### ランタイムストレージの所有者
+
+`runtime.New` には一つの `storage.Store` が必要です。プロダクションでは、一つのホストサービスがセッション状態、ランのメタデータ、継続用チェックポイント、変更不可の記録を格納するデータベースを所有します。エージェントワーカーは型付き API を通してそのサービスを呼び、自分で同じ collection に接続しません。
+
+プロダクトデータはプロダクトサービスが引き続き所有します。たとえば、別のサービスが Goa-AI のランタイムストアを所有していても、チャットサービスはトランスクリプト、評価、検索用フィールドを保持します。
+
+ストアは各ライフサイクル変更と対応する記録をまとめて確定しなければなりません。storage activity の完全に同じ再試行は最初の結果を返します。ランの識別情報、payload、checkpoint、状態、キャンセル理由のいずれかを変更した再試行は競合として失敗します。完全な契約は [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) を参照してください。
+
+`session.Store` と `runlog.Store` からの変更は、storage 全体を協調して
+切り替える必要があります。新 runtime が書き込む前に、既存の run metadata、
+checkpoint、record が統合された `storage.Store` contract を満たしていなければ
+なりません。storage owner と、それを呼ぶすべての worker をまとめて deploy
+します。旧 split-store writer と新 integrated-store writer を同時に動かしては
+いけません。Goa-AI は database migration の手順を規定しません。host
+application が、自身の database と deployment environment に合う conversion、
+verification、backup、recovery を所有します。
+
 ### Timing と Activity Retry
+
+Goa-AI は各 agent workflow を一度だけ開始します。以前の実行がすでに tool を
+呼んだり最終 record を保存したりしている可能性があるため、失敗後に workflow
+全体を最初から実行し直しません。耐久性は workflow history のリプレイと、
+planner、tool、hook、storage の各 activity の再試行によって実現します。
 
 DSL は semantic run budget、つまり run 全体にどれだけ時間を使えるか、planner attempt と tool attempt がどれだけ実行できるかを表します。
 
@@ -547,6 +584,7 @@ func (s *SSESink) Close(ctx context.Context) error {
 
 ```go
 rt := runtime.New(
+    runtimeStore,
     runtime.WithStream(pulseSink), // or your custom sink
 )
 ```
@@ -630,6 +668,7 @@ s, err := pulseSink.NewSink(pulseSink.Options{
 if err != nil { log.Fatal(err) }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(s),
 )
@@ -926,7 +965,5 @@ User: What should I do next?
 - トランスクリプト永続化のために [Memory & Sessions](./memory-sessions/) を読む
 - agent-as-tool パターンとして [Agent Composition](./agent-composition/) を読む
 - ツール実行モデルとして [Toolsets](./toolsets/) を読む
-
-
 
 

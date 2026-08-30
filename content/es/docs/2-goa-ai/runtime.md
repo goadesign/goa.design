@@ -16,7 +16,8 @@ El runtime de Goa-AI orquesta el bucle planificar/ejecutar/reanudar, aplica pol�
 | DSL + Codegen | Produce registros de agentes, especificaciones/codecs de herramientas, especificaciones/codecs de completions, flujos de trabajo y adaptadores MCP |
 | Núcleo del runtime | Orquesta el bucle plan/start/resume, la aplicación de políticas, los hooks, la memoria y el streaming |
 | Adaptador de motor de workflow | El adaptador de Temporal implementa `engine.Engine`; otros motores pueden conectarse |
-| Módulos de características | Integraciones opcionales (MCP, Pulse, almacenes Mongo, proveedores de modelos) |
+| Almacén del runtime host | Guarda juntos el alcance de la sesión, el estado de la ejecución, los checkpoints y los registros inmutables |
+| Módulos de características | Integraciones opcionales (MCP, Pulse, memoria y prompts, proveedores de modelos) |
 
 ---
 
@@ -47,15 +48,18 @@ package main
 
 import (
     "context"
+    "time"
 
     chat "example.com/assistant/gen/orchestrator/agents/chat"
     "goa.design/goa-ai/runtime/agent/model"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
     // In-memory engine is the default; pass WithEngine for Temporal or custom engines.
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: newChatPlanner()})
     if err != nil {
@@ -63,7 +67,7 @@ func main() {
     }
 
     // Sessions are first-class: create a session before starting runs under it.
-    if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
+    if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
         panic(err)
     }
 
@@ -166,13 +170,11 @@ Dos roles utilizan el runtime:
 ### Ejemplo sólo cliente
 
 ```go
-rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalClient)) // engine client
 
-// No agent registration needed in a caller-only process
+// The host session service has already created "s1".
+// No agent registration is needed in a caller-only process.
 client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "s1"); err != nil {
-    panic(err)
-}
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
@@ -182,6 +184,11 @@ Usa `StartOneShot` y `OneShotRun` cuando quieras trabajo duradero que no esté a
 
 - `Start` / `Run` son con sesión: requieren un `SessionID` concreto, participan en el ciclo de vida de la sesión y emiten eventos de stream con alcance de sesión.
 - `StartOneShot` / `OneShotRun` son sin sesión: no reciben `SessionID`, no crean una sesión y solo anexan eventos canónicos al run log para su inspección por `RunID`.
+- La aplicación host crea las sesiones antes de enviar trabajo; los runtimes de agentes no crean, terminan ni eliminan sesiones.
+- El motor acepta un workflow raíz antes de que su primera activity registre la ejecución. No se crea un estado `pending` antes de la admisión.
+- Los inicios raíz, hijo y one-shot usan operaciones distintas. El inicio hijo guarda el vínculo con el padre; one-shot guarda metadatos completos sin sesión.
+- Los motivos de cancelación se escriben una sola vez. Un reintento idéntico tiene éxito; un motivo diferente produce un conflicto.
+- La suspensión y la finalización guardan el nuevo estado junto con su registro inmutable.
 - `StartOneShot` devuelve inmediatamente un `engine.WorkflowHandle`. `OneShotRun` es el wrapper bloqueante que llama a `handle.Wait(ctx)` por ti.
 
 ```go
@@ -203,6 +210,12 @@ if err != nil {
 fmt.Println(out.RunID)
 ```
 
+El método de nivel inferior `Runtime.RunOneShot` guarda la ejecución antes de
+llamar al código de la aplicación. Cuando el callback termina, registra los
+prompts renderizados y el resultado final aunque el callback haya cancelado su
+contexto. Los errores temporales del almacenamiento reintentan los registros ya
+preparados sin volver a ejecutar el callback.
+
 ### Ejemplo de worker
 
 ```go
@@ -215,7 +228,7 @@ if err != nil {
 }
 defer eng.Close()
 
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 if err := chat.RegisterUsedToolsets(ctx, rt /* executors... */); err != nil {
     panic(err)
 }
@@ -231,14 +244,14 @@ if err := rt.Seal(ctx); err != nil {
 
 ## Bucle Plan → Ejecutar → Reanudar
 
-1. El runtime inicia un workflow para el agente (en memoria o Temporal) y registra un nuevo `run.Context` con `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
-2. Llama al `PlanStart` de tu planificador con los mensajes actuales y el contexto de ejecución.
-3. Programa las llamadas a herramientas devueltas por el planificador (el planificador pasa payloads JSON canónicos; el runtime se encarga de la codificación/decodificación mediante los codecs generados).
-4. Llama a `PlanResume` con los resultados de herramienta que siguen siendo visibles para el planificador; las herramientas con presupuesto son visibles por defecto, mientras que las herramientas de bookkeeping solo se reproducen cuando `RetryHint.AllowsRetry()` autoriza la reparación. El bucle se repite hasta que el planificador devuelve una respuesta final, un resultado de herramienta final, o una herramienta `TerminalRun` correcta completa la ejecución. Si la finalización forzada está activa porque se alcanzaron límites o deadlines, el planificador puede cerrar mediante herramientas terminales de bookkeeping en vez de prosa. A medida que avanza la ejecución, se pasa por los valores de `run.Phase` (`prompted`, `planning`, `executing_tools`, `synthesizing`, fases terminales).
-5. Los hooks y los suscriptores de stream emiten eventos (pensamientos del planificador, inicio/actualización/finalización de herramientas, esperas, uso, workflow, enlaces agente-ejecución) y, cuando están configurados, persisten entradas de transcripción y metadatos de ejecución.
+1. El motor acepta un workflow para el agente.
+2. La primera activity registra la identidad y el primer registro permanente mediante `StartRootRun`, `StartChildRun` o `StartOneShotRun`. Una ejecución con sesión solo continúa si la sesión está activa.
+3. El runtime llama a `PlanStart` con los mensajes actuales y un `run.Context` que contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
+4. Programa las llamadas a herramientas devueltas por el planificador usando los codecs generados.
+5. Llama a `PlanResume` con los resultados visibles para el planificador. El bucle continúa hasta una respuesta final, un resultado final o una herramienta `TerminalRun` correcta.
+6. El almacén guarda registros inmutables mientras cambia la ejecución. Los hooks y streams emiten pensamientos, herramientas, esperas, uso y vínculos entre ejecuciones. Un almacén de memoria opcional conserva la transcripción.
 
 ---
-
 ## Fases de ejecución
 
 A medida que una ejecución avanza por el bucle plan/ejecutar/reanudar, pasa por una serie de fases del ciclo de vida. Estas fases proporcionan una visibilidad detallada de dónde se encuentra una ejecución dentro de su progreso, permitiendo que las UIs muestren indicadores de progreso de alto nivel.
@@ -271,7 +284,7 @@ El runtime emite eventos de hook `RunPhaseChanged` para fases **no terminales** 
 
 Las fases son distintas de `run.Status`:
 
-- **Estado** (`pending`, `running`, `completed`, `failed`, `canceled`, `paused`) es el estado del ciclo de vida de grano grueso almacenado en los metadatos duraderos de la ejecución
+- **Estado** (`running`, `suspended`, `completed`, `failed`, `canceled`, `paused`) es el estado del ciclo de vida de grano grueso almacenado en los metadatos duraderos de la ejecución No existe un estado `pending` anterior a la admisión.
 - **Fase** proporciona una visibilidad más fina del bucle de ejecución, pensada para superficies de streaming/UX
 
 ### Eventos de ciclo de vida: cambios de fase vs finalización terminal
@@ -386,7 +399,7 @@ Goa-AI se integra con motores de políticas enchufables a través de `policy.Eng
 Las etiquetas fluyen hacia:
 - `run.Context.Labels` – disponibles para los planificadores durante una ejecución
 - entrada de actividad de herramienta (`api.ToolInput.Labels`) – clonadas en las ejecuciones de herramientas despachadas para que las actividades observen los mismos metadatos con alcance de ejecución, salvo que el planificador sobrescriba las etiquetas para una llamada concreta
-- eventos del run log (`runlog.Store`) – persistidos junto con los eventos de ciclo de vida para auditoría/búsqueda/paneles (cuando se indexan)
+- **El almacén del runtime** (`storage.Store`) añade registros inmutables por `RunID`. Los métodos de ciclo de vida guardan el estado, checkpoint o cancelación junto con su registro correspondiente.
 - finalización terminal e instantáneas – las etiquetas de inicio vuelven a salir al final de la ejecución en `hooks.RunCompletedEvent.Labels` y `run.Snapshot.Labels`, de modo que los hooks de finalización y los lectores de `GetRunSnapshot` recuperan la identidad de la ejecución sin seguimiento fuera de banda
 
 ### Filtrado de herramientas por ejecución
@@ -479,7 +492,7 @@ La gestión de prompts es nativa del runtime y versionada:
 - El contenido renderizado incluye metadatos `prompt.PromptRef` para procedencia; los planificadores pueden adjuntarlos a `model.Request.PromptRefs`.
 
 ```go
-content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
+content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
 if err != nil {
@@ -493,7 +506,30 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 })
 ```
 
-`PromptRefs` son metadatos de runtime para auditoría/procedencia y no son campos del payload wire del proveedor.
+`PromptRefs` identifica qué versiones renderizadas de prompts influyeron en una solicitud; no forma parte del payload del proveedor. El runtime lo deriva de los registros `prompt_rendered` y de vínculo padre-hijo, sin mantener otra lista que pueda divergir.
+
+El renderizado no escribe en el almacenamiento del runtime. Todas las rutas
+usan `prompt.RenderRecorder` para crear el mismo `prompt.RenderEvent` con el ID,
+la versión y el scope del prompt resuelto:
+
+- el código de la aplicación que renderiza los mensajes iniciales pasa
+  `recorder.Events()` mediante `runtime.WithRenderedPrompts` junto con esos
+  mensajes;
+- las activities del planificador devuelven sus eventos junto con el resultado;
+- la preparación del prompt de un agente hijo se ejecuta en una activity y
+  devuelve el texto renderizado y sus eventos en la entrada del hijo;
+- `RunOneShot` registra los renderizados realizados por su callback.
+
+El workflow guarda cada evento aceptado como el mismo registro
+`PromptRendered`. La ruta inicial no tiene una regla de renderizado distinta;
+solo entrega un evento creado antes de iniciar el workflow. La preparación del
+hijo se ejecuta en una activity para que Temporal reutilice durante el replay el
+texto y los eventos guardados en el historial, sin leer una versión más reciente
+del prompt.
+`RenderRecorder.Events` devuelve los renderizados completados en un orden
+estable por ID de prompt, versión, sesión y scope. Por tanto, el orden en que
+terminan renderizados concurrentes no puede cambiar la solicitud exacta de
+inicio del workflow.
 
 ---
 
@@ -503,7 +539,7 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Los almacenes de memoria** (`memory.Store`) se suscriben y añaden eventos de memoria duraderos (mensajes de usuario/asistente, llamadas a herramientas, resultados de herramientas, notas del planificador, pensamiento) por `(agentID, RunID)`.
 
-- **Los almacenes de eventos de ejecución** (`runlog.Store`) anexan el log canónico de eventos de hook por `RunID` para UIs de auditoría/debug e introspección de ejecuciones.
+- **Los almacenes de eventos de ejecución** (`storage.Store`) anexan el log canónico de eventos de hook por `RunID` para UIs de auditoría/debug e introspección de ejecuciones.
 
 - **Los sinks de stream** (`stream.Sink`, por ejemplo Pulse o SSE/WebSocket personalizados) reciben valores `stream.Event` tipados producidos por el `stream.Subscriber`. Un `StreamProfile` controla qué tipos de eventos se emiten.
 
@@ -543,6 +579,7 @@ if err != nil {
     panic(err)
 }
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(streams.Sink()),
 )
@@ -579,7 +616,13 @@ for {
 ## Abstracción del motor
 
 - **En memoria**: Bucle de desarrollo rápido, sin dependencias externas
-- **Temporal**: Ejecución duradera, replay, reintentos, señales, workers; los adaptadores cablean actividades y propagación de contexto
+- **Temporal**: Ejecución duradera, replay, reintentos de activities, señales y workers; los adaptadores conectan las activities y propagan el contexto
+
+Los workflows de agente de Goa-AI tienen un solo intento. El runtime reintenta
+activities individuales cuando sus contratos lo permiten, pero nunca reinicia
+un workflow de agente completo después de un fallo. Ese reinicio podría repetir
+efectos de herramientas o entrar en conflicto con el registro final que el
+primer intento ya guardó.
 
 ### Tiempos semánticos vs liveness de Temporal
 
@@ -618,70 +661,121 @@ if err != nil {
 
 Esta separación mantiene la mecánica del workflow detrás de la frontera de Temporal, mientras que el runtime genérico permanece honesto tanto con Temporal como con el motor en memoria.
 
+### Contratos del adaptador de almacenamiento y finalización
+
+El runtime registra una sola activity tipada llamada `runtime.store`. Cada
+`StorageActivityCommand` establece exactamente uno de estos campos: `Append`,
+`RootStart`, `ChildStart`, `OneShotStart`, `Cancellation`, `Suspension` o
+`Terminal`. El `StorageActivityResult` devuelto establece exactamente el campo
+correspondiente y ningún otro. Los almacenes personalizados devuelven
+`storage.ContractError` cuando repetir el mismo comando no puede funcionar. Los
+fallos temporales de base de datos o red siguen siendo errores normales y se
+pueden reintentar. `runtime.WithStorageActivityTimeout` fija el tiempo máximo
+Start-to-Close de la activity y exige un valor mayor que cero.
+
+`Engine.QueryRunCompletion` devuelve el `Status` actual de la ejecución. Cuando
+la ejecución ya está cerrada, el mismo resultado también contiene su instante
+estable `CompletedAt` y su `Output` final o `WorkflowError`. La reparación usa
+ese instante para que cada reintento envíe la misma marca de tiempo. El error
+separado del método indica que el motor no pudo recuperar esos datos. No existe
+otra consulta separada para el estado.
+
+La preparación del prompt de un hijo devuelve exactamente un `Success` o un
+`Failure`. El éxito solo contiene los mensajes y los datos de los prompts
+renderizados. El workflow obtiene la identidad de la ejecución hija, sesión,
+padre, herramienta y etiquetas de la llamada original ya registrada. El motor
+en memoria copia y limita la entrada y la salida y aplica la misma política de
+reintentos que Temporal.
+
 ---
 
 ## Contratos de ejecución
 
 - `SessionID` es obligatorio para los inicios con sesión. `Start` y `Run` fallan rápido cuando `SessionID` está vacío o en blanco
 - `StartOneShot` y `OneShotRun` son explícitamente sin sesión. No requieren ni crean una sesión y no emiten eventos de stream con alcance de sesión
+- El host crea las sesiones antes de enviar trabajo con sesión. Los runtimes de agentes no crean, terminan ni eliminan sesiones
+- El motor acepta un workflow raíz antes de que su primera activity guarde la ejecución. El runtime no crea un registro `pending` antes de esa aceptación
+- Los inicios raíz, hijo y one-shot usan operaciones de almacenamiento distintas. El inicio hijo guarda el vínculo con el padre; el inicio one-shot guarda metadatos completos sin sesión
+- El primer motivo de cancelación no cambia. Un reintento exacto tiene éxito y otro motivo para la misma ejecución produce un conflicto
+- La suspensión y la finalización guardan el nuevo estado junto con el registro correspondiente, que no puede modificarse después
 - Los agentes deben registrarse antes de la primera ejecución. El runtime rechaza el registro después del envío de la primera ejecución con `ErrRegistrationClosed` para mantener deterministas a los workers del motor
 - Los ejecutores de herramientas reciben metadatos explícitos por llamada (`ToolCallMeta`) en lugar de extraer valores de `context.Context`
 - No confíes en fallbacks implícitos; todos los identificadores de dominio (ejecución, sesión, turno, correlación) deben pasarse explícitamente
 
+### Reparar un registro final ausente
+
+Los workflows normales reintentan las escrituras de suspensión y finalización
+hasta que el almacenamiento del runtime las acepta. Si el historial del motor
+ya está cerrado pero la ejecución guardada sigue activa, un operador puede
+llamar a `Runtime.RepairRunCompletion(ctx, runID)`. El comando comprueba el
+estado final del motor y envía la suspensión o el registro final ausente a un
+método de reparación. El almacén lo escribe solo si la ejecución sigue activa;
+si el workflow guardó antes otro registro final, ese registro conserva la
+autoridad.
+
+Los métodos de listado e instantánea son de solo lectura y nunca realizan esta
+reparación. El motor devuelve la salida y el error del workflow separados de un
+error al recuperar ese resultado. Un error de recuperación se devuelve al
+operador y nunca se guarda como fallo final del workflow. Repetir una reparación
+que ya tuvo éxito no cambia el resultado guardado.
+
 ---
 
-## Pausa y reanudación
+## Entrada externa y continuaciones de workflows
 
-Los flujos human-in-loop pueden suspender y reanudar ejecuciones usando los helpers de interrupción del runtime:
+Cada entrada aceptada del usuario inicia un workflow de nivel superior para ese
+turno. El workflow termina con el resultado final del turno o con una suspensión
+que solicita entrada externa. Los agentes anidados siguen ejecutándose como
+workflows hijos vinculados.
 
-```go
-import "goa.design/goa-ai/runtime/agent/interrupt"
+Las aclaraciones, preguntas estructuradas, resultados de herramientas externas
+y confirmaciones terminan correctamente el workflow actual. El
+`RunOutput.Suspension` devuelto contiene la solicitud que debe responder la UI o
+el sistema externo. Ningún workflow de Temporal permanece abierto mientras una
+persona decide.
 
-// Pause
-if err := rt.PauseRun(ctx, interrupt.PauseRequest{
-    RunID: "session-1-run-1",
-    Reason: "human_review",
-}); err != nil {
-    panic(err)
-}
-
-// Resume
-if err := rt.ResumeRun(ctx, interrupt.ResumeRequest{
-    RunID: "session-1-run-1",
-}); err != nil {
-    panic(err)
-}
-```
-
-Entre bastidores, las señales de pausa/reanudación actualizan el almacén de ejecución y emiten eventos de hook `run_paused`/`run_resumed` para que las capas de UI permanezcan sincronizadas.
-
-### Proporcionar resultados externos de herramientas
-
-Algunas esperas se reanudan con **resultados de herramientas proporcionados por un actor externo** en lugar de por `ExecuteToolActivity` directamente. Ejemplos habituales son las herramientas controladas por la UI, como las preguntas estructuradas, o los servicios puente que recopilan resultados de otro sistema y luego despiertan la ejecución.
-
-Usa `ProvideToolResults` con resultados proporcionados en bruto:
+Antes de terminar, Goa-AI guarda su checkpoint privado bajo el ID de la
+ejecución completada. La aplicación debe aceptar una sola respuesta de forma
+atómica para que dos solicitudes concurrentes no continúen el mismo estado.
+Después inicia otro workflow con el ID de la ejecución anterior, un nuevo ID de
+ejecución, un nuevo ID de turno y una respuesta tipada:
 
 ```go
-err := rt.ProvideToolResults(ctx, interrupt.ToolResultsSet{
-    RunID: "run-123",
-    ID:    "await-1",
-    Results: []*api.ProvidedToolResult{
-        {
-            Name:       "chat.ask_question.ask_question",
-            ToolCallID: "toolcall-1",
-            Result:     rawjson.Message(`{"answers":[{"question_id":"topic","selected_ids":["alarms"]}]}`),
+next, err := client.Continue(
+    ctx,
+    "session-1",
+    previous.RunID,
+    "run-124",
+    "turn-2",
+    &api.PendingInputResponse{
+        Clarification: &api.ClarificationAnswer{
+            ID:     "clarify-device",
+            Answer: "Device ID is ABC-123",
         },
     },
-})
+)
 ```
 
-Contrato:
+La aplicación solo pasa el ID de la ejecución completada y la respuesta tipada.
+Goa-AI carga el checkpoint, valida su versión y la solicitud pendiente, restaura
+los payloads guardados con los codecs generados actuales y reanuda la
+planificación. El checkpoint permanece privado en el almacén del runtime.
 
-- Los llamadores proporcionan el **JSON de resultado canónico en bruto** más `Bounds`, `Error` y `RetryHint` opcionales.
-- Los llamadores **no** construyen `api.ToolEvent`; ese es el sobre interno del workflow del runtime.
-- El runtime decodifica el resultado proporcionado usando la especificación registrada de la herramienta, ejecuta la materialización tipada del resultado, adjunta cualquier sidecar solo del servidor, añade el `tool_result` canónico a la transcripción/run log, y solo entonces reanuda la planificación.
+El único formato aceptado es `goa-ai.run-suspension.v7`. Goa-AI rechaza todas
+las versiones anteriores en lugar de adivinar cómo traducirlas. Antes de
+aceptar continuaciones con el nuevo runtime, el host debe migrar o eliminar las
+ejecuciones suspendidas que usen un formato anterior.
 
-Esto mantiene el camino de espera conceptualmente alineado con el camino de ejecución normal: ambos flujos convergen en el mismo contrato tipado `planner.ToolResult` antes de la publicación.
+Cuando una respuesta completa una llamada de herramienta creada por el modelo
+en el workflow anterior, el nuevo evento `tool_end` incluye dos identidades:
+
+- su ID de ejecución normal identifica el nuevo workflow que recibió la
+  respuesta; y
+- `call_run_id` identifica el workflow anterior que emitió el `tool_start`.
+
+Los consumidores del stream deben emparejar esos eventos con `call_run_id` y el
+ID de la llamada. No deben buscar ejecuciones anteriores ni suponer que llamada
+y resultado pertenecen al mismo workflow.
 
 ---
 
@@ -847,11 +941,11 @@ Los planificadores también reciben un `PlannerContext` a través de `input.Agen
 
 ## Módulos de características
 
-- `runtime/mcp` – callers MCP para transportes HTTP, SSE y stdio
+- `runtime/agent/storage/inmem` – almacenamiento integrado en memoria para ejemplos y pruebas
+
+- `runtime/mcp` – callers MCP para HTTP y stdio; HTTP acepta respuestas JSON y flujos de eventos
 - `features/memory/mongo` – almacén de memoria duradera
 - `features/prompt/mongo` – almacén de overrides de prompts respaldado por Mongo
-- `features/runlog/mongo` – almacén de eventos de ejecución (append-only, paginación por cursor)
-- `features/session/mongo` – almacén de metadatos de sesión
 - `features/stream/pulse` – helpers de sink/subscriber de Pulse
 - `features/model/{anthropic,bedrock,openai}` – adaptadores de cliente de modelo para planificadores
 - `features/model/middleware` – middlewares compartidos de `model.Client` (por ejemplo, limitación de velocidad adaptativa)
@@ -883,7 +977,7 @@ rl := mdlmw.NewAdaptiveRateLimiter(
 )
 limited := rl.Middleware()(bed)
 
-rt := runtime.New()
+rt := runtime.New(runtimeStore)
 if err := rt.RegisterModel("bedrock", limited); err != nil {
     panic(err)
 }
@@ -1092,7 +1186,7 @@ Cuando se usa AWS Bedrock con el modo de pensamiento habilitado, el runtime vali
 El cliente de Bedrock valida estas restricciones de forma anticipada y devuelve un error descriptivo si se infringen:
 
 ```
-bedrock: invalid message ordering with thinking enabled (run=xxx, model=yyy): 
+bedrock: invalid message ordering with thinking enabled (run=xxx, model=yyy):
 bedrock: assistant message with tool_use must start with thinking
 ```
 

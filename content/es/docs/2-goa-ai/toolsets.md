@@ -38,7 +38,7 @@ externos con esquemas de herramientas en línea.
 
 - El registro generado establece `DecodeInExecutor=true` para que el JSON crudo se pase tal cual al ejecutor MCP
 - El ejecutor MCP decodifica usando sus propios codecs
-- Los wrappers generados se encargan de los esquemas/codificadores JSON y los transportes (HTTP/SSE/stdio) con reintentos y trazado
+- Los wrappers generados se encargan de los esquemas, los codificadores y el transporte HTTP o stdio con reintentos y trazado. HTTP acepta respuestas JSON y flujos de eventos
 
 ### Cuándo usar BindTo frente a implementaciones en línea
 

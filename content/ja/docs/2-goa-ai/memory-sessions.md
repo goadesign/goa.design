@@ -9,23 +9,21 @@ aliases:
 このガイドでは、Goa-AI のトランスクリプトモデル、メモリの永続化、複数ターンの会話や長時間実行するワークフローのモデル化方法について説明します。
 
 ## なぜトランスクリプトが重要なのか
+Goa-AI は **トランスクリプト**を、モデルに見える会話の唯一の定義元として扱います。メッセージとツール操作を順序付きで並べたもので、次の処理に十分な情報を持ちます。
 
-Goa-AI は、**トランスクリプト**を 1 つの run における唯一の真実のソースとして扱います。トランスクリプトとは、メッセージとツールの相互作用を順序付きで記録したもので、次の目的を満たすのに十分な情報を持ちます。
+- 各モデル呼び出し用の provider payload を再構築する
+- retry と tool repair を含めて planner を動かす
+- UI に正確な履歴を提供する
 
-- すべてのモデル呼び出しについて、プロバイダー (Bedrock/OpenAI) のペイロードを再構築する
-- プランナーを駆動する (リトライやツール修復を含む)
-- 正確な履歴にもとづいて UI を構築する
+トランスクリプトがモデル入力の基準になるため、次の情報を手作業で管理する必要はありません。
 
-トランスクリプトが権威 (authoritative) であるため、次のようなものを **手作業で管理する必要はありません**。
+- 過去の tool calls と results の別リスト
+- 独自の conversation state 構造
+- turn ごとの過去メッセージのコピー
 
-- 過去のツール呼び出しとツール結果を別々に保持するリスト
-- アドホックな「会話状態」構造
-- 以前の user/assistant メッセージをターンごとに複製したもの
-
-あなたは **トランスクリプトだけを永続化し、渡す** だけでよく、Goa-AI とプロバイダーアダプターが、そこから必要なすべてを再構築します。
+会話履歴には **トランスクリプトだけ**を保存して渡します。Goa-AI と provider adapter がそこから provider input を再構築します。run status、cancellation、continuation checkpoint、変更不可の run records は、後述する別の host-owned runtime store に属します。
 
 ---
-
 ## メッセージとパーツ
 
 モデル境界では、Goa-AI はトランスクリプトを `model.Message` 値で表現します。各メッセージはロール (`user`, `assistant`) と、順序付きの **パーツ (parts)** リストを持ちます。
@@ -68,120 +66,33 @@ Goa-AI の高レベルなトランスクリプトのコントラクトは次の�
 
 ---
 
-## トランスクリプト台帳
+## ランタイムのトランスクリプト再生
 
-**トランスクリプト台帳 (transcript ledger)** は、モデルプロバイダーが要求する厳密な形式で会話履歴を保持する、プロバイダー精度の記録です。これにより、ワークフロー状態へプロバイダー SDK の型を漏らすことなく、決定論的なリプレイとプロバイダー忠実性を実現します。
+ランタイムは、正規の `model.Message` の追加分を、ランの順序付き記録に保存します。
+`transcript_messages_seeded` にはラン開始前から存在したメッセージを、
+`transcript_messages_appended` にはランの実行中に受理したメッセージを保存します。
+初期メッセージの記録はモデル入力の復元に使われますが、新しいアシスタント出力としては配信されません。
 
-### プロバイダー忠実性
-
-モデルプロバイダー (Bedrock、OpenAI など) は、メッセージの順序や構造に厳しい要件を持ちます。台帳はこれらの制約を強制します。
-
-| プロバイダー要件 | 台帳の保証 |
-|------------------|------------|
-| アシスタントメッセージでは thinking が tool_use より前でなければならない | 台帳はパーツを thinking → text → tool_use の順で並べます |
-| ツール結果は対応する tool_use の後に続かなければならない | 台帳は tool_result を ToolUseID で関連付けます |
-| メッセージの交替 (assistant → user → assistant) | user 結果を追加する前に、アシスタント側をフラッシュします |
-
-Bedrock では特に、thinking を有効にしている場合:
-
-- tool_use を含むアシスタントメッセージは、**必ず** thinking ブロックで始まらなければなりません。
-- tool_result を含む user メッセージは、tool_use を宣言したアシスタントメッセージの直後に続かなければなりません。
-- ツール結果の数は、直前の tool_use の数を超えられません。
-
-### 順序要件
-
-台帳は、プロバイダーが要求する正規の順序でパーツを保存します。
-
-```
-Assistant Message:
-  1. ThinkingPart(s)  - provider reasoning (text + signature or redacted bytes)
-  2. TextPart(s)      - visible assistant text
-  3. ToolUsePart(s)   - tool invocations (ID, name, args)
-
-User Message:
-  1. ToolResultPart(s) - tool results correlated via ToolUseID
-```
-
-この順序は **神聖** です。台帳はパーツを並べ替えず、プロバイダーアダプターも同じ順序でプロバイダー固有のブロックに再エンコードします。
-
-### 台帳の自動メンテナンス
-
-ランタイムはトランスクリプト台帳を自動で維持します。手動で管理する必要はありません。
-
-1. **イベントキャプチャ**: run の進行に合わせて、ランタイムがメモリイベント (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) を順に永続化します。
-
-2. **台帳の再構築**: `BuildMessagesFromEvents` 関数が、保存されたイベントからプロバイダー向けのメッセージを再構築します。
-
-```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **検証**: プロバイダーへ送る前に、ランタイムはメッセージ構造を検証できます。
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
-}
-```
-
-### 台帳 API
-
-高度なユースケースでは、台帳を直接操作できます。台帳は次の主要なメソッドを提供します。
-
-| メソッド | 説明 |
-|--------|-------------|
-| `NewLedger()` | 空の台帳を新規作成します |
-| `AppendThinking(part)` | 現在のアシスタントメッセージに thinking パートを追加します |
-| `AppendText(text)` | 現在のアシスタントメッセージに可視テキストを追加します |
-| `DeclareToolUse(id, name, args)` | 現在のアシスタントメッセージでツール呼び出しを宣言します |
-| `FlushAssistant()` | 現在のアシスタントメッセージを確定し、user 入力の準備をします |
-| `AppendUserToolResults(results)` | ツール結果を user メッセージとして追加します |
-| `BuildMessages()` | トランスクリプト全体を `[]*model.Message` として返します |
-
-**使用例:**
+復旧や調査で、プロバイダーに渡すメッセージ列を正確に再現する必要がある場合は、
+公開されている再生関数を使います。
 
 ```go
 import "goa.design/goa-ai/runtime/agent/transcript"
 
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runtimeStore, runID)
+if err != nil {
+    return err
+}
 ```
 
-**Note:** 多くのユーザーは台帳を直接操作する必要はありません。ランタイムがイベントキャプチャと再構築を通じて台帳を自動維持します。台帳 API は、カスタムプランナーやデバッグツールなどの高度なシナリオでのみ利用してください。
+`BuildMessagesFromRunLog` は `storage.Store.ListRunRecords` をページ単位で読み、
+保存順に正規のトランスクリプト記録だけを再生します。記録をすでに読み込んでいる場合は、
+`ReplayRunLogEvents` が同じ変換を行います。プロバイダーアダプターはパーツの順序を保持し、
+`ValidatePlannerTranscript` と `ValidateBedrock` は適切な境界でトランスクリプトを検証します。
 
-### これが重要な理由
-
-- **決定論的リプレイ**: 保存されたイベントから、デバッグ/監査/失敗ターンの再実行のために、まったく同じトランスクリプトを再構築できます。
-- **プロバイダー非依存の保存形式**: 台帳は JSON フレンドリーなパーツを保存し、プロバイダー SDK 依存を持ち込みません。
-- **プランナーの簡素化**: プランナーはプロバイダー制約を管理せずに、正しく並んだメッセージを受け取れます。
-- **検証**: 順序違反がプロバイダーに到達して不可解なエラーになる前に検出できます。
+これらのランタイム記録は、workflow の復旧と調査のためのものです。
+チャット履歴、評価、検索、保持期間、顧客データの削除に使う、
+プロダクト所有のトランスクリプトを置き換えるものではありません。
 
 ---
 
@@ -206,10 +117,12 @@ Goa-AI は会話状態を 3 つの層に分けて扱います。
 エージェントを呼び出すときは次のようになります。
 
 ```go
-client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "chat-session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
+rt := runtime.New(store)
+client := chat.NewClient(rt)
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
@@ -222,124 +135,92 @@ out, err := client.Run(ctx, "chat-session-123", messages,
 
 ---
 
-## メモリストアとランログ
+## プロダクトメモリとランタイムストレージ
 
-Goa-AI の feature モジュールは、補完関係にあるストアを提供します。
+Goa-AI は、所有者が異なる二種類の永続データを分けます。
+
+- **プロダクトメモリ** はトランスクリプトと、それから作られるアプリケーションデータです。何を保持、表示、検索、削除するかはプロダクトが決めます。
+- **ランタイムストレージ** は実行と継続に必要なセッション状態、ランメタデータ、非公開チェックポイント、変更不可の記録です。
+
+たとえば、チャットサービスは会話、評価、検索項目を自分のデータベースに保存します。ランタイムストアは `run-42` の開始、子ラン、キャンセル要求、終了結果を記録しますが、チャットのトランスクリプトデータベースにはなりません。
 
 ### メモリストア (`memory.Store`)
 
-ランごとのイベント履歴を永続化します。
+ユーザーとアシスタントのメッセージ、ツール呼び出しと結果、プランナーのメモと思考を保存します。これらから `model.Transcript` とプロバイダ向けメッセージを再構築します。モデルに見えるこのデータはプロダクトが所有します。
 
-- user/assistant メッセージ
-- ツール呼び出しと結果
-- プランナーのメモと thinking
+### ランタイムストア (`storage.Store`)
 
-```go
-type Store interface {
-    LoadRun(ctx context.Context, agentID, runID string) (memory.Snapshot, error)
-    AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
-}
-```
+ホストは一つの `storage.Store` 実装を渡します。この実装だけが次のランタイム書き込みを所有します。
 
-主要な型:
+- セッションの範囲と active、ended、purged の状態
+- ランの識別情報、親子関係、ラベル、開始判断、現在状態
+- 一時停止したランを継続するための非公開 bytes
+- 調査と prompt provenance に使う、順序付きで変更不可の記録
 
-- **`memory.Snapshot`** – ランの保存履歴の不変ビュー (`AgentID`, `RunID`, `Events []memory.Event`)
-- **`memory.Event`** – 単一の永続化エントリ。`Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`, `thinking`)、`Timestamp`、`Data`、`Labels` を持ちます
-
-### ランログ (`runlog.Store`)
-
-粗粒度のランメタデータを永続化します。
-
-- `RunID`, `AgentID`, `SessionID`, `TurnID`
-- ステータス、タイムスタンプ、ラベル
+ランタイムはこの依存を必須とします。
 
 ```go
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
+store := newRuntimeStore()
+rt := runtime.New(store, runtime.WithEngine(eng))
 ```
 
-`runlog.Page` には次が含まれます。
-
-- `Events`（古い順）
-- `NextCursor`（空の場合はこれ以上イベントがない）
+単一プロセスでは `store` はローカル DB adapter でも構いません。分散構成では一つのサービスが DB を所有して型付きメソッドを公開し、worker はそのサービスを呼ぶことで `storage.Store` を実装します。異なるサービスが同じ collection を直接書きません。
 
 ---
 
-## ストアの配線
+## ライフサイクル変更と記録をまとめて保存する
 
-MongoDB ベースの実装では次のように配線します。
+各メソッドは状態と、それを示す記録を一つの操作で保存します。
 
-```go
-import (
-    memorymongo "goa.design/goa-ai/features/memory/mongo"
-    memorymongoclient "goa.design/goa-ai/features/memory/mongo/clients/mongo"
-    runlogmongo "goa.design/goa-ai/features/runlog/mongo"
-    runlogmongoclient "goa.design/goa-ai/features/runlog/mongo/clients/mongo"
-    "goa.design/goa-ai/runtime/agent/runtime"
-)
+- `StartRootRun` はルートランのメタデータと最初の記録を保存します。
+- `StartChildRun` は親リンク、子のメタデータ、最初の記録を保存します。
+- `StartOneShotRun` はセッションなしランと最初の記録を保存します。
+- `RecordRunCancellation` は最初のキャンセル理由と記録を保存します。
+- `RecordRunSuspension` は非公開チェックポイント、一時停止状態、記録を保存します。
+- `RecordRunTerminal` は最終状態と記録を保存します。
 
-mongoClient := newMongoClient()
+これにより、終了記録のない完了状態や、状態が active のまま checkpoint だけ保存されることはありません。通常の記録は `AppendRunRecord` で追加し、`ListRunRecords` と `ListSessionRunRecords` で読みます。cursor は store が返した値を変更せず次のページ取得に使います。
 
-memClient, err := memorymongoclient.New(memorymongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+### 完全一致の再試行
 
-memStore, err := memorymongo.NewStore(memClient)
-if err != nil {
-    log.Fatal(err)
-}
+workflow activity は複数回実行されることがあります。完全に同じ再試行は成功し、元の記録 ID を返します。identity、時刻、labels、event key と payload、checkpoint、status、cancellation reason がすべて同じ必要があります。
 
-runlogClient, err := runlogmongoclient.New(runlogmongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+開始、キャンセル、一時停止、終了の各変更について、store は最初に保存した
+正確な record も記憶します。status と他の lifecycle field が同じでも、別の
+record を使って同じ変更を繰り返すと conflict になります。
 
-runEventStore, err := runlogmongo.NewStore(runlogClient)
-if err != nil {
-    log.Fatal(err)
-}
+最初の書き込みで確定した値を変えると conflict になります。store は新旧を推測せず、最初の値を上書きしません。最初の cancellation reason も変更不可です。
 
-rt := runtime.New(
-    runtime.WithMemoryStore(memStore),
-    runtime.WithRunEventStore(runEventStore),
-)
-```
+### 開始順序
 
-設定すると次のようになります。
+ルート workflow は engine が受理した後に初めて store へ書きます。受理前の `pending` record はありません。最初の durable activity が `StartRootRun` を呼びます。session が active なら running を記録して続行し、受理後に session が ended なら canceled を記録して planner や tool の前に停止します。
 
-- デフォルトのサブスクライバーが、メモリとランイベントを自動的に永続化します。
-- `memory.Store` からいつでもトランスクリプトを再構築でき、モデル再呼び出し、UI 表示、オフライン分析に利用できます。
+子 workflow は `StartChildRun` を使い、親リンクと開始を同時に見せます。session なしの処理は `StartOneShotRun` を使い、通常の metadata と records を持ちますが session を作成しません。開始結果は現在状態ではなく最初の開始判断を返します。
 
 ---
 
-## カスタムストア
+## セッションのライフサイクルと削除
 
-カスタムバックエンド向けに `memory.Store` と `runlog.Store` インターフェイスを実装できます。
+session 管理は host application の責任であり、agent worker の責任ではありません。host は sessionful work の前に作成し、新しい work を止めるときに終了し、すべての run が final になってから完全削除します。
 
-```go
-// Memory store
-type Store interface {
-    LoadRun(ctx context.Context, agentID, runID string) (memory.Snapshot, error)
-    AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
-}
+- **End** は新しい planner/tool work を拒否し、進行中 run の最終記録は許可します。
+- **Purge** は全 run 終了後に session、runs、checkpoints、records を削除します。削除した session ID は再利用できません。
 
-// Run log store
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
-```
+`runtime/agent/storage/inmem` は例とテスト向けに `CreateSession`、`EndSession`、`PurgeSession` を公開します。プロダクションでは runtime DB を所有するサービスが実装します。prompt version は `prompt_rendered` と親子リンクの records から導出し、別の prompt ref や child ID リストは持ちません。
 
 ---
+
+## 分割ストアからの移行
+
+`session.Store`、`runlog.Store`、`runtime.WithSessionStore`、`runtime.WithRunEventStore`、runtime の `CreateSession`、`EndSession`、`PurgeSession`、`features/session/mongo`、`features/runlog/mongo` は削除されます。
+
+一つの `runtime/agent/storage.Store` を実装し、`runtime.New` の第一引数に渡します。session 管理は runtime data を所有する host service に移します。別サービスの worker は typed API で owner を呼び、DB adapter を import しません。
+
+新 runtime が書き込む前に、既存データが integrated store contract を満たして
+いなければなりません。run metadata、checkpoint、record は上記 lifecycle
+operation を支え、旧 split-store writer と新 writer は重ならないようにします。
+host application は自身の database と environment に合う conversion と recovery
+の手順を選び、owner と全 worker をまとめて deploy します。
 
 ## よくあるパターン
 
@@ -347,17 +228,18 @@ type Store interface {
 
 - チャットセッションごとに 1 つの `SessionID` を使います
 - user のターンまたは「タスク」ごとに新しいランを開始します
-- ランごとにトランスクリプトを永続化し、セッションメタデータで会話を繋ぎます
+- プロダクトの transcript は chat service に保存し、run の状態、継続、調査には runtime record を使います
 
 ### 長時間実行するワークフロー
 
-- 論理的なワークフローごとに 1 つのランを使います (一時停止/再開の可能性あり)
+- engine が受理した workflow ごとに一つの run を使います
+- run が外部入力を求めると、その workflow は終了します。回答は保存済み checkpoint を使い、同じ session 内で新しい run を開始します
 - `SessionID` を使って関連するワークフローをグループ化します (例: チケットやインシデントごと)
 - ステータス追跡には `run.Phase` と `RunCompleted` イベントを利用します
 
 ### 検索とダッシュボード
 
-- `runlog.Store` を `RunID` + cursor でページングして audit/debug UI を構築します
+- audit/debug UI では `storage.Store` を `RunID` でページングする
 - `memory.Store` から選択したランのトランスクリプトをオンデマンドで読み込みます
 
 ---

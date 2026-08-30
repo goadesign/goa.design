@@ -87,10 +87,11 @@ import (
     planner "example.com/tutorial/gen/orchestrator/agents/planner"
     orchestrator "example.com/tutorial/gen/orchestrator/agents/orchestrator"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Register planning agent
@@ -187,7 +188,7 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 - **Run** – エージェントの 1 回の実行:
   - `RunID` で識別
   - `run.Context`（RunID, SessionID, TurnID, labels, caps）で記述
-  - `runlog.Store`（append-only の run event log。cursor paging）で永続追跡
+  - ホストの `storage.Store` が、実行状態と変更不可の記録を一つの操作で永続化
 
 - **Session** – 1 回以上のランにまたがる会話またはワークフロー:
   - `SessionID` が関連するランをグルーピング（例: マルチターンチャット）
@@ -202,6 +203,16 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 
 - `run.Handle` – `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID` を持つ軽量ハンドル
 - ネストされたエージェントでは **常に実際の子ラン** を作成する agent-as-tool ヘルパーとツールセット登録（隠れたインラインハックはしない）
+
+子プランナーを実行する前に、`storage.Store.StartChildRun` は親へのリンク、子のメタデータ、子の最初の記録をまとめて保存します。同じ値で再試行すると元の記録が返り、親、子の識別情報、ラベル、payload のいずれかを変更した再試行は競合として失敗します。
+
+親の tool registration が child 用の prompt を描画する場合、runtime は child
+workflow を開始する前に activity でその prompt を準備します。activity は成功か
+失敗のどちらか一方だけを返します。成功には、workflow history に保存する正確な
+message と prompt render event だけが含まれます。workflow は activity から identity
+を受け取らず、記録済みの元の tool call から child run、session、parent、tool、label
+の identity を導出します。そのため replay は元の描画済み text を使い、storage
+から新しい prompt version を読みません。
 
 ---
 
@@ -276,7 +287,9 @@ for {
 ```go
 type StreamProfile struct {
     Assistant          bool // assistant_reply
+    AssistantTurns     bool // assistant_turn
     Thoughts           bool // planner_thought
+    PromptRendered     bool // prompt_rendered
     ToolStart          bool // tool_start
     ToolUpdate         bool // tool_update
     ToolEnd            bool // tool_end

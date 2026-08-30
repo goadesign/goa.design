@@ -153,15 +153,16 @@ Les packages d'agent générés exposent les clients typés. Les exécutions de 
 séance explicite ; Les exécutions ponctuelles sont intentionnellement sans session.
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -182,6 +183,9 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 Utilisez `Run` ou `Start` pour le travail conversationnel/sessionnel. Utilisez `OneShotRun` ou
 `StartOneShot` pour les tâches de demande/réponse qui doivent être observables par `RunID`
 mais ne doit pas appartenir à une session.
+
+
+Le projet local généré accepte un `storage.Store` et la commande d’exemple utilise `runtime/agent/storage/inmem`. En production, l’application fournit un adaptateur vers le service propriétaire de la base de données du runtime. Ce service, et non un worker d’agent, crée et termine les sessions.
 
 ---
 
@@ -315,7 +319,7 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 Pour la production UIs, publiez sur Pulse et abonnez-vous au flux de session
@@ -371,8 +375,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-Chaque agent conserve son propre planificateur, ses propres outils, sa politique et son journal d'exécution. Le parent voit un
-résultat d'outil normal avec un `RunLink` à l'exécution enfant.
+Chaque agent conserve son propre planificateur, ses outils et sa politique. Le stockage du runtime fourni par l’application enregistre chaque exécution racine et enfant, y compris le lien vers le parent. Le parent reçoit un résultat d’outil normal avec un `RunLink` vers l’exécution enfant.
 
 ---
 
@@ -384,9 +387,7 @@ résultat d'outil normal avec un `RunLink` à l'exécution enfant.
 - Un client d'exécution généré avec une exécution par session et en une seule fois.
 - Un chemin vers la planification basée sur un modèle, le streaming UIs et la composition des agents.
 
-Pour la production, ajoutez le moteur Temporal pour la durabilité, les magasins soutenus par Mongo pour
-journaux de mémoire/session/exécution, Pulse pour le streaming distribué et middleware de modèle
-pour les limites de tarifs des fournisseurs. La conception Goa reste la source de vérité.
+Pour la production, ajoutez le moteur Temporal pour la durabilité, un stockage unique du runtime appartenant à l’application, un stockage de mémoire appartenant au produit si nécessaire, Pulse pour le streaming distribué et le middleware de modèle pour les limites de débit du fournisseur. La conception Goa reste la source de vérité.
 
 ---
 

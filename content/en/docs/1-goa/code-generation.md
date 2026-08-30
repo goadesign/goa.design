@@ -6,7 +6,9 @@ llm_optimized: true
 aliases:
 ---
 
-Goa's code generation transforms your design into production-ready code. Rather than just scaffolding, Goa generates complete, runnable service implementations that follow best practices and maintain consistency across your entire API.
+Goa's code generation transforms your design into production-ready service
+contracts, transports, clients, and documentation. `goa example` creates
+runnable starter wiring, while your application supplies the business logic.
 
 
 
@@ -17,6 +19,16 @@ Goa's code generation transforms your design into production-ready code. Rather 
 ```bash
 go install goa.design/goa/v3/cmd/goa@latest
 ```
+
+{{< alert title="Testing a generation preview" color="info" >}}
+Pre-release versions are opt-in. Pin both the Goa module and the `goa` command
+to the exact version named by the
+[preview upgrade guide](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md).
+Regenerate the complete `gen/` directory, never mix stable and preview output,
+then compile and test the complete application. Coordinate client and server
+updates when the guide identifies a wire change. To return to stable, pin the
+stable module and command together and regenerate everything again.
+{{< /alert >}}
 
 ### Commands
 
@@ -94,6 +106,11 @@ Goa creates a temporary `main.go` that:
 - Validated expressions pass to code generators
 - Templates render to produce code files
 - Output writes to the `gen/` directory
+
+Goa resolves packages, declarations, names, imports, field paths, and known
+branches from the complete validated design before rendering. Templates write
+those choices directly. Generated programs branch only on values that arrive
+at runtime.
 
 ---
 
@@ -383,6 +400,7 @@ Generate types in a shared package:
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +411,17 @@ gen/
 └── types/
     └── common_type.go
 ```
+
+`struct:pkg:path` gives the authored type one declaration in the selected
+generated package, and every generated use imports that declaration. The Go
+package name is the lowercase final path segment. If the relocated type contains
+another authored type, that dependency must also declare an explicit
+`struct:pkg:path`, usually the same package. Compiler-created nested types stay
+with their owning authored type.
+
+One authored declaration is reused across services and across payload, result,
+and error uses. When that exact type is a custom error, Goa adds the error
+methods beside the same declaration instead of generating a second type.
 
 ### Field Customization
 
@@ -597,6 +626,15 @@ Common plugin use cases:
 - Custom validation rules
 - Cross-cutting concerns (logging, metrics)
 - Configuration file generation
+
+Released callbacks remain appropriate for plugins that edit generated values or
+files. A plugin that declares a package-level name must use the factory planning
+phase so Goa can reserve that name with every other declaration before
+rendering. See the
+[Code Generation Architecture](https://github.com/goadesign/goa/blob/v3/codegen/ARCHITECTURE.md)
+and the
+[preview upgrade guide](https://github.com/goadesign/goa/blob/v3.31.0-preview.1/UPGRADING.md)
+for the detailed plugin contract and migration steps.
 
 ---
 

@@ -323,7 +323,7 @@ var _ = API("bookstore", func() {
 
 ### APIレベルのエラー
 
-APIレベルで再利用可能なエラーを定義します：
+API レベルでは、再利用可能なエラーを一度定義し、そのエラーを返すサービスまたはメソッドで明示的に選択します。API レベルの定義だけで、すべてのサービスがそのエラーを返すようになるわけではありません：
 
 ```go
 var _ = API("bookstore", func() {
@@ -343,9 +343,30 @@ var _ = API("bookstore", func() {
 
 ```go
 var _ = Service("billing", func() {
-    Error("unauthorized")  // Inherits all properties
+    Error("unauthorized")  // API レベルの定義をこのサービスで選択
 })
 ```
+
+### カスタムエラータイプ
+
+追加の情報が必要なエラーには、カスタムタイプを使用します：
+
+```go
+var ValidationError = Type("ValidationError", func() {
+    Field(1, "message", String, "Error message")
+    Field(2, "field", String, "Field that failed validation")
+    Field(3, "value", Any, "Invalid value provided")
+    Required("message", "field")
+})
+
+Method("create", func() {
+    Error("validation_error", ValidationError, "Input validation failed")
+})
+```
+
+一つの名前付きエラーだけに使う型には、エラー名を判別するフィールドは必要ありません。一つの型を複数の名前付きエラーに使う場合は、`ErrorName("name", String, ...)` を追加し、`name` を必須にして、値を返す前に Goa のエラー名を設定します。
+
+Goa が `Error`、`ErrorName`、`GoaErrorName` メソッドを追加するのは、`Error` に直接渡した型だけです。その中に含まれる名前付き型は通常の型のままです。直接渡した型をペイロードや結果としても使う場合や、その型に `struct:pkg:path` が指定されている場合も、Goa は型を一度だけ生成し、その宣言の隣にエラーメソッドを配置します。`ErrorResult` は Goa 組み込みのサービスエラーであり、設計で定義したカスタムタイプとしては生成されません。
 
 ---
 

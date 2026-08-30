@@ -87,10 +87,11 @@ import (
     planner "example.com/tutorial/gen/orchestrator/agents/planner"
     orchestrator "example.com/tutorial/gen/orchestrator/agents/orchestrator"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Register planning agent
@@ -186,7 +187,7 @@ Goa-AI modella l'esecuzione come un **albero di esecuzioni e strumenti**:
 - **Esecuzione** - un'esecuzione di un agente:
   - Identificato da un `RunID`
   - Descritta da `run.Context` (RunID, SessionID, TurnID, label, caps)
-  - Tracciato in modo duraturo tramite `runlog.Store` (log append-only; paginazione per cursor)
+  - Lo `storage.Store` fornito dall’applicazione salva in modo duraturo lo stato dell’esecuzione e i relativi record immutabili nella stessa operazione
 
 - **Sessione** - una conversazione o un flusso di lavoro che comprende una o più sessioni:
   - `SessionID` raggruppa le sessioni correlate (ad esempio, chat a più turni)
@@ -201,6 +202,18 @@ Il runtime mantiene questa struttura ad albero utilizzando:
 
 - `run.Handle` - un handle leggero con `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID`
 - Aiutanti Agent-as-tool e registrazioni di toolset che **creano sempre vere esecuzioni figlio** per gli agenti annidati (nessun hack nascosto in linea)
+
+Prima dell’avvio di un pianificatore figlio, `storage.Store.StartChildRun` salva insieme il collegamento al padre, i metadati del figlio e il suo primo record. Un nuovo tentativo con gli stessi valori restituisce i record originali; un tentativo che cambia il padre, l’identità del figlio, le etichette o il payload fallisce con un conflitto.
+
+Se la registrazione dello strumento padre renderizza un prompt per il figlio, il
+runtime prepara quel prompt in una activity prima di avviare il workflow figlio.
+L’activity restituisce esattamente un successo o un fallimento. Il successo
+contiene soltanto i messaggi esatti e gli eventi di rendering salvati nella
+cronologia del workflow. Il workflow ricava l’identità dell’esecuzione figlia,
+della sessione, del padre, dello strumento e delle etichette dalla chiamata
+originale già registrata, invece di accettarla dall’activity. Il replay usa
+quindi il testo originale e non legge mai dallo storage una versione più
+recente del prompt.
 
 ---
 
@@ -274,7 +287,9 @@ for {
 ```go
 type StreamProfile struct {
     Assistant          bool // assistant_reply
+    AssistantTurns     bool // assistant_turn
     Thoughts           bool // planner_thought
+    PromptRendered     bool // prompt_rendered
     ToolStart          bool // tool_start
     ToolUpdate         bool // tool_update
     ToolEnd            bool // tool_end

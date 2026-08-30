@@ -122,7 +122,7 @@ Goa-AI は実行中に **型付けされたイベント**を発行します。�
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtime.WithStream(mySink))
+rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
 ```
 
 **Stream profiles** は消費者ごとにイベントをフィルタします。エンドユーザ UI 用の `UserChatProfile()`、開発者向けの `AgentDebugProfile()`、観測基盤向けの `MetricsProfile()` など。Pulse（Redis Streams）用の組み込み sink により、サービス間で分散ストリーミングできます。
@@ -147,14 +147,14 @@ Goa-AI は **Temporal** による耐久実行を採用します。エージェ�
 
 ```go
 // Development: in-memory (no dependencies)
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
 eng, _ := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
 **メリット:**
@@ -225,6 +225,7 @@ var CorpRegistry = Registry("corp", func() {
 | [Run Trees](#run-trees-composition) | エージェントがエージェントを呼ぶ構成を完全に追跡 |
 | [Structured Streaming](#structured-streaming) | UI と観測のためのリアルタイム型付きイベント |
 | [Temporal Durability](#temporal-durability) | 障害に強い、耐久実行 |
+| [ランタイムストレージ](memory-sessions/#runtime-store-storagestore) | 実行状態、継続用チェックポイント、変更不可の実行記録を一つにまとめる、ホスト所有のストア |
 | [Typed Contracts](dsl-reference/) | ツール操作のエンドツーエンド型安全性 |
 | [Typed Direct Completions](#typed-direct-completions) | 生成 codec と helper を備えた構造化された最終アシスタント応答 |
 | [Bounded Results & Server Data](toolsets/#server-data) | token 効率のよいモデル結果と、UI/監査向けの server-only data |
@@ -260,16 +261,16 @@ Goa-AI は、宣言的な設計をプロダクション品質のエージェン�
 |-------|---------|
 | **DSL** | バージョン管理された Go コードで、エージェント・ツール・ポリシー・外部統合を宣言 |
 | **Codegen** | 型安全な spec/codec/workflow 定義/レジストリクライアントを生成（`gen/` は編集しない） |
-| **Runtime** | ポリシー適用、メモリ永続化、イベントストリーミングを伴う plan/execute ループの実行 |
+| **Runtime** | ポリシー適用、必須のホスト所有ランタイムストレージ、任意のプロダクトメモリ、イベントストリーミングを伴う plan/execute ループを実行 |
 | **Engine** | 実行バックエンドを交換（開発は in-memory、本番は Temporal） |
-| **Features** | モデルプロバイダ（OpenAI/Anthropic/AWS Bedrock/Google Vertex AI）、永続化（Mongo）、ストリーミング（Pulse）、レジストリなどをプラグイン |
+| **Features** | モデルプロバイダ（OpenAI/Anthropic/AWS Bedrock/Google Vertex AI）、プロダクトメモリとプロンプトの永続化、ストリーミング（Pulse）、レジストリなどをプラグイン |
 
 **主要な統合ポイント:**
 
 - **Model Clients** — LLM プロバイダを統一インターフェースの裏に抽象化し、OpenAI/Anthropic/Bedrock/Vertex AI（Gemini または Claude-on-Vertex）を設計変更なしに差し替え
 - **Registry** — プロセス境界を跨いでツールセットを発見・呼び出し。Redis でクラスタ化し水平スケール
 - **Pulse Streaming** — UI 更新、観測パイプライン、サービス間通信のためのリアルタイムイベントバス
-- **Temporal Engine** — 自動リトライ、リプレイ、クラッシュリカバリを備えた耐久ワークフロー実行
+- **Temporal Engine** — activity の再試行、リプレイ、クラッシュリカバリを備えた耐久ワークフロー実行
 
 ### モデルプロバイダと拡張性 {#model-providers}
 
@@ -347,5 +348,4 @@ var _ = Service("calculator", func() {
 DSL の全体像は [DSL Reference](dsl-reference/) を参照してください。
 
 ランタイムアーキテクチャは [Runtime](runtime/) を参照してください。
-
 

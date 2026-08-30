@@ -177,7 +177,7 @@ Goa-AI emits **typed events** throughout execution: `assistant_reply` for stream
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtime.WithStream(mySink))
+rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
 ```
 
 **Stream profiles** filter events for different consumers: `UserChatProfile()` for end-user UIs, `AgentDebugProfile()` for developer views, `MetricsProfile()` for observability pipelines. Built-in sinks for Pulse (Redis Streams) enable distributed streaming across services.
@@ -202,14 +202,14 @@ Goa-AI uses **Temporal** for durable execution. Agent runs become workflows; too
 
 ```go
 // Development: in-memory (no dependencies)
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
 eng, _ := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
 **Benefits:**
@@ -281,6 +281,7 @@ Multiple registry nodes with the same name automatically form a cluster via Redi
 | [Run Trees](#run-trees-composition) | Agents calling agents with full traceability |
 | [Structured Streaming](#structured-streaming) | Real-time typed events for UIs and observability |
 | [Temporal Durability](#temporal-durability) | Fault-tolerant execution that survives failures |
+| [Runtime Storage](memory-sessions/#runtime-store-storagestore) | One host-owned store for run state, continuation checkpoints, and records that never change after insertion |
 | [Typed Contracts](dsl-reference/) | End-to-end type safety for all tool operations |
 | [Typed Direct Completions](#typed-direct-completions) | Structured final assistant answers with generated codecs and helpers |
 | [Bounded Results & Server Data](toolsets/#server-data) | Token-efficient model results plus server-only data for UIs and audit |
@@ -317,16 +318,16 @@ Goa-AI follows a **define → generate → execute** pipeline that transforms de
 |-------|---------|
 | **DSL** | Declare agents, tools, policies, and external integrations in version-controlled Go code |
 | **Codegen** | Generate type-safe specs, codecs, workflow definitions, and registry clients—never edit `gen/` |
-| **Runtime** | Execute the plan/execute loop with policy enforcement, memory persistence, and event streaming |
+| **Runtime** | Execute the plan/execute loop with policy enforcement, required host-owned runtime storage, optional product memory, and event streaming |
 | **Engine** | Swap execution backends: in-memory for development, Temporal for production durability |
-| **Features** | Plug in model providers (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistence (Mongo), streaming (Pulse), and registries |
+| **Features** | Plug in model providers (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), product memory and prompt persistence, streaming (Pulse), and registries |
 
 **Key Integration Points:**
 
 - **Model Clients** — Abstract LLM providers behind a unified interface; switch between OpenAI, Anthropic, Bedrock, or Vertex AI (Gemini or Claude-on-Vertex) without changing agent code
 - **Registry** — Discover and invoke toolsets across process boundaries; clustered via Redis for horizontal scaling
 - **Pulse Streaming** — Real-time event bus for UI updates, observability pipelines, and cross-service communication
-- **Temporal Engine** — Durable workflow execution with automatic retries, replay, and crash recovery
+- **Temporal Engine** — Durable workflow execution with activity retries, replay, and crash recovery
 
 ### Model Providers & Extensibility {#model-providers}
 

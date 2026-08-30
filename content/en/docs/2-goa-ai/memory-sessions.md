@@ -10,18 +10,26 @@ This guide covers Goa-AI's transcript model, memory persistence, and how to mode
 
 ## Why Transcripts Matter
 
-Goa-AI treats the **transcript** as the single source of truth for a run: an ordered sequence of messages and tool interactions that is sufficient to:
+Goa-AI treats the **transcript** as the source of truth for the model-visible
+conversation: an ordered sequence of messages and tool interactions that is
+sufficient to:
 
 - Reconstruct provider payloads (Bedrock/OpenAI) for every model call
 - Drive planners (including retries and tool repair)
 - Power UIs with accurate history
 
-Because the transcript is authoritative, you do **not** need to hand-manage:
+Because the transcript is authoritative for model input, you do **not** need to
+hand-manage:
+
 - Separate lists of prior tool calls and tool results
 - Ad-hoc "conversation state" structures
 - Per-turn copies of previous user/assistant messages
 
-You persist and pass **the transcript only**; Goa-AI and its provider adapters rebuild everything they need from that.
+You persist and pass **the transcript only** for model conversation history;
+Goa-AI and its provider adapters rebuild provider input from that. Run status,
+cancellation, continuation checkpoints, and run records that cannot change
+after insertion belong to the separate host-owned runtime store described
+below.
 
 ---
 
@@ -66,119 +74,35 @@ There is **no separate "tool history" API**; the transcript is the history.
 
 ---
 
-## Transcript Ledger
+## Runtime Transcript Replay
 
-The **transcript ledger** is a provider-precise record that maintains conversation history in the exact format required by model providers. It ensures deterministic replay and provider fidelity without leaking provider SDK types into workflow state.
+The runtime stores canonical `model.Message` deltas in the ordered run records.
+`transcript_messages_seeded` contains messages that existed before a run began;
+`transcript_messages_appended` contains messages accepted while that run was
+executing. Seed records rebuild model input but are not emitted as new assistant
+output.
 
-### Provider Fidelity
-
-Different model providers (Bedrock, OpenAI, etc.) have strict requirements about message ordering and structure. The ledger enforces these constraints:
-
-| Provider Requirement | Ledger Guarantee |
-|---------------------|------------------|
-| Thinking must precede tool_use in assistant messages | Ledger orders parts: thinking → text → tool_use |
-| Tool results must follow their corresponding tool_use | Ledger correlates tool_result via ToolUseID |
-| Message alternation (assistant → user → assistant) | Ledger flushes assistant before appending user results |
-
-For Bedrock specifically, when thinking is enabled:
-- Assistant messages containing tool_use **must** start with a thinking block
-- User messages with tool_result must immediately follow the assistant message declaring the tool_use
-- Tool result count cannot exceed the prior tool_use count
-
-### Ordering Requirements
-
-The ledger stores parts in the canonical order required by providers:
-
-```
-Assistant Message:
-  1. ThinkingPart(s)  - provider reasoning (text + signature or redacted bytes)
-  2. TextPart(s)      - visible assistant text
-  3. ToolUsePart(s)   - tool invocations (ID, name, args)
-
-User Message:
-  1. ToolResultPart(s) - tool results correlated via ToolUseID
-```
-
-This ordering is **sacred** — the ledger never reorders parts, and provider adapters re-encode them into provider-specific blocks in the same sequence.
-
-### Automatic Ledger Maintenance
-
-The runtime automatically maintains the transcript ledger. You do not need to manage it manually:
-
-1. **Event Capture**: As the run progresses, the runtime persists memory events (`EventThinking`, `EventAssistantMessage`, `EventToolCall`, `EventToolResult`) in order
-
-2. **Ledger Reconstruction**: The `BuildMessagesFromEvents` function rebuilds provider-ready messages from stored events:
-
-```go
-// Reconstruct messages from persisted events
-events := loadEventsFromStore(agentID, runID)
-messages := transcript.BuildMessagesFromEvents(events)
-
-// Messages are now in canonical provider order
-// Ready to pass to model.Client.Complete() or Stream()
-```
-
-3. **Validation**: Before sending to providers, the runtime can validate message structure:
-
-```go
-// Validate Bedrock constraints when thinking is enabled
-if err := transcript.ValidateBedrock(messages, thinkingEnabled); err != nil {
-    // Handle constraint violation
-}
-```
-
-### Ledger API
-
-For advanced use cases, you can interact with the ledger directly. The ledger provides these key methods:
-
-| Method | Description |
-|--------|-------------|
-| `NewLedger()` | Creates a new empty ledger |
-| `AppendThinking(part)` | Appends a thinking part to the current assistant message |
-| `AppendText(text)` | Appends visible text to the current assistant message |
-| `DeclareToolUse(id, name, args)` | Declares a tool invocation in the current assistant message |
-| `FlushAssistant()` | Finalizes the current assistant message and prepares for user input |
-| `AppendUserToolResults(results)` | Appends tool results as a user message |
-| `BuildMessages()` | Returns the complete transcript as `[]*model.Message` |
-
-**Example usage:**
+Use the public replay helper when runtime recovery or inspection needs the exact
+provider-ready message sequence:
 
 ```go
 import "goa.design/goa-ai/runtime/agent/transcript"
 
-// Create a new ledger
-l := transcript.NewLedger()
-
-// Record assistant turn
-l.AppendThinking(transcript.ThinkingPart{
-    Text:      "Let me search for that...",
-    Signature: "provider-sig",
-    Index:     0,
-    Final:     true,
-})
-l.AppendText("I'll search the database.")
-l.DeclareToolUse("tu-1", "search_db", map[string]any{"query": "status"})
-l.FlushAssistant()
-
-// Record user tool results
-l.AppendUserToolResults([]transcript.ToolResultSpec{{
-    ToolUseID: "tu-1",
-    Content:   map[string]any{"results": []string{"item1", "item2"}},
-    IsError:   false,
-}})
-
-// Build provider-ready messages
-messages := l.BuildMessages()
+messages, err := transcript.BuildMessagesFromRunLog(ctx, runtimeStore, runID)
+if err != nil {
+    return err
+}
 ```
 
-**Note:** Most users don't need to interact with the ledger directly. The runtime automatically maintains the ledger through event capture and reconstruction. Use the ledger API only for advanced scenarios like custom planners or debugging tools.
+`BuildMessagesFromRunLog` pages through `storage.Store.ListRunRecords` and
+replays only the canonical transcript records in their stored order. If records
+are already loaded, `ReplayRunLogEvents` performs the same projection. Provider
+adapters preserve part order, and `ValidatePlannerTranscript` or
+`ValidateBedrock` can check a transcript at the relevant boundary.
 
-### Why This Matters
-
-- **Deterministic Replay**: Stored events can rebuild the exact transcript for debugging, auditing, or re-running failed turns
-- **Provider Agnostic Storage**: The ledger stores JSON-friendly parts without provider SDK dependencies
-- **Simplified Planners**: Planners receive correctly ordered messages without managing provider constraints
-- **Validation**: Catch ordering violations before they reach the provider and cause cryptic errors
+These runtime records support workflow replay and inspection. They do not
+replace the product-owned transcript used for chat history, ratings, search,
+retention, or customer-facing deletion.
 
 ---
 
@@ -203,29 +127,48 @@ Goa-AI separates conversation state into three layers:
 When calling an agent:
 
 ```go
-client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "chat-session-123"); err != nil {
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "chat-session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
+rt := runtime.New(store)
+client := chat.NewClient(rt)
 out, err := client.Run(ctx, "chat-session-123", messages,
     runtime.WithTurnID("turn-1"), // optional but recommended for chat
 )
 ```
 
-- `SessionID`: Groups all runs for a conversation; often used as a search key in run logs and dashboards
+- `SessionID`: Groups all runs for a conversation; often used as a search key in runtime records and dashboards
 - `TurnID`: Groups events for a single user → assistant interaction; optional but helpful for UIs and logs
 
-Sessions are ended explicitly (for example, when a conversation is deleted). Once a session is ended, new runs must not start under it.
+Sessions are ended explicitly by the host application (for example, when a
+conversation is deleted). Once a session is ended, an accepted workflow records
+a canceled run and stops before planning or calling tools. The host may
+permanently delete the session only after all of its runs have finished.
 
 ---
 
-## Memory Store vs Run Log
+## Product Memory vs Runtime Storage
 
-Goa-AI's feature modules provide complementary stores:
+Goa-AI keeps two kinds of durable data separate because they have different
+owners:
+
+- **Product memory** is the transcript and any application data built from it.
+  The product decides what to retain, display, search, or redact.
+- **Runtime storage** is the state Goa-AI needs to execute and continue runs:
+  session state, run metadata, private continuation checkpoints, and run records
+  that cannot change after insertion.
+
+For example, a chat service may store the complete conversation, ratings, and
+search fields in its own database. The runtime store records that run `run-42`
+started, which child run it launched, whether cancellation was requested, and
+how it finished. The runtime store does not become the chat application's
+transcript database.
 
 ### Memory Store (`memory.Store`)
 
 Persists per-run event history:
+
 - User/assistant messages
 - Tool calls and results
 - Planner notes and thinking
@@ -241,93 +184,157 @@ Key types:
 - **`memory.Snapshot`** – immutable view of a run's stored history (`AgentID`, `RunID`, `Events []memory.Event`)
 - **`memory.Event`** – single persisted entry with `Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`, `thinking`), `Timestamp`, `Data`, and `Labels`
 
-### Run Log (`runlog.Store`)
+### Runtime Store (`storage.Store`)
 
-Persists the **canonical, append-only event log** for runs. The runtime appends hook events as the run executes (start/phase changes/tools/messages/completion) and callers can list them using cursor pagination for UIs and diagnostics.
+The host provides one `storage.Store` implementation to the runtime. That one
+implementation owns all runtime writes for:
+
+- session scope and whether a session is active, ended, or permanently deleted
+- run identity, parentage, labels, start decision, and current status
+- the private bytes required to continue a suspended run
+- ordered run records that cannot change after insertion, used for inspection
+  and for identifying which prompt versions influenced a run
+
+The runtime requires this dependency:
 
 ```go
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
+store := newRuntimeStore()
+rt := runtime.New(store, runtime.WithEngine(eng))
 ```
 
-`runlog.Page` captures:
-- `Events` (ordered oldest-first)
-- `NextCursor` (empty when there are no further events)
+In a single-process application, `store` may be a local database adapter. In a
+distributed application, one service should own the database and expose typed
+methods; agent workers should implement `storage.Store` by calling that service.
+Different services must not write the runtime collections directly.
 
 ---
 
-## Wiring Stores
+## Store Lifecycle Changes and Records Together
 
-With the MongoDB-backed implementations:
+Each lifecycle method stores the run state and the records that prove that
+state in one operation:
 
-```go
-import (
-    memorymongo "goa.design/goa-ai/features/memory/mongo"
-    memorymongoclient "goa.design/goa-ai/features/memory/mongo/clients/mongo"
-    runlogmongo "goa.design/goa-ai/features/runlog/mongo"
-    runlogmongoclient "goa.design/goa-ai/features/runlog/mongo/clients/mongo"
-    "goa.design/goa-ai/runtime/agent/runtime"
-)
+- `StartRootRun` stores root-run metadata and its first record.
+- `StartChildRun` stores the parent link, child metadata, and first child record.
+- `StartOneShotRun` stores a sessionless run and its first record.
+- `StartOneShotChildRun` stores a sessionless parent link and child start in one
+  operation.
+- `RecordRunCancellation` stores the first cancellation reason and its record.
+- `RecordRunSuspension` stores the private checkpoint, suspended status, and
+  suspension record.
+- `RecordRunTerminal` stores the final status and matching terminal record.
 
-mongoClient := newMongoClient()
+This contract prevents partial results. A database failure cannot leave a run
+marked complete without its completion record, or store a continuation
+checkpoint while the run still appears active.
 
-memClient, err := memorymongoclient.New(memorymongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+Ordinary records that do not change lifecycle use `AppendRunRecord`. Callers
+read records with `ListRunRecords` or `ListSessionRunRecords`. A cursor is a
+store-provided position that callers pass back unchanged to fetch the next page.
 
-memStore, err := memorymongo.NewStore(memClient)
-if err != nil {
-    log.Fatal(err)
-}
+### Exact retries
 
-runlogClient, err := runlogmongoclient.New(runlogmongoclient.Options{
-    Client:   mongoClient,
-    Database: "goa_ai",
-})
-if err != nil {
-    log.Fatal(err)
-}
+Workflow activities can run more than once. The storage contract therefore
+treats an exact repeat as success and returns the original record identifier.
+The retry must contain the same run identity, time, labels, event key, event
+payload, checkpoint, status, and cancellation reason as the first attempt.
+For each start, cancellation, suspension, and terminal change, the store also
+remembers the exact record selected by the first successful write. Repeating
+the lifecycle change with a different record is a conflict even when the status
+and other lifecycle fields match.
 
-runEventStore, err := runlogmongo.NewStore(runlogClient)
-if err != nil {
-    log.Fatal(err)
-}
+A repeat that changes any value fixed by the first write is a conflict. The
+store must not guess which value is newer or overwrite the first value.
+Cancellation follows the same rule: the first reason is permanent, an exact
+repeat succeeds, and a different reason fails.
 
-rt := runtime.New(
-    runtime.WithMemoryStore(memStore),
-    runtime.WithRunEventStore(runEventStore),
-)
-```
+### Start ordering
 
-Once configured:
-- Default subscribers persist memory and run events automatically
-- You can rebuild transcripts from `memory.Store` at any time to re-call models, power UIs, or run offline analysis
+For root runs, the workflow engine accepts the workflow before runtime storage
+is written. There is no `pending` run record created before engine admission.
+The workflow's first durable activity calls `StartRootRun`:
+
+- if the session is active, the store records `RunStarted`, marks the run as
+  running, and the workflow proceeds;
+- if the session ended after the engine accepted the workflow, the store still
+  records `RunStarted`, immediately follows it with a canceled `RunCompleted`,
+  and the workflow stops before planner or tool work.
+
+Child workflows use `StartChildRun`. The store records `ChildRunLinked` on the
+parent followed by `RunStarted` on the child. If the session has ended, it also
+records the child's canceled `RunCompleted`. Every workflow accepted by the
+engine therefore has one `RunStarted` record, including work stopped because
+its session ended.
+
+Sessionless root work uses `StartOneShotRun`; it receives normal run metadata
+and `RunStarted`, but it does not create or join a session. An agent called as a
+tool from that run uses `StartOneShotChildRun`. On the first call, the parent
+must already exist, have no session, and still be running. The store writes
+`ChildRunLinked` on that parent and `RunStarted` on the sessionless child in one
+operation.
+
+An exact retry of `StartOneShotChildRun` succeeds even if the parent finished
+after the first write, because the child relationship was already accepted.
+The retry must repeat the same child identity and both record keys and payloads.
+A changed retry is a conflict, and a new child cannot be attached after the
+parent has finished.
+
+The start result reports the original start decision, not the run's current
+status. Retrying a start after the run has completed therefore returns the same
+decision that was made on the first write.
 
 ---
 
-## Custom Stores
+## Session Lifecycle and Deletion
 
-Implement the `memory.Store` and `runlog.Store` interfaces for custom backends:
+Session administration belongs to the host application, not to agent workers.
+The host creates a session before submitting sessionful work, ends it when no
+new work should begin, and permanently deletes it only after every active run
+has reached a final state.
 
-```go
-// Memory store
-type Store interface {
-    LoadRun(ctx context.Context, agentID, runID string) (memory.Snapshot, error)
-    AppendEvents(ctx context.Context, agentID, runID string, events ...memory.Event) error
-}
+Ending a session and deleting it are separate operations:
 
-// Run log store
-type Store interface {
-    Append(ctx context.Context, e *runlog.Event) error
-    List(ctx context.Context, runID string, cursor string, limit int) (runlog.Page, error)
-}
-```
+- **End** prevents accepted workflows from doing new planner or tool work while
+  allowing already-running workflows to save their final records.
+- **Purge** removes the session, its runs, checkpoints, and records after all
+  runs finish. The deleted session ID remains unusable so a delayed retry cannot
+  recreate old state.
+
+The in-memory implementation under `runtime/agent/storage/inmem` exposes
+`CreateSession`, `EndSession`, and `PurgeSession` for local examples and tests.
+A production host implements those operations in the service that owns its
+runtime database.
+
+The runtime derives which prompt versions influenced a run from the
+`prompt_rendered` records and parent/child link records, which cannot change
+after insertion. Stores do not maintain a second list of prompt references or
+child IDs that could disagree with the run history.
+
+---
+
+## Upgrading from Split Stores
+
+This storage contract is a breaking change. The following public APIs are
+removed:
+
+- `session.Store` and `runlog.Store`
+- `runtime.WithSessionStore` and `runtime.WithRunEventStore`
+- runtime session-administration methods such as `CreateSession`, `EndSession`,
+  and `PurgeSession`
+- the built-in `features/session/mongo` and `features/runlog/mongo` packages
+
+Replace the two stores with one implementation of
+`runtime/agent/storage.Store`, then pass it as the first argument to
+`runtime.New`. Move session creation, ending, and deletion into the host service
+that owns the runtime data. If agent workers run in separate services, make them
+call that owner through a typed API instead of importing its database adapter.
+
+Before the new runtime writes, existing persisted data must satisfy the
+integrated store contract. Run metadata, checkpoints, and records must support
+the lifecycle operations above, and old split-store writers must not overlap
+with new writers. The host chooses the conversion and recovery procedure for
+its database and deployment environment, then deploys the owner and all workers
+that use it as one coordinated change.
 
 ---
 
@@ -337,17 +344,24 @@ type Store interface {
 
 - Use one `SessionID` per chat session
 - Start a new run per user turn or per "task"
-- Persist transcripts per run; use session metadata to stitch the conversation
+- Keep the product transcript in the chat service; use runtime records for run
+  state, continuation, and inspection
 
 ### Long-Running Workflows
 
-- Use a single run per logical workflow (potentially with pause/resume)
-- Use `SessionID` to group related workflows (e.g., per ticket or incident)
+- Use one run for each workflow accepted by the engine
+- When a run requests external input, its workflow ends; the answer starts a new
+  run in the same session using the saved checkpoint
+- When accepting the answer must be combined with an application write, use
+  `PrepareContinuation`, atomically accept the answer in application storage,
+  then pass that exact prepared value to `StartContinuation`. See
+  [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations).
+- Use `SessionID` to group related runs (e.g., per ticket or incident)
 - Rely on `run.Phase` and `RunCompleted` events for status tracking
 
 ### Search and Dashboards
 
-- Page through `runlog.Store` by `RunID` for audit/debug UIs
+- Page through `storage.Store` by `RunID` for audit/debug UIs
 - Load transcripts from `memory.Store` on demand for selected runs
 
 ---
@@ -360,7 +374,9 @@ type Store interface {
 
 - **Let the runtime own state**: Avoid maintaining parallel "tool history" arrays or "previous messages" slices in your planner. Read from `PlanInput.Messages` / `PlanResumeInput.Messages` and rely on the runtime to append new parts
 
-- **Persist transcripts once, reuse everywhere**: Whatever store you choose, treat the transcript as reusable infrastructure—same transcript backing model calls, chat UI, debug UI, and offline analysis
+- **Persist product transcripts once**: Keep one product-owned transcript for
+  model calls, chat UI, debug UI, and offline analysis. Do not copy it into a
+  second service merely because that service owns runtime state
 
 - **Index frequently queried fields**: Session ID, run ID, status for efficient queries
 

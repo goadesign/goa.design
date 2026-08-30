@@ -130,10 +130,7 @@ var DivByZero = Type("DivByZero", func() {
     Description("DivByZero is the error returned when using value 0 as divisor.")
     Field(1, "message", String, "Error message")
     Field(2, "dividend", Int, "Dividend that was used")
-    Field(3, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for multiple custom errors
-    })
-    Required("message", "dividend", "name")
+    Required("message", "dividend")
 })
 
 var _ = Service("divider", func() {
@@ -143,7 +140,17 @@ var _ = Service("divider", func() {
 })
 ```
 
-**重要**: 同じメソッド内で複数のエラーにカスタムタイプを使用する場合は、`Meta("struct:error:name")` を使って「どの属性にエラー名が入るか」を指定する必要があります。
+一つの名前付きエラーだけに使う型には、エラー名を判別するフィールドは必要ありません。一つの型を複数の名前付きエラーに使う場合は、その型にエラー名のフィールドを追加します：
+
+```go
+var RequestError = Type("RequestError", func() {
+    ErrorName(1, "name", String, "Goa エラー名")
+    Field(2, "message", String, "エラーメッセージ")
+    Required("name", "message")
+})
+```
+
+値を返す前に `Name` に Goa のエラー名を設定してください。Goa が `Error`、`ErrorName`、`GoaErrorName` メソッドを追加するのは、`Error` に直接渡した型だけです。その中に含まれる名前付き型は通常の型のままです。直接渡した型をペイロードや結果としても使う場合や、その型に `struct:pkg:path` が指定されている場合も、Goa は型を一度だけ生成し、その宣言の隣にエラーメソッドを配置します。`ErrorResult` は Goa 組み込みのサービスエラーであり、設計で定義したカスタムタイプとしては生成されません。
 
 ### エラーのプロパティ
 
@@ -284,7 +291,6 @@ func (s *dividerSvc) IntegralDivide(ctx context.Context, p *divider.IntOperands)
 func (s *dividerSvc) IntegralDivide(ctx context.Context, p *divider.IntOperands) (int, error) {
     if p.Divisor == 0 {
         return 0, &gendivider.DivByZero{
-            Name:     "DivByZero",
             Message:  "divisor cannot be zero",
             Dividend: p.Dividend,
         }
