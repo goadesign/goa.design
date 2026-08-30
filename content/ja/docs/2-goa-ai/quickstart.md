@@ -22,13 +22,18 @@ aliases:
 ## 1. モジュールを作成する
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+これらの branch 名は、このガイドで使う統合ランタイムストレージ契約を選択します。
+Goa preview branch 名にはスラッシュが含まれるため、direct proxy の設定が必要です。
+Go は正確な疑似バージョンを `go.mod` に記録するため、後で branch が更新されても、
+再度 `go get` を実行するまで既存のビルドは変わりません。
 
 Goa-AI は現在、モダンな Go を対象にしています。`goa.design/goa-ai` モジュールが宣言している Go バージョン、またはそれ以降を使ってください。
 

@@ -219,9 +219,37 @@ history を復元します。
 
 ### 開始順序
 
-ルート workflow は engine が受理した後に初めて store へ書きます。受理前の `pending` record はありません。最初の durable activity が `StartRootRun` を呼びます。session が active なら running を記録して続行し、受理後に session が ended なら canceled を記録して planner や tool の前に停止します。
+root run では、workflow engine が workflow を受理してから runtime storage へ
+書き込みます。engine が受理する前に `pending` run record は作成しません。
+workflow の最初の durable activity が `StartRootRun` を呼びます。
 
-子 workflow は `StartChildRun` を使い、親リンクと開始を同時に見せます。session なしの処理は `StartOneShotRun` を使い、通常の metadata と records を持ちますが session を作成しません。開始結果は現在状態ではなく最初の開始判断を返します。
+- session が active なら、store は `RunStarted` を書き、run を running にして
+  workflow を続行します。
+- engine が workflow を受理した後に session が終了していた場合も、store はまず
+  `RunStarted` を書き、直後に canceled の `RunCompleted` を書きます。workflow は
+  planner や tool の処理を始める前に停止します。
+
+child workflow は `StartChildRun` を使います。store は parent に
+`ChildRunLinked`、child に `RunStarted` の順で書きます。session が終了している
+場合は、child の canceled `RunCompleted` も書きます。そのため、engine が受理した
+すべての workflow には、session 終了によって停止したものも含めて `RunStarted`
+record が 1 つあります。
+
+sessionless root work は `StartOneShotRun` を使います。通常の run metadata と
+`RunStarted` を持ちますが、session を作成せず、session にも参加しません。その
+run から tool として呼ばれる agent は `StartOneShotChildRun` を使います。最初の
+呼び出しでは、parent がすでに存在し、session を持たず、まだ running でなければ
+なりません。store は parent の `ChildRunLinked` と sessionless child の
+`RunStarted` を 1 回の操作で書きます。
+
+最初の書き込み後に parent が完了していても、`StartOneShotChildRun` の完全に同じ
+retry は成功します。child との関係がすでに受理されているためです。retry では、
+同じ child identity と、二つの record の同じ key と payload を使う必要があります。
+内容を変えた retry は conflict になり、parent の完了後に新しい child を追加する
+こともできません。
+
+start result は run の現在の status ではなく、最初の start decision を返します。
+run の完了後に start を retry しても、最初の書き込み時と同じ decision が返ります。
 
 ---
 

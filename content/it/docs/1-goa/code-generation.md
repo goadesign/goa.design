@@ -18,7 +18,7 @@ business.
 ### Installazione
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
 
 {{< alert title="Provare una versione preliminare della generazione" color="info" >}}
@@ -26,7 +26,7 @@ Le versioni preliminari sono facoltative. Fissare il modulo Goa e il comando
 `goa` allo stesso commit. Il lavoro corrente si trova nel
 [branch preliminare `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
 al commit
-[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
 Rigenerare l'intera directory `gen/`, senza mai mescolare output stabile e
 preliminare, quindi compilare e provare l'intera applicazione. Coordinare gli
 aggiornamenti di client e server quando la guida segnala una modifica al formato
@@ -651,9 +651,9 @@ Le callback pubblicate restano adatte ai plugin che modificano valori o file
 generati. Un plugin che dichiara un nome a livello di pacchetto deve usare la
 fase di pianificazione della factory, così Goa può riservare quel nome insieme a
 tutte le altre dichiarazioni prima del rendering. Consultare
-[l'architettura della generazione di codice](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
+[l'architettura della generazione di codice](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
 e la
-[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
+[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
 per il contratto dettagliato dei plugin e i passaggi di migrazione.
 
 ---

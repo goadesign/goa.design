@@ -123,6 +123,24 @@ func main() {
 
 ---
 
+## Définitions d'agent générées
+
+La génération de code produit une seule `AgentDefinition` immuable pour chaque
+agent. Cette définition contient le nom du workflow, la file de tâches par
+défaut, les contrats des outils, les labels obligatoires, la politique de
+complétion et les définitions de tous les agents enfants accessibles par des
+outils fournis par des agents.
+
+Les appelants et les helpers générés pour enregistrer les workers utilisent la
+même définition. Le code écrit à la main fournit le planificateur, les
+exécuteurs d'outils et les réglages des activités ; il ne doit pas répéter la
+route, la file, l'identifiant d'un agent enfant, les contrats de ses outils ni
+les labels obligatoires. Ainsi, l'appelant et le worker interprètent la
+conception de la même manière. Une exécution donnée peut choisir une autre file
+avec `WithTaskQueue`.
+
+---
+
 ## Passthrough : Transfert d'outils déterministe
 
 Pour les outils exportés qui doivent contourner entièrement le planificateur et passer directement à une méthode de service, utilisez `Passthrough`. Ceci est utile lorsque :

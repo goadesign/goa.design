@@ -237,9 +237,40 @@ continuazioni dai record che l'hanno stabilita.
 
 ### Ordine di avvio
 
-Il motore accetta il workflow radice prima della scrittura. Non esiste uno stato `pending` prima dell’ammissione. La prima activity chiama `StartRootRun`: con sessione attiva salva un’esecuzione in corso; se la sessione è terminata, salva un’esecuzione annullata e si ferma prima di pianificatore e strumenti.
+Per le esecuzioni radice, il motore accetta il workflow prima che il runtime
+scriva nello storage. Non viene creato alcun record `pending` prima
+dell'accettazione del motore. La prima activity durevole del workflow chiama
+`StartRootRun`:
 
-I figli usano `StartChildRun`, così collegamento e avvio sono visibili insieme. Il lavoro senza sessione usa `StartOneShotRun`: conserva metadati e record normali senza creare una sessione. Il risultato restituisce sempre la decisione iniziale, anche dopo il completamento.
+- se la sessione è attiva, lo storage scrive `RunStarted`, contrassegna
+  l'esecuzione come attiva e il workflow prosegue;
+- se la sessione è terminata dopo l'accettazione del workflow, lo storage scrive
+  comunque `RunStarted`, lo fa seguire subito da un `RunCompleted` annullato e
+  il workflow si ferma prima del pianificatore o degli strumenti.
+
+I workflow figli usano `StartChildRun`. Lo storage scrive `ChildRunLinked` sul
+padre e poi `RunStarted` sul figlio. Se la sessione è terminata, scrive anche il
+`RunCompleted` annullato del figlio. Ogni workflow accettato dal motore ha quindi
+un record `RunStarted`, compreso il lavoro fermato perché la sessione era
+terminata.
+
+Il lavoro radice senza sessione usa `StartOneShotRun`: riceve i normali
+metadati dell'esecuzione e `RunStarted`, ma non crea né usa una sessione. Un
+agente chiamato come strumento da quell'esecuzione usa `StartOneShotChildRun`.
+Alla prima chiamata, il padre deve esistere, non avere una sessione ed essere
+ancora attivo. Lo storage scrive `ChildRunLinked` sul padre e `RunStarted` sul
+figlio senza sessione in una sola operazione.
+
+Una ripetizione esatta di `StartOneShotChildRun` riesce anche se il padre è
+terminato dopo la prima scrittura, perché il rapporto con il figlio era già
+stato accettato. La ripetizione deve usare la stessa identità del figlio e le
+stesse chiavi e contenuti di entrambi i record. Una ripetizione modificata
+produce un conflitto e non è possibile aggiungere un nuovo figlio dopo il
+termine del padre.
+
+Il risultato dell'avvio riporta la decisione originale, non lo stato corrente
+dell'esecuzione. Ripetere un avvio dopo il completamento restituisce quindi la
+stessa decisione presa alla prima scrittura.
 
 ---
 

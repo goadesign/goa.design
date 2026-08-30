@@ -18,7 +18,7 @@ negocio.
 ### Instalación
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
 
 {{< alert title="Probar una versión preliminar de la generación" color="info" >}}
@@ -26,7 +26,7 @@ Las versiones preliminares son opcionales. Fije el módulo de Goa y el comando
 `goa` al mismo commit. El trabajo actual está en la
 [rama preliminar `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
 en el commit
-[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
 Vuelva a generar todo el directorio `gen/`, no mezcle nunca resultados estables
 y preliminares y, a continuación, compile y pruebe la aplicación completa.
 Coordine las actualizaciones de cliente y servidor cuando la guía identifique
@@ -653,9 +653,9 @@ que editan valores o archivos generados. Un plugin que declara un nombre a
 nivel de paquete debe usar la fase de planificación de la factoría para que Goa
 pueda reservar ese nombre junto con todas las demás declaraciones antes de
 renderizar. Consulte la
-[arquitectura de generación de código](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
 y la
-[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
+[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
 para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---

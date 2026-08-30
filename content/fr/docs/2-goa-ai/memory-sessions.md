@@ -257,14 +257,41 @@ l'historique des continuations à partir des enregistrements qui l'ont établi.
 
 ### Ordre de démarrage
 
-Pour une exécution racine, le moteur accepte le workflow avant l’écriture dans le stockage. Aucun enregistrement `pending` n’est créé avant cette acceptation. La première activity durable appelle `StartRootRun` :
+Pour les exécutions racines, le moteur accepte le workflow avant toute écriture
+dans le stockage du runtime. Aucun enregistrement `pending` n'est créé avant
+cette acceptation. La première activité durable du workflow appelle
+`StartRootRun` :
 
-- si la session est active, elle enregistre une exécution en cours et continue ;
-- si la session s’est terminée après l’acceptation, elle enregistre une exécution annulée et s’arrête avant le planificateur et les outils.
+- si la session est active, le stockage écrit `RunStarted`, marque l'exécution
+  comme active et le workflow continue ;
+- si la session s'est terminée après l'acceptation du workflow par le moteur,
+  le stockage écrit tout de même `RunStarted`, le fait immédiatement suivre
+  d'un `RunCompleted` annulé et le workflow s'arrête avant le planificateur ou
+  les outils.
 
-Les workflows enfants utilisent `StartChildRun`, afin que le lien parent et le démarrage deviennent visibles ensemble. Le travail sans session utilise `StartOneShotRun` : il conserve les métadonnées et enregistrements normaux, sans créer ni rejoindre une session.
+Les workflows enfants utilisent `StartChildRun`. Le stockage écrit
+`ChildRunLinked` sur le parent, puis `RunStarted` sur l'enfant. Si la session est
+terminée, il écrit aussi le `RunCompleted` annulé de l'enfant. Chaque workflow
+accepté par le moteur possède donc un enregistrement `RunStarted`, y compris un
+travail arrêté parce que sa session était terminée.
 
-Le résultat du démarrage rapporte la décision d’origine, pas l’état courant. Une nouvelle tentative après la fin renvoie donc la même décision initiale.
+Un travail racine sans session utilise `StartOneShotRun` : il reçoit les
+métadonnées normales de l'exécution et `RunStarted`, mais ne crée ni ne rejoint
+une session. Un agent appelé comme outil depuis cette exécution utilise
+`StartOneShotChildRun`. Lors du premier appel, le parent doit déjà exister, ne
+pas avoir de session et être encore actif. Le stockage écrit `ChildRunLinked`
+sur ce parent et `RunStarted` sur l'enfant sans session en une seule opération.
+
+Une nouvelle tentative strictement identique de `StartOneShotChildRun` réussit
+même si le parent s'est terminé après la première écriture, car la relation avec
+l'enfant avait déjà été acceptée. Elle doit reprendre la même identité d'enfant
+ainsi que les clés et les contenus des deux enregistrements. Une tentative
+modifiée provoque un conflit et aucun nouvel enfant ne peut être ajouté après la
+fin du parent.
+
+Le résultat du démarrage rapporte la décision d'origine, pas l'état courant de
+l'exécution. Une nouvelle tentative après la fin renvoie donc la même décision
+que celle prise lors de la première écriture.
 
 ---
 

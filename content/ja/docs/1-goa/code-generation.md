@@ -15,7 +15,7 @@ Goa のコード生成は、設計を本番環境向けのサービス契約、�
 ### インストール
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
 
 {{< alert title="コード生成プレビューを試す" color="info" >}}
@@ -23,10 +23,12 @@ go install goa.design/goa/v3/cmd/goa@latest
 コマンドを同じ commit に固定してください。現在の作業は
 [`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
 の
-[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595)
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af)
 です。`gen/` ディレクトリ全体を生成し直し、安定版とプレビュー版の生成コードを
 混在させず、アプリケーション全体をコンパイルしてテストします。ガイドに通信形式の
 変更が記載されている場合は、クライアントとサーバーを同時に更新してください。
+安定版に戻すには、モジュールとコマンドの両方を安定版に固定し、すべてをもう一度
+生成し直してください。
 {{< /alert >}}
 
 ### コマンド
@@ -628,4 +630,4 @@ var _ = Service("calc", func() {
 - 横断的な関心事（ロギング、メトリクス）
 - 設定ファイルの生成
 
-生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)と[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)を参照してください。
+生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)と[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)を参照してください。

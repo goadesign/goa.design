@@ -225,14 +225,40 @@ a partir de los registros que lo establecieron.
 
 ### Orden de inicio
 
-Para una ejecución raíz, el motor acepta el workflow antes de escribir en el almacén. No existe un registro `pending` anterior a esa aceptación. La primera activity duradera llama a `StartRootRun`:
+Para las ejecuciones raíz, el motor acepta el workflow antes de escribir en el
+almacenamiento del runtime. No se crea un registro `pending` antes de que el
+motor lo acepte. La primera activity duradera del workflow llama a
+`StartRootRun`:
 
-- si la sesión está activa, guarda una ejecución en curso y continúa;
-- si la sesión terminó después de que el motor aceptara el workflow, guarda una ejecución cancelada y se detiene antes del planificador y las herramientas.
+- si la sesión está activa, el almacén escribe `RunStarted`, marca la ejecución
+  como activa y el workflow continúa;
+- si la sesión terminó después de que el motor aceptara el workflow, el almacén
+  escribe igualmente `RunStarted`, lo sigue de inmediato con un `RunCompleted`
+  cancelado y el workflow se detiene antes de ejecutar el planificador o una
+  herramienta.
 
-Los workflows hijos usan `StartChildRun`, de modo que el vínculo con el padre y el inicio sean visibles juntos. El trabajo sin sesión usa `StartOneShotRun`: conserva metadatos y registros normales, pero no crea ni se une a una sesión.
+Los workflows hijos usan `StartChildRun`. El almacén escribe `ChildRunLinked`
+en el padre y después `RunStarted` en el hijo. Si la sesión ha terminado,
+también escribe el `RunCompleted` cancelado del hijo. Por tanto, cada workflow
+aceptado por el motor tiene un registro `RunStarted`, incluso si se detuvo
+porque su sesión había terminado.
 
-El resultado del inicio devuelve la decisión original, no el estado actual. Repetir el inicio después de que la ejecución haya terminado devuelve la misma decisión inicial.
+El trabajo raíz sin sesión usa `StartOneShotRun`: recibe los metadatos normales
+de la ejecución y `RunStarted`, pero no crea ni se une a una sesión. Un agente
+invocado como herramienta desde esa ejecución usa `StartOneShotChildRun`. En la
+primera llamada, el padre debe existir, no tener sesión y seguir activo. El
+almacén escribe `ChildRunLinked` en el padre y `RunStarted` en el hijo sin sesión
+en una sola operación.
+
+Un reintento exacto de `StartOneShotChildRun` tiene éxito aunque el padre haya
+terminado después de la primera escritura, porque la relación con el hijo ya
+fue aceptada. El reintento debe repetir la misma identidad del hijo y las claves
+y contenidos de ambos registros. Un reintento modificado produce un conflicto,
+y no se puede añadir un hijo nuevo después de que el padre haya terminado.
+
+El resultado del inicio informa de la decisión original, no del estado actual
+de la ejecución. Repetir un inicio después de que la ejecución haya terminado
+devuelve por tanto la misma decisión tomada en la primera escritura.
 
 ---
 

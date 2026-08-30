@@ -123,6 +123,24 @@ func main() {
 
 ---
 
+## Definiciones de agente generadas
+
+La generación de código emite una única `AgentDefinition` inmutable para cada
+agente. Esta definición contiene el nombre del workflow, la cola de tareas
+predeterminada, los contratos de herramientas, las etiquetas obligatorias, la
+política de completion y las definiciones de todos los agentes hijo accesibles
+mediante herramientas respaldadas por agentes.
+
+Los clientes y los helpers generados para registrar workers usan la misma
+definición. El código escrito a mano proporciona el planificador, los ejecutores
+de herramientas y la configuración de las activities; no debe repetir la ruta,
+la cola, el ID del agente hijo, los contratos de sus herramientas ni las
+etiquetas obligatorias. Así, el cliente y el worker interpretan el diseño del
+mismo modo. Una ejecución concreta puede elegir otra cola mediante
+`WithTaskQueue`.
+
+---
+
 ## Passthrough: Reenvío determinista de herramientas
 
 Para las herramientas exportadas que deben pasar por alto el planificador por completo y reenviar directamente a un método de servicio, utilice `Passthrough`. Esto es útil cuando:

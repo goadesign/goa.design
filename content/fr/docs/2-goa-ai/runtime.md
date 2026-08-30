@@ -183,8 +183,17 @@ lettres/chiffres/`_`/`-` uniquement et doit commencer par une lettre ou un chiff
 
 Deux rôles utilisent le runtime :
 
-- **Client uniquement** (soumettre des exécutions) : construit un environnement d'exécution avec un moteur compatible client et n'enregistre pas les agents. Utilisez le `<agent>.NewClient(rt)` généré qui transporte l'itinéraire (workflow + file d'attente) enregistré par les travailleurs distants.
+- **Client uniquement** (soumettre des exécutions) : construit un environnement d'exécution avec un moteur compatible client et n'enregistre pas les agents. Utilisez le `<agent>.NewClient(rt)` généré, qui transporte l'`AgentDefinition` générée et partagée avec les workers distants.
 - **Worker** (exécutions d'exécution) : construit un environnement d'exécution avec un moteur capable de fonctionner, enregistre les ensembles d'outils et les agents, puis scelle l'enregistrement afin que l'interrogation ne démarre qu'une fois le registre d'exécution local terminé.
+
+Chaque `AgentDefinition` générée est le contrat complet et immuable d'un agent.
+Elle contient le nom du workflow, la file de tâches par défaut, les contrats des
+outils générés, les labels obligatoires, la politique de complétion et les
+définitions de tous les agents enfants accessibles. Les appelants l'utilisent
+pour valider et diriger le travail avant que le moteur accepte le workflow ; les
+workers utilisent la même valeur pour l'enregistrer. Une exécution donnée peut
+choisir une autre file avec `WithTaskQueue`, mais un enregistrement écrit à la
+main ne doit pas définir une seconde route ni un second graphe d'agents enfants.
 
 ### Exemple client uniquement
 
@@ -202,7 +211,7 @@ out, err := client.Run(ctx, "s1", msgs)
 Utilisez `StartOneShot` et `OneShotRun` lorsque vous souhaitez un travail durable qui n'est pas attaché à une session existante.
 
 - `Start` / `Run` sont de type session : ils nécessitent un `SessionID` concret, participent au cycle de vie de la session et émettent des événements de flux à l'échelle de la session.
-- `StartOneShot` / `OneShotRun` sont sans session : ils ne prennent pas de `SessionID`, n'en créent pas et ajoutent uniquement les événements canoniques du journal d'exécution pour l'introspection par `RunID`.
+- `StartOneShot` / `OneShotRun` sont sans session : ils ne prennent pas de `SessionID` et n'en créent pas. Avant d'exécuter le travail, le stockage intégré enregistre les métadonnées complètes sans session et l'enregistrement `RunStarted`, afin que l'exécution soit consultable par `RunID`.
 - L’application hôte crée les sessions avant le travail ; les runtimes d’agents ne créent, ne terminent et ne suppriment pas les sessions.
 - Le moteur accepte un workflow racine avant que sa première activity enregistre l’exécution. Aucun état `pending` n’est créé avant l’admission.
 - Les démarrages racine, enfant et ponctuel sont des opérations distinctes. Le démarrage enfant enregistre le lien parent ; le démarrage ponctuel enregistre toutes les métadonnées sans session.
@@ -607,6 +616,14 @@ peut donc pas modifier la requête exacte de démarrage du workflow.
 - **Exécuter les magasins d'événements** (`storage.Store`) ajoutez le journal des événements de hook canonique par `RunID` pour l'audit/débogage de UIs et exécutez l'introspection.
 
 - Les **récepteurs de flux** (`stream.Sink`, par exemple Pulse ou SSE/WebSocket personnalisé) reçoivent les valeurs `stream.Event` typées produites par le `stream.Subscriber`. Un `StreamProfile` contrôle quels types d'événements sont émis.
+
+  La transcription durable conserve exactement chaque réponse sélectionnée du
+  fournisseur. Lorsqu'un message assistant contient un appel d'outil, son texte
+  reste dans cette transcription pour la relecture auprès du fournisseur, mais
+  n'est pas émis comme réponse visible par l'utilisateur. Les événements d'outil
+  et d'attente présentent cette étape non terminale. Seuls les messages
+  assistant sans appel d'outil produisent des événements de texte assistant
+  validés.
 
 - **Télémétrie** : les flux de travail et les activités des instruments de journalisation, de métriques et de traçage compatibles OTEL de bout en bout.
 

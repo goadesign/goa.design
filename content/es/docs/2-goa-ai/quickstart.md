@@ -24,13 +24,20 @@ Vas a construir:
 ## 1. Crear un módulo
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+Estos nombres de rama seleccionan el contrato integrado de almacenamiento del
+runtime que usa esta guía. La configuración de proxy directo es necesaria
+porque el nombre de la rama preliminar de Goa contiene una barra. Go registra
+pseudoversiones exactas en `go.mod`, por lo que las actualizaciones posteriores
+de las ramas no cambian una compilación existente hasta que vuelvas a ejecutar
+`go get`.
 
 Goa-AI actualmente apunta a versiones modernas de Go. Utiliza la versión de Go
 declarada por el módulo `goa.design/goa-ai` o una posterior.

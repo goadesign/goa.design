@@ -180,9 +180,16 @@ fmt.Println(value.Name)
 
 ランタイムは大きく 2 つのロールで利用されます。
 
-- **クライアント専用**（run の送信）: クライアント機能を持つエンジンでランタイムを構築し、エージェント登録は行いません。生成された `<agent>.NewClient(rt)` は、リモートワーカーによって登録されたルート（workflow + queue）を保持しており、これを用いて run を送信します。
+- **クライアント専用**（run の送信）: クライアント機能を持つエンジンでランタイムを構築し、エージェント登録は行いません。生成された `<agent>.NewClient(rt)` は、リモート worker と共有する生成済みの `AgentDefinition` を保持しています。
 
 - **ワーカー**（run の実行）: ワーカー機能を持つエンジンでランタイムを構築し、実際のプランナーを使ってエージェントを登録します。その上で、エンジンが workflow/activity をポーリングして実行します。
+
+生成される各 `AgentDefinition` は、1 つのエージェントに対する完全で変更できない
+契約です。workflow 名、既定の task queue、生成されたツール契約、必須ラベル、
+completion policy、到達可能なすべての子エージェント定義を含みます。呼び出し側は
+engine が workflow を受理する前の検証と送信にこの値を使い、worker は同じ値で
+workflow を登録します。個別の実行は `WithTaskQueue` で別の queue を選べますが、
+手書きの登録が別の route や子エージェント graph を定義してはいけません。
 
 ### クライアント専用の例
 
@@ -200,7 +207,7 @@ out, err := client.Run(ctx, "s1", msgs)
 既存セッションに紐づかない耐久実行が必要な場合は `StartOneShot` と `OneShotRun` を使います。
 
 - `Start` / `Run` はセッション付きです。具体的な `SessionID` が必要で、セッションのライフサイクルに参加し、セッションスコープのストリームイベントを発行します。
-- `StartOneShot` / `OneShotRun` はセッションレスです。`SessionID` を受け取らず、セッションも作成せず、`RunID` による introspection のための canonical な runlog イベントだけを追記します。
+- `StartOneShot` / `OneShotRun` はセッションレスです。`SessionID` を受け取らず、セッションも作成しません。作業を始める前に、統合 storage がセッションなしの完全な metadata と `RunStarted` record を保存するため、`RunID` で実行を調べられます。
 - host が sessionful work の前に session を作成します。agent runtime は session を作成、終了、削除しません。
 - engine は root workflow を受理してから、最初の activity が run を記録します。受理前の `pending` row はありません。
 - root、child、one-shot は別の start operation です。child start は parent link を保存し、one-shot は session なしで完全な metadata を保存します。
@@ -553,6 +560,13 @@ workflow start request を変えることはありません。
 - **Run event stores**（`storage.Store`）は、`RunID` ごとに hook イベントのカノニカルログを追記し、audit/debug UI と run の introspection に利用できます。
 
 - **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別を制御します。
+
+  永続的な transcript は、選択された provider response をそのまま保持します。
+  assistant message にツール呼び出しが含まれる場合、その text は provider への
+  replay 用に transcript に残りますが、ユーザー向けの assistant answer としては
+  発行されません。ツールイベントと await イベントが、その未完了の手順を表します。
+  ツール呼び出しを含まない assistant message だけが、確定した assistant text
+  イベントを生成します。
 
 - **Telemetry**: OTEL 対応のロギング、メトリクス、トレーシングが workflow/activity を end-to-end で計測します。
 

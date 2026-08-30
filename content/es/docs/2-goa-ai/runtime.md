@@ -180,8 +180,17 @@ Los helpers de completion tipados son intencionadamente estrictos:
 
 Dos roles utilizan el runtime:
 
-- **Sólo-Cliente** (envía ejecuciones): Construye un runtime con un motor apto para clientes y no registra agentes. Usa el `<agent>.NewClient(rt)` generado que lleva la ruta (workflow + cola) registrada por los trabajadores remotos.
+- **Sólo-Cliente** (envía ejecuciones): Construye un runtime con un motor apto para clientes y no registra agentes. Usa el `<agent>.NewClient(rt)` generado, que lleva la `AgentDefinition` generada compartida con los workers remotos.
 - **Worker** (ejecuta ejecuciones): Construye un runtime con un motor con capacidad de worker, registra toolsets y agentes, y luego sella el registro para que el polling arranque únicamente cuando el registro local del runtime esté completo.
+
+Cada `AgentDefinition` generada es el contrato completo e inmutable de un
+agente. Contiene el nombre del workflow, la cola de tareas predeterminada, los
+contratos de herramientas generados, las etiquetas obligatorias, la política de
+completion y las definiciones de todos los agentes hijo accesibles. Los clientes
+la usan para validar y dirigir el trabajo antes de que el motor acepte el
+workflow; los workers usan el mismo valor al registrarlo. Una ejecución concreta
+puede elegir otra cola con `WithTaskQueue`, pero los registros escritos a mano no
+deben definir otra ruta ni otro grafo de agentes hijo.
 
 ### Ejemplo sólo cliente
 
@@ -199,7 +208,7 @@ out, err := client.Run(ctx, "s1", msgs)
 Usa `StartOneShot` y `OneShotRun` cuando quieras trabajo duradero que no esté asociado a una sesión existente.
 
 - `Start` / `Run` son con sesión: requieren un `SessionID` concreto, participan en el ciclo de vida de la sesión y emiten eventos de stream con alcance de sesión.
-- `StartOneShot` / `OneShotRun` son sin sesión: no reciben `SessionID`, no crean una sesión y solo anexan eventos canónicos al run log para su inspección por `RunID`.
+- `StartOneShot` / `OneShotRun` son sin sesión: no reciben `SessionID` ni crean una sesión. Antes de ejecutar el trabajo, el almacenamiento integrado guarda los metadatos completos sin sesión y el registro `RunStarted` para que la ejecución pueda consultarse por `RunID`.
 - La aplicación host crea las sesiones antes de enviar trabajo; los runtimes de agentes no crean, terminan ni eliminan sesiones.
 - El motor acepta un workflow raíz antes de que su primera activity registre la ejecución. No se crea un estado `pending` antes de la admisión.
 - Los inicios raíz, hijo y one-shot usan operaciones distintas. El inicio hijo guarda el vínculo con el padre; one-shot guarda metadatos completos sin sesión.
@@ -601,6 +610,14 @@ inicio del workflow.
 - **Los almacenes de eventos de ejecución** (`storage.Store`) anexan el log canónico de eventos de hook por `RunID` para UIs de auditoría/debug e introspección de ejecuciones.
 
 - **Los sinks de stream** (`stream.Sink`, por ejemplo Pulse o SSE/WebSocket personalizados) reciben valores `stream.Event` tipados producidos por el `stream.Subscriber`. Un `StreamProfile` controla qué tipos de eventos se emiten.
+
+  La transcripción duradera conserva exactamente cada respuesta del proveedor
+  seleccionada. Cuando un mensaje del asistente contiene una llamada a una
+  herramienta, su texto permanece en la transcripción para reproducirlo ante el
+  proveedor, pero no se emite como respuesta visible para el usuario. Los
+  eventos de herramienta y de espera presentan ese paso no terminal. Solo los
+  mensajes del asistente sin llamadas a herramientas producen eventos de texto
+  del asistente confirmados.
 
 - **Telemetría**: logging, métricas y trazas conscientes de OTEL instrumentan workflows y actividades de extremo a extremo.
 

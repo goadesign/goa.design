@@ -18,7 +18,7 @@ la logique métier.
 ### Installation
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
 
 {{< alert title="Tester une version préliminaire de la génération" color="info" >}}
@@ -26,7 +26,7 @@ Les versions préliminaires sont facultatives. Fixez le module Goa et la
 commande `goa` au même commit. Le travail actuel se trouve sur la
 [branche préliminaire `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
 au commit
-[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
 Régénérez l'intégralité du répertoire `gen/`, ne mélangez jamais une sortie
 stable avec une sortie préliminaire, puis compilez et testez l'application
 complète. Coordonnez les mises à jour du client et du serveur lorsque le guide
@@ -652,9 +652,9 @@ Les fonctions de rappel publiées restent adaptées aux plugins qui modifient de
 valeurs ou des fichiers générés. Un plugin qui déclare un nom au niveau d'un
 paquet doit utiliser la phase de planification de la fabrique afin que Goa
 puisse réserver ce nom avec toutes les autres déclarations avant le rendu.
-Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
+Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
 et le
-[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
+[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
 pour le contrat détaillé des plugins et les étapes de migration.
 
 ---

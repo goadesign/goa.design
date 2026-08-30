@@ -17,7 +17,7 @@ runnable starter wiring, while your application supplies the business logic.
 ### Installation
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
 
 {{< alert title="Testing a generation preview" color="info" >}}
@@ -25,7 +25,7 @@ Pre-release versions are opt-in. Pin both the Goa module and the `goa` command
 to the same preview commit. The current work is on the
 [`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
 at
-[`d176af09226076f90f22d0b4c8e8fbd2a46a1595`](https://github.com/goadesign/goa/commit/d176af09226076f90f22d0b4c8e8fbd2a46a1595).
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
 Regenerate the complete `gen/` directory, never mix stable and preview output,
 then compile and test the complete application. Coordinate client and server
 updates when the guide identifies a wire change. To return to stable, pin the
@@ -649,9 +649,9 @@ Released callbacks remain appropriate for plugins that edit generated values or
 files. A plugin that declares a package-level name must use the factory planning
 phase so Goa can reserve that name with every other declaration before
 rendering. See the
-[Code Generation Architecture](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/codegen/ARCHITECTURE.md)
+[Code Generation Architecture](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
 and the
-[preview upgrade guide](https://github.com/goadesign/goa/blob/d176af09226076f90f22d0b4c8e8fbd2a46a1595/UPGRADING.md)
+[preview upgrade guide](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
 for the detailed plugin contract and migration steps.
 
 ---

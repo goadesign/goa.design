@@ -23,13 +23,19 @@ Costruirai:
 ## 1. Crea un modulo
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+Questi nomi di branch selezionano il contratto di storage integrato del runtime
+usato dalla guida. L'impostazione del proxy diretto è necessaria perché il nome
+del branch preliminare di Goa contiene una barra. Go registra pseudoversioni
+esatte in `go.mod`, quindi gli aggiornamenti successivi dei branch non modificano
+una build esistente finché non esegui di nuovo `go get`.
 
 Goa-AI attualmente prende di mira il moderno Go. Utilizza la versione Go dichiarata da
 Modulo `goa.design/goa-ai` o successivo.

@@ -77,12 +77,7 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 | `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea |
 | `Resource` | Metodo | Contrassegna il metodo come risorsa MCP |
-| `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile |
 | `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico |
-| `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt |
-| `Notification` | Metodo | Contrassegna il metodo come mittente della notifica |
-| `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione |
-| `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti |
 | **Funzioni di registro** |                          |                                                                                                                    |
 | `Registry` | Livello superiore | Dichiara un'origine del registro |
 | `URL` | Registro | Imposta l'endpoint del registro |
