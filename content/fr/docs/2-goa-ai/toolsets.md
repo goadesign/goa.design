@@ -38,7 +38,7 @@ Serveurs MCP avec schémas d'outils en ligne.
 
 - L'enregistrement généré définit `DecodeInExecutor=true` afin que le JSON brut soit transmis à l'exécuteur MCP.
 - L'exécuteur MCP décode en utilisant ses propres codecs
-- Les wrappers générés gèrent les schémas/encodeurs et transports JSON (HTTP/SSE/stdio) avec tentatives et traçage
+- Les wrappers générés gèrent les schémas, les encodeurs et le transport HTTP ou stdio avec tentatives et traçage. HTTP accepte les réponses JSON et les flux d'événements
 
 ### Quand utiliser les implémentations BindTo vs Inline
 
@@ -157,6 +157,7 @@ type Bounds struct {
     Returned       int    // Number of items in the bounded view
     Total          *int   // Best-effort total before truncation (optional)
     Truncated      bool   // Whether any caps were applied (length, window, depth)
+    NextCursor     *string // Private provider cursor when another page exists
     RefinementHint string // Guidance on how to narrow the query when truncated
 }
 ```
@@ -166,6 +167,7 @@ type Bounds struct {
 | `Returned` | Nombre d'éléments réellement présents dans le résultat |
 | `Total` | Nombre total d'éléments au mieux avant troncature (nul si inconnu) |
 | `Truncated` | Vrai si des majuscules ont été appliquées (pagination, limites de profondeur, limites de taille) |
+| `NextCursor` | Curseur opaque de la page suivante ; sa visibilité dépend du contrat de pagination |
 | `RefinementHint` | Conseils lisibles par l'homme pour affiner la requête (par exemple, "Ajouter un filtre de date pour réduire les résultats") |
 
 #### Responsabilité du service pour le parage
@@ -186,8 +188,23 @@ Utilisez l'assistant DSL `BoundedResult()` dans une définition `Tool` :
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "Curseur opaque de la page suivante renvoyé par la page précédente")
         Required("site_id")
+    })
+    Return(func() {
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
+    })
+    BoundedResult(func() {
+        ContinueWith("continue_devices", "cursor")
+        NextCursor("next_cursor")
+    })
+    BindTo("DeviceService", "ListDevices")
+})
+
+Tool("continue_devices", "Continue the available device results", func() {
+    Args(func() {
+        Attribute("cursor", String)
+        Required("cursor")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "Matching devices")
@@ -197,9 +214,14 @@ Tool("list_devices", "List devices with pagination", func() {
         Cursor("cursor")
         NextCursor("next_cursor")
     })
-    BindTo("DeviceService", "ListDevices")
+    BindTo("DeviceService", "ContinueDevices")
 })
 ```
+
+Le curseur de l'outil de continuation appartient à son contrat d'exécution,
+mais il est retiré du schéma visible par le modèle. Le runtime ne présente
+l'action que lorsqu'une seule tête de chaîne peut continuer sans ambiguïté ; le
+modèle l'appelle avec `{}` sans copier le curseur ni répéter la requête initiale.
 
 #### Génération de code
 
@@ -227,6 +249,7 @@ transporter les champs délimités canoniques afin que l'exécuteur généré pu
 ```go
 spec.Bounds = &tools.BoundsSpec{
     Paging: &tools.PagingSpec{
+        ContinueTool:    "tools.continue_devices",
         CursorField:     "cursor",
         NextCursorField: "next_cursor",
     },
@@ -921,7 +944,7 @@ Tool("get_time_series", "Get time series data", func() {
         Required("summary", "count")
     })
     // Server-data: full-fidelity data for observers (e.g., UIs)
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -931,7 +954,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Le paramètre `kind` (par exemple, `"atlas.time_series"`) identifie le type de données du serveur afin que UIs puisse distribuer les moteurs de rendu appropriés.
+Le paramètre `kind` (par exemple, `"metrics.time_series"`) identifie le type de données du serveur afin que UIs puisse distribuer les moteurs de rendu appropriés.
 Le public déclare son intention de routage :
 
 - `AudienceTimeline()` pour la chronologie face à l'observateur/les charges utiles UI.
@@ -989,8 +1012,8 @@ func (e *Executor) Execute(
     
     // Build full-fidelity server-data for UIs
     // Generated server-data codecs are named from the tool and kind, for example:
-    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
-    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    // specs.GetTimeSeriesMetricsTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err
     }

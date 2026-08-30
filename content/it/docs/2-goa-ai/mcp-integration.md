@@ -8,6 +8,11 @@ aliases:
 
 Goa-AI fornisce un supporto di prima classe per l'integrazione dei server MCP (Model Context Protocol) negli agenti. I set di strumenti MCP consentono agli agenti di consumare strumenti da server MCP esterni attraverso wrapper e caller generati.
 
+I caller scritti a mano implementano attualmente il contratto degli strumenti
+MCP `2025-06-18`. Inizializzano una sessione, richiedono la capacità tools del
+server e invocano `tools/call`. Questa pagina non dichiara il supporto
+dell'intera superficie MCP, come prompt o risorse.
+
 ## Panoramica
 
 L'integrazione MCP segue questo flusso di lavoro:
@@ -15,7 +20,7 @@ L'integrazione MCP segue questo flusso di lavoro:
 1. **Progettazione del servizio**: Dichiarare il server MCP tramite il DSL MCP di Goa
 2. **Progettazione dell'agente**: Fare riferimento alla suite con un toolset dichiarato tramite `FromMCP(...)` o `FromExternalMCP(...)`
 3. **Generazione del codice**: Produce il server MCP JSON-RPC (quando è generato da Goa), oltre agli helper di registrazione a runtime e alle specs/codecs di proprietà del toolset (suite)
-4. **Cablaggio runtime**: Istanziare un trasporto `mcpruntime.Caller` (HTTP/SSE/stdio). Gli helper generati registrano il toolset e adattano gli errori JSON-RPC in valori `planner.ToolFailure`
+4. **Cablaggio runtime**: Istanziare un `mcpruntime.Caller` HTTP o stdio. Il caller HTTP accetta una risposta JSON o uno stream di eventi HTTP. Gli helper generati registrano il toolset e adattano gli errori JSON-RPC in valori `planner.ToolFailure`
 5. **Esecuzione del planner**: I planner costruiscono le chiamate con i descrittori tipizzati generati; il runtime inoltra il JSON canonico al chiamante MCP, registra i risultati ed espone telemetria strutturata
 
 ---
@@ -38,6 +43,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {
@@ -100,9 +108,13 @@ import (
     mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
 )
 
-// Create an MCP caller (HTTP, SSE, or stdio)
+// Create an HTTP MCP caller.
 caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
 })
 if err != nil {
     log.Fatal(err)
@@ -118,11 +130,22 @@ if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); er
 
 ## Tipi di chiamante MCP
 
-Goa-AI supporta diversi tipi di trasporto MCP attraverso il pacchetto `runtime/mcp`. Tutti i chiamanti implementano l'interfaccia `Caller`:
+Goa-AI supporta HTTP e stdio attraverso il pacchetto `runtime/mcp`. Entrambi i
+chiamanti implementano l'interfaccia `Caller`:
 
 ```go
 type Caller interface {
     CallTool(ctx context.Context, req CallRequest) (CallResponse, error)
+}
+
+type CallRequest struct {
+    Tool    string
+    Payload json.RawMessage
+}
+
+type CallResponse struct {
+    Content           []ContentBlock
+    StructuredContent json.RawMessage
 }
 ```
 
@@ -133,48 +156,21 @@ Per i server MCP accessibili tramite HTTP JSON-RPC:
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
-// Basic usage with defaults
 caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
-})
-
-// Full configuration
-caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint:        "https://assistant.example.com/mcp",
-    Client:          customHTTPClient,        // Optional: custom *http.Client
-    ProtocolVersion: "2024-11-05",            // Optional: MCP protocol version
-    ClientName:      "my-agent",              // Optional: client name for handshake
-    ClientVersion:   "1.0.0",                 // Optional: client version
-    InitTimeout:     10 * time.Second,        // Optional: initialize handshake timeout
+    Client:   customHTTPClient, // Facoltativo; il client predefinito ha un timeout di 30 secondi.
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
+    InitTimeout: 10 * time.Second, // Timeout di inizializzazione facoltativo.
 })
 ```
 
-Il chiamante HTTP esegue l'handshake di inizializzazione MCP alla creazione e utilizza JSON-RPC sincrono su HTTP POST per le chiamate agli strumenti.
-
-### Chiamante SSE
-
-Per i server MCP che utilizzano lo streaming di eventi inviati dal server:
-
-```go
-import mcpruntime "goa.design/goa-ai/runtime/mcp"
-
-// Basic usage
-caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint: "https://assistant.example.com/mcp",
-})
-
-// Full configuration (same options as HTTP)
-caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint:        "https://assistant.example.com/mcp",
-    Client:          customHTTPClient,
-    ProtocolVersion: "2024-11-05",
-    ClientName:      "my-agent",
-    ClientVersion:   "1.0.0",
-    InitTimeout:     10 * time.Second,
-})
-```
-
-Il chiamante SSE utilizza HTTP per l'handshake di inizializzazione, ma richiede risposte `text/event-stream` per le chiamate agli strumenti, consentendo ai server di trasmettere eventi di avanzamento prima della risposta finale.
+Il chiamante HTTP esegue l'handshake di inizializzazione MCP alla creazione.
+Invia ogni messaggio JSON-RPC 2.0 con una richiesta HTTP `POST` all'endpoint
+configurato. Accetta risposte JSON o flussi di eventi HTTP; non è necessario un
+chiamante SSE separato.
 
 ### Chiamante Stdio
 
@@ -183,21 +179,16 @@ Per i server MCP in esecuzione come sottoprocessi che comunicano tramite stdin/s
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
-// Basic usage
 caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
     Command: "mcp-server",
-})
-
-// Full configuration
-caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
-    Command:         "mcp-server",
-    Args:            []string{"--config", "config.json"},
-    Env:             []string{"MCP_DEBUG=1"},  // Additional environment variables
-    Dir:             "/path/to/workdir",       // Working directory
-    ProtocolVersion: "2024-11-05",
-    ClientName:      "my-agent",
-    ClientVersion:   "1.0.0",
-    InitTimeout:     10 * time.Second,
+    Args:    []string{"--config", "config.json"},
+    Env:     []string{"MCP_DEBUG=1"}, // Aggiunto all'ambiente corrente.
+    Dir:     "/path/to/workdir",
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
+    InitTimeout: 10 * time.Second, // Timeout di inizializzazione facoltativo.
 })
 defer caller.Close() // Clean up subprocess
 ```
@@ -213,12 +204,14 @@ import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
 // Adapt a function to the Caller interface
 caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallRequest) (mcpruntime.CallResponse, error) {
-    // Custom implementation
-    result, err := myCustomMCPCall(ctx, req.Suite, req.Tool, req.Payload)
+    content, structured, err := myCustomMCPCall(ctx, req.Tool, req.Payload)
     if err != nil {
         return mcpruntime.CallResponse{}, err
     }
-    return mcpruntime.CallResponse{Result: result}, nil
+    return mcpruntime.CallResponse{
+        Content:           content,
+        StructuredContent: structured,
+    }, nil
 })
 ```
 
@@ -227,7 +220,10 @@ caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallReq
 Per i client MCP generati da Goa che avvolgono i metodi del servizio:
 
 ```go
-caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
+caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
+    Name:    "my-agent",
+    Version: "1.0.0",
+})
 ```
 
 ---
@@ -238,7 +234,7 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 2. Il runtime valida l'intero risultato e assegna gli ID di esecuzione, producendo valori `runtime.ToolCall`
 3. Il runtime rileva la registrazione del toolset MCP
 4. Inoltra il payload JSON canonico della chiamata runtime al chiamante MCP
-5. Il chiamante MCP gestisce il trasporto (HTTP/SSE/stdio) e il protocollo JSON-RPC
+5. Il caller MCP usa HTTP o stdio e gestisce il protocollo JSON-RPC. Una risposta HTTP può essere JSON o uno stream di eventi
 6. Decodifica il risultato utilizzando il codec generato
 7. Restituisce `ToolResult` al pianificatore
 
@@ -253,6 +249,11 @@ Gli helper generati adattano gli errori JSON-RPC in valori `planner.ToolFailure`
 - **Errori del server** → cause strutturate conservate nell'errore
 
 In questo modo MCP e toolset nativi condividono lo stesso contratto di recupero applicato dal runtime.
+
+Gli errori restituiti da uno strumento diventano `ToolFailure`. Un risultato
+finale non valido del planner diventa invece `OutputContractError`: viene
+rifiutato senza un'altra richiesta al modello e non viene presentato come errore
+dello strumento.
 
 ---
 
@@ -273,6 +274,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("search", func() {
         Payload(func() {
@@ -314,15 +318,20 @@ import (
     chat "example.com/assistant/gen/orchestrator/agents/chat"
     mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Wire MCP caller
     caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
         Endpoint: "https://assistant.example.com/mcp",
+        ClientInfo: mcpruntime.ClientInfo{
+            Name:    "my-agent",
+            Version: "1.0.0",
+        },
     })
     if err != nil {
         log.Fatal(err)
@@ -376,7 +385,7 @@ provider viene conservato.
 - **Utilizzare chiamanti tipizzati**: Preferire i chiamanti JSON-RPC generati da Goa, quando disponibili, per la sicurezza dei tipi
 - **Gestire gli errori in modo strutturato**: Mappare gli errori MCP in `ToolFailure` con l'azione di recupero appropriata
 - **Monitorare la telemetria**: Le chiamate MCP emettono eventi di telemetria strutturati; usarli per l'osservabilità
-- **Scegliere il trasporto giusto**: Utilizzare HTTP per semplici richieste/risposte, SSE per lo streaming, stdio per i server basati su sottoprocessi
+- **Scegliere il trasporto giusto**: Utilizzare HTTP per i server remoti e stdio per i server avviati come sottoprocessi. Il chiamante HTTP accetta risposte JSON e flussi di eventi
 
 ---
 

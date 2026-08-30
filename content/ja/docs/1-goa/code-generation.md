@@ -6,7 +6,7 @@ llm_optimized: true
 aliases:
 ---
 
-Goa のコード生成は、あなたの設計を生産可能なコードに変換します。単なる雛形ではなく、Goa はベストプラクティスに従い、API 全体の一貫性を維持する、完全で実行可能なサービス実装を生成します。
+Goa のコード生成は、設計を本番環境向けのサービス契約、トランスポート、クライアント、ドキュメントへ変換します。`goa example` はサービスを実行するための初期コードを生成し、アプリケーションはビジネスロジックを実装します。
 
 
 
@@ -15,8 +15,21 @@ Goa のコード生成は、あなたの設計を生産可能なコードに変�
 ### インストール
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
+
+{{< alert title="コード生成プレビューを試す" color="info" >}}
+プレリリース版は明示的に選択した場合だけ使用されます。Goa モジュールと `goa`
+コマンドを同じ commit に固定してください。現在の作業は
+[`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
+の
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af)
+です。`gen/` ディレクトリ全体を生成し直し、安定版とプレビュー版の生成コードを
+混在させず、アプリケーション全体をコンパイルしてテストします。ガイドに通信形式の
+変更が記載されている場合は、クライアントとサーバーを同時に更新してください。
+安定版に戻すには、モジュールとコマンドの両方を安定版に固定し、すべてをもう一度
+生成し直してください。
+{{< /alert >}}
 
 ### コマンド
 
@@ -94,6 +107,8 @@ goa version
 - 検証された式がコード・ジェネレーターに渡される
 - テンプレートがレンダリングされてコードファイルが生成される
 - 出力は`gen/`ディレクトリに書き込まれる
+
+Goa は、完全に検証された設計からパッケージ、型宣言、名前、インポート、フィールドの参照先、生成時に確定できる分岐を解決してから、テンプレートをレンダリングします。テンプレートはその決定をコードへ直接書き出します。生成されたプログラムが分岐するのは、実行時に渡される値についてだけです。
 
 ---
 
@@ -383,6 +398,7 @@ var MyType = Type("MyType", func() {
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +409,10 @@ gen/
 └── types/
     └── common_type.go
 ``` を作成する。
+
+`struct:pkg:path` を指定すると、設計で定義した型は選択した生成パッケージで一度だけ宣言され、生成コード内のすべての使用箇所がその宣言をインポートします。Go パッケージ名には、パスの最後の要素を小文字にした名前が使われます。移動した型が設計で定義した別の型を含む場合、その型にも明示的な `struct:pkg:path` が必要です。通常は同じパッケージを指定します。コンパイラが作成する入れ子の型は、それを含む設計上の型と同じ場所に生成されます。
+
+設計で定義した一つの型宣言は、複数のサービス、およびペイロード、結果、エラーとしての使用箇所で共有されます。その型自体をカスタムエラーとして使う場合、Goa は別の型を生成せず、同じ宣言の隣にエラーメソッドを追加します。
 
 ### フィールドのカスタマイズ
 
@@ -512,14 +532,22 @@ Goaはシステム境界でデータを検証する：
 
 ### 構造体フィールドのポインタルール
 
-| プロパティ | ペイロード/結果 | リクエストボディ（サーバー） | レスポンスボディ（サーバー） |
-|------------|---------------|----------------------|---------------------|
-| 必須 OR デフォルトあり | 直接値（-） | ポインタ（*） | 直接値（-） |
-| 必須ではない & デフォルトなし | ポインタ（*） | ポインタ（*） | ポインタ（*） |
+service type は validation 済みの value を表します。decode 済み transport type は、
+受信 field が欠けていたかどうかも保持します。
 
-特殊型：
-- **オブジェクト（構造体）**：常にポインターを使用
-- **配列とマップ**：ポインターは使わない（すでに参照型になっている）
+| Field | Service type | HTTP／JSON-RPC body | Protobuf request または response |
+|---|---|---|---|
+| 必須 primitive または default 付き primitive | Value | validation のために decode するときは pointer、encode するときは value | presence を保持する必要がある singular field は pointer |
+| default のない任意 primitive | Pointer | Pointer | Pointer |
+| Object | Pointer | Pointer | Pointer |
+| Array または map | Value | Value | Value |
+
+HTTP と JSON-RPC では、decode 済み input は server の request または client の
+response です。client が encode する request と server が encode する response は
+value を使います。protobuf Go struct では、必須の singular boolean、number、string、
+enum とその alias は request と response の両方で pointer になります。これにより、
+validation は field の欠落と明示的な zero value を区別できます。byte slice は slice、
+message は pointer のままで、service struct は従来の構造を保ちます。
 
 例
 ```go
@@ -530,6 +558,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` は、受信 HTTP／JSON-RPC body だけで primitive element と
+primitive alias を pointer にして `[null]` を拒否します。service と生成 response
+body は value slice のままです。
 
 ### デフォルト値の処理
 
@@ -597,3 +629,5 @@ var _ = Service("calc", func() {
 - カスタム検証ルール
 - 横断的な関心事（ロギング、メトリクス）
 - 設定ファイルの生成
+
+生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)と[プレビュー版アップグレードガイド](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)を参照してください。

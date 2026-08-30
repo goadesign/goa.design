@@ -24,13 +24,20 @@ Vas a construir:
 ## 1. Crear un módulo
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+Estos nombres de rama seleccionan el contrato integrado de almacenamiento del
+runtime que usa esta guía. La configuración de proxy directo es necesaria
+porque el nombre de la rama preliminar de Goa contiene una barra. Go registra
+pseudoversiones exactas en `go.mod`, por lo que las actualizaciones posteriores
+de las ramas no cambian una compilación existente hasta que vuelvas a ejecutar
+`go get`.
 
 Goa-AI actualmente apunta a versiones modernas de Go. Utiliza la versión de Go
 declarada por el módulo `goa.design/goa-ai` o una posterior.
@@ -66,6 +73,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -101,24 +109,30 @@ a partir de este diseño.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Forma esperada:
 
 ```text
-RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
-Completion draft_task: ...
-Completion stream draft_task: ...
+RunID: demo-chat-run
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+La línea `Completion delta` es un prefijo JSON transmitido por streaming. El
+punto exacto donde se corta puede variar, pero el valor final transmitido está
+completo y coincide con el ejemplo declarado.
 
 `goa gen` crea los contratos generados. `goa example` crea el scaffold propiedad
 de la aplicación:
 
 - `gen/`: código generado. No edites este directorio a mano.
 - `cmd/orchestrator/main.go`: punto de entrada del ejemplo ejecutable.
-- `internal/agents/bootstrap/bootstrap.go`: construcción del runtime y registro del agente.
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: construcción del runtime y registro del agente.
 - `internal/agents/chat/planner/planner.go`: planificador stub que hay que sustituir.
 - `gen/orchestrator/completions/`: helpers tipados de completion directa.
 
@@ -157,15 +171,16 @@ sesión requieren una sesión explícita; las ejecuciones one-shot son
 intencionadamente sin sesión.
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -186,6 +201,9 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 Utiliza `Run` o `Start` para trabajo conversacional o con sesión. Utiliza
 `OneShotRun` o `StartOneShot` para trabajos del tipo request/response que
 deban ser observables por `RunID` pero que no deban pertenecer a una sesión.
+
+
+El scaffold local generado acepta un `storage.Store` y el comando de ejemplo usa `runtime/agent/storage/inmem`. En producción, la aplicación pasa un adaptador para el servicio propietario de la base de datos del runtime. Ese servicio, no un worker de agente, crea y termina las sesiones.
 
 ---
 
@@ -285,13 +303,12 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if len(summary.ToolCalls) > 0 {
 		return &planner.PlanResult{ToolCalls: summary.ToolCalls}, nil
 	}
+	final := summary.FinalResponse()
+	if final == nil {
+		return nil, errors.New("model stream ended without a canonical response")
+	}
 	return &planner.PlanResult{
-		FinalResponse: &planner.FinalResponse{
-			Message: &model.Message{
-				Role:  model.ConversationRoleAssistant,
-				Parts: []model.Part{model.TextPart{Text: summary.Text}},
-			},
-		},
+		FinalResponse: final,
 		Streamed: true,
 	}, nil
 }
@@ -328,7 +345,7 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 Para interfaces de usuario en producción, publica en Pulse y suscríbete al
@@ -386,9 +403,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-Cada agente mantiene su propio planificador, herramientas, política y registro
-de ejecución. El padre ve un resultado de herramienta normal con un `RunLink`
-a la ejecución hija.
+Cada agente mantiene su propio planificador, herramientas y política. El almacén del runtime de la aplicación registra todas las ejecuciones raíz e hijas, incluido el vínculo con el padre. El padre recibe un resultado de herramienta normal con un `RunLink` a la ejecución hija.
 
 ---
 
@@ -400,10 +415,7 @@ a la ejecución hija.
 - Un cliente de runtime generado con ejecución con sesión y one-shot.
 - Un camino hacia la planificación respaldada por modelos, interfaces con streaming y composición de agentes.
 
-Para producción, añade el motor Temporal para durabilidad, stores respaldados
-por Mongo para memoria, sesión y logs de ejecución, Pulse para streaming
-distribuido, y middleware de modelo para los límites de tasa del proveedor.
-El diseño de Goa sigue siendo la fuente de la verdad.
+Para producción, añade el motor Temporal para durabilidad, un único almacén del runtime propiedad de la aplicación, un almacén de memoria propiedad del producto cuando sea necesario, Pulse para streaming distribuido y middleware de modelo para los límites de tasa del proveedor. El diseño de Goa sigue siendo la fuente de la verdad.
 
 ---
 

@@ -19,7 +19,8 @@ Il motore in-memory è ideale per i test perché:
 ```go
 func TestChatAgent(t *testing.T) {
     // Create runtime with in-memory engine (default)
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
     
     // Register agent with test planner
@@ -28,7 +29,7 @@ func TestChatAgent(t *testing.T) {
     })
     require.NoError(t, err)
 
-    _, err = rt.CreateSession(ctx, "test-session")
+    _, err = store.CreateSession(ctx, "test-session", time.Now().UTC())
     require.NoError(t, err)
     
     // Run agent
@@ -185,7 +186,8 @@ Testare gli scenari dell'agente come strumento:
 
 ```go
 func TestAgentComposition(t *testing.T) {
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
     
     // Register provider agent
@@ -200,7 +202,7 @@ func TestAgentComposition(t *testing.T) {
     })
     require.NoError(t, err)
 
-    _, err = rt.CreateSession(ctx, "test-session")
+    _, err = store.CreateSession(ctx, "test-session", time.Now().UTC())
     require.NoError(t, err)
     
     // Run orchestrator - it should invoke planner agent as a tool
@@ -220,6 +222,32 @@ func TestAgentComposition(t *testing.T) {
 }
 ```
 
+### Test dell’archiviazione del runtime
+
+Usa `runtime/agent/storage/inmem` per i test di pianificatori e workflow. Verifica un’implementazione di produzione duratura rispetto allo stesso contratto, inclusi questi casi:
+
+- gli avvii radice, figlio e one-shot senza sessione salvano insieme i metadati e i primi record;
+- l’avvio di un figlio salva il collegamento al padre nella stessa operazione;
+- un nuovo tentativo identico restituisce l’identificatore del record originale e segnala che non è stato inserito un nuovo record;
+- ripetere un cambiamento del ciclo di vita con un record diverso produce un conflitto, anche quando stato e altri campi non cambiano;
+- cambiare un valore fissato dalla prima scrittura restituisce un conflitto;
+- il primo motivo di annullamento è permanente e un motivo successivo diverso produce un conflitto;
+- la sospensione salva insieme checkpoint, stato sospeso e record corrispondente;
+- il completamento salva insieme stato finale e record corrispondente;
+- l'avvio di una continuazione richiede un'esecuzione precedente sospesa che
+  esista e abbia la stessa sessione, lo stesso agente e la stessa esecuzione padre;
+- una continuazione non corrispondente non scrive né l'avvio del successore né
+  un collegamento al padre, mentre un successore accettato conserva
+  `PredecessorRunID` in `RunStarted`, non in `RunMeta`;
+- una sessione terminata impedisce il lavoro di pianificatore e strumenti, ma registra come annullato un workflow già accettato;
+- l’eliminazione fallisce mentre è attiva un’esecuzione e, al termine di tutte le esecuzioni, rimuove metadati, checkpoint e record della sessione terminata.
+
+Questi test devono esercitare le transazioni reali del database. Un mock che controlla solo le chiamate ai metodi non può dimostrare che stato e record diventino visibili insieme.
+
+I test delle continuazioni devono accettare `goa-ai.run-suspension.v7` e
+rifiutare tutte le versioni precedenti prima di ripristinare i payload o
+chiamare il planner.
+
 ---
 
 ## Risoluzione dei problemi
@@ -238,7 +266,8 @@ error: registration closed: cannot register agent after runtime start
 **Soluzione:** Registrare tutti gli agenti prima di avviare qualsiasi esecuzione:
 
 ```go
-rt := runtime.New()
+store := storageinmem.New()
+rt := runtime.New(store)
 
 // ✓ Register all agents first
 chat.RegisterChatAgent(ctx, rt, chatConfig)
@@ -246,7 +275,7 @@ planner.RegisterPlannerAgent(ctx, rt, plannerConfig)
 
 // ✓ Then create a session and start runs
 client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+if _, err := store.CreateSession(ctx, "session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "session-123", messages, opts...)
@@ -268,7 +297,7 @@ error: missing session ID: session ID is required for run
 out, err := client.Run(ctx, "", messages)
 
 // ✓ Correct - session ID provided
-if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+if _, err := store.CreateSession(ctx, "session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "session-123", messages)
@@ -441,6 +470,7 @@ Args(func() {
 import "goa.design/goa-ai/runtime/agent/runtime"
 
 rt := runtime.New(
+    storageinmem.New(),
     runtime.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
         Level: slog.LevelDebug,
     }))),
@@ -466,7 +496,7 @@ func (s *DebugSink) Send(ctx context.Context, event stream.Event) error {
 func (s *DebugSink) Close(ctx context.Context) error { return nil }
 
 // Wire the sink into the runtime to observe all stream events.
-rt := runtime.New(runtime.WithStream(&DebugSink{}))
+rt := runtime.New(storageinmem.New(), runtime.WithStream(&DebugSink{}))
 ```
 
 #### Ispezionare le specifiche dello strumento in fase di esecuzione

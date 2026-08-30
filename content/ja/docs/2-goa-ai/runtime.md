@@ -30,7 +30,8 @@ ASCII、英字・数字・`_`・`-` のみ、先頭は英字または数字と�
 | DSL + Codegen | エージェント登録、ツール仕様/コーデック、ワークフロー、MCP アダプターを生成する |
 | Runtime Core | plan/start/resume ループ、ポリシー強制、フック、メモリ、ストリーミングをオーケストレートする |
 | Workflow Engine Adapter | Temporal アダプターが `engine.Engine` を実装し、他のエンジンも差し替え可能 |
-| Feature Modules | 任意の統合（MCP、Pulse、Mongo ストア、モデルプロバイダーなど） |
+| Host Runtime Store | session scope、run state、continuation checkpoints、変更不可の run records をまとめて保存 |
+| Feature Modules | MCP、Pulse、memory/prompt stores、model providers などの任意統合 |
 
 ---
 
@@ -61,15 +62,18 @@ package main
 
 import (
     "context"
+    "time"
 
     chat "example.com/assistant/gen/orchestrator/agents/chat"
     "goa.design/goa-ai/runtime/agent/model"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
     // In-memory engine is the default; pass WithEngine for Temporal or custom engines.
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
     err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{Planner: newChatPlanner()})
     if err != nil {
@@ -77,7 +81,7 @@ func main() {
     }
 
     // Sessions are first-class: create a session before starting runs under it.
-    if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
+    if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
         panic(err)
     }
 
@@ -176,20 +180,25 @@ fmt.Println(value.Name)
 
 ランタイムは大きく 2 つのロールで利用されます。
 
-- **クライアント専用**（run の送信）: クライアント機能を持つエンジンでランタイムを構築し、エージェント登録は行いません。生成された `<agent>.NewClient(rt)` は、リモートワーカーによって登録されたルート（workflow + queue）を保持しており、これを用いて run を送信します。
+- **クライアント専用**（run の送信）: クライアント機能を持つエンジンでランタイムを構築し、エージェント登録は行いません。生成された `<agent>.NewClient(rt)` は、リモート worker と共有する生成済みの `AgentDefinition` を保持しています。
 
 - **ワーカー**（run の実行）: ワーカー機能を持つエンジンでランタイムを構築し、実際のプランナーを使ってエージェントを登録します。その上で、エンジンが workflow/activity をポーリングして実行します。
+
+生成される各 `AgentDefinition` は、1 つのエージェントに対する完全で変更できない
+契約です。workflow 名、既定の task queue、生成されたツール契約、必須ラベル、
+completion policy、到達可能なすべての子エージェント定義を含みます。呼び出し側は
+engine が workflow を受理する前の検証と送信にこの値を使い、worker は同じ値で
+workflow を登録します。個別の実行は `WithTaskQueue` で別の queue を選べますが、
+手書きの登録が別の route や子エージェント graph を定義してはいけません。
 
 ### クライアント専用の例
 
 ```go
-rt := runtime.New(runtime.WithEngine(temporalClient)) // engine client
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalClient)) // engine client
 
-// No agent registration needed in a caller-only process
+// The host session service has already created "s1".
+// No agent registration is needed in a caller-only process.
 client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "s1"); err != nil {
-    panic(err)
-}
 out, err := client.Run(ctx, "s1", msgs)
 ```
 
@@ -198,7 +207,12 @@ out, err := client.Run(ctx, "s1", msgs)
 既存セッションに紐づかない耐久実行が必要な場合は `StartOneShot` と `OneShotRun` を使います。
 
 - `Start` / `Run` はセッション付きです。具体的な `SessionID` が必要で、セッションのライフサイクルに参加し、セッションスコープのストリームイベントを発行します。
-- `StartOneShot` / `OneShotRun` はセッションレスです。`SessionID` を受け取らず、セッションも作成せず、`RunID` による introspection のための canonical な runlog イベントだけを追記します。
+- `StartOneShot` / `OneShotRun` はセッションレスです。`SessionID` を受け取らず、セッションも作成しません。作業を始める前に、統合 storage がセッションなしの完全な metadata と `RunStarted` record を保存するため、`RunID` で実行を調べられます。
+- host が sessionful work の前に session を作成します。agent runtime は session を作成、終了、削除しません。
+- engine は root workflow を受理してから、最初の activity が run を記録します。受理前の `pending` row はありません。
+- root、child、one-shot は別の start operation です。child start は parent link を保存し、one-shot は session なしで完全な metadata を保存します。
+- cancellation reason は write-once です。同一の retry は成功し、異なる reason は conflict になります。
+- suspension と terminal change は新しい status と対応する変更不可 record をまとめて保存します。
 - `StartOneShot` は `engine.WorkflowHandle` を即座に返します。`OneShotRun` は内部で `handle.Wait(ctx)` を呼ぶ blocking な convenience wrapper です。
 
 ```go
@@ -220,6 +234,11 @@ if err != nil {
 fmt.Println(out.RunID)
 ```
 
+下位レベルの `Runtime.RunOneShot` は、アプリケーションコードを呼ぶ前に
+run を保存します。callback が戻った後は、callback が context をキャンセル
+していても、描画された prompt と最終結果を記録します。一時的なストレージ
+障害では、callback を再実行せず、準備済みの記録だけを再試行します。
+
 ### ワーカーの例
 
 ```go
@@ -232,7 +251,7 @@ if err != nil {
 }
 defer eng.Close()
 
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 if err := chat.RegisterUsedToolsets(ctx, rt /* executors... */); err != nil {
     panic(err)
 }
@@ -248,14 +267,17 @@ if err := rt.Seal(ctx); err != nil {
 
 ## Plan → Execute → Resume ループ
 
-1. ランタイムはエージェントのワークフロー（インメモリまたは Temporal）を開始し、`RunID`、`SessionID`、`TurnID`、ラベル、ポリシー上限を含む新しい `run.Context` を記録します。
-2. 現在のメッセージと run コンテキストを渡して、プランナーの `PlanStart` を呼び出します。
-3. プランナーが返したツール呼び出しをスケジュールします（プランナーは「正規（canonical）JSON」のペイロードを渡し、エンコード/デコードはランタイムが生成済みコーデックで処理します）。
-4. プランナーから見えるまま残った tool output を添えて `PlanResume` を呼び出します。予算対象 tool は既定で可視です。失敗した bookkeeping tool は `ToolFailure.Recovery` に従い、call の修正、その tool を除いた replanning、finalization のいずれかとして次の planner turn を schedule します。planner が final response、final tool result を返すか、成功した `TerminalRun` tool が run を完了するまで loop します。cap や deadline が finalization を強制した場合、planner は prose ではなく terminal bookkeeping tool で閉じられます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / terminal phase）を遷移します。
-5. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
+1. engine が agent workflow を in-memory または Temporal で受理します。
+2. 最初の activity が `StartRootRun`、`StartChildRun`、`StartOneShotRun`、
+   `StartOneShotChildRun` のいずれかで run identity と最初の変更不可 record を
+   保存します。受理されたすべての workflow が `RunStarted` を保存します。
+3. runtime が messages と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
+   を持つ `run.Context` を `PlanStart` に渡します。
+4. planner が返した tool calls を generated codecs で実行します。
+5. プランナーから見えるまま残った tool output を添えて `PlanResume` を呼び出します。予算対象 tool は既定で可視です。失敗した bookkeeping tool は `ToolFailure.Recovery.Action` に従い、call の修正、その tool を除いた replanning、finalization のいずれかとして次の planner turn を schedule します。planner が final response、final tool result を返すか、成功した `TerminalRun` tool が run を完了するまで loop します。cap や deadline が finalization を強制した場合、planner は prose ではなく terminal bookkeeping tool で閉じられます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / terminal phase）を遷移します。
+6. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 
 ---
-
 ## Run フェーズ
 
 run が plan/execute/resume ループを進むにつれて、ライフサイクルフェーズを遷移します。フェーズは、run が今どの段階にいるかをきめ細かく可視化し、UI が高レベルの進捗を表示できるようにします。
@@ -288,7 +310,7 @@ prompted → planning → executing_tools → planning → synthesizing → comp
 
 フェーズは `run.Status` とは異なります。
 
-- **Status**（`pending`, `running`, `completed`, `failed`, `canceled`, `paused`）は、耐久化された run メタデータに格納される粗い粒度のライフサイクル状態です。
+- **Status**（`running`, `suspended`, `completed`, `failed`, `canceled`）は、耐久化された run メタデータに格納される粗い粒度のライフサイクル状態です。engine 受理前の `pending` 状態はありません。
 - **Phase** は、ストリーミング/UX 向けに実行ループをより細かく可視化するものです。
 
 ### ライフサイクルイベント: フェーズ遷移 vs 終端完了
@@ -405,8 +427,10 @@ Goa-AI は `policy.Engine` を介して pluggable policy engine と統合しま�
 ラベルは次に流れます。
 
 - `run.Context.Labels` – run 中にプランナーが参照可能
-- tool activity input（`api.ToolInput.Labels`）– dispatch 済み tool execution へ clone され、activity は run／policy metadata を参照します。terminal finalization call は runtime 所有の reason も `runtime.FinalizationReasonLabel` で受け取ります
-- runlog イベント（`runlog.Store`）– ライフサイクルイベントとともに永続化され、検索/ダッシュボードに有用（インデックスされる場合）
+- ツールアクティビティ入力（`api.ToolInput.Labels`）– dispatch 済みの tool
+  execution へ clone されます。terminal finalization call は runtime 所有の reason も
+  `runtime.FinalizationReasonLabel` で受け取ります
+- **Runtime store** (`storage.Store`) は `RunID` ごとに変更不可 records を追加します。lifecycle methods は status、checkpoint、cancellation change と対応する record を一つの操作で保存します。
 - 終端完了とスナップショット – 開始時のラベルは run の最後に `hooks.RunCompletedEvent.Labels` と `run.Snapshot.Labels` として戻ってくるため、完了フックや `GetRunSnapshot` のリーダーは帯域外の追跡なしに run のアイデンティティを取得できます
 
 ### run ごとのツールフィルタリング
@@ -432,7 +456,7 @@ out, err := client.Run(ctx, "session-1", messages,
 )
 ```
 
-これは run 全体に適用する caller policy です。tool failure は別の contract を使います。`ToolFailure.Recovery` が correction、failed tool を除いた replanning、finish のどれかを選択し、runtime は次の planner turn に適用する tool catalog を強制します。
+これは run 全体に適用する caller policy です。tool failure は別の contract を使います。`ToolFailure.Recovery.Action` が correction、failed tool を除いた replanning、finish のどれかを選択し、runtime は次の planner turn に適用する tool catalog を強制します。
 
 ---
 
@@ -489,7 +513,7 @@ Prompt 管理はランタイムネイティブで、バージョン管理され�
 - 描画済み内容には provenance 用の `prompt.PromptRef` が含まれ、プランナーは `model.Request.PromptRefs` に付与できる
 
 ```go
-content, err := input.Agent.RenderPrompt(ctx, "aura.chat.system", map[string]any{
+content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
 if err != nil {
@@ -503,7 +527,27 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 })
 ```
 
-`PromptRefs` は監査/プロベナンス向けのランタイムメタデータであり、プロバイダー wire payload のフィールドではありません。
+`PromptRefs` は model request に影響した rendered prompt versions を示し、provider wire payload には含まれません。runtime は `prompt_rendered` と parent/child link records から導出し、矛盾し得る別リストを持ちません。
+
+prompt の描画自体は runtime storage に書き込みません。すべての経路は
+`prompt.RenderRecorder` を使い、解決された prompt ID、version、scope を持つ
+同じ `prompt.RenderEvent` を作ります。
+
+- アプリケーションコードが最初の message を描画する場合は、その message と
+  一緒に `recorder.Events()` を `runtime.WithRenderedPrompts` で渡します。
+- planner activity は、planner result と一緒に記録済み event を返します。
+- child agent の prompt 準備は activity で実行し、描画済み text と event を
+  child input に返します。
+- `RunOneShot` は callback が行った描画を記録します。
+
+workflow は、受理したすべての event を同じ `PromptRendered` record として保存
+します。最初の経路だけ描画規則が違うわけではありません。workflow 開始前に
+作られた event を渡す点だけが異なります。child の準備を activity で行うため、
+Temporal replay は history に保存済みの text と event を再利用し、storage から
+新しい prompt version を読み直しません。
+`RenderRecorder.Events` は、完了した描画を prompt ID、version、session、scope
+の安定した順序で返します。そのため、同時に実行した描画の完了順序が正確な
+workflow start request を変えることはありません。
 
 ---
 
@@ -513,9 +557,19 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 
 - **Memory stores**（`memory.Store`）は、`(agentID, RunID)` ごとに耐久化されるメモリイベント（ユーザー/アシスタントメッセージ、ツール呼び出し、ツール結果、プランナーノート、思考）を購読し追記します。
 
-- **Run event stores**（`runlog.Store`）は、`RunID` ごとに hook イベントのカノニカルログを追記し、audit/debug UI と run の introspection に利用できます。
+- **Runtime store**（`storage.Store`）は一つだけで、host application が所有します。
+  `RunID` ごとに、挿入後は変更できない record を追加し、audit/debug UI と run の
+  調査に使います。lifecycle method は、status、checkpoint、または cancellation の
+  変更と、それに対応する変更不可 record を 1 回の操作で保存します。
 
 - **Stream sinks**（`stream.Sink`。例: Pulse またはカスタム SSE/WebSocket）は、`stream.Subscriber` が生成する型付き `stream.Event` を受け取ります。`StreamProfile` は送出するイベント種別を制御します。
+
+  永続的な transcript は、選択された provider response をそのまま保持します。
+  assistant message にツール呼び出しが含まれる場合、その text は provider への
+  replay 用に transcript に残りますが、ユーザー向けの assistant answer としては
+  発行されません。ツールイベントと await イベントが、その未完了の手順を表します。
+  ツール呼び出しを含まない assistant message だけが、確定した assistant text
+  イベントを生成します。
 
 - **Telemetry**: OTEL 対応のロギング、メトリクス、トレーシングが workflow/activity を end-to-end で計測します。
 
@@ -569,7 +623,12 @@ for {
 ## エンジン抽象
 
 - **In-memory**: 高速な開発ループ、外部依存なし
-- **Temporal**: 耐久実行、リプレイ、リトライ、シグナル、ワーカー。アダプタがアクティビティとコンテキスト伝搬を統合します。
+- **Temporal**: 耐久実行、リプレイ、activity の再試行、シグナル、ワーカー。アダプタが activity と context の伝搬を接続します。
+
+Goa-AI の agent workflow は一度だけ実行されます。runtime は contract が許す
+個別の activity を再試行しますが、失敗した agent workflow 全体を最初から
+実行し直しません。workflow 全体を再試行すると、tool の副作用を繰り返したり、
+最初の実行が保存した最終 record と conflict したりするためです。
 
 ### セマンティックな Timing と Temporal の Liveness
 
@@ -577,7 +636,9 @@ Goa-AI は公開ランタイム契約をエンジン非依存に保ちます:
 
 - `RunPolicy.Timing.Plan` と `RunPolicy.Timing.Tools` はセマンティックな「試行ごとの予算」
 - `runtime.WithTiming(...)` は run ごとにそれらのセマンティック予算を上書きする
-- `runtime.WithWorker(...)` はキュー配置のためのもので、ワークフローエンジン調整ではない
+- 生成 client は agent の default task queue を使います。一つの `Start` または
+  `Run` だけ別の queue を使う場合は
+  `runtime.WithTaskQueue("orchestrator.chat")` を渡します
 
 Temporal アダプタを使っていて、キュー待ちや liveness を調整したい
 場合は、それらを Temporal エンジン側で設定します:
@@ -611,15 +672,62 @@ if err != nil {
 保たれ、汎用ランタイムは Temporal とインメモリエンジンの両方に対して
 正直なままでいられます。
 
+### Storage と完了に関するアダプタ契約
+
+runtime は `runtime.store` という型付き activity を 1 つだけ登録します。各
+`StorageActivityCommand` は `Append`、`RootStart`、`ChildStart`、
+`OneShotStart`、`OneShotChildStart`、`Cancellation`、`Suspension`、`Terminal`
+のうち 1 つだけを設定します。返される `StorageActivityResult` も同じ field だけを設定します。
+同じ command を再試行しても成功しない場合、custom store は
+`storage.ContractError` を返します。一時的な database error や network error
+は通常の error のままなので再試行できます。`runtime.WithStorageActivityTimeout`
+は activity の Start-to-Close timeout を設定し、0 より大きい値が必要です。
+
+`Engine.QueryRunCompletion` は現在の run `Status` を返します。run が閉じた後は、
+同じ結果に安定した完了時刻 `CompletedAt` と、最終 `Output` または
+`WorkflowError` も含まれます。completion repair はこの時刻を使うため、再試行でも
+同じ record timestamp が送られます。method が別に返す error は、engine がそれらの
+情報を取得できなかったことを示します。status 専用の別 query はありません。
+
+child prompt の準備は `Success` または `Failure` のどちらか一方だけを返します。
+成功には message と描画済み prompt の情報だけが含まれます。workflow は、記録済み
+の元の tool call から child run、session、parent、tool、label の identity を導出します。
+in-memory engine は input と output をコピーして size limit を適用し、Temporal と同じ
+retry policy を使います。
+
 ---
 
 ## Run コントラクト
 
 - `SessionID` はセッション付き開始で必須です。`Start` と `Run` は `SessionID` が空、または空白のみの場合に fail-fast します。
 - `StartOneShot` と `OneShotRun` は明示的にセッションレスです。セッションを要求/作成せず、セッションスコープのストリームイベントも発行しません。
+- host は session を使う work を送る前に session を作成します。agent runtime は session を作成、終了、削除しません。
+- engine は root workflow を受理した後、最初の activity で run を保存します。runtime は受理前に `pending` record を作成しません。
+- 同じ run ID と完全に同じ request で start を繰り返すと、engine history を query
+  できる間は受理済み workflow が返ります。異なる input で ID を再利用すると拒否されます。
+  history retention 後の permanent command identity は product service が所有し、
+  Goa-AI は保証しません。
+- root、child、one-shot の開始には別々の storage operation を使います。child は親への link を保存し、one-shot は session なしで完全な metadata を保存します。
+- 最初の cancellation reason は変更できません。完全に同じ再試行は成功し、同じ run に別の reason を指定すると conflict になります。
+- suspension と終了は、新しい status と対応する変更不可の record をまとめて保存します。
 - エージェントは最初の run の前に登録されなければなりません。ランタイムは、エンジンワーカーの決定性を保つため、最初の run 送信後の登録を `ErrRegistrationClosed` で拒否します。
 - tool executor は `context.Context` から値を“釣る”のではなく、call ごとの明示 metadata（`ToolCallMeta`）を受け取ります。その label には clone された run／policy label が入り、call が terminal finalization を実行する場合だけ `runtime.FinalizationReasonLabel` も入ります。
 - 暗黙のフォールバックには依存しません。すべてのドメイン識別子（run / session / turn / correlation）は明示的に渡します。
+
+### 欠けた最終記録を修復する
+
+通常の workflow は、runtime storage が受理するまで suspension と terminal の
+書き込みを再試行します。engine history がすでに閉じているのに保存済み run が
+active のままの場合、operator は `Runtime.RepairRunCompletion(ctx, runID)` を
+呼べます。この command は engine の最終状態を確認し、修復専用の store operation に
+欠けた suspension または terminal record を渡します。この operation は
+`RepairRunSuspension` または `RepairRunTerminal` です。store は run がまだ active な場合だけ
+それを保存します。workflow が先に別の最終記録を保存していれば、その記録が優先されます。
+
+run の一覧や snapshot の method は読み取り専用で、この修復を行いません。
+engine は workflow output と workflow error を、最終結果を取得できなかった
+error とは分けて返します。取得 error は operator に返され、workflow の最終
+failure として保存されません。成功済みの修復を繰り返しても保存結果は変わりません。
 
 ---
 
@@ -630,6 +738,11 @@ if err != nil {
 clarification、structured question、external tool result、confirmation は、現在の workflow を正常終了させます。返される `RunOutput.Suspension` には UI または external system が回答すべき request が入ります。人が判断している間、Temporal workflow は開いたままになりません。
 
 workflow が完了する前に、Goa-AI は completed run ID の下に非公開 checkpoint を保存します。application は 1 つの answer を原子的に受理し、2 つの concurrent request が同じ state を続行できないようにしなければなりません。その後、predecessor run ID、新しい run ID、新しい turn ID、1 つの型付き response を使って新 workflow を開始します。
+
+answer の受理と product data を同じ transaction で保存する必要がある場合は、まず
+`PrepareContinuation` を呼び、両方の変更を atomic に確定し、exact prepared value
+を `StartContinuation` に渡します。validation と engine submission の間に
+application write がない場合だけ `Continue` を使います。
 
 ```go
 next, err := client.Continue(
@@ -644,18 +757,29 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
-    nil, // 新しい workflow の任意設定
+    nil, // 新しい run の任意 workflow 設定
 )
 ```
 
-application が渡すのは completed run ID と型付き answer だけです。Goa-AI は checkpoint を読み込み、正確な `goa-ai.run-suspension.v4` schema と pending request を要求し、現在の生成 codec で保存済み payload を復元して planning を再開します。ほかの checkpoint version は変換や推測を行わず拒否します。checkpoint は session store の非公開情報のままです。
+application が渡すのは、完了した run ID と型付き回答だけです。Goa-AI は
+checkpoint を読み、その version と保留中 request を検証し、現在の generated
+codec で保存済み payload を復元して planning を再開します。checkpoint は
+runtime store 内で非公開のままです。
 
-answer が以前の workflow の model-generated tool call を完了させる場合、新しい `tool_end` event には 2 つの異なる run identity があります。
+受理される形式は `goa-ai.run-suspension.v7` だけです。Goa-AI は以前の version を
+推測で変換せず、すべて拒否します。新しい runtime で continuation traffic を
+受け付ける前に、host は古い形式の suspended run を移行または削除する必要が
+あります。
 
-- 通常の run ID は answer を受け取った新 workflow を示します。
-- `call_run_id` は対応する `tool_start` を emit した以前の workflow を示します。
+回答が以前の workflow で model が作成した tool call を完了させる場合、新しい
+`tool_end` event には二つの run identity が含まれます。
 
-stream consumer は `call_run_id` と tool call ID を使って event を対応付けます。以前の run を検索したり、call と result が同じ workflow に属すると仮定したりしてはいけません。この境界を release 中に保つ worker／deployment 要件は [透過的なロールアウト](../production/#transparent-rollouts) を参照してください。
+- 通常の run ID は、回答を受け取った新しい workflow を示します。
+- `call_run_id` は、対応する `tool_start` を発行した以前の workflow を示します。
+
+stream consumer は `call_run_id` と tool call ID を使って event を対応付けます。
+以前の run を検索したり、call と result が同じ workflow に属すると仮定したり
+してはいけません。
 
 ---
 
@@ -681,7 +805,7 @@ Goa-AI は、書き込み・削除・コマンド実行などのセンシティ�
   "id": "...",
   "title": "...",
   "prompt": "...",
-  "tool_name": "atlas.commands.change_setpoint",
+  "tool_name": "facility.commands.change_setpoint",
   "tool_call_id": "toolcall-1",
   "payload": { "...": "canonical tool arguments (JSON)" }
 }
@@ -766,7 +890,7 @@ planner-generated request には domain intent だけを含めます。`planner.
 | `ToolSpec.Meta` | すべての run における 1 つの tool | 名前付きコンシューマが意味を所有する、不活性な生成アノテーション。メタデータだけでは runtime 動作は変わらない。 |
 | `ToolSpec.Bookkeeping` | すべての run における 1 つの tool | 成功後に別の planner turn を必要としない durable な制御記録。retrieval と連続失敗の budget を消費しない。 |
 | `ToolSpec.TerminalRun` | すべての run における 1 つの tool | 成功そのものが run を終了し、自動的に bookkeeping を含む。 |
-| `ToolFailure.Recovery` | 1 つの失敗 result | 同一 tool の修正、failed tool を除いた replanning、finalization のいずれかを選ぶ。 |
+| `ToolFailure.Recovery.Action` | 1 つの失敗 result | 同一 tool の修正、failed tool を除いた replanning、finalization のいずれかを選ぶ。 |
 | `PlanResult.SynthesizeAfterTools` | 選択された 1 batch | recoverable failure がなければ、次の planner turn は回答しなければならない。 |
 | `PlanResumeInput.SynthesisOnly` | 1 planner activity | 最終回答を返す。tool call は無効。 |
 | `PlanResumeInput.Finalize` | runtime が強制する終了 | cap または deadline により通常作業が禁止されている。 |
@@ -825,11 +949,9 @@ finalization を永続的に完了する必要があります。
 
 ## フィーチャーモジュール
 
-- `runtime/mcp` – HTTP、SSE、stdio transport 用の MCP caller
+- `runtime/mcp` – HTTP と stdio 用の MCP caller。HTTP は JSON と event-stream の応答を受け付ける
 - `features/memory/mongo` – durable memory store
 - `features/prompt/mongo` – Mongo-backed prompt override store
-- `features/runlog/mongo` – run event log store（append-only, cursor pagination）
-- `features/session/mongo` – session metadata store
 - `features/stream/pulse` – Pulse sink/subscriber helpers
 - `features/model/{anthropic,bedrock,openai,vertex}` – 検証済み model client を返す provider adapter
 - `features/model/gateway` – remote provider server と検証済み transport client
@@ -868,7 +990,7 @@ if err != nil {
     panic(err)
 }
 
-rt := runtime.New()
+rt := runtime.New(runtimeStore)
 if err := rt.RegisterModel("bedrock", limited); err != nil {
     panic(err)
 }
@@ -933,7 +1055,7 @@ import (
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
-rt := runtime.New()
+rt := runtime.New(runtimeStore) // host が所有する runtime storage
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
     APIKey:       os.Getenv("OPENAI_API_KEY"),
     DefaultModel: "gpt-5-mini",

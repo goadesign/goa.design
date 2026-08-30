@@ -36,7 +36,7 @@ Dichiarati tramite `Toolset(FromMCP(service, suite))` e referenziati tramite `Us
 
 - La registrazione generata imposta `DecodeInExecutor=true` in modo che il JSON grezzo sia passato all'esecutore MCP
 - L'esecutore MCP decodifica utilizzando i propri codec
-- I wrapper generati gestiscono schemi/encoder JSON e trasporti (HTTP/SSE/stdio) con tentativi e tracciamento
+- I wrapper generati gestiscono schemi, encoder e trasporto HTTP o stdio con tentativi e tracciamento. HTTP accetta risposte JSON e flussi di eventi
 
 ### Quando utilizzare BindTo rispetto alle implementazioni in linea
 
@@ -151,12 +151,12 @@ Some tools naturally return large lists, graphs, or time-series windows. You can
 `agent.Bounds` descrive come il risultato di uno strumento è stato limitato rispetto al set di dati completo. Per gli strumenti paginati, il provider inserisce il cursor opaco della pagina successiva in `NextCursor`. `ContinueWith` lo mantiene nel runtime, mentre un contratto `Cursor` diretto lo espone al modello.
 
 ```go
-tipo Bounds struct {
-    Returned int // Numero di elementi nella vista delimitata
-    Total *int // Totale al meglio prima del troncamento (opzionale)
-    Truncated bool // Se sono stati applicati dei tappi (lunghezza, finestra, profondità)
-    NextCursor *string // Cursor privato del provider quando esiste un'altra pagina
-    RefinementHint string // Guida su come restringere la query quando è troncata
+type Bounds struct {
+    Returned       int     // Numero di elementi nella vista delimitata
+    Total          *int    // Totale al meglio prima del troncamento (opzionale)
+    Truncated      bool    // Se è stato applicato un limite
+    NextCursor     *string // Cursor privato del provider quando esiste un'altra pagina
+    RefinementHint string  // Come restringere la query quando è troncata
 }
 ```
 
@@ -184,30 +184,44 @@ This design keeps truncation logic where domain knowledge lives (in services) wh
 Use the DSL helper `BoundedResult()` inside a `Tool` definition:
 
 ```go
-Tool("list_devices", "Elenco dei dispositivi con paginazione", func() {
+Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
-        Attributo("site_id", String, "Identificatore del sito")
-        Attributo("stato", Stringa, "Filtrare per stato", func() {
-            Enum("online", "offline", "sconosciuto")
-        })
-        Attributo("limite", Int, "Risultati massimi", func() {
-            Predefinito(50)
-            Massimo(500)
-        })
+        Attribute("site_id", String, "Site identifier")
         Required("site_id")
     })
     Return(func() {
-        Attribute("devices", ArrayOf(Device), "Dispositivi corrispondenti")
-        Attribute("returned", Int, "Conteggio dei dispositivi restituiti")
-        Attributo("total", Int, "Totale dispositivi corrispondenti")
-        Attributo("troncato", Booleano, "I risultati sono stati troncati")
-        Attributo("refinement_hint", Stringa, "Come restringere i risultati")
-        Richiesto("dispositivi", "restituiti")
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
     })
-    BoundedResult()
+    BoundedResult(func() {
+        ContinueWith("continue_devices", "cursor")
+        NextCursor("next_cursor")
+    })
     BindTo("DeviceService", "ListDevices")
 })
+
+Tool("continue_devices", "Continue the available device results", func() {
+    Args(func() {
+        Attribute("cursor", String)
+        Required("cursor")
+    })
+    Return(func() {
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
+    })
+    BoundedResult(func() {
+        Cursor("cursor")
+        NextCursor("next_cursor")
+    })
+    BindTo("DeviceService", "ContinueDevices")
+})
 ```
+
+Il cursor dello strumento di continuazione appartiene al contratto di
+esecuzione, ma viene rimosso dallo schema visibile al modello. Il runtime
+presenta l'azione solo quando una singola testa della catena può continuare
+senza ambiguità; il modello la chiama con `{}` senza copiare il cursor o
+ripetere la query originale.
 
 #### Code Generation
 
@@ -232,9 +246,10 @@ When a tool is marked with `BoundedResult()`:
 ```go
 spec.Bounds = &tools.BoundsSpec{
     Paging: &tools.PagingSpec{
+        ContinueTool:    "tools.continue_devices",
         CursorField:     "cursor",
         NextCursorField: "next_cursor",
-    }
+    },
 }
 ```
 
@@ -930,7 +945,7 @@ Tool("get_time_series", "Get time series data", func() {
         Required("summary", "count")
     })
     // Server-data: full-fidelity data for observers (e.g., UIs)
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -940,7 +955,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Il parametro `kind` (ad esempio `"atlas.time_series"`) identifica il tipo di server-data cosi le UI possono instradare il renderer corretto.
+Il parametro `kind` (ad esempio `"metrics.time_series"`) identifica il tipo di server-data cosi le UI possono instradare il renderer corretto.
 L'audience dichiara l'intento di routing:
 
 - `AudienceTimeline()` per payload orientati a osservatori in timeline/UI.
@@ -999,8 +1014,8 @@ func (e *Executor) Execute(
 
     // Build full-fidelity server-data for UIs
     // Generated server-data codecs are named from the tool and kind, for example:
-    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
-    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    // specs.GetTimeSeriesMetricsTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err
     }

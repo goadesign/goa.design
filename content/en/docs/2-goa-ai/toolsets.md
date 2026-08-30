@@ -38,7 +38,7 @@ MCP servers with inline tool schemas.
 
 - Generated registration sets `DecodeInExecutor=true` so raw JSON is passed through to the MCP executor
 - MCP executor decodes using its own codecs
-- Generated wrappers handle JSON schemas/encoders and transports (HTTP/SSE/stdio) with retries and tracing
+- Generated wrappers handle JSON schemas, encoders, and HTTP or stdio transport with retries and tracing. HTTP accepts JSON and event-stream responses
 
 ### When to Use BindTo vs Inline Implementations
 
@@ -1005,7 +1005,7 @@ Tool("get_time_series", "Get time series data", func() {
         Required("summary", "count")
     })
     // Server-data: full-fidelity data for observers (e.g., UIs)
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -1015,7 +1015,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-The `kind` parameter (e.g., `"atlas.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
+The `kind` parameter (e.g., `"metrics.time_series"`) identifies the server-data kind so UIs can dispatch appropriate renderers.
 The audience declares routing intent:
 
 - `AudienceTimeline()` for observer-facing timeline/UI payloads.
@@ -1073,8 +1073,8 @@ func (e *Executor) Execute(
     
     // Build full-fidelity server-data for UIs
     // Generated server-data codecs are named from the tool and kind, for example:
-    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
-    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    // specs.GetTimeSeriesMetricsTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err
     }

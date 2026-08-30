@@ -23,13 +23,20 @@ Vous construirez :
 ## 1. Créez un module
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+Ces noms de branche sélectionnent le contrat de stockage intégré du runtime
+utilisé dans ce guide. Le réglage du proxy direct est nécessaire, car le nom de
+la branche préliminaire de Goa contient une barre oblique. Go enregistre des
+pseudo-versions exactes dans `go.mod` ; les mises à jour ultérieures des branches
+ne modifient donc pas une compilation existante tant que vous ne relancez pas
+`go get`.
 
 Goa-AI cible actuellement le Go moderne. Utilisez la version Go déclarée par le
 Module `goa.design/goa-ai` ou plus récent.
@@ -65,6 +72,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -99,24 +107,30 @@ et les contrats d'exécution sont générés à partir de cette conception.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Forme attendue :
 
 ```text
-RunID: orchestrator-chat-...
-Assistant: Hello from example planner.
-Completion draft_task: ...
-Completion stream draft_task: ...
+RunID: demo-chat-run
+Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+La ligne `Completion delta` est un préfixe JSON transmis en streaming. Son point
+de coupure exact peut varier, mais la valeur finale transmise est complète et
+correspond à l'exemple déclaré.
 
 `goa gen` crée des contrats générés. `goa example` crée des applications appartenant
 échafaudage :
 
 - `gen/` : code généré. Ne modifiez pas ce répertoire à la main.
 - `cmd/orchestrator/main.go` : exemple de point d’entrée exécutable.
-- `internal/agents/bootstrap/bootstrap.go` : construction du runtime et enregistrement des agents.
+- `internal/agents/orchestrator/bootstrap/bootstrap.go` : construction du runtime et enregistrement des agents.
 - `internal/agents/chat/planner/planner.go` : planificateur de stub à remplacer.
 - `gen/orchestrator/completions/` : assistants de saisie semi-automatique typés.
 
@@ -158,15 +172,16 @@ Les packages d'agent générés exposent les clients typés. Les exécutions de 
 séance explicite ; Les exécutions ponctuelles sont intentionnellement sans session.
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -187,6 +202,9 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 Utilisez `Run` ou `Start` pour le travail conversationnel/sessionnel. Utilisez `OneShotRun` ou
 `StartOneShot` pour les tâches de demande/réponse qui doivent être observables par `RunID`
 mais ne doit pas appartenir à une session.
+
+
+Le projet local généré accepte un `storage.Store` et la commande d’exemple utilise `runtime/agent/storage/inmem`. En production, l’application fournit un adaptateur vers le service propriétaire de la base de données du runtime. Ce service, et non un worker d’agent, crée et termine les sessions.
 
 ---
 
@@ -327,7 +345,7 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 Pour la production UIs, publiez sur Pulse et abonnez-vous au flux de session
@@ -383,8 +401,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-Chaque agent conserve son propre planificateur, ses propres outils, sa politique et son journal d'exécution. Le parent voit un
-résultat d'outil normal avec un `RunLink` à l'exécution enfant.
+Chaque agent conserve son propre planificateur, ses outils et sa politique. Le stockage du runtime fourni par l’application enregistre chaque exécution racine et enfant, y compris le lien vers le parent. Le parent reçoit un résultat d’outil normal avec un `RunLink` vers l’exécution enfant.
 
 ---
 
@@ -396,9 +413,7 @@ résultat d'outil normal avec un `RunLink` à l'exécution enfant.
 - Un client d'exécution généré avec une exécution par session et en une seule fois.
 - Un chemin vers la planification basée sur un modèle, le streaming UIs et la composition des agents.
 
-Pour la production, ajoutez le moteur Temporal pour la durabilité, les magasins soutenus par Mongo pour
-journaux de mémoire/session/exécution, Pulse pour le streaming distribué et middleware de modèle
-pour les limites de tarifs des fournisseurs. La conception Goa reste la source de vérité.
+Pour la production, ajoutez le moteur Temporal pour la durabilité, un stockage unique du runtime appartenant à l’application, un stockage de mémoire appartenant au produit si nécessaire, Pulse pour le streaming distribué et le middleware de modèle pour les limites de débit du fournisseur. La conception Goa reste la source de vérité.
 
 ---
 

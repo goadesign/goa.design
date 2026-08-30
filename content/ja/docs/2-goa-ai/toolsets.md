@@ -36,7 +36,7 @@ aliases:
 
 - 生成される登録は `DecodeInExecutor=true` を設定し、生の JSON が MCP エクゼキュータへそのまま渡されます
 - MCP エクゼキュータは自身のコーデックでデコードします
-- 生成されるラッパは JSON スキーマ / エンコーダとトランスポート（HTTP/SSE/stdio）を、リトライとトレーシング付きで扱います
+- 生成されるラッパは JSON スキーマ、エンコーダ、HTTP または stdio トランスポートをリトライとトレーシング付きで扱います。HTTP は JSON と event-stream の応答を受け付けます
 
 ### BindTo とインライン実装の使い分け
 
@@ -154,6 +154,7 @@ type Bounds struct {
     Returned       int    // Number of items in the bounded view
     Total          *int   // Best-effort total before truncation (optional)
     Truncated      bool   // Whether any caps were applied (length, window, depth)
+    NextCursor     *string // Private provider cursor when another page exists
     RefinementHint string // Guidance on how to narrow the query when truncated
 }
 ```
@@ -163,6 +164,7 @@ type Bounds struct {
 | `Returned` | result に実際に含まれる item 数 |
 | `Total` | truncation 前の total item 数の best-effort 値 (不明なら nil) |
 | `Truncated` | pagination、depth limit、size limit など何らかの cap が適用された場合 true |
+| `NextCursor` | 次ページ用の opaque cursor。model への公開方法は paging contract が決める |
 | `RefinementHint` | result が truncated のとき、query を絞るための人間可読な案内 |
 
 #### trim は service の責務
@@ -183,8 +185,23 @@ runtime は subset や truncation を自分では計算しません。**service 
 Tool("list_devices", "List devices with pagination", func() {
     Args(func() {
         Attribute("site_id", String, "Site identifier")
-        Attribute("cursor", String, "前ページが返した次ページ用の opaque cursor")
         Required("site_id")
+    })
+    Return(func() {
+        Attribute("devices", ArrayOf(Device), "Matching devices")
+        Required("devices")
+    })
+    BoundedResult(func() {
+        ContinueWith("continue_devices", "cursor")
+        NextCursor("next_cursor")
+    })
+    BindTo("DeviceService", "ListDevices")
+})
+
+Tool("continue_devices", "Continue the available device results", func() {
+    Args(func() {
+        Attribute("cursor", String)
+        Required("cursor")
     })
     Return(func() {
         Attribute("devices", ArrayOf(Device), "Matching devices")
@@ -194,9 +211,14 @@ Tool("list_devices", "List devices with pagination", func() {
         Cursor("cursor")
         NextCursor("next_cursor")
     })
-    BindTo("DeviceService", "ListDevices")
+    BindTo("DeviceService", "ContinueDevices")
 })
 ```
+
+continuation tool の cursor は execution contract に存在しますが、model-facing
+schema からは除かれます。runtime は一意な live chain head を続行できる場合だけ
+action を公開します。model は cursor のコピーや元 query の繰り返しをせず、`{}`
+で呼び出します。
 
 #### コード生成
 
@@ -216,6 +238,7 @@ method-backed `BindTo` tool では、生成 executor が runtime projection 前�
 ```go
 spec.Bounds = &tools.BoundsSpec{
     Paging: &tools.PagingSpec{
+        ContinueTool:    "tools.continue_devices",
         CursorField:     "cursor",
         NextCursorField: "next_cursor",
     },
@@ -902,7 +925,7 @@ Tool("get_time_series", "Get time series data", func() {
         Required("summary", "count")
     })
     // Server-data: full-fidelity data for observers (e.g., UIs)
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -912,7 +935,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-`kind` parameter (例: `"atlas.time_series"`) は server-data kind を識別し、UI が適切な renderer に dispatch できるようにします。audience は routing intent を宣言します:
+`kind` parameter (例: `"metrics.time_series"`) は server-data kind を識別し、UI が適切な renderer に dispatch できるようにします。audience は routing intent を宣言します:
 
 - `AudienceTimeline()` は observer-facing timeline/UI payload 用です。
 - `AudienceEvidence()` は provenance または audit evidence 用です。
@@ -968,8 +991,8 @@ func (e *Executor) Execute(
 
     // Build full-fidelity server-data for UIs
     // Generated server-data codecs are named from the tool and kind, for example:
-    // specs.GetTimeSeriesAtlasTimeSeriesServerDataCodec.ToJSON(...)
-    serverData, err := buildCanonicalServerData("atlas.time_series", fullData)
+    // specs.GetTimeSeriesMetricsTimeSeriesServerDataCodec.ToJSON(...)
+    serverData, err := buildCanonicalServerData("metrics.time_series", fullData)
     if err != nil {
         return nil, err
     }

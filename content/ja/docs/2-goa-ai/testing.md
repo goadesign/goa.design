@@ -20,7 +20,8 @@ llm_optimized: true
 ```go
 func TestChatAgent(t *testing.T) {
     // Create runtime with in-memory engine (default)
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
 
     // Register agent with test planner
@@ -29,7 +30,7 @@ func TestChatAgent(t *testing.T) {
     })
     require.NoError(t, err)
 
-    _, err = rt.CreateSession(ctx, "test-session")
+    _, err = store.CreateSession(ctx, "test-session", time.Now().UTC())
     require.NoError(t, err)
 
     // Run agent
@@ -197,7 +198,8 @@ agent-as-tool シナリオをテストします:
 
 ```go
 func TestAgentComposition(t *testing.T) {
-    rt := runtime.New()
+    store := storageinmem.New()
+    rt := runtime.New(store)
     ctx := context.Background()
 
     // Register provider agent
@@ -212,7 +214,7 @@ func TestAgentComposition(t *testing.T) {
     })
     require.NoError(t, err)
 
-    _, err = rt.CreateSession(ctx, "test-session")
+    _, err = store.CreateSession(ctx, "test-session", time.Now().UTC())
     require.NoError(t, err)
 
     // Run orchestrator - it should invoke planner agent as a tool
@@ -231,6 +233,31 @@ func TestAgentComposition(t *testing.T) {
     assert.Greater(t, out.ChildrenCount, 0)
 }
 ```
+
+### ランタイムストレージのテスト
+
+プランナーとワークフローのテストには `runtime/agent/storage/inmem` を使います。プロダクション用の永続実装も同じ契約に対してテストし、次のケースを含めます。
+
+- ルート、子、セッションなし one-shot の各開始が、メタデータと最初の記録をまとめて保存する
+- 子の開始が、親へのリンクと子の開始を同じ操作で保存する
+- まったく同じ再試行が元の記録 ID を返し、新しい記録を追加していないことを報告する
+- status と他の lifecycle field が同じでも、別の record で同じ変更を繰り返すと conflict になる
+- 最初の書き込みで確定した値を変更すると競合になる
+- 最初のキャンセル理由は変更できず、異なる理由を後から書くと競合になる
+- 一時停止がチェックポイント、一時停止状態、対応する記録をまとめて保存する
+- 終了が最終状態と対応する記録をまとめて保存する
+- continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
+  suspended predecessor が必要である
+- continuation の identity が一致しない場合は successor の開始も親リンクも書かれず、
+  受理された successor は `RunMeta` ではなく `RunStarted` に
+  `PredecessorRunID` を保存する
+- 終了済みセッションではプランナーやツールを実行せず、すでに受理されたワークフローはキャンセルとして記録する
+- 実行中のランがある間は purge が失敗し、すべて終了した後に終了済みセッションのメタデータ、チェックポイント、記録を削除する
+
+これらのテストでは、実際のデータベーストランザクションを動かしてください。メソッド呼び出しだけを確認する mock では、状態と記録が同時に見えることを証明できません。
+
+continuation test は `goa-ai.run-suspension.v7` を受理し、それ以前の version は
+payload の復元や planner 呼び出しの前に拒否することを確認します。
 
 ---
 
@@ -251,7 +278,8 @@ error: registration closed: cannot register agent after runtime start
 **解決策:** run を開始する前にすべてのエージェントを登録します:
 
 ```go
-rt := runtime.New()
+store := storageinmem.New()
+rt := runtime.New(store)
 
 // ✓ Register all agents first
 chat.RegisterChatAgent(ctx, rt, chatConfig)
@@ -259,7 +287,7 @@ planner.RegisterPlannerAgent(ctx, rt, plannerConfig)
 
 // ✓ Then create a session and start runs
 client := chat.NewClient(rt)
-if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+if _, err := store.CreateSession(ctx, "session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "session-123", messages, opts...)
@@ -282,7 +310,7 @@ error: missing session ID: session ID is required for run
 out, err := client.Run(ctx, "", messages)
 
 // ✓ Correct - session ID provided
-if _, err := rt.CreateSession(ctx, "session-123"); err != nil {
+if _, err := store.CreateSession(ctx, "session-123", time.Now().UTC()); err != nil {
     panic(err)
 }
 out, err := client.Run(ctx, "session-123", messages)
@@ -468,6 +496,7 @@ Args(func() {
 import "goa.design/goa-ai/runtime/agent/runtime"
 
 rt := runtime.New(
+    storageinmem.New(),
     runtime.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
         Level: slog.LevelDebug,
     }))),
@@ -480,8 +509,7 @@ rt := runtime.New(
 type DebugSink struct{}
 
 func (s *DebugSink) Send(ctx context.Context, event stream.Event) error {
-    fmt.Printf("[%s] %s run=%s session=%s payload=%v
-",
+    fmt.Printf("[%s] %s run=%s session=%s payload=%v\n",
         time.Now().Format(time.RFC3339),
         event.Type(),
         event.RunID(),
@@ -494,7 +522,7 @@ func (s *DebugSink) Send(ctx context.Context, event stream.Event) error {
 func (s *DebugSink) Close(ctx context.Context) error { return nil }
 
 // Wire the sink into the runtime to observe all stream events.
-rt := runtime.New(runtime.WithStream(&DebugSink{}))
+rt := runtime.New(storageinmem.New(), runtime.WithStream(&DebugSink{}))
 ```
 
 #### 実行時に Tool Spec を調べる

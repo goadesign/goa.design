@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Utilisez `ArrayOfRequired` lorsque chaque élément doit être présent. Cette règle
+s'applique aux primitives, à leurs alias et aux objets : un tableau JSON ou
+JSON-RPC entrant contenant `null` est refusé, tandis que `""`, `0` et `false`
+restent des éléments valides.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` déclare des alternatives dont une seule branche peut être sélectionnée.
+Marquez l'attribut `OneOf` comme requis lorsque l'appelant doit choisir une
+branche.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+Un `OneOf` requis refuse l'absence de branche, un wrapper typé dont la valeur
+est nil et un message, une slice d'octets ou une valeur `Any` nil. Un message
+vide non nil reste valide. Les constructeurs, setters, accessors et méthodes
+`Kind` générés gardent la branche privée et imposent une seule sélection.
+
 #### Cartes
 
 Les cartes fournissent des associations clé-valeur avec une sécurité de type :
@@ -657,15 +691,15 @@ Les erreurs dans Goa sont définies au niveau de la conception et automatiquemen
 
 Les erreurs peuvent être définies à trois niveaux :
 
-| Les erreurs peuvent être définies à trois niveaux : - Portée - Disponibilité - Cas d'utilisation
+| Portée | Disponibilité | Cas d'utilisation |
 |-------|--------------|----------|
-| Au niveau de l'API, tous les services, les erreurs courantes (non autorisé, taux limité), les erreurs de domaine (non trouvé, état invalide), les erreurs de service (non trouvé, état invalide)
-| Au niveau de l'API, toutes les méthodes dans le service, les erreurs de domaine (non trouvé, état invalide), les erreurs de service, les erreurs de service, les erreurs de service
-| Au niveau de l'API | Toutes les méthodes du service | Erreurs de domaine (introuvable, état invalide)
+| Niveau API | Définition réutilisable, sélectionnée explicitement par un service ou une méthode | Erreurs courantes (non autorisé, débit limité) |
+| Niveau service | Toutes les méthodes du service | Erreurs du domaine (introuvable, état non valide) |
+| Niveau méthode | Une seule méthode | Erreurs propres à une opération |
 
 ### Erreurs au niveau de l'API
 
-Définir une fois, utiliser partout :
+Définir une fois, sélectionner là où l'erreur peut être renvoyée :
 
 ```go
 var _ = API("myapi", func() {
@@ -685,6 +719,11 @@ var _ = API("myapi", func() {
         Response("unauthorized", CodeUnauthenticated)
         Response("rate_limited", CodeResourceExhausted)
     })
+})
+
+var _ = Service("users", func() {
+    // Sélectionnez la définition au niveau de l'API pour ce service.
+    Error("unauthorized")
 })
 ```
 
@@ -769,19 +808,28 @@ Pour les erreurs nécessitant un contexte supplémentaire :
 
 ```go
 var ValidationError = Type("ValidationError", func() {
-    Field(1, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for custom error types
-    })
-    Field(2, "message", String, "Error message")
-    Field(3, "field", String, "Field that failed validation")
-    Field(4, "value", Any, "Invalid value provided")
-    Required("name", "message", "field")
+    Field(1, "message", String, "Error message")
+    Field(2, "field", String, "Field that failed validation")
+    Field(3, "value", Any, "Invalid value provided")
+    Required("message", "field")
 })
 
 Method("create", func() {
     Error("validation_error", ValidationError, "Input validation failed")
 })
 ```
+
+Une seule erreur nommée n'a pas besoin d'un champ qui la distingue. Lorsqu'un
+même type représente plusieurs erreurs nommées, ajoutez `ErrorName("name",
+String, ...)`, rendez `name` obligatoire et donnez-lui le nom de l'erreur Goa
+avant de renvoyer la valeur.
+
+Goa ajoute les méthodes `Error`, `ErrorName` et `GoaErrorName` uniquement au type
+exact transmis à `Error`. Les types nommés imbriqués restent des types ordinaires.
+Si le type exact sert aussi de charge utile ou de résultat, ou s'il utilise
+`struct:pkg:path`, Goa ne l'émet qu'une fois et place les méthodes d'erreur à
+côté de cette déclaration. `ErrorResult` reste l'erreur de service intégrée de
+Goa et n'est pas émis comme un type personnalisé défini dans la conception.
 
 **Voir aussi:**
 - [Guide de gestion des erreurs](error-handling/) - Modèles complets de gestion des erreurs

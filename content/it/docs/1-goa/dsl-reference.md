@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Usare `ArrayOfRequired` quando ogni elemento deve essere presente. La regola
+vale per primitivi, alias primitivi e oggetti: un array JSON o JSON-RPC in
+ingresso contenente `null` viene rifiutato, mentre `""`, `0` e `false` restano
+elementi validi.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` dichiara alternative in cui può essere selezionato esattamente un ramo.
+Contrassegnare l'attributo `OneOf` come richiesto quando il caller deve scegliere
+un ramo.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+Un `OneOf` richiesto rifiuta l'assenza di un ramo, un wrapper tipizzato con
+valore nil e un messaggio, slice di byte o `Any` nil. Un messaggio vuoto non nil
+resta valido. Costruttori, setter, accessor e metodi `Kind` generati mantengono
+privato il ramo e impongono una sola selezione.
+
 #### Mappe
 
 Le mappe forniscono associazioni chiave-valore con sicurezza di tipo:
@@ -659,13 +693,13 @@ Gli errori possono essere definiti a tre livelli:
 
 | Ambito di applicazione | Disponibilità | Caso d'uso |
 |-------|--------------|----------|
-| A livello API | Tutti i servizi | Errori comuni (non autorizzato, tasso limitato) |
+| A livello API | Definizione riutilizzabile, selezionata esplicitamente da un servizio o un metodo | Errori comuni (non autorizzato, limite di frequenza) |
 | A livello di servizio | Tutti i metodi nel servizio | Errori di dominio (non trovato, stato non valido) |
 | A livello di metodo | Solo un metodo singolo | Errori specifici dell'operazione |
 
 ### Errori a livello API
 
-Definiti una volta, usati ovunque:
+Definiti una volta, selezionati dove possono essere restituiti:
 
 ```go
 var _ = API("myapi", func() {
@@ -685,6 +719,11 @@ var _ = API("myapi", func() {
         Response("unauthorized", CodeUnauthenticated)
         Response("rate_limited", CodeResourceExhausted)
     })
+})
+
+var _ = Service("users", func() {
+    // Seleziona la definizione a livello di API per questo servizio.
+    Error("unauthorized")
 })
 ```
 
@@ -769,19 +808,29 @@ Per gli errori che necessitano di un contesto aggiuntivo:
 
 ```go
 var ValidationError = Type("ValidationError", func() {
-    Field(1, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for custom error types
-    })
-    Field(2, "message", String, "Error message")
-    Field(3, "field", String, "Field that failed validation")
-    Field(4, "value", Any, "Invalid value provided")
-    Required("name", "message", "field")
+    Field(1, "message", String, "Error message")
+    Field(2, "field", String, "Field that failed validation")
+    Field(3, "value", Any, "Invalid value provided")
+    Required("message", "field")
 })
 
 Method("create", func() {
     Error("validation_error", ValidationError, "Input validation failed")
 })
 ```
+
+Un solo errore con nome non richiede un campo discriminatore. Quando un tipo
+rappresenta più errori con nome, aggiungere `ErrorName("name", String, ...)`,
+rendere obbligatorio `name` e impostarlo sul nome dell'errore Goa prima di
+restituire il valore.
+
+Goa aggiunge i metodi `Error`, `ErrorName` e `GoaErrorName` solo al tipo esatto
+passato a `Error`. I tipi con nome annidati al suo interno rimangono tipi
+ordinari. Se il tipo esatto viene usato anche come payload o risultato, oppure
+usa `struct:pkg:path`, Goa lo emette una sola volta e colloca i metodi di errore
+accanto a quella dichiarazione. `ErrorResult` rimane l'errore di servizio
+integrato di Goa e non viene emesso come tipo personalizzato definito nel
+progetto.
 
 **Vedi anche:**
 - [Guida alla gestione degli errori](error-handling/) - Schemi completi di gestione degli errori

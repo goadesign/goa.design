@@ -23,13 +23,18 @@ You will build:
 ## 1. Create a Module
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+These branch names select the integrated runtime storage contract used by this
+guide. The direct proxy setting is needed because the Goa preview branch name
+contains a slash. Go records exact pseudo-versions in `go.mod`, so later branch
+updates do not change an existing build until you run `go get` again.
 
 Goa-AI currently targets modern Go. Use the Go version declared by the
 `goa.design/goa-ai` module or newer.
@@ -65,6 +70,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -99,17 +105,22 @@ and runtime contracts are generated from this design.
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 Expected shape:
 
 ```text
-RunID: orchestrator-chat-...
+RunID: demo-chat-run
 Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
-Completion draft_task: ...
-Completion stream draft_task: ...
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+The `Completion delta` line is a streamed JSON prefix. Its exact cutoff may
+vary, but the final streamed value is complete and matches the declared example.
 
 When the design has an authored payload example and either an authored result
 example or no result, the scaffold planner demonstrates that tool. If no tool
@@ -121,7 +132,7 @@ creates application-owned files only when they do not already exist:
 
 - `gen/`: generated code. Do not edit this directory by hand.
 - `cmd/orchestrator/main.go`: runnable example entry point (create-once).
-- `internal/agents/bootstrap/bootstrap.go`: runtime construction and agent registration (create-once).
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: runtime construction and agent registration (create-once).
 - `internal/agents/chat/planner/planner.go`: stub planner to replace (create-once).
 - `internal/agents/chat/toolsets/helpers/execute.go`: example executor (create-once).
 - `gen/orchestrator/completions/`: typed direct-completion helpers.
@@ -164,15 +175,16 @@ Generated agent packages expose typed clients. Sessionful runs require an
 explicit session; one-shot runs are intentionally sessionless.
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -193,6 +205,11 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 Use `Run` or `Start` for conversational/sessionful work. Use `OneShotRun` or
 `StartOneShot` for request/response jobs that should be observable by `RunID`
 but should not belong to a session.
+
+The generated local scaffold accepts a `storage.Store` and uses
+`runtime/agent/storage/inmem` in the example command. A production application
+passes an adapter for the service that owns its runtime database. That service,
+not an agent worker, creates and ends sessions.
 
 ---
 
@@ -331,7 +348,7 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 For production UIs, publish to Pulse and subscribe to the session stream
@@ -388,7 +405,8 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-Each agent keeps its own planner, tools, policy, and run log. The parent sees a
+Each agent keeps its own planner, tools, and policy. The host runtime store
+records every root and child run, including the parent link. The parent sees a
 normal tool result with a `RunLink` to the child run.
 
 ---
@@ -403,9 +421,10 @@ normal tool result with a `RunLink` to the child run.
   generated evaluation suites (declare a `Suite` in the design; see
   [Evaluations](evaluations/)).
 
-For production, add the Temporal engine for durability, Mongo-backed stores for
-memory/session/run logs, Pulse for distributed streaming, and model middleware
-for provider rate limits. The Goa design remains the source of truth.
+For production, add the Temporal engine for durability, one host-owned runtime
+store, a product-owned memory store when needed, Pulse for distributed
+streaming, and model middleware for provider rate limits. The Goa design
+remains the source of truth.
 
 ---
 

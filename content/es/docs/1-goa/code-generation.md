@@ -6,7 +6,10 @@ llm_optimized: true
 aliases:
 ---
 
-La generación de código de Goa transforma su diseño en código listo para la producción. En lugar de un simple andamiaje, Goa genera implementaciones de servicios completas y ejecutables que siguen las mejores prácticas y mantienen la coherencia en toda la API.
+La generación de código de Goa transforma su diseño en contratos de servicio,
+transportes, clientes y documentación listos para producción. `goa example` crea
+el cableado inicial ejecutable, mientras que su aplicación aporta la lógica de
+negocio.
 
 
 
@@ -15,8 +18,21 @@ La generación de código de Goa transforma su diseño en código listo para la 
 ### Instalación
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
+
+{{< alert title="Probar una versión preliminar de la generación" color="info" >}}
+Las versiones preliminares son opcionales. Fije el módulo de Goa y el comando
+`goa` al mismo commit. El trabajo actual está en la
+[rama preliminar `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+en el commit
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
+Vuelva a generar todo el directorio `gen/`, no mezcle nunca resultados estables
+y preliminares y, a continuación, compile y pruebe la aplicación completa.
+Coordine las actualizaciones de cliente y servidor cuando la guía identifique
+un cambio en el formato intercambiado. Para volver a la versión estable, fije
+juntos el módulo y el comando estables y vuelva a generar todo.
+{{< /alert >}}
 
 ### Comandos
 
@@ -94,6 +110,12 @@ Goa crea un `main.go` temporal que:
 - Las expresiones validadas pasan a los generadores de código
 - Las plantillas se renderizan para producir archivos de código
 - La salida se escribe en el directorio `gen/`
+
+Goa resuelve los paquetes, las declaraciones, los nombres, las importaciones,
+las rutas de los campos y las ramas conocidas a partir del diseño completo y
+validado antes de renderizar. Las plantillas escriben directamente esas
+decisiones. Los programas generados solo se ramifican según los valores que
+reciben durante la ejecución.
 
 ---
 
@@ -383,6 +405,7 @@ Generar tipos en un paquete compartido:
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +416,19 @@ gen/
 └── types/
     └── common_type.go
 ```
+
+`struct:pkg:path` da al tipo definido por el autor una única declaración en el
+paquete generado seleccionado, y cada uso generado importa esa declaración. El
+nombre del paquete Go es el último segmento de la ruta en minúsculas. Si el tipo
+reubicado contiene otro tipo definido por el autor, esa dependencia también debe
+declarar un `struct:pkg:path` explícito, normalmente el mismo paquete. Los tipos
+anidados creados por el compilador permanecen junto al tipo definido por el
+autor al que pertenecen.
+
+Una declaración definida por el autor se reutiliza entre servicios y entre usos
+como carga útil, resultado y error. Cuando ese tipo exacto es un error
+personalizado, Goa añade los métodos de error junto a la misma declaración en vez
+de generar un segundo tipo.
 
 ### Personalización de campos
 
@@ -512,14 +548,24 @@ Goa valida los datos en los límites del sistema:
 
 ### Reglas de puntero para campos Struct
 
-| Propiedades | Carga útil/Resultado | Cuerpo de la solicitud (servidor) | Cuerpo de la respuesta (servidor) |
-|------------|---------------|----------------------|---------------------|
-| Requerido o con valor por defecto | Directo (-) | Puntero (*) | Directo (-) |
-| No requerido, sin valor por defecto | Puntero (*) | Puntero (*) | Puntero (*) |
+Los tipos de servicio representan valores ya validados. Los tipos de transporte
+decodificados también deben conservar si un campo entrante estaba ausente.
 
-Tipos especiales:
-- **Objetos (structs)**: Utilice siempre punteros
-- **Arrays y Mapas**: Nunca utilizar punteros (ya son tipos de referencia)
+| Campo | Tipo de servicio | Cuerpo HTTP/JSON-RPC | Solicitud o respuesta protobuf |
+|---|---|---|---|
+| Primitivo requerido o con valor por defecto | Valor | Puntero al decodificar para validar; valor al codificar | Puntero para campos singulares cuya presencia debe conservarse |
+| Primitivo opcional sin valor por defecto | Puntero | Puntero | Puntero |
+| Objeto | Puntero | Puntero | Puntero |
+| Array o mapa | Valor | Valor | Valor |
+
+En HTTP y JSON-RPC, la entrada decodificada es una solicitud en el servidor o
+una respuesta en el cliente. Las solicitudes codificadas por el cliente y las
+respuestas codificadas por el servidor usan valores. En los structs protobuf,
+los booleanos, números, strings, enums y sus alias singulares requeridos son
+punteros tanto en solicitudes como en respuestas. Así la validación distingue
+un campo omitido de un valor cero explícito. Los slices de bytes siguen siendo
+slices, los mensajes siguen siendo punteros y los structs de servicio conservan
+su estructura.
 
 Ejemplo:
 ```go
@@ -530,6 +576,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` usa punteros para elementos primitivos y alias primitivos
+solo en cuerpos HTTP y JSON-RPC entrantes, para rechazar `[null]`. El servicio y
+las respuestas generadas usan slices de valores.
 
 ### Manejo de valores por defecto
 
@@ -597,6 +647,16 @@ Casos de uso comunes del plugin:
 - Reglas de validación personalizadas
 - Cuestiones transversales (registro, métricas)
 - Generación de archivos de configuración
+
+Las funciones de callback publicadas siguen siendo adecuadas para los plugins
+que editan valores o archivos generados. Un plugin que declara un nombre a
+nivel de paquete debe usar la fase de planificación de la factoría para que Goa
+pueda reservar ese nombre junto con todas las demás declaraciones antes de
+renderizar. Consulte la
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
+y la
+[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
+para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---
 

@@ -8,6 +8,11 @@ aliases:
 
 Goa-AI は、MCP (Model Context Protocol) サーバーをエージェントへ統合するためのファーストクラスのサポートを提供します。MCP ツールセットにより、エージェントは外部 MCP サーバーのツールを、生成されたラッパーと caller 経由で利用できます。
 
+handwritten caller が現在実装するのは MCP `2025-06-18` の tool contract
+です。session を初期化し、server の tools capability を必須とし、`tools/call`
+を呼びます。このページは prompts や resources を含む MCP 全体の実装を示すもの
+ではありません。
+
 ## 概要
 
 MCP 統合は次の流れです:
@@ -15,7 +20,7 @@ MCP 統合は次の流れです:
 1. **サービス設計**: Goa の MCP DSL で MCP サーバーを宣言する
 2. **エージェント設計**: `FromMCP(...)` または `FromExternalMCP(...)` で宣言したツールセットとして、その suite を参照する
 3. **コード生成**: Goa-backed の場合は MCP JSON-RPC サーバーを生成し、suite 用のランタイム登録 helper とツールセット所有の specs/codecs も生成する
-4. **ランタイム配線**: `mcpruntime.Caller` transport（HTTP/SSE/stdio）を作成する。生成 helper が toolset を登録し、JSON-RPC error を `planner.ToolFailure` に変換する
+4. **ランタイム配線**: HTTP または stdio の `mcpruntime.Caller` を作成する。HTTP caller は JSON response または HTTP event stream を受け取る。生成 helper が toolset を登録し、JSON-RPC error を `planner.ToolFailure` に変換する
 5. **プランナー実行**: プランナーは生成済みの型付き tool descriptor で call を構築する。runtime が正規 JSON を MCP caller へ転送し、result を記録し、構造化 telemetry を公開する
 
 ---
@@ -38,6 +43,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 
     Method("search", func() {
         Payload(func() {
@@ -100,9 +108,13 @@ import (
     mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
 )
 
-// Create an MCP caller (HTTP, SSE, or stdio)
+// Create an HTTP MCP caller.
 caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
 })
 if err != nil {
     log.Fatal(err)
@@ -118,11 +130,22 @@ if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); er
 
 ## MCP Caller の種類
 
-Goa-AI は `runtime/mcp` パッケージを通じて複数の MCP トランスポートをサポートします。すべての caller は `Caller` インターフェースを実装します:
+Goa-AI は `runtime/mcp` パッケージを通じて HTTP と stdio をサポートします。
+どちらの caller も `Caller` インターフェースを実装します:
 
 ```go
 type Caller interface {
     CallTool(ctx context.Context, req CallRequest) (CallResponse, error)
+}
+
+type CallRequest struct {
+    Tool    string
+    Payload json.RawMessage
+}
+
+type CallResponse struct {
+    Content           []ContentBlock
+    StructuredContent json.RawMessage
 }
 ```
 
@@ -133,48 +156,20 @@ HTTP JSON-RPC で到達できる MCP サーバー向けです:
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
-// Basic usage with defaults
 caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
-})
-
-// Full configuration
-caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint:        "https://assistant.example.com/mcp",
-    Client:          customHTTPClient,        // Optional: custom *http.Client
-    ProtocolVersion: "2024-11-05",            // Optional: MCP protocol version
-    ClientName:      "my-agent",              // Optional: client name for handshake
-    ClientVersion:   "1.0.0",                 // Optional: client version
-    InitTimeout:     10 * time.Second,        // Optional: initialize handshake timeout
+    Client:   customHTTPClient, // 省略時は 30 秒のタイムアウトを持つ client を使う。
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
+    InitTimeout: 10 * time.Second, // 省略可能な初期化タイムアウト。
 })
 ```
 
-HTTP caller は作成時に MCP initialize handshake を行い、ツール呼び出しには HTTP POST 上の同期 JSON-RPC を使います。
-
-### SSE Caller
-
-Server-Sent Events streaming を使う MCP サーバー向けです:
-
-```go
-import mcpruntime "goa.design/goa-ai/runtime/mcp"
-
-// Basic usage
-caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint: "https://assistant.example.com/mcp",
-})
-
-// Full configuration (same options as HTTP)
-caller, err := mcpruntime.NewSSECaller(ctx, mcpruntime.HTTPOptions{
-    Endpoint:        "https://assistant.example.com/mcp",
-    Client:          customHTTPClient,
-    ProtocolVersion: "2024-11-05",
-    ClientName:      "my-agent",
-    ClientVersion:   "1.0.0",
-    InitTimeout:     10 * time.Second,
-})
-```
-
-SSE caller は initialize handshake に HTTP を使いますが、ツール呼び出しでは `text/event-stream` 応答を要求します。そのため、サーバーは最終応答の前に進捗イベントをストリーミングできます。
+HTTP caller は作成時に MCP initialize handshake を行います。各 JSON-RPC 2.0
+message を設定済み endpoint への HTTP `POST` として送ります。tool response は
+JSON または HTTP event stream で受信でき、別の SSE caller は不要です。
 
 ### Stdio Caller
 
@@ -183,21 +178,16 @@ stdin/stdout で通信するサブプロセスとして MCP サーバーを起�
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
-// Basic usage
 caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
     Command: "mcp-server",
-})
-
-// Full configuration
-caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
-    Command:         "mcp-server",
-    Args:            []string{"--config", "config.json"},
-    Env:             []string{"MCP_DEBUG=1"},  // Additional environment variables
-    Dir:             "/path/to/workdir",       // Working directory
-    ProtocolVersion: "2024-11-05",
-    ClientName:      "my-agent",
-    ClientVersion:   "1.0.0",
-    InitTimeout:     10 * time.Second,
+    Args:    []string{"--config", "config.json"},
+    Env:     []string{"MCP_DEBUG=1"}, // 現在の環境へ追加する。
+    Dir:     "/path/to/workdir",
+    ClientInfo: mcpruntime.ClientInfo{
+        Name:    "my-agent",
+        Version: "1.0.0",
+    },
+    InitTimeout: 10 * time.Second, // 省略可能な初期化タイムアウト。
 })
 defer caller.Close() // Clean up subprocess
 ```
@@ -213,12 +203,14 @@ import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
 // Adapt a function to the Caller interface
 caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallRequest) (mcpruntime.CallResponse, error) {
-    // Custom implementation
-    result, err := myCustomMCPCall(ctx, req.Suite, req.Tool, req.Payload)
+    content, structured, err := myCustomMCPCall(ctx, req.Tool, req.Payload)
     if err != nil {
         return mcpruntime.CallResponse{}, err
     }
-    return mcpruntime.CallResponse{Result: result}, nil
+    return mcpruntime.CallResponse{
+        Content:           content,
+        StructuredContent: structured,
+    }, nil
 })
 ```
 
@@ -227,7 +219,10 @@ caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallReq
 サービスメソッドをラップする Goa 生成 MCP クライアント向けです:
 
 ```go
-caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
+caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
+    Name:    "my-agent",
+    Version: "1.0.0",
+})
 ```
 
 ---
@@ -238,7 +233,7 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 2. runtime が planner result 全体を検証して execution ID を割り当て、`runtime.ToolCall` value を作ります
 3. runtime が MCP toolset 登録を検出します
 4. runtime call の正規 JSON payload を MCP caller へ転送します
-5. MCP caller がトランスポート (HTTP/SSE/stdio) と JSON-RPC プロトコルを扱います
+5. MCP caller は HTTP または stdio を使い、JSON-RPC protocol を処理します。HTTP response は JSON または event stream です
 6. 生成 codec で結果をデコードします
 7. `ToolResult` をプランナーへ返します
 
@@ -253,6 +248,10 @@ caller := mcpassistant.NewCaller(client) // Uses Goa-generated client
 - **server error** → 構造化された cause を failure に保持
 
 これにより MCP toolset と native toolset は、同じ強制 recovery contract を使います。
+
+tool が返した failure は `ToolFailure` になります。完了した planner result が
+不正な場合は `OutputContractError` となり、別の model request を行わず拒否され、
+tool failure として提示されません。
 
 ---
 
@@ -273,6 +272,9 @@ var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 
     Method("search", func() {
         Payload(func() {
@@ -314,15 +316,20 @@ import (
     chat "example.com/assistant/gen/orchestrator/agents/chat"
     mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
 
     // Wire MCP caller
     caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
         Endpoint: "https://assistant.example.com/mcp",
+        ClientInfo: mcpruntime.ClientInfo{
+            Name:    "my-agent",
+            Version: "1.0.0",
+        },
     })
     if err != nil {
         log.Fatal(err)
@@ -373,7 +380,7 @@ func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*plan
 - **型付き caller を使う**: 利用できる場合は型安全のため Goa 生成 JSON-RPC caller を優先する
 - **error を明示的に扱う**: MCP error を、正しい failure kind と recovery action を持つ `ToolFailure` value へ map する
 - **telemetry を監視する**: MCP 呼び出しは構造化 telemetry イベントを発行するため、可観測性に活用する
-- **適切な transport を選ぶ**: 単純な request/response には HTTP、streaming には SSE、サブプロセス型サーバーには stdio を使う
+- **適切な transport を選ぶ**: リモートサーバーには HTTP、サブプロセス型サーバーには stdio を使う。HTTP caller は JSON と event-stream の応答を受け付ける
 
 ---
 

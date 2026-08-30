@@ -87,10 +87,11 @@ import (
     planner "example.com/tutorial/gen/orchestrator/agents/planner"
     orchestrator "example.com/tutorial/gen/orchestrator/agents/orchestrator"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Register planning agent
@@ -119,6 +120,20 @@ func main() {
 - **AgentToolset**: 別のエージェントからエクスポートされたツールセットを参照します
 - **Inline Execution**: 呼び出し側の視点では、agent-as-tool は通常のツール呼び出しのように振る舞います。ランタイムはプロバイダエージェントを子ランとして実行し、その出力を単一の `ToolResult`（子ランへの `RunLink` 付き）に集約します
 - **Cross-Process**: 異なるワーカー上でエージェントが実行されても、一貫したランツリーを維持できます。`ChildRunLinked` イベントとランハンドルが、親のツール呼び出しと子エージェントランをリンクし、ストリーミングと可観測性を実現します
+
+---
+
+## 生成されるエージェント定義
+
+コード生成は、エージェントごとに変更できない `AgentDefinition` を 1 つ生成します。
+この定義には、workflow 名、既定の task queue、ツール契約、必須ラベル、completion
+policy、およびエージェントツールから到達できるすべての子エージェント定義が含まれます。
+
+生成された呼び出し側コードと worker 登録 helper は、同じ定義を使います。手書きの
+コードが指定するのは planner、ツール executor、activity 設定です。route、queue、
+子エージェント ID、子のツール契約、必須ラベルを重ねて定義してはいけません。これにより、
+呼び出し側と worker は同じ設計を同じように解釈します。個別の実行だけ別の queue を
+使う場合は `WithTaskQueue` を指定できます。
 
 ---
 
@@ -187,7 +202,7 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 - **Run** – エージェントの 1 回の実行:
   - `RunID` で識別
   - `run.Context`（RunID, SessionID, TurnID, labels, caps）で記述
-  - `runlog.Store`（append-only の run event log。cursor paging）で永続追跡
+  - ホストの `storage.Store` が、実行状態と変更不可の記録を一つの操作で永続化
 
 - **Session** – 1 回以上のランにまたがる会話またはワークフロー:
   - `SessionID` が関連するランをグルーピング（例: マルチターンチャット）
@@ -202,6 +217,16 @@ Goa-AI は実行を **ランとツールのツリー** としてモデル化し�
 
 - `run.Handle` – `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID` を持つ軽量ハンドル
 - ネストされたエージェントでは **常に実際の子ラン** を作成する agent-as-tool ヘルパーとツールセット登録（隠れたインラインハックはしない）
+
+子プランナーを実行する前に、`storage.Store.StartChildRun` は親へのリンク、子のメタデータ、子の最初の記録をまとめて保存します。session を持たない親には `StartOneShotChildRun` が同じ操作を行い、session を作りません。最初の呼び出しでは、親が存在し、session を持たず、まだ実行中であることが必要です。リンクがすでに保存されていれば、親の終了後も完全に同じ再試行は成功します。内容を変えた再試行や、親の終了後に新しい子を作る呼び出しは拒否されます。
+
+親の tool registration が child 用の prompt を描画する場合、runtime は child
+workflow を開始する前に activity でその prompt を準備します。activity は成功か
+失敗のどちらか一方だけを返します。成功には、workflow history に保存する正確な
+message と prompt render event だけが含まれます。workflow は activity から identity
+を受け取らず、記録済みの元の tool call から child run、session、parent、tool、label
+の identity を導出します。そのため replay は元の描画済み text を使い、storage
+から新しい prompt version を読みません。
 
 Temporal の子 workflow ID には、ランタイムが割り当てた正確な tool-call ID が含まれます。これにより、同じネスト先エージェントを並列に呼び出しても区別できます。この導出方法を変更するリリースは、すでに実行中の子 workflow と互換性がありません。
 
@@ -278,7 +303,9 @@ for {
 ```go
 type StreamProfile struct {
     Assistant          bool // assistant_reply
+    AssistantTurns     bool // assistant_turn
     Thoughts           bool // planner_thought
+    PromptRendered     bool // prompt_rendered
     ToolStart          bool // tool_start
     ToolUpdate         bool // tool_update
     ToolEnd            bool // tool_end

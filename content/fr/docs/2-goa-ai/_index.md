@@ -186,7 +186,7 @@ Goa-AI émet des **événements typés** tout au long de l'exécution : `assist
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtime.WithStream(mySink))
+rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
 ```
 
 Les **profils de flux** filtrent les événements pour différents consommateurs : `UserChatProfile()` pour l'utilisateur final UIs, `AgentDebugProfile()` pour les vues des développeurs, `MetricsProfile()` pour les pipelines d'observabilité. Les récepteurs intégrés pour Pulse (Redis Streams) permettent un streaming distribué entre les services.
@@ -211,7 +211,7 @@ Goa-AI utilise **Temporal** pour une exécution durable. Les exécutions d'agent
 
 ```go
 // Development: in-memory (no dependencies)
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
 eng, err := temporal.NewWorker(temporal.Options{
@@ -222,7 +222,7 @@ if err != nil {
     panic(err)
 }
 defer eng.Close()
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
 **Avantages:**
@@ -297,6 +297,7 @@ Plusieurs nœuds de registre portant le même nom forment automatiquement un clu
 | [Exécuter des arbres](#run-trees-composition) | Agents appelant des agents avec une traçabilité complète |
 | [Diffusion structurée](#structured-streaming) | Événements typés en temps réel pour UIs et observabilité |
 | [Durabilité Temporal](#temporal-durability) | Exécution tolérante aux pannes qui survit aux échecs |
+| [Stockage du runtime](memory-sessions/#runtime-store) | Un stockage unique appartenant à l’application pour l’état des exécutions, les points de reprise et les enregistrements immuables |
 | [Contrats tapés](dsl-reference/) | Sécurité de type de bout en bout pour toutes les opérations sur les outils |
 | [Remplissions directes saisies](#typed-direct-completions) | Réponses structurées de l'assistant final avec codecs et assistants générés |
 | [Résultats limités et données du serveur](toolsets/#server-data) | Résultats de modèles efficaces en jetons ainsi que données serveur uniquement pour UIs et audit |
@@ -333,16 +334,16 @@ Goa-AI suit un pipeline **définir → générer → exécuter** qui transforme 
 |-------|---------|
 | **DSL** | Déclarez les agents, les outils, les politiques et les intégrations externes dans le code Go à version contrôlée |
 | **Codegen** | Générez des spécifications, des codecs, des définitions de flux de travail et des clients de registre de type sécurisé ; ne modifiez jamais `gen/` |
-| **Exécution** | Exécuter la boucle planifier/exécuter avec application des politiques, persistance de la mémoire et streaming d'événements |
+| **Exécution** | Exécute la boucle planifier/exécuter avec l’application des politiques, le stockage obligatoire du runtime fourni par l’application, la mémoire produit facultative et le streaming d’événements |
 | **Moteur** | Backends d'exécution d'échange : en mémoire pour le développement, Temporal pour la durabilité de la production |
-| **Caractéristiques** | Fournisseurs de modèles de plug-in (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistance (Mongo), streaming (Pulse) et registres |
+| **Caractéristiques** | Branche les fournisseurs de modèles (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), le stockage de la mémoire produit et des prompts, le streaming (Pulse) et les registres |
 
 **Points d'intégration clés :**
 
 - **Clients modèles** — Fournisseurs LLM abstraits derrière une interface unifiée ; basculer entre OpenAI, Anthropic, Bedrock ou Vertex AI (Gemini ou Claude-on-Vertex) sans changer le code de l'agent
 - **Registre** – Découvrez et invoquez des ensembles d'outils au-delà des limites des processus ; regroupé via Redis pour une mise à l'échelle horizontale
 - **Pulse Streaming** — Bus d'événements en temps réel pour les mises à jour UI, les pipelines d'observabilité et la communication interservices
-- **Moteur Temporal** — Exécution de flux de travail durable avec tentatives automatiques, relecture et récupération après incident
+- **Moteur Temporal** — Exécution durable avec nouvelles tentatives des activités, relecture et récupération après incident
 
 ### Fournisseurs de modèles et extensibilité {#model-providers}
 
@@ -397,7 +398,7 @@ import (
 
 var _ = Service("calculator", func() {
     Description("Calculator service with an AI assistant")
-    
+
     // Define a service method that the tool will bind to
     Method("add", func() {
         Description("Add two numbers")
@@ -408,7 +409,7 @@ var _ = Service("calculator", func() {
         })
         Result(Int)
     })
-    
+
     // Define the agent within the service
     Agent("assistant", "A helpful assistant agent", func() {
         // Use a toolset with tools bound to service methods
@@ -423,7 +424,7 @@ var _ = Service("calculator", func() {
                 BindTo("add")  // Bind to the service method
             })
         })
-        
+
         // Configure the agent's run policy
         RunPolicy(func() {
             DefaultCaps(MaxToolCalls(10))

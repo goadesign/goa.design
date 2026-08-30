@@ -6,7 +6,10 @@ llm_optimized: true
 aliases:
 ---
 
-La generazione di codice di Goa trasforma il progetto in codice pronto per la produzione. Piuttosto che una semplice impalcatura, Goa genera implementazioni di servizi complete ed eseguibili che seguono le best practice e mantengono la coerenza dell'intera API.
+La generazione di codice di Goa trasforma il progetto in contratti di servizio,
+trasporti, client e documentazione pronti per la produzione. `goa example` crea
+il collegamento iniziale eseguibile, mentre l'applicazione fornisce la logica di
+business.
 
 
 
@@ -15,8 +18,21 @@ La generazione di codice di Goa trasforma il progetto in codice pronto per la pr
 ### Installazione
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
+
+{{< alert title="Provare una versione preliminare della generazione" color="info" >}}
+Le versioni preliminari sono facoltative. Fissare il modulo Goa e il comando
+`goa` allo stesso commit. Il lavoro corrente si trova nel
+[branch preliminare `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+al commit
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
+Rigenerare l'intera directory `gen/`, senza mai mescolare output stabile e
+preliminare, quindi compilare e provare l'intera applicazione. Coordinare gli
+aggiornamenti di client e server quando la guida segnala una modifica al formato
+scambiato. Per tornare alla versione stabile, fissare insieme il modulo e il
+comando stabili e rigenerare di nuovo tutto.
+{{< /alert >}}
 
 ### Comandi
 
@@ -94,6 +110,11 @@ Goa crea un `main.go` temporaneo che:
 - Le espressioni convalidate passano ai generatori di codice
 - I modelli eseguono il rendering per produrre i file di codice
 - L'output viene scritto nella cartella `gen/`
+
+Prima del rendering, Goa determina pacchetti, dichiarazioni, nomi, importazioni,
+percorsi dei campi e rami noti a partire dal progetto completo e convalidato. I
+modelli scrivono direttamente queste scelte. I programmi generati scelgono un
+ramo solo in base ai valori ricevuti durante l'esecuzione.
 
 ---
 
@@ -383,6 +404,7 @@ Generare tipi in un pacchetto condiviso:
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +415,19 @@ gen/
 └── types/
     └── common_type.go
 ```
+
+`struct:pkg:path` assegna al tipo definito nel progetto una sola dichiarazione
+nel pacchetto generato selezionato, e ogni utilizzo generato importa tale
+dichiarazione. Il nome del pacchetto Go è l'ultimo segmento del percorso in
+minuscolo. Se il tipo spostato contiene un altro tipo definito nel progetto,
+anche quella dipendenza deve dichiarare esplicitamente `struct:pkg:path`, in
+genere con lo stesso pacchetto. I tipi annidati creati dal compilatore rimangono
+accanto al tipo definito nel progetto a cui appartengono.
+
+Una dichiarazione definita nel progetto viene riutilizzata tra servizi e tra
+gli usi come payload, risultato ed errore. Quando quel tipo esatto è un errore
+personalizzato, Goa aggiunge i metodi di errore accanto alla stessa dichiarazione
+invece di generare un secondo tipo.
 
 ### Personalizzazione del campo
 
@@ -513,14 +548,23 @@ Goa convalida i dati ai confini del sistema:
 
 ### Regole sui puntatori per i campi delle strutture
 
-| Proprietà | Payload/Risultato | Corpo della richiesta (Server) | Corpo della risposta (Server) |
-|------------|---------------|----------------------|---------------------|
-| Richiesto O Predefinito | Diretto (-) | Puntatore (*) | Diretto (-) |
-non richiesto, nessun valore predefinito | Puntatore (*) | Puntatore (*) | Puntatore (*) | Puntatore (*) |
+I tipi di servizio rappresentano valori già convalidati. I tipi di trasporto
+decodificati devono anche conservare l'assenza di un campo in ingresso.
 
-Tipi speciali:
-- **Oggetti (strutture)**: Usare sempre i puntatori
-- **Array e mappe**: Non utilizzare mai i puntatori (sono già tipi di riferimento)
+| Campo | Tipo di servizio | Body HTTP/JSON-RPC | Richiesta o risposta protobuf |
+|---|---|---|---|
+| Primitivo richiesto o con valore predefinito | Valore | Puntatore durante la decodifica per convalidare la presenza; valore durante la codifica | Puntatore per i campi singoli la cui presenza deve essere conservata |
+| Primitivo facoltativo senza valore predefinito | Puntatore | Puntatore | Puntatore |
+| Oggetto | Puntatore | Puntatore | Puntatore |
+| Array o mappa | Valore | Valore | Valore |
+
+Per HTTP e JSON-RPC, l'input decodificato è una richiesta sul server o una
+risposta sul client. Le richieste codificate dal client e le risposte codificate
+dal server usano valori. Negli struct protobuf, booleani, numeri, stringhe, enum
+e relativi alias singoli richiesti sono puntatori sia nelle richieste sia nelle
+risposte. La convalida distingue così un campo omesso da un valore zero
+esplicito. Le slice di byte restano slice, i messaggi restano puntatori e gli
+struct di servizio mantengono la propria struttura.
 
 Esempio:
 ```go
@@ -531,6 +575,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` usa puntatori per elementi primitivi e alias primitivi solo
+nei body HTTP e JSON-RPC in ingresso, per rifiutare `[null]`. Il servizio e le
+risposte generate usano slice di valori.
 
 ### Gestione dei valori predefiniti
 
@@ -598,6 +646,15 @@ Casi d'uso comuni dei plugin:
 - Regole di validazione personalizzate
 - Aspetti trasversali (registrazione, metriche)
 - Generazione di file di configurazione
+
+Le callback pubblicate restano adatte ai plugin che modificano valori o file
+generati. Un plugin che dichiara un nome a livello di pacchetto deve usare la
+fase di pianificazione della factory, così Goa può riservare quel nome insieme a
+tutte le altre dichiarazioni prima del rendering. Consultare
+[l'architettura della generazione di codice](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
+e la
+[guida all'aggiornamento della versione preliminare](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
+per il contratto dettagliato dei plugin e i passaggi di migrazione.
 
 ---
 

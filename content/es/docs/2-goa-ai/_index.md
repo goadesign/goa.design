@@ -122,7 +122,7 @@ Goa-AI emite **eventos tipados** a lo largo de la ejecución: `assistant_reply` 
 
 ```go
 // Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtime.WithStream(mySink))
+rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
 ```
 
 Los **perfiles de stream** filtran los eventos para distintos consumidores: `UserChatProfile()` para UIs de usuario final, `AgentDebugProfile()` para vistas de desarrollador, `MetricsProfile()` para pipelines de observabilidad. Los sinks integrados para Pulse (Redis Streams) permiten streaming distribuido entre servicios.
@@ -147,14 +147,14 @@ Goa-AI usa **Temporal** para ejecución duradera. Las ejecuciones de agente se c
 
 ```go
 // Development: in-memory (no dependencies)
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 
 // Production: Temporal for durability
 eng, _ := temporal.NewWorker(temporal.Options{
     ClientOptions: &client.Options{HostPort: "localhost:7233"},
     WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
 })
-rt := runtime.New(runtime.WithEngine(eng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
 ```
 
 **Ventajas:**
@@ -225,6 +225,7 @@ Múltiples nodos de registro con el mismo nombre forman automáticamente un clú
 | [Árboles de ejecución](#run-trees-composition) | Agentes que llaman a agentes con trazabilidad completa |
 | [Streaming estructurado](#structured-streaming) | Eventos tipados en tiempo real para UIs y observabilidad |
 | [Durabilidad con Temporal](#temporal-durability) | Ejecución tolerante a fallos que sobrevive a las caídas |
+| [Almacenamiento del runtime](memory-sessions/#runtime-store) | Un único almacén propiedad de la aplicación para el estado de las ejecuciones, los checkpoints de continuación y los registros inmutables |
 | [Contratos tipados](dsl-reference/) | Seguridad de tipos de extremo a extremo para todas las operaciones de herramientas |
 | [Completions Directas Tipadas](#typed-direct-completions) | Respuestas finales estructuradas del asistente con codecs y helpers generados |
 | [Resultados acotados y datos del servidor](toolsets/#server-data) | Resultados del modelo eficientes en tokens más datos solo del servidor para UIs y auditoría |
@@ -260,16 +261,16 @@ Goa-AI sigue un pipeline **definir → generar → ejecutar** que transforma dis
 |-------|---------|
 | **DSL** | Declara agentes, herramientas, políticas e integraciones externas en código Go versionado |
 | **Codegen** | Genera specs con seguridad de tipos, codecs, definiciones de workflow y clientes de registro; nunca edites `gen/` |
-| **Runtime** | Ejecuta el bucle plan/execute con aplicación de políticas, persistencia de memoria y streaming de eventos |
+| **Runtime** | Ejecuta el bucle plan/execute con aplicación de políticas, almacenamiento obligatorio del runtime propiedad de la aplicación, memoria de producto opcional y streaming de eventos |
 | **Engine** | Intercambia backends de ejecución: en memoria para desarrollo, Temporal para durabilidad en producción |
-| **Features** | Conecta proveedores de modelos (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), persistencia (Mongo), streaming (Pulse) y registros |
+| **Features** | Conecta proveedores de modelos (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI), almacenamiento de memoria de producto y prompts, streaming (Pulse) y registros |
 
 **Puntos clave de integración:**
 
 - **Clientes de modelos** — Abstraen los proveedores LLM detrás de una interfaz unificada; cambia entre OpenAI, Anthropic, Bedrock o Vertex AI (Gemini o Claude-on-Vertex) sin tocar el código del agente
 - **Registry** — Descubre e invoca toolsets a través de los límites entre procesos; en clúster a través de Redis para escalado horizontal
 - **Pulse Streaming** — Bus de eventos en tiempo real para actualizaciones de UI, pipelines de observabilidad y comunicación entre servicios
-- **Temporal Engine** — Ejecución duradera de workflows con reintentos automáticos, replay y recuperación ante caídas
+- **Temporal Engine** — Ejecución duradera de workflows con reintentos de activities, replay y recuperación ante caídas
 
 ### Proveedores de modelos y extensibilidad {#model-providers}
 
@@ -310,7 +311,7 @@ import (
 
 var _ = Service("calculator", func() {
     Description("Calculator service with an AI assistant")
-    
+
     // Define a service method that the tool will bind to
     Method("add", func() {
         Description("Add two numbers")
@@ -321,7 +322,7 @@ var _ = Service("calculator", func() {
         })
         Result(Int)
     })
-    
+
     // Define the agent within the service
     Agent("assistant", "A helpful assistant agent", func() {
         // Use a toolset with tools bound to service methods
@@ -336,7 +337,7 @@ var _ = Service("calculator", func() {
                 BindTo("add")  // Bind to the service method
             })
         })
-        
+
         // Configure the agent's run policy
         RunPolicy(func() {
             DefaultCaps(MaxToolCalls(10))

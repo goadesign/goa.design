@@ -58,7 +58,7 @@ import (
 
 func main() {
     ctx := context.Background()
-    rt := runtime.New()
+    rt := runtime.New(runtimeStore) // host が所有する runtime storage
 
     // Vertex Gemini exposes the exact CountTokens operation required by the limiter.
     modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
@@ -154,7 +154,7 @@ if err != nil {
     panic(err)
 }
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
@@ -230,8 +230,8 @@ import (
 
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
-    Database:   "aura",
-    Collection: "prompt_overrides", // 任意（既定は prompt_overrides）
+    Database:   "assistant",
+    Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
     panic(err)
@@ -243,6 +243,7 @@ if err != nil {
 }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(temporalEng),
     runtime.WithPromptStore(promptStore),
 )
@@ -332,7 +333,7 @@ Goa-AI は実行バックエンドを `Engine` インタフェースの背後に
 
 ```go
 // Default: no external dependencies
-rt := runtime.New()
+rt := runtime.New(storageinmem.New())
 ```
 
 **Temporal エンジン**（本番）:
@@ -371,8 +372,41 @@ if err != nil {
 }
 defer temporalEng.Close()
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 ```
+
+### ランタイムストレージの所有者
+
+`runtime.New` には一つの `storage.Store` が必要です。プロダクションでは、一つのホストサービスがセッション状態、ランのメタデータ、継続用チェックポイント、変更不可の記録を格納するデータベースを所有します。エージェントワーカーは型付き API を通してそのサービスを呼び、自分で同じ collection に接続しません。
+
+プロダクトデータはプロダクトサービスが引き続き所有します。たとえば、別のサービスが Goa-AI のランタイムストアを所有していても、チャットサービスはトランスクリプト、評価、検索用フィールドを保持します。
+
+ストアは各ライフサイクル変更と対応する記録をまとめて確定しなければなりません。storage activity の完全に同じ再試行は最初の結果を返します。ランの識別情報、payload、checkpoint、状態、キャンセル理由のいずれかを変更した再試行は競合として失敗します。完全な契約は [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) を参照してください。
+
+continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
+suspended predecessor が必要です。transaction は identity の不一致を、successor
+の開始や親リンクを書く前に拒否します。successor の `RunStarted` record が
+`PredecessorRunID` を保存し、`RunMeta` はこの関係を重複して持ちません。
+
+`session.Store` と `runlog.Store` からの変更は、storage 全体を協調して
+切り替える必要があります。新 runtime が書き込む前に、既存の run metadata、
+checkpoint、record が統合された `storage.Store` contract を満たしていなければ
+なりません。storage owner と、それを呼ぶすべての worker をまとめて deploy
+します。旧 split-store writer と新 integrated-store writer を同時に動かしては
+いけません。
+
+traffic のない状態で、temporary database job または pod から disposable migration
+program を実行します。この program は host application が所有し、通常 release には
+含めず、cutover の検証後に削除します。
+
+1. runtime database を backup し、writer がないことを確認します。
+2. verification mode で migration を実行し、拒否された record をすべて修正します。
+3. conversion を適用し、schema、index、session、run metadata、v7 checkpoint、
+   immutable record を検証します。
+4. storage owner と全 worker をまとめて deploy し、migration program を削除します。
+
+conversion 開始後の rollback は database 全体の restore です。partial conversion の
+database に旧 writer を接続してはいけません。
 
 `ClientOptions.DataConverter` を設定しないでください。Temporal engine は custom converter を拒否し、すべての worker と client が同じ永続 contract を使うよう Goa-AI の bounded converter を自ら install します。
 
@@ -383,6 +417,11 @@ workflow または activity の各 argument list には、encode 後の aggregat
 `planner.ToolResult` は in-process value で、Temporal boundary を越えられません。workflow は代わりに正規 JSON byte を持つ `api.ToolEvent` を運びます。有効な tool result が 1 MiB を超え得る場合、tool executor は application-owned storage に保存し、型付き reference を返さなければなりません。runtime が黙って result を置き換えることはありません。
 
 ### Timing と Activity Retry
+
+Goa-AI は各 agent workflow を一度だけ開始します。以前の実行がすでに tool を
+呼んだり最終 record を保存したりしている可能性があるため、失敗後に workflow
+全体を最初から実行し直しません。耐久性は workflow history のリプレイと、
+planner、tool、hook、storage の各 activity の再試行によって実現します。
 
 DSL は semantic run budget、つまり run 全体にどれだけ時間を使えるか、planner attempt と tool attempt がどれだけ実行できるかを表します。
 
@@ -468,7 +507,7 @@ Worker Deployment Versioning は workflow replay を保護します。dependency
 
 生成 agent、completion package、永続 runtime payload を互換性なく変更する場合、上記の mixed-version 手順を適用しません。全 agent と completion を再生成し、影響を受ける work を drain または停止して、runtime、worker、caller を 1 回の coordinated release で deploy します。Goa-AI は生成 runtime contract の dual-read mode を提供しません。
 
-runtime が受理するのは、正確な `goa-ai.run-suspension.v4` schema だけです。question、clarification、external tool を待つ planner は provider の `ModelToolCallID` を保持し、workflow は停止データを保存する前に別の runtime `ToolCallID` を割り当てます。ほかの suspension schema は resume しません。将来 schema を変更する場合、coordinated release の前に互換性のない保存済み work を調査して廃止します。dual reader を追加したり field を推測したりしてはいけません。
+runtime が受理するのは、正確な `goa-ai.run-suspension.v7` schema だけです。question、clarification、external tool を待つ planner は provider の `ModelToolCallID` を保持し、workflow は停止データを保存する前に別の runtime `ToolCallID` を割り当てます。ほかの suspension schema は resume しません。将来 schema を変更する場合、coordinated release の前に互換性のない保存済み work を調査して廃止します。dual reader を追加したり field を推測したりしてはいけません。
 
 #### release の検証
 
@@ -600,6 +639,7 @@ func (s *SSESink) Close(ctx context.Context) error {
 
 ```go
 rt := runtime.New(
+    runtimeStore,
     runtime.WithStream(pulseSink), // or your custom sink
 )
 ```
@@ -683,6 +723,7 @@ s, err := pulseSink.NewSink(pulseSink.Options{
 if err != nil { log.Fatal(err) }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(s),
 )
@@ -979,7 +1020,3 @@ User: What should I do next?
 - トランスクリプト永続化のために [Memory & Sessions](./memory-sessions/) を読む
 - agent-as-tool パターンとして [Agent Composition](./agent-composition/) を読む
 - ツール実行モデルとして [Toolsets](./toolsets/) を読む
-
-
-
-

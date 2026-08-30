@@ -22,13 +22,18 @@ aliases:
 ## 1. モジュールを作成する
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa/v3@latest goa.design/goa-ai@latest
+GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
 mkdir design
 ```
+
+これらの branch 名は、このガイドで使う統合ランタイムストレージ契約を選択します。
+Goa preview branch 名にはスラッシュが含まれるため、direct proxy の設定が必要です。
+Go は正確な疑似バージョンを `go.mod` に記録するため、後で branch が更新されても、
+再度 `go get` を実行するまで既存のビルドは変わりません。
 
 Goa-AI は現在、モダンな Go を対象にしています。`goa.design/goa-ai` モジュールが宣言している Go バージョン、またはそれ以降を使ってください。
 
@@ -63,6 +68,7 @@ var Answer = Type("Answer", func() {
 var TaskDraft = Type("TaskDraft", func() {
 	Attribute("name", String, "Task name")
 	Attribute("goal", String, "Outcome-style goal")
+	Example(map[string]any{"name": "Prepare launch checklist", "goal": "Confirm the service is ready to launch."})
 	Required("name", "goal")
 })
 
@@ -95,17 +101,23 @@ var _ = Service("orchestrator", func() {
 ```bash
 goa gen example.com/quickstart/design
 goa example example.com/quickstart/design
+go mod tidy
 go run ./cmd/orchestrator
 ```
 
 期待される出力の形:
 
 ```text
-RunID: orchestrator-chat-...
+RunID: demo-chat-run
 Assistant: Tool helpers.answer returned {"text":"Tokyo is the capital of Japan."}
-Completion draft_task: ...
-Completion stream draft_task: ...
+Completion draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
+Completion delta draft_task: {"goal":"Confirm the ser
+Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the service is ready to launch.}
 ```
+
+`Completion delta` の行は、streaming された JSON の prefix です。区切られる位置は
+変わることがありますが、最後に streaming される値は完全で、宣言した example と
+一致します。
 
 デザインに payload example があり、さらに result example があるか result 自体がない場合、scaffold planner はそのツールを実演します。利用可能な example を持つツールがなければ、代わりに greeting を返します。
 
@@ -113,7 +125,7 @@ Completion stream draft_task: ...
 
 - `gen/`: 生成コード。このディレクトリを手で編集しないでください。
 - `cmd/orchestrator/main.go`: 実行可能なサンプルのエントリポイント（初回のみ作成）。
-- `internal/agents/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録（初回のみ作成）。
+- `internal/agents/orchestrator/bootstrap/bootstrap.go`: ランタイム構築とエージェント登録（初回のみ作成）。
 - `internal/agents/chat/planner/planner.go`: 置き換え用のスタブプランナー（初回のみ作成）。
 - `internal/agents/chat/toolsets/helpers/execute.go`: example executor（初回のみ作成）。
 - `gen/orchestrator/completions/`: 型付き直接 completion の helper。
@@ -147,15 +159,16 @@ bookkeeping を暗黙に含みます）。それらが成功してから run を
 生成されたエージェントパッケージは型付きクライアントを公開します。セッション付き run には明示的なセッションが必要です。one-shot run は意図的にセッションレスです。
 
 ```go
-rt, cleanup, err := bootstrap.New(ctx)
+store := storageinmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+	log.Fatal(err)
+}
+
+rt, cleanup, err := bootstrap.New(ctx, store)
 if err != nil {
 	log.Fatal(err)
 }
 defer cleanup()
-
-if _, err := rt.CreateSession(ctx, "session-1"); err != nil {
-	log.Fatal(err)
-}
 
 client := chat.NewClient(rt)
 out, err := client.Run(ctx, "session-1", []*model.Message{{
@@ -174,6 +187,9 @@ out, err = client.OneShotRun(ctx, []*model.Message{{
 ```
 
 会話型/セッション付きの作業には `Run` または `Start` を使います。`RunID` で観測したいがセッションには属させたくないリクエスト/レスポンス型のジョブには、`OneShotRun` または `StartOneShot` を使います。
+
+
+生成されたローカル scaffold は `storage.Store` を受け取り、サンプルコマンドでは `runtime/agent/storage/inmem` を使います。プロダクションでは、ランタイムデータベースを所有するサービスへのアダプタを渡します。セッションを作成し終了するのはそのサービスであり、エージェントワーカーではありません。
 
 ---
 
@@ -286,21 +302,18 @@ func (s *ConsoleSink) Send(ctx context.Context, event stream.Event) error {
 	case stream.AssistantReply:
 		fmt.Print(e.Data.Text)
 	case stream.ToolStart:
-		fmt.Printf("tool_start: %s
-", e.Data.ToolName)
+		fmt.Printf("tool_start: %s\n", e.Data.ToolName)
 	case stream.ToolEnd:
-		fmt.Printf("tool_end: %s
-", e.Data.ToolName)
+		fmt.Printf("tool_end: %s\n", e.Data.ToolName)
 	case stream.Workflow:
-		fmt.Printf("workflow: %s
-", e.Data.Phase)
+		fmt.Printf("workflow: %s\n", e.Data.Phase)
 	}
 	return nil
 }
 
 func (s *ConsoleSink) Close(ctx context.Context) error { return nil }
 
-rt := runtime.New(runtime.WithStream(&ConsoleSink{}))
+rt := runtime.New(runtimeStore, runtime.WithStream(&ConsoleSink{}))
 ```
 
 本番 UI では Pulse へ publish し、セッションストリーム（`session/<session_id>`）を購読します。アクティブ run の `run_stream_end` を観測したらユーザー接続を閉じます。
@@ -347,7 +360,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 })
 ```
 
-各エージェントは、自分のプランナー、ツール、ポリシー、run log を保持します。親は、子 run への `RunLink` を持つ通常のツール結果として結果を受け取ります。
+各エージェントはそれぞれのプランナー、ツール、ポリシーを持ちます。ホストのランタイムストアは、親へのリンクを含め、すべてのルートランと子ランを記録します。親には子ランへの `RunLink` を含む通常のツール結果が返ります。
 
 ---
 
@@ -359,7 +372,7 @@ Agent("coordinator", "Delegates specialist work", func() {
 - セッション付き実行と one-shot 実行を備えた生成ランタイムクライアント。
 - モデル連携プランニング、ストリーミング UI、エージェント合成、生成 evaluation suite へ進む道筋（デザインで `Suite` を宣言します。詳細は [Evaluations](evaluations/)）。
 
-本番では、耐久性のために Temporal engine、memory/session/run log のために Mongo-backed store、分散ストリーミングのために Pulse、プロバイダーのレート制限のために model middleware を追加します。Goa デザインは引き続き真実の情報源です。
+プロダクションでは、耐久実行のための Temporal engine、ホスト所有の単一ランタイムストア、必要に応じてプロダクト所有のメモリストア、分散ストリーミングのための Pulse、プロバイダのレート制限に対応するモデルミドルウェアを追加します。Goa design が引き続き唯一の定義元です。
 
 ---
 

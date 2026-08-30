@@ -87,10 +87,11 @@ import (
     planner "example.com/tutorial/gen/orchestrator/agents/planner"
     orchestrator "example.com/tutorial/gen/orchestrator/agents/orchestrator"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Register planning agent
@@ -119,6 +120,24 @@ func main() {
 - **AgentToolset** : Fait référence à un jeu d'outils exporté d'un autre agent
 - **Inline Execution** : Du point de vue de l'appelant, un agent-as-tool se comporte comme un appel d'outil normal ; le runtime exécute l'agent fournisseur en tant que run enfant et agrège ses résultats en un seul `ToolResult` (avec un `RunLink` renvoyant au run enfant)
 - **Cross-Process** : Les agents peuvent être exécutés sur différents travailleurs tout en conservant un arbre d'exécution cohérent ; les événements `ChildRunLinked` et les gestionnaires d'exécution relient les appels d'outils parents aux exécutions d'agents enfants pour la diffusion en continu et l'observabilité
+
+---
+
+## Définitions d'agent générées
+
+La génération de code produit une seule `AgentDefinition` immuable pour chaque
+agent. Cette définition contient le nom du workflow, la file de tâches par
+défaut, les contrats des outils, les labels obligatoires, la politique de
+complétion et les définitions de tous les agents enfants accessibles par des
+outils fournis par des agents.
+
+Les appelants et les helpers générés pour enregistrer les workers utilisent la
+même définition. Le code écrit à la main fournit le planificateur, les
+exécuteurs d'outils et les réglages des activités ; il ne doit pas répéter la
+route, la file, l'identifiant d'un agent enfant, les contrats de ses outils ni
+les labels obligatoires. Ainsi, l'appelant et le worker interprètent la
+conception de la même manière. Une exécution donnée peut choisir une autre file
+avec `WithTaskQueue`.
 
 ---
 
@@ -186,7 +205,7 @@ Goa-AI modélise l'exécution comme un **arbre d'exécutions et d'outils** :
 - **Run** - une exécution d'un agent :
   - Identifié par un `RunID`
   - Décrit par `run.Context` (RunID, SessionID, TurnID, labels, caps)
-  - Suivi durable via `runlog.Store` (journal append-only; pagination par curseur)
+  - Le `storage.Store` fourni par l’application enregistre durablement l’état de l’exécution et ses enregistrements immuables dans la même opération
 
 - **Session** - une conversation ou un flux de travail couvrant une ou plusieurs exécutions :
   - `SessionID` regroupe des runs liés (par exemple, chat multi-tours)
@@ -201,6 +220,24 @@ Le moteur d'exécution maintient cette arborescence à l'aide de :
 
 - `run.Handle` - une poignée légère avec `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID`
 - Les agents en tant qu'outils et les enregistrements de jeux d'outils qui **créent toujours de véritables exécutions enfant** pour les agents imbriqués (pas de hacks cachés en ligne)
+
+Avant l’exécution d’un planificateur enfant, `storage.Store.StartChildRun`
+enregistre ensemble le lien vers le parent, les métadonnées de l’enfant et son
+premier enregistrement. Pour un parent sans session, `StartOneShotChildRun`
+effectue la même opération sans inventer de session. Le premier appel exige que
+le parent existe, soit sans session et encore actif. Une nouvelle tentative
+exacte reste valide après la fin du parent, car le lien est déjà enregistré ;
+une tentative modifiée ou un nouvel enfant après cette fin est refusé.
+
+Si l’enregistrement de l’outil parent rend un prompt pour l’enfant, le runtime
+prépare ce prompt dans une activité avant de démarrer le workflow enfant.
+L’activité renvoie exactement un succès ou un échec. Le succès contient
+uniquement les messages exacts et les événements de rendu enregistrés dans
+l’historique du workflow. Le workflow déduit l’identité de l’exécution enfant,
+de la session, du parent, de l’outil et des étiquettes depuis l’appel d’outil
+original déjà enregistré, au lieu d’accepter cette identité depuis l’activité.
+Le replay utilise donc le texte d’origine et ne lit jamais une version plus
+récente du prompt dans le stockage.
 
 Les IDs des workflows enfants Temporal contiennent l'ID exact de l'appel
 d'outil attribué par le runtime. Les appels parallèles au même agent imbriqué
@@ -276,7 +313,9 @@ for {
 ```go
 type StreamProfile struct {
     Assistant          bool // assistant_reply
+    AssistantTurns     bool // assistant_turn
     Thoughts           bool // planner_thought
+    PromptRendered     bool // prompt_rendered
     ToolStart          bool // tool_start
     ToolUpdate         bool // tool_update
     ToolEnd            bool // tool_end

@@ -6,7 +6,10 @@ llm_optimized: true
 aliases:
 ---
 
-La génération de code de Goa transforme votre conception en code prêt à la production. Plutôt qu'un simple échafaudage, Goa génère des implémentations de services complètes et exécutables qui respectent les meilleures pratiques et maintiennent la cohérence de l'ensemble de votre API.
+La génération de code de Goa transforme votre conception en contrats de service,
+transports, clients et documentation prêts pour la production. `goa example`
+crée un assemblage de démarrage exécutable, tandis que votre application fournit
+la logique métier.
 
 
 
@@ -15,8 +18,21 @@ La génération de code de Goa transforme votre conception en code prêt à la p
 ### Installation
 
 ```bash
-go install goa.design/goa/v3/cmd/goa@latest
+GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
 ```
+
+{{< alert title="Tester une version préliminaire de la génération" color="info" >}}
+Les versions préliminaires sont facultatives. Fixez le module Goa et la
+commande `goa` au même commit. Le travail actuel se trouve sur la
+[branche préliminaire `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
+au commit
+[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
+Régénérez l'intégralité du répertoire `gen/`, ne mélangez jamais une sortie
+stable avec une sortie préliminaire, puis compilez et testez l'application
+complète. Coordonnez les mises à jour du client et du serveur lorsque le guide
+signale une modification du format échangé. Pour revenir à la version stable,
+fixez ensemble le module et la commande stables, puis régénérez tout.
+{{< /alert >}}
 
 ### Commandes
 
@@ -94,6 +110,12 @@ Goa crée un `main.go` temporaire qui :
 - Les expressions validées sont transmises aux générateurs de code
 - Les modèles sont rendus pour produire des fichiers de code
 - La sortie est écrite dans le répertoire `gen/`
+
+Avant le rendu, Goa détermine les paquets, les déclarations, les noms, les
+importations, les chemins de champs et les branches connues à partir de la
+conception complète et validée. Les modèles écrivent directement ces choix. Les
+programmes générés ne choisissent une branche qu'en fonction des valeurs reçues
+pendant l'exécution.
 
 ---
 
@@ -383,6 +405,7 @@ Générer des types dans un paquetage partagé :
 ```go
 var CommonType = Type("CommonType", func() {
     Meta("struct:pkg:path", "types")
+    Meta("type:generate:force")
     Attribute("id", String)
 })
 ```
@@ -393,6 +416,19 @@ gen/
 └── types/
     └── common_type.go
 ```
+
+`struct:pkg:path` attribue au type défini dans la conception une seule
+déclaration dans le paquet généré choisi, et chaque utilisation générée importe
+cette déclaration. Le nom du paquet Go est le dernier segment du chemin en
+minuscules. Si le type déplacé contient un autre type défini dans la conception,
+cette dépendance doit elle aussi déclarer explicitement `struct:pkg:path`, en
+général avec le même paquet. Les types imbriqués créés par le compilateur
+restent avec le type défini dans la conception auquel ils appartiennent.
+
+Une déclaration définie dans la conception est réutilisée entre les services et
+entre ses utilisations comme charge utile, résultat et erreur. Lorsque ce type
+exact est une erreur personnalisée, Goa ajoute les méthodes d'erreur à la même
+déclaration au lieu de générer un second type.
 
 ### Personnalisation des champs
 
@@ -512,14 +548,24 @@ Goa valide les données aux limites du système :
 
 ### Règles de pointeur pour les champs de structure
 
-| Propriétés de la structure : charge utile/résultat, corps de la demande (serveur), corps de la réponse (serveur), etc
-|------------|---------------|----------------------|---------------------|
-| Requise OU par défaut | Directe (-) | Pointeur (*) | Directe (-) | Non requise, pas de défaut | Pointeur (*) | Pointeur (*) | Directe (-)
-| Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*) | Pointeur (*)
+Les types de service représentent des valeurs déjà validées. Les types de
+transport décodés doivent aussi conserver l'absence d'un champ entrant.
 
-Types spéciaux :
-- **Objets (structs)** : Toujours utiliser des pointeurs
-- **Tableaux et cartes** : N'utilisent jamais de pointeurs (ce sont déjà des types de référence)
+| Champ | Type de service | Corps HTTP/JSON-RPC | Requête ou réponse protobuf |
+|---|---|---|---|
+| Primitif requis ou avec valeur par défaut | Valeur | Pointeur au décodage pour valider la présence ; valeur à l'encodage | Pointeur pour les champs singuliers dont la présence doit être conservée |
+| Primitif facultatif sans valeur par défaut | Pointeur | Pointeur | Pointeur |
+| Objet | Pointeur | Pointeur | Pointeur |
+| Tableau ou map | Valeur | Valeur | Valeur |
+
+Pour HTTP et JSON-RPC, une entrée décodée est une requête côté serveur ou une
+réponse côté client. Les requêtes encodées par le client et les réponses
+encodées par le serveur utilisent des valeurs. Dans les structs protobuf, les
+booléens, nombres, strings, enums et leurs alias singuliers requis sont des
+pointeurs dans les requêtes comme dans les réponses. La validation distingue
+ainsi un champ absent d'une valeur zéro explicite. Les slices d'octets restent
+des slices, les messages restent des pointeurs et les structs de service
+conservent leur structure.
 
 Exemple :
 ```go
@@ -530,6 +576,10 @@ type Person struct {
     Metadata map[string]string  // map, no pointer
 }
 ```
+
+`ArrayOfRequired` utilise des pointeurs pour les éléments primitifs et leurs
+alias uniquement dans les corps HTTP et JSON-RPC entrants afin de refuser
+`[null]`. Le service et les réponses générées utilisent des slices de valeurs.
 
 ### Traitement des valeurs par défaut
 
@@ -597,6 +647,15 @@ Cas d'utilisation courants des plugins :
 - Règles de validation personnalisées
 - Questions transversales (journalisation, métriques)
 - Génération de fichiers de configuration
+
+Les fonctions de rappel publiées restent adaptées aux plugins qui modifient des
+valeurs ou des fichiers générés. Un plugin qui déclare un nom au niveau d'un
+paquet doit utiliser la phase de planification de la fabrique afin que Goa
+puisse réserver ce nom avec toutes les autres déclarations avant le rendu.
+Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
+et le
+[guide de mise à niveau de la version préliminaire](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
+pour le contrat détaillé des plugins et les étapes de migration.
 
 ---
 

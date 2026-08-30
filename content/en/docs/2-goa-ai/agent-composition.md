@@ -87,10 +87,11 @@ import (
     planner "example.com/tutorial/gen/orchestrator/agents/planner"
     orchestrator "example.com/tutorial/gen/orchestrator/agents/orchestrator"
     "goa.design/goa-ai/runtime/agent/runtime"
+    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
 )
 
 func main() {
-    rt := runtime.New()
+    rt := runtime.New(storageinmem.New())
     ctx := context.Background()
     
     // Register planning agent
@@ -119,6 +120,22 @@ func main() {
 - **AgentToolset**: References an exported toolset from another agent
 - **Inline Execution**: From the caller's perspective, an agent-as-tool behaves like a normal tool call; the runtime runs the provider agent as a child run and aggregates its output into a single `ToolResult` (with a `RunLink` back to the child run)
 - **Cross-Process**: Agents can execute on different workers while maintaining a coherent run tree; `child_run_linked` stream events and run handles link parent tool calls to child agent runs for streaming and observability
+
+---
+
+## Generated Agent Definitions
+
+Code generation emits one immutable `AgentDefinition` for each agent. That
+definition owns the workflow name, default task queue, tool contracts, required
+labels, completion policy, and definitions of every child agent reachable
+through agent-backed tools.
+
+Generated callers and generated worker registration helpers use the same
+definition. Handwritten code supplies the planner, tool executors, and activity
+settings; it must not repeat the route, queue, child agent ID, child tool
+contracts, or required labels. This keeps caller validation, worker
+registration, and continuation validation on one generated contract. A caller
+may still use `WithTaskQueue` to select another queue for one explicit start.
 
 ---
 
@@ -186,7 +203,8 @@ Goa-AI models execution as a **tree of runs and tools**:
 - **Run** – one execution of an agent:
   - Identified by a `RunID`
   - Described by `run.Context` (RunID, SessionID, TurnID, labels, caps)
-  - Tracked durably via `runlog.Store` (append-only run event log; cursor-paginated)
+  - Tracked durably by the host's `storage.Store`, which keeps run state and
+    records that never change after insertion together
 
 - **Session** – a conversation or workflow spanning one or more runs:
   - `SessionID` groups related runs (e.g., multi-turn chat)
@@ -201,6 +219,25 @@ The runtime maintains this tree using:
 
 - `run.Handle` – a lightweight handle with `RunID`, `AgentID`, `ParentRunID`, `ParentToolCallID`
 - Agent-as-tool helpers and toolset registrations that **always create real child runs** for nested agents (no hidden inline hacks)
+
+Before a child planner runs, `storage.Store.StartChildRun` saves the parent link,
+child metadata, and first child record together. For a sessionless parent,
+`StartOneShotChildRun` performs the equivalent operation without inventing a
+session. Its first call requires the parent to exist, be sessionless, and still
+be running. An exact retry remains valid after that parent finishes because the
+relationship was already stored; a changed retry or a new child after the
+parent finishes is rejected. See
+[Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together)
+for the complete storage contract.
+
+If the parent tool registration renders a prompt for the child, the runtime
+prepares that prompt in an activity before starting the child workflow. The
+activity returns exactly one success or failure. Success contains only the
+exact messages and prompt render events stored in workflow history. The
+workflow derives child run, session, parent, tool, and label identity from the
+original recorded tool call instead of accepting identity from the activity.
+Replay therefore uses the original rendered text and never reads a possibly
+newer prompt from storage.
 
 Temporal child workflow IDs include the exact runtime tool-call ID. This keeps
 parallel calls to the same nested agent distinct; a release that changes this
@@ -278,7 +315,9 @@ for {
 ```go
 type StreamProfile struct {
     Assistant          bool // assistant_reply
+    AssistantTurns     bool // assistant_turn
     Thoughts           bool // planner_thought
+    PromptRendered     bool // prompt_rendered
     ToolStart          bool // tool_start
     ToolUpdate         bool // tool_update
     ToolEnd            bool // tool_end

@@ -29,7 +29,11 @@ Todos los proveedores de modelos aplican límites de tasa. Supéralos y tus peti
 
 ### Visión general
 
-El paquete `features/model/middleware` proporciona un **limitador de tasa adaptativo estilo AIMD** que se sitúa en la frontera del cliente de modelo. Estima el coste en tokens, bloquea a los llamadores hasta que hay capacidad disponible y ajusta automáticamente su presupuesto de tokens por minuto en respuesta a las señales de limitación de tasa de los proveedores.
+El paquete `features/model/middleware` proporciona un **limitador de tasa
+adaptativo estilo AIMD** bajo el cliente de modelo validado. Pide al proveedor
+el recuento exacto de tokens de entrada, bloquea a los llamadores hasta que haya
+capacidad y ajusta su presupuesto de tokens de entrada por minuto cuando el
+proveedor limita el tráfico. Nunca estima tokens ni mide cuotas de salida.
 
 ### Estrategia AIMD
 
@@ -51,41 +55,31 @@ Crea un único limitador por proceso y envuelve tu cliente de modelo:
 ```go
 import (
     "context"
-    "os"
 
-    "goa.design/goa-ai/features/model/openai"
     "goa.design/goa-ai/features/model/middleware"
     "goa.design/goa-ai/runtime/agent/runtime"
 )
 
 func main() {
     ctx := context.Background()
+    rt := runtime.New(runtimeStore) // almacenamiento del runtime propiedad del host
 
-    // Crea el limitador de tasa adaptativo
-    // Parámetros: context, rmap (nil para local), key, initialTPM, maxTPM
-    limiter := middleware.NewAdaptiveRateLimiter(
-        ctx,
-        nil,     // nil = limitador local al proceso
-        "",      // clave (no utilizada cuando rmap es nil)
-        60000,   // tokens por minuto iniciales
-        120000,  // máximo de tokens por minuto
-    )
-
-    // Crea tu cliente de modelo subyacente
-    modelClient, err := openai.New(openai.Options{
-        APIKey:       os.Getenv("OPENAI_API_KEY"),
-        DefaultModel: "gpt-5-mini",
-        HighModel:    "gpt-5",
-        SmallModel:   "gpt-5-nano",
+    // Vertex Gemini proporciona el recuento exacto que exige el limitador.
+    modelClient, err := rt.NewVertexGeminiModelClient(ctx, runtime.VertexConfig{
+        ProjectID:    "my-gcp-project",
+        Location:     "us-central1",
+        DefaultModel: "gemini-2.5-flash",
     })
     if err != nil {
         panic(err)
     }
 
-    // Envuelve con el middleware de limitación de tasa
-    rateLimitedClient := limiter.Middleware()(modelClient)
+    limiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+    rateLimitedClient, err := limiter.Middleware()(modelClient)
+    if err != nil {
+        panic(err)
+    }
 
-    rt := runtime.New()
     if err := rt.RegisterModel("default", rateLimitedClient); err != nil {
         panic(err)
     }
@@ -108,59 +102,65 @@ func main() {
     ctx := context.Background()
 
     // Crea un mapa replicado de Pulse respaldado por Redis
-    rm, err := rmap.NewMap(ctx, "rate-limits", rmap.WithRedis(redisClient))
+    rm, err := rmap.Join(ctx, "rate-limits", redisClient)
     if err != nil {
         panic(err)
     }
+    defer rm.Close()
 
     // Crea un limitador consciente del clúster
     // Todos los procesos que compartan este mapa y clave coordinan sus presupuestos
     limiter := middleware.NewAdaptiveRateLimiter(
         ctx,
         rm,
-        "claude-sonnet",  // clave compartida para este modelo
+        "vertex:gemini",  // clave compartida para esta familia de modelos
         60000,            // TPM inicial
         120000,           // TPM máximo
     )
 
     // Envuelve tu cliente como antes
-    rateLimitedClient := limiter.Middleware()(bedrockClient)
+    rateLimitedClient, err := limiter.Middleware()(vertexClient)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
-Cuando se utiliza limitación consciente del clúster:
+Mientras las lecturas y escrituras del mapa replicado funcionen:
 - **El backoff se propaga globalmente**: cuando cualquier proceso recibe `ErrRateLimited`, todos los procesos reducen su presupuesto
 - **El sondeo se coordina**: las peticiones exitosas incrementan el presupuesto compartido
 - **Reconciliación automática**: los procesos vigilan los cambios externos y actualizan sus limitadores locales
 
-### Estimación de tokens
+Un mapa nulo o una clave vacía crea deliberadamente un limitador local al
+proceso. Si el estado compartido no se puede iniciar o actualizar, las llamadas
+al modelo siguen usando el presupuesto adaptativo local hasta que un evento
+posterior del mapa vuelva a sincronizarlo. Supervisa Redis cuando necesites
+coordinación entre procesos.
 
-El limitador estima el coste de la petición mediante una heurística simple:
-- Cuenta los caracteres en las partes de texto y en los resultados de herramientas de tipo cadena
-- Convierte a tokens usando ~3 caracteres por token
-- Añade un búfer de 500 tokens para prompts de sistema y sobrecostes del proveedor
+### Recuento exacto de tokens
 
-Esta estimación es intencionadamente conservadora para evitar subestimar.
+El limitador llama a `CountTokens` en el cliente envuelto antes de reservar
+capacidad. Exige `Exact=true` y nunca estima.
+
+Vertex Gemini proporciona una operación nativa. Bedrock devuelve
+`model.ErrTokenCountingUnsupported` cuando no puede contar exactamente, y
+OpenAI no ofrece un contador nativo. Envolver un cliente sin soporte funciona,
+pero su primera llamada `Complete` o `Stream` devuelve ese error antes de la
+inferencia.
 
 ### Integración con el runtime
 
 Conecta los clientes con tasa limitada al runtime de Goa-AI:
 
 ```go
-// Crea limitadores para cada modelo que utilices
-claudeLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
-gptLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 90000, 180000)
-
-// Envuelve los clientes subyacentes
-claudeClient := claudeLimiter.Middleware()(bedrockClient)
-gptClient := gptLimiter.Middleware()(openaiClient)
-
-// Configura el runtime con clientes con tasa limitada
-rt := runtime.New(runtime.WithEngine(temporalEng))
-if err := rt.RegisterModel("claude", claudeClient); err != nil {
+vertexLimiter := middleware.NewAdaptiveRateLimiter(ctx, nil, "", 60000, 120000)
+limitedVertex, err := vertexLimiter.Middleware()(vertexClient)
+if err != nil {
     panic(err)
 }
-if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
+
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
+if err := rt.RegisterModel("gemini", limitedVertex); err != nil {
     panic(err)
 }
 ```
@@ -191,18 +191,9 @@ if err := rt.RegisterModel("gpt-4", gptClient); err != nil {
 
 ### Monitorización
 
-Sigue el comportamiento del limitador de tasa con métricas y logs:
-
-```go
-// El limitador registra los eventos de backoff en nivel WARN
-// Monitoriza el estrangulamiento sostenido siguiendo:
-// - Distribución del tiempo de espera (cuánto se encolan las peticiones)
-// - Frecuencia de backoff (con qué frecuencia ocurren los 429)
-// - TPM actual vs. TPM inicial
-
-// Ejemplo: exporta la capacidad actual a Prometheus
-currentTPM := limiter.CurrentTPM()
-```
+Mide la latencia de las llamadas al modelo y los errores terminales
+`model.ErrRateLimited` en la telemetría del cliente envuelto. Supervisa también
+Redis cuando uses un mapa replicado.
 
 ### Buenas prácticas
 
@@ -246,8 +237,8 @@ import (
 
 promptClient, err := clientmongo.New(clientmongo.Options{
     Client:     mongoClient,
-    Database:   "aura",
-    Collection: "prompt_overrides", // opcional (por defecto: prompt_overrides)
+    Database:   "assistant",
+    Collection: "prompt_overrides", // optional (default is prompt_overrides)
 })
 if err != nil {
     panic(err)
@@ -259,6 +250,7 @@ if err != nil {
 }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(temporalEng),
     runtime.WithPromptStore(promptStore),
 )
@@ -345,32 +337,46 @@ Goa-AI abstrae el backend de ejecución detrás de la interfaz `Engine`. Interca
 
 **Motor en memoria** (desarrollo):
 ```go
-// Por defecto: sin dependencias externas
-rt := runtime.New()
+// Default: no external dependencies
+rt := runtime.New(storageinmem.New())
 ```
 
 **Motor Temporal** (producción):
 ```go
 import (
     runtimeTemporal "goa.design/goa-ai/runtime/agent/engine/temporal"
-    "go.temporal.io/sdk/client"
+    temporalclient "go.temporal.io/sdk/client"
+    "go.temporal.io/sdk/worker"
+    "go.temporal.io/sdk/workflow"
 
-    // Agregado generado de especificaciones de tus herramientas.
-    // El paquete generado expone: func Spec(tools.Ident) (*tools.ToolSpec, bool)
+    // Your generated tool specs aggregate.
+    // The generated package exposes: func Spec(tools.Ident) (*tools.ToolSpec, bool)
     specs "<module>/gen/<service>/agents/<agent>/specs"
 )
 
+const releaseBuildID = "git-sha-or-image-digest"
+
 temporalEng, err := runtimeTemporal.NewWorker(runtimeTemporal.Options{
-    ClientOptions: &client.Options{
+    ClientOptions: &temporalclient.Options{
         HostPort:  "127.0.0.1:7233",
         Namespace: "default",
-        // Obligatorio: hace cumplir el contrato de frontera de workflow de goa-ai.
-        // Los resultados de herramientas y server-data atraviesan las fronteras del workflow como bytes JSON canónicos
-        // (por ejemplo, payloads api.ToolEvent), no como valores planner.ToolResult decodificados.
+        // Required: enforce goa-ai's workflow boundary contract.
+        // Tool results and server-data cross workflow boundaries as canonical JSON bytes
+        // (for example api.ToolEvent payloads), not decoded planner.ToolResult values.
         DataConverter: runtimeTemporal.NewAgentDataConverter(specs.Spec),
     },
     WorkerOptions: runtimeTemporal.WorkerOptions{
         TaskQueue: "orchestrator.chat",
+        Options: worker.Options{
+            DeploymentOptions: worker.DeploymentOptions{
+                UseVersioning: true,
+                Version: worker.WorkerDeploymentVersion{
+                    DeploymentName: "assistant",
+                    BuildID:        releaseBuildID,
+                },
+                DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
+            },
+        },
     },
 })
 if err != nil {
@@ -378,14 +384,54 @@ if err != nil {
 }
 defer temporalEng.Close()
 
-rt := runtime.New(runtime.WithEngine(temporalEng))
+rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 ```
+
+### Propiedad del almacenamiento del runtime
+
+`runtime.New` requiere un único `storage.Store`. En producción, un solo servicio de la aplicación debe ser propietario de la base de datos que contiene el estado de las sesiones, los metadatos de las ejecuciones, los checkpoints de continuación y los registros inmutables. Los workers de agentes llaman a ese propietario mediante una API tipada; no abren conexiones independientes a sus colecciones.
+
+Los datos del producto siguen perteneciendo al servicio del producto. Por ejemplo, un servicio de chat conserva sus transcripciones, valoraciones y campos de búsqueda aunque otro servicio sea propietario del almacén del runtime de Goa-AI.
+
+El almacén debe confirmar cada cambio de ciclo de vida junto con su registro correspondiente. Un reintento idéntico de la activity de almacenamiento devuelve el primer resultado. Un reintento que cambie la identidad de la ejecución, el payload, el checkpoint, el estado o el motivo de cancelación falla con un conflicto. Consulta [Memoria y sesiones](../memory-sessions/#store-lifecycle-changes-and-records-together) para ver el contrato completo.
+
+El inicio de una continuación exige un predecesor suspendido existente con la
+misma sesión, el mismo agente y la misma ejecución padre. La transacción rechaza
+cualquier diferencia antes de escribir el inicio del sucesor o un vínculo
+padre. El registro `RunStarted` del sucesor guarda `PredecessorRunID`; `RunMeta`
+no duplica esa relación.
+
+El cambio desde `session.Store` y `runlog.Store` es un cambio coordinado del
+almacenamiento. Antes de que el nuevo runtime escriba, los metadatos, checkpoints
+y registros existentes deben cumplir el contrato integrado de `storage.Store`.
+Despliega juntos al propietario del almacenamiento y a todos los workers que lo
+llaman. Los escritores antiguos de almacenes separados y los nuevos escritores
+integrados no deben solaparse.
+
+Realiza la conversión sin tráfico con un programa de migración desechable en un
+job o pod temporal de la base de datos. La aplicación host posee ese programa;
+no forma parte del release normal y se elimina tras verificar el cambio.
+
+1. Crea y verifica una copia de seguridad y confirma que no haya writers.
+2. Ejecuta la migración en modo de verificación y corrige cada registro rechazado.
+3. Aplica la conversión y verifica esquema, índices, sesiones, metadatos,
+   checkpoints v7 y registros inmutables.
+4. Despliega juntos al propietario y a todos los workers, y elimina el programa.
+
+Una vez iniciada la conversión, el rollback restaura la copia completa. No
+ejecutes writers antiguos sobre una base parcialmente convertida.
 
 ### Tiempos y reintentos de actividad
 
 Usa el DSL para presupuestos semánticos de ejecución: cuánto puede durar toda la
 ejecución, cuánto puede durar un intento de planificación y cuánto puede durar
 un intento de herramienta.
+
+Goa-AI inicia cada workflow de agente una sola vez. No reinicia el workflow
+completo después de un fallo porque un intento anterior puede haber llamado a
+herramientas o guardado un registro final. La durabilidad procede del replay
+del historial y de los reintentos de cada activity de planificación,
+herramienta, hook y almacenamiento.
 
 ```go
 Agent("operator", "Production operations agent", func() {
@@ -445,7 +491,7 @@ runtime, los workers y los llamadores. Goa-AI no ofrece lectura dual para los
 contratos generados del runtime.
 
 El runtime acepta únicamente el esquema exacto
-`goa-ai.run-suspension.v4`. Los planificadores que esperan preguntas,
+`goa-ai.run-suspension.v7`. Los planificadores que esperan preguntas,
 aclaraciones o herramientas externas conservan el `ModelToolCallID` del
 proveedor; el workflow asigna el `ToolCallID` independiente del runtime antes
 de guardar la suspensión. Las suspensiones con otros esquemas no se reanudan.
@@ -569,7 +615,8 @@ Para transmitir todas las ejecuciones a través de un sumidero global (por ejemp
 
 ```go
 rt := runtime.New(
-    runtime.WithStream(pulseSink), // o tu sumidero personalizado
+    runtimeStore,
+    runtime.WithStream(pulseSink), // or your custom sink
 )
 ```
 
@@ -641,7 +688,7 @@ Cableado típico:
 pulseClient := pulse.NewClient(redisClient)
 s, err := pulseSink.NewSink(pulseSink.Options{
     Client: pulseClient,
-    // Opcional: sobrescribe la nomenclatura del stream (por defecto, `session/<SessionID>`).
+    // Optional: override stream naming (defaults to `session/<SessionID>`).
     StreamID: func(ev stream.Event) (string, error) {
         if ev.SessionID() == "" {
             return "", errors.New("missing session id")
@@ -652,6 +699,7 @@ s, err := pulseSink.NewSink(pulseSink.Options{
 if err != nil { log.Fatal(err) }
 
 rt := runtime.New(
+    runtimeStore,
     runtime.WithEngine(eng),
     runtime.WithStream(s),
 )

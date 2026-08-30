@@ -77,12 +77,7 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 | `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea |
 | `Resource` | Metodo | Contrassegna il metodo come risorsa MCP |
-| `WatchableResource` | Metodo | Contrassegna il metodo come risorsa sottoscrivibile |
 | `StaticPrompt` | Servizio | Aggiunge il modello di prompt statico |
-| `DynamicPrompt` | Metodo | Contrassegna il metodo come generatore di prompt |
-| `Notification` | Metodo | Contrassegna il metodo come mittente della notifica |
-| `Subscription` | Metodo | Contrassegna il metodo come gestore della sottoscrizione |
-| `SubscriptionMonitor` | Metodo | Monitor SSE per abbonamenti |
 | **Funzioni di registro** |                          |                                                                                                                    |
 | `Registry` | Livello superiore | Dichiara un'origine del registro |
 | `URL` | Registro | Imposta l'endpoint del registro |
@@ -646,7 +641,7 @@ I dati del server della sequenza temporale vengono in genere proiettati in sched
 
 **Parametri:**
 
-- `kind`: un identificatore di stringa per il tipo di dati del server (ad esempio, `"atlas.time_series"`, `"atlas.control_narrative"`, `"aura.evidence"`). Ciò consente ai consumatori di identificare e gestire in modo appropriato le diverse proiezioni dei dati del server.
+- `kind`: un identificatore di stringa per il tipo di dati del server (ad esempio, `"metrics.time_series"`, `"control.narrative"`, `"audit.evidence"`). Ciò consente ai consumatori di identificare e gestire in modo appropriato le diverse proiezioni dei dati del server.
 - `val`: la definizione dello schema, seguendo gli stessi modelli di `Args` e `Return`: una funzione con chiamate `Attribute()`, un tipo di utente Goa o un tipo primitivo.
 
 **Instradamento del pubblico (`Audience`*):**
@@ -660,12 +655,12 @@ Ogni voce `ServerData` dichiara un pubblico che i consumatori a valle utilizzano
 Imposta il pubblico all'interno del blocco DSL `ServerData`:
 
 ```go
-ServerData("atlas.time_series.chart_points", TimeSeriesServerData, func() {
+ServerData("metrics.time_series.chart_points", TimeSeriesServerData, func() {
     AudienceInternal()
     FromMethodResultField("chart_sidecar")
 })
 
-ServerData("aura.evidence", ArrayOf(Evidence), func() {
+ServerData("audit.evidence", ArrayOf(Evidence), func() {
     AudienceEvidence()
     FromMethodResultField("evidence")
 })
@@ -692,7 +687,7 @@ Tool("get_time_series", "Get time series data", func() {
         Attribute("max_value", Float64, "Maximum value in range")
         Required("summary", "count")
     })
-    ServerData("atlas.time_series", func() {
+    ServerData("metrics.time_series", func() {
         Attribute("data_points", ArrayOf(TimeSeriesPoint), "Full time series data")
         Attribute("metadata", MapOf(String, String), "Additional metadata")
         Required("data_points")
@@ -720,7 +715,7 @@ Tool("get_metrics", "Get device metrics", func() {
         Attribute("point_count", Int, "Number of data points")
         Required("summary", "point_count")
     })
-    ServerData("atlas.metrics", TimeSeriesServerData)
+    ServerData("metrics.query", TimeSeriesServerData)
 })
 ```
 
@@ -1661,6 +1656,9 @@ Service("calculator", func() {
     Description("Calculator MCP server")
     
     MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     Method("add", func() {
         Payload(func() {
@@ -1687,6 +1685,9 @@ Service("calculator", func() {
 Service("calculator", func() {
     // Specify protocol version as an option
     MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
 })
 ```
 
@@ -1750,11 +1751,9 @@ Agent("helper", "", func() {
 `FromExternalMCP` richiede dichiarazioni `Tool(...)` in linea perché le dichiarazioni esterne
 gli schemi del server non provengono dal progetto Goa locale.
 
-### Risorsa e risorsa guardabile
+### Risorsa
 
 `Resource(name, uri, mimeType)` contrassegna un metodo come provider di risorse MCP.
-
-`WatchableResource(name, uri, mimeType)` contrassegna un metodo come risorsa sottoscrivibile.
 
 **Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
 
@@ -1763,105 +1762,37 @@ Method("readme", func() {
     Result(String)
     Resource("readme", "file:///docs/README.md", "text/markdown")
 })
-
-Method("system_status", func() {
-    Result(func() {
-        Attribute("status", String, "Current system status")
-        Attribute("uptime", Int, "Uptime in seconds")
-        Required("status", "uptime")
-    })
-    WatchableResource("status", "status://system", "application/json")
-})
 ```
 
-### StaticPrompt e DynamicPrompt
+### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` aggiunge un modello di prompt statico.
 
-`DynamicPrompt(name, description)` contrassegna un metodo come generatore di prompt dinamico.
-
-**Contesto**: All'interno di `Service` (statico) o `Method` (dinamico)
+**Contesto**: All'interno di `Service`
 
 ```go
 Service("assistant", func() {
     MCP("assistant-mcp", "1.0")
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
-    // Static prompt
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
         "user", "Hello!")
-    
-    // Dynamic prompt
-    Method("code_review", func() {
-        Payload(func() {
-            Attribute("language", String, "Programming language")
-            Attribute("code", String, "Code to review")
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
 })
 ```
-
-### Notifica e iscrizione
-
-`Notification(name, description)` contrassegna un metodo come mittente della notifica MCP.
-
-`Subscription(resourceName)` contrassegna un metodo come gestore di sottoscrizione per una risorsa guardabile.
-
-**Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
-
-```go
-Method("progress_update", func() {
-    Payload(func() {
-        Attribute("task_id", String, "Task identifier")
-        Attribute("progress", Int, "Progress percentage (0-100)")
-        Required("task_id", "progress")
-    })
-    Notification("progress", "Task progress notification")
-})
-
-Method("subscribe_status", func() {
-    Payload(func() {
-        Attribute("uri", String, "Resource URI to subscribe to")
-        Required("uri")
-    })
-    Result(String)
-    Subscription("status") // Links to WatchableResource named "status"
-})
-```
-
-### Monitoraggio abbonamenti
-
-`SubscriptionMonitor(name)` contrassegna il metodo corrente come monitoraggio degli eventi inviati dal server (SSE) per gli aggiornamenti della sottoscrizione. Il metodo trasmette gli eventi di modifica della sottoscrizione ai client connessi.
-
-**Contesto**: All'interno di `Method` (il servizio deve avere MCP abilitato)
-
-```go
-Method("watch_subscriptions", func() {
-    StreamingResult(func() {
-        Attribute("resource", String, "Resource URI that changed")
-        Attribute("event", String, "Event type (created, updated, deleted)")
-        Required("resource", "event")
-    })
-    SubscriptionMonitor("subscriptions")
-})
-```
-
-**Quando utilizzare SubscriptionMonitor:**
-
-- Quando i clienti necessitano di aggiornamenti in tempo reale sulle modifiche dell'abbonamento
-- Per implementare endpoint SSE che inviano eventi di sottoscrizione
-- Quando si creano interfacce utente reattive che rispondono alle modifiche delle risorse
 
 ### Esempio completo del server MCP
 
 ```go
 var _ = Service("assistant", func() {
-    Description("Full-featured MCP server example")
+    Description("MCP server example")
     
     MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    JSONRPC(func() {
+        POST("/mcp")
+    })
     
     StaticPrompt("greeting", "Friendly greeting",
         "system", "You are a helpful assistant",
@@ -1885,38 +1816,6 @@ var _ = Service("assistant", func() {
         Resource("readme", "file:///README.md", "text/markdown")
     })
     
-    Method("get_status", func() {
-        Result(func() {
-            Attribute("status", String)
-            Attribute("updated_at", String)
-        })
-        WatchableResource("status", "status://system", "application/json")
-    })
-    
-    Method("subscribe_status", func() {
-        Payload(func() { Attribute("uri", String) })
-        Result(String)
-        Subscription("status")
-    })
-    
-    Method("review_code", func() {
-        Payload(func() {
-            Attribute("language", String)
-            Attribute("code", String)
-            Required("language", "code")
-        })
-        Result(ArrayOf(Message))
-        DynamicPrompt("code_review", "Generate code review prompt")
-    })
-    
-    Method("notify_progress", func() {
-        Payload(func() {
-            Attribute("task_id", String)
-            Attribute("progress", Int)
-            Required("task_id", "progress")
-        })
-        Notification("progress", "Task progress update")
-    })
 })
 ```
 

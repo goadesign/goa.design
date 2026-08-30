@@ -70,6 +70,40 @@ var Team = Type("Team", func() {
 })
 ```
 
+Use `ArrayOfRequired` when every item must be present. This matters for
+primitive values and primitive aliases as well as objects: an incoming JSON or
+JSON-RPC array containing `null` is rejected, while zero values such as `""`,
+`0`, and `false` remain valid items.
+
+```go
+var Alias = Type("Alias", String)
+
+var Names = ArrayOfRequired(Alias, func() {
+    MinLength(1)
+})
+```
+
+#### OneOf
+
+`OneOf` declares alternatives where exactly one branch may be selected. Mark
+the `OneOf` attribute required when the caller must select a branch.
+
+```go
+var Lifecycle = Type("Lifecycle", func() {
+    OneOf("state", func() {
+        Attribute("active", Active)
+        Attribute("inactive", Empty)
+    })
+    Required("state")
+})
+```
+
+A required `OneOf` rejects no selected branch, a typed branch wrapper whose
+value is nil, and a selected nil message, byte slice, or `Any` value. A selected
+nonnil empty message remains valid. Generated constructors, setters, accessors,
+and `Kind` methods keep the branch storage private and enforce one selected
+branch.
+
 #### Maps
 
 Maps provide key-value associations with type safety:
@@ -659,13 +693,13 @@ Errors can be defined at three levels:
 
 | Scope | Availability | Use Case |
 |-------|--------------|----------|
-| API-level | All services | Common errors (unauthorized, rate limited) |
+| API-level | Reusable definition; selected explicitly by a service or method | Common errors (unauthorized, rate limited) |
 | Service-level | All methods in service | Domain errors (not found, invalid state) |
 | Method-level | Single method only | Operation-specific errors |
 
 ### API-Level Errors
 
-Define once, use everywhere:
+Define once, select where returned:
 
 ```go
 var _ = API("myapi", func() {
@@ -685,6 +719,11 @@ var _ = API("myapi", func() {
         Response("unauthorized", CodeUnauthenticated)
         Response("rate_limited", CodeResourceExhausted)
     })
+})
+
+var _ = Service("users", func() {
+    // Select the API-level definition for this service.
+    Error("unauthorized")
 })
 ```
 
@@ -769,19 +808,26 @@ For errors needing additional context:
 
 ```go
 var ValidationError = Type("ValidationError", func() {
-    Field(1, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for custom error types
-    })
-    Field(2, "message", String, "Error message")
-    Field(3, "field", String, "Field that failed validation")
-    Field(4, "value", Any, "Invalid value provided")
-    Required("name", "message", "field")
+    Field(1, "message", String, "Error message")
+    Field(2, "field", String, "Field that failed validation")
+    Field(3, "value", Any, "Invalid value provided")
+    Required("message", "field")
 })
 
 Method("create", func() {
     Error("validation_error", ValidationError, "Input validation failed")
 })
 ```
+
+One named error does not need a discriminator field. When one type backs more
+than one named error, add `ErrorName("name", String, ...)`, make `name`
+required, and set it to the Goa error name before returning the value.
+
+Goa adds `Error`, `ErrorName`, and `GoaErrorName` methods only to the exact type
+passed to `Error`. Named types nested inside it remain ordinary types. If the
+exact type is also a payload or result, or uses `struct:pkg:path`, Goa emits it
+once and puts the error methods beside that declaration. `ErrorResult` remains
+Goa's built-in service error and is not emitted as an authored custom type.
 
 **See also:**
 - [Error Handling Guide](error-handling/) — Complete error handling patterns

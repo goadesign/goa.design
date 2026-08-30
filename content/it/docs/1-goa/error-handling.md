@@ -44,6 +44,12 @@ var _ = Service("divider", func() {
 })
 ```
 
+Un errore a livello API è una definizione riutilizzabile e un luogo in cui
+dichiarare le mappature di trasporto predefinite. Non significa che tutti i
+metodi di tutti i servizi restituiscano quell'errore. Un servizio o un metodo
+deve selezionarlo con `Error("invalid_argument")` affinché l'endpoint generato
+possa restituirlo.
+
 ### Errori a livello di servizio
 
 Gli errori a livello di servizio sono disponibili per tutti i metodi di un servizio:
@@ -130,10 +136,7 @@ var DivByZero = Type("DivByZero", func() {
     Description("DivByZero is the error returned when using value 0 as divisor.")
     Field(1, "message", String, "Error message")
     Field(2, "dividend", Int, "Dividend that was used")
-    Field(3, "name", String, "Error name", func() {
-        Meta("struct:error:name")  // Required for multiple custom errors
-    })
-    Required("message", "dividend", "name")
+    Required("message", "dividend")
 })
 
 var _ = Service("divider", func() {
@@ -143,7 +146,26 @@ var _ = Service("divider", func() {
 })
 ```
 
-**Importante**: Quando si usano tipi personalizzati per più errori nello stesso metodo, è necessario specificare quale attributo contiene il nome dell'errore usando `Meta("struct:error:name")`.
+Un solo errore con nome non richiede un campo discriminatore. Quando un tipo
+rappresenta più errori con nome, aggiungere al tipo un campo per il nome
+dell'errore:
+
+```go
+var RequestError = Type("RequestError", func() {
+    ErrorName(1, "name", String, "Nome dell'errore Goa")
+    Field(2, "message", String, "Messaggio di errore")
+    Required("name", "message")
+})
+```
+
+Impostare `Name` sul nome dell'errore Goa prima di restituire il valore. Goa
+aggiunge i metodi `Error`, `ErrorName` e `GoaErrorName` solo al tipo esatto
+passato a `Error`. I tipi con nome annidati al suo interno rimangono tipi
+ordinari. Se il tipo esatto viene usato anche come payload o risultato, oppure
+usa `struct:pkg:path`, Goa lo emette una sola volta e colloca i metodi di errore
+accanto a quella dichiarazione. `ErrorResult` rimane l'errore di servizio
+integrato di Goa e non viene emesso come tipo personalizzato definito nel
+progetto.
 
 ### Proprietà dell'errore
 
@@ -284,7 +306,6 @@ Utilizzo di tipi di errore personalizzati:
 func (s *dividerSvc) IntegralDivide(ctx context.Context, p *divider.IntOperands) (int, error) {
     if p.Divisor == 0 {
         return 0, &gendivider.DivByZero{
-            Name:     "DivByZero",
             Message:  "divisor cannot be zero",
             Dividend: p.Dividend,
         }
