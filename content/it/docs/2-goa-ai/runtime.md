@@ -729,8 +729,11 @@ workflow figli collegati.
 
 Chiarimenti, domande strutturate, risultati di strumenti esterni e conferme
 concludono con successo il workflow corrente. Il `RunOutput.Suspension`
-restituito contiene la richiesta cui deve rispondere la UI o il sistema
-esterno. Nessun workflow Temporal resta aperto mentre una persona decide.
+restituito contiene richieste `Pending` visibili e un `Checkpoint` privato.
+L'applicazione conserva la sospensione completa in uno storage server affidabile
+e invia solo `Suspension.Pending` alla UI o al sistema esterno che deve
+rispondere. Non invia mai il checkpoint privato a un client non attendibile.
+Nessun workflow Temporal resta aperto mentre una persona decide.
 
 Prima di terminare, Goa-AI salva il checkpoint privato sotto l'ID del run
 completato. L'applicazione deve accettare atomicamente una sola risposta, quindi
@@ -738,10 +741,11 @@ avvia un nuovo workflow con l'ID del run precedente, un nuovo run ID, un nuovo
 turn ID e una sola risposta tipizzata:
 
 Se l'accettazione della risposta deve essere salvata insieme a dati del
-prodotto, chiamare prima `PrepareContinuation`, confermare atomicamente entrambe
-le modifiche e passare esattamente il valore preparato a `StartContinuation`.
-Usare `Continue` solo quando non vi è una scrittura applicativa tra convalida e
-invio al motore.
+prodotto, chiamare `PrepareContinuation`, quindi `MarshalBinary`, e salvare quei
+byte con la risposta in un'unica transazione. Il processo che avvia il workflow
+carica i byte, chiama `ParsePreparedRun` e passa il valore ripristinato a
+`StartPrepared`. Usare `Continue` solo quando non vi è una scrittura
+applicativa tra convalida e invio al motore.
 
 ```go
 next, err := client.Continue(
@@ -756,14 +760,17 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
-    nil, // impostazioni workflow facoltative per la nuova esecuzione
+    runtime.WorkflowOptions{},
 )
 ```
 
-L’applicazione passa soltanto l’ID dell’esecuzione completata e la risposta
-tipizzata. Goa-AI carica il checkpoint, ne convalida la versione e la richiesta
-in attesa, ripristina i payload salvati con i codec generati correnti e riprende
-la pianificazione. Il checkpoint resta privato nello storage del runtime.
+Durante la preparazione della continuazione, l’applicazione passa soltanto l’ID
+dell’esecuzione completata e la risposta tipizzata. Goa-AI carica il checkpoint,
+ne convalida la versione e la richiesta in attesa, ripristina i payload salvati
+con i codec generati correnti e riprende la pianificazione. I byte di
+`PreparedRun` possono contenere una copia del checkpoint e la trascrizione
+completa. Salvali solo in uno storage applicativo affidabile e con accesso
+controllato; non inviarli mai a un client non attendibile.
 
 L’unico formato accettato è `goa-ai.run-suspension.v7`. Goa-AI rifiuta tutte le
 versioni precedenti invece di tentare di tradurle. Prima di accettare
