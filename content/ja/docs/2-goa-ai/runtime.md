@@ -735,14 +735,15 @@ failure として保存されません。成功済みの修復を繰り返して
 
 受理された各 user input は、その turn の top-level workflow を 1 つ開始します。workflow は、その turn の final result または external-input suspension のどちらかで終了します。nested agent は引き続き linked child workflow として動きます。
 
-clarification、structured question、external tool result、confirmation は、現在の workflow を正常終了させます。返される `RunOutput.Suspension` には UI または external system が回答すべき request が入ります。人が判断している間、Temporal workflow は開いたままになりません。
+clarification、structured question、external tool result、confirmation は、現在の workflow を正常終了させます。返される `RunOutput.Suspension` には、UI または external system が回答する公開可能な `Pending` requests と、非公開の `Checkpoint` が入ります。application は suspension 全体を信頼できる server storage に保存し、回答する相手には `Suspension.Pending` だけを送ります。非公開 checkpoint を信頼できない client に送ってはいけません。人が判断している間、Temporal workflow は開いたままになりません。
 
 workflow が完了する前に、Goa-AI は completed run ID の下に非公開 checkpoint を保存します。application は 1 つの answer を原子的に受理し、2 つの concurrent request が同じ state を続行できないようにしなければなりません。その後、predecessor run ID、新しい run ID、新しい turn ID、1 つの型付き response を使って新 workflow を開始します。
 
 answer の受理と product data を同じ transaction で保存する必要がある場合は、まず
-`PrepareContinuation` を呼び、両方の変更を atomic に確定し、exact prepared value
-を `StartContinuation` に渡します。validation と engine submission の間に
-application write がない場合だけ `Continue` を使います。
+`PrepareContinuation`、続いて `MarshalBinary` を呼び、その bytes と answer を同じ
+transaction で保存します。workflow を開始する process は bytes を読み込み、
+`ParsePreparedRun` を呼び、復元した値を `StartPrepared` に渡します。validation と
+engine submission の間に application write がない場合だけ `Continue` を使います。
 
 ```go
 next, err := client.Continue(
@@ -757,14 +758,16 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
-    nil, // 新しい run の任意 workflow 設定
+    runtime.WorkflowOptions{},
 )
 ```
 
-application が渡すのは、完了した run ID と型付き回答だけです。Goa-AI は
-checkpoint を読み、その version と保留中 request を検証し、現在の generated
-codec で保存済み payload を復元して planning を再開します。checkpoint は
-runtime store 内で非公開のままです。
+continuation の準備時に application が渡すのは、完了した run ID と型付き回答
+だけです。Goa-AI は checkpoint を読み、その version と保留中 request を検証し、
+現在の generated codec で保存済み payload を復元して planning を再開します。
+`PreparedRun` の bytes には、その checkpoint のコピーと完全な transcript が含まれる
+場合があります。信頼できる access-controlled な application storage にだけ保存し、
+信頼できない client には決して送信しないでください。
 
 受理される形式は `goa-ai.run-suspension.v7` だけです。Goa-AI は以前の version を
 推測で変換せず、すべて拒否します。新しい runtime で continuation traffic を

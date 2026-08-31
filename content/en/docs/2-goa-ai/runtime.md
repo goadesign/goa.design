@@ -722,6 +722,16 @@ activities when their contracts allow it, but it never restarts an entire agent
 workflow after failure. A whole-workflow retry could repeat tool side effects or
 conflict with the final lifecycle record already saved by the first attempt.
 
+Custom engines use `engine/contract.NormalizeRootRequest` and
+`NormalizeChildRequest` to validate and privately retain accepted requests.
+Before every initial or retry attempt, they call `CopyRunInput` so the workflow
+handler receives a fresh input. After success they retain one private
+`CopyRunOutput` result and copy it again for every wait, query, or other
+caller-facing read. Goa-AI also converts search fields to values that every
+supported engine can store and computes the identity used to recognize an exact
+retry. Each engine adapter still translates and submits those values through
+its own backend.
+
 ### Semantic timing vs Temporal liveness
 
 Goa-AI keeps the public runtime contract engine-agnostic:
@@ -846,19 +856,23 @@ suspension. Nested agents still run as linked child workflows.
 
 Clarifications, structured questions, external tool results, and confirmations
 end the current workflow successfully. The returned `RunOutput.Suspension`
-contains the request that the UI or external system must answer. No Temporal
-workflow remains open while a person is deciding.
+contains visible `Pending` requests and a private `Checkpoint`. The application
+keeps the complete suspension in trusted server storage and sends only
+`Suspension.Pending` to the UI or external system that must answer it. No
+Temporal workflow remains open while a person is deciding.
 
 Before the workflow completes, Goa-AI stores its private checkpoint under the
 completed run ID. When the application must record acceptance of the answer in
-its own storage, continuation has two explicit phases:
+its own storage, continuation has three explicit steps:
 
 1. `PrepareContinuation` loads the saved checkpoint, validates the typed answer
-   and the current generated `AgentDefinition`, and returns an immutable copy
-   of the complete successor input. It does not write runtime state or call the
-   workflow engine.
-2. The application atomically accepts that answer in its own storage, then
-   passes the exact prepared value to `StartContinuation`.
+   and the current generated `AgentDefinition`, and returns a `PreparedRun`
+   containing an immutable copy of the complete successor request. It does not
+   write runtime state or call the workflow engine.
+2. The application calls `MarshalBinary` and atomically stores those bytes with
+   its accepted answer.
+3. Any process can load those bytes, call `ParsePreparedRun`, and pass the
+   restored value to `StartPrepared`.
 
 This lets concurrent requests compete for one application-owned obligation
 without starting two workflows. If the engine response is uncertain, the
@@ -878,14 +892,31 @@ prepared, err := client.PrepareContinuation(
             Answer: "Device ID is ABC-123",
         },
     },
-    nil, // optional workflow settings for the new run
+    runtime.WorkflowOptions{},
 )
 if err != nil {
     return err
 }
 
-// Atomically accept this answer in application storage here.
-handle, err := client.StartContinuation(ctx, prepared)
+preparedBytes, err := prepared.MarshalBinary()
+if err != nil {
+    return err
+}
+// This application-owned method uses one database transaction to accept the
+// answer and store the prepared workflow ID with preparedBytes.
+if err := workflowStarts.AcceptContinuation(ctx, previous.RunID, prepared.RunID(), preparedBytes); err != nil {
+    return err
+}
+
+preparedBytes, err = workflowStarts.Load(ctx, "run-124")
+if err != nil {
+    return err
+}
+stored, err := runtime.ParsePreparedRun(preparedBytes)
+if err != nil {
+    return err
+}
+handle, err := client.StartPrepared(ctx, stored)
 if err != nil {
     return err
 }
@@ -894,7 +925,10 @@ next, err := handle.Wait(ctx)
 
 When no application write is needed between validation and engine submission,
 `Continue` is the convenience method that prepares, starts, and waits. In both
-forms the checkpoint remains private to the runtime store. Goa-AI validates its
+forms the runtime store keeps the authoritative checkpoint. The complete
+suspension and prepared bytes may also contain that checkpoint and the complete
+transcript, so keep them in trusted, access-controlled application storage and
+never send them to an untrusted client. Goa-AI validates the checkpoint's
 version and pending request, restores saved payloads through the current
 generated codecs, and resumes planning.
 

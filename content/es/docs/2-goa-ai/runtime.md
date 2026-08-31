@@ -817,16 +817,22 @@ con un resultado final o con un `api.RunSuspension` que contiene las solicitudes
 pendientes visibles y un checkpoint privado. Ningún workflow permanece abierto
 mientras una persona o un sistema externo prepara la respuesta.
 
+La aplicación conserva el `RunSuspension` completo en almacenamiento de servidor
+confiable y envía únicamente `RunSuspension.Pending` a la interfaz o al sistema
+externo que debe responder. Nunca envía el checkpoint privado a un cliente no
+confiable.
+
 El servicio propietario debe aceptar una sola respuesta de forma atómica. A
 continuación inicia un nuevo workflow con el ID de la ejecución completada, un
 nuevo ID de ejecución, un nuevo ID de turno y una
 `api.PendingInputResponse` que satisface el primer elemento pendiente:
 
 Si la aceptación de la respuesta debe guardarse junto con datos del producto,
-llama primero a `PrepareContinuation`, confirma ambos cambios de forma atómica
-y pasa exactamente el valor preparado a `StartContinuation`. Usa `Continue`
-solo cuando no haya una escritura de la aplicación entre la validación y el
-envío al motor.
+llama a `PrepareContinuation`, después a `MarshalBinary`, y guarda esos bytes
+con la respuesta en una sola transacción. El proceso que inicia el workflow
+carga los bytes, llama a `ParsePreparedRun` y pasa el valor restaurado a
+`StartPrepared`. Usa `Continue` solo cuando no haya una escritura de la
+aplicación entre la validación y el envío al motor.
 
 ```go
 next, err := client.Continue(
@@ -836,7 +842,7 @@ next, err := client.Continue(
     "run-124",
     "turn-2",
     response,
-    nil, // opciones opcionales del nuevo workflow
+    runtime.WorkflowOptions{},
 )
 ```
 
@@ -867,10 +873,13 @@ response := &api.PendingInputResponse{
 }
 ```
 
-La aplicación solo pasa el ID de la ejecución completada y la respuesta tipada.
-Goa-AI carga el checkpoint, valida su versión y la solicitud pendiente, restaura
-los payloads guardados con los codecs generados actuales y reanuda la
-planificación. El checkpoint permanece privado en el almacén del runtime.
+Al preparar la continuación, la aplicación solo pasa el ID de la ejecución
+completada y la respuesta tipada. Goa-AI carga el checkpoint, valida su versión
+y la solicitud pendiente, restaura los payloads guardados con los codecs
+generados actuales y reanuda la planificación. Los bytes de `PreparedRun`
+pueden contener una copia de ese checkpoint y la transcripción completa.
+Guárdalos únicamente en almacenamiento de aplicación confiable y con acceso
+controlado; nunca los envíes a un cliente no confiable.
 
 El único formato aceptado es `goa-ai.run-suspension.v7`. Goa-AI rechaza todas
 las versiones anteriores en lugar de adivinar cómo traducirlas. Antes de

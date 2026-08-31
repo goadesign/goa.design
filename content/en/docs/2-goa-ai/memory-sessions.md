@@ -405,8 +405,9 @@ that use it as one coordinated change.
 - When a run requests external input, its workflow ends; the answer starts a new
   run in the same session using the saved checkpoint
 - When accepting the answer must be combined with an application write, use
-  `PrepareContinuation`, atomically accept the answer in application storage,
-  then pass that exact prepared value to `StartContinuation`. See
+  `PrepareContinuation`, call `MarshalBinary`, and atomically store those bytes
+  with the accepted answer. A submitting process loads the bytes, calls
+  `ParsePreparedRun`, and passes the restored value to `StartPrepared`. See
   [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations).
 - Use `SessionID` to group related runs (e.g., per ticket or incident)
 - Rely on `run.Phase` and `RunCompleted` events for status tracking

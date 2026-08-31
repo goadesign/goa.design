@@ -835,9 +835,12 @@ continuent à s'exécuter dans des workflows enfants liés.
 
 Les clarifications, questions structurées, résultats d'outils externes et
 confirmations terminent correctement le workflow courant. Le
-`RunOutput.Suspension` renvoyé contient la demande à laquelle l'interface ou le
-système externe doit répondre. Aucun workflow Temporal ne reste ouvert pendant
-la décision d'une personne.
+`RunOutput.Suspension` renvoyé contient des demandes `Pending` visibles et un
+point de reprise `Checkpoint` privé. L’application conserve la suspension complète
+dans un stockage serveur fiable et transmet uniquement `Suspension.Pending` à
+l’interface ou au système externe qui doit répondre. Elle ne transmet jamais le
+point de reprise privé à un client non fiable. Aucun workflow Temporal ne reste
+ouvert pendant la décision d'une personne.
 
 Avant de se terminer, Goa-AI enregistre son point de reprise privé sous l'ID de
 l'exécution achevée. L'application doit accepter atomiquement une seule réponse
@@ -846,10 +849,11 @@ Elle démarre ensuite un nouveau workflow avec l'ID de l'exécution précédente
 un nouvel ID d'exécution, un nouvel ID de tour et une réponse typée :
 
 Si l'acceptation de la réponse doit être enregistrée avec des données produit,
-appelez d'abord `PrepareContinuation`, validez les deux modifications de façon
-atomique, puis passez exactement la valeur préparée à `StartContinuation`.
-Utilisez `Continue` uniquement lorsqu'aucune écriture applicative ne sépare la
-validation de la soumission au moteur.
+appelez `PrepareContinuation`, puis `MarshalBinary`, et enregistrez ces octets
+avec la réponse dans une seule transaction. Le processus qui lance le workflow
+charge ces octets, appelle `ParsePreparedRun`, puis transmet la valeur restaurée
+à `StartPrepared`. Utilisez `Continue` uniquement lorsqu'aucune écriture
+applicative ne sépare la validation de la soumission au moteur.
 
 ```go
 next, err := client.Continue(
@@ -864,15 +868,17 @@ next, err := client.Continue(
             Answer: "Device ID is ABC-123",
         },
     },
-    nil, // paramètres de workflow facultatifs pour la nouvelle exécution
+    runtime.WorkflowOptions{},
 )
 ```
 
-L’application transmet uniquement l’ID de l’exécution terminée et la réponse
-typée. Goa-AI charge le point de reprise, valide sa version et la demande en
-attente, restaure les payloads enregistrés avec les codecs générés actuels et
-reprend la planification. Le point de reprise reste privé dans le stockage du
-runtime.
+Lors de la préparation de la continuation, l’application transmet uniquement
+l’ID de l’exécution terminée et la réponse typée. Goa-AI charge le point de
+reprise, valide sa version et la demande en attente, restaure les payloads
+enregistrés avec les codecs générés actuels et reprend la planification. Les
+octets de `PreparedRun` peuvent contenir une copie de ce point de reprise et la
+transcription complète. Conservez-les uniquement dans un stockage applicatif
+fiable avec un accès contrôlé ; ne les envoyez jamais à un client non fiable.
 
 Le seul format accepté est `goa-ai.run-suspension.v7`. Goa-AI rejette toutes les
 versions précédentes au lieu de deviner comment les traduire. Avant d’accepter
