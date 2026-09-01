@@ -3,7 +3,7 @@
     "autoprefixer": "^10.5.0",
     "fast-check": "^4.8.0",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.25",
     "postcss-cli": "^11.0.1",
     "sass-embedded": "^1.100.0",
     "vitest": "^4.1.8"
