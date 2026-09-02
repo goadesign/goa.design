@@ -381,12 +381,14 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 
 プロダクトデータはプロダクトサービスが引き続き所有します。たとえば、別のサービスが Goa-AI のランタイムストアを所有していても、チャットサービスはトランスクリプト、評価、検索用フィールドを保持します。
 
-ストアは各ライフサイクル変更と対応する記録をまとめて確定しなければなりません。storage activity の完全に同じ再試行は最初の結果を返します。ランの識別情報、payload、checkpoint、状態、キャンセル理由のいずれかを変更した再試行は競合として失敗します。完全な契約は [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together) を参照してください。
-
-continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
-suspended predecessor が必要です。transaction は identity の不一致を、successor
-の開始や親リンクを書く前に拒否します。successor の `RunStarted` record が
-`PredecessorRunID` を保存し、`RunMeta` はこの関係を重複して持ちません。
+[Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together)
+は storage contract 全体を定義しています。lifecycle change と record はまとめて
+保存し、完全に同じ retry には受理済みの結果を返します。新しい child には running
+の parent が必要です。保存済み event の JSON は厳密に検証し、キャンセル理由の
+由来も正確に保ちます。[Runtime](../runtime/#ensuring-a-final-record-and-its-delivery)
+は engine history が閉じた後に host が最終 run event を検証して配信する方法を
+定義します。各 worker で同じ規則を作り直さず、規則を所有する runtime store に
+実装してください。
 
 `session.Store` と `runlog.Store` からの変更は、storage 全体を協調して
 切り替える必要があります。新 runtime が書き込む前に、既存の run metadata、

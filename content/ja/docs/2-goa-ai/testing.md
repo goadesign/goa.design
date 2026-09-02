@@ -239,11 +239,20 @@ func TestAgentComposition(t *testing.T) {
 プランナーとワークフローのテストには `runtime/agent/storage/inmem` を使います。プロダクション用の永続実装も同じ契約に対してテストし、次のケースを含めます。
 
 - ルート、子、セッションなし one-shot の各開始が、メタデータと最初の記録をまとめて保存する
-- 子の開始が、親へのリンクと子の開始を同じ操作で保存する
+- 新しい `StartChildRun` と `StartOneShotChildRun` は running の parent を必須とし、親 link と child start を同じ操作で保存する
+- 受理済みのどちらの child start も、完全に同じ retry なら parent の停止後も有効だが、内容を変えた retry と新しい child は拒否する
 - まったく同じ再試行が元の記録 ID を返し、新しい記録を追加していないことを報告する
 - status と他の lifecycle field が同じでも、別の record で同じ変更を繰り返すと conflict になる
 - 最初の書き込みで確定した値を変更すると競合になる
-- 最初のキャンセル理由は変更できず、異なる理由を後から書くと競合になる
+- running workflow が受理した明示的な `CancelRun` は、最初の reason と対応する
+  `storage.CancellationRecordType` record をまとめて保存する。この record の
+  serialized type は `runtime.cancellation_intent` である。完全に同じ retry は成功するが、
+  後から異なる reason を指定すると conflict になる
+- sessionful run の開始時に session がすでに終了していた場合、`session_ended` と
+  canceled の terminal record を保存し、`storage.CancellationRecordType` record は保存しない
+- engine が始めたキャンセルでは、保存された reason は空のままで
+  `storage.CancellationRecordType` record もなく、terminal record に
+  `engine_canceled` が入る
 - 一時停止がチェックポイント、一時停止状態、対応する記録をまとめて保存する
 - 終了が最終状態と対応する記録をまとめて保存する
 - continuation の開始には、存在し、同じ session、agent、parent run identity を持つ
@@ -254,7 +263,31 @@ func TestAgentComposition(t *testing.T) {
 - 終了済みセッションではプランナーやツールを実行せず、すでに受理されたワークフローはキャンセルとして記録する
 - 実行中のランがある間は purge が失敗し、すべて終了した後に終了済みセッションのメタデータ、チェックポイント、記録を削除する
 
-これらのテストでは、実際のデータベーストランザクションを動かしてください。メソッド呼び出しだけを確認する mock では、状態と記録が同時に見えることを証明できません。
+これらの store test では、実際の database transaction を動かしてください。method
+call だけを確認する mock では、state と record が同時に見えることを証明できません。
+
+Temporal adapter は別に test します。親 workflow を終了すると child workflow も
+終了する必要があります。
+
+runtime の明示的な完了結果配信 command は別に test し、次を確認します。
+
+- `EnsureRunCompletion` は active な保存済み run に欠けている result を保存し、
+  すでに保存済みの result は変更せず、検証して再配信する
+- child link は final event より先に配信し、`EnsureChildRunLink` は保存済みの正確な
+  link だけを配信する
+- active な Session で `Runtime.WithStream` がない場合は失敗し、新たに確認した
+  Session が終了済みなら、保存済み result を保持して配信を抑止する
+- `LoadSessionStatus` は Session の現在の status を返すが、`EnsureRunCompletion` は
+  final record の書き込みまたは完全に同じ再試行と一緒に返された
+  `SessionStatus` を使い、stream 配信の再試行中もその status を保つ
+- Session が active な間に受理された event は、その配信 call 中に Session が
+  終了しても配信対象のままである
+- engine workflow が open なら `ErrRunCompletionNotReady` を返し、engine または
+  storage の data が不正、または矛盾していれば `ErrRunCompletionCorrupt` を返す
+
+hook codec は別に test します。`RunStarted`、`RunSuspended`、`RunCompleted`、
+`ChildRunLinked` の decoder は、`null`、未知の field、末尾の二つ目の JSON 値を
+拒否する必要があります。
 
 continuation test は `goa-ai.run-suspension.v7` を受理し、それ以前の version は
 payload の復元や planner 呼び出しの前に拒否することを確認します。

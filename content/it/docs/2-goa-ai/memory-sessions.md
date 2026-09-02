@@ -204,9 +204,9 @@ In un’applicazione a processo singolo, `store` può essere un adattatore local
 Ogni metodo salva stato e record corrispondente nella stessa operazione:
 
 - `StartRootRun` salva metadati radice e primo record.
-- `StartChildRun` salva collegamento al padre, metadati del figlio e primo record.
+- `StartChildRun` salva collegamento al padre, metadati del figlio e primo record. Un nuovo figlio richiede un padre attivo; un retry identico già accettato resta valido dopo l'arresto del padre.
 - `StartOneShotRun` salva un’esecuzione senza sessione e il primo record.
-- `StartOneShotChildRun` salva insieme il collegamento al padre senza sessione e l'avvio del figlio.
+- `StartOneShotChildRun` salva insieme il collegamento al padre senza sessione e l'avvio del figlio. Applica la stessa regola del padre attivo e del retry identico.
 - `RecordRunCancellation` salva il primo motivo di annullamento e il record.
 - `RecordRunSuspension` salva checkpoint privato, stato sospeso e record.
 - `RecordRunTerminal` salva stato finale e record.
@@ -221,6 +221,38 @@ Per ogni avvio, annullamento, sospensione e completamento, lo storage ricorda
 anche il record esatto scelto dalla prima scrittura riuscita. Ripetere il
 cambiamento del ciclo di vita con un record diverso produce un conflitto, anche
 quando lo stato e gli altri campi del ciclo di vita coincidono.
+
+### JSON degli eventi persistenti {#durable-event-json}
+
+Il runtime decodifica i payload di `RunStarted`, `RunSuspended`, `RunCompleted`
+e `ChildRunLinked` come un unico valore JSON tipizzato. I campi sconosciuti e
+gli ulteriori valori JSON vengono rifiutati. I record esistenti devono
+rispettare esattamente queste forme prima che il runtime possa riprodurli o
+consegnarli; i dati salvati non compatibili non vengono mai ignorati.
+
+### Origine dell'annullamento {#cancellation-provenance}
+
+Lo storage del runtime distingue una richiesta di annullamento dal motivo per
+cui termina un'esecuzione:
+
+- Quando un workflow attivo accetta una chiamata esplicita a `CancelRun`, salva
+  in un'unica operazione il primo motivo nei metadati dell'esecuzione e un
+  record di tipo `storage.CancellationRecordType`
+  (`runtime.cancellation_intent`) con lo stesso motivo. Il successivo record
+  `RunCompleted` annullato deve contenere quel medesimo motivo.
+- Se `StartRootRun` o `StartChildRun` rileva che la sessione è già terminata,
+  l'operazione di avvio salva `session_ended` nei metadati insieme a
+  `RunStarted` e al record `RunCompleted` annullato. Non salva un record
+  `storage.CancellationRecordType`, perché non è stata fatta una richiesta di
+  annullamento separata.
+- Se il motore dei workflow annulla un'esecuzione senza una richiesta già
+  registrata, il motivo di annullamento nei metadati rimane vuoto e non esiste
+  alcun record `storage.CancellationRecordType`. Il record `RunCompleted`
+  annullato contiene `engine_canceled`. In questo caso, il campo vuoto ha un
+  significato preciso e non indica dati mancanti.
+
+Queste sono le tre combinazioni valide tra i metadati dell'esecuzione e i
+record di annullamento. Uno storage persistente deve conservarle esattamente.
 
 ### Avvio di una continuazione
 
@@ -252,7 +284,10 @@ I workflow figli usano `StartChildRun`. Lo storage scrive `ChildRunLinked` sul
 padre e poi `RunStarted` sul figlio. Se la sessione è terminata, scrive anche il
 `RunCompleted` annullato del figlio. Ogni workflow accettato dal motore ha quindi
 un record `RunStarted`, compreso il lavoro fermato perché la sessione era
-terminata.
+terminata. Un nuovo figlio richiede un padre attivo. Un retry identico di un
+avvio figlio già accettato resta valido dopo l'arresto del padre; un retry
+modificato o un nuovo figlio vengono rifiutati. Temporal termina un workflow
+figlio se il workflow padre si chiude per primo.
 
 Il lavoro radice senza sessione usa `StartOneShotRun`: riceve i normali
 metadati dell'esecuzione e `RunStarted`, ma non crea né usa una sessione. Un
@@ -289,7 +324,11 @@ L’applicazione host crea, termina e rimuove le sessioni; i worker non lo fanno
 
 Sono rimossi `session.Store`, `runlog.Store`, `runtime.WithSessionStore`, `runtime.WithRunEventStore`, i metodi runtime `CreateSession`, `EndSession` e `PurgeSession`, e i package `features/session/mongo` e `features/runlog/mongo`.
 
-Implementa un unico `runtime/agent/storage.Store` e passalo come primo argomento di `runtime.New`. Sposta l’amministrazione delle sessioni nel servizio host proprietario dei dati. I worker remoti lo chiamano tramite API tipizzata, senza importarne l’adattatore database.
+Implementa un unico `storage.Store` del package
+`goa.design/goa-ai/runtime/agent/storage` e passalo come primo argomento di
+`runtime.New`. Sposta l’amministrazione delle sessioni nel servizio host
+proprietario dei dati. I worker remoti lo chiamano tramite API tipizzata, senza
+importarne l’adattatore database.
 
 Prima che il nuovo runtime scriva, i dati esistenti devono rispettare il
 contratto dello storage integrato. Metadati, checkpoint e record devono
@@ -297,6 +336,22 @@ supportare le operazioni del ciclo di vita descritte sopra, e i vecchi writer
 degli storage separati non devono sovrapporsi ai nuovi. L’applicazione host
 sceglie la procedura di conversione e ripristino per il proprio database e
 ambiente, quindi distribuisce insieme il proprietario e tutti i worker.
+
+I comandi di consegna del completamento non aggiungono una migrazione dello
+schema del database e non cambiano alcun formato pubblico. Cambiano però il
+contratto del codice Go. Aggiorna insieme il runtime e la relativa
+implementazione dello storage:
+
+- sostituisci ogni chiamata a `Runtime.RepairRunCompletion` con
+  `Runtime.EnsureRunCompletion`;
+- implementa `LoadSessionStatus` in ogni `storage.Store` personalizzato;
+- configura `Runtime.WithStream` prima di chiamare uno dei comandi di garanzia
+  per una sessione attiva; e
+- prevedi che l'avvio di un nuovo figlio fallisca dopo l'arresto del padre. Un
+  retry identico di un avvio già accettato dallo storage resta valido.
+
+Anche i record persistenti esistenti devono rispettare il contratto JSON esatto
+descritto sopra.
 
 ## Modelli comuni
 

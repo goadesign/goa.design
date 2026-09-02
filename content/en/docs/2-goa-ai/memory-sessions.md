@@ -256,9 +256,11 @@ state in one operation:
 
 - `StartRootRun` stores root-run metadata and its first record.
 - `StartChildRun` stores the parent link, child metadata, and first child record.
+  A new child requires a running parent; an exact accepted retry remains valid
+  after the parent stops.
 - `StartOneShotRun` stores a sessionless run and its first record.
 - `StartOneShotChildRun` stores a sessionless parent link and child start in one
-  operation.
+  operation. It applies the same running-parent and exact-retry rule.
 - `RecordRunCancellation` stores the first cancellation reason and its record.
 - `RecordRunSuspension` stores the private checkpoint, suspended status, and
   suspension record.
@@ -288,6 +290,38 @@ store must not guess which value is newer or overwrite the first value.
 Cancellation follows the same rule: the first reason is permanent, an exact
 repeat succeeds, and a different reason fails.
 
+### Durable event JSON
+
+The runtime decodes `RunStarted`, `RunSuspended`, `RunCompleted`, and
+`ChildRunLinked` payloads as exactly one typed JSON value. Unknown fields and
+extra JSON values after that value are rejected. Existing records must match
+these exact shapes before the runtime can replay or deliver them; it never
+ignores incompatible stored data.
+
+### Cancellation provenance {#cancellation-provenance}
+
+The runtime store distinguishes a cancellation request from the reason a run
+ended:
+
+- When a running workflow accepts an explicit `CancelRun` request, it stores
+  the first reason in run metadata and a matching record whose type is
+  `storage.CancellationRecordType` (`runtime.cancellation_intent`) in one
+  operation before it stops. The later canceled `RunCompleted` record must
+  contain that same reason.
+- If `StartRootRun` or `StartChildRun` finds that its session already ended,
+  the start operation stores `session_ended` in run metadata together with
+  `RunStarted` and the canceled `RunCompleted` record. It does not store a
+  `storage.CancellationRecordType` record because no separate cancellation was
+  requested.
+- If the workflow engine cancels a run without a previously recorded request,
+  the cancellation reason in run metadata remains empty and there is no
+  `storage.CancellationRecordType` record. The canceled `RunCompleted` record
+  contains `engine_canceled`. In this case, the empty metadata field has a
+  precise meaning; it is not missing data.
+
+These are the three valid pairings between run metadata and cancellation
+records. A durable store must preserve each pairing exactly.
+
 ### Continuation starts
 
 A continuation start requires an existing predecessor run in `suspended`
@@ -316,7 +350,10 @@ Child workflows use `StartChildRun`. The store records `ChildRunLinked` on the
 parent followed by `RunStarted` on the child. If the session has ended, it also
 records the child's canceled `RunCompleted`. Every workflow accepted by the
 engine therefore has one `RunStarted` record, including work stopped because
-its session ended.
+its session ended. A new child requires a running parent. An exact retry of a
+child start that the store already accepted remains valid after the parent
+stops; a changed retry or a new child is rejected. Temporal terminates a child
+workflow if its parent workflow closes first.
 
 Sessionless root work uses `StartOneShotRun`; it receives normal run metadata
 and `RunStarted`, but it does not create or join a session. An agent called as a
@@ -375,8 +412,8 @@ removed:
   and `PurgeSession`
 - the built-in `features/session/mongo` and `features/runlog/mongo` packages
 
-Replace the two stores with one implementation of
-`runtime/agent/storage.Store`, then pass it as the first argument to
+Replace the two stores with one implementation of `storage.Store` from
+`goa.design/goa-ai/runtime/agent/storage`, then pass it as the first argument to
 `runtime.New`. Move session creation, ending, and deletion into the host service
 that owns the runtime data. If agent workers run in separate services, make them
 call that owner through a typed API instead of importing its database adapter.
@@ -387,6 +424,21 @@ the lifecycle operations above, and old split-store writers must not overlap
 with new writers. The host chooses the conversion and recovery procedure for
 its database and deployment environment, then deploys the owner and all workers
 that use it as one coordinated change.
+
+The completion-delivery commands do not add a database schema migration or
+change a public wire format. They do change the Go source contract. Upgrade the
+runtime and its store implementation together:
+
+- replace each `Runtime.RepairRunCompletion` call with
+  `Runtime.EnsureRunCompletion`;
+- implement `LoadSessionStatus` in every custom `storage.Store`;
+- configure `Runtime.WithStream` before calling either ensure command for an
+  active Session; and
+- expect a new child start to fail after its parent stops. An exact retry of a
+  child start already accepted by the store remains valid.
+
+Existing durable lifecycle records must also satisfy the exact JSON contract
+above.
 
 ---
 

@@ -272,6 +272,8 @@ if err := rt.Seal(ctx); err != nil {
    sessionful run proceeds only when its session is active; when the session has
    ended, the store follows `RunStarted` with a canceled `RunCompleted` and the
    workflow does no planner or tool work.
+   [Memory & Sessions](../memory-sessions/#cancellation-provenance) defines the
+   three valid ways cancellation reasons and intent records are stored.
 3. The runtime calls your planner's `PlanStart` with the current messages and a
    `run.Context` containing `RunID`, `SessionID`, `TurnID`, labels, and policy
    caps.
@@ -787,9 +789,10 @@ activity's Start-to-Close timeout and requires a value greater than zero.
 
 `Engine.QueryRunCompletion` returns the current run `Status`. Once the run is
 closed, the same result also contains its stable `CompletedAt` time and final
-`Output` or `WorkflowError`. Completion repair uses that time so every retry
-submits the same record timestamp. The method's separate error means the engine
-could not retrieve those facts. There is no separate status query.
+`Output` or `WorkflowError`. `EnsureRunCompletion` uses `CompletedAt` as the
+record timestamp, so every retry submits the same value. The method's separate
+error means the engine could not retrieve those facts. There is no separate
+status query.
 
 Child prompt preparation returns exactly one `Success` or `Failure`. Success
 contains only the messages and rendered prompt facts. The workflow derives the
@@ -817,34 +820,58 @@ applies the same retry policy as Temporal.
 - Root, child, sessionless root, and sessionless child starts are separate
   storage calls. Child starts store the parent link with the child start;
   sessionless starts store full run metadata without a session
-- A new sessionless child requires an existing running sessionless parent.
-  `StartOneShotChildRun` stores the parent link and child start together. An
-  exact retry remains valid after the parent finishes, while a changed retry or
-  a new child after the parent finishes is rejected
+- Temporal terminates a child workflow if its parent workflow closes first
+- New children require a running parent. `StartChildRun` and
+  `StartOneShotChildRun` each store the parent link and child start together.
+  An exact retry of an accepted start remains valid after the parent stops,
+  while a changed retry or a new child is rejected
 - Cancellation reasons are write-once. An exact retry succeeds; a different reason for the same run is a conflict
 - Suspension and terminal changes store the new status with the matching record,
   which cannot later be changed
+- Durable `RunStarted`, `RunSuspended`, `RunCompleted`, and `ChildRunLinked`
+  payloads must contain exactly one matching JSON value. Unknown fields and
+  trailing JSON values are rejected
 - Agents must be registered before the first run. The runtime rejects registration after the first run submission with `ErrRegistrationClosed` to keep engine workers deterministic
 - Tool executors receive explicit per-call metadata (`ToolCallMeta`) rather than fishing values from `context.Context`. Its labels contain cloned run and policy labels plus `runtime.FinalizationReasonLabel` only when that call is executing terminal finalization
 - Do not rely on implicit fallbacks; all domain identifiers (run, session, turn, correlation) must be passed explicitly
 
-### Repairing a missing final record
+### Ensuring a final record and its delivery {#ensuring-a-final-record-and-its-delivery}
 
 Normal workflows retry suspension and terminal writes until the runtime store
-accepts them. If engine history is already closed while the stored run still
-appears active, an operator can call
-`Runtime.RepairRunCompletion(ctx, runID)`. The command verifies the final engine
-status and submits the missing suspension or terminal record through a
-repair-only store method: `RepairRunSuspension` or `RepairRunTerminal`. The
-store writes it only if the run is still active;
-if the workflow stored another final record first, that record remains
-authoritative.
+accepts them. A host can use two explicit commands after engine history closes:
 
-Run listing and snapshot methods are read-only and never perform this repair.
-The engine returns the workflow output and workflow error separately from an
-error retrieving that result. Retrieval errors return to the operator and are
-never saved as the workflow's final failure. Repeating a successful repair does
-not change the stored result.
+- `Runtime.EnsureRunCompletion(ctx, runID)` stores a missing suspension or
+  terminal result for a run that is still active in storage. If the run is
+  already closed, or another final result wins while the command runs, it
+  validates and delivers the exact stored result instead.
+- `Runtime.EnsureChildRunLink(ctx, runID)` validates and delivers only a
+  session-backed child's exact stored parent link. Hosts can call it in
+  parent-first order before they deliver the final results of nested children.
+
+`EnsureRunCompletion` delivers the parent link before a child's final event.
+Stable event keys make repeated stream delivery safe, and an already stored
+result does not produce another local lifecycle notification. Neither ensure
+command changes the result that storage already accepted.
+
+Both commands require `Runtime.WithStream` when the Session status used for
+delivery is active. `EnsureChildRunLink` reads the current status through
+`LoadSessionStatus`. `EnsureRunCompletion` instead uses the `SessionStatus`
+returned with the final-record write or exact retry. A newly checked ended
+Session keeps its stored records and suppresses delivery. If storage accepted
+the event while the Session was active, that event remains due: ending the
+Session while the same delivery call retries does not cancel it.
+
+`EnsureRunCompletion` returns `ErrRunCompletionNotReady` when the engine still
+reports a running workflow. It returns `ErrRunCompletionCorrupt` when engine
+history or stored lifecycle data cannot form one valid result. An error loading
+engine history is returned to the caller and is never stored as the workflow's
+failure.
+
+Run listing and snapshot methods are read-only and never call either command.
+These commands add no database schema migration and do not change a public wire
+format. They do change the Go source interface for custom stores, and existing
+durable lifecycle records must match the strict typed JSON shapes documented in
+[Memory & Sessions](../memory-sessions/#durable-event-json).
 
 ---
 

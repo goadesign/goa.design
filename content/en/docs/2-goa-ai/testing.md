@@ -235,14 +235,25 @@ production implementation against the same contract, including these cases:
 
 - root, child, and sessionless one-shot starts store their metadata and first
   records together;
-- a child start stores its parent link in the same operation as the child start;
+- new `StartChildRun` and `StartOneShotChildRun` calls require a running parent
+  and store the parent link in the same operation as the child start;
+- an exact retry of either accepted child start remains valid after the parent
+  stops, while a changed retry and a new child are rejected;
 - an identical retry returns the original record identifier and reports that no
   new record was inserted;
 - repeating a lifecycle change with a different record conflicts even when the
   requested status and other lifecycle fields are unchanged;
 - changing any value fixed by the first write returns a conflict;
-- the first cancellation reason is permanent and a different later reason is a
-  conflict;
+- cancellation accepted by a running workflow stores the first reason and
+  matching `storage.CancellationRecordType` record together; its serialized
+  type is `runtime.cancellation_intent`. An exact retry succeeds and a different
+  later reason conflicts;
+- a sessionful start against an already-ended session stores `session_ended`
+  with the canceled terminal record and no `storage.CancellationRecordType`
+  record;
+- engine-originated cancellation leaves the stored reason empty and has no
+  `storage.CancellationRecordType` record, while its terminal record contains
+  `engine_canceled`;
 - suspension stores the checkpoint, suspended status, and matching record
   together;
 - terminal completion stores the final status and matching record together;
@@ -256,9 +267,32 @@ production implementation against the same contract, including these cases:
 - purge fails while a run is active, then removes the ended session's run
   metadata, checkpoints, and records after all runs finish.
 
-These tests should exercise the real database transaction behavior. A mock that
-only checks method calls cannot prove that state and records become visible
+These store tests must exercise the real database transaction behavior. A mock
+that only checks method calls cannot prove that state and records become visible
 together.
+
+Test the Temporal adapter separately: closing a Temporal parent must terminate
+its child workflow.
+
+Test the runtime's explicit completion-delivery commands separately:
+
+- `EnsureRunCompletion` writes a result missing from an active stored run and
+  validates and redelivers an already stored result without changing it;
+- a child link is delivered before its final event, while
+  `EnsureChildRunLink` delivers only the exact stored link;
+- an active Session without `Runtime.WithStream` fails, while a newly checked
+  ended Session keeps the stored result and suppresses delivery;
+- `LoadSessionStatus` returns the Session's current status, while
+  `EnsureRunCompletion` uses the `SessionStatus` returned with the final-record
+  write or exact retry and retains that status through stream retries;
+- an event accepted while its Session is active remains due if the Session ends
+  during that delivery call;
+- an open engine workflow returns `ErrRunCompletionNotReady`, and malformed or
+  contradictory engine or stored data returns `ErrRunCompletionCorrupt`.
+
+Test the hook codec separately: decoders for `RunStarted`, `RunSuspended`,
+`RunCompleted`, and `ChildRunLinked` must reject `null`, unknown fields, and a
+second trailing JSON value.
 
 Continuation tests should accept `goa-ai.run-suspension.v7` and reject every
 earlier checkpoint version before restoring payloads or calling a planner.

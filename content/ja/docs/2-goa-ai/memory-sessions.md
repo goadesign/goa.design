@@ -187,9 +187,9 @@ rt := runtime.New(store, runtime.WithEngine(eng))
 各メソッドは状態と、それを示す記録を一つの操作で保存します。
 
 - `StartRootRun` はルートランのメタデータと最初の記録を保存します。
-- `StartChildRun` は親リンク、子のメタデータ、最初の記録を保存します。
+- `StartChildRun` は親リンク、子のメタデータ、最初の記録を保存します。新しい child には running の parent が必要です。すでに受理された完全に同じ retry は、parent の停止後も有効です。
 - `StartOneShotRun` はセッションなしランと最初の記録を保存します。
-- `StartOneShotChildRun` はセッションなし親へのリンクと子の開始をまとめて保存します。
+- `StartOneShotChildRun` はセッションなし親へのリンクと子の開始をまとめて保存します。同じ running-parent と完全一致 retry のルールが適用されます。
 - `RecordRunCancellation` は最初のキャンセル理由と記録を保存します。
 - `RecordRunSuspension` は非公開チェックポイント、一時停止状態、記録を保存します。
 - `RecordRunTerminal` は最終状態と記録を保存します。
@@ -205,6 +205,36 @@ workflow activity は複数回実行されることがあります。完全に�
 record を使って同じ変更を繰り返すと conflict になります。
 
 最初の書き込みで確定した値を変えると conflict になります。store は新旧を推測せず、最初の値を上書きしません。最初の cancellation reason も変更不可です。
+
+### 永続イベントの JSON {#durable-event-json}
+
+runtime は `RunStarted`、`RunSuspended`、`RunCompleted`、`ChildRunLinked` の
+payload を、型が決まった単一の JSON 値として decode します。未知の field や、
+その値の後に続く別の JSON 値は拒否します。runtime が既存の record を replay
+または配信するには、record がこれらの形式に正確に一致する必要があります。
+互換性のない保存済み data を無視することはありません。
+
+### キャンセル理由の記録 {#cancellation-provenance}
+
+runtime store は、キャンセル要求と run が終了した理由を区別して保存します。
+
+- running workflow が明示的な `CancelRun` request を受理した場合、最初の reason を
+  run metadata に保存し、同じ reason を持つ
+  `storage.CancellationRecordType` (`runtime.cancellation_intent`) record も
+  1 回の操作で保存します。後から保存する canceled の `RunCompleted` record にも
+  同じ reason が必要です。
+- `StartRootRun` または `StartChildRun` が、すでに終了した session を検出した場合、
+  start operation は `session_ended` を run metadata に保存し、`RunStarted` と
+  canceled の `RunCompleted` record も同時に保存します。独立したキャンセル要求は
+  なかったため、`storage.CancellationRecordType` record は保存しません。
+- 事前に記録されたキャンセル要求がないまま workflow engine が run をキャンセル
+  した場合、run metadata の cancellation reason は空のままで、
+  `storage.CancellationRecordType` record もありません。canceled の
+  `RunCompleted` record は `engine_canceled` を含みます。この空の metadata field
+  には明確な意味があり、data の欠落ではありません。
+
+run metadata とキャンセル record の組み合わせとして有効なのは、この 3 通りです。
+永続 store は各組み合わせをそのまま保存する必要があります。
 
 ### Continuation の開始
 
@@ -233,7 +263,10 @@ child workflow は `StartChildRun` を使います。store は parent に
 `ChildRunLinked`、child に `RunStarted` の順で書きます。session が終了している
 場合は、child の canceled `RunCompleted` も書きます。そのため、engine が受理した
 すべての workflow には、session 終了によって停止したものも含めて `RunStarted`
-record が 1 つあります。
+record が 1 つあります。新しい child には running の parent が必要です。store が
+すでに受理した child start の完全に同じ retry は、parent の停止後も有効です。
+内容を変えた retry や新しい child は拒否します。親 workflow が先に終了すると、
+Temporal は child workflow を終了します。
 
 sessionless root work は `StartOneShotRun` を使います。通常の run metadata と
 `RunStarted` を持ちますが、session を作成せず、session にも参加しません。その
@@ -268,13 +301,31 @@ session 管理は host application の責任であり、agent worker の責任�
 
 `session.Store`、`runlog.Store`、`runtime.WithSessionStore`、`runtime.WithRunEventStore`、runtime の `CreateSession`、`EndSession`、`PurgeSession`、`features/session/mongo`、`features/runlog/mongo` は削除されます。
 
-一つの `runtime/agent/storage.Store` を実装し、`runtime.New` の第一引数に渡します。session 管理は runtime data を所有する host service に移します。別サービスの worker は typed API で owner を呼び、DB adapter を import しません。
+`goa.design/goa-ai/runtime/agent/storage` package の `storage.Store` を一つ実装し、
+`runtime.New` の第一引数に渡します。session 管理は runtime data を所有する host
+service に移します。別サービスの worker は typed API で owner を呼び、DB
+adapter を import しません。
 
 新 runtime が書き込む前に、既存データが integrated store contract を満たして
 いなければなりません。run metadata、checkpoint、record は上記 lifecycle
 operation を支え、旧 split-store writer と新 writer は重ならないようにします。
 host application は自身の database と environment に合う conversion と recovery
 の手順を選び、owner と全 worker をまとめて deploy します。
+
+完了結果の配信 command は database schema migration を追加せず、公開 wire format
+も変更しません。ただし Go source contract は変わります。runtime と store
+implementation は同時に更新してください。
+
+- `Runtime.RepairRunCompletion` の各呼び出しを
+  `Runtime.EnsureRunCompletion` に置き換えます。
+- すべての custom `storage.Store` に `LoadSessionStatus` を実装します。
+- active な Session にどちらかの ensure command を使う前に
+  `Runtime.WithStream` を設定します。
+- parent が停止した後は、新しい child start が失敗することを前提にします。store が
+  すでに受理した child start の完全に同じ retry は引き続き有効です。
+
+また、既存の durable lifecycle record も上記の厳密な JSON contract を満たす必要が
+あります。
 
 ## よくあるパターン
 

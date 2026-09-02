@@ -19,14 +19,14 @@ Get a DeepL API key at: https://www.deepl.com/pro-api
 ## Quick Start
 
 ```bash
-# Translate all English docs to all languages (IT, JA, FR)
-./scripts/translate content/en/docs/
+# Translate all English docs supported by DeepL
+./scripts/translate --lang IT --lang FR --lang ES content/en/docs/
 
 # Translate a single file to French only
 ./scripts/translate --lang FR content/en/docs/1-goa/quickstart.md
 
-# Translate a directory to Japanese only
-./scripts/translate --lang JA content/en/docs/1-goa/
+# Check which Japanese files need a manual update without changing the cache
+./scripts/translate --dry-run --lang JA content/en/docs/1-goa/
 
 # See what would be translated (dry run)
 ./scripts/translate --dry-run content/en/docs/
@@ -36,17 +36,24 @@ Get a DeepL API key at: https://www.deepl.com/pro-api
 
 1. **Source files** live in `content/en/docs/`
 2. **Translated files** are placed in `content/{lang}/docs/` with the same structure
-3. A **cache file** (`.translation-cache.json`) tracks which files have been translated
-4. Only **changed files** are re-translated (unless `--force` is used)
+3. DeepL translates Italian, French, and Spanish; Japanese is updated manually
+4. A **cache file** (`.translation-cache.json`) tracks which files have been translated
+5. Only **changed files** are re-translated (unless `--force` is used)
+
+For Japanese, inspect pending files with `--dry-run` before editing them. A
+normal Japanese run does not update the translated file: it prints a reminder
+and records the current English hash in the cache. Run it only after the manual
+Japanese update, so the cache is not advanced before the translation is ready.
 
 ## Supported Languages
 
-| Code | Language | Directory |
-|------|----------|-----------|
-| EN   | English  | content/en |
-| IT   | Italian  | content/it |
-| JA   | Japanese | content/ja |
-| FR   | French   | content/fr |
+| Code | Language | Directory | Method |
+|------|----------|-----------|--------|
+| EN   | English  | content/en | Source |
+| IT   | Italian  | content/it | DeepL |
+| FR   | French   | content/fr | DeepL |
+| ES   | Spanish  | content/es | DeepL |
+| JA   | Japanese | content/ja | Manual |
 
 ## What Gets Translated
 
@@ -58,18 +65,28 @@ Get a DeepL API key at: https://www.deepl.com/pro-api
 ### After editing English docs
 
 ```bash
-# Re-translate changed files
-./scripts/translate content/en/docs/
+# Re-translate changed files supported by DeepL
+./scripts/translate --lang IT --lang FR --lang ES content/en/docs/
 
-# Force re-translate everything
-./scripts/translate --force content/en/docs/
+# Force DeepL to re-translate everything it supports
+./scripts/translate --force --lang IT --lang FR --lang ES content/en/docs/
+
+# List Japanese files whose English source changed
+./scripts/translate --dry-run --lang JA content/en/docs/
+
+# After manually updating those Japanese files, record their English revision
+./scripts/translate --lang JA content/en/docs/
 ```
 
 ### Adding a new page
 
 ```bash
-# Translate the new page to all languages
-./scripts/translate content/en/docs/1-goa/new-page.md
+# Translate the new page with DeepL
+./scripts/translate --lang IT --lang FR --lang ES content/en/docs/1-goa/new-page.md
+
+# Then inspect and manually update its Japanese translation
+./scripts/translate --dry-run --lang JA content/en/docs/1-goa/new-page.md
+./scripts/translate --lang JA content/en/docs/1-goa/new-page.md
 ```
 
 ### Translate only to one language
@@ -84,7 +101,7 @@ Usage is displayed after each run. The free tier includes 500,000 chars/month.
 
 You can also pass a different API key directly:
 ```bash
-./scripts/translate --api-key "your-key-here" content/en/docs/
+./scripts/translate --api-key "your-key-here" --lang IT --lang FR --lang ES content/en/docs/
 ```
 
 ## Troubleshooting
@@ -103,7 +120,7 @@ rm -rf .venv
 If a file is corrupted or you want to re-translate:
 
 ```bash
-./scripts/translate --force content/en/docs/1-goa/quickstart.md
+./scripts/translate --force --lang IT --lang FR --lang ES content/en/docs/1-goa/quickstart.md
 ```
 
 ### Clear translation cache
@@ -112,8 +129,13 @@ To re-translate everything:
 
 ```bash
 rm .translation-cache.json
-./scripts/translate content/en/docs/
+./scripts/translate --lang IT --lang FR --lang ES content/en/docs/
+./scripts/translate --dry-run --lang JA content/en/docs/
 ```
+
+After manually checking every Japanese file reported by the dry run, run
+`./scripts/translate --lang JA content/en/docs/` once to record the reviewed
+English revisions.
 
 ## Files
 
@@ -122,4 +144,3 @@ rm .translation-cache.json
 - `.translation-cache.json` - Tracks translated files (gitignored)
 - `.venv/` - Python virtual environment (gitignored)
 - `i18n/*.yaml` - UI string translations (manually maintained)
-
