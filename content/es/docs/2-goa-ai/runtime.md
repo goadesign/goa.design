@@ -273,6 +273,9 @@ if err := rt.Seal(ctx); err != nil {
 2. La primera actividad guarda la identidad y el primer registro permanente
    mediante `StartRootRun`, `StartChildRun`, `StartOneShotRun` o
    `StartOneShotChildRun`. Todo workflow aceptado guarda `RunStarted`.
+   [Memoria y sesiones](../memory-sessions/#cancellation-provenance) define las
+   tres formas válidas de guardar los motivos y los registros de intención de
+   cancelación.
 3. El runtime llama a `PlanStart` con los mensajes y un `run.Context` que
    contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
 4. Programa las llamadas a herramientas devueltas por el planificador usando
@@ -758,10 +761,11 @@ Start-to-Close de la activity y exige un valor mayor que cero.
 
 `Engine.QueryRunCompletion` devuelve el `Status` actual de la ejecución. Cuando
 la ejecución ya está cerrada, el mismo resultado también contiene su instante
-estable `CompletedAt` y su `Output` final o `WorkflowError`. La reparación usa
-ese instante para que cada reintento envíe la misma marca de tiempo. El error
-separado del método indica que el motor no pudo recuperar esos datos. No existe
-otra consulta separada para el estado.
+estable `CompletedAt` y su `Output` final o `WorkflowError`.
+`EnsureRunCompletion` usa `CompletedAt` como marca de tiempo del registro, por
+lo que cada reintento envía el mismo valor. El error separado del método indica
+que el motor no pudo recuperar esos datos. No existe otra consulta separada
+para el estado.
 
 La preparación del prompt de un hijo devuelve exactamente un `Success` o un
 `Failure`. El éxito solo contiene los mensajes y los datos de los prompts
@@ -783,30 +787,58 @@ reintentos que Temporal.
   historial consultable. Reusar el ID con otra entrada se rechaza. Después de
   la retención del historial, la identidad permanente del comando pertenece al
   servicio del producto, no a Goa-AI
-- Los inicios raíz, hijo y one-shot usan operaciones de almacenamiento distintas. El inicio hijo guarda el vínculo con el padre; el inicio one-shot guarda metadatos completos sin sesión
+- Los inicios raíz, hijo y one-shot usan operaciones de almacenamiento distintas. Los inicios de hijos guardan juntos el vínculo con el padre y el inicio del hijo; los inicios one-shot guardan metadatos completos sin sesión
+- Temporal termina un workflow hijo si su workflow padre se cierra primero
+- Un hijo nuevo requiere un padre activo. Tanto `StartChildRun` como `StartOneShotChildRun` guardan juntos el vínculo con el padre y el inicio del hijo. Un reintento exacto ya aceptado sigue siendo válido después de que el padre se detenga; un reintento modificado o un hijo nuevo se rechazan
 - El primer motivo de cancelación no cambia. Un reintento exacto tiene éxito y otro motivo para la misma ejecución produce un conflicto
 - La suspensión y la finalización guardan el nuevo estado junto con el registro correspondiente, que no puede modificarse después
+- Los payloads duraderos de `RunStarted`, `RunSuspended`, `RunCompleted` y `ChildRunLinked` deben contener exactamente un valor JSON del tipo correspondiente. Se rechazan los campos desconocidos y los valores JSON adicionales
 - Los agentes deben registrarse antes de la primera ejecución. El runtime rechaza el registro después del envío de la primera ejecución con `ErrRegistrationClosed` para mantener deterministas a los workers del motor
 - Los ejecutores de herramientas reciben metadatos explícitos por llamada (`ToolCallMeta`) en lugar de extraer valores de `context.Context`
 - No confíes en fallbacks implícitos; todos los identificadores de dominio (ejecución, sesión, turno, correlación) deben pasarse explícitamente
 
-### Reparar un registro final ausente
+### Garantizar el registro final y su entrega {#ensuring-a-final-record-and-its-delivery}
 
 Los workflows normales reintentan las escrituras de suspensión y finalización
-hasta que el almacenamiento del runtime las acepta. Si el historial del motor
-ya está cerrado pero la ejecución guardada sigue activa, un operador puede
-llamar a `Runtime.RepairRunCompletion(ctx, runID)`. El comando comprueba el
-estado final del motor y envía la suspensión o el registro final ausente a un
-método de reparación: `RepairRunSuspension` o `RepairRunTerminal`. El almacén
-lo escribe solo si la ejecución sigue activa;
-si el workflow guardó antes otro registro final, ese registro conserva la
-autoridad.
+hasta que el almacenamiento del runtime las acepta. Un host puede usar dos
+comandos explícitos después de que se cierre el historial del motor:
 
-Los métodos de listado e instantánea son de solo lectura y nunca realizan esta
-reparación. El motor devuelve la salida y el error del workflow separados de un
-error al recuperar ese resultado. Un error de recuperación se devuelve al
-operador y nunca se guarda como fallo final del workflow. Repetir una reparación
-que ya tuvo éxito no cambia el resultado guardado.
+- `Runtime.EnsureRunCompletion(ctx, runID)` guarda una suspensión o un
+  resultado final ausente cuando la ejecución todavía está activa en el
+  almacenamiento. Si ya está cerrada, o si otro resultado final gana mientras
+  se ejecuta el comando, valida y entrega exactamente el resultado guardado.
+- `Runtime.EnsureChildRunLink(ctx, runID)` valida y entrega únicamente el
+  vínculo exacto con el padre de una ejecución hija asociada a una sesión. Los
+  hosts pueden llamarlo en orden de padres a hijos antes de entregar los
+  resultados finales de hijos anidados.
+
+`EnsureRunCompletion` entrega el vínculo con el padre antes del evento final de
+un hijo. Las claves de evento estables hacen que repetir la entrega al stream
+sea seguro, y un resultado ya guardado no produce otra notificación local del
+ciclo de vida. Ninguno de los dos comandos cambia el resultado aceptado por el
+almacenamiento.
+
+Ambos comandos requieren `Runtime.WithStream` cuando el estado de la sesión
+usado para la entrega es activo. `EnsureChildRunLink` obtiene el estado actual
+mediante `LoadSessionStatus`. En cambio, `EnsureRunCompletion` usa el
+`SessionStatus` devuelto junto con la escritura del registro final o su
+reintento exacto. Una sesión recién comprobada como terminada conserva sus
+registros y suprime la entrega. Si el almacenamiento aceptó el evento mientras
+la sesión estaba activa, el evento sigue pendiente: terminar la sesión durante
+los reintentos de esa misma llamada de entrega no lo cancela.
+
+`EnsureRunCompletion` devuelve `ErrRunCompletionNotReady` si el motor aún
+informa de un workflow activo. Devuelve `ErrRunCompletionCorrupt` si el
+historial del motor o los datos de ciclo de vida guardados no pueden formar un
+único resultado válido. Los errores al cargar el historial del motor se
+devuelven al código que llamó al comando y nunca se guardan como fallo del
+workflow.
+
+Los métodos de listado e instantánea son de solo lectura y nunca llaman a estos
+comandos. Los comandos no requieren una migración del esquema de la base de
+datos ni cambian un formato público. Sí cambian la interfaz Go de los almacenes
+personalizados, y los registros duraderos existentes deben respetar las formas
+JSON tipadas y estrictas descritas en [Memoria y sesiones](../memory-sessions/#durable-event-json).
 
 ---
 

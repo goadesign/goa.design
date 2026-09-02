@@ -393,13 +393,15 @@ rt := runtime.New(runtimeStore, runtime.WithEngine(temporalEng))
 
 I dati del prodotto restano di proprietà del servizio del prodotto. Per esempio, un servizio chat conserva trascrizioni, valutazioni e campi di ricerca anche quando un altro servizio possiede l’archivio del runtime Goa-AI.
 
-L’archivio deve salvare ogni cambiamento del ciclo di vita insieme al record corrispondente. Un retry identico dell’activity di storage restituisce il primo risultato. Un tentativo che cambia identità dell’esecuzione, payload, checkpoint, stato o motivo di annullamento fallisce con un conflitto. Consulta [Memoria e sessioni](../memory-sessions/#store-lifecycle-changes-and-records-together) per il contratto completo.
-
-L'avvio di una continuazione richiede un'esecuzione precedente sospesa che
-esista e abbia la stessa sessione, lo stesso agente e la stessa esecuzione padre.
-La transazione rifiuta una differenza prima di scrivere l'avvio del successore o
-un collegamento al padre. Il record `RunStarted` del successore conserva
-`PredecessorRunID`; `RunMeta` non duplica questa relazione.
+[Memoria e sessioni](../memory-sessions/#store-lifecycle-changes-and-records-together)
+definisce il contratto completo dello storage: i cambiamenti del ciclo di vita
+e i record vengono salvati insieme, i retry identici restituiscono il risultato
+accettato, i nuovi figli richiedono un padre attivo, il JSON degli eventi
+salvati è rigoroso e l'origine dell'annullamento viene preservata.
+[Runtime](../runtime/#ensuring-a-final-record-and-its-delivery) descrive come
+gli host convalidano e consegnano gli eventi finali dopo la chiusura della
+cronologia del motore. Mantieni queste regole nello storage del runtime che ne
+è responsabile invece di ripeterle in ogni worker.
 
 Il passaggio da `session.Store` e `runlog.Store` è una modifica coordinata dello
 storage. Prima che il nuovo runtime scriva, metadati, checkpoint e record

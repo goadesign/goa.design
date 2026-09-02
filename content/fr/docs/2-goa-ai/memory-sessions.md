@@ -221,9 +221,9 @@ déduisez pas de l'ordre d'exécution.
 Chaque méthode de cycle de vie enregistre l’état et l’enregistrement correspondant dans la même opération :
 
 - `StartRootRun` enregistre les métadonnées d’une exécution racine et son premier enregistrement.
-- `StartChildRun` enregistre le lien parent, les métadonnées de l’enfant et son premier enregistrement.
+- `StartChildRun` enregistre le lien parent, les métadonnées de l’enfant et son premier enregistrement. Un nouvel enfant exige un parent actif ; une nouvelle tentative identique déjà acceptée reste valide après l'arrêt du parent.
 - `StartOneShotRun` enregistre une exécution sans session et son premier enregistrement.
-- `StartOneShotChildRun` enregistre ensemble le lien vers le parent sans session et le démarrage de l'enfant.
+- `StartOneShotChildRun` enregistre ensemble le lien vers le parent sans session et le démarrage de l'enfant. Il applique la même règle de parent actif et de nouvelle tentative identique.
 - `RecordRunCancellation` enregistre le premier motif d’annulation et son enregistrement.
 - `RecordRunSuspension` enregistre le point de reprise privé, l’état suspendu et son enregistrement.
 - `RecordRunTerminal` enregistre l’état final et son enregistrement.
@@ -242,6 +242,40 @@ changement de cycle de vie avec un autre enregistrement produit un conflit,
 même si l’état et les autres champs du cycle de vie sont identiques.
 
 Toute valeur différente de la première écriture produit un conflit. Le stockage ne choisit pas la valeur la plus récente et n’écrase pas la première. Le premier motif d’annulation est permanent : une répétition exacte réussit, un motif différent échoue.
+
+### JSON des événements durables {#durable-event-json}
+
+Le runtime décode les payloads `RunStarted`, `RunSuspended`, `RunCompleted` et
+`ChildRunLinked` comme une seule valeur JSON typée. Les champs inconnus et les
+valeurs JSON supplémentaires sont rejetés. Les enregistrements existants
+doivent respecter exactement ces formes avant que le runtime puisse les
+rejouer ou les livrer ; il n'ignore jamais des données enregistrées
+incompatibles.
+
+### Origine de l'annulation {#cancellation-provenance}
+
+Le stockage du runtime distingue une demande d'annulation de la raison pour
+laquelle une exécution s'est terminée :
+
+- Lorsqu'un workflow actif accepte un appel explicite à `CancelRun`, il
+  enregistre en une seule opération le premier motif dans les métadonnées de
+  l'exécution et un enregistrement de type `storage.CancellationRecordType`
+  (`runtime.cancellation_intent`) portant le même motif. L'enregistrement
+  `RunCompleted` annulé écrit ensuite doit contenir ce même motif.
+- Si `StartRootRun` ou `StartChildRun` constate que sa session est déjà
+  terminée, l'opération de démarrage enregistre `session_ended` dans les
+  métadonnées avec `RunStarted` et l'enregistrement `RunCompleted` annulé. Elle
+  n'enregistre pas de `storage.CancellationRecordType`, car aucune demande
+  d'annulation distincte n'a eu lieu.
+- Si le moteur de workflows annule une exécution sans demande enregistrée au
+  préalable, le motif d'annulation reste vide dans les métadonnées et aucun
+  enregistrement `storage.CancellationRecordType` n'existe. L'enregistrement
+  `RunCompleted` annulé contient `engine_canceled`. Dans ce cas, le champ vide a
+  un sens précis ; il ne signale pas une donnée manquante.
+
+Ce sont les trois combinaisons valides entre les métadonnées d'exécution et les
+enregistrements d'annulation. Un stockage durable doit les conserver
+exactement.
 
 ### Démarrage d'une continuation
 
@@ -273,7 +307,11 @@ Les workflows enfants utilisent `StartChildRun`. Le stockage écrit
 `ChildRunLinked` sur le parent, puis `RunStarted` sur l'enfant. Si la session est
 terminée, il écrit aussi le `RunCompleted` annulé de l'enfant. Chaque workflow
 accepté par le moteur possède donc un enregistrement `RunStarted`, y compris un
-travail arrêté parce que sa session était terminée.
+travail arrêté parce que sa session était terminée. Un nouvel enfant exige un
+parent actif. Une nouvelle tentative identique d'un démarrage déjà accepté
+reste valide après l'arrêt du parent ; une tentative modifiée ou un nouvel
+enfant est rejeté. Temporal termine un workflow enfant si son workflow parent
+se ferme en premier.
 
 Un travail racine sans session utilise `StartOneShotRun` : il reçoit les
 métadonnées normales de l'exécution et `RunStarted`, mais ne crée ni ne rejoint
@@ -319,7 +357,12 @@ Ce contrat rompt l’API précédente. Sont supprimés :
 - les méthodes d’administration de session du runtime, comme `CreateSession`, `EndSession` et `PurgeSession`
 - les packages intégrés `features/session/mongo` et `features/runlog/mongo`
 
-Implémentez un seul `runtime/agent/storage.Store` et passez-le en premier argument de `runtime.New`. Déplacez la création, la fin et la suppression des sessions dans le service hôte propriétaire des données. Les workers situés dans d’autres services appellent ce propriétaire par une API typée au lieu d’importer son adaptateur de base de données.
+Implémentez un seul `storage.Store` du package
+`goa.design/goa-ai/runtime/agent/storage` et passez-le en premier argument de
+`runtime.New`. Déplacez la création, la fin et la suppression des sessions dans
+le service hôte propriétaire des données. Les workers situés dans d’autres
+services appellent ce propriétaire par une API typée au lieu d’importer son
+adaptateur de base de données.
 
 Avant que le nouveau runtime écrive, les données existantes doivent respecter
 le contrat du stockage intégré. Les métadonnées, points de reprise et
@@ -328,6 +371,23 @@ ci-dessus, et les anciens writers des stockages séparés ne doivent pas se
 chevaucher avec les nouveaux. L’application hôte choisit la procédure de
 conversion et de récupération adaptée à sa base de données et à son
 environnement, puis déploie ensemble le propriétaire et tous ses workers.
+
+Les commandes de livraison de fin n'ajoutent aucune migration de schéma de
+base de données et ne modifient aucun format public. Elles changent toutefois
+le contrat du code Go. Mettez à jour ensemble le runtime et son implémentation
+du stockage :
+
+- remplacez chaque appel à `Runtime.RepairRunCompletion` par
+  `Runtime.EnsureRunCompletion` ;
+- implémentez `LoadSessionStatus` dans chaque `storage.Store` personnalisé ;
+- configurez `Runtime.WithStream` avant d'appeler l'une des deux commandes de
+  garantie pour une session active ; et
+- attendez-vous à ce que le démarrage d'un nouvel enfant échoue après l'arrêt
+  de son parent. Une nouvelle tentative identique d'un démarrage déjà accepté
+  par le stockage reste valide.
+
+Les enregistrements durables existants doivent également respecter le contrat
+JSON exact décrit ci-dessus.
 
 ## Modèles communs
 

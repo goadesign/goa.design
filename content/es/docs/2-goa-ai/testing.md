@@ -237,11 +237,22 @@ func TestAgentComposition(t *testing.T) {
 Usa `runtime/agent/storage/inmem` para probar planificadores y workflows. Comprueba una implementación duradera de producción con el mismo contrato, incluidos estos casos:
 
 - los inicios raíz, hijo y one-shot sin sesión guardan juntos sus metadatos y primeros registros;
-- el inicio de un hijo guarda el vínculo con su padre en la misma operación;
+- las llamadas nuevas a `StartChildRun` y `StartOneShotChildRun` requieren un padre activo y guardan el vínculo con el padre en la misma operación que el inicio del hijo;
+- un reintento exacto de cualquiera de estos inicios ya aceptados sigue siendo válido después de que el padre se detenga, mientras que se rechazan un reintento modificado y un hijo nuevo;
 - un reintento idéntico devuelve el identificador del registro original e indica que no se insertó otro;
 - repetir un cambio de ciclo de vida con otro registro produce un conflicto, aunque no cambien el estado solicitado ni los demás campos;
 - cambiar cualquier valor fijado por la primera escritura devuelve un conflicto;
-- el primer motivo de cancelación es permanente y un motivo posterior diferente produce un conflicto;
+- una llamada explícita a `CancelRun` aceptada por un workflow activo guarda
+  juntos el primer motivo y el registro `storage.CancellationRecordType`
+  correspondiente; su tipo serializado es `runtime.cancellation_intent`. Un
+  reintento exacto tiene éxito y un motivo posterior diferente produce un
+  conflicto;
+- un inicio con sesión contra una sesión ya terminada guarda `session_ended`
+  con el registro terminal cancelado y sin ningún registro
+  `storage.CancellationRecordType`;
+- una cancelación iniciada por el motor deja vacío el motivo almacenado y no
+  tiene registro `storage.CancellationRecordType`, mientras que su registro
+  terminal contiene `engine_canceled`;
 - la suspensión guarda juntos el checkpoint, el estado suspendido y el registro correspondiente;
 - la finalización guarda juntos el estado final y el registro correspondiente;
 - el inicio de una continuación exige un predecesor suspendido existente con la
@@ -252,7 +263,36 @@ Usa `runtime/agent/storage/inmem` para probar planificadores y workflows. Compru
 - una sesión terminada impide el trabajo del planificador y las herramientas, pero registra como cancelado un workflow ya aceptado;
 - la purga falla mientras haya una ejecución activa y, una vez terminadas todas, elimina los metadatos, checkpoints y registros de la sesión terminada.
 
-Estas pruebas deben ejercer las transacciones reales de la base de datos. Un mock que solo comprueba llamadas a métodos no demuestra que el estado y los registros se hagan visibles juntos.
+Estas pruebas del almacén deben ejecutar las transacciones reales de la base de
+datos. Un mock que solo comprueba llamadas a métodos no demuestra que el estado
+y los registros se hagan visibles juntos.
+
+Prueba por separado el adaptador de Temporal: cerrar un workflow padre debe
+terminar su workflow hijo.
+
+Prueba por separado los comandos explícitos del runtime para entregar la
+finalización:
+
+- `EnsureRunCompletion` guarda el resultado ausente de una ejecución activa y
+  valida y vuelve a entregar un resultado ya guardado sin cambiarlo;
+- el vínculo de un hijo se entrega antes de su evento final, mientras que
+  `EnsureChildRunLink` entrega únicamente el vínculo exacto guardado;
+- una sesión activa sin `Runtime.WithStream` falla, mientras que una sesión
+  recién comprobada como terminada conserva el resultado guardado y suprime la
+  entrega;
+- `LoadSessionStatus` devuelve el estado actual de la sesión, mientras que
+  `EnsureRunCompletion` usa el `SessionStatus` devuelto junto con la escritura
+  del registro final o su reintento exacto y conserva ese estado durante los
+  reintentos de entrega al stream;
+- un evento aceptado mientras su sesión está activa sigue pendiente si la sesión
+  termina durante esa llamada de entrega;
+- un workflow activo en el motor devuelve `ErrRunCompletionNotReady`, y los
+  datos mal formados o contradictorios del motor o del almacenamiento devuelven
+  `ErrRunCompletionCorrupt`.
+
+Prueba por separado el codec de hooks: los decodificadores de `RunStarted`,
+`RunSuspended`, `RunCompleted` y `ChildRunLinked` deben rechazar `null`, campos
+desconocidos y un segundo valor JSON al final.
 
 Las pruebas de continuación deben aceptar `goa-ai.run-suspension.v7` y rechazar
 todas las versiones anteriores antes de restaurar payloads o llamar al

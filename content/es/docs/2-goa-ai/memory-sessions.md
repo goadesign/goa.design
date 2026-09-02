@@ -189,9 +189,9 @@ En una aplicación de un solo proceso, `store` puede ser un adaptador de base de
 Cada método de ciclo de vida guarda el estado y el registro que lo demuestra en la misma operación:
 
 - `StartRootRun` guarda los metadatos de una ejecución raíz y su primer registro.
-- `StartChildRun` guarda el vínculo con el padre, los metadatos del hijo y su primer registro.
+- `StartChildRun` guarda el vínculo con el padre, los metadatos del hijo y su primer registro. Un hijo nuevo requiere un padre activo; un reintento exacto ya aceptado sigue siendo válido después de que el padre se detenga.
 - `StartOneShotRun` guarda una ejecución sin sesión y su primer registro.
-- `StartOneShotChildRun` guarda juntos el vínculo con el padre sin sesión y el inicio del hijo.
+- `StartOneShotChildRun` guarda juntos el vínculo con el padre sin sesión y el inicio del hijo. Aplica la misma regla de padre activo y reintento exacto.
 - `RecordRunCancellation` guarda el primer motivo de cancelación y su registro.
 - `RecordRunSuspension` guarda el checkpoint privado, el estado suspendido y su registro.
 - `RecordRunTerminal` guarda el estado final y su registro.
@@ -210,6 +210,41 @@ el cambio de ciclo de vida con otro registro produce un conflicto, aunque
 coincidan el estado y los demás campos del ciclo de vida.
 
 Si cambia cualquier valor fijado por la primera escritura, el almacén devuelve un conflicto. No adivina qué valor es más reciente ni sobrescribe el primero. El primer motivo de cancelación también es permanente: una repetición exacta tiene éxito y un motivo diferente produce un conflicto.
+
+### JSON de eventos duraderos {#durable-event-json}
+
+El runtime decodifica los payloads de `RunStarted`, `RunSuspended`,
+`RunCompleted` y `ChildRunLinked` como un único valor JSON tipado. Rechaza los
+campos desconocidos y cualquier valor JSON adicional. Los registros existentes
+deben ajustarse exactamente a estas formas para que el runtime pueda
+reproducirlos o entregarlos; los datos guardados que no sean compatibles nunca
+se ignoran.
+
+### Procedencia de la cancelación {#cancellation-provenance}
+
+El almacén del runtime distingue una solicitud de cancelación del motivo por
+el que terminó una ejecución:
+
+- Cuando un workflow activo acepta una llamada explícita a `CancelRun`, guarda
+  en una sola operación el primer motivo en los metadatos de la ejecución y un
+  registro del tipo `storage.CancellationRecordType`
+  (`runtime.cancellation_intent`) con el mismo motivo. El registro
+  `RunCompleted` cancelado que se escriba después debe contener ese mismo
+  motivo.
+- Si `StartRootRun` o `StartChildRun` encuentra que la sesión ya terminó, la
+  operación de inicio guarda `session_ended` en los metadatos junto con
+  `RunStarted` y el `RunCompleted` cancelado. No guarda un registro
+  `storage.CancellationRecordType` porque no hubo una solicitud de cancelación
+  separada.
+- Si el motor de workflows cancela una ejecución sin una solicitud registrada
+  previamente, el motivo de cancelación de los metadatos queda vacío y no hay
+  ningún registro `storage.CancellationRecordType`. El `RunCompleted` cancelado
+  contiene `engine_canceled`. En este caso, el campo vacío tiene un significado
+  preciso; no indica que falten datos.
+
+Estas son las tres combinaciones válidas entre los metadatos de la ejecución y
+los registros de cancelación. Un almacén duradero debe conservar cada una sin
+cambios.
 
 ### Inicio de una continuación
 
@@ -241,7 +276,11 @@ Los workflows hijos usan `StartChildRun`. El almacén escribe `ChildRunLinked`
 en el padre y después `RunStarted` en el hijo. Si la sesión ha terminado,
 también escribe el `RunCompleted` cancelado del hijo. Por tanto, cada workflow
 aceptado por el motor tiene un registro `RunStarted`, incluso si se detuvo
-porque su sesión había terminado.
+porque su sesión había terminado. Un hijo nuevo requiere un padre activo. Un
+reintento exacto de un inicio de hijo que el almacén ya aceptó sigue siendo
+válido después de que el padre se detenga; un reintento modificado o un hijo
+nuevo se rechazan. Temporal termina un workflow hijo si su workflow padre se
+cierra primero.
 
 El trabajo raíz sin sesión usa `StartOneShotRun`: recibe los metadatos normales
 de la ejecución y `RunStarted`, pero no crea ni se une a una sesión. Un agente
@@ -286,7 +325,12 @@ Este contrato rompe la API anterior. Se eliminan:
 - los métodos de administración de sesiones del runtime, como `CreateSession`, `EndSession` y `PurgeSession`
 - los paquetes integrados `features/session/mongo` y `features/runlog/mongo`
 
-Implementa un único `runtime/agent/storage.Store` y pásalo como primer argumento de `runtime.New`. Mueve la creación, finalización y eliminación de sesiones al servicio host propietario de los datos. Si los workers viven en otros servicios, deben llamar al propietario mediante una API tipada y no importar su adaptador de base de datos.
+Implementa un único `storage.Store` del paquete
+`goa.design/goa-ai/runtime/agent/storage` y pásalo como primer argumento de
+`runtime.New`. Mueve la creación, finalización y eliminación de sesiones al
+servicio host propietario de los datos. Si los workers viven en otros
+servicios, deben llamar al propietario mediante una API tipada y no importar
+su adaptador de base de datos.
 
 Antes de que el nuevo runtime escriba, los datos existentes deben cumplir el
 contrato del almacenamiento integrado. Los metadatos, checkpoints y registros
@@ -294,6 +338,22 @@ deben admitir las operaciones de ciclo de vida anteriores, y los escritores
 antiguos de almacenes separados no deben solaparse con los nuevos. La aplicación
 host elige el procedimiento de conversión y recuperación para su base de datos y
 su entorno, y despliega juntos al propietario y a todos sus workers.
+
+Los comandos de entrega de finalización no requieren una migración del esquema
+de la base de datos ni cambian un formato público. Sí cambian el contrato de
+código Go. Actualiza el runtime y su implementación del almacén a la vez:
+
+- sustituye cada llamada a `Runtime.RepairRunCompletion` por
+  `Runtime.EnsureRunCompletion`;
+- implementa `LoadSessionStatus` en cada `storage.Store` personalizado;
+- configura `Runtime.WithStream` antes de llamar a cualquiera de los comandos
+  de garantía para una sesión activa; y
+- espera que el inicio de un hijo nuevo falle después de que su padre se
+  detenga. Un reintento exacto de un inicio que el almacén ya aceptó sigue
+  siendo válido.
+
+Además, los registros duraderos existentes deben cumplir el contrato JSON
+exacto descrito arriba.
 
 ## Patrones comunes
 

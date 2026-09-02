@@ -265,6 +265,8 @@ if err := rt.Seal(ctx); err != nil {
 2. La prima activity salva l'identità e il primo record permanente tramite
    `StartRootRun`, `StartChildRun`, `StartOneShotRun` o
    `StartOneShotChildRun`. Ogni workflow accettato salva `RunStarted`.
+   [Memoria e sessioni](../memory-sessions/#cancellation-provenance) descrive i
+   tre modi validi di salvare i motivi e i record di richiesta di annullamento.
 3. Il runtime chiama `PlanStart` con i messaggi e un `run.Context` contenente
    `RunID`, `SessionID`, `TurnID`, etichette e limiti di policy.
 4. Pianifica le chiamate agli strumenti usando i codec generati.
@@ -668,10 +670,11 @@ dell’activity e richiede un valore maggiore di zero.
 
 `Engine.QueryRunCompletion` restituisce lo `Status` corrente dell’esecuzione.
 Dopo la chiusura dell’esecuzione, lo stesso risultato contiene anche l’istante
-stabile `CompletedAt` e l’`Output` finale o il `WorkflowError`. La riparazione
-usa quell’istante, quindi ogni nuovo tentativo invia lo stesso timestamp.
-L’errore separato del metodo indica che il motore non ha potuto recuperare
-queste informazioni. Non esiste una query separata per lo stato.
+stabile `CompletedAt` e l’`Output` finale o il `WorkflowError`.
+`EnsureRunCompletion` usa `CompletedAt` come timestamp del record, quindi ogni
+nuovo tentativo invia lo stesso valore. L’errore separato del metodo indica che
+il motore non ha potuto recuperare queste informazioni. Non esiste una query
+separata per lo stato.
 
 La preparazione del prompt di un figlio restituisce esattamente un `Success` o
 un `Failure`. Il successo contiene soltanto i messaggi e i dati dei prompt
@@ -693,30 +696,58 @@ stessa politica di retry di Temporal.
   interrogabile. Riutilizzare l’ID con input diverso viene rifiutato. Dopo la
   conservazione della cronologia, l’identità permanente del comando appartiene
   al servizio del prodotto, non a Goa-AI
-- Gli avvii radice, figlio e one-shot usano operazioni distinte. L’avvio figlio salva il collegamento al padre; l’avvio one-shot salva metadati completi senza sessione
+- Gli avvii radice, figlio e one-shot usano operazioni distinte. Gli avvii dei figli salvano insieme il collegamento al padre e l'avvio del figlio; gli avvii one-shot salvano metadati completi senza sessione
+- Temporal termina un workflow figlio se il workflow padre si chiude per primo
+- Un nuovo figlio richiede un padre attivo. `StartChildRun` e `StartOneShotChildRun` salvano ciascuno il collegamento al padre e l'avvio del figlio insieme. Un retry identico già accettato resta valido dopo l'arresto del padre; un retry modificato o un nuovo figlio vengono rifiutati
 - Il primo motivo di annullamento non cambia. Un retry esatto riesce e un motivo diverso per la stessa esecuzione produce un conflitto
 - La sospensione e il completamento salvano il nuovo stato insieme al record corrispondente, che non può più essere modificato
+- I payload persistenti di `RunStarted`, `RunSuspended`, `RunCompleted` e `ChildRunLinked` devono contenere esattamente un valore JSON del tipo corrispondente. I campi sconosciuti e gli ulteriori valori JSON vengono rifiutati
 - Gli agenti devono essere registrati prima della prima esecuzione. Il runtime rifiuta la registrazione dopo l'invio della prima esecuzione con `ErrRegistrationClosed` per mantenere i lavoratori del motore deterministici
 - Gli esecutori degli strumenti ricevono metadati espliciti per chiamata (`ToolCallMeta`) piuttosto che pescare valori da `context.Context`
 - Non fare affidamento su fallback impliciti; tutti gli identificatori di dominio (esecuzione, sessione, turno, correlazione) devono essere passati esplicitamente
 
-### Riparare un record finale mancante
+### Garantire il record finale e la sua consegna {#ensuring-a-final-record-and-its-delivery}
 
 I workflow normali ritentano le scritture di sospensione e completamento finché
-lo storage del runtime non le accetta. Se la cronologia del motore è già chiusa
-ma l’esecuzione salvata risulta ancora attiva, un operatore può chiamare
-`Runtime.RepairRunCompletion(ctx, runID)`. Il comando verifica lo stato finale
-del motore e invia la sospensione o il record finale mancante a un’operazione
-di riparazione: `RepairRunSuspension` o `RepairRunTerminal`. Lo storage lo
-scrive solo se l’esecuzione è ancora attiva; se
-il workflow ha già salvato un altro record finale, quel record resta
-autorevole.
+lo storage del runtime non le accetta. Un host può usare due comandi espliciti
+dopo la chiusura della cronologia del motore:
 
-I metodi di elenco e snapshot sono di sola lettura e non eseguono mai questa
-riparazione. Il motore restituisce output ed errore del workflow separatamente
-da un errore nel recupero del risultato. Gli errori di recupero vengono
-restituiti all’operatore e non vengono mai salvati come errore finale del
-workflow. Ripetere una riparazione già riuscita non modifica il risultato.
+- `Runtime.EnsureRunCompletion(ctx, runID)` salva una sospensione o un
+  risultato finale mancante mentre l'esecuzione è ancora attiva nello storage.
+  Se è già terminata, o se un altro risultato finale prevale durante il
+  comando, convalida e consegna esattamente il risultato salvato.
+- `Runtime.EnsureChildRunLink(ctx, runID)` convalida e consegna soltanto
+  l'esatto collegamento al padre di un'esecuzione figlia associata a una
+  sessione. Gli host possono chiamarlo dal padre verso i figli prima di
+  consegnare i risultati finali dei figli annidati.
+
+`EnsureRunCompletion` consegna il collegamento al padre prima dell'evento finale
+di un figlio. Le chiavi evento stabili rendono sicura la consegna ripetuta allo
+stream e un risultato già salvato non produce un'altra notifica locale del
+ciclo di vita. Nessuno dei due comandi cambia il risultato accettato dallo
+storage.
+
+Entrambi i comandi richiedono `Runtime.WithStream` quando lo stato della sessione
+usato per la consegna è attivo. `EnsureChildRunLink` legge lo stato corrente con
+`LoadSessionStatus`. `EnsureRunCompletion` usa invece il `SessionStatus`
+restituito insieme alla scrittura del record finale o al suo tentativo identico.
+Una sessione appena rilevata come terminata conserva i propri record e sopprime
+la consegna allo stream. Se lo storage ha accettato l’evento mentre la sessione
+era attiva, l’evento resta da consegnare: terminare la sessione durante i
+tentativi di quella stessa chiamata di consegna non lo annulla.
+
+`EnsureRunCompletion` restituisce `ErrRunCompletionNotReady` quando il motore
+segnala ancora un workflow attivo. Restituisce `ErrRunCompletionCorrupt` quando
+la cronologia del motore o i dati del ciclo di vita salvati non possono formare
+un unico risultato valido. Un errore nel caricamento della cronologia del
+motore viene restituito al chiamante e non viene mai salvato come errore del
+workflow.
+
+I metodi di elenco e snapshot sono di sola lettura e non chiamano mai questi
+comandi. I comandi non aggiungono una migrazione dello schema del database e non
+cambiano alcun formato pubblico. Cambiano però l'interfaccia Go degli storage
+personalizzati, e i record persistenti esistenti devono rispettare le forme JSON
+tipizzate e rigorose descritte in [Memoria e sessioni](../memory-sessions/#durable-event-json).
 
 ---
 

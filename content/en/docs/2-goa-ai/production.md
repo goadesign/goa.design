@@ -405,25 +405,14 @@ Product data remains with the product service. For example, a chat service keeps
 its transcript, ratings, and search fields even when another service owns the
 Goa-AI runtime store.
 
-The store must commit each lifecycle change with its matching record. An
-identical storage-activity retry returns the first result. A retry that changes the run
-identity, payload, checkpoint, status, or cancellation reason fails as a
-conflict. See [Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together)
-for the full contract.
-
-Every workflow accepted by the engine has a durable `RunStarted` record. If a
-session ended before an accepted root or child may begin work, the same start
-operation stores `RunStarted` followed by a canceled `RunCompleted`; the
-workflow does no planner or tool work. Sessionless child starts store the
-parent link and child start together. Their first call requires a running
-sessionless parent, while an exact retry remains valid after that parent
-finishes.
-
-A continuation start requires an existing suspended predecessor with the same
-session, agent, and parent run identity. The storage transaction rejects a
-mismatch before it writes the successor start or a parent link. The successor's
-`RunStarted` record stores `PredecessorRunID`; `RunMeta` does not duplicate that
-relationship.
+[Memory & Sessions](../memory-sessions/#store-lifecycle-changes-and-records-together)
+defines the complete storage contract: lifecycle changes and records are stored
+together, exact retries return the accepted result, new children require a
+running parent, stored event JSON is strict, and cancellation provenance is
+preserved. [Runtime](../runtime/#ensuring-a-final-record-and-its-delivery)
+defines how hosts validate and deliver final run events after engine history
+closes. Keep these rules in the owning runtime store rather than reproducing
+them in each worker.
 
 The move from `session.Store` plus `runlog.Store` is a coordinated storage
 change. Before the new runtime writes, existing run metadata, checkpoints, and

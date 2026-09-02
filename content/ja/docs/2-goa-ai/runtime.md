@@ -271,6 +271,8 @@ if err := rt.Seal(ctx); err != nil {
 2. 最初の activity が `StartRootRun`、`StartChildRun`、`StartOneShotRun`、
    `StartOneShotChildRun` のいずれかで run identity と最初の変更不可 record を
    保存します。受理されたすべての workflow が `RunStarted` を保存します。
+   キャンセル理由と要求 record の有効な 3 通りの保存方法は、
+   [メモリとセッション](../memory-sessions/#cancellation-provenance)で定義します。
 3. runtime が messages と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
    を持つ `run.Context` を `PlanStart` に渡します。
 4. planner が返した tool calls を generated codecs で実行します。
@@ -685,9 +687,10 @@ runtime は `runtime.store` という型付き activity を 1 つだけ登録し
 
 `Engine.QueryRunCompletion` は現在の run `Status` を返します。run が閉じた後は、
 同じ結果に安定した完了時刻 `CompletedAt` と、最終 `Output` または
-`WorkflowError` も含まれます。completion repair はこの時刻を使うため、再試行でも
-同じ record timestamp が送られます。method が別に返す error は、engine がそれらの
-情報を取得できなかったことを示します。status 専用の別 query はありません。
+`WorkflowError` も含まれます。`EnsureRunCompletion` は `CompletedAt` を
+record timestamp として使うため、再試行でも同じ値が送られます。method が別に
+返す error は、engine がそれらの情報を取得できなかったことを示します。status
+専用の別 query はありません。
 
 child prompt の準備は `Success` または `Failure` のどちらか一方だけを返します。
 成功には message と描画済み prompt の情報だけが含まれます。workflow は、記録済み
@@ -707,27 +710,54 @@ retry policy を使います。
   できる間は受理済み workflow が返ります。異なる input で ID を再利用すると拒否されます。
   history retention 後の permanent command identity は product service が所有し、
   Goa-AI は保証しません。
-- root、child、one-shot の開始には別々の storage operation を使います。child は親への link を保存し、one-shot は session なしで完全な metadata を保存します。
+- root、child、one-shot の開始には別々の storage operation を使います。child start は親 link と child start をまとめて保存し、one-shot start は session なしで完全な metadata を保存します。
+- 親 workflow が先に終了すると、Temporal は child workflow を終了します。
+- 新しい child には running の parent が必要です。`StartChildRun` と `StartOneShotChildRun` は、親 link と child start をそれぞれまとめて保存します。受理済みの完全に同じ retry は parent の停止後も有効ですが、内容を変えた retry や新しい child は拒否します。
 - 最初の cancellation reason は変更できません。完全に同じ再試行は成功し、同じ run に別の reason を指定すると conflict になります。
 - suspension と終了は、新しい status と対応する変更不可の record をまとめて保存します。
+- 永続化された `RunStarted`、`RunSuspended`、`RunCompleted`、`ChildRunLinked` の payload は、対応する型の JSON 値を正確に一つだけ含む必要があります。未知の field や末尾の追加 JSON 値は拒否します。
 - エージェントは最初の run の前に登録されなければなりません。ランタイムは、エンジンワーカーの決定性を保つため、最初の run 送信後の登録を `ErrRegistrationClosed` で拒否します。
 - tool executor は `context.Context` から値を“釣る”のではなく、call ごとの明示 metadata（`ToolCallMeta`）を受け取ります。その label には clone された run／policy label が入り、call が terminal finalization を実行する場合だけ `runtime.FinalizationReasonLabel` も入ります。
 - 暗黙のフォールバックには依存しません。すべてのドメイン識別子（run / session / turn / correlation）は明示的に渡します。
 
-### 欠けた最終記録を修復する
+### 最終記録とその配信を保証する {#ensuring-a-final-record-and-its-delivery}
 
 通常の workflow は、runtime storage が受理するまで suspension と terminal の
-書き込みを再試行します。engine history がすでに閉じているのに保存済み run が
-active のままの場合、operator は `Runtime.RepairRunCompletion(ctx, runID)` を
-呼べます。この command は engine の最終状態を確認し、修復専用の store operation に
-欠けた suspension または terminal record を渡します。この operation は
-`RepairRunSuspension` または `RepairRunTerminal` です。store は run がまだ active な場合だけ
-それを保存します。workflow が先に別の最終記録を保存していれば、その記録が優先されます。
+書き込みを再試行します。engine history が閉じた後、host は二つの明示的な command
+を使えます。
 
-run の一覧や snapshot の method は読み取り専用で、この修復を行いません。
-engine は workflow output と workflow error を、最終結果を取得できなかった
-error とは分けて返します。取得 error は operator に返され、workflow の最終
-failure として保存されません。成功済みの修復を繰り返しても保存結果は変わりません。
+- `Runtime.EnsureRunCompletion(ctx, runID)` は、storage 上でまだ active の run に
+  欠けている suspension または terminal result を保存します。run がすでに終了して
+  いる場合や、command の実行中に別の final result が先に確定した場合は、保存済みの
+  正確な result を検証して配信します。
+- `Runtime.EnsureChildRunLink(ctx, runID)` は、session に属する child run の保存済み
+  parent link だけを検証して配信します。host は nested child の final result を配信
+  する前に、parent から child の順でこの command を呼べます。
+
+`EnsureRunCompletion` は child の final event より先に parent link を配信します。
+安定した event key により stream への再配信は安全です。すでに保存済みの result から
+local lifecycle notification をもう一度発行することはありません。どちらの command
+も storage が受理済みの result を変更しません。
+
+配信に使う Session status が active な場合、どちらの command にも
+`Runtime.WithStream` が必要です。`EnsureChildRunLink` は
+`LoadSessionStatus` で現在の status を読みます。一方、`EnsureRunCompletion` は
+final record の書き込みまたは完全に同じ再試行と一緒に返された `SessionStatus`
+を使います。新たに確認した Session が終了済みなら、保存済み record は保持して
+stream 配信を抑止します。Session が active な間に storage が event を受理した場合、
+その event は配信対象のままです。同じ配信 call の再試行中に Session が終了しても
+取り消されません。
+
+engine が workflow を running と報告している場合、`EnsureRunCompletion` は
+`ErrRunCompletionNotReady` を返します。engine history または保存済み lifecycle data
+から一つの有効な result を構成できない場合は `ErrRunCompletionCorrupt` を返します。
+engine history の読み込み error は caller に返し、workflow failure として保存しません。
+
+run の一覧や snapshot の method は読み取り専用で、どちらの command も呼びません。
+これらの command は database schema migration を追加せず、公開 wire format も
+変更しません。ただし custom store の Go interface は変わり、既存の durable
+lifecycle record は [Memory & Sessions](../memory-sessions/#durable-event-json) に記載した
+厳密な typed JSON 形式を満たす必要があります。
 
 ---
 

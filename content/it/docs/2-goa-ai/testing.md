@@ -227,11 +227,21 @@ func TestAgentComposition(t *testing.T) {
 Usa `runtime/agent/storage/inmem` per i test di pianificatori e workflow. Verifica un’implementazione di produzione duratura rispetto allo stesso contratto, inclusi questi casi:
 
 - gli avvii radice, figlio e one-shot senza sessione salvano insieme i metadati e i primi record;
-- l’avvio di un figlio salva il collegamento al padre nella stessa operazione;
+- le nuove chiamate a `StartChildRun` e `StartOneShotChildRun` richiedono un padre attivo e salvano il collegamento al padre nella stessa operazione dell'avvio del figlio;
+- un retry identico di uno di questi avvii già accettati resta valido dopo l'arresto del padre, mentre un retry modificato o un nuovo figlio vengono rifiutati;
 - un nuovo tentativo identico restituisce l’identificatore del record originale e segnala che non è stato inserito un nuovo record;
 - ripetere un cambiamento del ciclo di vita con un record diverso produce un conflitto, anche quando stato e altri campi non cambiano;
 - cambiare un valore fissato dalla prima scrittura restituisce un conflitto;
-- il primo motivo di annullamento è permanente e un motivo successivo diverso produce un conflitto;
+- una chiamata esplicita a `CancelRun` accettata da un workflow attivo salva
+  insieme il primo motivo e il record `storage.CancellationRecordType`
+  corrispondente; il suo tipo serializzato è `runtime.cancellation_intent`. Un
+  retry identico riesce e un motivo successivo diverso produce un conflitto;
+- l'avvio di un'esecuzione con una sessione già terminata salva
+  `session_ended` con il record terminale annullato e senza alcun record
+  `storage.CancellationRecordType`;
+- un annullamento avviato dal motore lascia vuoto il motivo salvato e non ha un
+  record `storage.CancellationRecordType`, mentre il record terminale contiene
+  `engine_canceled`;
 - la sospensione salva insieme checkpoint, stato sospeso e record corrispondente;
 - il completamento salva insieme stato finale e record corrispondente;
 - l'avvio di una continuazione richiede un'esecuzione precedente sospesa che
@@ -242,7 +252,36 @@ Usa `runtime/agent/storage/inmem` per i test di pianificatori e workflow. Verifi
 - una sessione terminata impedisce il lavoro di pianificatore e strumenti, ma registra come annullato un workflow già accettato;
 - l’eliminazione fallisce mentre è attiva un’esecuzione e, al termine di tutte le esecuzioni, rimuove metadati, checkpoint e record della sessione terminata.
 
-Questi test devono esercitare le transazioni reali del database. Un mock che controlla solo le chiamate ai metodi non può dimostrare che stato e record diventino visibili insieme.
+Questi test dello storage devono eseguire le transazioni reali del database. Un
+mock che controlla solo le chiamate ai metodi non può dimostrare che stato e
+record diventino visibili insieme.
+
+Verifica separatamente l'adattatore Temporal: la chiusura di un workflow padre
+deve terminare il workflow figlio.
+
+Verifica separatamente i comandi espliciti del runtime per consegnare il
+completamento:
+
+- `EnsureRunCompletion` salva il risultato mancante di un'esecuzione attiva e
+  convalida e riconsegna un risultato già salvato senza cambiarlo;
+- il collegamento di un figlio viene consegnato prima del suo evento finale,
+  mentre `EnsureChildRunLink` consegna soltanto l'esatto collegamento salvato;
+- una sessione attiva senza `Runtime.WithStream` non riesce, mentre una sessione
+  appena rilevata come terminata conserva il risultato salvato e ne sopprime la
+  consegna;
+- `LoadSessionStatus` restituisce lo stato corrente della sessione, mentre
+  `EnsureRunCompletion` usa il `SessionStatus` restituito insieme alla scrittura
+  del record finale o al suo tentativo identico e conserva quello stato durante
+  i tentativi di consegna allo stream;
+- un evento accettato mentre la sessione è attiva resta da consegnare se la
+  sessione termina durante quella chiamata di consegna;
+- un workflow ancora attivo nel motore restituisce `ErrRunCompletionNotReady`,
+  mentre dati malformati o contraddittori del motore o dello storage
+  restituiscono `ErrRunCompletionCorrupt`.
+
+Verifica separatamente il codec degli hook: i decoder di `RunStarted`,
+`RunSuspended`, `RunCompleted` e `ChildRunLinked` devono rifiutare `null`, i
+campi sconosciuti e un secondo valore JSON finale.
 
 I test delle continuazioni devono accettare `goa-ai.run-suspension.v7` e
 rifiutare tutte le versioni precedenti prima di ripristinare i payload o

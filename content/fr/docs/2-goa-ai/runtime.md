@@ -276,6 +276,9 @@ if err := rt.Seal(ctx); err != nil {
 2. La première activité enregistre l'identité et le premier enregistrement
    permanent avec `StartRootRun`, `StartChildRun`, `StartOneShotRun` ou
    `StartOneShotChildRun`. Chaque workflow accepté enregistre `RunStarted`.
+   [Mémoire et sessions](../memory-sessions/#cancellation-provenance) définit
+   les trois façons valides d'enregistrer les motifs et les demandes
+   d'annulation.
 3. Le runtime appelle `PlanStart` avec les messages et un `run.Context`
    contenant `RunID`, `SessionID`, `TurnID`, les libellés et les limites.
 4. Il planifie les appels d'outils avec les codecs générés.
@@ -770,10 +773,11 @@ zéro.
 
 `Engine.QueryRunCompletion` renvoie le `Status` actuel de l’exécution. Une fois
 l’exécution fermée, le même résultat contient aussi son instant stable
-`CompletedAt` et son `Output` final ou son `WorkflowError`. La réparation utilise
-cet instant afin que chaque nouvelle tentative envoie le même horodatage.
-L’erreur distincte de la méthode indique que le moteur n’a pas pu récupérer ces
-informations. Il n’existe pas de requête de statut séparée.
+`CompletedAt` et son `Output` final ou son `WorkflowError`.
+`EnsureRunCompletion` utilise `CompletedAt` comme horodatage de l’enregistrement,
+afin que chaque nouvelle tentative envoie la même valeur. L’erreur distincte de
+la méthode indique que le moteur n’a pas pu récupérer ces informations. Il
+n’existe pas de requête de statut séparée.
 
 La préparation du prompt d’un enfant renvoie exactement un `Success` ou un
 `Failure`. Le succès contient uniquement les messages et les informations sur
@@ -795,9 +799,12 @@ applique la même politique de nouvelle tentative que Temporal.
   interrogeable. Réutiliser l’ID avec une autre entrée est refusé. Après la
   durée de conservation de l’historique, l’identité permanente de la commande
   appartient au service produit, pas à Goa-AI
-- Les démarrages racine, enfant et ponctuel utilisent des opérations distinctes. Le démarrage enfant enregistre le lien parent ; le démarrage ponctuel enregistre les métadonnées complètes sans session
+- Les démarrages racine, enfant et ponctuel utilisent des opérations distinctes. Les démarrages d'enfants enregistrent ensemble le lien parent et le démarrage de l'enfant ; les démarrages ponctuels enregistrent les métadonnées complètes sans session
+- Temporal termine un workflow enfant si son workflow parent se ferme en premier
+- Tout nouvel enfant exige un parent actif. `StartChildRun` et `StartOneShotChildRun` enregistrent chacun le lien parent et le démarrage de l'enfant ensemble. Une nouvelle tentative identique déjà acceptée reste valide après l'arrêt du parent ; une tentative modifiée ou un nouvel enfant est rejeté
 - Le premier motif d’annulation ne change pas. Une répétition exacte réussit et un autre motif pour la même exécution produit un conflit
 - La suspension et la fin enregistrent le nouvel état avec l’enregistrement correspondant, qui ne peut plus être modifié
+- Les payloads durables `RunStarted`, `RunSuspended`, `RunCompleted` et `ChildRunLinked` doivent contenir exactement une valeur JSON du type correspondant. Les champs inconnus et les valeurs JSON supplémentaires sont rejetés
 - Les agents doivent être enregistrés avant la première exécution. Le moteur d'exécution rejette l'enregistrement après la première soumission d'exécution avec `ErrRegistrationClosed` pour que les opérateurs du moteur restent déterministes.
 - Les exécuteurs d'outils reçoivent des métadonnées explicites par appel
   (`ToolCallMeta`) plutôt que d'extraire des valeurs de `context.Context`.
@@ -806,23 +813,51 @@ applique la même politique de nouvelle tentative que Temporal.
   finalisation terminale
 - Ne comptez pas sur des solutions de repli implicites ; tous les identifiants de domaine (exécution, session, tour, corrélation) doivent être transmis explicitement
 
-### Réparer un enregistrement final manquant
+### Garantir l’enregistrement final et sa livraison {#ensuring-a-final-record-and-its-delivery}
 
 Les workflows normaux relancent les écritures de suspension et de fin jusqu’à
-ce que le stockage du runtime les accepte. Si l’historique du moteur est déjà
-fermé alors que l’exécution enregistrée est encore active, un opérateur peut
-appeler `Runtime.RepairRunCompletion(ctx, runID)`. La commande vérifie l’état
-final du moteur et soumet la suspension ou le résultat final manquant à une
-opération de réparation : `RepairRunSuspension` ou `RepairRunTerminal`. Le
-stockage ne l’écrit que si l’exécution est encore
-active ; si le workflow a déjà enregistré un autre résultat final, celui-ci
-reste la référence.
+ce que le stockage du runtime les accepte. Un hôte peut utiliser deux commandes
+explicites après la fermeture de l'historique du moteur :
 
-Les méthodes de liste et d’instantané sont en lecture seule et n’effectuent
-jamais cette réparation. Le moteur renvoie le résultat et l’erreur du workflow
-séparément d’une erreur survenue pendant leur récupération. Une erreur de
-récupération est renvoyée à l’opérateur et n’est jamais enregistrée comme échec
-final du workflow. Répéter une réparation réussie ne modifie pas le résultat.
+- `Runtime.EnsureRunCompletion(ctx, runID)` enregistre une suspension ou un
+  résultat final manquant tant que l'exécution reste active dans le stockage.
+  Si elle est déjà terminée, ou si un autre résultat final l'emporte pendant
+  l'exécution de la commande, celle-ci valide et livre exactement le résultat
+  enregistré.
+- `Runtime.EnsureChildRunLink(ctx, runID)` valide et livre uniquement le lien
+  parent exact d'une exécution enfant associée à une session. Les hôtes peuvent
+  l'appeler dans l'ordre des parents vers les enfants avant de livrer les
+  résultats finaux des enfants imbriqués.
+
+`EnsureRunCompletion` livre le lien parent avant l'événement final d'un enfant.
+Les clés d'événement stables permettent de répéter sans risque la livraison au
+flux, et un résultat déjà enregistré ne produit pas une nouvelle notification
+locale du cycle de vie. Aucune des deux commandes ne modifie le résultat accepté
+par le stockage.
+
+Les deux commandes exigent `Runtime.WithStream` lorsque le statut de la session
+utilisé pour la livraison est actif. `EnsureChildRunLink` lit le statut actuel
+avec `LoadSessionStatus`. `EnsureRunCompletion` utilise plutôt le
+`SessionStatus` renvoyé avec l’écriture de l’enregistrement final ou sa nouvelle
+tentative identique. Une session nouvellement constatée comme terminée conserve
+ses enregistrements et n’émet rien sur le flux. Si le stockage a accepté
+l’événement pendant que la session était active, cet événement reste à livrer :
+terminer la session pendant les nouvelles tentatives de ce même appel de
+livraison ne l’annule pas.
+
+`EnsureRunCompletion` renvoie `ErrRunCompletionNotReady` lorsque le moteur
+signale encore un workflow actif. Il renvoie `ErrRunCompletionCorrupt` lorsque
+l'historique du moteur ou les données de cycle de vie enregistrées ne peuvent
+pas former un résultat valide unique. Une erreur de lecture de l'historique du
+moteur est renvoyée au code appelant et n'est jamais enregistrée comme échec
+du workflow.
+
+Les méthodes de liste et d'instantané sont en lecture seule et n'appellent
+jamais ces commandes. Ces commandes n'ajoutent aucune migration du schéma de la
+base de données et ne changent aucun format public. Elles modifient toutefois
+l'interface Go des stockages personnalisés, et les enregistrements durables
+existants doivent respecter les formes JSON typées et strictes décrites dans
+[Mémoire et sessions](../memory-sessions/#durable-event-json).
 
 ---
 

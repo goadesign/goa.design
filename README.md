@@ -83,13 +83,16 @@ We provide a translation helper script backed by DeepL:
 cp .env.example .env
 ${EDITOR:-vi} .env
 
-# 2) Translate changed English docs to all supported languages
-./scripts/translate content/en/docs/
+# 2) Translate changed English docs to every language supported by DeepL
+./scripts/translate --lang IT --lang FR --lang ES content/en/docs/
 ```
 
 Notes:
 
 - The full workflow is documented in `scripts/TRANSLATION.md`.
 - The script uses a cache file (`.translation-cache.json`, gitignored) so only changed English files are reprocessed.
-- **Japanese (`JA`) is not auto-translated**: `./scripts/translate --lang JA ...` will print which files need a **manual update** and record the English hash so only future changes are re-flagged.
+- **Japanese (`JA`) is updated manually**: first run
+  `./scripts/translate --dry-run --lang JA ...`, update the listed files, then
+  run `./scripts/translate --lang JA ...` to record the English revision you
+  translated.
 - UI strings live under `i18n/*.yaml` and are maintained manually.
