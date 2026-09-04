@@ -1122,10 +1122,11 @@ Each recoverable `ToolFailure` also selects a `Recovery.Action`:
 
 - `correct_call` keeps the failed tool available and gives the next planner turn
   the original model-authored input, generated validation issues, field
-  guidance, and example.
-  It does not require one replacement call per failure. The planner may combine
-  work, make any number of valid calls to advertised tools, wait for input, or
-  answer from the evidence already collected.
+  guidance, and example. The runtime starts with the saved contracts for the
+  failed calls, applies the current run policy, and rejects unrelated executable
+  tools. It does not require one replacement call per failure. The planner may
+  combine work, make any number of valid calls to that recovery catalog, wait
+  for input, or answer from the evidence already collected.
 - `replan` removes the failed tool from the next planner turn. The planner may
   use another advertised tool, wait for input, or answer.
 - `finish` removes all tools and requires a final answer from the available

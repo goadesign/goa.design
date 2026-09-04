@@ -906,6 +906,25 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 Donde `toolID` es una constante `tools.Ident` tipada proveniente de un paquete generado de specs o agenttools.
 
+`ToolSpecsForAgent` devuelve todas las herramientas que la definición del agente
+permite ejecutar a su planner. Las definiciones generadas completan esta lista.
+El código que construye una definición directamente debe incluir todas las
+herramientas ejecutables; una lista vacía significa que el agente no puede
+ejecutar ninguna. El método no devuelve las herramientas que el agente solo
+exporta a otros agentes ni el catálogo más pequeño mostrado al modelo en un
+turno. Una solicitud copiada de una llamada del modelo debe usar el catálogo
+exacto mostrado en ese turno. Una solicitud creada directamente por el planner
+puede usar las herramientas ejecutables generadas del agente en un turno normal.
+Durante la recuperación con `correct_call`, solo puede usar los contratos
+guardados para las llamadas fallidas después de aplicar la política actual de la
+ejecución. Las herramientas de continuación dedicadas no aparecen en los
+catálogos del modelo. El planner puede llamarlas después de construir una entrada
+tipada que supere la validación generada, tanto si la entrada proviene de la
+solicitud actual como del estado guardado por la aplicación. Esta llamada directa
+es distinta de la acción de continuación sin entrada descrita antes: el runtime
+la trata como una llamada independiente y no genera otra acción de continuación
+ni un recordatorio del cursor para el modelo.
+
 ### Server Data
 
 Algunas herramientas necesitan devolver una salida rica orientada a observadores —series temporales completas,

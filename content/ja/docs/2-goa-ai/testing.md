@@ -561,7 +561,7 @@ rt := runtime.New(storageinmem.New(), runtime.WithStream(&DebugSink{}))
 #### 実行時に Tool Spec を調べる
 
 ```go
-// List all registered tools
+// この agent が実行できる tool を列挙する
 for _, spec := range rt.ToolSpecsForAgent(chat.AgentID) {
     fmt.Printf("Tool: %s
 ", spec.Name)

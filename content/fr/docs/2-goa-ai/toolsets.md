@@ -899,6 +899,25 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 Où `toolID` est une constante `tools.Ident` typée à partir d'un package de spécifications ou d'agenttools généré.
 
+`ToolSpecsForAgent` renvoie tous les outils que la définition de l'agent autorise
+son planificateur à exécuter. Les définitions générées remplissent cette liste.
+Le code qui construit directement une définition d'agent doit énumérer tous les
+outils exécutables ; une liste vide signifie que l'agent ne peut en exécuter
+aucun. La méthode ne renvoie pas les outils que l'agent exporte seulement vers
+d'autres agents, ni le catalogue plus restreint présenté au modèle pendant un
+tour. Une requête copiée depuis un appel d'outil du modèle doit utiliser le
+catalogue exact présenté pendant ce tour. Une requête créée directement par le
+planificateur peut utiliser les outils exécutables générés de l'agent pendant un
+tour normal. Pendant une récupération `correct_call`, elle ne peut utiliser que
+les contrats enregistrés pour les appels en échec après application de la
+politique actuelle de l'exécution. Les outils de continuation dédiés restent
+absents des catalogues du modèle. Le planificateur peut les appeler après avoir
+construit une entrée typée qui passe la validation générée, que cette entrée
+provienne de la requête actuelle ou d'un état enregistré par l'application. Cet
+appel direct est distinct de l'action de continuation sans entrée décrite plus
+haut : le runtime le traite comme un appel autonome et ne produit pas une autre
+action de continuation ni un rappel de curseur pour le modèle.
+
 ### Données du serveur
 
 Certains outils doivent renvoyer des résultats riches destinés à l'observateur - des séries chronologiques complètes,

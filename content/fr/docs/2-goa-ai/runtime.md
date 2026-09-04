@@ -1070,10 +1070,13 @@ Chaque `ToolFailure` récupérable sélectionne aussi une `Recovery.Action` :
 
 - `correct_call` garde l'outil en échec disponible et transmet au prochain tour
   du planificateur l'entrée rejetée, les problèmes de validation générés, les
-  indications sur les champs et un exemple. Il n'impose pas un appel de
-  remplacement par échec. Le planificateur peut regrouper le travail, effectuer
-  autant d'appels valides que nécessaire aux outils annoncés, attendre une
-  entrée ou répondre avec les éléments déjà recueillis.
+  indications sur les champs et un exemple. Le runtime part des contrats
+  enregistrés pour les appels en échec, applique la politique actuelle de
+  l'exécution et rejette les outils exécutables sans rapport. Il n'impose pas un
+  appel de remplacement par échec. Le planificateur peut regrouper le travail,
+  effectuer autant d'appels valides que nécessaire dans ce catalogue de
+  récupération, attendre une entrée ou répondre avec les éléments déjà
+  recueillis.
 - `replan` retire l'outil en échec du prochain tour. Le planificateur peut
   utiliser un autre outil annoncé, attendre une entrée ou répondre.
 - `finish` retire tous les outils et exige une réponse finale fondée sur les

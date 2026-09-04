@@ -960,6 +960,23 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
 
+`ToolSpecsForAgent` returns every tool the agent definition allows its planner
+to execute. Generated definitions populate this list. Code that builds an agent
+definition directly must list every executable tool; an empty list means the
+agent has no executable tools. The method does not return tools the agent only
+exports to other agents, and it is not the smaller catalog shown to a model on
+one turn. A request copied from a model tool call must use the exact catalog
+shown for that turn. A request created directly by planner code may use the
+agent's generated executable tools on a normal turn. During `correct_call`
+recovery, it may use only the saved contracts for the failed calls after the
+current run policy is applied. Dedicated continuation tools stay out of model
+catalogs. Planner code may call them after constructing typed input that passes
+generated validation,
+whether that input comes from the current request or saved application state.
+This direct call is separate from the empty-input continuation action described
+above: the runtime treats it as a standalone call and does not emit another
+model-facing continuation action or cursor reminder.
+
 ### Server Data
 
 Some tools need to return rich observer-facing output - full time series,

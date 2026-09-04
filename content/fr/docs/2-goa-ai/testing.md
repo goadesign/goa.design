@@ -554,7 +554,7 @@ rt := runtime.New(storageinmem.New(), runtime.WithStream(&DebugSink{}))
 #### Inspecter les spécifications de l'outil au moment de l'exécution
 
 ```go
-// List all registered tools
+// Lister les outils que cet agent peut exécuter
 for _, spec := range rt.ToolSpecsForAgent(chat.AgentID) {
     fmt.Printf("Tool: %s\n", spec.Name)
     fmt.Printf("  Description: %s\n", spec.Description)

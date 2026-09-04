@@ -1069,10 +1069,12 @@ Cada `ToolFailure` recuperable también selecciona una `Recovery.Action`:
 
 - `correct_call` mantiene disponible la herramienta que falló y entrega al
   siguiente turno del planner la entrada rechazada, los problemas de validación
-  generados, la guía de campos y un ejemplo. No exige una llamada de reemplazo
-  por cada fallo. El planner puede combinar trabajo, realizar cualquier número
-  de llamadas válidas a herramientas anunciadas, esperar una entrada o responder
-  con la evidencia ya recopilada.
+  generados, la guía de campos y un ejemplo. El runtime parte de los contratos
+  guardados para las llamadas fallidas, aplica la política actual de la ejecución
+  y rechaza herramientas ejecutables no relacionadas. No exige una llamada de
+  reemplazo por cada fallo. El planner puede combinar trabajo, realizar cualquier
+  número de llamadas válidas a ese catálogo de recuperación, esperar una entrada
+  o responder con la evidencia ya recopilada.
 - `replan` elimina la herramienta que falló del siguiente turno del planner. El
   planner puede usar otra herramienta anunciada, esperar una entrada o responder.
 - `finish` elimina todas las herramientas y exige una respuesta final basada en

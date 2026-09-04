@@ -947,9 +947,11 @@ recoverable な `ToolFailure` は `Recovery.Action` も 1 つ選択します。
 
 - `correct_call` は失敗した tool を引き続き利用可能にし、拒否された input、
   生成済み validation issue、field guidance、example を次の planner turn に
-  渡します。失敗 1 件につき replacement call 1 件を要求するものではありません。
-  planner は作業をまとめ、表示された tool を任意の回数だけ正しく呼び出し、
-  input を待つか、すでに集めた evidence から回答できます。
+  渡します。runtime は失敗した call の保存済み contract から始め、現在の run
+  policy を適用し、関係のない executable tool を拒否します。失敗 1 件につき
+  replacement call 1 件を要求するものではありません。planner は作業をまとめ、
+  この recovery catalog に含まれる tool を任意の回数だけ正しく呼び出し、input
+  を待つか、すでに集めた evidence から回答できます。
 - `replan` は失敗した tool を次の planner turn から除外します。planner は別の
   表示済み tool を使うか、input を待つか、回答できます。
 - `finish` はすべての tool を除外し、利用可能な evidence に基づく最終回答を

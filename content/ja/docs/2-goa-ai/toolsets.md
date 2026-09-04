@@ -882,6 +882,22 @@ specs   := rt.ToolSpecsForAgent(chat.AgentID)  // []ToolSpec for one agent
 
 ここで `toolID` は、生成された specs もしくは agenttools パッケージの型付き `tools.Ident` 定数です。
 
+`ToolSpecsForAgent` は、agent definition が planner に実行を許可したすべての
+tool を返します。生成された definition はこのリストを設定します。agent
+definition を直接作るコードは、実行可能な tool をすべて列挙する必要があります。
+空のリストは、その agent に実行可能な tool がないことを意味します。この method
+は、agent が他の agent に export するだけの tool や、1 回の turn で model に
+表示する、より小さい catalog を返しません。model の tool call からコピーした
+request は、その turn で表示した catalog と正確に一致する必要があります。
+planner code が直接作る request は、通常の turn では agent の生成済み executable
+tool を使用できます。`correct_call` による recovery では、現在の run policy を
+適用した後に残る、失敗した call の保存済み contract だけを使用できます。専用の
+continuation tool は model catalog に含まれません。planner は、現在の request
+または application が保存した state から、生成済み validation を通る typed input
+を作った後で、この tool を呼び出せます。この直接 call は、上記の input が空の
+continuation action とは別です。runtime はこの call を単独の call として扱い、
+model 向けの continuation action や cursor reminder を新たに生成しません。
+
 ### Server Data
 
 一部の tool は、UI や audit system には有用でも model provider には重すぎる rich observer-facing output (完全な time series、topology graph、大きな result set、evidence reference など) を返す必要があります。Goa-AI は、その model 向けではない出力を **server-data** としてモデル化します。

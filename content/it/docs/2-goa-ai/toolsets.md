@@ -904,6 +904,25 @@ specs := rt.ToolSpecsForAgent(chat.AgentID) // []ToolSpec per un agente
 
 Where `toolID` is a typed `tools.Ident` constant from a generated specs or agenttools package.
 
+`ToolSpecsForAgent` restituisce tutti gli strumenti che la definizione
+dell'agente consente al planner di eseguire. Le definizioni generate compilano
+questo elenco. Il codice che costruisce direttamente una definizione dell'agente
+deve elencare tutti gli strumenti eseguibili; un elenco vuoto significa che
+l'agente non può eseguirne alcuno. Il metodo non restituisce gli strumenti che
+l'agente esporta soltanto ad altri agenti, né il catalogo più ristretto mostrato
+al modello in un turno. Una richiesta copiata da una chiamata del modello deve
+usare il catalogo esatto mostrato in quel turno. Una richiesta creata direttamente
+dal planner può usare gli strumenti eseguibili generati dell'agente in un turno
+normale. Durante il recupero con `correct_call`, può usare soltanto i contratti
+salvati per le chiamate non riuscite dopo l'applicazione della politica corrente
+dell'esecuzione. Gli strumenti di continuazione dedicati restano fuori dai
+cataloghi del modello. Il planner può chiamarli dopo aver costruito un input
+tipizzato che supera la validazione generata, sia che l'input provenga dalla
+richiesta corrente sia che provenga dallo stato salvato dall'applicazione. Questa
+chiamata diretta è distinta dall'azione di continuazione senza input descritta
+sopra: il runtime la tratta come una chiamata autonoma e non produce un'altra
+azione di continuazione o un promemoria del cursore per il modello.
+
 ### Server Data e artefatti UI
 
 Alcuni tool devono restituire **output ricco orientato agli osservatori** (serie temporali complete, grafi di topologia, grandi set di risultati) utile per UI e audit, ma troppo pesante per i provider di modelli. Goa-AI modella tutto l'output non rivolto al modello come **server-data**. I server-data opzionali possono essere proiettati in **artefatti UI**.
