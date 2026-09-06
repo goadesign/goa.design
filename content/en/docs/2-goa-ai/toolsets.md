@@ -324,6 +324,15 @@ When a bounded tool executes:
 6. Stream subscribers and finalizers access bounds for UI display, logging, or
    policy decisions
 
+When a truncated result has no next-page cursor, the runtime reminder asks the
+model to state the view's limits. Partial results can still support useful
+answers about the returned items when that scope is clear. Disclosing truncation
+or fetching another still-partial page does not establish facts about items
+still omitted. Provider-established full-query totals retain their full-query
+scope; later, independently complete evidence supports conclusions within its
+own scope. Extra pagination is not required when the available evidence already
+answers the question.
+
 ```go
 // In a stream subscriber
 func handleToolEnd(event *stream.ToolEndEvent) {

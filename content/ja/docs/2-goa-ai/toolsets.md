@@ -296,6 +296,8 @@ bounded tool が実行されると:
 5. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
 6. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 
+truncated result に次ページの cursor がない場合、runtime の reminder は model に view の限界を明示するよう求めます。partial result でも、返された item についての回答であることを明確にすれば、有用な回答の根拠になります。truncation を明記したり、別のまだ不完全な page を取得したりするだけでは、依然として省略されている item についての事実は確立できません。provider が query 全体について確立した total はその範囲を保ち、後から得られた、それ自体で完全な証拠は、その証拠が対象とする範囲内の結論の根拠になります。利用可能な証拠ですでに質問に答えられる場合、追加の page 取得は不要です。
+
 ```go
 // In a stream subscriber
 func handleToolEnd(event *stream.ToolEndEvent) {
