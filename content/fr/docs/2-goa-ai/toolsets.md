@@ -307,6 +307,17 @@ Lorsqu'un outil limité s'exécute :
 5. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
 6. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 
+Lorsqu'un résultat tronqué n'a pas de curseur de page suivante, le rappel du
+runtime demande au modèle de préciser les limites de la vue. Des résultats
+partiels peuvent étayer des réponses utiles sur les éléments renvoyés, à
+condition que cette portée soit claire. Signaler la troncature ou récupérer une
+autre page encore partielle ne permet pas d'établir des faits sur les éléments
+qui restent omis. Les totaux établis par le fournisseur pour l'ensemble de la
+requête conservent cette portée ; des éléments de preuve ultérieurs, complets
+par eux-mêmes, peuvent étayer des conclusions dans leur propre périmètre. Il
+n'est pas nécessaire de récupérer d'autres pages si les éléments disponibles
+répondent déjà à la question.
+
 ```go
 // In a stream subscriber
 func handleToolEnd(event *stream.ToolEndEvent) {

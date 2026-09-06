@@ -308,6 +308,16 @@ When a bounded tool executes:
 5. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
 6. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
 
+Quando un risultato troncato non ha un cursor per la pagina successiva, il
+promemoria del runtime chiede al modello di indicare i limiti della vista.
+I risultati parziali possono comunque sostenere risposte utili sugli elementi
+restituiti, purché tale ambito sia chiaro. Segnalare il troncamento o recuperare
+un'altra pagina ancora parziale non permette di stabilire fatti sugli elementi
+ancora omessi. I totali stabiliti dal provider per l'intera query mantengono tale
+ambito; dati successivi, completi di per sé, possono sostenere conclusioni nel
+proprio ambito. Non occorre recuperare altre pagine se i dati disponibili
+rispondono già alla domanda.
+
 ```go
 // In un sottoscrittore di flusso
 func handleToolEnd(event *stream.ToolEnd) {

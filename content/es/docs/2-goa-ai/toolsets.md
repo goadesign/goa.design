@@ -309,6 +309,17 @@ Cuando se ejecuta una herramienta acotada:
 5. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
 6. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
 
+Cuando un resultado truncado no tiene un cursor de página siguiente, el
+recordatorio del runtime pide al modelo que indique los límites de la vista.
+Los resultados parciales pueden sustentar respuestas útiles sobre los elementos
+devueltos si ese alcance queda claro. Advertir del truncado u obtener otra
+página que siga siendo parcial no permite establecer hechos sobre los elementos
+que siguen omitidos. Los totales que el proveedor establece para la consulta
+completa conservan ese alcance; las pruebas posteriores que sean completas por
+sí mismas pueden sustentar conclusiones dentro de su propio alcance. No es
+necesario obtener más páginas si las pruebas disponibles ya responden a la
+pregunta.
+
 ```go
 // En un suscriptor de stream
 func handleToolEnd(event *stream.ToolEndEvent) {
