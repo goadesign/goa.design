@@ -359,7 +359,7 @@ For `status="failed"`, the stream payload includes:
 - `error_kind`: stable classifier for UX/decisioning (provider kinds like `rate_limited`, `unavailable`, or runtime kinds like `timeout`/`internal`)
 - `retryable`: whether retrying may succeed without changing input
 - `error`: **user-safe** message suitable for direct display
-- `debug_error`: raw error string for logs/diagnostics (not for UI)
+- `debug_error`: diagnostic error text; the application decides who may see it
 
 **Terminal identity**
 
@@ -373,6 +373,78 @@ on both engines. Labels merged by policy decisions mid-run are not included;
 they remain observable via `PolicyDecision` events.
 
 ---
+
+## Error Diagnostics
+
+Goa-AI preserves complete valid UTF-8 diagnostic messages and typed provider
+error text without per-field length cutoffs. Applications own disclosure:
+they choose what their instrumentation stores and who can read or display it.
+Planner and Temporal activity spans receive the original error before workflow
+transport or error conversion. Workflow replay does not re-emit those activity
+diagnostics. Display summaries, failure classification, retryability, and
+model recovery behavior remain unchanged; diagnostic text is not model
+correction guidance.
+
+### Saved error formats
+
+New `OutputContractFailure`, `ModelOutputRejected`, and `PlannerOutputRejected`
+records use `ReasonVersion="goa_ai.rejection_reason.v2"`. `Reason` retains the
+exact selected cause text, identified by `ReasonSHA256` and `ReasonSize`.
+Valid text has an empty `ReasonOmitted`; invalid UTF-8 produces an empty
+`Reason` and `ReasonOmitted="invalid_utf8"`. New records do not use
+`size_limit` to omit a long reason.
+
+New Temporal failures use four private application types:
+
+- `goa_ai.provider_error.v3`
+- `goa_ai.generic_error.v3`
+- `goa_ai.output_contract_error.v3`
+- `goa_ai.invalid_reserved_error.v3`
+
+The type selects the saved details format. Provider and generic details retain
+their owned text as plain strings, separately from the outer diagnostic
+message. Invalid UTF-8 becomes an explicit unavailable-text notice with the
+original hash and byte count, not silent replacement characters. These formats
+do not serialize arbitrary Go causes, SDK error objects, or custom application
+details. Exact valid text is not a promise to store arbitrary bytes.
+
+### Transport and application limits
+
+The existing whole workflow argument/result limit still applies to the
+complete encoded value, including accompanying fields. A planner result that
+does not fit returns an explicit transport-budget failure; it does not persist
+the oversized diagnostic by silently shortening it.
+
+Native Temporal failure objects use a separate SDK failure converter, not the
+workflow argument/result admission path. Goa-AI adds no native failure-size
+cap or preflight check. An application's configured `FailureConverter`,
+including its rejection behavior, remains application-owned.
+
+Temporal request and history limits can reject large failures; pending
+activity retry state may retain a server-shortened failure. Instrumentation
+also has sampling, exporter, and backend limits. Preserving text in the
+framework does not guarantee unlimited storage, delivery, or recovery of text
+that was previously omitted.
+
+### Worker upgrades and saved histories
+
+New readers retain the existing behavior for versionless and v1 rejection
+records and historical Temporal types with v1/v2 details. Decoding and replay
+do not rewrite those records, change their published bytes, or restore missing
+text. Old omission and validation rules still apply to the old formats.
+
+Already stored terminal failures retain their original bytes. A workflow that
+reads old rejection metadata but closes for the first time after the upgrade
+writes the current terminal failure type. Successful replay does not prove
+that old and new terminal failure commands have identical encoded details.
+
+Upgrade validating hook consumers and workflow/activity workers before they
+receive the new formats. Do not mix new writers with incompatible old readers
+on the same task queues; use the application's verified worker-version routing
+or drain-and-replacement procedure. Rollback must retain readers that
+understand every format already written. Keep historical decoders while
+supported run records or workflow histories still require them; replacing
+workers alone does not remove that requirement.
 
 ## Policies, Caps, and Labels
 
