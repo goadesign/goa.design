@@ -78,8 +78,12 @@ artefactos inválidos y respuestas incompletas del juez semántico.
 La concurrencia es explícita y limitada:
 
 ```go
+grader, err := judge.New(modelClient, maxOutputTokens)
+if err != nil {
+    return err
+}
 runner, err := eval.NewRunner(
-    judge.New(modelClient),
+    grader,
     eval.RunnerConfig{MaxConcurrency: 5},
 )
 if err != nil {
@@ -117,6 +121,20 @@ vacíos, duplicados e IDs o etiquetas desconocidos.
 
 ## Evaluación semántica
 
+La aplicación debe pasar un `maxOutputTokens` positivo a `judge.New` y manejar
+el error devuelto. Lee el valor de la configuración de la aplicación antes de
+ejecutar la suite. Cero y los valores negativos hacen fallar la construcción
+sin llamar al modelo; no hay un valor predeterminado.
+
+El valor es un límite inclusivo de tokens de salida para **una respuesta
+completa del modelo**, incluidos todos los juicios y su estructura JSON. No es
+una asignación por afirmación ni un presupuesto total por escenario o suite.
+Goa-AI envía el mismo valor en la petición inicial y en cada petición de
+corrección permitida, independientemente del número de afirmaciones. Elige un
+valor compatible con el proveedor y el modelo configurados; los valores no
+compatibles siguen siendo errores, sin reducir silenciosamente el límite. Un
+límite finito no garantiza que la respuesta pueda completarse.
+
 Antes de ejecutar escenarios, el runner verifica el juez con cuatro ejemplos
 propiedad del framework: `entailed` (la respuesta demuestra la afirmación),
 `contradicted` (demuestra lo contrario), `not_addressed` (habla de otra cosa) e
@@ -125,7 +143,30 @@ propiedad del framework: `entailed` (la respuesta demuestra la afirmación),
 Los cuatro resultados deben ser correctos. Así, un juez que siempre responde
 `entailed` no puede hacer que toda la suite pase. Un fallo de calibración detiene
 la suite antes de llamar a la aplicación. En los escenarios, solo `entailed`
-aprueba; el juez no reintenta ni repara su salida.
+aprueba.
+
+El juez exige exactamente un juicio por afirmación, en el mismo orden, con una
+etiqueta conocida y una justificación no vacía. Los IDs de las afirmaciones no
+se envían al modelo y se restauran según su posición. Los juicios ausentes o
+adicionales, etiquetas desconocidas, campos adicionales y respuestas malformadas
+se rechazan. El mecanismo de corrección existente, con un número limitado de
+intentos, puede pedir al modelo una respuesta de reemplazo; nunca modifica una
+salida inválida para aceptarla. Si se agotan las correcciones, el llamante
+recibe un error en lugar de juicios inventados.
+
+## Migrar la construcción del juez
+
+`judge.New(client, opts...) *Judge` se sustituye por
+`judge.New(client, maxOutputTokens, opts...) (*Judge, error)`. Actualiza todos
+los llamantes para pasar el límite positivo configurado y manejar el error
+antes de crear el runner. Las opciones existentes, como `WithModelClass`, van
+después del límite obligatorio y mantienen su significado.
+
+Se elimina el cálculo anterior de `256 × número de afirmaciones`. Este cambio
+del código fuente Go exige actualizar los llamantes para compilar con la nueva
+versión. No cambia la selección del modelo, el prompt, las etiquetas, la
+validación estricta de las respuestas ni el número de correcciones. No hace
+falta migrar los informes guardados.
 
 ## Leer el informe
 

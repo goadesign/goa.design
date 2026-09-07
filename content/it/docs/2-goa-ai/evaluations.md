@@ -77,8 +77,12 @@ non validi e risposte incomplete del giudice.
 La concorrenza è esplicita e limitata:
 
 ```go
+grader, err := judge.New(modelClient, maxOutputTokens)
+if err != nil {
+    return err
+}
 runner, err := eval.NewRunner(
-    judge.New(modelClient),
+    grader,
     eval.RunnerConfig{MaxConcurrency: 5},
 )
 if err != nil {
@@ -117,6 +121,21 @@ ID o tag sconosciuti.
 
 ## Giudizio semantico
 
+L'applicazione deve passare un `maxOutputTokens` positivo a `judge.New` e
+gestire l'errore restituito. Leggi il valore dalla configurazione
+dell'applicazione prima di eseguire la suite. Zero e valori negativi fanno
+fallire la costruzione senza chiamare il modello; non esiste un valore
+predefinito.
+
+Il valore è un limite inclusivo di token di output per **una risposta completa
+del modello**, comprendente tutti i giudizi e la loro struttura JSON. Non è un
+limite per claim né un budget totale per scenario o suite. Goa-AI invia lo
+stesso valore nella richiesta iniziale e in ogni richiesta di correzione
+consentita, indipendentemente dal numero di claim. Scegli un valore supportato
+dal provider e dal modello configurati; i valori non supportati restano errori,
+senza riduzioni silenziose del limite. Un limite finito non garantisce che la
+risposta riesca a completarsi.
+
 Prima degli scenari, il runner verifica il giudice con quattro esempi gestiti dal
 framework: `entailed` (la risposta dimostra il claim), `contradicted` (dimostra
 il contrario), `not_addressed` (parla d'altro) e `indeterminate` (informazioni
@@ -125,7 +144,30 @@ in conflitto impediscono una conclusione).
 Tutti e quattro i risultati devono essere corretti. In questo modo, un giudice
 che risponde sempre `entailed` non può far passare l'intera suite. Un errore di
 calibrazione ferma la suite prima della chiamata all'applicazione. Negli scenari
-passa solo `entailed`; il giudice non ritenta né ripara il proprio output.
+passa solo `entailed`.
+
+Il giudice richiede esattamente un giudizio per claim, nello stesso ordine, con
+un'etichetta nota e una motivazione non vuota. Gli ID dei claim non vengono
+inviati al modello e sono ripristinati in base alla posizione. Giudizi mancanti
+o aggiuntivi, etichette sconosciute, campi aggiuntivi e risposte malformate sono
+rifiutati. Il meccanismo di correzione esistente, con un numero limitato di
+tentativi, può chiedere al modello una risposta sostitutiva; non modifica mai
+un output invalido per accettarlo. Esaurite le correzioni, il chiamante riceve
+un errore anziché giudizi inventati.
+
+## Migrare la costruzione del giudice
+
+`judge.New(client, opts...) *Judge` è sostituito da
+`judge.New(client, maxOutputTokens, opts...) (*Judge, error)`. Aggiorna ogni
+chiamante per passare il limite positivo configurato e gestire l'errore prima
+di creare il runner. Le opzioni esistenti, come `WithModelClass`, seguono il
+limite obbligatorio e mantengono il loro significato.
+
+Il precedente calcolo `256 × numero di claim` viene rimosso. Questa modifica
+al codice sorgente Go richiede l'aggiornamento dei chiamanti per compilare con
+la nuova versione. Non cambia la selezione del modello, il prompt, le
+etichette, la convalida rigorosa delle risposte o il numero di correzioni. Non
+è necessaria alcuna migrazione dei report salvati.
 
 ## Leggere il report
 

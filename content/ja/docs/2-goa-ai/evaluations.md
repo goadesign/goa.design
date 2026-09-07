@@ -250,7 +250,11 @@ if err != nil {
     return err
 }
 
-runner, err := eval.NewRunner(judge.New(modelClient), eval.RunnerConfig{
+grader, err := judge.New(modelClient, maxOutputTokens)
+if err != nil {
+    return err
+}
+runner, err := eval.NewRunner(grader, eval.RunnerConfig{
     MaxConcurrency: 5,
     Reporter:       reporter,
 })
@@ -290,6 +294,10 @@ report, err := runner.RunTags(ctx, suite, "smoke", "alarm")
 
 `eval/judge` は、Goa-AI の他の箇所と同じ不透明な検証済み `model.Client` から judge を作るため、設定済みのどの provider でも利用できます。deterministic な judge client が必要な test は `model.Provider` を実装し、`model.NewClient` を通します。application code は `model.Client` を直接実装できません。
 
+application は `judge.New` に正の `maxOutputTokens` を渡し、返された error を処理する必要があります。suite を実行する前に application の設定からこの値を読み取ってください。ゼロや負の値では model を呼ばずに生成が失敗します。default 値はありません。
+
+この値は、全 judgment と JSON 構造を含む**モデルの 1 回の応答全体**に対する output token 数の上限です。上限と同じ値までは許可されます。claim ごとの割り当てでも、scenario や suite 全体の予算でもありません。Goa-AI は claim 数にかかわらず、初回 request と許可された各 correction request に同じ値を渡します。設定された provider と model が対応する値を選んでください。未対応の値は黙って引き下げられず、error になります。有限の上限では、その範囲内で応答が完了することは保証されません。
+
 各 scenario について、judge は回答と claim を受け取り、claim ごとに正確に 1 label と短い理由を返します。
 
 - `entailed`: 回答が claim を真だと裏付ける。
@@ -301,7 +309,7 @@ report, err := runner.RunTags(ctx, suite, "smoke", "alarm")
 
 scenario を開始する前に、runner は label ごとに 1 つ、固定の 4 example で judge を検査します。この手順を calibration と呼びます。たとえば常に `entailed` を返して全 evaluation を成功させるような、label を区別できない judge は calibration に失敗し、application へ触れる前に suite を停止します。calibration は runner 所有の 2 分 deadline 内で行うため、接続不能または停止した model endpoint は suite を永久に block せず、明確な error になります。
 
-judge は自身の protocol を厳格に検証します。claim ID の欠落や重複、未知の label、余分な field、不正な response は error です。不正出力を retry または修復しません。自分の出力を編集する judge は、信頼できる evidence ではないからです。
+judge は、各 claim に対して同じ順序で正確に 1 つの judgment を要求します。各 judgment には既知の label と空でない理由が必要です。claim ID は model request に含めず、位置に基づいて復元します。judgment の不足や超過、未知の label、余分な field、不正な response は拒否されます。既存の回数制限付き correction 処理は model に代わりの応答を求めることがありますが、不正な出力を書き換えて受理することはありません。correction 回数を使い切ると、呼び出し元には架空の judgment ではなく error が返ります。
 
 ## report を読む
 
@@ -313,6 +321,12 @@ report とその全要素は安定した JSON field 名を使うため、tooling
 - **scenario-level**: hook error、不正な result、timeout、judging failure は該当 scenario の report に記録され、残りの scenario は完了まで続きます。
 
 suite-level error なしで実行を終えたら `report.Passed` を確認します。全 selected scenario がすべての check と claim に成功した場合だけ true です。false なら呼び出し元 command または CI job を失敗させてください。
+
+## judge の生成処理を移行する
+
+`judge.New(client, opts...) *Judge` は `judge.New(client, maxOutputTokens, opts...) (*Judge, error)` に置き換わります。すべての呼び出し元で、設定済みの正の応答上限を渡し、runner を作る前に error を処理してください。`WithModelClass` など既存の option は必須の上限値の後に渡し、意味は変わりません。
+
+以前の `256 × claim 数` という計算は削除されます。これは Go source の変更なので、新しい version で compile するには呼び出し元の更新が必要です。judge の model 選択、prompt、label、厳格な応答検証、correction 回数は変わりません。保存済み report の移行は不要です。
 
 ## string-input suite からの upgrade
 

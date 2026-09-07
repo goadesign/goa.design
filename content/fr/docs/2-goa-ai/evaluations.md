@@ -332,7 +332,11 @@ if err != nil {
     return err
 }
 
-runner, err := eval.NewRunner(judge.New(modelClient), eval.RunnerConfig{
+grader, err := judge.New(modelClient, maxOutputTokens)
+if err != nil {
+    return err
+}
+runner, err := eval.NewRunner(grader, eval.RunnerConfig{
     MaxConcurrency: 5,
     Reporter:       reporter,
 })
@@ -381,6 +385,21 @@ que le reste de Goa-AI. Les tests qui ont besoin d'un client déterministe
 implémentent `model.Provider` puis appellent `model.NewClient` ; le code
 d'application ne peut pas implémenter directement `model.Client`.
 
+L'application doit fournir un `maxOutputTokens` strictement positif à
+`judge.New` et traiter son erreur. Lisez cette valeur dans la configuration de
+l'application avant d'exécuter la suite. Zéro et les valeurs négatives font
+échouer la construction sans appeler le modèle ; il n'existe aucune valeur par
+défaut.
+
+Cette valeur est un plafond inclusif de jetons de sortie pour **une réponse
+complète du modèle**, comprenant tous les jugements et leur structure JSON.
+Ce n'est ni un quota par affirmation, ni un budget total par scénario ou suite.
+Goa-AI transmet la même valeur dans la requête initiale et chaque requête de
+correction autorisée, quel que soit le nombre d'affirmations. Choisissez une
+valeur prise en charge par le fournisseur et le modèle configurés ; une valeur
+non prise en charge reste une erreur, sans réduction silencieuse du plafond.
+Un plafond fini ne garantit pas que la réponse pourra se terminer.
+
 Le juge reçoit la réponse et les affirmations, puis attribue exactement un
 résultat et une justification courte à chacune :
 
@@ -394,9 +413,15 @@ exemple fixe de chaque résultat. Un juge incapable de les distinguer arrête la
 suite avant tout appel à l'application. Cette calibration a un délai de deux
 minutes géré par le runner.
 
-Le protocole du juge est strict : IDs absents ou dupliqués, résultats inconnus,
-champs supplémentaires et réponses mal formées sont des erreurs. Il ne réessaie
-ni ne répare une réponse incorrecte.
+Le juge exige exactement un jugement par affirmation, dans le même ordre, avec
+un résultat connu et une justification non vide. Les IDs d'affirmations restent
+hors de la requête au modèle et sont rétablis selon leur position. Les jugements
+manquants ou supplémentaires, les résultats inconnus, les champs supplémentaires
+et les réponses mal formées sont refusés. Le mécanisme de correction existant,
+limité en nombre de tentatives, peut demander une réponse de remplacement au
+modèle ; il ne modifie jamais une sortie invalide pour la rendre acceptable. Une
+fois les corrections épuisées, l'appelant reçoit une erreur, pas des jugements
+inventés.
 
 ## Lire le rapport
 
@@ -411,6 +436,20 @@ comprend le hook, la validation du résultat et le jugement.
 Après une exécution sans erreur de suite, `report.Passed` n'est vrai que si
 toutes les vérifications et affirmations de tous les scénarios sélectionnés ont
 réussi. Une valeur false doit faire échouer la commande ou le travail CI.
+
+## Migrer la construction du juge
+
+`judge.New(client, opts...) *Judge` est remplacé par
+`judge.New(client, maxOutputTokens, opts...) (*Judge, error)`. Modifiez chaque
+appelant pour fournir son plafond de réponse configuré, strictement positif,
+et traiter l'erreur avant de créer le runner. Les options existantes comme
+`WithModelClass` suivent le plafond obligatoire et conservent leur sens.
+
+L'ancien calcul `256 × nombre d'affirmations` est supprimé. Ce changement du
+code source Go exige de modifier les appelants pour compiler avec la nouvelle
+version. Il ne change ni le choix du modèle, ni le prompt, ni les résultats
+possibles, ni la validation stricte, ni le nombre de corrections. Aucune
+migration des rapports enregistrés n'est nécessaire.
 
 ## Migrer depuis les suites à entrée texte
 
