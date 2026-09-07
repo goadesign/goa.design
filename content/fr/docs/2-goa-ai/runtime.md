@@ -1475,6 +1475,38 @@ mélangés ou ambigus. Ne combinez pas `PlannerModelClient.Stream(...)` avec
 `planner.ConsumeStream` ; choisissez un seul propriétaire du flux par tour du
 planificateur.
 
+### Éléments fournis au modèle de résumé
+
+`Compress` fournit les anciens messages sélectionnés comme éléments à résumer,
+et non comme une conversation à poursuivre. Le texte, les arguments et résultats
+complets des outils, leurs identifiants, l'état et le texte intégral des erreurs,
+ainsi que les champs des citations sont cités au format JSON canonique de
+`model.Message`. Les rôles, positions et ordre sont conservés, sans sélection,
+arrondi ni suppression des valeurs répétées. Le modèle juge leur pertinence.
+
+`WithSummaryPrompt` insère toujours la transcription textuelle complète dans
+`%s`. Les images et documents sont joints une seule fois comme contenu natif dans
+le même appel : un message de pièces jointes par message utilisateur original
+contenant des médias, avec des références à leurs positions. Aucun outil n'est
+proposé à l'exécution ; les documents ne sont ni extraits ni récupérés.
+`Message.Meta`, le raisonnement, les points de contrôle du cache et les signatures
+de raisonnement des outils ne sont pas copiés dans cette nouvelle requête.
+L'historique original, les messages conservés exactement, les diagnostics et les
+erreurs complètes restent inchangés.
+
+Le résumé conserve son rôle et sa représentation textuelle. Les phrases citées
+et tous leurs champs d'attribution sont conservés dans l'ordre sous forme
+d'enregistrements cités. Les coordonnées appartiennent à la requête qui les a
+produites. Si le nouveau résumé contient des citations et utilisait des documents
+natifs, il décrit aussi leur disposition, sans corps de document, réattribution
+de `DocumentIndex` ni lien inventé.
+
+La sélection des messages, la rétention, le modèle, les limites, le comptage et
+l'unique appel de résumé ne changent pas. Un contenu non pris en charge ou trop
+volumineux échoue explicitement, sans suppression d'éléments ni appel ajouté.
+Recevoir tous les éléments ne garantit pas que le modèle retiendra chaque fait.
+Voir le [contrat complet en anglais](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
+
 ### Validation de l'ordre des messages Bedrock
 
 Lors de l'utilisation de AWS Bedrock avec le mode réflexion activé, le moteur d'exécution valide les contraintes d'ordre des messages avant d'envoyer les requêtes. Bedrock nécessite :

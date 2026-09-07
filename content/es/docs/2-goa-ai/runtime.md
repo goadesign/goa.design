@@ -1382,6 +1382,37 @@ ambiguos. No mezcles `PlannerModelClient.Stream(...)` con
 `planner.ConsumeStream`; elige un único propietario del stream por turno del
 planificador.
 
+### Evidencia disponible para el modelo de resumen
+
+`Compress` entrega los mensajes antiguos seleccionados como evidencia, no como
+una conversación que deba continuar. Cita el texto, los argumentos y resultados
+completos de las herramientas, sus identificadores, el estado y texto completo
+de los errores y los campos de las citas mediante el formato JSON canónico de
+`model.Message`. Conserva los roles, las posiciones y el orden, sin seleccionar,
+redondear ni eliminar valores repetidos. El modelo decide qué datos son relevantes.
+
+`WithSummaryPrompt` sigue insertando la transcripción textual completa en `%s`.
+Las imágenes y los documentos se adjuntan una sola vez como contenido nativo en
+la misma llamada: un mensaje de adjuntos por cada mensaje de usuario original
+que contenía archivos, con referencias a sus posiciones. No se ofrecen
+herramientas para ejecutar ni se extraen o recuperan documentos. `Message.Meta`,
+el razonamiento, los puntos de control de caché y las firmas de razonamiento de
+herramientas no se copian a esta nueva petición. El historial original, los
+mensajes conservados sin cambios, los diagnósticos y los errores completos
+permanecen intactos.
+
+El resumen mantiene su rol y formato textual. Conserva las frases citadas y
+todos sus campos de atribución, en orden, como registros citados. Las coordenadas
+pertenecen a la petición que las produjo. Si el nuevo resumen contiene citas y
+usó documentos nativos, incluye una descripción de su disposición, sin cuerpos
+de documentos, reasignar `DocumentIndex` ni inventar enlaces.
+
+No cambian los mensajes seleccionados, la retención, el modelo, los límites,
+el recuento ni la única llamada de resumen. El contenido no compatible o demasiado
+grande falla explícitamente; no se descarta evidencia ni se añaden llamadas.
+Recibir toda la evidencia no garantiza que el modelo conserve todos los hechos.
+Consulta el [contrato completo en inglés](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
+
 ### Validación de ordenación de mensajes en Bedrock
 
 Cuando se usa AWS Bedrock con el modo de pensamiento habilitado, el runtime valida las restricciones de ordenación de mensajes antes de enviar peticiones. Bedrock requiere:

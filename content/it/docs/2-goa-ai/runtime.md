@@ -1321,6 +1321,36 @@ non produce una risposta accettata. Non mescolare
 `PlannerModelClient.Stream(...)` con `planner.ConsumeStream`; scegliere un solo
 proprietario del flusso per turno del planner.
 
+### Evidenze fornite al modello di riepilogo
+
+`Compress` fornisce i messaggi precedenti selezionati come evidenze da riassumere,
+non come una conversazione da continuare. Testo, argomenti e risultati completi
+degli strumenti, identificatori, stato e testo integrale degli errori e campi
+delle citazioni vengono riportati nel formato JSON canonico di `model.Message`.
+Ruoli, posizioni e ordine restano espliciti, senza selezionare, arrotondare o
+eliminare valori ripetuti. Il modello decide quali fatti sono rilevanti.
+
+`WithSummaryPrompt` continua a inserire la trascrizione testuale completa in
+`%s`. Immagini e documenti vengono allegati una sola volta come contenuto nativo
+nella stessa chiamata: un messaggio di allegati per ogni messaggio utente
+originale contenente media, con riferimenti alle posizioni originali. Non vengono
+offerti strumenti da eseguire né estratti o recuperati documenti. `Message.Meta`,
+ragionamento, checkpoint della cache e firme di ragionamento degli strumenti non
+vengono copiati nella nuova richiesta. Cronologia originale, messaggi conservati
+esattamente, diagnostica ed errori completi rimangono invariati.
+
+Il riepilogo mantiene ruolo e rappresentazione testuale. Conserva nell'ordine le
+frasi citate e tutti i campi di attribuzione come record citati. Le coordinate
+appartengono alla richiesta che le ha prodotte. Se il nuovo riepilogo contiene
+citazioni e ha utilizzato documenti nativi, descrive anche la loro disposizione,
+senza corpi dei documenti, riassegnazioni di `DocumentIndex` o collegamenti inventati.
+
+Non cambiano selezione dei messaggi, conservazione, modello, limiti, conteggio e
+singola chiamata di riepilogo. Contenuti non supportati o troppo grandi producono
+errori espliciti: non si eliminano evidenze né si aggiungono chiamate. Ricevere
+tutte le evidenze non garantisce che il modello conservi ogni fatto nel testo.
+Vedere il [contratto completo in inglese](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
+
 ### Convalida dell'ordinamento dei messaggi di Bedrock
 
 Quando si usa AWS Bedrock con la modalità di pensiero abilitata, il runtime convalida i vincoli di ordine dei messaggi prima di inviare le richieste. Bedrock richiede:

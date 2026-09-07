@@ -1563,6 +1563,56 @@ Bedrock adapter returns `model.ErrTokenCountingUnsupported` for those models.
 The generated agent config exposes `HistoryCompression` for deployment-specific
 overrides without changing the design defaults.
 
+#### Evidence supplied to the summary model
+
+`Compress` gives its selected older messages to the summary model as evidence,
+not as a conversation to continue. Text, complete tool arguments and results,
+call/result IDs, error status and full error messages, and citation fields are
+quoted through the canonical `model.Message` JSON codec. Their original roles,
+message/part positions, and order remain explicit. Values are not selected,
+rounded, deduplicated, or replaced with tool-result placeholders. The model
+decides which supplied facts matter; the runtime does not predict relevance.
+
+`WithSummaryPrompt` still inserts the complete quoted textual transcript at its
+`%s` placeholder. Images and documents remain native attachments, supplied once
+after that prompt in the same completion. Each original user message containing
+media produces one user attachment message, with matching original message/part
+references. The history policy neither duplicates media bytes as base64 prose
+nor extracts or fetches document bodies. Historical tools are quoted data: the
+summary request advertises no tools and does not replay historical assistant
+turns as new actions.
+
+Original `Message.Meta`, thinking, cache checkpoints, and tool thought signatures
+are not copied into the new summary request. This does not redact or change
+original history, exact retained messages, stored diagnostics, or full tool
+errors. Put facts that must be available for summarization in canonical text,
+tool, citation, or media parts, not an opaque metadata map.
+
+The returned summary keeps its configured `WithSummaryRole`, single text part,
+`[Conversation Summary]` prefix, and runtime summary metadata. Plain text keeps
+its existing representation. Cited sentences and all supplied citation fields
+(title, source, location, and excerpts) survive in output order as quoted
+records, not native citation blocks replayed under another role. Whitespace-only
+generated text still fails as an empty summary, even with attribution fields.
+
+Citation coordinates retain the meaning of the request that produced them.
+Historical document indices are not reassigned to the summary's attachments.
+When a cited summary used native documents, its text also describes their
+request layout: attachment-message position, document occurrence within that
+message, original history position, and supplied name, format, and URI. It
+includes no document bodies and does not claim a mapping to a provider's
+`DocumentIndex` or invent a file link from incomplete attribution. Later
+compression treats these records as text, not a document registry to rebuild.
+
+This fuller input may be larger than the former placeholder prompt. The selected
+older messages, exact retained suffix, model class, thresholds, counting behavior,
+and single summary completion remain unchanged. Adapter support and existing
+client/provider limits still apply; providers may combine consecutive user
+messages. Unsupported media or an oversized request fails explicitly, without
+dropping evidence, a text-only fallback, or extra summary/count calls. Complete
+input does **not** guarantee that the model preserves every important fact in
+its prose, or that every history fits the summary model.
+
 ### Coordinated Generated-System Releases
 
 Compatible releases may roll transparently; incompatible generated changes
