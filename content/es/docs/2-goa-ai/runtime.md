@@ -1382,6 +1382,35 @@ ambiguos. No mezcles `PlannerModelClient.Stream(...)` con
 `planner.ConsumeStream`; elige un único propietario del stream por turno del
 planificador.
 
+### Retención exacta y cobertura del resumen
+
+Con `CompressAtMaxInputTokens` positivo, un único resumen recibe todos los turnos
+anteriores al más reciente. El runtime cuenta juntos los mensajes de sistema,
+el resumen real, los turnos completos elegibles y las herramientas actuales. Si
+supera el límite, elimina el turno opcional más antiguo y vuelve a contar hasta
+encontrar la secuencia final más larga que quepa. La igualdad con el límite es
+válida. El turno más reciente nunca se resume ni se divide. `KeepMaxTurns` y
+`KeepMaxInputTokens` siguen limitando la retención elegible; el resumen cuenta
+contra el límite total, no contra la asignación adicional para turnos antiguos.
+
+Cada turno eliminado ya se entregó al modelo de resumen. Algunos turnos pueden
+aparecer tanto en el resumen como en el historial exacto, sin volver a ejecutar
+sus herramientas. Esto no garantiza que el modelo interprete correctamente
+hechos repetidos o contradictorios. Para `K` turnos elegibles hay como máximo
+`K` recuentos finales, además de las comprobaciones iniciales. La entrada más
+amplia y los recuentos adicionales pueden aumentar coste y latencia; no se añade
+otra llamada de resumen. Si ni siquiera el resumen y el turno más reciente caben,
+o falla un recuento o el resumen, se devuelve el historial original con el error,
+sin soluciones alternativas ni reinicio automático.
+
+Sin límite total, el resumen sigue cubriendo solo el prefijo excluido: no cambian
+los turnos conservados ni se añaden solapamientos o recuentos finales. Con límite
+positivo, actualiza los prompts personalizados de `WithSummaryPrompt` que digan
+"solo historial descartado" para referirse al historial antiguo suministrado.
+El enfoque elegido, `%s`, los signos de porcentaje escapados, el modelo y el rol
+no cambian; no hay nueva configuración ni migración del historial guardado.
+Consulta el [contrato completo en inglés](https://goa.design/docs/2-goa-ai/runtime/#exact-retention-and-summary-coverage).
+
 ### Evidencia disponible para el modelo de resumen
 
 `Compress` entrega los mensajes antiguos seleccionados como evidencia, no como
@@ -1407,9 +1436,10 @@ pertenecen a la petición que las produjo. Si el nuevo resumen contiene citas y
 usó documentos nativos, incluye una descripción de su disposición, sin cuerpos
 de documentos, reasignar `DocumentIndex` ni inventar enlaces.
 
-No cambian los mensajes seleccionados, la retención, el modelo, los límites,
-el recuento ni la única llamada de resumen. El contenido no compatible o demasiado
-grande falla explícitamente; no se descarta evidencia ni se añaden llamadas.
+La cobertura y la retención siguen las reglas anteriores; el modelo, los límites
+y la única llamada de resumen se mantienen. El contenido no compatible o una
+petición de resumen demasiado grande falla explícitamente, sin descartar evidencia
+ni generar otro resumen. Los adjuntos no añaden un recuento separado.
 Recibir toda la evidencia no garantiza que el modelo conserve todos los hechos.
 Consulta el [contrato completo en inglés](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
 

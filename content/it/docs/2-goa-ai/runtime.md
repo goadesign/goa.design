@@ -1321,6 +1321,35 @@ non produce una risposta accettata. Non mescolare
 `PlannerModelClient.Stream(...)` con `planner.ConsumeStream`; scegliere un solo
 proprietario del flusso per turno del planner.
 
+### Conservazione esatta e copertura del riepilogo
+
+Con `CompressAtMaxInputTokens` positivo, un solo riepilogo riceve tutti i turni
+precedenti al più recente. Il runtime conta insieme messaggi di sistema,
+riepilogo effettivo, turni completi ammissibili e strumenti attuali. Se supera
+il limite, rimuove il turno facoltativo più vecchio e riconta fino a trovare
+la sequenza finale più lunga che rientra. L'uguaglianza con il limite è ammessa.
+Il turno più recente non viene mai riassunto né diviso. `KeepMaxTurns` e
+`KeepMaxInputTokens` continuano a limitare la conservazione ammissibile; il
+riepilogo conta nel limite totale, non nel budget aggiuntivo dei turni precedenti.
+
+Ogni turno rimosso è già stato fornito al modello di riepilogo. Alcuni possono
+comparire sia nel riepilogo sia nella cronologia esatta, senza rieseguire gli
+strumenti. Questo non prova che il modello interpreti correttamente fatti
+ripetuti o contrastanti. Con `K` turni ammissibili si effettuano al massimo `K`
+conteggi finali, oltre alle verifiche iniziali. Input più ampio e conteggi
+aggiuntivi possono aumentare costo e latenza, ma non aggiungono un'altra chiamata
+di riepilogo. Se riepilogo e turno più recente non rientrano, oppure un conteggio
+o il riepilogo falliscono, viene restituita la cronologia originale con l'errore,
+senza soluzioni alternative né riavvio automatico.
+
+Senza limite totale, si riassume solo il prefisso escluso: i turni conservati
+restano invariati, senza sovrapposizione né conteggi finali aggiunti. Con limite
+positivo, aggiornare i prompt `WithSummaryPrompt` che presuppongono «solo la
+cronologia scartata» affinché si riferiscano alla cronologia precedente fornita.
+Obiettivo scelto, `%s`, percentuali con escape, modello e ruolo non cambiano;
+non servono nuova configurazione o migrazione della cronologia salvata.
+Vedere il [contratto completo in inglese](https://goa.design/docs/2-goa-ai/runtime/#exact-retention-and-summary-coverage).
+
 ### Evidenze fornite al modello di riepilogo
 
 `Compress` fornisce i messaggi precedenti selezionati come evidenze da riassumere,
@@ -1345,10 +1374,11 @@ appartengono alla richiesta che le ha prodotte. Se il nuovo riepilogo contiene
 citazioni e ha utilizzato documenti nativi, descrive anche la loro disposizione,
 senza corpi dei documenti, riassegnazioni di `DocumentIndex` o collegamenti inventati.
 
-Non cambiano selezione dei messaggi, conservazione, modello, limiti, conteggio e
-singola chiamata di riepilogo. Contenuti non supportati o troppo grandi producono
-errori espliciti: non si eliminano evidenze né si aggiungono chiamate. Ricevere
-tutte le evidenze non garantisce che il modello conservi ogni fatto nel testo.
+Copertura e conservazione seguono le regole precedenti; modello, limiti e singola
+chiamata di riepilogo restano invariati. Contenuti non supportati o richieste di
+riepilogo troppo grandi producono errori espliciti, senza eliminare evidenze né
+generare un altro riepilogo. Gli allegati non aggiungono un conteggio separato.
+Ricevere tutte le evidenze non garantisce che il modello conservi ogni fatto nel testo.
 Vedere il [contratto completo in inglese](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
 
 ### Convalida dell'ordinamento dei messaggi di Bedrock
