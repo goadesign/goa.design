@@ -358,7 +358,7 @@ Pour `status="failed"`, la charge utile du flux comprend :
 - `error_kind` : classificateur stable pour l'UX/la décision (types de fournisseurs comme `rate_limited`, `unavailable` ou types d'exécution comme `timeout`/`internal`)
 - `retryable` : si une nouvelle tentative peut réussir sans modifier l'entrée
 - `error` : message **sécurisé pour l'utilisateur** adapté à l'affichage direct
-- `debug_error` : chaîne d'erreur brute pour les journaux/diagnostics (pas pour UI)
+- `debug_error` : texte de diagnostic de l'erreur ; l'application décide qui peut le voir
 
 **Identité terminale**
 
@@ -375,6 +375,89 @@ d'exécution ne sont pas incluses ; elles restent observables via les
 événements `PolicyDecision`.
 
 ---
+
+## Diagnostic des erreurs
+
+Goa-AI conserve intégralement les messages de diagnostic et le texte des erreurs
+de fournisseur typées en UTF-8 valide, sans limite de longueur par champ.
+L'application décide ce que son instrumentation enregistre et qui peut le lire
+ou l'afficher. Les spans du planificateur et des activités Temporal reçoivent
+l'erreur originale avant le transport du workflow ou la conversion de l'erreur.
+La relecture du workflow ne réémet pas ces diagnostics. Les résumés destinés à
+l'affichage, la classification, les possibilités de nouvelle tentative et la
+récupération du modèle restent inchangés ; le diagnostic n'est pas une consigne
+de correction pour le modèle.
+
+### Formats des erreurs enregistrées
+
+Les nouveaux enregistrements `OutputContractFailure`, `ModelOutputRejected` et
+`PlannerOutputRejected` utilisent `ReasonVersion="goa_ai.rejection_reason.v2"`.
+`Reason` conserve le texte exact de la cause sélectionnée, identifié par
+`ReasonSHA256` et `ReasonSize`. Un texte valide laisse `ReasonOmitted` vide ;
+un texte UTF-8 invalide produit un `Reason` vide et
+`ReasonOmitted="invalid_utf8"`. Les nouveaux enregistrements n'utilisent pas
+`size_limit` pour omettre une cause longue.
+
+Les nouveaux échecs Temporal utilisent quatre types privés d'erreur applicative :
+
+- `goa_ai.provider_error.v3`
+- `goa_ai.generic_error.v3`
+- `goa_ai.output_contract_error.v3`
+- `goa_ai.invalid_reserved_error.v3`
+
+Le type sélectionne le format des détails enregistrés. Les détails génériques
+et de fournisseur conservent leur propre texte sous forme de chaînes simples,
+séparément du message de diagnostic extérieur. Un texte UTF-8 invalide devient
+un avis explicite de texte indisponible avec l'empreinte et le nombre d'octets
+d'origine, sans caractères de remplacement silencieux. Ces formats ne
+sérialisent pas les causes Go arbitraires, les objets d'erreur du SDK ni les
+détails personnalisés de l'application. Conserver exactement un texte valide
+ne signifie pas stocker des octets arbitraires.
+
+### Limites du transport et de l'application
+
+La limite existante des arguments et résultats complets de workflow continue
+de s'appliquer à la valeur encodée entière, y compris les champs associés.
+Un résultat du planificateur trop volumineux produit un échec explicite de
+budget de transport ; le diagnostic n'est pas enregistré en étant raccourci
+silencieusement.
+
+Les objets d'échec natifs de Temporal utilisent un convertisseur d'échecs du SDK
+distinct, et non le contrôle de taille des arguments et résultats du workflow.
+Goa-AI n'ajoute aucune limite de taille ni vérification préalable pour ces
+échecs natifs. Le `FailureConverter` configuré par l'application, y compris son
+comportement de rejet, reste sous le contrôle de l'application.
+
+Les limites des requêtes et de l'historique Temporal peuvent rejeter les échecs
+volumineux ; l'état de nouvelle tentative d'une activité en attente peut
+conserver un échec raccourci par le serveur. L'instrumentation possède aussi
+ses limites d'échantillonnage, d'exportation et de stockage. La conservation du
+texte par le framework ne garantit ni stockage ni livraison illimités, ni la
+récupération d'un texte précédemment omis.
+
+### Mise à niveau des workers et historiques enregistrés
+
+Les nouveaux lecteurs maintiennent le comportement des rejets sans version et
+v1, ainsi que des types Temporal historiques avec leurs détails v1/v2. Le
+décodage et la relecture ne réécrivent pas ces enregistrements, ne modifient pas
+leurs octets publiés et ne restaurent pas le texte perdu. Les anciennes règles
+d'omission et de validation restent applicables aux anciens formats.
+
+Les échecs terminaux déjà enregistrés conservent leurs octets d'origine. Un
+workflow qui lit d'anciennes métadonnées de rejet mais se termine pour la
+première fois après la mise à niveau écrit le type actuel d'échec terminal.
+Une relecture réussie ne prouve pas que les anciennes et nouvelles commandes
+d'échec terminal ont des détails encodés identiques.
+
+Mettez à niveau les consommateurs de hooks qui valident les enregistrements et
+les workers de workflows et d'activités avant qu'ils reçoivent les nouveaux
+formats. Ne mélangez pas de nouveaux producteurs avec des lecteurs anciens
+incompatibles sur les mêmes files de tâches ; utilisez le routage par version
+de worker ou la procédure vérifiée de vidage et de remplacement de l'application.
+Un retour arrière doit conserver des lecteurs capables de comprendre tous les
+formats déjà écrits. Gardez les décodeurs historiques tant que des
+enregistrements d'exécution ou des historiques de workflow pris en charge en
+ont besoin ; remplacer les workers ne supprime pas cette obligation.
 
 ## Politiques, plafonds et étiquettes
 
