@@ -1312,6 +1312,33 @@ history compression では、summary 開始条件と exact recent history の保
 
 Bedrock Runtime は structured-output request を count できません。Claude Opus 4.7、Sonnet 5、Mythos 5 は AWS の別 Mantle count endpoint を必要とするため、Bedrock adapter はこれらで `model.ErrTokenCountingUnsupported` を返します。生成 agent config の `HistoryCompression` により、design default を変えず deployment ごとに上書きできます。
 
+#### 要約モデルに渡す根拠
+
+`Compress` は、選択した過去のメッセージを、続行すべき会話ではなく要約対象の
+根拠として渡します。テキスト、ツールの完全な引数と結果、呼び出しと結果の ID、
+エラー状態と全文、引用の各フィールドを、`model.Message` の標準 JSON 形式で
+引用します。元のロール、位置、順序を保持し、値の選別、丸め、重複除去はしません。
+どの事実が重要かはモデルが判断します。
+
+`WithSummaryPrompt` は引き続き `%s` に完全な引用テキストを挿入します。
+画像と文書は同じ呼び出し内で、ネイティブの添付として一度だけ渡します。
+メディアを含む元のユーザーメッセージごとに添付メッセージを一つ作り、元の
+メッセージとパートの位置を示します。実行可能なツールは提示せず、文書本文の
+抽出や取得もしません。`Message.Meta`、思考内容、キャッシュのチェックポイント、
+ツールの思考署名は新しい要約リクエストにはコピーしません。元の履歴、正確に
+保持するメッセージ、診断情報、ツールのエラー全文は変更しません。
+
+返す要約のロールとテキスト形式は維持します。引用付きの文とすべての出典情報を、
+元の順序で引用レコードとして残します。引用の座標は、それを生成したリクエストに
+属します。新しい要約が引用を含み、そのリクエストでネイティブ文書を使った場合は、
+文書の配置も記録します。本文を複製せず、`DocumentIndex` を再割り当てせず、
+不明な出典からファイルへのリンクを推測しません。
+
+対象メッセージ、履歴の保持、モデル、上限、トークン計数、要約が一回の呼び出しで
+あることは変わりません。未対応または大きすぎる入力は明示的なエラーとなり、根拠の
+削除や追加呼び出しで回避しません。完全な根拠を渡しても、モデルがすべての事実を
+要約に残す保証にはなりません。詳細は[英語の契約](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model)を参照してください。
+
 ### 生成 system の協調 release
 
 compatible release は透過的に rollout できます。incompatible な生成 contract 変更には coordinated drain と cutover が必要です。checkpoint version、generated codec、required tool name、worker retention の要件は [production rollout contract](../production/#transparent-rollouts) を参照してください。
