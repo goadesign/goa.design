@@ -1475,6 +1475,36 @@ mélangés ou ambigus. Ne combinez pas `PlannerModelClient.Stream(...)` avec
 `planner.ConsumeStream` ; choisissez un seul propriétaire du flux par tour du
 planificateur.
 
+### Conservation exacte et couverture du résumé
+
+Avec un `CompressAtMaxInputTokens` positif, un seul résumé reçoit tous les tours
+antérieurs au plus récent. Le runtime compte ensemble les messages système,
+le résumé réellement produit, les tours complets admissibles et les outils
+actuels. Si le total dépasse la limite, il retire le plus ancien tour facultatif
+et recompte jusqu'à trouver la plus longue suite finale qui tienne. L'égalité
+avec la limite est acceptée. Le dernier tour n'est jamais résumé ni coupé.
+`KeepMaxTurns` et `KeepMaxInputTokens` bornent toujours la conservation admissible ;
+le résumé compte dans la limite totale, pas dans le budget supplémentaire des
+anciens tours.
+
+Chaque tour retiré a déjà été fourni au modèle de résumé. Certains peuvent
+figurer à la fois dans le résumé et dans l'historique exact, sans réexécution
+des outils. Cela ne prouve pas que le modèle interprétera correctement des faits
+répétés ou contradictoires. Pour `K` tours admissibles, il y a au plus `K`
+comptages finaux, en plus des vérifications initiales. L'entrée plus large et ces
+comptages peuvent accroître le coût et la latence, sans second appel de résumé.
+Si le résumé et le dernier tour ne tiennent pas, ou si un comptage ou le résumé
+échoue, l'historique original accompagne l'erreur, sans solution de repli ni
+redémarrage automatique.
+
+Sans limite totale, seul le préfixe exclu est résumé : les tours conservés restent
+inchangés, sans chevauchement ni comptage final ajouté. Avec une limite positive,
+adaptez les prompts `WithSummaryPrompt` qui supposent « uniquement l'historique
+écarté » pour parler de l'historique ancien fourni. L'objectif choisi, `%s`, les
+pourcentages échappés, le modèle et le rôle restent inchangés ; aucune nouvelle
+configuration ni migration de l'historique enregistré n'est nécessaire.
+Voir le [contrat complet en anglais](https://goa.design/docs/2-goa-ai/runtime/#exact-retention-and-summary-coverage).
+
 ### Éléments fournis au modèle de résumé
 
 `Compress` fournit les anciens messages sélectionnés comme éléments à résumer,
@@ -1501,9 +1531,11 @@ produites. Si le nouveau résumé contient des citations et utilisait des docume
 natifs, il décrit aussi leur disposition, sans corps de document, réattribution
 de `DocumentIndex` ni lien inventé.
 
-La sélection des messages, la rétention, le modèle, les limites, le comptage et
-l'unique appel de résumé ne changent pas. Un contenu non pris en charge ou trop
-volumineux échoue explicitement, sans suppression d'éléments ni appel ajouté.
+La couverture et la conservation suivent les règles ci-dessus ; le modèle, les
+limites et l'unique appel de résumé restent inchangés. Un contenu non pris en
+charge ou une requête de résumé trop volumineuse échoue explicitement, sans
+suppression d'éléments ni second résumé. Les pièces jointes n'ajoutent pas de
+comptage distinct.
 Recevoir tous les éléments ne garantit pas que le modèle retiendra chaque fait.
 Voir le [contrat complet en anglais](https://goa.design/docs/2-goa-ai/runtime/#evidence-supplied-to-the-summary-model).
 

@@ -1549,8 +1549,8 @@ History compression separates the condition that starts summarization from the
 amount of exact recent history retained:
 
 - `CompressAtTurns` and `CompressAtMaxInputTokens` are ORed triggers.
-- `KeepMaxTurns` and `KeepMaxInputTokens` both constrain the newest complete
-  turns retained after summarization; the runtime never cuts a turn in half.
+- `KeepMaxTurns` and `KeepMaxInputTokens` both bound which newest complete
+  turns are eligible to remain exact; the runtime never cuts a turn in half.
 - Token policies require a `HistoryModel` whose client's `CountTokens` operation
   returns an exact count. The count includes preserved system messages,
   candidate turns, and currently advertised tools.
@@ -1562,6 +1562,57 @@ Sonnet 5, and Mythos 5 require AWS's separate Mantle count endpoint, so the
 Bedrock adapter returns `model.ErrTokenCountingUnsupported` for those models.
 The generated agent config exposes `HistoryCompression` for deployment-specific
 overrides without changing the design defaults.
+
+#### Exact retention and summary coverage
+
+`KeepMaxTurns` and `KeepMaxInputTokens` establish the eligible complete turns
+before summarization. The newest complete turn is mandatory. The older-turn
+token allowance measures each candidate request minus the request containing
+only newest; both counts include preserved system messages and the current tool
+catalog. Equality fits. The summary is not charged against this older-turn
+allowance: it counts against the separate `CompressAtMaxInputTokens` total limit.
+
+When that total limit is positive, one summary receives **every turn older than
+newest**, including optional turns eligible to remain exact, even when the turn
+trigger fires first. The runtime counts
+the preserved system messages, actual rendered summary, eligible exact turns,
+and unchanged tool catalog together. If too large, it removes the oldest
+optional whole turn and counts the next candidate. It returns the longest
+fitting suffix permitted by the initial eligibility calculation, without
+assuming that counts are additive or monotonic. Equality with the limit fits.
+The count covers this history-policy request, not thinking or structured output
+a planner may choose afterward; the limit is not a summary-model context maximum.
+
+For example, if three turns are eligible, it tests the summary plus all three,
+then plus the newest two, then plus newest alone, stopping at the first fit.
+Every removed turn has already reached the summary model. Newest is never
+summarized or split. Some older turns may occur in both summary prose and exact
+history; their tools are not executed again. However, the answering model still
+has to interpret repeated or conflicting facts correctly. Complete evidence
+delivery and a fitting count do not prove that interpretation.
+
+If the summary plus newest cannot fit, compression returns the original history
+with an explicit error. Counting or summary errors stop immediately rather than
+trying another candidate, dropping evidence, or generating another summary.
+There is no automatic restart. For `K` eligible turns, final selection makes at
+most `K` exact count calls, stopping on fit or error. The unchanged trigger and
+eligibility checks may also count; these bounds describe logical calls, not
+provider HTTP attempts or billing. Broader summary input and extra counts may
+increase cost and latency. The existing model, thresholds, single summary
+completion, deadlines, and request limits remain in effect.
+
+With no total limit, only the excluded older prefix enters the summary and the
+eligible exact suffix stays unchanged. There is no added overlap or final
+counting, even when an older-turn token allowance is configured. Empty,
+system-only, non-triggered, and nothing-to-summarize returns remain unchanged.
+Each invocation recomputes fit from its own messages and tools.
+
+**Custom prompt upgrade:** with a positive total limit, `WithSummaryPrompt` now
+receives all turns older than newest, not only discarded history. Change wording
+that assumes "only discarded history" to refer to the supplied older history.
+The caller's chosen focus, `%s` interpolation, escaped percent signs, model class,
+and summary role remain unchanged. No new configuration or stored-history
+migration is needed. Without a total limit, the prefix scope is unchanged.
 
 #### Evidence supplied to the summary model
 
@@ -1604,14 +1655,15 @@ includes no document bodies and does not claim a mapping to a provider's
 `DocumentIndex` or invent a file link from incomplete attribution. Later
 compression treats these records as text, not a document registry to rebuild.
 
-This fuller input may be larger than the former placeholder prompt. The selected
-older messages, exact retained suffix, model class, thresholds, counting behavior,
-and single summary completion remain unchanged. Adapter support and existing
-client/provider limits still apply; providers may combine consecutive user
-messages. Unsupported media or an oversized request fails explicitly, without
-dropping evidence, a text-only fallback, or extra summary/count calls. Complete
-input does **not** guarantee that the model preserves every important fact in
-its prose, or that every history fits the summary model.
+This fuller input may be larger than the former placeholder prompt. The
+[coverage and exact-retention rules](#exact-retention-and-summary-coverage)
+determine which messages are summarized and which complete histories are counted.
+Adapter support and existing client/provider limits still apply; providers may
+combine consecutive user messages. Unsupported media or an oversized summary
+request fails explicitly, without dropping evidence, a text-only fallback, or
+another summary call. Media adds no separate counting step. Complete input does
+**not** guarantee that the model preserves every important fact in its prose,
+or that every history fits the summary model.
 
 ### Coordinated Generated-System Releases
 
