@@ -344,7 +344,11 @@ if err != nil {
     return err
 }
 
-runner, err := eval.NewRunner(judge.New(modelClient), eval.RunnerConfig{
+grader, err := judge.New(modelClient, maxOutputTokens)
+if err != nil {
+    return err
+}
+runner, err := eval.NewRunner(grader, eval.RunnerConfig{
     MaxConcurrency: 5,
     Reporter:       reporter,
 })
@@ -402,6 +406,19 @@ that need a deterministic judge client should implement `model.Provider` and
 pass it through `model.NewClient`; application code cannot implement
 `model.Client` directly.
 
+The application must supply a positive `maxOutputTokens` to `judge.New` and
+handle its error. Read this value from application configuration before running
+the suite. Zero and negative values fail construction without calling the
+model; there is no default.
+
+The value is an inclusive output-token ceiling for **one complete model
+response**, including all judgments and their JSON structure. It is not a
+per-claim allowance or a total budget for the scenario or suite. Goa-AI sends
+the same value on the initial request and every permitted correction request,
+regardless of claim count. Choose a value supported by your configured provider
+and model; unsupported values remain errors, not silently reduced limits. A
+finite ceiling does not guarantee that a response will finish within it.
+
 For each scenario the judge receives the answer and the scenario's claims, and
 returns exactly one label and a short rationale per claim:
 
@@ -420,10 +437,13 @@ before touching the application. Calibration runs under a two-minute deadline
 owned by the runner, so an unreachable or stalled model endpoint fails the
 suite with a clear error instead of blocking it forever.
 
-The judge is strict about its own protocol: missing or duplicate claim IDs,
-unknown labels, extra fields, and malformed responses are errors. It never
-retries or repairs a bad response, because a judge that edits its own output
-is no longer trustworthy evidence.
+The judge requires exactly one judgment per claim, in the same order, with a
+known label and a nonempty rationale. Claim IDs stay outside the model request
+and are restored by position. Missing or extra judgments, unknown labels,
+extra fields, and malformed responses are rejected. The existing bounded
+correction flow can ask the model for a replacement response; it never edits
+invalid output into an accepted result. If correction is exhausted, the caller
+receives an error rather than invented judgments.
 
 ## Read the report
 
@@ -443,6 +463,19 @@ Failures land at two levels:
 After a run without a suite-level error, check `report.Passed`: it is true
 only when every selected scenario passed all of its checks and claims. A false
 value must fail the calling command or CI job.
+
+## Upgrade judge construction
+
+`judge.New(client, opts...) *Judge` is replaced by
+`judge.New(client, maxOutputTokens, opts...) (*Judge, error)`. Update every
+caller to supply its configured positive response limit and handle the error
+before creating the runner. Existing options such as `WithModelClass` follow
+the required limit and keep their meaning.
+
+The former `256 × claim count` calculation is removed. This is a Go source
+change: existing callers must be updated to compile against the new version.
+It does not change the judge's model selection, prompt, labels, strict response
+validation, or correction count. No saved-report migration is required.
 
 ## Upgrade from string-input suites
 
