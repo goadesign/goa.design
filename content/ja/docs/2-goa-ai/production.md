@@ -403,9 +403,13 @@ program を実行します。この program は host application が所有し、
 
 1. runtime database を backup し、writer がないことを確認します。
 2. verification mode で migration を実行し、拒否された record をすべて修正します。
-3. conversion を適用し、schema、index、session、run metadata、v7 checkpoint、
+3. conversion を適用し、schema、index、session、run metadata、現在の形式の checkpoint、
    immutable record を検証します。
 4. storage owner と全 worker をまとめて deploy し、migration program を削除します。
+
+この物理 storage の変換は suspension 形式を変換しません。保存済み work は別途、
+[現在の continuation contract](../runtime/#外部入力と-workflow-continuation)
+を満たす必要があります。完了済み history と保存済み tool result は保持してください。
 
 conversion 開始後の rollback は database 全体の restore です。partial conversion の
 database に旧 writer を接続してはいけません。
@@ -486,6 +490,10 @@ worker version は次の順序で release します。
 
 受理された各 user input は top-level Goa-AI workflow を 1 つ開始します。Goa-AI は human または external input を要求すると workflow を終了し、completed run ID の下に非公開 checkpoint を保存します。受理された answer は current worker version で新しい workflow を開始します。そのため透過的 release では、新 version が保存済み checkpoint version、生成 result codec、必要な tool 名との互換性を保つ必要があります。Worker Versioning は互換性のない保存値を変換できません。
 
+現在の runtime が受理するのは `goa-ai.run-suspension.v8` だけで、それ以前の形式は
+拒否します。互換性のない upgrade では、worker を重ねて動かすこの手順ではなく、
+以下の「生成 contract の変更」に従ってください。
+
 application の残りの部分も、同じ overlap 中に availability を保つ必要があります。
 
 - downstream Service には常に 1 つ以上の ready endpoint が必要です。readiness-gated rolling replacement を使います。`Recreate` rollout は gap を作ります。
@@ -509,7 +517,13 @@ Worker Deployment Versioning は workflow replay を保護します。dependency
 
 生成 agent、completion package、永続 runtime payload を互換性なく変更する場合、上記の mixed-version 手順を適用しません。全 agent と completion を再生成し、影響を受ける work を drain または停止して、runtime、worker、caller を 1 回の coordinated release で deploy します。Goa-AI は生成 runtime contract の dual-read mode を提供しません。
 
-runtime が受理するのは、正確な `goa-ai.run-suspension.v7` schema だけです。question、clarification、external tool を待つ planner は provider の `ModelToolCallID` を保持し、workflow は停止データを保存する前に別の runtime `ToolCallID` を割り当てます。ほかの suspension schema は resume しません。将来 schema を変更する場合、coordinated release の前に互換性のない保存済み work を調査して廃止します。dual reader を追加したり field を推測したりしてはいけません。
+runtime が受理するのは、正確な `goa-ai.run-suspension.v8` schema だけです。question、clarification、external tool を待つ planner は provider の `ModelToolCallID` を保持し、workflow は停止データを保存する前に別の runtime `ToolCallID` を割り当てます。ほかの suspension schema は resume しません。version eight は、受理済み recovery plan が input を待つとき、提示した選択肢も保持します。古い保存済み work を所有する worker の置き換え前に、[External Input and Workflow Continuations](../runtime/#外部入力と-workflow-continuation) で説明した、host による保存方法と再開可能性の判断を行ってください。dual reader を追加したり field を推測したりしてはいけません。
+
+新規 work を受け付ける前に、すべての workflow queue と activity queue で協調する
+worker、生成済み package、caller を更新します。新 worker が v8 suspension を保存した
+後は、旧 worker ではそれを再開できません。image を戻すだけでは再開可能性は戻りません。
+完了済み history と保存済み tool result は保持します。物理 storage の変換は、別途
+host が所有する操作です。
 
 #### release の検証
 

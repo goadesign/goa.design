@@ -1035,10 +1035,17 @@ never send them to an untrusted client. Goa-AI validates the checkpoint's
 version and pending request, restores saved payloads through the current
 generated codecs, and resumes planning.
 
-The accepted checkpoint format is exactly `goa-ai.run-suspension.v7`. Goa-AI
-rejects every earlier version instead of guessing how to translate it. A host
-upgrading from an earlier format must migrate or remove those suspended runs
-before it accepts continuation traffic on the new runtime.
+The accepted checkpoint format is exactly `goa-ai.run-suspension.v8`. Version
+eight saves the advertised tool names when an accepted recovery plan waits for
+input: failed tool names alone cannot reconstruct the other choices offered
+on that turn. Continuation preserves those choices while still checking the
+current agent definition and execution policy.
+
+Goa-AI rejects every earlier checkpoint version. Before upgrading, finish
+old-format saved work under its owning runtime. If any must remain unfinished,
+the host must explicitly decide how to preserve it and whether it will remain
+resumable; this runtime cannot resume it. The framework supplies no conversion
+command and never automatically deletes, cancels, or rewrites saved work.
 
 When an answer completes a model-authored tool call from the earlier workflow,
 the new `tool_end` event has two distinct run identities:
@@ -1177,7 +1184,7 @@ These contracts are separate:
 | `ToolSpec.Meta` | A tool, for every run | Inert generated annotations whose semantics belong to the named consumer; metadata alone changes no runtime behavior. |
 | `ToolSpec.Bookkeeping` | A tool, for every run | The call is a durable control record whose success does not require another planner turn. It consumes no retrieval or consecutive-failure budget. |
 | `ToolSpec.TerminalRun` | A tool, for every run | Successful execution itself ends the run. It automatically implies bookkeeping. |
-| `ToolFailure.Recovery.Action` | One failed result | Selects same-tool correction, replanning without the failed tool, or finalization. |
+| `ToolFailure.Recovery.Action` | One failed result | Selects correction with the failed tool still available, replanning without it, or finalization. |
 | `PlanResult.SynthesizeAfterTools` | One selected batch | If the batch has no recoverable failure, the next planner turn must answer. |
 | `PlanResumeInput.SynthesisOnly` | One planner activity | Return a final answer; tool calls are invalid. |
 | `PlanResumeInput.Finalize` | Runtime-forced termination | A cap or deadline has prohibited normal work. |
@@ -1206,6 +1213,19 @@ Each recoverable `ToolFailure` also selects a `Recovery.Action`:
   use another advertised tool, wait for input, or answer.
 - `finish` removes all tools and requires a final answer from the available
   evidence.
+
+An ordinary `correct_call` turn combines the current agent's executable tools
+with the exact failed-tool contracts. Matching names are deduplicated;
+conflicting contracts, missing executable registrations, and revoked tools
+fail before a model call. Caller restrictions, run tag restrictions, and
+recovery exclusions still apply. A denied correction tool causes an error; the
+runtime does not silently drop it or restore it after filtering. Downstream
+authorization still checks every executed call.
+
+Unfinished queries retain their runtime-generated continuation actions; failed
+requests do not create continuations. Forced finalization offers only the exact
+failed terminal tool for correction, and synthesis-only turns remain tool-free.
+After correction, normal turns return to the current agent's tools.
 
 The workflow owns model-facing correction evidence. It replaces executor-
 supplied prior input and examples with the original provider call and the
@@ -1380,6 +1400,16 @@ the whole operation; Goa-AI never truncates, repairs, or coerces model data.
 `ValidatedStream` must be drained to `io.EOF`. Only then does `Response()`
 return the accepted canonical response. An incomplete, malformed, or
 contradictory stream returns an error and no accepted response.
+
+Complete tool calls must satisfy their advertised schema and any attached generated
+decoder before planner code can observe them. When a schema rejection has one
+unique deepest cause matching generated array field metadata, correction
+guidance names that array's inclusive minimum or maximum, for example:
+`Field "items" must contain at most 3 items.` Ambiguous or unsupported causes
+retain generic guidance. These are bounds on that one submitted array, not a
+limit on the complete run. The arguments remain rejected before execution;
+Goa-AI does not split, truncate, or rewrite them. The original validation error,
+acceptance rules, and configured recovery-turn limit remain unchanged.
 
 ### Provider Adapters
 

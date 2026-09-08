@@ -297,8 +297,15 @@ hook codec は別に test します。`RunStarted`、`RunSuspended`、`RunComple
 `ChildRunLinked` の decoder は、`null`、未知の field、末尾の二つ目の JSON 値を
 拒否する必要があります。
 
-continuation test は `goa-ai.run-suspension.v7` を受理し、それ以前の version は
+continuation test は `goa-ai.run-suspension.v8` を受理し、それ以前の version は
 payload の復元や planner 呼び出しの前に拒否することを確認します。
+input を待つ recovery plan では、失敗した tool だけでなく、提示したすべての代替手段が
+continuation に保持されることを確認します。現在の agent definition と実行 policy が、
+削除済み、不一致、または禁止された tool を planning 前に拒否することも確認します。
+保存済みの選択肢は恒久的な許可ではありません。許可された代替手段、未完了 query の
+continuation、terminal tool だけによる強制修正、tool のない synthesis の正常系テストも
+保持してください。これらの contract test が証明するのは合法な action であり、
+実際の model の選択の品質ではありません。
 
 ---
 

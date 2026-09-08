@@ -418,8 +418,13 @@ après vérification.
 1. Créez et vérifiez une sauvegarde, puis confirmez l’absence de writers.
 2. Exécutez la migration en mode vérification et corrigez chaque rejet.
 3. Appliquez la conversion et vérifiez schéma, index, sessions, métadonnées,
-   checkpoints v7 et enregistrements immuables.
+   points de reprise au format actuel et enregistrements immuables.
 4. Déployez ensemble le propriétaire et tous les workers, puis supprimez le programme.
+
+Cette conversion du stockage physique ne traduit pas les formats de suspension.
+Le travail enregistré doit satisfaire séparément le
+[contrat actuel de continuation](../runtime/#entrées-externes-et-continuations-de-workflow).
+Conservez intacts l'historique terminé et les résultats d'outils enregistrés.
 
 Après le début de la conversion, le rollback restaure la sauvegarde complète.
 N’exécutez pas d’anciens writers sur une base partiellement convertie.
@@ -532,6 +537,11 @@ courante. Cette version doit donc rester compatible avec la version du point
 de reprise, les codecs générés et les noms d'outils requis. Le versionnement
 des workers ne traduit pas des valeurs enregistrées incompatibles.
 
+Le runtime actuel accepte uniquement `goa-ai.run-suspension.v8` et rejette les
+versions précédentes. Pour une mise à niveau incompatible, suivez la section
+« Changements de contrats générés » ci-dessous plutôt que cette procédure de
+chevauchement des workers.
+
 Le reste de l'application doit rester disponible pendant le chevauchement :
 
 - chaque service en aval conserve au moins un endpoint prêt ; utilisez un
@@ -577,13 +587,24 @@ concerné, puis déployez ensemble le runtime, les workers et les appelants.
 Goa-AI n'offre aucun mode de double lecture pour ses contrats générés.
 
 Le runtime accepte uniquement le schéma exact
-`goa-ai.run-suspension.v7`. Les planificateurs qui attendent des questions, une
+`goa-ai.run-suspension.v8`. Les planificateurs qui attendent des questions, une
 clarification ou des outils externes conservent le `ModelToolCallID` du
 fournisseur ; le workflow attribue un `ToolCallID` d'exécution distinct avant
 d'enregistrer la suspension. Aucun autre schéma de suspension ne peut reprendre.
-Un changement futur doit inventorier et retirer le travail enregistré
-incompatible avant la version coordonnée ; n'ajoutez ni double lecteur ni
-déduction de champs.
+La version huit conserve aussi les choix annoncés lorsqu'un plan de
+récupération accepté attend une entrée. Avant de remplacer les workers qui
+possèdent du travail enregistré dans l'ancien format, appliquez la décision de
+l'hôte sur sa conservation et sa reprise décrite dans
+[Entrées externes et continuations de workflow](../runtime/#entrées-externes-et-continuations-de-workflow) ;
+n'ajoutez ni double lecteur ni déduction de champs.
+
+Mettez à jour ensemble les workers de toutes les files de workflows et
+d'activités, les packages générés et les appelants avant d'accepter du nouveau
+travail. Dès que les nouveaux workers enregistrent des suspensions v8, les
+anciens ne peuvent pas les reprendre : rétablir une image seule ne restaure
+pas cette capacité. Conservez l'historique terminé et les résultats d'outils
+enregistrés ; toute conversion du stockage physique reste une opération
+distincte appartenant à l'hôte.
 
 #### Vérification d'une version
 

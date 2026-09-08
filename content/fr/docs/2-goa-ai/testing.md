@@ -304,9 +304,18 @@ Testez séparément le codec des hooks : les décodeurs de `RunStarted`,
 `RunSuspended`, `RunCompleted` et `ChildRunLinked` doivent rejeter `null`, les
 champs inconnus et une seconde valeur JSON finale.
 
-Les tests de continuation doivent accepter `goa-ai.run-suspension.v7` et rejeter
+Les tests de continuation doivent accepter `goa-ai.run-suspension.v8` et rejeter
 toutes les versions précédentes avant de restaurer les payloads ou d’appeler le
 planificateur.
+Pour un plan de récupération qui attend une entrée, vérifiez que la continuation
+conserve toutes les alternatives annoncées, pas seulement l'outil en échec.
+Vérifiez aussi que la définition actuelle de l'agent et la politique d'exécution
+rejettent avant la planification les outils supprimés, contradictoires ou
+interdits ; les choix enregistrés n'accordent pas une autorisation permanente.
+Conservez des tests positifs pour les alternatives autorisées, les continuations
+de requêtes inachevées, la correction forcée limitée aux outils terminaux et la
+synthèse sans outils. Ces tests de contrat prouvent quelles actions sont
+permises, pas la qualité du choix d'un modèle réel.
 
 ---
 
