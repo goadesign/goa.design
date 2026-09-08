@@ -267,8 +267,9 @@ if err := rt.Seal(ctx); err != nil {
    `StartOneShotChildRun`. Ogni workflow accettato salva `RunStarted`.
    [Memoria e sessioni](../memory-sessions/#cancellation-provenance) descrive i
    tre modi validi di salvare i motivi e i record di richiesta di annullamento.
-3. Il runtime chiama `PlanStart` con i messaggi e un `run.Context` contenente
+3. Il runtime chiama `PlanStart` con `PrepareMessages` e un `run.Context` contenente
    `RunID`, `SessionID`, `TurnID`, etichette e limiti di policy.
+   Il pianificatore chiama la funzione se gli serve la cronologia.
 4. Pianifica le chiamate agli strumenti usando i codec generati.
 5. Chiama `PlanResume` con gli output che restano visibili al planner. Gli
    strumenti con budget sono visibili per impostazione predefinita. Un errore
@@ -569,6 +570,10 @@ La gestione dei prompt e nativa del runtime e versionata:
 - Il contenuto renderizzato include metadati `prompt.PromptRef` per provenance; i planner possono allegarli a `model.Request.PromptRefs`.
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -578,7 +583,7 @@ if err != nil {
 
 resp, err := modelClient.Complete(ctx, &model.Request{
     RunID:      input.RunContext.RunID,
-    Messages:   input.Messages,
+    Messages:   messages,
     PromptRefs: []prompt.PromptRef{content.Ref},
 })
 ```
@@ -1093,6 +1098,41 @@ I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che esp
 - `RemoveReminder(id string)` - cancellare i promemoria quando le precondizioni non sono più valide
 - `Memory()` - accedere alla cronologia delle conversazioni
 
+### Preparare i messaggi della conversazione {#preparing-conversation-messages}
+
+`PlanInput` e `PlanResumeInput` forniscono la funzione obbligatoria
+`PrepareMessages func() ([]*model.Message, error)`, da chiamare prima di leggere
+o trasformare la cronologia, anche per una decisione senza modello. La prima
+chiamata applica la policy della cronologia ai messaggi dell'attività e agli
+strumenti pubblicizzati, con il contesto, la scadenza e l'annullamento di quella
+attività. Una decisione basata solo su `RunContext`, `ToolOutputs` o `Finalize`
+può non chiamarla: non vengono eseguiti conteggi o riepiloghi inutilizzati.
+
+Le chiamate ripetute o concorrenti restituiscono la stessa slice di messaggi e
+lo stesso errore, senza ripetere la policy né copiare i messaggi. Il pianificatore
+resta responsabile di sincronizzare le modifiche concorrenti. Tutte le chiamate
+devono terminare prima del suo ritorno; non conservare la funzione per usarla
+in seguito. Il runtime la fornisce anche per una cronologia vuota o senza policy
+configurata. Non esiste un accesso alternativo alla cronologia non preparata.
+
+Restituisci subito l'errore di preparazione. Anche se il pianificatore lo ignora,
+il runtime rifiuta il risultato e fa fallire l'attività con quell'errore,
+conservandone messaggio completo, cause e classificazione. Un successivo errore
+del pianificatore o del modello non lo sostituisce. La preparazione non viene
+ritentata nella stessa attività; un nuovo tentativo dell'attività riceve una
+nuova funzione. Il replay di un'attività completata usa il risultato registrato,
+senza nuova preparazione.
+
+**Migrazione:** sostituisci i vecchi campi `PlanInput.Messages` e
+`PlanResumeInput.Messages` con la chiamata a `PrepareMessages` e gestisci l'errore.
+Anche i test diretti devono fornire la funzione; inoltrala invariata quando
+converti un input del pianificatore in un altro. Aggiorna i chiamanti insieme
+alla dipendenza goa-ai. `RunInput.Messages`, richieste del modello, dati delle
+attività e trascrizioni salvate restano invariati: cambia solo l'API Go, senza
+migrazione di dati o protocolli. Limiti, firme del ragionamento, coppie
+chiamata/risultato e streaming non cambiano; i riepiloghi non vengono riutilizzati
+tra attività.
+
 ---
 
 ## Moduli funzionali
@@ -1320,13 +1360,17 @@ sottostante e restituisce un `planner.StreamSummary`:
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
+    messages, err := input.PrepareMessages()
+    if err != nil {
+        return nil, err
+    }
     mc, ok := input.Agent.PlannerModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
     if !ok {
         return nil, errors.New("model not configured")
     }
 
     req := &model.Request{
-        Messages: input.Messages,
+        Messages: messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1361,12 +1405,16 @@ Quando serve il `model.Client` grezzo, recuperarlo tramite
 `PlannerContext.ModelClient` e abbinarlo a `planner.ConsumeStream`:
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
 req := &model.Request{
-    Messages: input.Messages,
+    Messages: messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1404,6 +1452,10 @@ proprietario del flusso per turno del planner.
 
 ### Conservazione esatta e copertura del riepilogo
 
+La policy si applica alla prima chiamata a `PrepareMessages`, secondo il
+[contratto di preparazione](#preparing-conversation-messages), non prima di ogni
+invocazione del pianificatore.
+
 Con `CompressAtMaxInputTokens` positivo, un solo riepilogo riceve tutti i turni
 precedenti al più recente. Il runtime conta insieme messaggi di sistema,
 riepilogo effettivo, turni completi ammissibili e strumenti attuali. Se supera
@@ -1420,8 +1472,9 @@ ripetuti o contrastanti. Con `K` turni ammissibili si effettuano al massimo `K`
 conteggi finali, oltre alle verifiche iniziali. Input più ampio e conteggi
 aggiuntivi possono aumentare costo e latenza, ma non aggiungono un'altra chiamata
 di riepilogo. Se riepilogo e turno più recente non rientrano, oppure un conteggio
-o il riepilogo falliscono, viene restituita la cronologia originale con l'errore,
-senza soluzioni alternative né riavvio automatico.
+o il riepilogo falliscono, la policy restituisce la cronologia originale e
+l'errore al runtime, senza riavvio automatico. `PrepareMessages` espone l'errore
+di preparazione, non un accesso alternativo alla cronologia non preparata.
 
 Senza limite totale, si riassume solo il prefisso escluso: i turni conservati
 restano invariati, senza sovrapposizione né conteggi finali aggiunti. Con limite

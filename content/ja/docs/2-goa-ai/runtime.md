@@ -273,7 +273,7 @@ if err := rt.Seal(ctx); err != nil {
    保存します。受理されたすべての workflow が `RunStarted` を保存します。
    キャンセル理由と要求 record の有効な 3 通りの保存方法は、
    [メモリとセッション](../memory-sessions/#cancellation-provenance)で定義します。
-3. runtime が messages と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
+3. runtime が `PrepareMessages` と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
    を持つ `run.Context` を `PlanStart` に渡します。
 4. planner が返した tool calls を generated codecs で実行します。
 5. プランナーから見えるまま残った tool output を添えて `PlanResume` を呼び出します。予算対象 tool は既定で可視です。失敗した bookkeeping tool は `ToolFailure.Recovery.Action` に従い、call の修正、その tool を除いた replanning、finalization のいずれかとして次の planner turn を schedule します。planner が final response、final tool result を返すか、成功した `TerminalRun` tool が run を完了するまで loop します。cap や deadline が finalization を強制した場合、planner は prose ではなく terminal bookkeeping tool で閉じられます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / terminal phase）を遷移します。
@@ -589,6 +589,10 @@ Prompt 管理はランタイムネイティブで、バージョン管理され�
 - 描画済み内容には provenance 用の `prompt.PromptRef` が含まれ、プランナーは `model.Request.PromptRefs` に付与できる
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -598,7 +602,7 @@ if err != nil {
 
 resp, err := modelClient.Complete(ctx, &model.Request{
     RunID:      input.RunContext.RunID,
-    Messages:   input.Messages,
+    Messages:   messages,
     PromptRefs: []prompt.PromptRef{content.Ref},
 })
 ```
@@ -1052,6 +1056,31 @@ finalization を永続的に完了する必要があります。
 - `RemoveReminder(id string)` - 前提条件が満たされなくなったときに reminder を削除する
 - `Memory()` - 会話履歴へアクセスする
 
+### 会話メッセージの準備 {#preparing-conversation-messages}
+
+`PlanInput` と `PlanResumeInput` には
+`PrepareMessages func() ([]*model.Message, error)` が必須です。代わりに使える
+`Messages` フィールドはありません。プランナーは履歴の読み取り、確認、変換、
+プロンプトやリマインダーの組み立ての前に `PrepareMessages()` を呼び、
+エラーを確認します。モデルを呼ばずにメッセージを使う処理も同じです。
+メッセージが不要な処理だけは呼び出しを省略でき、その場合は履歴ポリシーも、
+それに伴うトークン計数や要約も実行しません。
+
+最初の呼び出しは、アクティビティのコンテキストと期限を使って、メッセージと
+提示されたツールに履歴ポリシーを適用します。キャンセルはトークン計数と要約にも
+伝わります。ポリシーが未設定でも、ランタイムはこの関数を必ず渡します。
+同じプランナー呼び出し内では、並行呼び出しも含め、常に同じスライス、同じメッセージへの
+ポインター、同じエラーを返します。スライスやメッセージの並行変更は呼び出し側で
+同期する必要があります。この関数を後で使うために保存してはいけません。
+すべての呼び出しは `PlanStart` または
+`PlanResume` が戻る前に完了させます。準備エラーをプランナーが無視しても
+アクティビティは失敗し、未準備の履歴には切り替えません。元の準備エラーは、その後の
+プランナーやモデルのエラーより優先し、元の分類を保ちます。モデル出力の修復処理には
+変わりません。同じ試行内で失敗した準備を再実行することもありません。
+完了済みアクティビティの再生では保存した
+結果を使い、準備は繰り返しません。新しい試行やプランナー呼び出しでは改めて準備します。
+保存済みの履歴、圧縮規則、上限は変わりません。
+
 ---
 
 ## フィーチャーモジュール
@@ -1282,8 +1311,12 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
         return nil, errors.New("model not configured")
     }
 
+    messages, err := input.PrepareMessages()
+    if err != nil {
+        return nil, err
+    }
     req := &model.Request{
-        Messages: input.Messages,
+        Messages: messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1318,8 +1351,12 @@ mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 req := &model.Request{
-    Messages: input.Messages,
+    Messages: messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1377,6 +1414,9 @@ remote endpoint が exact token count を実装するときだけ `NewCountingRe
 
 ### history policy
 
+履歴ポリシーはプランナー呼び出しの前ではなく、
+[`PrepareMessages`](#preparing-conversation-messages) を呼ぶ時に適用します。
+
 history compression では、summary 開始条件と exact recent history の保持量を分けます。
 
 - `CompressAtTurns` と `CompressAtMaxInputTokens` は OR 条件。
@@ -1401,8 +1441,9 @@ Bedrock Runtime は structured-output request を count できません。Claude
 重複や矛盾をモデルが正しく解釈する保証にはなりません。保持候補が `K` ターンなら、
 初期チェックに加えて最終計数は最大 `K` 回です。入力の拡大と追加計数は費用や
 待ち時間を増やす可能性がありますが、要約呼び出しは一回のままです。要約と最新
-ターンだけでも収まらない場合や、計数・要約が失敗した場合は、元の履歴とエラーを
-返します。代替処理や自動再開はしません。
+ターンだけでも収まらない場合や、計数・要約が失敗した場合、ポリシーは元の履歴と
+エラーを返します。この履歴で代わりに計画を進めることはできません。
+`PrepareMessages()` のエラーでアクティビティは失敗し、代替処理や自動再開はしません。
 
 全体上限がない場合は、除外する古い先頭部分だけを要約します。正確に保持する
 末尾部分は変わらず、重複対象や最終計数は追加しません。正の上限を使う場合、

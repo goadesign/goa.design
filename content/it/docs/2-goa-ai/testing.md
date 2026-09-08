@@ -96,6 +96,11 @@ iniettare direttamente input deterministici e richieste tipizzate. Usare un
 provider fittizio quando il test deve provare validazione della richiesta,
 decodifica dei payload, limiti dell'output o terminazione dello stream.
 
+I test diretti dei pianificatori forniscono `PrepareMessages` e verificano che
+gli errori di preparazione vengano restituiti. Per provare che il runtime applica
+la policy una sola volta e rifiuta un errore ignorato, usare il runtime reale;
+vedi il [contratto di preparazione](../runtime/#preparing-conversation-messages).
+
 I provider fittizi per lo streaming devono emettere una sequenza completa e
 valida, poi restituire `io.EOF`; solo allora
 `ValidatedStream.Response()` espone la risposta accettata. I test delle

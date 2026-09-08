@@ -1472,7 +1472,7 @@ Agent("assistant", "Conversational assistant", func() {
 
 ### History
 
-`History(dsl)` define cómo el runtime gestiona el historial de conversación antes de cada invocación al planner. Las políticas de historial transforman el historial de mensajes preservando:
+`History(dsl)` define cómo el runtime prepara el historial de conversación cuando el planificador llama por primera vez a `PrepareMessages()` en cada actividad. Si no necesita mensajes y omite la llamada, la política no se ejecuta. Consulta el [ciclo de vida de los mensajes](../runtime/#preparing-conversation-messages). Las políticas de historial transforman el historial de mensajes preservando:
 
 - Los prompts de sistema al inicio de la conversación
 - Los límites lógicos de turno (usuario + asistente + llamadas/resultados de herramientas como unidades atómicas)

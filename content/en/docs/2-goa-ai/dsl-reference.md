@@ -1549,7 +1549,13 @@ Agent("assistant", "Conversational assistant", func() {
 
 ### History
 
-`History(dsl)` defines how the runtime manages conversation history before each planner invocation. History policies transform the message history while preserving:
+`History(dsl)` defines how the runtime prepares conversation history on the
+first `PrepareMessages` call in each planner activity. Decisions that do not
+read messages skip this work; message-dependent decisions still prepare history
+even when they do not call a model. See
+[Preparing conversation messages](../runtime/#preparing-conversation-messages)
+for lifetime and error handling. History policies transform the messages while
+preserving:
 
 - System prompts at the start of the conversation
 - Logical turn boundaries (user + assistant + tool calls/results as atomic units)

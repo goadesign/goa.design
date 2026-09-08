@@ -142,7 +142,7 @@ aggiornamenti, quindi mantenere le modifiche dell'applicazione in `cmd/` e `inte
 
 **Il ciclo di pianificazione/esecuzione:**
 
-1. `PlanStart` riceve i messaggi utente iniziali.
+1. `PlanStart` accede ai messaggi utente iniziali tramite `PrepareMessages` se ne ha bisogno.
 2. Il pianificatore restituisce un `FinalResponse`, chiamate strumento o una richiesta di attesa.
 3. Il runtime convalida ed esegue le chiamate agli strumenti ammessi utilizzando le specifiche generate e gli esecutori registrati.
 4. `PlanResume` riceve gli output dello strumento visibili dal pianificatore.
@@ -277,13 +277,17 @@ Schizzo del pianificatore:
 
 ```go
 func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+	messages, err := in.PrepareMessages()
+	if err != nil {
+		return nil, err
+	}
 	mc, ok := in.Agent.PlannerModelClient("default")
 	if !ok {
 		return nil, errors.New("model client default is not registered")
 	}
 
 	summary, err := mc.Stream(ctx, &model.Request{
-		Messages: in.Messages,
+		Messages: messages,
 		Tools:    in.Agent.AdvertisedToolDefinitions(),
 		Stream:   true,
 	})
@@ -303,6 +307,11 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	}, nil
 }
 ```
+
+Chiama `PrepareMessages` prima di leggere o trasformare la cronologia e
+restituisci ogni errore. Una decisione basata solo sullo stato dell'esecuzione
+o sui risultati tipizzati degli strumenti non deve preparare i messaggi.
+Vedi il [contratto di preparazione](../runtime/#preparing-conversation-messages).
 
 Utilizza `in.Agent.ModelClient("default")` quando hai bisogno di controllo e associazione del flusso non elaborato
 con `planner.ConsumeStream`. Scegli un proprietario dello stream per turno del pianificatore.

@@ -274,7 +274,7 @@ if err := rt.Seal(ctx); err != nil {
    workflow does no planner or tool work.
    [Memory & Sessions](../memory-sessions/#cancellation-provenance) defines the
    three valid ways cancellation reasons and intent records are stored.
-3. The runtime calls your planner's `PlanStart` with the current messages and a
+3. The runtime calls your planner's `PlanStart` with `PrepareMessages` and a
    `run.Context` containing `RunID`, `SessionID`, `TurnID`, labels, and policy
    caps.
 4. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs).
@@ -653,6 +653,10 @@ Prompt management is runtime-native and versioned:
   `model.Request.PromptRefs`.
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -661,7 +665,7 @@ if err != nil {
 }
 
 resp, err := modelClient.Complete(ctx, &model.Request{
-    Messages:   input.Messages,
+    Messages:   messages,
     PromptRefs: []prompt.PromptRef{content.Ref},
 })
 ```
@@ -1237,6 +1241,46 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 - `RemoveReminder(id string)` - clear reminders when preconditions no longer hold
 - `Memory()` - access conversation history
 
+### Preparing conversation messages {#preparing-conversation-messages}
+
+Both planner inputs provide `PrepareMessages func() ([]*model.Message, error)`
+instead of a `Messages` field. Call it before inspecting or transforming the
+conversation, including prompt construction and message-dependent checks:
+
+```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
+```
+
+The first call applies the registered history policy to this activity's
+messages and advertised tools, using the activity context and deadline.
+Repeated or concurrent calls return the same prepared slice, message pointers,
+and error without rerunning the policy. Callers must coordinate mutations as
+with any shared slice. Complete all calls before the planner returns, and do
+not retain the function for another invocation. Each new activity attempt gets
+its own preparation; completed-activity replay does not prepare history again.
+
+A decision based only on run context and typed tool outputs need not call it,
+so unused history causes no token counting or summarization. A code-only
+decision that reads earlier messages must still prepare them. The runtime
+always supplies the callback, including when no history policy is configured;
+there is no raw-history alternative or nil-as-bypass mode.
+
+Preparation failure fails the activity even if planner code ignores the error.
+The original history error and its retry classification take precedence over
+later planner or model-output errors; they do not become model-output recovery.
+Cancellation reaches token counting and summarization through the activity
+context. Repeated access does not retry a failed preparation. History limits,
+retention rules, native tool/result pairing, and stored transcripts are
+unchanged.
+
+**Upgrade custom planners and direct test fixtures** when upgrading goa-ai:
+replace reads of the removed input fields with the checked call above and
+supply the callback in fixtures whose planners read history. This is a Go
+source change, not a new wire format or stored-history migration.
+
 ---
 
 ## Feature Modules
@@ -1500,9 +1544,13 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if !ok {
         return nil, errors.New("model not configured")
     }
+    messages, err := input.PrepareMessages()
+    if err != nil {
+        return nil, err
+    }
 
     req := &model.Request{
-        Messages: input.Messages,
+        Messages: messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1542,8 +1590,12 @@ mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 req := &model.Request{
-    Messages: input.Messages,
+    Messages: messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1617,6 +1669,11 @@ token counting. `NewRemoteClient` deliberately returns
 
 ### History Policies
 
+History policies run on the first `PrepareMessages` call in each planner
+activity, not before every planner invocation. See
+[Preparing conversation messages](#preparing-conversation-messages) for the
+caller contract and the decisions that need no history work.
+
 History compression separates the condition that starts summarization from the
 amount of exact recent history retained:
 
@@ -1664,7 +1721,9 @@ has to interpret repeated or conflicting facts correctly. Complete evidence
 delivery and a fitting count do not prove that interpretation.
 
 If the summary plus newest cannot fit, compression returns the original history
-with an explicit error. Counting or summary errors stop immediately rather than
+with an explicit error to the runtime. `PrepareMessages` returns that
+preparation error without exposing the original history as a fallback.
+Counting or summary errors stop immediately rather than
 trying another candidate, dropping evidence, or generating another summary.
 There is no automatic restart. For `K` eligible turns, final selection makes at
 most `K` exact count calls, stopping on fit or error. The unchanged trigger and

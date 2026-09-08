@@ -69,7 +69,9 @@ La politique `History(...)` d'un agent peut résumer les anciens tours tout en
 conservant une fin exacte et limitée. Les valeurs `CompressAt...` déterminent
 le début de la compression ; les valeurs `KeepMax...` déterminent les tours
 complets les plus récents qui restent inchangés. Le runtime ne tronque jamais
-un tour.
+un tour. Cette préparation a lieu au premier appel à `PrepareMessages`, pas
+avant chaque invocation du planificateur ; voir le
+[contrat de préparation](../runtime/#preparing-conversation-messages).
 
 La compression exige un `HistoryModel` configuré. Les déclencheurs et limites
 fondés sur les jetons exigent aussi le comptage exact de ce client. Bedrock
@@ -80,7 +82,7 @@ modèles Claude actuels exigent l'endpoint Mantle distinct d'AWS. Consultez
 
 ### Comment cela simplifie les planificateurs et les interfaces utilisateur
 
-- **Les planificateurs** : Reçoivent la transcription actuelle dans `planner.PlanInput.Messages` et `planner.PlanResumeInput.Messages`. Ils peuvent décider de ce qu'il faut faire en se basant uniquement sur les messages, sans passer par un état supplémentaire.
+- **Les planificateurs** : Obtiennent la transcription préparée en appelant `PrepareMessages` sur `PlanInput` ou `PlanResumeInput` et en traitant l'erreur avant de lire les messages. Ils peuvent alors décider à partir de cette transcription, sans maintenir un état parallèle.
 - **UIs** : L'historique du chat, les rubans d'outils et les cartes d'agent peuvent être rendus à partir de la même transcription sous-jacente que celle qui est conservée pour le modèle. Aucune structure séparée de "journal d'outil" n'est nécessaire.
 - **Adaptateurs de fournisseurs** : Ne devinent jamais quels outils ont été appelés ou quels résultats appartiennent à quel endroit ; ils mappent simplement les parties de la transcription → les blocs du fournisseur.
 
@@ -417,7 +419,7 @@ JSON exact décrit ci-dessus.
 
 - **Utiliser des schémas solides et descriptifs** : Des types, descriptions et exemples riches en `Args` / `Return` dans votre conception de Goa produisent des charges utiles/résultats d'outils plus clairs dans la transcription
 
-- **Laissez le temps d'exécution s'occuper de l'état** : Évitez de maintenir des tableaux parallèles d'"historique de l'outil" ou des tranches de "messages précédents" dans votre planificateur. Lisez à partir de `PlanInput.Messages` / `PlanResumeInput.Messages` et comptez sur l'exécution pour ajouter de nouvelles parties
+- **Laissez le runtime gérer l'état** : Évitez de maintenir des tableaux parallèles d'« historique des outils » ou de « messages précédents ». Appelez `PrepareMessages`, traitez l'erreur et lisez la transcription renvoyée ; le runtime ajoute les nouvelles parties.
 
 - **Les transcriptions ne sont conservées qu'une seule fois et réutilisées partout** : Quel que soit le magasin que vous choisissez, traitez la transcription comme une infrastructure réutilisable - la même transcription soutenant les appels de modèle, l'interface de discussion, l'interface de débogage et l'analyse hors ligne
 

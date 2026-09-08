@@ -59,7 +59,7 @@ No hay **una API separada de "historial de herramientas "**; la transcripción e
 
 ### Cómo simplifica los planificadores y las interfaces de usuario
 
-- **Planificadores**: Reciben la transcripción actual en `planner.PlanInput.Messages` y `planner.PlanResumeInput.Messages`. Pueden decidir qué hacer basándose puramente en los mensajes, sin enhebrar estado extra.
+- **Planificadores**: Obtienen la transcripción preparada llamando a `PrepareMessages()` en `planner.PlanInput` o `planner.PlanResumeInput` y comprobando el error antes de usarla. Pueden decidir qué hacer basándose en esos mensajes, sin mantener estado extra. Consulta el [ciclo de vida de los mensajes](../runtime/#preparing-conversation-messages).
 - **UIs**: Pueden renderizar el historial de chat, las cintas de herramientas y las tarjetas de agente a partir de la misma transcripción subyacente que persisten para el modelo. No se necesitan estructuras separadas de "registro de herramientas".
 - **Adaptadores de proveedores: Nunca adivinan qué herramientas fueron llamadas o qué resultados pertenecen a dónde; simplemente mapean partes de transcripción → bloques de proveedor.
 
@@ -383,7 +383,7 @@ exacto descrito arriba.
 
 - **Utilizar esquemas sólidos y descriptivos**: Los tipos, descripciones y ejemplos `Args` / `Return` en el diseño de Goa producen cargas útiles/resultados más claros en la transcripción
 
-- **Deje que el tiempo de ejecución posea el estado**: Evite mantener matrices paralelas de "historial de herramientas" o rebanadas de "mensajes anteriores" en su planificador. Lea desde `PlanInput.Messages` / `PlanResumeInput.Messages` y confíe en el tiempo de ejecución para añadir nuevas partes
+- **Deje que el runtime gestione el estado**: Evite mantener arrays paralelos de "historial de herramientas" o slices de "mensajes anteriores" en su planificador. Llame a `PrepareMessages()`, compruebe el error y use los mensajes preparados; confíe en el runtime para añadir nuevas partes.
 
 - **Persiste las transcripciones una vez, reutilízalas en todas partes**: Sea cual sea el almacén que elija, trate la transcripción como infraestructura reutilizable: la misma transcripción respalda las llamadas al modelo, la interfaz de usuario de chat, la interfaz de usuario de depuración y el análisis sin conexión
 

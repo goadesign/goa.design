@@ -279,8 +279,9 @@ if err := rt.Seal(ctx); err != nil {
    [Mémoire et sessions](../memory-sessions/#cancellation-provenance) définit
    les trois façons valides d'enregistrer les motifs et les demandes
    d'annulation.
-3. Le runtime appelle `PlanStart` avec les messages et un `run.Context`
+3. Le runtime appelle `PlanStart` avec `PrepareMessages` et un `run.Context`
    contenant `RunID`, `SessionID`, `TurnID`, les libellés et les limites.
+   Le planificateur appelle la fonction s'il a besoin de l'historique.
 4. Il planifie les appels d'outils avec les codecs générés.
 5. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par
    le planificateur. Les outils budgétisés sont visibles par défaut ; les outils
@@ -654,6 +655,10 @@ La gestion des invites est native du runtime et versionnée :
 `model.Request.PromptRefs`.
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -663,7 +668,7 @@ if err != nil {
 
 resp, err := modelClient.Complete(ctx, &model.Request{
     RunID:      input.RunContext.RunID,
-    Messages:   input.Messages,
+    Messages:   messages,
     PromptRefs: []prompt.PromptRef{content.Ref},
 })
 ```
@@ -1203,6 +1208,41 @@ Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` q
 - `RemoveReminder(id string)` - effacer les rappels lorsque les conditions préalables ne sont plus valables
 - `Memory()` - accéder à l'historique des conversations
 
+### Préparer les messages de conversation {#preparing-conversation-messages}
+
+`PlanInput` et `PlanResumeInput` fournissent la fonction obligatoire
+`PrepareMessages func() ([]*model.Message, error)`, à appeler avant de lire ou
+de transformer l'historique, même pour une décision prise sans modèle. Le
+premier appel applique la politique d'historique aux messages de l'activité et
+aux outils annoncés, avec le contexte, l'échéance et l'annulation de cette
+activité. Une décision fondée uniquement sur `RunContext`, `ToolOutputs` ou
+`Finalize` peut ne pas l'appeler : aucun comptage ni résumé n'est alors effectué.
+
+Les appels répétés ou concurrents renvoient la même tranche de messages et la
+même erreur, sans relancer la politique ni copier les messages. Le planificateur
+reste responsable de synchroniser les modifications concurrentes. Tous les
+appels doivent se terminer avant son retour ; ne conservez pas la fonction pour
+plus tard. Le runtime la fournit aussi pour un historique vide ou sans politique
+configurée. Il n'existe pas d'autre accès à un historique brut.
+
+Renvoyez immédiatement l'erreur de préparation. Même si le planificateur
+l'ignore, le runtime refuse son résultat et fait échouer l'activité avec cette
+erreur, en préservant son message complet, ses causes et sa classification.
+Une erreur ultérieure du planificateur ou du modèle ne la remplace pas. Il n'y
+a pas de nouvelle tentative de préparation dans la même activité ; une nouvelle
+tentative d'activité obtient une nouvelle fonction. Le rejeu d'une activité
+terminée utilise son résultat enregistré, sans nouvelle préparation.
+
+**Migration :** remplacez les anciens champs `PlanInput.Messages` et
+`PlanResumeInput.Messages` par l'appel à `PrepareMessages` et traitez son erreur.
+Les tests directs doivent fournir cette fonction ; transmettez-la inchangée
+lorsque vous convertissez une entrée de planificateur en une autre. Mettez les
+appelants à jour avec leur dépendance goa-ai. `RunInput.Messages`, les requêtes
+du modèle, les données d'activité et les transcriptions enregistrées restent
+inchangés : seule l'API Go change, sans migration de données ou de protocole.
+Les limites, les signatures de raisonnement, les paires appel/résultat et le
+streaming restent inchangés ; les résumés ne sont pas réutilisés entre activités.
+
 ---
 
 ## Modules de fonctionnalités
@@ -1470,13 +1510,17 @@ La méthode `Stream(...)` draine le flux du fournisseur sous-jacent et renvoie u
 
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*planner.PlanResult, error) {
+    messages, err := input.PrepareMessages()
+    if err != nil {
+        return nil, err
+    }
     mc, ok := input.Agent.PlannerModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
     if !ok {
         return nil, errors.New("model not configured")
     }
 
     req := &model.Request{
-        Messages: input.Messages,
+        Messages: messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1514,12 +1558,16 @@ sur `PlannerContext.ModelClient` et associez son flux validé à
 `planner.ConsumeStream` :
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
 req := &model.Request{
-    Messages: input.Messages,
+    Messages: messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1560,6 +1608,10 @@ planificateur.
 
 ### Conservation exacte et couverture du résumé
 
+La politique s'applique au premier appel à `PrepareMessages`, selon le
+[contrat de préparation](#preparing-conversation-messages), pas avant chaque invocation du
+planificateur.
+
 Avec un `CompressAtMaxInputTokens` positif, un seul résumé reçoit tous les tours
 antérieurs au plus récent. Le runtime compte ensemble les messages système,
 le résumé réellement produit, les tours complets admissibles et les outils
@@ -1577,8 +1629,9 @@ répétés ou contradictoires. Pour `K` tours admissibles, il y a au plus `K`
 comptages finaux, en plus des vérifications initiales. L'entrée plus large et ces
 comptages peuvent accroître le coût et la latence, sans second appel de résumé.
 Si le résumé et le dernier tour ne tiennent pas, ou si un comptage ou le résumé
-échoue, l'historique original accompagne l'erreur, sans solution de repli ni
-redémarrage automatique.
+échoue, la politique renvoie l'historique original et l'erreur au runtime, sans
+redémarrage automatique. `PrepareMessages` expose l'erreur de préparation, pas
+un accès de repli à l'historique brut.
 
 Sans limite totale, seul le préfixe exclu est résumé : les tours conservés restent
 inchangés, sans chevauchement ni comptage final ajouté. Avec une limite positive,

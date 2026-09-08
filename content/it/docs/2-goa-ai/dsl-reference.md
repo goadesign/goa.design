@@ -1478,7 +1478,11 @@ Agent("assistant", "Conversational assistant", func() {
 
 ### Storia
 
-`History(dsl)` definisce il modo in cui il runtime gestisce la cronologia delle conversazioni prima di ogni invocazione del pianificatore. Le policy relative alla cronologia trasformano la cronologia dei messaggi preservando:
+`History(dsl)` definisce la preparazione della cronologia alla prima chiamata a
+`PrepareMessages` in un'invocazione del pianificatore. Una decisione che non
+legge i messaggi non esegue questa preparazione. Vedi il
+[contratto di preparazione](../runtime/#preparing-conversation-messages).
+Le policy della cronologia preservano:
 
 - Il sistema richiede all'inizio della conversazione
 - Confini logici del turno (utente + assistente + chiamate/risultati dello strumento come unità atomiche)

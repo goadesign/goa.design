@@ -94,16 +94,19 @@ func TestPlannerWithMockClient(t *testing.T) {
         },
     }
 
-    planner := &MyPlanner{client: mockClient}
+    p := &MyPlanner{client: mockClient}
 
+    messages := []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Search for test"}},
+    }}
     input := &planner.PlanInput{
-        Messages: []*model.Message{{
-            Role:  model.ConversationRoleUser,
-            Parts: []model.Part{model.TextPart{Text: "Search for test"}},
-        }},
+        PrepareMessages: func() ([]*model.Message, error) {
+            return messages, nil
+        },
     }
 
-    result, err := planner.PlanStart(context.Background(), input)
+    result, err := p.PlanStart(context.Background(), input)
     require.NoError(t, err)
 
     // Assert planner returned tool calls
@@ -112,6 +115,11 @@ func TestPlannerWithMockClient(t *testing.T) {
     assert.Equal(t, "search", string(result.ToolCalls[0].Name))
 }
 ```
+
+プランナーを直接呼ぶテストでも `PrepareMessages` は必須です。この例は固定した
+スライスを返します。履歴ポリシーの遅延実行とエラーを検証する場合は、実際の
+ランタイムを通してテストしてください。契約は
+[メッセージの準備](../runtime/#preparing-conversation-messages)を参照してください。
 
 ### ツールを単体でテストする
 

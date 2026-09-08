@@ -93,16 +93,19 @@ func TestPlannerWithMockClient(t *testing.T) {
         },
     }
     
-    planner := &MyPlanner{client: mockClient}
+    p := &MyPlanner{client: mockClient}
+    messages := []*model.Message{{
+        Role:  model.ConversationRoleUser,
+        Parts: []model.Part{model.TextPart{Text: "Search for test"}},
+    }}
     
     input := &planner.PlanInput{
-        Messages: []*model.Message{{
-            Role:  model.ConversationRoleUser,
-            Parts: []model.Part{model.TextPart{Text: "Search for test"}},
-        }},
+        PrepareMessages: func() ([]*model.Message, error) {
+            return messages, nil
+        },
     }
     
-    result, err := planner.PlanStart(context.Background(), input)
+    result, err := p.PlanStart(context.Background(), input)
     require.NoError(t, err)
     
     // Assert planner returned tool calls
@@ -111,6 +114,11 @@ func TestPlannerWithMockClient(t *testing.T) {
     assert.Equal(t, "search", string(result.ToolCalls[0].Name))
 }
 ```
+
+Les tests directs des planificateurs fournissent `PrepareMessages` et vérifient
+que toute erreur de préparation est renvoyée. Pour prouver que le runtime
+n'applique la politique qu'une fois et refuse une erreur ignorée, testez avec le
+vrai runtime ; voir le [contrat de préparation](../runtime/#preparing-conversation-messages).
 
 ### Outils de test isolés
 
