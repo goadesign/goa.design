@@ -288,9 +288,18 @@ Verifica separatamente il codec degli hook: i decoder di `RunStarted`,
 `RunSuspended`, `RunCompleted` e `ChildRunLinked` devono rifiutare `null`, i
 campi sconosciuti e un secondo valore JSON finale.
 
-I test delle continuazioni devono accettare `goa-ai.run-suspension.v7` e
+I test delle continuazioni devono accettare `goa-ai.run-suspension.v8` e
 rifiutare tutte le versioni precedenti prima di ripristinare i payload o
 chiamare il planner.
+Per un piano di recupero che attende un input, verificare che la continuazione
+conservi tutte le alternative annunciate, non solo lo strumento fallito.
+Verificare inoltre che la definizione attuale dell'agente e la policy di
+esecuzione rifiutino gli strumenti rimossi, in conflitto o negati prima della
+pianificazione; le scelte salvate non concedono autorizzazioni permanenti.
+Conservare test positivi per le alternative consentite, le continuazioni delle
+query incompiute, la correzione forzata limitata agli strumenti terminali e la
+sintesi senza strumenti. Questi test di contratto provano quali azioni sono
+lecite, non la qualità della scelta di un modello reale.
 
 ---
 

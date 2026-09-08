@@ -429,9 +429,13 @@ runtime release and should be deleted after the cutover is verified.
    active.
 2. Run the migration in verification mode and correct every rejected record.
 3. Apply the conversion, then verify the schema, indexes, session state, run
-   metadata, v7 checkpoints, and immutable run records.
+   metadata, current-format checkpoints, and immutable run records.
 4. Deploy the storage owner and all workers together, then remove the temporary
    migration program.
+
+This physical storage conversion does not translate suspension formats. Saved
+work must separately satisfy the [current continuation contract](../runtime/#external-input-and-workflow-continuations).
+Keep completed history and stored tool results intact.
 
 Once the conversion starts, rollback is a database restore, not a mixed-version
 deployment. If conversion or verification fails, keep runtime traffic closed
@@ -544,10 +548,10 @@ workflow when it requests human or external input and stores a private
 checkpoint under the completed run ID. The accepted answer starts a new
 workflow on the current worker version. The new version must therefore accept
 the saved checkpoint format, generated result codecs, and required tool names.
-The current runtime accepts only `goa-ai.run-suspension.v7`; earlier checkpoint
-versions are rejected. Migrate or remove older saved checkpoints before
-promoting the release. Worker versioning cannot translate incompatible stored
-values.
+The current runtime accepts only `goa-ai.run-suspension.v8`; earlier checkpoint
+versions are rejected. Follow [Generated contract changes](#generated-contract-changes)
+for an incompatible upgrade rather than this overlapping-worker procedure.
+Worker versioning cannot translate incompatible stored values.
 
 The rest of the application must preserve availability during the same
 overlap:
@@ -607,12 +611,21 @@ all agents and completions, drain or stop affected work, and deploy the runtime,
 workers, and callers as one coordinated release. Goa-AI does not provide a
 dual-read mode for generated runtime contracts.
 
-The runtime accepts only the exact `goa-ai.run-suspension.v7` schema. Planners
+The runtime accepts only the exact `goa-ai.run-suspension.v8` schema. Planners
 that wait for questions, clarification, or external tools preserve the
 provider's `ModelToolCallID`; the workflow assigns the separate runtime
 `ToolCallID` before it saves the suspension. Other suspension schemas do not
-resume. A future schema change must inventory and retire incompatible saved
-work before the coordinated release; do not add a dual reader or infer fields.
+resume. Version eight also retains the advertised choices when an accepted
+recovery plan waits for input. Follow the host-owned preservation and
+resumability decision in [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations)
+before replacing workers that own older saved work; do not add a dual reader or
+infer fields.
+
+Update cooperating workers for every workflow and activity queue, generated
+packages, and callers before accepting new work. Once new workers save v8
+suspensions, older workers cannot resume those suspensions: reverting an image
+alone does not restore resumability. Preserve completed history and stored tool
+results; any physical storage conversion is a separate host-owned operation.
 
 #### Release verification
 

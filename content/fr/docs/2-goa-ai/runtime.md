@@ -1003,10 +1003,18 @@ octets de `PreparedRun` peuvent contenir une copie de ce point de reprise et la
 transcription complète. Conservez-les uniquement dans un stockage applicatif
 fiable avec un accès contrôlé ; ne les envoyez jamais à un client non fiable.
 
-Le seul format accepté est `goa-ai.run-suspension.v7`. Goa-AI rejette toutes les
-versions précédentes au lieu de deviner comment les traduire. Avant d’accepter
-des continuations avec le nouveau runtime, l’hôte doit migrer ou supprimer les
-exécutions suspendues qui utilisent un ancien format.
+Le seul format accepté est `goa-ai.run-suspension.v8`. La version huit conserve
+les noms des outils annoncés lorsqu'un plan de récupération accepté attend une
+entrée : les noms des outils en échec ne suffisent pas à reconstruire les autres
+choix proposés pendant ce tour. La continuation conserve ces choix tout en
+vérifiant la définition actuelle de l'agent et la politique d'exécution.
+
+Goa-AI rejette toutes les versions précédentes du point de reprise. Avant la
+mise à niveau, terminez le travail enregistré dans l'ancien format avec le
+runtime qui le possède. Si du travail doit rester inachevé, l'hôte doit décider
+explicitement comment le conserver et s'il restera reprenable ; ce runtime ne
+peut pas le reprendre. Le framework ne fournit aucune commande de conversion
+et ne supprime, n'annule ni ne réécrit automatiquement le travail enregistré.
 
 Lorsqu’une réponse termine un appel d’outil créé par le modèle dans le workflow
 précédent, le nouvel événement `tool_end` porte deux identités :
@@ -1134,7 +1142,7 @@ Ces contrats sont distincts :
 | `ToolSpec.Meta` | Un outil, pour chaque exécution | Annotations générées et inertes dont la sémantique appartient au consommateur nommé ; les métadonnées seules ne changent pas le runtime. |
 | `ToolSpec.Bookkeeping` | Un outil, pour chaque exécution | L'appel est un enregistrement de contrôle durable dont le succès ne requiert pas un autre tour du planificateur. Il ne consomme aucun budget de récupération ou d'échecs consécutifs. |
 | `ToolSpec.TerminalRun` | Un outil, pour chaque exécution | Le succès termine lui-même l'exécution et implique automatiquement la comptabilité. |
-| `ToolFailure.Recovery.Action` | Un résultat en échec | Définit la prochaine transition autorisée : corriger le même appel, replanifier sans l'outil en échec ou terminer avec les éléments disponibles. |
+| `ToolFailure.Recovery.Action` | Un résultat en échec | Choisit la correction en gardant l'outil en échec disponible, la replanification sans cet outil ou la finalisation. |
 | `PlanResult.SynthesizeAfterTools` | Un lot sélectionné | Si le lot n'a aucun échec récupérable, le prochain tour du planificateur doit répondre. |
 | `PlanResumeInput.SynthesisOnly` | Une activité du planificateur | Renvoyer une réponse finale ; les appels d'outils sont invalides. |
 | `PlanResumeInput.Finalize` | Arrêt imposé par le runtime | Un plafond ou une deadline interdit le travail normal. |
@@ -1166,6 +1174,22 @@ Chaque `ToolFailure` récupérable sélectionne aussi une `Recovery.Action` :
   utiliser un autre outil annoncé, attendre une entrée ou répondre.
 - `finish` retire tous les outils et exige une réponse finale fondée sur les
   éléments disponibles.
+
+Un tour ordinaire de `correct_call` combine les outils exécutables de l'agent
+actuel avec les contrats exacts des outils en échec. Les noms et contrats
+identiques sont dédupliqués ; les contrats contradictoires, les enregistrements
+d'exécution manquants et les outils révoqués provoquent un échec avant l'appel
+au modèle. Les restrictions de l'appelant, celles des étiquettes de l'exécution
+et les exclusions de récupération restent applicables. Un outil de correction
+interdit provoque une erreur ; le runtime ne l'écarte pas silencieusement et ne
+le rétablit pas après filtrage. L'autorisation du service exécutant vérifie
+toujours chaque appel.
+
+Les requêtes inachevées conservent leurs actions de continuation générées par le
+runtime ; les demandes en échec ne créent pas de continuation. La finalisation
+forcée ne propose à la correction que l'outil terminal exact en échec, et les
+tours de synthèse seule restent sans outils. Après la correction, les tours
+normaux reviennent aux outils de l'agent actuel.
 
 Le workflow possède les informations de correction visibles par le modèle.
 Avant d'enregistrer l'échec, il remplace l'entrée antérieure et l'exemple
@@ -1347,6 +1371,18 @@ tronque, ne répare et ne convertit jamais les données du modèle.
 Un `ValidatedStream` doit être lu jusqu'à `io.EOF`. Ce n'est qu'alors que
 `Response()` rend la réponse canonique acceptée. Un flux incomplet, mal formé
 ou contradictoire renvoie une erreur sans réponse acceptée.
+
+Les appels d'outils complets doivent satisfaire leur schéma annoncé et leur
+décodeur généré associé, s'il existe, avant d'être transmis au planificateur. Lorsqu'un rejet
+de schéma possède une seule cause au niveau le plus profond et que celle-ci
+correspond aux métadonnées générées d'un champ tableau, l'instruction de
+correction indique le minimum ou le maximum inclusif de ce tableau, par exemple :
+`Field "items" must contain at most 3 items.` Les causes ambiguës ou non prises
+en charge conservent une instruction générique. Ces bornes s'appliquent à ce
+seul tableau soumis, pas à l'exécution entière. Les arguments restent rejetés
+avant l'exécution ; Goa-AI ne les découpe, ne les tronque ni ne les réécrit.
+L'erreur de validation d'origine, les règles d'acceptation et la limite
+configurée de tours de récupération restent inchangées.
 
 ### Adaptateurs de fournisseur
 

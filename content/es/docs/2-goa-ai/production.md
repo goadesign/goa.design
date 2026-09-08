@@ -417,8 +417,13 @@ no forma parte del release normal y se elimina tras verificar el cambio.
 1. Crea y verifica una copia de seguridad y confirma que no haya writers.
 2. Ejecuta la migración en modo de verificación y corrige cada registro rechazado.
 3. Aplica la conversión y verifica esquema, índices, sesiones, metadatos,
-   checkpoints v7 y registros inmutables.
+   checkpoints del formato actual y registros inmutables.
 4. Despliega juntos al propietario y a todos los workers, y elimina el programa.
+
+Esta conversión del almacenamiento físico no traduce los formatos de
+suspensión. El trabajo guardado debe cumplir por separado el
+[contrato actual de continuación](../runtime/#entrada-externa-y-continuaciones-de-workflow).
+Conserva intactos el historial completado y los resultados guardados de herramientas.
 
 Una vez iniciada la conversión, el rollback restaura la copia completa. No
 ejecutes writers antiguos sobre una base parcialmente convertida.
@@ -493,13 +498,23 @@ runtime, los workers y los llamadores. Goa-AI no ofrece lectura dual para los
 contratos generados del runtime.
 
 El runtime acepta únicamente el esquema exacto
-`goa-ai.run-suspension.v7`. Los planificadores que esperan preguntas,
+`goa-ai.run-suspension.v8`. Los planificadores que esperan preguntas,
 aclaraciones o herramientas externas conservan el `ModelToolCallID` del
 proveedor; el workflow asigna el `ToolCallID` independiente del runtime antes
 de guardar la suspensión. Las suspensiones con otros esquemas no se reanudan.
-Antes de cambiar este esquema en el futuro, inventaría y retira el trabajo
-guardado incompatible durante el despliegue coordinado; no añadas un lector
-dual ni deduzcas campos ausentes.
+La versión ocho también conserva las opciones anunciadas cuando un plan de
+recuperación aceptado espera una entrada. Antes de reemplazar los workers que
+poseen trabajo guardado anterior, aplica la decisión del host sobre conservación
+y posibilidad de reanudar descrita en
+[Entrada externa y continuaciones de workflow](../runtime/#entrada-externa-y-continuaciones-de-workflow);
+no añadas un lector dual ni deduzcas campos ausentes.
+
+Antes de aceptar trabajo nuevo, actualiza conjuntamente los workers de todas
+las colas de workflows y actividades, los paquetes generados y los llamadores.
+Una vez que los nuevos workers guardan suspensiones v8, los anteriores no
+pueden reanudarlas: revertir solo una imagen no recupera esa capacidad.
+Conserva el historial completado y los resultados guardados de herramientas;
+cualquier conversión del almacenamiento físico es una operación separada del host.
 
 ### Buenas prácticas
 

@@ -889,10 +889,18 @@ con i codec generati correnti e riprende la pianificazione. I byte di
 completa. Salvali solo in uno storage applicativo affidabile e con accesso
 controllato; non inviarli mai a un client non attendibile.
 
-L’unico formato accettato è `goa-ai.run-suspension.v7`. Goa-AI rifiuta tutte le
-versioni precedenti invece di tentare di tradurle. Prima di accettare
-continuazioni con il nuovo runtime, l’host deve migrare o rimuovere le
-esecuzioni sospese che usano un formato precedente.
+L'unico formato accettato è `goa-ai.run-suspension.v8`. La versione otto salva i
+nomi degli strumenti annunciati quando un piano di recupero accettato attende
+un input: i nomi degli strumenti falliti non bastano a ricostruire le altre
+scelte offerte in quel turno. La continuazione conserva queste scelte e
+verifica comunque la definizione attuale dell'agente e la policy di esecuzione.
+
+Goa-AI rifiuta tutte le versioni precedenti del checkpoint. Prima dell'upgrade,
+completare il lavoro salvato nel vecchio formato con il runtime che lo possiede.
+Se deve restare lavoro incompiuto, l'host deve decidere esplicitamente come
+conservarlo e se resterà riprendibile; questo runtime non può riprenderlo.
+Il framework non fornisce comandi di conversione e non elimina, annulla o
+riscrive automaticamente il lavoro salvato.
 
 Quando una risposta completa una chiamata a un tool creata dal modello nel
 workflow precedente, il nuovo evento `tool_end` contiene due identità:
@@ -1029,7 +1037,7 @@ Questi contratti sono distinti:
 | `ToolSpec.Meta` | Uno strumento, per ogni run | Annotazioni generate e inerti la cui semantica appartiene al consumer denominato; i metadati da soli non cambiano il runtime. |
 | `ToolSpec.Bookkeeping` | Uno strumento, per ogni run | La chiamata è un record di controllo durevole il cui successo non richiede un altro turno del planner. Non consuma budget di retrieval o di errori consecutivi. |
 | `ToolSpec.TerminalRun` | Uno strumento, per ogni run | Il successo termina direttamente il run e implica automaticamente bookkeeping. |
-| `ToolFailure.Recovery.Action` | Un risultato fallito | Sceglie la correzione sullo stesso strumento, una nuova pianificazione senza lo strumento fallito oppure la finalizzazione. |
+| `ToolFailure.Recovery.Action` | Un risultato fallito | Sceglie la correzione mantenendo disponibile lo strumento fallito, una nuova pianificazione senza di esso oppure la finalizzazione. |
 | `PlanResult.SynthesizeAfterTools` | Un batch selezionato | Se il batch non contiene errori recuperabili, il turno successivo del planner deve rispondere. |
 | `PlanResumeInput.SynthesisOnly` | Un'attività del planner | Restituire una risposta finale; le chiamate agli strumenti non sono valide. |
 | `PlanResumeInput.Finalize` | Terminazione forzata dal runtime | Un limite o una deadline impedisce il lavoro normale. |
@@ -1061,6 +1069,21 @@ Ogni `ToolFailure` recuperabile seleziona anche una `Recovery.Action`:
   può usare un altro strumento annunciato, attendere un input o rispondere.
 - `finish` rimuove tutti gli strumenti e richiede una risposta finale basata
   sulle prove disponibili.
+
+Un normale turno `correct_call` combina gli strumenti eseguibili dell'agente
+attuale con i contratti esatti degli strumenti falliti. Nomi e contratti
+identici vengono deduplicati; contratti in conflitto, registrazioni di
+esecuzione mancanti e strumenti revocati causano un errore prima della chiamata
+al modello. Restano applicabili le restrizioni del chiamante, quelle dei tag
+del run e le esclusioni di recupero. Uno strumento di correzione negato causa
+un errore; il runtime non lo scarta silenziosamente e non lo ripristina dopo il
+filtro. L'autorizzazione nel servizio esecutore verifica ancora ogni chiamata.
+
+Le query incompiute conservano le azioni di continuazione generate dal runtime;
+le richieste fallite non creano continuazioni. La finalizzazione forzata offre
+per la correzione solo l'esatto strumento terminale fallito, e i turni di sola
+sintesi restano privi di strumenti. Dopo la correzione, i turni normali tornano
+agli strumenti dell'agente attuale.
 
 Il workflow possiede le prove di correzione mostrate al modello. Prima di
 salvare l'errore nella cronologia, sostituisce input ed esempi forniti
@@ -1228,6 +1251,18 @@ modello.
 `ValidatedStream` deve essere consumato fino a `io.EOF`; solo allora
 `Response()` restituisce la risposta canonica accettata. Uno stream incompleto,
 malformato o contraddittorio restituisce un errore e nessuna risposta accettata.
+
+Le chiamate complete agli strumenti devono rispettare lo schema annunciato e il
+decoder generato associato, se presente, prima di essere visibili al planner. Quando un
+rifiuto dello schema ha una sola causa al livello più profondo, corrispondente
+ai metadati generati di un campo array, la guida alla correzione indica il
+minimo o il massimo inclusivo di quell'array, per esempio:
+`Field "items" must contain at most 3 items.` Cause ambigue o non supportate
+mantengono una guida generica. Questi limiti riguardano solo quell'array
+inviato, non l'intero run. Gli argomenti restano rifiutati prima dell'esecuzione;
+Goa-AI non li divide, tronca o riscrive. L'errore di validazione originale, le
+regole di accettazione e il limite configurato dei turni di recupero restano
+invariati.
 
 ### Adattatori del provider
 

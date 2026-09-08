@@ -417,8 +417,13 @@ programma; non fa parte del release normale e va eliminato dopo la verifica.
 1. Creare e verificare un backup e confermare che non vi siano writer.
 2. Eseguire la migrazione in modalità verifica e correggere ogni record rifiutato.
 3. Applicare la conversione e verificare schema, indici, sessioni, metadati,
-   checkpoint v7 e record immutabili.
+   checkpoint nel formato attuale e record immutabili.
 4. Distribuire insieme proprietario e worker, quindi eliminare il programma.
+
+Questa conversione dello storage fisico non traduce i formati di sospensione.
+Il lavoro salvato deve rispettare separatamente il
+[contratto attuale di continuazione](../runtime/#input-esterno-e-continuazioni-dei-workflow).
+Conservare intatti la cronologia completata e i risultati degli strumenti salvati.
 
 Dopo l’avvio della conversione, il rollback ripristina il backup completo. Non
 eseguire writer precedenti su un database convertito solo in parte.
@@ -505,12 +510,23 @@ chiamanti come un'unica release coordinata. Goa-AI non offre una modalità di
 lettura doppia per i contratti runtime generati.
 
 Il runtime accetta esclusivamente lo schema esatto
-`goa-ai.run-suspension.v7`. I planner che attendono domande, chiarimenti o
+`goa-ai.run-suspension.v8`. I planner che attendono domande, chiarimenti o
 strumenti esterni conservano il `ModelToolCallID` del provider; il workflow
 assegna il distinto `ToolCallID` del runtime prima di salvare la sospensione.
-Gli altri schemi di sospensione non vengono ripresi. Un futuro cambio di schema
-deve censire e ritirare il lavoro salvato incompatibile prima della release
-coordinata; non aggiungere un lettore doppio e non inferire campi.
+Gli altri schemi di sospensione non vengono ripresi. La versione otto conserva
+anche le scelte annunciate quando un piano di recupero accettato attende un
+input. Prima di sostituire i worker che possiedono lavoro salvato precedente,
+applicare la decisione dell'host sulla conservazione e sulla possibilità di
+ripresa descritta in
+[Input esterno e continuazioni dei workflow](../runtime/#input-esterno-e-continuazioni-dei-workflow);
+non aggiungere un lettore doppio e non inferire campi.
+
+Aggiornare insieme i worker di tutte le code di workflow e attività, i package
+generati e i chiamanti prima di accettare nuovo lavoro. Quando i nuovi worker
+salvano sospensioni v8, i vecchi worker non possono riprenderle: ripristinare
+solo un'immagine non restituisce questa capacità. Conservare la cronologia
+completata e i risultati degli strumenti salvati; qualsiasi conversione dello
+storage fisico rimane un'operazione separata di proprietà dell'host.
 
 #### Verifica della release
 

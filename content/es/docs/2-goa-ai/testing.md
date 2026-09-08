@@ -294,9 +294,18 @@ Prueba por separado el codec de hooks: los decodificadores de `RunStarted`,
 `RunSuspended`, `RunCompleted` y `ChildRunLinked` deben rechazar `null`, campos
 desconocidos y un segundo valor JSON al final.
 
-Las pruebas de continuación deben aceptar `goa-ai.run-suspension.v7` y rechazar
+Las pruebas de continuación deben aceptar `goa-ai.run-suspension.v8` y rechazar
 todas las versiones anteriores antes de restaurar payloads o llamar al
 planificador.
+Para un plan de recuperación que espera una entrada, verifica que la
+continuación conserve todas las alternativas anunciadas, no solo la herramienta
+fallida. Comprueba también que la definición actual del agente y la política de
+ejecución rechacen herramientas eliminadas, en conflicto o denegadas antes de
+planificar; las opciones guardadas no conceden autorización permanente.
+Conserva pruebas positivas para las alternativas permitidas, las continuaciones
+de consultas sin terminar, la corrección forzada solo con herramientas
+terminales y la síntesis sin herramientas. Estas pruebas de contrato demuestran
+qué acciones son legales, no la calidad de la elección de un modelo real.
 
 ---
 

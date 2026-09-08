@@ -294,8 +294,15 @@ Test the hook codec separately: decoders for `RunStarted`, `RunSuspended`,
 `RunCompleted`, and `ChildRunLinked` must reject `null`, unknown fields, and a
 second trailing JSON value.
 
-Continuation tests should accept `goa-ai.run-suspension.v7` and reject every
+Continuation tests should accept `goa-ai.run-suspension.v8` and reject every
 earlier checkpoint version before restoring payloads or calling a planner.
+For a recovery plan that waits for input, verify that continuation retains all
+advertised alternatives, not just the failed tool. Also verify that the current
+agent definition and execution policy reject removed, conflicting, or denied
+tools before planning; saved choices do not grant permanent authorization.
+Keep positive checks for allowed alternatives, unfinished-query continuations,
+terminal-only forced correction, and tool-free synthesis. These contract tests
+prove which actions are legal, not the quality of a live model's choice.
 
 ---
 

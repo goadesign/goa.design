@@ -877,10 +877,17 @@ continuation の準備時に application が渡すのは、完了した run ID �
 場合があります。信頼できる access-controlled な application storage にだけ保存し、
 信頼できない client には決して送信しないでください。
 
-受理される形式は `goa-ai.run-suspension.v7` だけです。Goa-AI は以前の version を
-推測で変換せず、すべて拒否します。新しい runtime で continuation traffic を
-受け付ける前に、host は古い形式の suspended run を移行または削除する必要が
-あります。
+受理される形式は `goa-ai.run-suspension.v8` だけです。version eight は、受理済みの
+recovery plan が input を待つとき、その turn で提示した tool 名を保存します。
+失敗した tool 名だけから、ほかに提示した選択肢を復元することはできません。
+continuation はその選択肢を保持しますが、現在の agent definition と実行 policy の
+検証も引き続き行います。
+
+Goa-AI は以前の checkpoint version をすべて拒否します。upgrade 前に、古い形式の
+保存済み work は、それを所有する runtime で完了させてください。未完了のまま残す
+必要がある場合、host が保存方法と再開可能性を明示的に判断します。この runtime では
+再開できません。framework は変換 command を提供せず、保存済み work の削除、
+キャンセル、書き換えを自動で行うこともありません。
 
 回答が以前の workflow で model が作成した tool call を完了させる場合、新しい
 `tool_end` event には二つの run identity が含まれます。
@@ -1001,7 +1008,7 @@ planner-generated request には domain intent だけを含めます。`planner.
 | `ToolSpec.Meta` | すべての run における 1 つの tool | 名前付きコンシューマが意味を所有する、不活性な生成アノテーション。メタデータだけでは runtime 動作は変わらない。 |
 | `ToolSpec.Bookkeeping` | すべての run における 1 つの tool | 成功後に別の planner turn を必要としない durable な制御記録。retrieval と連続失敗の budget を消費しない。 |
 | `ToolSpec.TerminalRun` | すべての run における 1 つの tool | 成功そのものが run を終了し、自動的に bookkeeping を含む。 |
-| `ToolFailure.Recovery.Action` | 1 つの失敗 result | 同一 tool の修正、failed tool を除いた replanning、finalization のいずれかを選ぶ。 |
+| `ToolFailure.Recovery.Action` | 1 つの失敗 result | failed tool を引き続き利用可能にした修正、その tool を除いた replanning、finalization のいずれかを選ぶ。 |
 | `PlanResult.SynthesizeAfterTools` | 選択された 1 batch | recoverable failure がなければ、次の planner turn は回答しなければならない。 |
 | `PlanResumeInput.SynthesisOnly` | 1 planner activity | 最終回答を返す。tool call は無効。 |
 | `PlanResumeInput.Finalize` | runtime が強制する終了 | cap または deadline により通常作業が禁止されている。 |
@@ -1032,6 +1039,18 @@ recoverable な `ToolFailure` は `Recovery.Action` も 1 つ選択します。
   表示済み tool を使うか、input を待つか、回答できます。
 - `finish` はすべての tool を除外し、利用可能な evidence に基づく最終回答を
   要求します。
+
+通常の `correct_call` turn では、現在の agent が実行できる tool と、失敗した tool の
+正確な contract を組み合わせます。同じ名前と contract は重複を除きます。
+contract の不一致、実行登録の欠落、tool の取り消しは model 呼び出し前に失敗します。
+caller の制限、run tag の制限、recovery による除外も適用します。修正対象の tool が
+拒否されていれば error にし、黙って除外したり filtering 後に復活させたりしません。
+実行先での認可も、各 call に引き続き適用します。
+
+未完了の query は runtime が生成した continuation action を保持します。失敗した
+request から continuation は生成しません。強制 finalization で修正できるのは、
+失敗した正確な terminal tool だけです。synthesis-only turn には tool を提示しません。
+修正後の通常 turn は、現在の agent の tool に戻ります。
 
 ランタイムは recovery turn で表示した tool catalog を正確に記録し、その外側の
 実行可能な call をすべて拒否します。user または外部 input の要求に埋め込まれた
@@ -1156,6 +1175,15 @@ provider integration は raw transport response／chunk を生成する `model.P
 provider call 前には tool name／schema、message part、thinking option、structured-output metadata、request の dynamic value を検証します。request と unary response は 16 MiB、visited value は 100,000 個までで、nested dynamic metadata の depth は 64 までです。streaming では chunk と terminal response に 1 つの累積 budget を適用します。limit 超過では操作全体を拒否し、model data の切り詰め、修復、coercion は行いません。
 
 `ValidatedStream` は `io.EOF` まで drain する必要があります。完了した場合だけ `Response()` が受理済み canonical response を返します。不完全、不正、または矛盾する stream は error となり、受理済み response はありません。
+
+完了した tool call は、planner が受け取る前に、提示済み schema に合格する必要があります。
+生成済み decoder が付属する場合は、その検証にも合格します。schema の拒否に最深部の原因が一つだけあり、
+生成済みの配列 field metadata と一致する場合、修正指示はその配列の要素数の下限または
+上限を、境界値を含む形で示します。たとえば `Field "items" must contain at most 3 items.`
+です。原因が曖昧または未対応なら、一般的な修正指示を使います。この制限は提出した
+一つの配列に対するもので、run 全体の制限ではありません。引数は実行前に拒否された
+ままで、Goa-AI は分割、切り詰め、書き換えをしません。元の validation error、
+受理規則、設定済み recovery-turn 上限は変わりません。
 
 ### プロバイダーアダプター
 

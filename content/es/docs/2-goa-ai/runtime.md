@@ -999,10 +999,19 @@ pueden contener una copia de ese checkpoint y la transcripción completa.
 Guárdalos únicamente en almacenamiento de aplicación confiable y con acceso
 controlado; nunca los envíes a un cliente no confiable.
 
-El único formato aceptado es `goa-ai.run-suspension.v7`. Goa-AI rechaza todas
-las versiones anteriores en lugar de adivinar cómo traducirlas. Antes de
-aceptar continuaciones con el nuevo runtime, el host debe migrar o eliminar las
-ejecuciones suspendidas que usen un formato anterior.
+El único formato aceptado es `goa-ai.run-suspension.v8`. La versión ocho guarda
+los nombres de las herramientas anunciadas cuando un plan de recuperación
+aceptado espera una entrada: los nombres de las herramientas fallidas no bastan
+para reconstruir las otras opciones ofrecidas en ese turno. La continuación
+conserva esas opciones y sigue comprobando la definición actual del agente y la
+política de ejecución.
+
+Goa-AI rechaza todas las versiones anteriores del checkpoint. Antes de
+actualizar, termina el trabajo guardado con el formato anterior en el runtime
+que lo posee. Si debe quedar trabajo sin terminar, el host debe decidir
+explícitamente cómo conservarlo y si seguirá siendo reanudable; este runtime
+no puede reanudarlo. El framework no proporciona un comando de conversión ni
+elimina, cancela o reescribe automáticamente el trabajo guardado.
 
 - Los llamadores proporcionan exactamente uno de estos valores: `Success`, con
   el **JSON de resultado canónico en bruto** y `Bounds` opcional, o `Failure`,
@@ -1134,7 +1143,7 @@ Estos contratos son independientes:
 | `ToolSpec.Meta` | Una herramienta, para cada ejecución | Anotaciones generadas e inertes cuyas semánticas pertenecen al consumidor identificado; los metadatos por sí solos no cambian el runtime. |
 | `ToolSpec.Bookkeeping` | Una herramienta, para cada ejecución | La llamada es un registro de control duradero cuyo éxito no necesita otro turno del planner. No consume presupuesto de recuperación ni de fallos consecutivos. |
 | `ToolSpec.TerminalRun` | Una herramienta, para cada ejecución | La ejecución correcta finaliza por sí misma la ejecución e implica automáticamente bookkeeping. |
-| `ToolFailure.Recovery.Action` | Un resultado fallido | Selecciona la corrección con la misma herramienta, la replanificación sin ella o la finalización. |
+| `ToolFailure.Recovery.Action` | Un resultado fallido | Selecciona la corrección manteniendo disponible la herramienta fallida, la replanificación sin ella o la finalización. |
 | `PlanResult.SynthesizeAfterTools` | Un lote seleccionado | Si el lote no tiene un fallo recuperable, el siguiente turno del planner debe responder. |
 | `PlanResumeInput.SynthesisOnly` | Una actividad del planner | Devuelve una respuesta final; las llamadas a herramientas no son válidas. |
 | `PlanResumeInput.Finalize` | Finalización forzada por el runtime | Un límite o deadline ha prohibido el trabajo normal. |
@@ -1163,6 +1172,22 @@ Cada `ToolFailure` recuperable también selecciona una `Recovery.Action`:
   planner puede usar otra herramienta anunciada, esperar una entrada o responder.
 - `finish` elimina todas las herramientas y exige una respuesta final basada en
   la evidencia disponible.
+
+Un turno normal de `correct_call` combina las herramientas ejecutables del
+agente actual con los contratos exactos de las herramientas fallidas. Elimina
+duplicados cuando coinciden los nombres y contratos; los contratos en conflicto,
+los registros de ejecución ausentes y las herramientas revocadas producen un
+error antes de llamar al modelo. Siguen aplicándose las restricciones del
+llamador, las de etiquetas de la ejecución y las exclusiones de recuperación.
+Una herramienta de corrección denegada provoca un error; el runtime no la
+descarta silenciosamente ni la restaura después del filtrado. La autorización
+en el servicio ejecutor sigue comprobando cada llamada.
+
+Las consultas sin terminar conservan sus acciones de continuación generadas
+por el runtime; las solicitudes fallidas no crean continuaciones. La
+finalización forzada solo ofrece para corrección la herramienta terminal exacta
+que falló, y los turnos de solo síntesis siguen sin herramientas. Después de la
+corrección, los turnos normales vuelven a las herramientas del agente actual.
 
 El runtime registra el catálogo exacto de herramientas mostrado en un turno de
 recuperación y rechaza cualquier llamada ejecutable que quede fuera de él,
@@ -1298,6 +1323,18 @@ type Client interface {
     Stream(ctx context.Context, req *Request) (Streamer, error)
 }
 ```
+
+Las llamadas completas a herramientas deben cumplir su esquema anunciado y el
+decodificador generado asociado, si lo hay, antes de que el planner pueda observarlas.
+Cuando un rechazo del esquema tiene una sola causa en el nivel más profundo y
+esta coincide con los metadatos generados de un campo de tipo array, la guía de
+corrección indica el mínimo o máximo inclusivo de ese array, por ejemplo:
+`Field "items" must contain at most 3 items.` Las causas ambiguas o no
+compatibles conservan una guía genérica. Estos límites corresponden a ese único
+array enviado, no a la ejecución completa. Los argumentos siguen rechazados
+antes de la ejecución; Goa-AI no los divide, recorta ni reescribe. El error de
+validación original, las reglas de aceptación y el límite configurado de turnos
+de recuperación no cambian.
 
 ### Adaptadores de proveedor
 
