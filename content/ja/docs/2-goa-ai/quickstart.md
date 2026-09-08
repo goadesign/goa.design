@@ -139,7 +139,7 @@ Completion stream draft_task: &{Name:Prepare launch checklist Goal:Confirm the s
 
 **plan/execute ループ:**
 
-1. `PlanStart` が最初のユーザーメッセージを受け取ります。
+1. `PlanStart` は `PrepareMessages` を受け取り、必要な場合に初期メッセージを取得します。
 2. プランナーは `FinalResponse`、ツール呼び出し、または await request を返します。
 3. ランタイムは生成 spec と登録済み executor を使い、許可されたツール呼び出しを検証して実行します。
 4. `PlanResume` がプランナーから見えるツール出力を受け取ります。
@@ -255,7 +255,9 @@ if err := rt.RegisterModel("default", modelClient); err != nil {
 }
 ```
 
-プランナーのスケッチ:
+プランナーの例です。履歴の読み取りや変換の前に `PrepareMessages` を呼び、
+エラーを確認します。詳細は[メッセージの準備](../runtime/#preparing-conversation-messages)
+を参照してください。
 
 ```go
 func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
@@ -264,8 +266,12 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 		return nil, errors.New("model client default is not registered")
 	}
 
+	messages, err := in.PrepareMessages()
+	if err != nil {
+		return nil, err
+	}
 	summary, err := mc.Stream(ctx, &model.Request{
-		Messages: in.Messages,
+		Messages: messages,
 		Tools:    in.Agent.AdvertisedToolDefinitions(),
 		Stream:   true,
 	})

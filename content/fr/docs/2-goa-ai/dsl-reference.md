@@ -1487,7 +1487,11 @@ Agent("assistant", "Conversational assistant", func() {
 
 ### Histoire
 
-`History(dsl)` définit la manière dont le runtime gère l'historique des conversations avant chaque appel du planificateur. Les politiques d'historique transforment l'historique des messages tout en préservant :
+`History(dsl)` définit la préparation de l'historique au premier appel à
+`PrepareMessages` dans une invocation du planificateur. Une décision qui ne lit
+pas les messages n'effectue pas cette préparation. Voir le
+[contrat de préparation](../runtime/#preparing-conversation-messages).
+Les politiques d'historique préservent :
 
 - Invites du système au début de la conversation
 - Limites de virage logiques (utilisateur + assistant + appels/résultats d'outils sous forme d'unités atomiques)

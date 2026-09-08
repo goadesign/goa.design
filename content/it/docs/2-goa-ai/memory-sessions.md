@@ -69,6 +69,9 @@ La policy `History(...)` di un agente può riassumere i turni meno recenti
 mantenendo una coda esatta e limitata. I valori `CompressAt...` stabiliscono
 quando avviare il riepilogo; i valori `KeepMax...` stabiliscono quali turni
 completi più recenti restano invariati. Il runtime non tronca mai un turno.
+La preparazione avviene alla prima chiamata a `PrepareMessages`, non prima di
+ogni invocazione del pianificatore; vedi il
+[contratto di preparazione](../runtime/#preparing-conversation-messages).
 
 La compressione richiede un `HistoryModel` configurato. I criteri basati sui
 token richiedono inoltre il conteggio esatto fornito dal relativo client del
@@ -79,7 +82,7 @@ Vedere [Runtime → Policy della cronologia](../runtime/#history-policies) e
 
 ### Come questo semplifica i pianificatori e le interfacce utente
 
-- **Pianificatori**: Ricevono la trascrizione corrente in `planner.PlanInput.Messages` e `planner.PlanResumeInput.Messages`. Possono decidere cosa fare basandosi esclusivamente sui messaggi, senza dover ricorrere a uno stato aggiuntivo.
+- **Pianificatori**: Ottengono la trascrizione preparata chiamando `PrepareMessages` su `PlanInput` o `PlanResumeInput` e gestendo l'errore prima di leggere i messaggi. Possono quindi decidere in base alla trascrizione senza mantenere uno stato parallelo.
 - **UI**: Possono rendere la cronologia della chat, i nastri degli strumenti e le schede degli agenti dalla stessa trascrizione sottostante che persiste per il modello. Non sono necessarie strutture separate di "log degli strumenti".
 - adattatori **Provider**: Non indovinano mai quali strumenti sono stati chiamati o quali risultati appartengono a un determinato punto; mappano semplicemente le parti della trascrizione → i blocchi dei provider.
 
@@ -381,7 +384,7 @@ descritto sopra.
 
 - **Utilizzare schemi forti e descrittivi**: Tipi, descrizioni ed esempi ricchi di `Args` / `Return` nella progettazione di Goa producono carichi utili/risultati più chiari nella trascrizione
 
-- **Lasciare che sia il runtime a gestire lo stato**: Evitare di mantenere array paralleli di "cronologia degli strumenti" o fette di "messaggi precedenti" nel pianificatore. Leggere da `PlanInput.Messages` / `PlanResumeInput.Messages` e affidarsi al runtime per aggiungere nuove parti
+- **Lasciare che sia il runtime a gestire lo stato**: Evitare array paralleli per la cronologia degli strumenti o i messaggi precedenti. Chiamare `PrepareMessages`, gestire l'errore e leggere la trascrizione restituita; il runtime aggiunge le nuove parti.
 
 - **Persistere le trascrizioni una volta, riutilizzarle ovunque**: Qualunque sia lo store scelto, trattate la trascrizione come un'infrastruttura riutilizzabile: la stessa trascrizione supporta le chiamate al modello, l'interfaccia della chat, l'interfaccia di debug e l'analisi offline
 

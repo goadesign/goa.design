@@ -143,7 +143,7 @@ mises à jour, puis conservez les modifications de l'application dans `cmd/` et 
 
 **La boucle planifier/exécuter :**
 
-1. `PlanStart` reçoit les messages utilisateur initiaux.
+1. `PlanStart` accède aux messages utilisateur initiaux via `PrepareMessages` s'il en a besoin.
 2. Le planificateur renvoie un `FinalResponse`, des appels d'outils ou une demande d'attente.
 3. Le runtime valide et exécute les appels d'outils admis à l'aide des spécifications générées et des exécuteurs enregistrés.
 4. `PlanResume` reçoit les sorties d'outils visibles par le planificateur.
@@ -286,13 +286,17 @@ Croquis du planificateur :
 
 ```go
 func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
+	messages, err := in.PrepareMessages()
+	if err != nil {
+		return nil, err
+	}
 	mc, ok := in.Agent.PlannerModelClient("default")
 	if !ok {
 		return nil, errors.New("model client default is not registered")
 	}
 
 	summary, err := mc.Stream(ctx, &model.Request{
-		Messages: in.Messages,
+		Messages: messages,
 		Tools:    in.Agent.AdvertisedToolDefinitions(),
 		Stream:   true,
 	})
@@ -312,6 +316,11 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	}, nil
 }
 ```
+
+Appelez `PrepareMessages` avant de lire ou de transformer l'historique et
+renvoyez toute erreur. Une décision fondée uniquement sur l'état d'exécution
+ou les résultats typés des outils n'a pas besoin de préparer les messages.
+Consultez le [contrat de préparation](../runtime/#preparing-conversation-messages).
 
 Utilisez `in.Agent.ModelClient("default")` lorsque vous devez lire vous-même le
 flux validé avec `planner.ConsumeStream(ctx, stream)`. Choisissez un seul

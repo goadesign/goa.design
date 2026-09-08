@@ -146,7 +146,7 @@ actualizaciones del scaffold y mantén las modificaciones de la aplicación en
 
 **El bucle plan/execute:**
 
-1. `PlanStart` recibe los mensajes iniciales del usuario.
+1. `PlanStart` recibe `PrepareMessages` para obtener los mensajes iniciales cuando los necesite.
 2. El planificador devuelve un `FinalResponse`, llamadas a herramientas o una solicitud de await.
 3. El runtime valida y ejecuta las llamadas a herramientas admitidas utilizando las especificaciones generadas y los ejecutores registrados.
 4. `PlanResume` recibe las salidas de herramientas visibles para el planificador.
@@ -283,7 +283,9 @@ if err := rt.RegisterModel("default", modelClient); err != nil {
 }
 ```
 
-Esbozo del planificador:
+Esbozo del planificador. Antes de leer o transformar el historial, llama a
+`PrepareMessages` y comprueba el error; consulta el
+[ciclo de vida de los mensajes](../runtime/#preparing-conversation-messages).
 
 ```go
 func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
@@ -292,8 +294,12 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 		return nil, errors.New("model client default is not registered")
 	}
 
+	messages, err := in.PrepareMessages()
+	if err != nil {
+		return nil, err
+	}
 	summary, err := mc.Stream(ctx, &model.Request{
-		Messages: in.Messages,
+		Messages: messages,
 		Tools:    in.Agent.AdvertisedToolDefinitions(),
 		Stream:   true,
 	})

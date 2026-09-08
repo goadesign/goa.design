@@ -276,7 +276,7 @@ if err := rt.Seal(ctx); err != nil {
    [Memoria y sesiones](../memory-sessions/#cancellation-provenance) define las
    tres formas válidas de guardar los motivos y los registros de intención de
    cancelación.
-3. El runtime llama a `PlanStart` con los mensajes y un `run.Context` que
+3. El runtime llama a `PlanStart` con `PrepareMessages` y un `run.Context` que
    contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
 4. Programa las llamadas a herramientas devueltas por el planificador usando
    los codecs generados.
@@ -641,6 +641,10 @@ La gestión de prompts es nativa del runtime y versionada:
 - El contenido renderizado incluye metadatos `prompt.PromptRef` para procedencia; los planificadores pueden adjuntarlos a `model.Request.PromptRefs`.
 
 ```go
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -650,7 +654,7 @@ if err != nil {
 
 resp, err := modelClient.Complete(ctx, &model.Request{
     RunID:      input.RunContext.RunID,
-    Messages:   input.Messages,
+    Messages:   messages,
     PromptRefs: []prompt.PromptRef{content.Ref},
 })
 ```
@@ -1186,6 +1190,35 @@ Los planificadores también reciben un `PlannerContext` a través de `input.Agen
 - `RemoveReminder(id string)` - limpia recordatorios cuando las precondiciones dejan de cumplirse
 - `Memory()` - accede al historial de conversación
 
+### Preparar los mensajes de conversación {#preparing-conversation-messages}
+
+`PlanInput` y `PlanResumeInput` requieren
+`PrepareMessages func() ([]*model.Message, error)`; ya no tienen un campo
+`Messages` alternativo. Antes de leer, inspeccionar o transformar el historial,
+incluidos los prompts y recordatorios, el planificador debe llamar a
+`PrepareMessages()` y comprobar el error. Esto también se aplica al código que
+usa mensajes sin llamar a un modelo. Solo las rutas que no necesitan mensajes
+pueden omitirlo; en ellas no se ejecuta la política de historial ni sus
+recuentos de tokens o resúmenes.
+
+La primera llamada aplica la política a los mensajes y las herramientas
+anunciadas con el contexto y el plazo de la actividad. Su cancelación detiene
+el recuento de tokens y el resumen. El runtime proporciona la función incluso
+sin una política configurada. Las llamadas posteriores, incluso concurrentes, reciben el mismo
+slice, los mismos punteros a mensajes y el mismo error durante esa invocación
+del planificador. El llamador debe coordinar cualquier modificación concurrente
+del slice o de sus mensajes. La función no debe guardarse para después: todas
+las llamadas deben terminar antes de que `PlanStart` o `PlanResume` retorne.
+Un error de preparación hace fallar la actividad aunque el planificador lo
+ignore; el runtime no acepta una decisión basada en historial sin preparar.
+Ese error original conserva su clasificación y tiene prioridad sobre errores
+posteriores del planificador o del modelo, sin convertirse en recuperación de
+salida del modelo. El mismo intento no vuelve a ejecutar una preparación fallida.
+La reproducción de una actividad ya completada usa
+su resultado guardado sin repetir la preparación. Cada nuevo intento o
+invocación prepara sus propios mensajes. El historial guardado, las reglas de
+compresión y los límites no cambian.
+
 ---
 
 ## Módulos de características
@@ -1382,8 +1415,12 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
         return nil, errors.New("model not configured")
     }
 
+    messages, err := input.PrepareMessages()
+    if err != nil {
+        return nil, err
+    }
     req := &model.Request{
-        Messages: input.Messages,
+        Messages: messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1424,8 +1461,12 @@ mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
+messages, err := input.PrepareMessages()
+if err != nil {
+    return nil, err
+}
 req := &model.Request{
-    Messages: input.Messages,
+    Messages: messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1466,6 +1507,10 @@ planificador.
 
 ### Retención exacta y cobertura del resumen
 
+La política se aplica al llamar a
+[`PrepareMessages`](#preparing-conversation-messages), no antes de cada
+invocación del planificador.
+
 Con `CompressAtMaxInputTokens` positivo, un único resumen recibe todos los turnos
 anteriores al más reciente. El runtime cuenta juntos los mensajes de sistema,
 el resumen real, los turnos completos elegibles y las herramientas actuales. Si
@@ -1482,8 +1527,10 @@ hechos repetidos o contradictorios. Para `K` turnos elegibles hay como máximo
 `K` recuentos finales, además de las comprobaciones iniciales. La entrada más
 amplia y los recuentos adicionales pueden aumentar coste y latencia; no se añade
 otra llamada de resumen. Si ni siquiera el resumen y el turno más reciente caben,
-o falla un recuento o el resumen, se devuelve el historial original con el error,
-sin soluciones alternativas ni reinicio automático.
+o falla un recuento o el resumen, la política devuelve el historial original
+junto con el error. Ese historial no es una alternativa válida para planificar:
+el error de `PrepareMessages()` hace fallar la actividad, sin soluciones
+alternativas ni reinicio automático.
 
 Sin límite total, el resumen sigue cubriendo solo el prefijo excluido: no cambian
 los turnos conservados ni se añaden solapamientos o recuentos finales. Con límite

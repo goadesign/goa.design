@@ -148,7 +148,7 @@ delete a file before rerunning if you intentionally want a fresh stub.
 
 **The plan/execute loop:**
 
-1. `PlanStart` receives the initial user messages.
+1. `PlanStart` receives `PrepareMessages`, which it calls when it needs the initial conversation.
 2. The planner returns a `FinalResponse`, tool calls, or an await request.
 3. The runtime validates and executes admitted tool calls using generated specs and registered executors.
 4. `PlanResume` receives planner-visible tool outputs.
@@ -294,9 +294,13 @@ func (p *Planner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planne
 	if !ok {
 		return nil, errors.New("model client default is not registered")
 	}
+	messages, err := in.PrepareMessages()
+	if err != nil {
+		return nil, err
+	}
 
 	summary, err := mc.Stream(ctx, &model.Request{
-		Messages: in.Messages,
+		Messages: messages,
 		Tools:    in.Agent.AdvertisedToolDefinitions(),
 		Stream:   true,
 	})
@@ -321,6 +325,12 @@ Use `in.Agent.ModelClient("default")` when you need to drain the validated
 stream yourself with `planner.ConsumeStream(ctx, stream)`. Choose one stream
 owner per planner turn. Provider constructors return opaque clients whose
 responses are validated before planner code receives them.
+
+Call `PrepareMessages` before inspecting history or building a prompt. It
+applies the history policy once per planner activity; decisions that use only
+typed tool results or run context need not prepare unused messages. See
+[Preparing conversation messages](../runtime/#preparing-conversation-messages)
+for the lifetime, cancellation, and error contract.
 
 ---
 
