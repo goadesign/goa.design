@@ -375,6 +375,50 @@ I riepiloghi da visualizzare, la classificazione, la possibilità di riprovare
 e il recupero del modello restano invariati; il testo diagnostico non è
 un'istruzione di correzione per il modello.
 
+### Rifiuti locali delle richieste al modello
+
+Usare `model.NewRequestValidationError(cause)` solo quando una convalida
+dell'applicazione rifiuta una richiesta al modello prima che un provider la
+accetti. Un adattatore di modello remoto può ricostruire questo tipo dall'errore
+esplicito di convalida delle richieste del proprio servizio. La causa è
+obbligatoria: `Unwrap()` espone l'errore originale ed `Error()` restituisce la
+diagnostica completa. Questo tipo non contiene nome del provider, stato HTTP,
+impostazioni di retry o istruzioni di recupero.
+
+Non usarlo per errori di rete, observer, cancellazione o provider. I validatori e
+gli adattatori esistenti mantengono il proprio comportamento, a meno che il
+responsabile non identifichi esplicitamente un rifiuto locale. I rifiuti effettivi
+del provider usano ancora `model.ProviderError`; l'output non valido del modello
+o del planner mantiene il proprio contratto distinto di convalida dell'output.
+
+La run termina con il tipo `model_request`, `Retryable: false` e senza provider,
+operazione, codice del provider o stato HTTP. Il riepilogo predefinito è
+“The AI request could not be prepared.” L'applicazione può modificare
+`hooks.PublicErrorModelRequest` all'avvio del processo; `DebugMessage` conserva
+la diagnostica completa. Né l'esecuzione dei tool né gli agenti annidati
+trasformano questo errore in un retry o in una chiamata aggiuntiva al modello
+per correggerlo. Il testo già pubblicato da una chiamata precedente al modello
+nella stessa attività del planner viene conservato prima che la run termini.
+Un `ApplicationError` Temporal personalizzato restituito direttamente mantiene
+la classificazione e la policy di retry esistenti dell'applicazione; questo
+tipo non sostituisce tale errore esterno esplicito.
+
+Temporal salva l'errore come `goa_ai.request_validation_error`, con
+`NonRetryable: true` e la diagnostica valida completa nel messaggio, senza
+dettagli o un oggetto causa. I lettori rifiutano un valore salvato che consente
+retry, contiene dettagli o una causa, oppure presenta UTF-8 non valido. La
+codifica delle diagnostiche e i limiti esterni di dimensione degli errori
+restano applicabili; non viene introdotto un nuovo limite di testo. Gli errori
+di provider, output, generici e di cancellazione già salvati non vengono
+reinterpretati.
+
+Aggiornare i worker prima che gli adattatori inizino a produrre questo tipo.
+I worker precedenti non possono leggere la classificazione salvata e non devono
+elaborare cronologie che la contengono, nemmeno tornando a una versione
+precedente. Assegnare tali cronologie solo ai worker aggiornati. Non sono
+previsti cambiamenti dell'API generata, migrazioni del database o modalità di
+compatibilità, e l'aggiornamento non riclassifica gli errori salvati in precedenza.
+
 ### Formati degli errori salvati
 
 I nuovi record `OutputContractFailure`, `ModelOutputRejected` e
@@ -385,7 +429,8 @@ il testo UTF-8 non valido produce un `Reason` vuoto e
 `ReasonOmitted="invalid_utf8"`. I nuovi record non usano `size_limit` per omettere
 una causa lunga.
 
-I nuovi errori Temporal usano quattro tipi privati di errore applicativo:
+I nuovi errori Temporal di provider, generici, di contratto dell'output e di
+tipo riservato non valido usano questi quattro tipi privati di errore applicativo:
 
 - `goa_ai.provider_error.v3`
 - `goa_ai.generic_error.v3`

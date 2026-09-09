@@ -385,6 +385,45 @@ diagnostics. Display summaries, failure classification, retryability, and
 model recovery behavior remain unchanged; diagnostic text is not model
 correction guidance.
 
+### Local model-request rejections
+
+Use `model.NewRequestValidationError(cause)` only when application-side
+validation rejects a model request before a provider accepts it. A remote model
+adapter can restore this type from its service's explicit request-validation
+error. The cause is required: `Unwrap()` exposes the original error and `Error()`
+returns its complete diagnostic. This type carries no provider name, HTTP
+status, retry setting, or recovery instruction.
+
+Do not use it for network, observer, cancellation, or provider failures.
+Existing validators and adapters keep their behavior unless their owner
+explicitly marks a local request rejection. Genuine provider rejections still
+use `model.ProviderError`; invalid model or planner output keeps its separate
+output-validation contract.
+
+The run ends with kind `model_request`, `Retryable: false`, and no provider,
+operation, provider code, or HTTP status. Its default summary is “The AI request
+could not be prepared.” Applications can override `hooks.PublicErrorModelRequest`
+at process startup; `DebugMessage` keeps the complete diagnostic. Tool execution
+and nested agents do not turn this error into a retry or an extra model call for
+correction. Text already published by an earlier model call in the same planner
+activity is preserved before the run ends. A directly returned custom Temporal
+`ApplicationError` retains the application's existing classification and retry
+policy; this type does not override that explicit outer error.
+
+Temporal saves the error as `goa_ai.request_validation_error`, with
+`NonRetryable: true` and the complete valid diagnostic in its message, without
+details or a cause object. Readers reject a saved value that is retryable,
+contains details or a cause, or has invalid UTF-8. Existing diagnostic encoding
+and external failure-size limits still apply; there is no new text limit.
+Previously saved provider, output, generic, and cancellation failures are not
+reinterpreted.
+
+Upgrade workers before adapters start producing this type. Older workers cannot
+read its saved classification and must not process histories containing it,
+including during rollback. Route those histories only to upgraded workers.
+There is no database migration, generated API change, or compatibility mode,
+and upgrading does not relabel earlier saved failures.
+
 ### Saved error formats
 
 New `OutputContractFailure`, `ModelOutputRejected`, and `PlannerOutputRejected`
@@ -394,7 +433,8 @@ Valid text has an empty `ReasonOmitted`; invalid UTF-8 produces an empty
 `Reason` and `ReasonOmitted="invalid_utf8"`. New records do not use
 `size_limit` to omit a long reason.
 
-New Temporal failures use four private application types:
+New provider, generic, output-contract, and invalid-reserved Temporal failures
+use these four private application types:
 
 - `goa_ai.provider_error.v3`
 - `goa_ai.generic_error.v3`

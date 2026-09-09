@@ -389,6 +389,53 @@ l'affichage, la classification, les possibilités de nouvelle tentative et la
 récupération du modèle restent inchangés ; le diagnostic n'est pas une consigne
 de correction pour le modèle.
 
+### Rejets locaux des requêtes au modèle
+
+Utilisez `model.NewRequestValidationError(cause)` uniquement lorsqu'une
+validation de l'application rejette une requête au modèle avant qu'un
+fournisseur ne l'accepte. Un adaptateur de modèle distant peut reconstruire ce
+type à partir de l'erreur explicite de validation des requêtes de son service.
+La cause est obligatoire : `Unwrap()` expose l'erreur originale et `Error()`
+renvoie son diagnostic complet. Ce type ne contient ni nom de fournisseur,
+ni statut HTTP, ni paramètre de nouvelle tentative, ni consigne de récupération.
+
+Ne l'utilisez pas pour les erreurs de réseau, d'observateur, d'annulation ou de
+fournisseur. Les validateurs et adaptateurs existants gardent leur comportement
+sauf si leur responsable marque explicitement un rejet local. Les véritables
+rejets du fournisseur utilisent toujours `model.ProviderError` ; les sorties
+invalides du modèle ou du planificateur conservent leur contrat distinct de
+validation des sorties.
+
+L'exécution se termine avec le type `model_request`, `Retryable: false`, sans
+fournisseur, opération, code fournisseur ni statut HTTP. Le résumé par défaut
+est “The AI request could not be prepared.” L'application peut modifier
+`hooks.PublicErrorModelRequest` au démarrage du processus ; `DebugMessage`
+conserve le diagnostic complet. Ni l'exécution des outils ni les agents
+imbriqués ne transforment cette erreur en nouvelle tentative ou en appel
+supplémentaire au modèle pour la corriger. Le texte déjà publié par un appel
+précédent au modèle dans la même activité du planificateur est conservé avant la
+fin de l'exécution. Un `ApplicationError` Temporal personnalisé renvoyé
+directement conserve la classification et la politique de nouvelle tentative
+existantes de l'application ; ce type ne remplace pas cette erreur extérieure
+explicite.
+
+Temporal enregistre l'erreur sous `goa_ai.request_validation_error`, avec
+`NonRetryable: true` et le diagnostic valide complet dans son message, sans
+détails ni objet de cause. Les lecteurs rejettent une valeur enregistrée qui
+autorise une nouvelle tentative, contient des détails ou une cause, ou présente
+un UTF-8 invalide. L'encodage des diagnostics et les limites externes de taille
+des échecs restent applicables ; aucune nouvelle limite de texte n'est ajoutée.
+Les échecs de fournisseur, de sortie, génériques et d'annulation déjà enregistrés
+ne sont pas réinterprétés.
+
+Mettez les workers à niveau avant que les adaptateurs ne produisent ce type.
+Les anciens workers ne peuvent pas lire sa classification enregistrée et ne
+doivent pas traiter les historiques qui la contiennent, même lors d'un retour à
+une version antérieure. Confiez ces historiques uniquement aux workers mis à
+niveau. Il n'y a ni migration de base de données, ni changement d'API générée,
+ni mode de compatibilité, et la mise à niveau ne reclassifie pas les échecs
+enregistrés auparavant.
+
 ### Formats des erreurs enregistrées
 
 Les nouveaux enregistrements `OutputContractFailure`, `ModelOutputRejected` et
@@ -399,7 +446,8 @@ un texte UTF-8 invalide produit un `Reason` vide et
 `ReasonOmitted="invalid_utf8"`. Les nouveaux enregistrements n'utilisent pas
 `size_limit` pour omettre une cause longue.
 
-Les nouveaux échecs Temporal utilisent quatre types privés d'erreur applicative :
+Les nouveaux échecs Temporal de fournisseur, génériques, de contrat de sortie et
+de type réservé invalide utilisent ces quatre types privés d'erreur applicative :
 
 - `goa_ai.provider_error.v3`
 - `goa_ai.generic_error.v3`
