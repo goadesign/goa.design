@@ -1451,6 +1451,22 @@ limit on the complete run. The arguments remain rejected before execution;
 Goa-AI does not split, truncate, or rewrite them. The original validation error,
 acceptance rules, and configured recovery-turn limit remain unchanged.
 
+For schema or typed tool-input rejections eligible for correction, the model
+client can append the complete validated input example after the field guidance.
+It copies the example with the request's validation contract before the model
+call, so later request mutation cannot replace it. The accompanying instruction
+asks the model to choose values and a valid union branch appropriate to the
+request, rather than copy the example's sample values.
+
+The entire correction must fit the existing 4,096-byte limit for one rejected
+model invocation, including the instruction, example, and UTF-8 bytes. An absent
+or oversized example leaves the existing field guidance unchanged; the example
+is omitted whole, never truncated. This bounds optional correction context, not
+tool arguments. Validation, rejected-response diagnostics, accepted history,
+available tool choices, and the recovery-turn limit remain unchanged; arguments
+are never repaired and no retry is added. See the
+[framework contract](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#model-visible-tool-arguments).
+
 ### Provider Adapters
 
 Goa-AI ships with adapters for popular LLM providers:

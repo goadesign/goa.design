@@ -1309,6 +1309,24 @@ Goa-AI non li divide, tronca o riscrive. L'errore di validazione originale, le
 regole di accettazione e il limite configurato dei turni di recupero restano
 invariati.
 
+Per i rifiuti dello schema o della validazione tipizzata degli argomenti che
+ammettono una correzione, il client del modello può aggiungere l'esempio di input
+completo e validato dopo l'indicazione sul campo. Copia l'esempio insieme al
+contratto di validazione della richiesta prima di chiamare il modello; una
+successiva modifica della richiesta non può sostituirlo. L'istruzione allegata
+chiede al modello di scegliere valori e un ramo valido dell'unione adatti alla
+richiesta, anziché copiare i valori di esempio.
+
+La correzione completa deve rientrare nel limite esistente di 4.096 byte per ogni
+invocazione del modello rifiutata, includendo istruzione, esempio e byte UTF-8.
+Se l'esempio manca o è troppo grande, l'indicazione sul campo resta invariata;
+l'esempio viene omesso per intero, mai troncato. Il limite riguarda il contesto
+facoltativo della correzione, non gli argomenti. Validazione, diagnostica delle
+risposte rifiutate, cronologia accettata, strumenti disponibili e limite dei
+turni di recupero non cambiano; gli argomenti non vengono mai riparati e non si
+aggiunge alcun tentativo. Vedere il
+[contratto del framework](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#model-visible-tool-arguments).
+
 ### Adattatori del provider
 
 Goa-AI viene fornito con adattatori per i più diffusi provider LLM:
