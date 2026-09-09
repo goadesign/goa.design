@@ -1369,16 +1369,27 @@ type Client interface {
 ```
 
 Las llamadas completas a herramientas deben cumplir su esquema anunciado y el
-decodificador generado asociado, si lo hay, antes de que el planner pueda observarlas.
-Cuando un rechazo del esquema tiene una sola causa en el nivel más profundo y
-esta coincide con los metadatos generados de un campo de tipo array, la guía de
-corrección indica el mínimo o máximo inclusivo de ese array, por ejemplo:
-`Field "items" must contain at most 3 items.` Las causas ambiguas o no
-compatibles conservan una guía genérica. Estos límites corresponden a ese único
-array enviado, no a la ejecución completa. Los argumentos siguen rechazados
-antes de la ejecución; Goa-AI no los divide, recorta ni reescribe. El error de
-validación original, las reglas de aceptación y el límite configurado de turnos
-de recuperación no cambian.
+decodificador generado asociado, si lo hay, antes de que el planner las observe.
+Los metadatos permiten explicar infracciones independientes de campos obligatorios,
+tipos, enumeraciones o longitud de arrays. Un límite de array es inclusivo y se
+aplica a ese array, no a toda la ejecución:
+`Field "items" must contain at most 3 items.`
+
+El runtime sigue restricciones obligatorias independientes, incluido `allOf`, y
+solo la rama de unión elegida por un discriminador válido. No convierte ramas
+alternativas de `anyOf`, candidatos de `contains` ni comprobaciones de nombres de
+propiedades en requisitos para cambiar cada valor correspondiente. Los índices
+y las claves de mapas aparecen como `*`; los campos no declarados se señalan
+en su objeto padre sin repetir el nombre enviado.
+
+Las instrucciones se ordenan y deduplican. Se omiten instrucciones distintas para
+la misma ruta mostrada, sin intentar combinar sus restricciones. Las instrucciones
+útiles de otros campos se conservan aunque otras sean ambiguas, no compatibles o
+demasiado grandes. Cada instrucción, con su descripción y enumeraciones, se incluye
+entera dentro del límite de bytes; una corrección parcial indica que no detalla
+otros errores. Si no cabe ninguna, la guía es genérica. Los argumentos siguen
+rechazados antes de ejecutarse; Goa-AI no los divide, recorta ni reescribe. Los
+errores originales, las reglas de aceptación y el límite de recuperación no cambian.
 
 Ante un rechazo del esquema o una validación tipada de los argumentos que admita
 corrección, el cliente del modelo puede añadir el ejemplo de entrada completo y

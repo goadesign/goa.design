@@ -190,14 +190,26 @@ Los cuatro resultados deben ser correctos. Así, un juez que siempre responde
 la suite antes de llamar a la aplicación. En los escenarios, solo `entailed`
 aprueba.
 
-El juez exige exactamente un juicio por afirmación, en el mismo orden, con una
-etiqueta conocida y una justificación no vacía. Los IDs de las afirmaciones no
-se envían al modelo y se restauran según su posición. Los juicios ausentes o
-adicionales, etiquetas desconocidas, campos adicionales y respuestas malformadas
-se rechazan. El mecanismo de corrección existente, con un número limitado de
-intentos, puede pedir al modelo una respuesta de reemplazo; nunca modifica una
-salida inválida para aceptarla. Si se agotan las correcciones, el llamante
-recibe un error en lugar de juicios inventados.
+El prompt pide llamar exactamente una vez a la herramienta de evaluación
+proporcionada, sin escribir un nombre específico del proveedor. Su esquema exige
+una propiedad con el ID de cada afirmación, que contenga una etiqueta y una
+justificación no vacía. El juez devuelve los juicios en el orden de las
+afirmaciones buscándolos por nombre, no por su posición en la respuesta. Rechaza
+nombres ausentes, desconocidos o duplicados, campos adicionales y etiquetas inválidas.
+
+Los metadatos estructurales permiten al validador explicar errores independientes
+en los campos, como una afirmación codificada como cadena cuando se exige un
+objeto. El texto completo de las afirmaciones permanece en el esquema y la
+evidencia de referencia en la petición; ninguno se copia en estos metadatos de
+corrección. Una afirmación llamada `requests` es válida si el esquema la exige.
+El juez no proporciona veredictos de ejemplo.
+
+El mecanismo de corrección existente y limitado puede pedir un reemplazo, pero
+nunca repara una salida inválida. Las etiquetas, la selección del modelo, los
+límites de tokens y el número de correcciones no cambian; unas instrucciones más
+claras no garantizan su cumplimiento. Si se agotan las correcciones, el llamante
+recibe un error, no juicios inventados. Consulta el
+[contrato del juez del framework](https://github.com/goadesign/goa-ai/blob/main/docs/evals.md#how-judging-works).
 
 ## Migrar la construcción del juez
 

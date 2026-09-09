@@ -1298,16 +1298,28 @@ modello.
 malformato o contraddittorio restituisce un errore e nessuna risposta accettata.
 
 Le chiamate complete agli strumenti devono rispettare lo schema annunciato e il
-decoder generato associato, se presente, prima di essere visibili al planner. Quando un
-rifiuto dello schema ha una sola causa al livello più profondo, corrispondente
-ai metadati generati di un campo array, la guida alla correzione indica il
-minimo o il massimo inclusivo di quell'array, per esempio:
-`Field "items" must contain at most 3 items.` Cause ambigue o non supportate
-mantengono una guida generica. Questi limiti riguardano solo quell'array
-inviato, non l'intero run. Gli argomenti restano rifiutati prima dell'esecuzione;
-Goa-AI non li divide, tronca o riscrive. L'errore di validazione originale, le
-regole di accettazione e il limite configurato dei turni di recupero restano
-invariati.
+decoder generato associato, se presente, prima di essere visibili al planner.
+I metadati permettono di spiegare violazioni indipendenti di campi obbligatori,
+tipi, enumerazioni o lunghezze degli array. Il limite di un array è inclusivo e
+riguarda quell'array inviato, non l'intera esecuzione:
+`Field "items" must contain at most 3 items.`
+
+Il runtime segue vincoli obbligatori indipendenti, incluso `allOf`, e solo il
+ramo dell'unione selezionato da un discriminatore valido. Non trasforma rami
+alternativi di `anyOf`, candidati di `contains` o controlli sui nomi delle
+proprietà in obblighi di modifica di ogni valore corrispondente. Indici degli
+array e chiavi delle mappe appaiono come `*`; i campi non dichiarati sono segnalati
+sull'oggetto padre senza ripetere il nome inviato.
+
+Le istruzioni sono ordinate e deduplicate. Istruzioni distinte per lo stesso
+percorso visualizzato vengono omesse, senza tentare di combinarne i vincoli.
+Le istruzioni utili per altri campi restano disponibili anche quando altre sono
+ambigue, non supportate o troppo grandi. Ogni istruzione, incluse descrizione ed
+enumerazioni, rientra interamente nel limite di byte; una correzione parziale
+segnala che altri errori non sono descritti. Se non è possibile includerne alcuna,
+la guida resta generica. Gli argomenti restano rifiutati prima dell'esecuzione;
+Goa-AI non li divide, tronca o riscrive. Errori originali, regole di accettazione
+e limite dei turni di recupero restano invariati.
 
 Per i rifiuti dello schema o della validazione tipizzata degli argomenti che
 ammettono una correzione, il client del modello può aggiungere l'esempio di input

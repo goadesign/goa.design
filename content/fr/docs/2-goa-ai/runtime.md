@@ -1421,16 +1421,28 @@ Un `ValidatedStream` doit être lu jusqu'à `io.EOF`. Ce n'est qu'alors que
 ou contradictoire renvoie une erreur sans réponse acceptée.
 
 Les appels d'outils complets doivent satisfaire leur schéma annoncé et leur
-décodeur généré associé, s'il existe, avant d'être transmis au planificateur. Lorsqu'un rejet
-de schéma possède une seule cause au niveau le plus profond et que celle-ci
-correspond aux métadonnées générées d'un champ tableau, l'instruction de
-correction indique le minimum ou le maximum inclusif de ce tableau, par exemple :
-`Field "items" must contain at most 3 items.` Les causes ambiguës ou non prises
-en charge conservent une instruction générique. Ces bornes s'appliquent à ce
-seul tableau soumis, pas à l'exécution entière. Les arguments restent rejetés
-avant l'exécution ; Goa-AI ne les découpe, ne les tronque ni ne les réécrit.
-L'erreur de validation d'origine, les règles d'acceptation et la limite
-configurée de tours de récupération restent inchangées.
+décodeur généré associé, s'il existe, avant d'être transmis au planificateur.
+Les métadonnées permettent d'expliquer des violations indépendantes de champs
+requis, de types, d'énumérations ou de longueurs de tableaux. Une borne de tableau
+est inclusive et s'applique au tableau soumis, pas à l'exécution entière :
+`Field "items" must contain at most 3 items.`
+
+Le runtime suit les contraintes obligatoires indépendantes, dont `allOf`, et
+seulement la branche d'union choisie par un discriminateur valide. Il ne transforme
+pas les branches alternatives d'`anyOf`, les candidats de `contains` ni les contrôles
+des noms de propriétés en obligations de modifier chaque valeur correspondante.
+Les indices et clés de dictionnaires apparaissent comme `*` ; les champs non déclarés
+sont signalés sur leur objet parent sans répéter le nom soumis.
+
+Les instructions sont triées et dédupliquées. Des instructions distinctes pour
+un même chemin affiché sont omises, sans tenter de combiner leurs contraintes.
+Les instructions utiles pour les autres champs subsistent même si certaines sont
+ambiguës, non prises en charge ou trop longues. Chaque instruction, description
+et énumérations comprises, tient entière dans la limite d'octets ; une correction
+partielle indique que d'autres erreurs ne sont pas détaillées. Si aucune ne peut
+être incluse, l'instruction reste générique. Les arguments restent rejetés avant
+l'exécution ; Goa-AI ne les découpe, ne les tronque ni ne les réécrit. Les erreurs
+d'origine, les règles d'acceptation et la limite de récupération ne changent pas.
 
 Lorsqu'un rejet de schéma ou une validation typée des arguments permet une
 correction, le client du modèle peut ajouter l'exemple d'entrée complet et validé

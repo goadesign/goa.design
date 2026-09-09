@@ -336,7 +336,20 @@ Judge(ctx context.Context, output string, claims []eval.Claim, reference string)
 
 scenario を開始する前に、runner は label ごとに 1 つ、固定の 4 example で judge を検査します。この手順を calibration と呼びます。たとえば常に `entailed` を返して全 evaluation を成功させるような、label を区別できない judge は calibration に失敗し、application へ触れる前に suite を停止します。calibration は runner 所有の 2 分 deadline 内で行うため、接続不能または停止した model endpoint は suite を永久に block せず、明確な error になります。
 
-judge は、各 claim に対して同じ順序で正確に 1 つの judgment を要求します。各 judgment には既知の label と空でない理由が必要です。claim ID は model request に含めず、位置に基づいて復元します。judgment の不足や超過、未知の label、余分な field、不正な response は拒否されます。既存の回数制限付き correction 処理は model に代わりの応答を求めることがありますが、不正な出力を書き換えて受理することはありません。correction 回数を使い切ると、呼び出し元には架空の judgment ではなく error が返ります。
+プロンプトは、プロバイダー固有の名前を書かず、提示された評価ツールを正確に 1 回呼び出すよう求めます。
+スキーマは各 claim ID を名前とするプロパティを要求し、その値には label と空でない理由を含めます。
+judge は応答内の位置ではなく名前で判断を参照し、元の claim 順で返します。
+不足・未知・重複した名前、余分なフィールド、不正な label は拒否されます。
+
+構造を表すフィールドメタデータにより、検証器は独立したフィールドの誤りを説明できます。
+たとえば、オブジェクトが必要な claim が文字列として返された場合です。
+claim の全文はスキーマに、参照証拠はリクエストに保持され、どちらもこの修正用メタデータにはコピーされません。
+スキーマが要求する場合、`requests` という名前の claim も有効です。judge は判定例を提示しません。
+
+既存の回数制限付き修正処理は代わりの応答を求められますが、不正な出力を書き換えることはありません。
+label、モデル選択、トークン上限、修正回数は変わらず、説明が明確になってもモデルが従う保証はありません。
+修正回数を使い切ると、呼び出し元には架空の判断ではなくエラーが返ります。
+詳しくは[フレームワークの judge 契約](https://github.com/goadesign/goa-ai/blob/main/docs/evals.md#how-judging-works)を参照してください。
 
 ## report を読む
 
