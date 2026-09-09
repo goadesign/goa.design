@@ -495,10 +495,10 @@ Agent("chat", "Conversational runner", func() {
 
 これはエージェント登録に紐づく `runtime.RunPolicy` になります。
 
-- **上限**: `MaxToolCalls` は実行ごとの予算対象ツール呼び出し総数を制限します。`MaxRecoveryTurns` は、ツール結果またはモデル回答が拒否された後にプランナーを再実行できる回数を制限します。予算対象ツールが成功すると、この回数はリセットされます。`Bookkeeping()` ツールはいずれの予算も消費しません。
+- **上限**: `MaxToolCalls` は実行ごとの予算対象ツール呼び出し総数を制限します。`MaxRecoveryTurns` は、ツール結果またはモデル回答が拒否された後にプランナーを再実行できる回数を制限します。予算対象の処理が成功すると回数はリセットされますが、`finish` の失敗が有効な間は例外です。ページ取得の成功でその失敗の回数がリセットされることはありません。`Bookkeeping()` ツールはいずれの予算も消費しません。
 - **Time budget**: `TimeBudget`（run の wall-clock 予算）、`FinalizerGrace`（ランタイム専用: 最終化のための予約ウィンドウ）。
 - **Interrupts**: `InterruptsAllowed`（pause/resume のオプトイン）。
-- **Terminal tools**: DSL で `TerminalRun()` として宣言された tool は自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受理されます。強制 finalization 中、runtime は terminal bookkeeping call だけを受理し、残りの hard deadline 内で実行し、すべての terminal side effect が成功した場合にのみ run を閉じます。実行前に runtime は正確な `planner.TerminationReason` を `runtime.FinalizationReasonLabel`（`goa-ai.finalization_reason`）へ書き込みます。run label、policy label、planner output、model output はこの値を選択したり置き換えたりできません。通常 call には渡されません。
+- **Terminal tools**: DSL で `TerminalRun()` として宣言された tool は自動的に bookkeeping となり、成功すると後続 `PlanResume` なしで run を終了します。したがって terminal commit は retrieval budget が残っていなくても受理されます。期限や上限による finalization 中、runtime は terminal bookkeeping call だけを受理し、残りの hard deadline 内で実行し、すべての terminal side effect が成功した場合にのみ run を閉じます。実行前に runtime は正確な `planner.TerminationReason` を `runtime.FinalizationReasonLabel`（`goa-ai.finalization_reason`）へ書き込みます。run label、policy label、planner output、model output はこの値を選択したり置き換えたりできません。通常 call には渡されません。
 - **Missing fields behavior**: `OnMissingFields`（バリデーションが欠落フィールドを示した場合の挙動）。
 
   `tool_failure` を含む fixed-limit または planner-generated terminal call の consumer は `runtime.FinalizationReasonLabel` を使います。この execution contract の変更は consumer と runtime worker にまとめて deploy してください。
@@ -1051,7 +1051,7 @@ planner-generated request には domain intent だけを含めます。`planner.
 | `ToolFailure.Recovery.Action` | 1 つの失敗 result | failed tool を引き続き利用可能にした修正、その tool を除いた replanning、finalization のいずれかを選ぶ。 |
 | `PlanResult.SynthesizeAfterTools` | 選択された 1 batch | recoverable failure がなければ、次の planner turn は回答しなければならない。 |
 | `PlanResumeInput.SynthesisOnly` | 1 planner activity | 最終回答を返す。tool call は無効。 |
-| `PlanResumeInput.Finalize` | runtime が強制する終了 | cap または deadline により通常作業が禁止されている。 |
+| `PlanResumeInput.Finalize` | runtime が要求する完了 | 新しい操作は禁止。理由が `tool_failure` の場合、提示されたカタログには開始済みクエリのページが残ることがある。 |
 
 ランタイムは次の順序で次状態を選びます。
 
@@ -1059,6 +1059,7 @@ planner-generated request には domain intent だけを含めます。`planner.
 | --- | --- |
 | cap または deadline が finalization を要求 | `Finalize` turn |
 | `TerminalRun` tool が成功 | 即時終了 |
+| `finish` の失敗が有効 | 理由 `tool_failure` の `Finalize`。提示済みページと結果を保存する終端ツールを保持 |
 | 失敗 result のいずれかで `AllowsToolTurn() == true` | 通常の repair turn |
 | `SynthesizeAfterTools` が true | `SynthesisOnly` turn |
 | その他 | 通常の continuation turn |
@@ -1067,6 +1068,8 @@ planner-generated request には domain intent だけを含めます。`planner.
 recoverable failure を先に修復し、成功した final batch または terminal failure を
 含む final batch は synthesis に進みます。ランタイムは `SynthesisOnly` turn
 から返された tool call を拒否します。
+
+### ツール失敗後の回復 {#finish-recovery}
 
 recoverable な `ToolFailure` は `Recovery.Action` も 1 つ選択します。
 
@@ -1077,8 +1080,27 @@ recoverable な `ToolFailure` は `Recovery.Action` も 1 つ選択します。
   input を待つか、すでに集めた evidence から回答できます。
 - `replan` は失敗した tool を次の planner turn から除外します。planner は別の
   表示済み tool を使うか、input を待つか、回答できます。
-- `finish` はすべての tool を除外し、利用可能な evidence に基づく最終回答を
-  要求します。
+- `finish` は実行が終了するまで新しい操作を禁止します。プランナーは回答するか、
+  登録済みの終端ツールで最終結果を保存するか、開始済みクエリの提示されたページを取得できます。
+
+`finish` では `PlanResumeInput.Finalize` の理由が `tool_failure` になります。
+利用可能な操作は理由だけでなく、現在のカタログで決まります。ページ取得と終端の
+送信を同じバッチに含めると、runtime はどちらも実行する前に拒否します。新しい
+入力要求や独立した要約ステップも拒否します。取得できるページがなければ、
+終端の完了だけが可能です。期限や上限による finalization ではページ取得を許可しません。
+
+有効なツール失敗と、拒否されたモデル応答に対する修正指示は別の情報です。
+応答が拒否されてもページ取得が成功しても、元の失敗、そのメッセージ、新しい
+処理の禁止は保持されます。通常の `correct_call` と `replan` の制限は、それぞれの
+回復処理が終わると解除されます。モデル検証はスキーマの制約と例を提供し、
+runtime は現在の操作と完了要件に従う代替応答を要求します。必ずしも別の
+ツール呼び出しを要求するわけではありません。
+
+成功したページ取得は通常のツール数と時間の予算を使いますが、代替応答の試行回数を
+消費せず、有効な `finish` の失敗の残り回数もリセットしません。拒否による
+代替応答は引き続き `MaxRecoveryTurns` を消費します。終端の送信に引数修正が
+必要な場合、次のリクエストは元の失敗と新しい検証診断の両方を保持します。
+その修正では失敗した終端ツールだけを提示し、ページ取得は再開しません。
 
 通常の `correct_call` turn では、現在の agent が実行できる tool と、失敗した tool の
 正確な contract を組み合わせます。同じ名前と contract は重複を除きます。
@@ -1090,16 +1112,27 @@ caller の制限、run tag の制限、recovery による除外も適用しま�
 未完了の query は runtime が生成した continuation action を保持します。失敗した
 request から continuation は生成しません。強制 finalization で修正できるのは、
 失敗した正確な terminal tool だけです。synthesis-only turn には tool を提示しません。
-修正後の通常 turn は、現在の agent の tool に戻ります。
+通常の修正後は現在の agent の tool に戻りますが、`finish` の失敗が有効な間は
+新しい操作の禁止が続きます。
 
 ランタイムは recovery turn で表示した tool catalog を正確に記録し、その外側の
 実行可能な call をすべて拒否します。user または外部 input の要求に埋め込まれた
 call も対象です。生成済み codec は引き続きすべての payload を検証し、run の
 tool・failure・time limit は無効な作業の繰り返しを停止します。recovery turn が
-input を待つ場合、failure evidence は再開後も利用できます。tool call または最終
-回答を選ぶと、その evidence は消去されます。
+input を待つ場合、failure evidence は再開後も利用できます。通常の回復処理が
+受理されるとその回復は終了しますが、ページや代替応答によって有効な `finish`
+の失敗が消去されることはありません。
 
 recovery activity の input と表示された catalog は durable workflow history の一部です。production deployment は pinned Temporal Worker Deployment Versioning を使い、Temporal が drained と報告するまで各 old worker version を保持しなければなりません。新 worker の起動は、既存 workflow を新 code で replay してよい根拠にはなりません。continuation は新 workflow なので、保存済み checkpoint の validation を通過した後なら current version を使えます。
+
+この変更は activity や checkpoint にフィールドを追加せず、データ移行も不要です。
+独自プランナーは `Finalize.Reason` と提示されたカタログを併用し、runtime と
+一緒に更新してください。`finish` の失敗後に新しい処理を再開した旧履歴は、
+この実行契約と互換性がありません。記録済みの通常ツールの計画は実行前に拒否されます。
+影響する未完了の履歴は元の worker バージョンで実行し続けるか、worker の置き換え前に
+完了してください。checkpoint のデコード成功は履歴の replay 互換性を証明しません。
+ロールバックでも履歴と worker の割り当てを確認し、影響する workflow 内で
+activity のバージョンを混在させないでください。
 
 `PlanResumeInput.Finalize` が設定されている場合、プランナーは terminal
 bookkeeping tool を返せます。これらは後続プランナーターンには再生されず、

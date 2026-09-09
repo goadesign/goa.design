@@ -318,7 +318,10 @@ When a bounded tool executes:
 4. If another tool in the same parallel batch requires `finish` recovery, the
    failed tool cannot run again and no new domain work can start. Continuation
    actions remain available for successful queries that already returned a
-   next-page cursor. Without such an action, finalization starts immediately
+   next-page cursor, alongside terminal bookkeeping tools that save the final
+   result. The planner may fetch a page or submit the result, never both in one
+   batch. Neither a page nor a rejected response reopens new operations. Without
+   a live page, only terminal completion remains. See [tool failure recovery](../runtime/#finish-recovery)
 5. For direct `Cursor`, the runtime projects the opaque cursor into
    `next_cursor` and the model supplies it on the next call
 6. Stream subscribers and finalizers access bounds for UI display, logging, or
@@ -809,7 +812,8 @@ explicit actions:
 - `RecoveryCorrectCall` keeps the failed tool available and supplies structured
   correction evidence.
 - `RecoveryReplan` removes the failed tool from the next planner turn.
-- `RecoveryFinish` allows only finalization from evidence already collected.
+- `RecoveryFinish` forbids new operations while permitting terminal completion
+  or advertised pages of queries already started.
 
 `ToolResult` carries either a typed result or one structured failure:
 
@@ -896,7 +900,8 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.Tool
 canonical payload/result bytes plus `Failure`. For `RecoveryCorrectCall`, field
 issues, prior input, and example JSON let the next planner turn correct the
 call. `RecoveryReplan` removes the failed tool from that next turn.
-`RecoveryFinish` permits only finalization. The runtime enforces these
+`RecoveryFinish` follows the [finish-recovery contract](../runtime/#finish-recovery).
+The runtime enforces these
 transitions; planners do not infer them from error text. Only provider-authored
 calls can use `RecoveryCorrectCall`. Runtime-created continuations have no
 model-authored input and must replan or finish instead of exposing their

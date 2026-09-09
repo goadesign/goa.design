@@ -292,7 +292,7 @@ bounded tool が実行されると:
 1. runtime は successful bounded tool が `planner.ToolResult.Bounds` を返したことを検証します
 2. runtime は `BoundedResult(...)` の field name を使い、emitted JSON に bounds を merge します
 3. `ContinueWith` では、runtime は一意な live chain head に対してのみ空の action を公開し、実行前に cursor を bind します
-4. 同じ parallel batch の別の tool が `finish` recovery を要求した場合、failed tool は再実行できず、新しい domain work も開始できません。next-page cursor を既に返した successful query の continuation action は引き続き利用できます。そのような action がない場合は、直ちに finalization が始まります
+4. 同じバッチの別のツールが `finish` を要求した場合、新しい操作は開始できません。成功したクエリに次のページがあれば、その継続アクションと最終結果を保存する終端ツールを提示します。プランナーはページ取得か結果送信を選び、両方を同じバッチには含められません。ページや拒否された応答によって新しい操作が再開することはありません。ページがなければ終端の完了だけが可能です。[ツール失敗後の回復](../runtime/#finish-recovery)を参照してください
 5. direct `Cursor` では、runtime は opaque cursor を `next_cursor` に出力し、model が次の call で指定します
 6. stream subscriber と finalizer は bounds を UI display、logging、policy decision に使えます
 
@@ -731,7 +731,7 @@ timeout、malformed result、internal error があります。回復 action は�
 
 - `RecoveryCorrectCall`: 失敗した tool を利用可能なままにし、構造化された correction evidence を渡す
 - `RecoveryReplan`: 次の planner turn から失敗した tool を除く
-- `RecoveryFinish`: すでに集めた evidence に基づく finalization だけを許可する
+- `RecoveryFinish`: 新しい操作を禁止し、終端の完了または開始済みクエリの提示されたページ取得を許可する
 
 `ToolResult` は型付き result または 1 つの構造化 failure を持ちます:
 
@@ -812,7 +812,7 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.Tool
 payload/result bytes と `Failure` を持ちます。`RecoveryCorrectCall` では field
 issue、prior input、example JSON により次の planner turn が call を修正できます。
 `RecoveryReplan` はその turn から失敗した tool を除き、`RecoveryFinish` は
-finalization だけを許可します。runtime がこの transition を強制するため、
+[失敗後の完了契約](../runtime/#finish-recovery)に従います。runtime がこの transition を強制するため、
 planner が error text から推測する必要はありません。`RecoveryCorrectCall` を
 使えるのは provider-authored call だけです。runtime-created continuation には
 model-authored input がないため、execution payload を公開せず replan または

@@ -510,10 +510,10 @@ Agent("chat", "Conversational runner", func() {
 
 Questo diventa un `runtime.RunPolicy` allegato alla registrazione dell'agente:
 
-- **Limiti**: `MaxToolCalls` limita il numero totale di chiamate agli strumenti con budget per ogni esecuzione. `MaxRecoveryTurns` limita le nuove chiamate al pianificatore dopo il rifiuto del risultato di uno strumento o di una risposta del modello. Una chiamata riuscita a uno strumento con budget reimposta questo limite. Gli strumenti `Bookkeeping()` non consumano nessuno dei due budget.
+- **Limiti**: `MaxToolCalls` limita il numero totale di chiamate agli strumenti con budget per ogni esecuzione. `MaxRecoveryTurns` limita le nuove chiamate al pianificatore dopo il rifiuto del risultato di uno strumento o di una risposta del modello. Il lavoro riuscito con budget ripristina questa disponibilità salvo quando resta attivo un errore `finish`; le pagine ottenute non ripristinano mai la disponibilità di quell'errore. Gli strumenti `Bookkeeping()` non consumano nessuno dei due budget.
 - **Bilancio di tempo**: `TimeBudget` - budget di tempo per la corsa. `FinalizerGrace` (solo per la corsa) - finestra riservata opzionale per la finalizzazione.
 - **Interruzioni**: `InterruptsAllowed` - opt-in per pausa/ripresa.
-- **Completamento terminale del run**: gli strumenti dichiarati `TerminalRun()` diventano automaticamente bookkeeping e chiudono il run dopo una chiamata riuscita, senza un turno `PlanResume` successivo. Un commit terminale può quindi essere ammesso senza budget di retrieval residuo. Durante la finalizzazione forzata, il runtime ammette solo chiamate terminali di bookkeeping, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce. Prima dell'esecuzione, il runtime scrive l'esatto `planner.TerminationReason` in `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Etichette del run o della policy e output del planner o del modello non possono scegliere né sostituire questo valore; le chiamate ordinarie non lo ricevono.
+- **Completamento terminale del run**: gli strumenti dichiarati `TerminalRun()` diventano automaticamente bookkeeping e chiudono il run dopo una chiamata riuscita, senza un turno `PlanResume` successivo. Un commit terminale può quindi essere ammesso senza budget di retrieval residuo. Durante la finalizzazione dovuta a scadenze o limiti, il runtime ammette solo chiamate terminali di bookkeeping, le esegue nella finestra restante dell'hard deadline e chiude il run solo se ogni effetto terminale riesce. Prima dell'esecuzione, il runtime scrive l'esatto `planner.TerminationReason` in `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Etichette del run o della policy e output del planner o del modello non possono scegliere né sostituire questo valore; le chiamate ordinarie non lo ricevono.
 
   I consumer di chiamate terminali dovute a limiti fissi o scelte dal planner,
   incluso `tool_failure`, usano `runtime.FinalizationReasonLabel`. Distribuire
@@ -1085,7 +1085,7 @@ Questi contratti sono distinti:
 | `ToolFailure.Recovery.Action` | Un risultato fallito | Sceglie la correzione mantenendo disponibile lo strumento fallito, una nuova pianificazione senza di esso oppure la finalizzazione. |
 | `PlanResult.SynthesizeAfterTools` | Un batch selezionato | Se il batch non contiene errori recuperabili, il turno successivo del planner deve rispondere. |
 | `PlanResumeInput.SynthesisOnly` | Un'attività del planner | Restituire una risposta finale; le chiamate agli strumenti non sono valide. |
-| `PlanResumeInput.Finalize` | Terminazione forzata dal runtime | Un limite o una deadline impedisce il lavoro normale. |
+| `PlanResumeInput.Finalize` | Conclusione imposta dal runtime | Le nuove operazioni sono vietate. Con il motivo `tool_failure`, il catalogo annunciato può conservare pagine di query già iniziate. |
 
 Il runtime sceglie il prossimo stato in quest'ordine:
 
@@ -1093,6 +1093,7 @@ Il runtime sceglie il prossimo stato in quest'ordine:
 | --- | --- |
 | Un limite o una deadline richiede la finalizzazione | Turno `Finalize` |
 | Uno strumento `TerminalRun` è riuscito | Termine immediato |
+| Resta attivo un errore `finish` | `Finalize` con motivo `tool_failure`; conserva le pagine annunciate e gli strumenti terminali di bookkeeping |
 | Un risultato fallito ha `AllowsToolTurn() == true` | Normale turno di riparazione |
 | `SynthesizeAfterTools` è true | Turno `SynthesisOnly` |
 | Altrimenti | Normale turno di continuazione |
@@ -1101,6 +1102,8 @@ In questo modo l'intento del planner non diventa una seconda policy di retry.
 Un errore recuperabile viene riparato per primo; un batch finale riuscito o con
 errore terminale passa alla sintesi. Il runtime rifiuta chiamate agli strumenti
 restituite da un turno `SynthesisOnly`.
+
+### Recupero dopo un errore dello strumento {#finish-recovery}
 
 Ogni `ToolFailure` recuperabile seleziona anche una `Recovery.Action`:
 
@@ -1112,8 +1115,31 @@ Ogni `ToolFailure` recuperabile seleziona anche una `Recovery.Action`:
   input o rispondere usando le prove già raccolte.
 - `replan` rimuove lo strumento che ha fallito dal turno successivo. Il planner
   può usare un altro strumento annunciato, attendere un input o rispondere.
-- `finish` rimuove tutti gli strumenti e richiede una risposta finale basata
-  sulle prove disponibili.
+- `finish` vieta nuove operazioni fino al termine del run. Il planner può
+  rispondere, usare gli strumenti terminali registrati per salvare il risultato
+  finale oppure leggere una pagina annunciata di una query già iniziata.
+
+Con `finish`, `PlanResumeInput.Finalize` porta il motivo `tool_failure`. Il
+catalogo corrente, non il solo motivo, determina le azioni disponibili. Una
+pagina e un invio terminale non possono condividere un batch: il runtime lo
+rifiuta prima di eseguire qualsiasi chiamata. Rifiuta anche nuove richieste di
+input e passaggi separati di sintesi. Senza pagine disponibili resta solo la
+conclusione terminale. La finalizzazione dovuta a scadenze o limiti non consente mai la paginazione.
+
+Gli errori attivi degli strumenti e le indicazioni su una risposta del modello
+rifiutata sono fatti separati. I rifiuti e le pagine ottenute conservano
+l'errore originale, il suo messaggio e il divieto di nuovo lavoro. Le normali
+restrizioni `correct_call` e `replan` terminano con il proprio episodio di
+recupero. La validazione del modello fornisce vincoli dello schema ed esempi;
+il runtime richiede una risposta sostitutiva conforme alle azioni e ai requisiti
+di conclusione correnti, non necessariamente un'altra chiamata a uno strumento.
+
+Le pagine riuscite consumano i normali budget di strumenti e tempo, ma non
+un tentativo sostitutivo e non ripristinano la disponibilità dell'errore
+`finish` attivo. Ogni sostituzione causata da un rifiuto consuma ancora
+`MaxRecoveryTurns`. Se l'invio terminale richiede argomenti corretti, la richiesta
+successiva conserva l'errore originale e la nuova diagnosi di validazione. Per
+quella correzione viene annunciato solo lo strumento terminale fallito; le pagine non ricompaiono.
 
 Un normale turno `correct_call` combina gli strumenti eseguibili dell'agente
 attuale con i contratti esatti degli strumenti falliti. Nomi e contratti
@@ -1127,8 +1153,9 @@ filtro. L'autorizzazione nel servizio esecutore verifica ancora ogni chiamata.
 Le query incompiute conservano le azioni di continuazione generate dal runtime;
 le richieste fallite non creano continuazioni. La finalizzazione forzata offre
 per la correzione solo l'esatto strumento terminale fallito, e i turni di sola
-sintesi restano privi di strumenti. Dopo la correzione, i turni normali tornano
-agli strumenti dell'agente attuale.
+sintesi restano privi di strumenti. Dopo una correzione ordinaria, i turni
+normali tornano agli strumenti dell'agente attuale; un errore `finish` attivo
+continua a vietare nuove operazioni.
 
 Il workflow possiede le prove di correzione mostrate al modello. Prima di
 salvare l'errore nella cronologia, sostituisce input ed esempi forniti
@@ -1145,13 +1172,27 @@ incorporate in una richiesta di input utente o esterno. I codec generati
 continuano a validare ogni payload e i limiti di strumenti, errori e tempo del
 run continuano a interrompere il lavoro non valido ripetuto. Se un turno di
 recupero attende un input, le prove dell'errore restano disponibili alla
-ripresa; la scelta di una chiamata o di una risposta finale le elimina.
+ripresa. Il lavoro di recupero ordinario accettato termina il suo episodio;
+una pagina o una risposta sostitutiva non elimina mai un errore `finish` attivo.
 
 Gli input delle attività di recupero e il catalogo annunciato fanno parte della
-cronologia durevole del workflow. Un deployment che modifica questo contratto
-deve drenare o arrestare i vecchi worker e i workflow in esecuzione prima di
-avviare il nuovo gruppo di worker. Non è sicuro combinare versioni diverse dei
-worker attraverso questo limite.
+cronologia durevole del workflow. I deployment di produzione devono usare
+Temporal Worker Deployment Versioning con versioni fissate e conservare ogni
+vecchia versione finché Temporal non la segnala come drenata. Avviare un nuovo
+worker non autorizza il replay di un workflow esistente con nuovo codice.
+Una continuazione è un nuovo workflow e può usare la versione corrente dopo
+la validazione del checkpoint salvato.
+
+Questo cambiamento non aggiunge campi ad attività o checkpoint e non richiede
+migrazioni dei dati. I planner personalizzati devono usare il catalogo
+annunciato insieme a `Finalize.Reason`; aggiornarli con il runtime. Le vecchie
+cronologie che hanno riaperto lavoro di dominio dopo un errore `finish` non
+sono compatibili con questa esecuzione: i loro piani con strumenti ordinari
+vengono rifiutati prima dell'esecuzione. Conservare le cronologie interessate
+non ancora terminate sulla versione di worker originale oppure completarle
+prima di sostituirla. Decodificare un checkpoint non dimostra compatibilità
+di replay della cronologia. Verificare l'assegnazione delle cronologie ai worker
+anche per il rollback; non mescolare versioni delle attività in un workflow interessato.
 
 Quando `PlanResumeInput.Finalize` è impostato, i planner possono restituire
 strumenti terminali di bookkeeping; queste chiamate non vengono riprodotte in

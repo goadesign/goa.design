@@ -304,7 +304,7 @@ When a bounded tool executes:
 1. The runtime validates that a successful bounded tool returned `planner.ToolResult.Bounds`
 2. The runtime merges those bounds into emitted JSON using the model-facing JSON field names generated from `BoundedResult(...)`
 3. Con `ContinueWith`, il runtime offre l'azione vuota solo per una singola testa di catena attiva non ambigua e associa il cursor prima dell'esecuzione
-4. Se un altro strumento nello stesso batch parallelo richiede il recovery `finish`, lo strumento fallito non può essere eseguito di nuovo e non può iniziare nuovo lavoro di dominio. Le azioni di continuazione restano disponibili per le query riuscite che hanno già restituito un cursor della pagina successiva. Senza tale azione, la finalizzazione inizia immediatamente
+4. Se un altro strumento nello stesso batch parallelo richiede il recupero `finish`, non possono iniziare nuove operazioni. Le query riuscite con una pagina successiva conservano le azioni di continuazione insieme agli strumenti terminali che salvano il risultato finale. Il planner può leggere una pagina o inviare il risultato, mai entrambi nello stesso batch. Né una pagina né una risposta rifiutata riapre le operazioni. Senza pagine disponibili resta solo la conclusione terminale. Vedere il [recupero dopo un errore](../runtime/#finish-recovery)
 5. Con `Cursor` diretto, il runtime emette il cursor opaco in `next_cursor` per la chiamata successiva del modello
 6. I sottoscrittori dello stream e i finalizer accedono ai bounds per UI, log e decisioni di policy
 
@@ -774,8 +774,8 @@ Le azioni di recupero sono esplicite:
 - `RecoveryCorrectCall` mantiene disponibile lo strumento e fornisce prove
   strutturate per la correzione.
 - `RecoveryReplan` rimuove lo strumento che ha fallito dal turno successivo.
-- `RecoveryFinish` permette soltanto la finalizzazione usando le prove già
-  raccolte.
+- `RecoveryFinish` vieta nuove operazioni e consente la conclusione terminale
+  oppure le pagine annunciate di query già iniziate.
 
 `ToolResult` contiene un risultato tipizzato oppure un solo errore strutturato:
 
@@ -864,8 +864,9 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.Tool
 chiamata: payload e risultato canonici più `Failure`. Per
 `RecoveryCorrectCall`, problemi dei campi, input precedente ed esempio JSON
 consentono al turno successivo di correggere la chiamata. `RecoveryReplan`
-rimuove lo strumento; `RecoveryFinish` consente solo la finalizzazione. Il
-runtime applica queste transizioni: il planner non le deduce dal testo
+rimuove lo strumento; `RecoveryFinish` segue il
+[contratto di conclusione dopo un errore](../runtime/#finish-recovery).
+Il runtime applica queste transizioni: il planner non le deduce dal testo
 dell'errore. Solo le chiamate prodotte dal provider possono usare
 `RecoveryCorrectCall`; le continuazioni create dal runtime devono ripianificare
 o terminare, senza esporre il payload privato di esecuzione.
