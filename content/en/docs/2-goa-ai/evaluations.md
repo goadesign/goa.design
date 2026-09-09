@@ -419,6 +419,48 @@ regardless of claim count. Choose a value supported by your configured provider
 and model; unsupported values remain errors, not silently reduced limits. A
 finite ceiling does not guarantee that a response will finish within it.
 
+### Shared reference and judge migration
+
+Put factual context shared by several claims in the optional `Result.Reference`
+string, instead of repeating it inside each claim. Keep `Output` as the answer
+being evaluated:
+
+```go
+result := eval.Result{
+    Output:    answer,
+    Reference: "Supported export formats: CSV and JSON.",
+    Claims: []eval.Claim{{
+        ID:   "export_formats",
+        Text: "The answer lists the supported export formats.",
+    }},
+}
+```
+
+The runner passes the reference separately from the unchanged answer. The
+model-backed judge includes it once in each request, including existing
+correction requests. Reference facts help establish whether the answer is
+accurate; they never supply content missing from the answer. In this example,
+listing the formats only in the reference does not satisfy the claim. An empty
+`Output` still gives every claim `not_addressed` without calling the judge,
+even when the reference contains the answer.
+
+Custom judges implement the new four-argument interface:
+
+```go
+Judge(ctx context.Context, output string, claims []eval.Claim, reference string) ([]eval.Judgment, error)
+```
+
+Update direct calls to `grader.Judge(ctx, output, claims, reference)`. Pass `""`
+when no additional context is needed; calibration also uses an empty reference.
+The runner retains a nonempty reference as `reference` in the JSON report and
+omits the field when empty. Existing reports without it still mean no additional
+context. Strict external report readers must accept the new field before reading
+reports that include it. No saved-report migration, generated suite change, or
+product service contract change is required. This change adds no model call and
+does not change model selection, token limits, labels, or correction counts.
+
+### Labels and response validation
+
 For each scenario the judge receives the answer and the scenario's claims, and
 returns exactly one label and a short rationale per claim:
 

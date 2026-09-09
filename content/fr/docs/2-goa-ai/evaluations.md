@@ -400,6 +400,52 @@ valeur prise en charge par le fournisseur et le modèle configurés ; une valeu
 non prise en charge reste une erreur, sans réduction silencieuse du plafond.
 Un plafond fini ne garantit pas que la réponse pourra se terminer.
 
+### Référence partagée et migration du juge
+
+Placez le contexte factuel partagé par plusieurs affirmations dans la chaîne
+facultative `Result.Reference`, au lieu de le répéter dans chaque affirmation.
+Conservez dans `Output` la réponse à évaluer :
+
+```go
+result := eval.Result{
+    Output:    answer,
+    Reference: "Supported export formats: CSV and JSON.",
+    Claims: []eval.Claim{{
+        ID:   "export_formats",
+        Text: "The answer lists the supported export formats.",
+    }},
+}
+```
+
+Le runner transmet la référence séparément, sans modifier la réponse. Le juge
+fondé sur un modèle l'inclut une seule fois dans chaque requête, y compris les
+requêtes de correction existantes. Les faits de la référence aident à vérifier
+l'exactitude de la réponse ; ils ne fournissent jamais le contenu qu'elle omet.
+Dans cet exemple, énumérer les formats uniquement dans la référence ne suffit
+pas à satisfaire l'affirmation. Un `Output` vide attribue toujours `not_addressed`
+à chaque affirmation sans appeler le juge, même si la référence contient la
+réponse.
+
+Les juges personnalisés implémentent la nouvelle interface à quatre arguments :
+
+```go
+Judge(ctx context.Context, output string, claims []eval.Claim, reference string) ([]eval.Judgment, error)
+```
+
+Modifiez les appels directs en `grader.Judge(ctx, output, claims, reference)`.
+Passez `""` lorsqu'aucun contexte supplémentaire n'est nécessaire ; la calibration
+utilise aussi une référence vide. Le runner conserve une référence non vide dans
+le champ `reference` du rapport JSON et omet ce champ lorsqu'elle est vide. Les
+anciens rapports sans ce champ indiquent toujours l'absence de contexte
+supplémentaire. Les lecteurs externes à validation stricte doivent accepter le
+nouveau champ avant de lire des rapports qui l'incluent. Aucune migration des
+rapports enregistrés ni modification des suites générées ou des contrats des
+services du produit n'est nécessaire. Ce changement n'ajoute aucun appel au modèle
+et ne modifie ni le choix du modèle, ni les limites de jetons, ni les résultats
+possibles, ni le nombre de corrections.
+
+### Résultats et validation des réponses
+
 Le juge reçoit la réponse et les affirmations, puis attribue exactement un
 résultat et une justification courte à chacune :
 
