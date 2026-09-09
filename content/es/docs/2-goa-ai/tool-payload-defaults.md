@@ -11,6 +11,54 @@ Goa-AI generates **typed tool payload structs**, **JSON Schemas**, and **codecs*
 
 This is implemented to match Goa’s own HTTP pattern: **decode-body → transform**.
 
+## Argumentos del modelo y datos de ejecución
+
+Una herramienta puede aceptar menos argumentos del modelo de los que necesita
+su ejecutor. Cada entrada tiene su propio esquema JSON y códec (las funciones
+generadas que validan, decodifican y codifican esa entrada):
+
+- `ToolSpec.Payload.Codec` corresponde a `Payload.Schema` y a su ejemplo
+  definido en el diseño. Úsalo para validar los argumentos escritos por el modelo.
+- `ToolSpec.ExecutionPayloadCodec` corresponde a `ExecutionPayloadSchema`.
+  Úsalo para los datos completos de ejecución y para restaurar trabajo guardado.
+
+En una herramienta dedicada a continuar la consulta original conservada, el modelo envía `{}`
+para solicitar la página siguiente. Antes de ejecutarla, el runtime recupera
+la consulta original y el cursor del proveedor. Por tanto, el códec del modelo
+acepta `{}`, mientras que el códec de ejecución exige los campos de consulta
+conservados y el cursor. Un ejemplo vacío no debe impedir registrar la
+herramienta solo porque su ejecución requiera esos campos adicionales.
+
+Ambos códecs son obligatorios al registrar una herramienta. Si las dos entradas
+tienen la misma estructura, el generador reutiliza una implementación. Los
+campos declarados con `Inject` no aparecen en ninguna de las entradas JSON;
+el proveedor los obtiene del contexto de ejecución. Los códecs de datos tipados
+y los descriptores tipados generados siguen representando datos de ejecución.
+Un códec del modelo puede devolver el mismo tipo Go con campos aún sin rellenar
+que el runtime proporcionará; ese valor todavía no está listo para ejecutarse.
+
+### Actualizar las especificaciones de herramientas
+
+Regenera las especificaciones con el framework actualizado antes de iniciar
+los workers. Las especificaciones escritas a mano también deben proporcionar
+`ExecutionPayloadCodec`, con codificador y decodificador. Los consumidores
+que decodifican datos ejecutados o guardados deben usar este códec; la validación
+de entradas del modelo sigue usando `Payload.Codec`. La ejecución no recurre
+al códec del modelo como alternativa.
+
+Este cambio afecta al contrato Go dentro del proceso, no a los mensajes del
+registro, los esquemas del modelo ni los formatos de datos guardados. No requiere
+migrar formatos de intercambio ni datos almacenados.
+
+Para herramientas con una continuación dedicada, el códec generado con nombre
+propio para el payload inicial ahora aplica el contrato de ejecución ya
+declarado: la solicitud inicial no acepta un cursor. Decodifica las solicitudes
+de páginas posteriores con el códec de ejecución de la herramienta de
+continuación que realmente se llamó; no las renombres como solicitudes
+iniciales. Las solicitudes iniciales con cursor que antes se aceptaban estaban
+fuera de ese contrato y esta actualización no mantiene su aceptación. Los
+esquemas de ejecución declarados y el historial guardado válido no cambian.
+
 ## Summary
 
 - **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.
@@ -67,5 +115,3 @@ If you mismatch them, Goa’s transform generator can emit uncompilable code suc
 
 - `if in.Field != nil { ... }` when `Field` is a value
 - `out.Field = "x"` when `Field` is a `*T`
-
-
