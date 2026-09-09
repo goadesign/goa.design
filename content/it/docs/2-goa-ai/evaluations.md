@@ -69,8 +69,9 @@ i claim solo quando serve leggere e interpretare la risposta. Restituisci i
 guasti dell'infrastruttura o del protocollo come errori. Ogni controllo fallito
 deve includere una diagnosi.
 
-Il runner rifiuta risultati vuoti, ID duplicati, claim senza risposta, artefatti
-non validi e risposte incomplete del giudice.
+Il runner rifiuta risultati senza controlli né claim, ID duplicati, artefatti
+non validi e risposte incomplete del giudice. Se `Output` è vuoto, assegna
+`not_addressed` a ogni claim senza chiamare il giudice.
 
 ## Creare ed eseguire un runner
 
@@ -135,6 +136,50 @@ consentita, indipendentemente dal numero di claim. Scegli un valore supportato
 dal provider e dal modello configurati; i valori non supportati restano errori,
 senza riduzioni silenziose del limite. Un limite finito non garantisce che la
 risposta riesca a completarsi.
+
+### Riferimento condiviso e migrazione del giudice
+
+Inserisci il contesto fattuale condiviso da più claim nella stringa facoltativa
+`Result.Reference`, invece di ripeterlo in ogni claim. Mantieni in `Output` la
+risposta da valutare:
+
+```go
+result := eval.Result{
+    Output:    answer,
+    Reference: "Supported export formats: CSV and JSON.",
+    Claims: []eval.Claim{{
+        ID:   "export_formats",
+        Text: "The answer lists the supported export formats.",
+    }},
+}
+```
+
+Il runner passa il riferimento separatamente, senza modificare la risposta. Il
+giudice basato su un modello lo include una volta in ogni richiesta, comprese
+quelle di correzione già previste. I fatti nel riferimento aiutano a verificare
+l'accuratezza della risposta; non forniscono mai contenuti che la risposta omette.
+In questo esempio, elencare i formati solo nel riferimento non soddisfa il claim.
+Un `Output` vuoto continua a produrre `not_addressed` per ogni claim senza chiamare
+il giudice, anche quando il riferimento contiene la risposta.
+
+I giudici personalizzati implementano la nuova interfaccia a quattro argomenti:
+
+```go
+Judge(ctx context.Context, output string, claims []eval.Claim, reference string) ([]eval.Judgment, error)
+```
+
+Aggiorna le chiamate dirette a `grader.Judge(ctx, output, claims, reference)`.
+Passa `""` quando non serve altro contesto; anche la calibrazione usa un riferimento
+vuoto. Il runner conserva un riferimento non vuoto nel campo `reference` del
+report JSON e omette il campo quando è vuoto. I report precedenti senza tale campo
+continuano a indicare l'assenza di contesto aggiuntivo. I lettori esterni con
+convalida rigorosa devono accettare il nuovo campo prima di leggere report che lo
+includono. Non occorre migrare i report salvati né modificare le suite generate o
+i contratti dei servizi del prodotto. Questa modifica non aggiunge chiamate al
+modello e non cambia la scelta del modello, i limiti di token, le etichette o il
+numero di correzioni.
+
+### Etichette e convalida delle risposte
 
 Prima degli scenari, il runner verifica il giudice con quattro esempi gestiti dal
 framework: `entailed` (la risposta dimostra il claim), `contradicted` (dimostra

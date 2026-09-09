@@ -70,8 +70,9 @@ otros valores exactos. Usa afirmaciones solo cuando sea necesario leer e
 interpretar la respuesta. Devuelve los fallos de infraestructura o protocolo
 como errores. Toda comprobación fallida debe incluir un diagnóstico.
 
-El runner rechaza resultados vacíos, IDs repetidos, afirmaciones sin respuesta,
-artefactos inválidos y respuestas incompletas del juez semántico.
+El runner rechaza resultados sin comprobaciones ni afirmaciones, IDs repetidos,
+artefactos inválidos y respuestas incompletas del juez semántico. Si `Output`
+está vacío, asigna `not_addressed` a cada afirmación sin llamar al juez.
 
 ## Crear y ejecutar un runner
 
@@ -134,6 +135,50 @@ corrección permitida, independientemente del número de afirmaciones. Elige un
 valor compatible con el proveedor y el modelo configurados; los valores no
 compatibles siguen siendo errores, sin reducir silenciosamente el límite. Un
 límite finito no garantiza que la respuesta pueda completarse.
+
+### Referencia compartida y migración del juez
+
+Pon el contexto factual compartido por varias afirmaciones en la cadena opcional
+`Result.Reference`, en lugar de repetirlo en cada afirmación. Mantén `Output`
+como la respuesta que se evalúa:
+
+```go
+result := eval.Result{
+    Output:    answer,
+    Reference: "Supported export formats: CSV and JSON.",
+    Claims: []eval.Claim{{
+        ID:   "export_formats",
+        Text: "The answer lists the supported export formats.",
+    }},
+}
+```
+
+El runner pasa la referencia por separado, sin modificar la respuesta. El juez
+basado en un modelo la incluye una vez en cada petición, incluidas las peticiones
+de corrección existentes. Los hechos de la referencia ayudan a comprobar la
+exactitud de la respuesta; nunca aportan contenido que falte en ella. En este
+ejemplo, enumerar los formatos solo en la referencia no satisface la afirmación.
+Un `Output` vacío sigue dando `not_addressed` a todas las afirmaciones sin llamar
+al juez, aunque la referencia contenga la respuesta.
+
+Los jueces personalizados implementan la nueva interfaz de cuatro argumentos:
+
+```go
+Judge(ctx context.Context, output string, claims []eval.Claim, reference string) ([]eval.Judgment, error)
+```
+
+Actualiza las llamadas directas a `grader.Judge(ctx, output, claims, reference)`.
+Pasa `""` cuando no se necesite contexto adicional; la calibración también usa
+una referencia vacía. El runner conserva una referencia no vacía como `reference`
+en el informe JSON y omite el campo cuando está vacía. Los informes anteriores
+sin ese campo siguen indicando que no hay contexto adicional. Los lectores
+externos estrictos deben aceptar el nuevo campo antes de consumir informes que
+lo incluyan. No hace falta migrar los informes guardados ni cambiar las suites
+generadas o los contratos de servicios del producto. Este cambio no añade llamadas
+al modelo ni modifica su selección, los límites de tokens, las etiquetas o el
+número de correcciones.
+
+### Etiquetas y validación de respuestas
 
 Antes de ejecutar escenarios, el runner verifica el juez con cuatro ejemplos
 propiedad del framework: `entailed` (la respuesta demuestra la afirmación),

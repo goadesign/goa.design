@@ -298,6 +298,33 @@ application は `judge.New` に正の `maxOutputTokens` を渡し、返された
 
 この値は、全 judgment と JSON 構造を含む**モデルの 1 回の応答全体**に対する output token 数の上限です。上限と同じ値までは許可されます。claim ごとの割り当てでも、scenario や suite 全体の予算でもありません。Goa-AI は claim 数にかかわらず、初回 request と許可された各 correction request に同じ値を渡します。設定された provider と model が対応する値を選んでください。未対応の値は黙って引き下げられず、error になります。有限の上限では、その範囲内で応答が完了することは保証されません。
 
+### 共有する参照情報と judge の移行
+
+複数の claim に共通する事実情報は、各 claim に繰り返し書くのではなく、任意の文字列フィールド `Result.Reference` に入れます。`Output` には評価対象の回答をそのまま保持します。
+
+```go
+result := eval.Result{
+    Output:    answer,
+    Reference: "Supported export formats: CSV and JSON.",
+    Claims: []eval.Claim{{
+        ID:   "export_formats",
+        Text: "The answer lists the supported export formats.",
+    }},
+}
+```
+
+runner は回答を変更せず、参照情報を別に渡します。モデルを使う judge は、既存の修正リクエストも含め、各リクエストに参照情報を 1 回だけ含めます。参照情報の事実は回答の正確さを判断するためのものであり、回答に欠けた内容を補うものではありません。この例では、参照情報だけに形式が列挙されていても claim を満たしません。`Output` が空なら、参照情報に答えが含まれていても judge は呼ばれず、すべての claim が `not_addressed` になります。
+
+独自の judge は、新しい 4 引数のインターフェースを実装します。
+
+```go
+Judge(ctx context.Context, output string, claims []eval.Claim, reference string) ([]eval.Judgment, error)
+```
+
+直接の呼び出しは `grader.Judge(ctx, output, claims, reference)` に更新します。追加の情報が不要なら `""` を渡してください。calibration も空の参照情報を使います。runner は空でない参照情報を JSON report の `reference` フィールドに保存し、空ならフィールドを省略します。このフィールドがない既存の report は、引き続き追加情報がないことを意味します。report を厳格に検証する外部の読み取り側は、新しいフィールドを含む report を読む前に、そのフィールドを受け入れるよう更新する必要があります。保存済み report の移行、生成される suite の変更、製品のサービス契約の変更は不要です。この変更でモデルの呼び出しは増えず、モデルの選択、トークン上限、判定ラベル、修正回数も変わりません。
+
+### 判定ラベルと応答の検証
+
 各 scenario について、judge は回答と claim を受け取り、claim ごとに正確に 1 label と短い理由を返します。
 
 - `entailed`: 回答が claim を真だと裏付ける。
