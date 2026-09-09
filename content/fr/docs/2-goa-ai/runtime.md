@@ -1432,6 +1432,24 @@ avant l'exécution ; Goa-AI ne les découpe, ne les tronque ni ne les réécrit.
 L'erreur de validation d'origine, les règles d'acceptation et la limite
 configurée de tours de récupération restent inchangées.
 
+Lorsqu'un rejet de schéma ou une validation typée des arguments permet une
+correction, le client du modèle peut ajouter l'exemple d'entrée complet et validé
+après l'instruction concernant le champ. Il copie cet exemple avec le contrat de
+validation de la requête avant l'appel au modèle ; une modification ultérieure
+de la requête ne peut donc pas le remplacer. L'instruction jointe demande au
+modèle de choisir les valeurs et une branche valide de l'union adaptées à la
+requête, plutôt que de recopier les valeurs de l'exemple.
+
+La correction entière doit respecter la limite existante de 4 096 octets par
+invocation du modèle rejetée, instruction, exemple et octets UTF-8 compris.
+Si l'exemple est absent ou trop volumineux, l'instruction concernant le champ
+reste inchangée ; l'exemple est omis entièrement, jamais tronqué. Cette limite
+porte sur le contexte facultatif de correction, pas sur les arguments. La
+validation, les diagnostics des réponses rejetées, l'historique accepté, les
+outils disponibles et la limite de tours de récupération ne changent pas ; les
+arguments ne sont jamais réparés et aucune nouvelle tentative n'est ajoutée.
+Voir le [contrat du framework](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#model-visible-tool-arguments).
+
 ### Adaptateurs de fournisseur
 
 Le Goa-AI est livré avec des adaptateurs pour les fournisseurs LLM populaires :

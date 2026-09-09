@@ -1380,6 +1380,24 @@ antes de la ejecución; Goa-AI no los divide, recorta ni reescribe. El error de
 validación original, las reglas de aceptación y el límite configurado de turnos
 de recuperación no cambian.
 
+Ante un rechazo del esquema o una validación tipada de los argumentos que admita
+corrección, el cliente del modelo puede añadir el ejemplo de entrada completo y
+validado después de la indicación sobre el campo. Copia el ejemplo junto con el
+contrato de validación de la solicitud antes de llamar al modelo; una modificación
+posterior de la solicitud no puede sustituirlo. La instrucción adjunta pide al
+modelo que elija valores y una rama válida de la unión adecuados para la
+solicitud, en lugar de copiar los valores de muestra.
+
+La corrección completa debe caber en el límite existente de 4.096 bytes por cada
+invocación del modelo rechazada, incluidos la instrucción, el ejemplo y los bytes
+UTF-8. Si el ejemplo falta o es demasiado grande, la indicación sobre el campo
+no cambia; el ejemplo se omite entero, nunca se trunca. El límite afecta al
+contexto opcional de corrección, no a los argumentos. La validación, los
+diagnósticos de respuestas rechazadas, el historial aceptado, las herramientas
+disponibles y el límite de turnos de recuperación no cambian; los argumentos
+nunca se reparan y no se añade ningún reintento. Consulta el
+[contrato del framework](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#model-visible-tool-arguments).
+
 ### Adaptadores de proveedor
 
 Goa-AI incluye adaptadores para los proveedores LLM más populares:
