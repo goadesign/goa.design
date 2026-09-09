@@ -459,6 +459,19 @@ exemple fixe de chaque résultat. Un juge incapable de les distinguer arrête la
 suite avant tout appel à l'application. Cette calibration a un délai de deux
 minutes géré par le runner.
 
+Appliquez les conditions de chaque affirmation telles qu'elles sont écrites.
+« Indiquer le prix » exige un prix. « Tout prix cité doit correspondre à la
+référence ; ne citer aucun prix satisfait cette contrainte » permet l'omission :
+une réponse non vide qui ne cite aucun prix satisfait cette contrainte
+(`entailed`, et non `not_addressed`) si ses autres exigences sont remplies.
+L'omission ne fournit pas le contenu obligatoire, n'étaye pas une déclaration
+incluse sans preuve et ne résout pas une condition inconnue sur le monde.
+
+Le modèle interprète ces conditions ; le framework ne classe pas les affirmations
+par du code et ne réécrit ni les résultats ni leurs justifications. Un `Output`
+entièrement vide attribue toujours `not_addressed` à chaque affirmation et fait
+échouer le scénario sans appeler le juge.
+
 Le prompt demande d'appeler exactement une fois l'outil d'évaluation fourni,
 sans indiquer un nom propre au fournisseur. Son schéma exige une propriété portant
 l'ID de chaque affirmation, contenant un résultat et une justification non vide.

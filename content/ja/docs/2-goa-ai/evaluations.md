@@ -334,6 +334,17 @@ Judge(ctx context.Context, output string, claims []eval.Claim, reference string)
 
 成功とみなすのは `entailed` だけです。
 
+各 claim の条件を記載どおりに適用します。「価格を示す」には価格が必要です。
+「記載する価格は参照情報と一致しなければならず、価格を記載しなくてもこの制約を満たす」
+という条件なら省略できます。空ではない回答が価格を記載せず、他の要件も満たしていれば、
+その制約の判定は `not_addressed` ではなく `entailed` です。省略によって必須の内容を
+補ったり、回答に含まれる根拠のない記述を裏付けたり、現実についての不明な条件を
+解決したりすることはできません。
+
+これらの条件はモデルが解釈します。フレームワークはコードで claim を分類したり、
+判定ラベルや理由を書き換えたりしません。`Output` 全体が空なら、引き続き judge を
+呼ばずにすべての claim を `not_addressed` とし、scenario を失敗させます。
+
 scenario を開始する前に、runner は label ごとに 1 つ、固定の 4 example で judge を検査します。この手順を calibration と呼びます。たとえば常に `entailed` を返して全 evaluation を成功させるような、label を区別できない judge は calibration に失敗し、application へ触れる前に suite を停止します。calibration は runner 所有の 2 分 deadline 内で行うため、接続不能または停止した model endpoint は suite を永久に block せず、明確な error になります。
 
 プロンプトは、プロバイダー固有の名前を書かず、提示された評価ツールを正確に 1 回呼び出すよう求めます。

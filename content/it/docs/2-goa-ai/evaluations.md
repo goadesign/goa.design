@@ -191,6 +191,19 @@ che risponde sempre `entailed` non può far passare l'intera suite. Un errore di
 calibrazione ferma la suite prima della chiamata all'applicazione. Negli scenari
 passa solo `entailed`.
 
+Applica le condizioni di ogni claim così come sono scritte. «Riporta il prezzo»
+richiede un prezzo. «Ogni prezzo citato deve corrispondere al riferimento;
+non citare prezzi soddisfa questo vincolo» consente l'omissione: una risposta
+non vuota che non cita prezzi soddisfa quel vincolo (`entailed`, non
+`not_addressed`) se rispetta gli altri requisiti. L'omissione non fornisce
+contenuti obbligatori, non sostiene un'affermazione inclusa senza prove e non
+risolve una condizione sconosciuta sul mondo.
+
+Il modello interpreta queste condizioni; il framework non classifica i claim
+tramite codice e non riscrive etichette o motivazioni. Un `Output` interamente
+vuoto continua ad assegnare `not_addressed` a ogni claim e fa fallire lo scenario
+senza chiamare il giudice.
+
 Il prompt chiede di chiamare esattamente una volta lo strumento di valutazione
 fornito, senza indicare un nome specifico del provider. Lo schema richiede una
 proprietà con l'ID di ogni claim, contenente un'etichetta e una motivazione non
