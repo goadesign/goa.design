@@ -522,7 +522,7 @@ Agent("chat", "Conversational runner", func() {
 
 Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
 
-- **Límites**: `MaxToolCalls` limita el total de llamadas a herramientas con presupuesto por ejecución. `MaxRecoveryTurns` limita las nuevas llamadas al planificador después de rechazar el resultado de una herramienta o una respuesta del modelo. Una llamada correcta a una herramienta con presupuesto reinicia este límite. Las herramientas `Bookkeeping()` no consumen ninguno de estos presupuestos.
+- **Límites**: `MaxToolCalls` limita el total de llamadas a herramientas con presupuesto por ejecución. `MaxRecoveryTurns` limita las nuevas llamadas al planificador después de rechazar el resultado de una herramienta o una respuesta del modelo. El trabajo correcto con presupuesto reinicia esta asignación salvo que siga activo un fallo `finish`; las páginas obtenidas correctamente nunca reinician la asignación de ese fallo. Las herramientas `Bookkeeping()` no consumen ninguno de estos presupuestos.
 - **Presupuesto de tiempo**: `TimeBudget` – presupuesto de reloj de pared para la ejecución. `FinalizerGrace` (solo runtime) – ventana reservada opcional para la finalización.
 - **Interrupciones**: `InterruptsAllowed` – opt-in para pausa/reanudación.
 - **Comportamiento ante campos faltantes**: `OnMissingFields` – rige lo que ocurre cuando la validación indica que faltan campos.
@@ -530,7 +530,7 @@ Esto se convierte en un `runtime.RunPolicy` adjunto al registro del agente:
   convierten automáticamente en bookkeeping y completan la ejecución al tener
   éxito, sin programar un turno `PlanResume` posterior. Por tanto, un commit
   terminal puede admitirse sin presupuesto de recuperación restante. Durante
-  la finalización forzada, el runtime admite solo llamadas terminales de
+  la finalización por plazo o límite, el runtime admite solo llamadas terminales de
   bookkeeping, las ejecuta dentro de la ventana restante del hard deadline y
   cierra la ejecución solo si todos los efectos laterales terminales tienen
   éxito. Antes de ejecutarlas, el runtime escribe el
@@ -1190,7 +1190,7 @@ Estos contratos son independientes:
 | `ToolFailure.Recovery.Action` | Un resultado fallido | Selecciona la corrección manteniendo disponible la herramienta fallida, la replanificación sin ella o la finalización. |
 | `PlanResult.SynthesizeAfterTools` | Un lote seleccionado | Si el lote no tiene un fallo recuperable, el siguiente turno del planner debe responder. |
 | `PlanResumeInput.SynthesisOnly` | Una actividad del planner | Devuelve una respuesta final; las llamadas a herramientas no son válidas. |
-| `PlanResumeInput.Finalize` | Finalización forzada por el runtime | Un límite o deadline ha prohibido el trabajo normal. |
+| `PlanResumeInput.Finalize` | Finalización impuesta por el runtime | No se permiten nuevas operaciones. Con el motivo `tool_failure`, el catálogo anunciado puede conservar páginas de consultas ya iniciadas. |
 
 El runtime elige un único estado siguiente en este orden:
 
@@ -1198,11 +1198,14 @@ El runtime elige un único estado siguiente en este orden:
 | --- | --- |
 | Un límite o deadline exige finalización | Turno `Finalize` |
 | Se completó una herramienta `TerminalRun` correcta | Finaliza inmediatamente |
+| Sigue activo un fallo `finish` | `Finalize` con motivo `tool_failure`; conserva las páginas anunciadas y las herramientas terminales de bookkeeping |
 | Algún resultado fallido tiene `AllowsToolTurn() == true` | Turno normal de recuperación |
 | `SynthesizeAfterTools` es true | Turno `SynthesisOnly` |
 | En otro caso | Turno normal de continuación |
 
 Esto evita que la intención del planner se convierta en una segunda política de reintentos. Un fallo recuperable se repara primero; un lote final correcto o con fallo terminal pasa a síntesis. El runtime rechaza las llamadas a herramientas devueltas desde un turno `SynthesisOnly`.
+
+### Recuperación de fallos de herramientas {#finish-recovery}
 
 Cada `ToolFailure` recuperable también selecciona una `Recovery.Action`:
 
@@ -1214,8 +1217,31 @@ Cada `ToolFailure` recuperable también selecciona una `Recovery.Action`:
   con la evidencia ya recopilada.
 - `replan` elimina la herramienta que falló del siguiente turno del planner. El
   planner puede usar otra herramienta anunciada, esperar una entrada o responder.
-- `finish` elimina todas las herramientas y exige una respuesta final basada en
-  la evidencia disponible.
+- `finish` prohíbe iniciar nuevas operaciones hasta que termine la ejecución.
+  El planificador puede responder, usar herramientas terminales registradas para
+  guardar el resultado final u obtener una página anunciada de una consulta ya iniciada.
+
+Con `finish`, `PlanResumeInput.Finalize` lleva el motivo `tool_failure`. El
+catálogo actual, no solo el motivo, determina las acciones disponibles. Una
+página y un envío terminal no pueden compartir lote: el runtime rechaza el
+lote antes de ejecutar cualquiera de ellos. También rechaza nuevas solicitudes
+de entrada y pasos separados de síntesis. Sin páginas disponibles, solo queda
+la finalización terminal. La finalización por plazo o límite nunca permite paginar.
+
+Los fallos activos de herramientas y las indicaciones para una respuesta del
+modelo rechazada son hechos separados. Los rechazos y las páginas obtenidas
+conservan el fallo original, su mensaje y la prohibición de nuevo trabajo.
+Las restricciones ordinarias de `correct_call` y `replan` terminan con su
+propio episodio de recuperación. La validación del modelo aporta restricciones
+del esquema y ejemplos; el runtime pide una respuesta de reemplazo conforme a
+las acciones y requisitos de finalización actuales, no necesariamente otra llamada.
+
+Las páginas correctas consumen el presupuesto normal de herramientas y tiempo,
+pero no un intento de reemplazo ni reinician la asignación del fallo `finish`.
+Cada reemplazo causado por un rechazo sigue consumiendo `MaxRecoveryTurns`.
+Si el envío terminal necesita argumentos corregidos, la siguiente solicitud
+conserva el fallo original y el nuevo diagnóstico de validación. Para esa
+corrección solo se anuncia la herramienta terminal fallida; las páginas no reaparecen.
 
 Un turno normal de `correct_call` combina las herramientas ejecutables del
 agente actual con los contratos exactos de las herramientas fallidas. Elimina
@@ -1231,7 +1257,8 @@ Las consultas sin terminar conservan sus acciones de continuación generadas
 por el runtime; las solicitudes fallidas no crean continuaciones. La
 finalización forzada solo ofrece para corrección la herramienta terminal exacta
 que falló, y los turnos de solo síntesis siguen sin herramientas. Después de la
-corrección, los turnos normales vuelven a las herramientas del agente actual.
+corrección ordinaria, los turnos normales vuelven a las herramientas del agente
+actual; un fallo `finish` activo sigue prohibiendo nuevas operaciones.
 
 El runtime registra el catálogo exacto de herramientas mostrado en un turno de
 recuperación y rechaza cualquier llamada ejecutable que quede fuera de él,
@@ -1239,14 +1266,28 @@ incluidas las llamadas incorporadas en una solicitud de entrada del usuario o
 de un sistema externo. Los codecs generados siguen validando cada payload, y
 los límites de herramientas, fallos y tiempo de la ejecución siguen deteniendo
 el trabajo inválido repetido. Si un turno de recuperación espera una entrada,
-su evidencia de fallo sigue disponible cuando la ejecución continúa; elegir
-una llamada o una respuesta final elimina esa evidencia.
+su evidencia de fallo sigue disponible cuando la ejecución continúa. El trabajo
+de recuperación ordinario aceptado termina su episodio; una página o una
+respuesta de reemplazo nunca elimina un fallo `finish` activo.
 
 Las entradas de las actividades de recuperación y su catálogo anunciado forman
-parte del historial duradero del workflow. Un despliegue que cambie este
-contrato debe drenar o detener los workers antiguos y los workflows en curso
-antes de iniciar el nuevo conjunto de workers. No es seguro mezclar versiones
-de workers a través de este límite.
+parte del historial duradero del workflow. Los despliegues de producción deben
+usar Temporal Worker Deployment Versioning con versiones fijadas y conservar
+cada versión antigua hasta que Temporal indique que está drenada. Iniciar un
+worker nuevo no permite reproducir automáticamente un workflow existente con
+código nuevo. Una continuación es un workflow nuevo y puede usar la versión
+actual una vez validado su checkpoint guardado.
+
+Este cambio no añade campos a las actividades ni a los checkpoints y no necesita
+migración de datos. Los planificadores personalizados deben usar el catálogo
+anunciado junto con `Finalize.Reason`; actualízalos con el runtime. Los
+historiales antiguos que reabrieron trabajo de dominio tras un fallo `finish`
+no son compatibles con la ejecución: sus planes de herramientas ordinarias
+se rechazan antes de ejecutarlos. Mantén los historiales afectados sin terminar
+en su versión de worker original o complétalos antes de reemplazarla. Poder
+decodificar un checkpoint no demuestra compatibilidad de reproducción del
+historial. Revisa también la asignación de historiales a workers al revertir;
+no mezcles versiones de actividades dentro de un workflow afectado.
 
 Cuando `PlanResumeInput.Finalize` está presente, los planners pueden devolver herramientas terminales de bookkeeping; esas llamadas no se reproducen en un turno posterior del planner y deben terminar la finalización de forma duradera.
 

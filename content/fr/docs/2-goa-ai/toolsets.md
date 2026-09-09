@@ -303,7 +303,7 @@ Lorsqu'un outil limité s'exécute :
 1. Le runtime valide qu'un outil limité réussi a renvoyé `planner.ToolResult.Bounds`
 2. Le moteur d'exécution fusionne ces limites dans le JSON émis en utilisant les noms de champs de `BoundedResult(...)`.
 3. Avec `ContinueWith`, le runtime propose l'action vide uniquement pour une tête de chaîne active non ambiguë et associe le curseur avant l'exécution
-4. Si un autre outil du même lot parallèle nécessite une récupération `finish`, l'outil en échec ne peut pas être relancé et aucun nouveau travail métier ne peut commencer. Les actions de continuation restent disponibles pour les requêtes réussies qui ont déjà renvoyé un curseur de page suivante. Sans une telle action, la finalisation commence immédiatement
+4. Si un autre outil du même lot parallèle nécessite une récupération `finish`, aucune nouvelle opération ne peut commencer. Les requêtes réussies ayant une page suivante conservent leurs actions de continuation, avec les outils terminaux qui sauvegardent le résultat final. Le planificateur peut lire une page ou soumettre le résultat, jamais les deux dans un lot. Ni une page ni une réponse rejetée ne rouvre les opérations. Sans page disponible, seule la conclusion terminale reste possible. Voir la [récupération après un échec](../runtime/#finish-recovery)
 5. Avec `Cursor` direct, le runtime émet le curseur opaque dans `next_cursor` pour l'appel suivant du modèle
 6. Les abonnés au flux et les finaliseurs accèdent aux limites pour l'affichage UI, la journalisation ou les décisions de politique
 
@@ -768,8 +768,8 @@ et les erreurs internes. Trois actions de récupération sont explicites :
 - `RecoveryCorrectCall` conserve l'outil en échec et fournit des informations
   structurées pour corriger l'appel.
 - `RecoveryReplan` retire cet outil du tour suivant du planificateur.
-- `RecoveryFinish` n'autorise plus que la finalisation à partir des éléments
-  déjà recueillis.
+- `RecoveryFinish` interdit les nouvelles opérations et permet la conclusion
+  terminale ou les pages annoncées de requêtes déjà commencées.
 
 `ToolResult` transporte soit un résultat typé, soit un échec structuré :
 
@@ -860,8 +860,9 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.Tool
 chaque appel : octets canoniques de la charge utile et du résultat, ainsi que
 `Failure`. Pour `RecoveryCorrectCall`, les problèmes de champs, l'entrée
 antérieure et l'exemple permettent au tour suivant de corriger l'appel.
-`RecoveryReplan` retire l'outil en échec et `RecoveryFinish` ne permet plus que
-la finalisation. Le runtime applique ces transitions ; le planificateur ne les
+`RecoveryReplan` retire l'outil en échec et `RecoveryFinish` suit le
+[contrat de conclusion après un échec](../runtime/#finish-recovery).
+Le runtime applique ces transitions ; le planificateur ne les
 déduit jamais du texte d'une erreur. Seuls les appels provenant du fournisseur
 peuvent utiliser `RecoveryCorrectCall`. Une continuation créée par le runtime
 n'a pas d'entrée produite par le modèle et doit replanifier ou terminer.

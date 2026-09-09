@@ -529,14 +529,14 @@ Agent("chat", "Conversational runner", func() {
 
 Celui-ci devient un `runtime.RunPolicy` attaché à l'inscription de l'agent :
 
-- **Caps** : `MaxToolCalls` limite le nombre total d'appels d'outils budgétisés par exécution. `MaxRecoveryTurns` limite les nouveaux appels au planificateur après le rejet d'un résultat d'outil ou d'une réponse du modèle. Un appel d'outil budgétisé réussi réinitialise cette allocation. Les outils déclarés `Bookkeeping()` ne consomment aucun de ces budgets.
+- **Caps** : `MaxToolCalls` limite le nombre total d'appels d'outils budgétisés par exécution. `MaxRecoveryTurns` limite les nouveaux appels au planificateur après le rejet d'un résultat d'outil ou d'une réponse du modèle. Le travail budgétisé réussi réinitialise cette allocation sauf si un échec `finish` reste actif ; les pages obtenues ne réinitialisent jamais l'allocation de cet échec. Les outils déclarés `Bookkeeping()` ne consomment aucun de ces budgets.
 - **Budget temps** : `TimeBudget` – budget d'horloge murale pour la course. `FinalizerGrace` (exécution uniquement) – fenêtre réservée en option pour la finalisation.
 - **Interruptions** : `InterruptsAllowed` – option pour la pause/reprise.
 - **Comportement des champs manquants** : `OnMissingFields` – régit ce qui se passe lorsque la validation indique des champs manquants.
 - **Outils terminaux** : les outils déclarés `TerminalRun()` deviennent
   automatiquement comptables et terminent l'exécution après leur succès ;
   aucun tour `PlanResume` supplémentaire n'est planifié. Pendant la
-  finalisation forcée, le runtime n'admet que les appels comptables terminaux,
+  finalisation due à un délai ou un plafond, le runtime n'admet que les appels comptables terminaux,
   les exécute avant l'échéance absolue et ne ferme l'exécution que si tous leurs
   effets réussissent. Avant l'appel, il écrit la valeur exacte de
   `planner.TerminationReason` dans `runtime.FinalizationReasonLabel`
@@ -1193,7 +1193,7 @@ Ces contrats sont distincts :
 | `ToolFailure.Recovery.Action` | Un résultat en échec | Choisit la correction en gardant l'outil en échec disponible, la replanification sans cet outil ou la finalisation. |
 | `PlanResult.SynthesizeAfterTools` | Un lot sélectionné | Si le lot n'a aucun échec récupérable, le prochain tour du planificateur doit répondre. |
 | `PlanResumeInput.SynthesisOnly` | Une activité du planificateur | Renvoyer une réponse finale ; les appels d'outils sont invalides. |
-| `PlanResumeInput.Finalize` | Arrêt imposé par le runtime | Un plafond ou une deadline interdit le travail normal. |
+| `PlanResumeInput.Finalize` | Fin imposée par le runtime | Les nouvelles opérations sont interdites. Avec le motif `tool_failure`, le catalogue annoncé peut conserver les pages de requêtes déjà commencées. |
 
 Le runtime choisit l'état suivant dans cet ordre :
 
@@ -1201,6 +1201,7 @@ Le runtime choisit l'état suivant dans cet ordre :
 | --- | --- |
 | Un plafond ou une deadline impose la finalisation | Tour `Finalize` |
 | Un outil `TerminalRun` a réussi | Fin immédiate |
+| Un échec `finish` reste actif | `Finalize` avec le motif `tool_failure` ; conserve les pages annoncées et les outils terminaux de comptabilité |
 | Un résultat en échec a `ToolFailure.AllowsToolTurn() == true` | Tour normal de récupération |
 | `SynthesizeAfterTools` vaut true | Tour `SynthesisOnly` |
 | Sinon | Tour normal de continuation |
@@ -1209,6 +1210,8 @@ Ainsi, l'intention du planificateur ne devient pas une seconde politique de
 reprise. Un échec récupérable est réparé d'abord ; un lot final réussi ou en
 échec terminal passe à la synthèse. Le runtime rejette les appels d'outils
 renvoyés depuis un tour `SynthesisOnly`.
+
+### Récupération après un échec d'outil {#finish-recovery}
 
 Chaque `ToolFailure` récupérable sélectionne aussi une `Recovery.Action` :
 
@@ -1220,8 +1223,32 @@ Chaque `ToolFailure` récupérable sélectionne aussi une `Recovery.Action` :
   entrée ou répondre avec les éléments déjà recueillis.
 - `replan` retire l'outil en échec du prochain tour. Le planificateur peut
   utiliser un autre outil annoncé, attendre une entrée ou répondre.
-- `finish` retire tous les outils et exige une réponse finale fondée sur les
-  éléments disponibles.
+- `finish` interdit toute nouvelle opération jusqu'à la fin de l'exécution.
+  Le planificateur peut répondre, utiliser les outils terminaux enregistrés pour
+  sauvegarder son résultat final ou lire une page annoncée d'une requête déjà commencée.
+
+Avec `finish`, `PlanResumeInput.Finalize` porte le motif `tool_failure`. Le
+catalogue actuel, et non le motif seul, détermine les actions disponibles. Une
+page et un envoi terminal ne peuvent pas partager un lot : le runtime rejette
+ce lot avant toute exécution. Les nouvelles demandes d'entrée et les étapes
+de synthèse séparées sont également rejetées. Sans page disponible, seule la
+conclusion terminale reste possible. Une finalisation due à un délai ou un
+plafond ne permet jamais la pagination.
+
+Les échecs d'outils actifs et les indications concernant une réponse du modèle
+rejetée sont des faits distincts. Les rejets et les pages obtenues conservent
+l'échec original, son message et l'interdiction de nouveau travail. Les
+restrictions ordinaires de `correct_call` et `replan` prennent fin avec leur
+propre épisode de récupération. La validation du modèle fournit les contraintes
+du schéma et les exemples ; le runtime demande une réponse de remplacement
+conforme aux actions et exigences de conclusion actuelles, pas nécessairement un appel d'outil.
+
+Les pages obtenues consomment les budgets habituels d'outils et de temps, mais
+ni tentative de remplacement ni réinitialisation de l'allocation de l'échec
+`finish`. Chaque remplacement dû à un rejet consomme toujours `MaxRecoveryTurns`.
+Si l'envoi terminal nécessite des arguments corrigés, la requête suivante
+conserve l'échec original et le nouveau diagnostic de validation. Seul l'outil
+terminal en échec est annoncé pour cette correction ; les pages ne réapparaissent pas.
 
 Un tour ordinaire de `correct_call` combine les outils exécutables de l'agent
 actuel avec les contrats exacts des outils en échec. Les noms et contrats
@@ -1236,8 +1263,9 @@ toujours chaque appel.
 Les requêtes inachevées conservent leurs actions de continuation générées par le
 runtime ; les demandes en échec ne créent pas de continuation. La finalisation
 forcée ne propose à la correction que l'outil terminal exact en échec, et les
-tours de synthèse seule restent sans outils. Après la correction, les tours
-normaux reviennent aux outils de l'agent actuel.
+tours de synthèse seule restent sans outils. Après une correction ordinaire,
+les tours normaux reviennent aux outils de l'agent actuel ; un échec `finish`
+actif continue d'interdire les nouvelles opérations.
 
 Le workflow possède les informations de correction visibles par le modèle.
 Avant d'enregistrer l'échec, il remplace l'entrée antérieure et l'exemple
@@ -1258,14 +1286,29 @@ compris un appel intégré à une demande d'entrée utilisateur ou externe. Les
 codecs générés valident toujours chaque charge utile, et les limites d'outils,
 d'échecs et de temps arrêtent toujours les travaux invalides répétés. Si un
 tour de récupération attend une entrée, ses éléments d'échec restent
-disponibles à la reprise ; le choix d'un appel d'outil ou d'une réponse finale
-les efface.
+disponibles à la reprise. Le travail de récupération ordinaire accepté termine
+son épisode ; une page ou une réponse de remplacement n'efface jamais un échec
+`finish` actif.
 
 Les entrées d'activité de récupération et leur catalogue annoncé font partie de
-l'historique durable du workflow. Un déploiement qui modifie ce contrat doit
-drainer ou arrêter les anciens workers et les workflows en cours avant de
-démarrer le nouveau groupe de workers. Mélanger les versions de workers à cette
-frontière n'est pas sûr.
+l'historique durable du workflow. Les déploiements de production doivent utiliser
+Temporal Worker Deployment Versioning avec des versions épinglées et conserver
+chaque ancienne version jusqu'à ce que Temporal la signale comme drainée.
+Démarrer un nouveau worker n'autorise pas à rejouer un workflow existant avec
+du nouveau code. Une continuation est un nouveau workflow et peut utiliser la
+version actuelle après validation de son checkpoint enregistré.
+
+Ce changement n'ajoute aucun champ aux activités ou aux checkpoints et ne
+nécessite aucune migration de données. Les planificateurs personnalisés doivent
+utiliser le catalogue annoncé avec `Finalize.Reason` ; mettez-les à jour avec
+le runtime. Les anciens historiques qui ont rouvert du travail métier après
+un échec `finish` ne sont pas compatibles avec cette exécution : leurs plans
+d'outils ordinaires sont rejetés avant exécution. Gardez les historiques
+concernés encore actifs sur leur version de worker d'origine ou terminez-les
+avant de la remplacer. Décoder un checkpoint ne prouve pas la compatibilité
+de rejeu de l'historique. Vérifiez aussi l'affectation des historiques aux
+workers lors d'un retour arrière ; ne mélangez pas les versions d'activités
+au sein d'un workflow concerné.
 
 Lorsque `PlanResumeInput.Finalize` est défini, les planificateurs peuvent
 renvoyer des outils terminaux de comptabilité ; ces appels ne sont pas rejoués

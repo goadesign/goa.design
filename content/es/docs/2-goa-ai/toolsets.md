@@ -305,7 +305,7 @@ Cuando se ejecuta una herramienta acotada:
 1. El runtime valida que una herramienta acotada exitosa haya devuelto `planner.ToolResult.Bounds`
 2. El runtime fusiona esos bounds en el JSON emitido usando los nombres JSON visibles para el modelo generados desde `BoundedResult(...)`
 3. Con `ContinueWith`, el runtime ofrece la acción vacía solo cuando una única cabeza activa de la cadena puede continuar y enlaza el cursor antes de ejecutar
-4. Si otra herramienta del mismo lote paralelo requiere recuperación `finish`, la herramienta fallida no puede volver a ejecutarse y no puede iniciarse nuevo trabajo de dominio. Las acciones de continuación siguen disponibles para las consultas exitosas que ya devolvieron un cursor de página siguiente. Sin una acción de ese tipo, la finalización comienza inmediatamente
+4. Si otra herramienta del mismo lote paralelo requiere recuperación `finish`, no pueden iniciarse nuevas operaciones. Las consultas correctas con una página siguiente conservan sus acciones de continuación junto con las herramientas terminales que guardan el resultado final. El planificador puede obtener una página o enviar el resultado, nunca ambos en un lote. Ni una página ni una respuesta rechazada reabren operaciones. Sin páginas disponibles, solo queda la finalización terminal. Consulta la [recuperación de fallos](../runtime/#finish-recovery)
 5. Con `Cursor` directo, el runtime emite el cursor opaco en `next_cursor` para la siguiente llamada del modelo
 6. Los suscriptores de streams y los finalizadores acceden a los bounds para su visualización en la UI, logging o decisiones de políticas
 
@@ -773,7 +773,8 @@ errores internos. La recuperación tiene tres acciones explícitas:
 - `RecoveryCorrectCall` mantiene disponible la herramienta que falló y aporta
   evidencia estructurada para corregirla.
 - `RecoveryReplan` elimina esa herramienta del siguiente turno.
-- `RecoveryFinish` permite únicamente finalizar con la evidencia ya reunida.
+- `RecoveryFinish` prohíbe nuevas operaciones y permite la finalización terminal
+  o páginas anunciadas de consultas ya iniciadas.
 
 `ToolResult` lleva un resultado tipado o un único fallo estructurado:
 
@@ -864,8 +865,9 @@ func Execute(ctx context.Context, meta *runtime.ToolCallMeta, call *runtime.Tool
 llamada: los bytes canónicos de payload y resultado, más `Failure`. Para
 `RecoveryCorrectCall`, los problemas de campo, la entrada anterior y el JSON de
 ejemplo permiten corregir la llamada en el siguiente turno.
-`RecoveryReplan` elimina la herramienta que falló; `RecoveryFinish` permite
-solo la finalización. El runtime impone estas transiciones: el planificador no
+`RecoveryReplan` elimina la herramienta que falló; `RecoveryFinish` sigue el
+[contrato de finalización tras un fallo](../runtime/#finish-recovery).
+El runtime impone estas transiciones: el planificador no
 las deduce del texto del error.
 
 Solo las llamadas creadas por el proveedor pueden usar

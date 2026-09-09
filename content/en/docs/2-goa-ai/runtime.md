@@ -507,11 +507,11 @@ Agent("chat", "Conversational runner", func() {
 
 This becomes a `runtime.RunPolicy` attached to the agent's registration:
 
-- **Caps**: `MaxToolCalls` is the total budgeted tool calls per run. `MaxRecoveryTurns` limits replacement planner calls after rejected tool or model output. A successful budgeted tool call starts a fresh recovery allowance. Tools declared `Bookkeeping()` consume neither budget. Model-authored batches stay atomic: bookkeeping calls add zero cost, but the runtime never removes individual calls to make a mixed batch fit. Successful bookkeeping results stay out of compact future `ToolOutputs`.
+- **Caps**: `MaxToolCalls` is the total budgeted tool calls per run. `MaxRecoveryTurns` limits replacement planner calls after rejected tool or model output. Successful budgeted work starts a fresh recovery allowance unless a `finish` failure remains active; successful pages never reset that failure's allowance. Tools declared `Bookkeeping()` consume neither budget. Model-authored batches stay atomic: bookkeeping calls add zero cost, but the runtime never removes individual calls to make a mixed batch fit. Successful bookkeeping results stay out of compact future `ToolOutputs`.
 - **Time budget**: `TimeBudget` – wall-clock budget for the run. `FinalizerGrace` (runtime-only) – optional reserved window for finalization.
 - **Interrupts**: `InterruptsAllowed` – opt-in for pause/resume.
 - **Missing fields behavior**: `OnMissingFields` – governs what happens when validation indicates missing fields.
-- **Terminal tools**: Tools declared `TerminalRun()` automatically become bookkeeping and complete the run once they succeed—no follow-up `PlanResume` turn is scheduled. A terminal commit can therefore be admitted with no retrieval budget remaining. During forced finalization, the runtime admits only terminal bookkeeping calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds. Before execution, the runtime writes the exact `planner.TerminationReason` to `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Run labels, policy labels, planner output, and model output cannot choose or replace this value. Ordinary calls do not receive it.
+- **Terminal tools**: Tools declared `TerminalRun()` automatically become bookkeeping and complete the run once they succeed—no follow-up `PlanResume` turn is scheduled. A terminal commit can therefore be admitted with no retrieval budget remaining. During deadline or cap finalization, the runtime admits only terminal bookkeeping calls, executes them inside the remaining hard-deadline window, and closes the run only if every terminal side effect succeeds. Before execution, the runtime writes the exact `planner.TerminationReason` to `runtime.FinalizationReasonLabel` (`goa-ai.finalization_reason`). Run labels, policy labels, planner output, and model output cannot choose or replace this value. Ordinary calls do not receive it.
 
   Consumers of fixed-limit or planner-authored terminal calls, including `tool_failure`, use `runtime.FinalizationReasonLabel`. Deploy a change to this execution contract across consumers and runtime workers together.
 
@@ -1227,7 +1227,7 @@ These contracts are separate:
 | `ToolFailure.Recovery.Action` | One failed result | Selects correction with the failed tool still available, replanning without it, or finalization. |
 | `PlanResult.SynthesizeAfterTools` | One selected batch | If the batch has no recoverable failure, the next planner turn must answer. |
 | `PlanResumeInput.SynthesisOnly` | One planner activity | Return a final answer; tool calls are invalid. |
-| `PlanResumeInput.Finalize` | Runtime-forced termination | A cap or deadline has prohibited normal work. |
+| `PlanResumeInput.Finalize` | Runtime-forced completion | New operations are forbidden. With reason `tool_failure`, the advertised catalog may retain pages of queries already started. |
 
 The runtime chooses one next state in this order:
 
@@ -1235,11 +1235,14 @@ The runtime chooses one next state in this order:
 | --- | --- |
 | A cap or deadline requires finalization | `Finalize` turn |
 | A successful `TerminalRun` tool completed | End immediately |
+| A `finish` failure remains active | `Finalize` with reason `tool_failure`; retain advertised pages and terminal bookkeeping |
 | Any failed result has `AllowsToolTurn() == true` | Normal repair turn |
 | `SynthesizeAfterTools` is true | `SynthesisOnly` turn |
 | Otherwise | Normal continuation turn |
 
 This keeps planner intent from becoming a second retry policy. A recoverable failure is repaired first; a successful or terminally failed final batch proceeds to synthesis. The runtime rejects tool calls returned from a `SynthesisOnly` turn.
+
+### Tool failure recovery {#finish-recovery}
 
 Each recoverable `ToolFailure` also selects a `Recovery.Action`:
 
@@ -1251,8 +1254,31 @@ Each recoverable `ToolFailure` also selects a `Recovery.Action`:
   answer from the evidence already collected.
 - `replan` removes the failed tool from the next planner turn. The planner may
   use another advertised tool, wait for input, or answer.
-- `finish` removes all tools and requires a final answer from the available
-  evidence.
+- `finish` forbids starting new operations until the run ends. The planner may
+  answer, use registered terminal bookkeeping tools to save its final result,
+  or fetch an advertised page of a query already started.
+
+For `finish`, `PlanResumeInput.Finalize` carries reason `tool_failure`. The
+current catalog, not the reason alone, determines the available actions. A page
+and a terminal submission cannot share a batch: the runtime rejects that batch
+before either executes. New input requests and separate synthesis steps are
+also rejected. With no live page, only terminal completion remains. Deadline
+and cap finalization never permit pagination.
+
+Active tool failures and feedback about one rejected model response are
+separate facts. Rejected responses and successful pages preserve the original
+failure, its message, and the restriction on new work. Ordinary `correct_call`
+and `replan` restrictions end with their own recovery episode. Model validation
+supplies schema constraints and examples; the runtime requests a replacement
+response under the current actions and completion requirements, not necessarily
+another tool call.
+
+Successful pages spend the normal tool/time budgets but neither consume a
+replacement attempt nor reset the active finish failure's recovery allowance.
+Each rejection-driven replacement still consumes `MaxRecoveryTurns`. If a
+terminal submission needs corrected arguments, the next request retains both
+the original failure and the new validation diagnostic. Only the failed
+terminal tool is advertised for that repair; pages do not reopen.
 
 An ordinary `correct_call` turn combines the current agent's executable tools
 with the exact failed-tool contracts. Matching names are deduplicated;
@@ -1265,7 +1291,8 @@ authorization still checks every executed call.
 Unfinished queries retain their runtime-generated continuation actions; failed
 requests do not create continuations. Forced finalization offers only the exact
 failed terminal tool for correction, and synthesis-only turns remain tool-free.
-After correction, normal turns return to the current agent's tools.
+After ordinary correction, normal turns return to the current agent's tools;
+an active finish failure keeps new operations closed.
 
 The workflow owns model-facing correction evidence. It replaces executor-
 supplied prior input and examples with the original provider call and the
@@ -1281,7 +1308,8 @@ every executable call outside it, including a call embedded in a request for
 user or external input. Generated codecs still validate every payload, and the
 run's tool, failure, and time limits still stop repeated invalid work. If a
 recovery turn waits for input, its failure evidence remains available when the
-run resumes; choosing a tool call or final answer clears that evidence.
+run resumes. Accepted ordinary recovery work ends its episode; a page or
+replacement response never clears an active finish failure.
 
 Recovery activity inputs and their advertised catalog are part of durable
 workflow history. Production deployments must use pinned Temporal Worker
@@ -1289,6 +1317,16 @@ Deployment Versioning and retain each old worker version until Temporal reports
 it drained. Starting a new worker does not make it safe to replay an existing
 workflow on new code. A continuation is a new workflow and may use the current
 version after its saved checkpoint passes validation.
+
+This finish-recovery change adds no activity or checkpoint fields and needs no
+data migration. Custom planners must use the advertised catalog alongside
+`Finalize.Reason`; update them with the runtime. Old histories that reopened
+domain work after a finish failure are not execution-compatible: their recorded
+ordinary-tool plans are rejected before execution. Keep affected unfinished
+histories on their owning worker version or complete them before replacement.
+Successful checkpoint decoding does not prove history replay compatibility.
+Review worker/history routing for rollback too; do not mix activity versions
+within an affected workflow.
 
 When `PlanResumeInput.Finalize` is set, planners may return terminal bookkeeping tools; those calls are not replayed into a later planner turn and must durably finish finalization.
 
