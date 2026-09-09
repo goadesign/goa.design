@@ -191,14 +191,26 @@ che risponde sempre `entailed` non può far passare l'intera suite. Un errore di
 calibrazione ferma la suite prima della chiamata all'applicazione. Negli scenari
 passa solo `entailed`.
 
-Il giudice richiede esattamente un giudizio per claim, nello stesso ordine, con
-un'etichetta nota e una motivazione non vuota. Gli ID dei claim non vengono
-inviati al modello e sono ripristinati in base alla posizione. Giudizi mancanti
-o aggiuntivi, etichette sconosciute, campi aggiuntivi e risposte malformate sono
-rifiutati. Il meccanismo di correzione esistente, con un numero limitato di
-tentativi, può chiedere al modello una risposta sostitutiva; non modifica mai
-un output invalido per accettarlo. Esaurite le correzioni, il chiamante riceve
-un errore anziché giudizi inventati.
+Il prompt chiede di chiamare esattamente una volta lo strumento di valutazione
+fornito, senza indicare un nome specifico del provider. Lo schema richiede una
+proprietà con l'ID di ogni claim, contenente un'etichetta e una motivazione non
+vuota. Il giudice restituisce i giudizi nell'ordine dei claim cercandoli per nome,
+non ricostruendo le posizioni nella risposta. Nomi mancanti, sconosciuti o
+duplicati, campi aggiuntivi ed etichette non valide vengono rifiutati.
+
+I metadati strutturali permettono al validatore di spiegare errori indipendenti
+nei campi, come un claim codificato come stringa quando è richiesto un oggetto.
+Il testo completo dei claim resta nello schema e le prove di riferimento nella
+richiesta; nessuno dei due viene copiato in questi metadati di correzione. Un
+claim chiamato `requests` è valido se richiesto dallo schema. Il giudice non
+fornisce verdetti di esempio.
+
+Il meccanismo di correzione esistente e limitato può richiedere una risposta
+sostitutiva, ma non ripara mai output non validi. Etichette, scelta del modello,
+limiti di token e numero di correzioni restano invariati; istruzioni più chiare
+non garantiscono che il modello le segua. Esaurite le correzioni, il chiamante
+riceve un errore anziché giudizi inventati. Vedi il
+[contratto del giudice del framework](https://github.com/goadesign/goa-ai/blob/main/docs/evals.md#how-judging-works).
 
 ## Migrare la costruzione del giudice
 

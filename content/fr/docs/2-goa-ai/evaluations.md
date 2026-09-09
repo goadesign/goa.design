@@ -459,15 +459,26 @@ exemple fixe de chaque résultat. Un juge incapable de les distinguer arrête la
 suite avant tout appel à l'application. Cette calibration a un délai de deux
 minutes géré par le runner.
 
-Le juge exige exactement un jugement par affirmation, dans le même ordre, avec
-un résultat connu et une justification non vide. Les IDs d'affirmations restent
-hors de la requête au modèle et sont rétablis selon leur position. Les jugements
-manquants ou supplémentaires, les résultats inconnus, les champs supplémentaires
-et les réponses mal formées sont refusés. Le mécanisme de correction existant,
-limité en nombre de tentatives, peut demander une réponse de remplacement au
-modèle ; il ne modifie jamais une sortie invalide pour la rendre acceptable. Une
+Le prompt demande d'appeler exactement une fois l'outil d'évaluation fourni,
+sans indiquer un nom propre au fournisseur. Son schéma exige une propriété portant
+l'ID de chaque affirmation, contenant un résultat et une justification non vide.
+Le juge renvoie les jugements dans l'ordre des affirmations en les recherchant
+par nom, et non selon leur position dans la réponse. Les noms manquants, inconnus
+ou dupliqués, les champs supplémentaires et les résultats invalides sont refusés.
+
+Les métadonnées structurelles permettent au validateur d'expliquer les erreurs
+indépendantes des champs, par exemple une affirmation encodée comme chaîne alors
+qu'un objet est requis. Le texte complet des affirmations reste dans le schéma
+et les preuves de référence dans la requête ; ni l'un ni les autres ne sont copiés
+dans ces métadonnées de correction. Une affirmation nommée `requests` est valide
+si le schéma l'exige. Le juge ne fournit pas de verdicts d'exemple.
+
+Le mécanisme de correction existant et borné peut demander une réponse de
+remplacement, mais ne répare jamais une sortie invalide. Les résultats possibles,
+le choix du modèle, les limites de tokens et le nombre de corrections restent
+inchangés ; des indications plus précises ne garantissent pas leur respect. Une
 fois les corrections épuisées, l'appelant reçoit une erreur, pas des jugements
-inventés.
+inventés. Voir le [contrat du juge du framework](https://github.com/goadesign/goa-ai/blob/main/docs/evals.md#how-judging-works).
 
 ## Lire le rapport
 

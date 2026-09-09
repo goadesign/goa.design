@@ -1441,15 +1441,27 @@ the whole operation; Goa-AI never truncates, repairs, or coerces model data.
 return the accepted canonical response. An incomplete, malformed, or
 contradictory stream returns an error and no accepted response.
 
-Complete tool calls must satisfy their advertised schema and any attached generated
-decoder before planner code can observe them. When a schema rejection has one
-unique deepest cause matching generated array field metadata, correction
-guidance names that array's inclusive minimum or maximum, for example:
-`Field "items" must contain at most 3 items.` Ambiguous or unsupported causes
-retain generic guidance. These are bounds on that one submitted array, not a
-limit on the complete run. The arguments remain rejected before execution;
-Goa-AI does not split, truncate, or rewrite them. The original validation error,
-acceptance rules, and configured recovery-turn limit remain unchanged.
+Complete tool calls must satisfy their advertised schema and any attached
+generated decoder before planner code can observe them. Field metadata lets
+correction guidance name independently identified required, type, enum, or
+array-length violations. An array bound is inclusive and applies to that submitted
+array, not the whole run: `Field "items" must contain at most 3 items.`
+
+The runtime follows independently required constraints, including `allOf`, and
+only the union branch selected by a valid discriminator. It does not turn
+alternative `anyOf` branches, array `contains` candidates, or property-name
+checks into requirements to change every corresponding value. Array indexes
+and map keys appear as `*`; undeclared fields are reported against their parent
+object without repeating the submitted name.
+
+Instructions are sorted and deduplicated. Distinct instructions for the same
+displayed path are omitted, without trying to combine their constraints. Useful
+instructions for other fields survive unsupported, ambiguous, or oversized
+ones. Each instruction, including its description and enum values, fits whole
+within the byte limit; a partial correction says other errors are not detailed.
+If none can be included, guidance remains generic. Arguments stay rejected
+before execution; Goa-AI does not split, truncate, or rewrite them. Original
+errors, acceptance rules, and the recovery-turn limit remain unchanged.
 
 For schema or typed tool-input rejections eligible for correction, the model
 client can append the complete validated input example after the field guidance.

@@ -479,13 +479,23 @@ before touching the application. Calibration runs under a two-minute deadline
 owned by the runner, so an unreachable or stalled model endpoint fails the
 suite with a clear error instead of blocking it forever.
 
-The judge requires exactly one judgment per claim, in the same order, with a
-known label and a nonempty rationale. Claim IDs stay outside the model request
-and are restored by position. Missing or extra judgments, unknown labels,
-extra fields, and malformed responses are rejected. The existing bounded
-correction flow can ask the model for a replacement response; it never edits
-invalid output into an accepted result. If correction is exhausted, the caller
-receives an error rather than invented judgments.
+The prompt asks for the supplied grading tool exactly once, without spelling a
+provider-specific name. Its schema requires a property named for each claim ID,
+containing a label and nonempty rationale. The judge returns judgments in claim
+order by looking up their names, not by restoring response positions. Missing,
+unknown, or duplicate names, extra fields, and invalid labels are rejected.
+
+Structural field metadata lets the validator explain independently invalid
+fields, such as a claim encoded as a string where an object is required. Full
+claim text remains in the schema and reference evidence remains in the request;
+neither is copied into this correction metadata. A claim named `requests` is
+valid when required by the schema. The judge supplies no example verdicts.
+
+The existing bounded correction flow may request a replacement, but never
+repairs invalid output. Labels, model selection, token limits, and correction
+counts remain unchanged; clearer guidance does not guarantee compliance. If
+correction is exhausted, the caller receives an error rather than invented
+judgments. See the [framework judge contract](https://github.com/goadesign/goa-ai/blob/main/docs/evals.md#how-judging-works).
 
 ## Read the report
 
