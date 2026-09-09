@@ -11,6 +11,46 @@ Goa-AI génère à partir de votre design Goa des **structures typées pour les 
 
 Cette implémentation suit le modèle HTTP de Goa : **décodage du corps → transformation**.
 
+## Arguments du modèle et données d'exécution
+
+Un outil peut accepter moins d'arguments du modèle que son exécuteur n'en exige.
+Chaque entrée possède son propre schéma JSON et son codec (les fonctions
+générées qui valident, décodent et encodent cette entrée) :
+
+- `ToolSpec.Payload.Codec` correspond à `Payload.Schema` et à l'exemple
+  défini dans le design. Il valide les arguments rédigés par le modèle.
+- `ToolSpec.ExecutionPayloadCodec` correspond à `ExecutionPayloadSchema`.
+  Il traite les données complètes d'exécution et restaure le travail sauvegardé.
+
+Pour un outil de continuation qui conserve la requête initiale, le modèle envoie `{}` pour demander
+la page suivante. Avant l'exécution, le runtime restaure la requête initiale et
+le curseur du fournisseur. Le codec du modèle accepte donc `{}`, tandis que
+le codec d'exécution exige les champs conservés de la requête et le curseur.
+Un exemple vide ne doit pas empêcher l'enregistrement de l'outil simplement
+parce que son exécution nécessite ces champs supplémentaires.
+
+Les deux codecs sont obligatoires à l'enregistrement. Si les deux entrées ont
+la même structure, le générateur réutilise une seule implémentation. Les champs
+déclarés avec `Inject` n'apparaissent dans aucune des deux entrées JSON ;
+le fournisseur les renseigne à partir du contexte d'exécution. Les codecs de
+charges utiles typées et les descripteurs d'outils typés générés représentent
+toujours les données d'exécution. Un codec du modèle peut renvoyer le même type
+Go avec des champs encore non renseignés que le runtime fournira ; cette valeur
+n'est pas encore prête à être exécutée.
+
+### Mise à jour des spécifications d'outils
+
+Régénérez les spécifications avec le framework mis à jour avant de démarrer les
+workers. Les spécifications écrites à la main doivent aussi fournir
+`ExecutionPayloadCodec`, avec son encodeur et son décodeur. Les consommateurs
+qui décodent des données exécutées ou sauvegardées doivent utiliser ce codec ;
+la validation des entrées du modèle continue d'utiliser `Payload.Codec`.
+L'exécution ne se rabat pas sur le codec du modèle.
+
+Ce changement concerne le contrat Go dans le processus, pas les messages du
+registre, les schémas du modèle ni les formats des données sauvegardées.
+Aucune migration des formats d'échange ou des données stockées n'est nécessaire.
+
 ## Résumé
 
 - **Décoder le JSON dans un type auxiliaire** dont les champs sont des pointeurs (la forme « decode-body ») afin que le codec distingue une valeur **absente** d'une valeur **nulle**.
@@ -97,5 +137,3 @@ Dans le cas contraire, le générateur de transformations de Goa peut produire d
 
 - `if in.Field != nil { ... }` lorsque `Field` est une valeur ;
 - `out.Field = "x"` lorsque `Field` est un `*T`.
-
-

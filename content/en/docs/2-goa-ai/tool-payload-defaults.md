@@ -11,6 +11,43 @@ Goa-AI generates **typed tool payload structs**, **JSON Schemas**, and **codecs*
 
 This is implemented to match Goa’s own HTTP pattern: **decode-body → transform**.
 
+## Model arguments and execution payloads
+
+A tool can accept fewer arguments from the model than its executor needs.
+Each input has its own JSON schema and codec (the generated functions that
+validate, decode, and encode that input):
+
+- `ToolSpec.Payload.Codec` matches `Payload.Schema` and its authored example.
+  Use it to validate arguments written by the model.
+- `ToolSpec.ExecutionPayloadCodec` matches `ExecutionPayloadSchema`.
+  Use it for complete execution payloads and when restoring saved tool work.
+
+For a dedicated continuation tool that retains the original query, the model
+sends `{}` to request the next page. The runtime restores the query and the provider's cursor before
+execution. The model codec therefore accepts `{}`, while the execution codec
+requires the retained query fields and cursor. An empty example must not fail
+registration merely because execution needs those additional fields.
+
+Both codecs are required when registering a tool. When the two inputs have the
+same shape, generation reuses one codec implementation. Fields declared with
+`Inject` appear in neither JSON input; the provider fills them from runtime
+context. Generated typed payload codecs and typed tool descriptors still
+represent execution payloads. A model codec may return the same Go payload type
+with fields left unset for the runtime to supply; that value is not yet ready
+for execution.
+
+### Upgrading tool specifications
+
+Regenerate tool specifications with the updated framework before starting
+workers. Handwritten specifications must also supply
+`ExecutionPayloadCodec`, including its encoder and decoder. Update consumers
+that decode executed or saved payloads to use this codec; model-input
+validation continues to use `Payload.Codec`. There is no fallback to the model
+codec for execution.
+
+This changes the in-process Go contract, not registry messages, model schemas,
+or saved payload formats. No wire-format or stored-data migration is required.
+
 ## Summary
 
 - **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.
@@ -87,5 +124,3 @@ If you mismatch them, Goa’s transform generator can emit uncompilable code suc
 
 - `if in.Field != nil { ... }` when `Field` is a value
 - `out.Field = "x"` when `Field` is a `*T`
-
-
