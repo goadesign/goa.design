@@ -387,6 +387,49 @@ resúmenes para mostrar, la clasificación, la posibilidad de reintento y la
 recuperación del modelo no cambian; el diagnóstico no es una instrucción de
 corrección para el modelo.
 
+### Rechazos locales de solicitudes al modelo
+
+Use `model.NewRequestValidationError(cause)` solo cuando una validación de la
+aplicación rechace una solicitud al modelo antes de que un proveedor la acepte.
+Un adaptador de modelo remoto puede reconstruir este tipo a partir del error
+explícito de validación de solicitudes de su servicio. La causa es obligatoria:
+`Unwrap()` expone el error original y `Error()` devuelve su diagnóstico completo.
+Este tipo no incluye nombre de proveedor, estado HTTP, configuración de
+reintento ni instrucciones de recuperación.
+
+No lo use para fallos de red, observadores, cancelación o proveedores. Los
+validadores y adaptadores existentes mantienen su comportamiento salvo que su
+responsable marque explícitamente un rechazo local. Los rechazos reales del
+proveedor siguen usando `model.ProviderError`; la salida no válida del modelo o
+del planificador mantiene su contrato independiente de validación de salida.
+
+La ejecución termina con el tipo `model_request`, `Retryable: false` y sin
+proveedor, operación, código de proveedor ni estado HTTP. El resumen
+predeterminado es “The AI request could not be prepared.” La aplicación puede
+cambiar `hooks.PublicErrorModelRequest` al iniciar el proceso; `DebugMessage`
+conserva el diagnóstico completo. Ni la ejecución de herramientas ni los
+agentes anidados convierten este error en un reintento o una llamada adicional
+al modelo para corregirlo. El texto ya publicado por una llamada anterior al
+modelo en la misma actividad del planificador se conserva antes de terminar.
+Un `ApplicationError` personalizado de Temporal devuelto directamente mantiene
+la clasificación y la política de reintento existentes de la aplicación; este
+tipo no reemplaza ese error exterior explícito.
+
+Temporal guarda el error como `goa_ai.request_validation_error`, con
+`NonRetryable: true` y el diagnóstico válido completo en su mensaje, sin
+detalles ni objeto de causa. Los lectores rechazan un valor guardado si permite
+reintentos, contiene detalles o una causa, o tiene UTF-8 no válido. La
+codificación de diagnósticos y los límites externos de tamaño de fallos siguen
+aplicándose; no hay un nuevo límite de texto. No se reinterpretan los fallos de
+proveedor, salida, genéricos o de cancelación guardados anteriormente.
+
+Actualice los workers antes de que los adaptadores produzcan este tipo. Los
+workers antiguos no pueden leer su clasificación guardada y no deben procesar
+historiales que la contengan, tampoco al volver a una versión anterior. Envíe
+esos historiales solo a workers actualizados. No hay migración de base de datos,
+cambio de API generada ni modo de compatibilidad, y la actualización no cambia
+la clasificación de fallos guardados anteriormente.
+
 ### Formatos de error guardados
 
 Los nuevos registros `OutputContractFailure`, `ModelOutputRejected` y
@@ -397,7 +440,8 @@ si no es UTF-8 válido, `Reason` queda vacío y
 `ReasonOmitted="invalid_utf8"`. Los registros nuevos no usan `size_limit` para
 omitir una causa larga.
 
-Los nuevos fallos Temporal usan cuatro tipos privados de error de aplicación:
+Los nuevos fallos Temporal de proveedor, genéricos, de contrato de salida y de
+tipo reservado no válido usan estos cuatro tipos privados de error de aplicación:
 
 - `goa_ai.provider_error.v3`
 - `goa_ai.generic_error.v3`
