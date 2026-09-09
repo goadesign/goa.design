@@ -47,6 +47,14 @@ This is implemented to match Goa’s own HTTP pattern: **decode-body → transfo
 スキーマ、保存されたペイロードの形式は変わりません。通信形式や保存データの
 移行は不要です。
 
+継続専用ツールがある場合、初回ペイロード用に生成された名前付きコーデックは、
+既に宣言されている実行契約を厳密に適用するようになります。初回リクエストは
+カーソルを受け付けません。後続ページのリクエストは、実際に呼び出された
+継続ツールの実行用コーデックでデコードしてください。初回リクエストとして
+名前を付け替えてはいけません。以前は受け付けられていたカーソル付きの
+初回リクエストは契約外であり、このアップグレードでは受け付けられなくなります。
+宣言済みの実行スキーマと、契約に適合する保存済み履歴は変わりません。
+
 ## Summary
 
 - **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.

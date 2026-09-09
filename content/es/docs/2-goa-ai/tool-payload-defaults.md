@@ -50,6 +50,15 @@ Este cambio afecta al contrato Go dentro del proceso, no a los mensajes del
 registro, los esquemas del modelo ni los formatos de datos guardados. No requiere
 migrar formatos de intercambio ni datos almacenados.
 
+Para herramientas con una continuación dedicada, el códec generado con nombre
+propio para el payload inicial ahora aplica el contrato de ejecución ya
+declarado: la solicitud inicial no acepta un cursor. Decodifica las solicitudes
+de páginas posteriores con el códec de ejecución de la herramienta de
+continuación que realmente se llamó; no las renombres como solicitudes
+iniciales. Las solicitudes iniciales con cursor que antes se aceptaban estaban
+fuera de ese contrato y esta actualización no mantiene su aceptación. Los
+esquemas de ejecución declarados y el historial guardado válido no cambian.
+
 ## Summary
 
 - **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.

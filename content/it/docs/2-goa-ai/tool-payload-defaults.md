@@ -51,6 +51,15 @@ La modifica riguarda il contratto Go all'interno del processo, non i messaggi
 del registro, gli schemi del modello o i formati dei dati salvati. Non occorre
 migrare i formati di scambio o i dati archiviati.
 
+Per gli strumenti con una continuazione dedicata, il codec generato con nome
+proprio per il payload iniziale ora applica il contratto di esecuzione già
+dichiarato: la richiesta iniziale non accetta un cursore. Decodifica le richieste
+delle pagine successive con il codec di esecuzione dello strumento di
+continuazione effettivamente chiamato; non rinominarle come richieste iniziali.
+Le richieste iniziali con cursore precedentemente accettate erano fuori
+contratto e questo aggiornamento non ne mantiene l'accettazione. Gli schemi di
+esecuzione dichiarati e la cronologia salvata valida restano invariati.
+
 ## Summary
 
 - **Decode JSON into a helper type** with pointer fields (the “decode-body” shape) so the codec can distinguish **missing** from **zero**.

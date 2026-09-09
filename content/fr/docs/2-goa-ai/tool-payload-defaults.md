@@ -51,6 +51,15 @@ Ce changement concerne le contrat Go dans le processus, pas les messages du
 registre, les schémas du modèle ni les formats des données sauvegardées.
 Aucune migration des formats d'échange ou des données stockées n'est nécessaire.
 
+Pour les outils dotés d'une continuation dédiée, le codec nommé généré pour la
+charge utile initiale applique désormais le contrat d'exécution déjà déclaré :
+la requête initiale n'accepte pas de curseur. Décodez les requêtes des pages
+suivantes avec le codec d'exécution de l'outil de continuation réellement
+appelé ; ne les renommez pas en requêtes initiales. Les requêtes initiales avec
+curseur auparavant acceptées étaient hors contrat et cette mise à jour ne
+maintient pas leur acceptation. Les schémas d'exécution déclarés et l'historique
+sauvegardé valide restent inchangés.
+
 ## Résumé
 
 - **Décoder le JSON dans un type auxiliaire** dont les champs sont des pointeurs (la forme « decode-body ») afin que le codec distingue une valeur **absente** d'une valeur **nulle**.
