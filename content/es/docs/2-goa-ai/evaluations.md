@@ -190,6 +190,19 @@ Los cuatro resultados deben ser correctos. Así, un juez que siempre responde
 la suite antes de llamar a la aplicación. En los escenarios, solo `entailed`
 aprueba.
 
+Aplica las condiciones de cada afirmación tal como están escritas. «Indica el
+precio» exige un precio. «Todo precio citado debe coincidir con la referencia;
+no citar ningún precio satisface esta restricción» permite omitirlo: una
+respuesta no vacía que no cite precios satisface esa restricción (`entailed`,
+no `not_addressed`) si cumple los demás requisitos. Omitir información no aporta
+contenido obligatorio, no respalda una afirmación incluida sin evidencia ni
+resuelve una condición desconocida sobre el mundo.
+
+El modelo interpreta estas condiciones; el framework no clasifica afirmaciones
+mediante código ni reescribe etiquetas o justificaciones. Un `Output` totalmente
+vacío sigue asignando `not_addressed` a todas las afirmaciones y hace fallar el
+escenario sin llamar al juez.
+
 El prompt pide llamar exactamente una vez a la herramienta de evaluación
 proporcionada, sin escribir un nombre específico del proveedor. Su esquema exige
 una propiedad con el ID de cada afirmación, que contenga una etiqueta y una

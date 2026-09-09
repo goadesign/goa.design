@@ -471,6 +471,17 @@ returns exactly one label and a short rationale per claim:
 
 Only `entailed` counts as passing.
 
+Apply each claim's conditions as written. “Report the price” requires a price.
+“Any quoted price must match the reference; quoting no price satisfies this
+constraint” permits omission: a nonempty answer quoting no price satisfies that
+constraint (`entailed`, not `not_addressed`) if its other requirements hold.
+Omission does not supply required content, support an included statement that
+lacks evidence, or resolve an unknown condition about the world.
+
+The model interprets these conditions; the framework does not classify claims
+in code or rewrite labels or rationales. An entirely empty `Output` still gives
+every claim `not_addressed` and fails the scenario without calling the judge.
+
 Before any scenario runs, the runner tests the judge with four fixed examples,
 one per label. This step is called calibration. A judge that cannot tell the
 labels apart — for example one that answers `entailed` for everything, which
