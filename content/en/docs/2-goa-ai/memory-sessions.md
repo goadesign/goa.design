@@ -79,6 +79,13 @@ bounded exact tail. `CompressAt...` values decide when summarization starts;
 `KeepMax...` values decide which newest whole turns remain unchanged. The
 runtime never truncates a turn.
 
+Historical instructions are quoted for the summary model while remaining exact
+instructions in the destination request. The runtime can reuse a summary within
+one workflow when its evidence and historical instructions are unchanged. See
+[summary evidence](../runtime/#evidence-supplied-to-the-summary-model) and
+[summary reuse](../runtime/#reusing-a-summary-within-one-workflow) for the
+authoritative input and saved-state rules.
+
 Compression requires a configured `HistoryModel`. Token-based triggers and
 retention also require exact token counting from that model client. Bedrock
 Runtime cannot count structured-output requests, and some current Claude

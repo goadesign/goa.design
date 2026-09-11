@@ -1891,6 +1891,20 @@ message/part positions, and order remain explicit. Values are not selected,
 rounded, deduplicated, or replaced with tool-result placeholders. The model
 decides which supplied facts matter; the runtime does not predict relevance.
 
+System messages within the selected historical prefix are quoted through the
+same codec. This includes goals or constraints supplied only in instructions:
+for example, "inspect both units, then compare their readings with the service
+limits." The summary model receives those goals as evidence, not as commands to
+execute. The prefix ends at the last selected non-System message; reminders
+after that point do not enter this summary request. Original message and
+attachment positions are unchanged.
+
+Every original System message also remains an exact instruction in the
+destination request, in its original order relative to retained messages. A
+summary never replaces or drops those instructions. They count toward the
+request limit even when the surrounding conversation is summarized; if the
+mandatory instructions and newest turn cannot fit, preparation fails explicitly.
+
 `WithSummaryPrompt` still inserts the complete quoted textual transcript at its
 `%s` placeholder. Images and documents remain native attachments, supplied once
 after that prompt in the same completion. Each original user message containing
@@ -1931,6 +1945,30 @@ request fails explicitly, without dropping evidence, a text-only fallback, or
 another summary call. Media adds no separate counting step. Complete input does
 **not** guarantee that the model preserves every important fact in its prose,
 or that every history fits the summary model.
+
+#### Reusing a summary within one workflow
+
+The runtime can retain the selected model invocation's summary for later planner
+activities in the same workflow. It still counts each destination request with
+its actual model settings and tools; reuse does not cache a token count or change
+the original conversation and suspension records.
+
+Reuse requires unchanged source evidence and summary policy. The built-in
+policy fingerprint, the identifier used to check whether a saved summary still
+applies, also binds the exact historical System messages and their positions
+through the `SourceMessages`-th non-System message. Changing a goal or
+inserting an instruction within that prefix invalidates reuse. Adding a reminder
+after its last source message does not. A replacement summary receives original
+evidence, not an earlier generated summary. The model still decides which facts
+to retain; supplying the original goals does not guarantee better summary prose
+or a completed answer.
+
+Saved summaries with older policy fingerprints remain readable. If a later
+activity needs compression, the current policy generates a replacement once;
+subsequent activities may reuse that replacement. No stored-history conversion,
+new configuration, model change, or threshold change is required. Including the
+historical instructions can enlarge the summary request, and existing request
+limits still apply.
 
 ### Coordinated Generated-System Releases
 
