@@ -213,3 +213,7 @@ defaultContentLanguageInSubdir = false
   home = ["HTML", "RSS", "LLMs", "Markdown"]
   page = ["HTML", "Markdown"]
   section = ["HTML", "RSS", "Markdown"]
+
+[minify.tdewolff.html]
+  # Cloudflare needs the email_off comments to leave documentation commands intact.
+  keepComments = true

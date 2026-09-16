@@ -5,7 +5,10 @@
   </div>
   {{ with .Params.description }}<div class="lead">{{ . | markdownify }}</div>{{ end }}
   {{ partial "toc-auto.html" . }}
+  {{/* Versioned module paths can resemble email addresses; keep the public documentation text intact. */}}
+  {{ "<!--email_off-->" | safeHTML }}
   {{ .Content }}
+  {{ "<!--/email_off-->" | safeHTML }}
   {{ if and .IsSection (not .Params.hide_children) }}{{ partial "section-index.html" . }}{{ end }}
   {{ partial "feedback.html" . }}
   {{ partial "page-meta-lastmod.html" . }}
