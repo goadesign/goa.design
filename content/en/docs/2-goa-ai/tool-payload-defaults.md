@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: Tool Payload Defaults
 linkTitle: Tool Payload Defaults
-weight: 9
+weight: 120
 description: "How Goa-AI applies Goa-style defaults to tool payloads (decode-body + transform) and what codegen contracts must hold."
 llm_optimized: true
 aliases:

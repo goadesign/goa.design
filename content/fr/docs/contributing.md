@@ -15,24 +15,24 @@ Chaque sujet de documentation a exactement une **foyer canonique** - l'endroit u
 
 ### Accueil canonique Référence
 
-| Sujet - Accueil canonique - Catégorie - Sujet - Accueil canonique - Catégorie - Sujet - Accueil canonique - Catégorie - Sujet - Accueil canonique - Catégorie - Accueil canonique
-|-------|---------------|----------|
-| Modélisation des données ** [Référence DSL](1-goa/dsl-reference/#data-modeling) | Modélisation des données ** [Référence DSL](1-goa/dsl-reference/#data-modeling) | Modélisation des données
-| **Services & Méthodes** | [DSL Reference](1-goa/dsl-reference/#services-and-methods) | Conception | **Services & Méthodes** | [DSL Reference](1-goa/dsl-reference/#data-modeling)
-| **Streaming (Design)** | [DSL Reference](1-goa/dsl-reference/#streaming) | Design | **Fichiers statiques (Design)
-| **Fichiers statiques (Conception)** | [Référence DSL](1-goa/dsl-reference/#static-files) | Conception |
-| **Gestion des erreurs (Conception)** | [Référence DSL](1-goa/dsl-reference/#error-handling) | Conception |
-| **Systèmes de sécurité** | [Référence DSL](1-goa/dsl-reference/#security) | Conception | **Transport HTTP** [Référence DSL](1-goa/dsl-reference/#security)
-| Transport **HTTP** | [HTTP Guide](1-goa/http-guide/) | Transport |
-| **HTTP Streaming** | [HTTP Guide](1-goa/http-guide/#streaming) | Transport | **HTTP Streaming** | [HTTP Guide](1-goa/http-guide/#streaming) | Transport |
-**Réponses d'erreur HTTP** | [Guide HTTP](1-goa/http-guide/#error-responses) | Transport |
-| Transport **gRPC** | [Guide gRPC](1-goa/grpc-guide/) | Transport |
-**gRPC Streaming** | [gRPC Guide](1-goa/grpc-guide/#streaming) | Transport | **gRPC Status Codes **gRPC Status Codes **gRPC Status Codes
-| **Codes d'état gRPC** | [Guide gRPC](1-goa/grpc-guide/#error-handling) | Transport |
-**Intercepteurs** | [Intercepteurs](1-goa/interceptors/) | Coupe transversale | **Observabilité** | [Intercepteurs](1-goa/interceptors/)
-| **Observabilité** | [Indice](3-ecosystem/clue/) | Ecosystème | **Evénements distribués** | [Indice](3-ecosystem/clue/)
-| Événements distribués ** [Pulse](3-ecosystem/pulse/) | Écosystème
-| Diagrammes de l'architecture*** - [Modèle](3-ecosystem/model/) - Écosystème - [Diagrammes de l'architecture**] - [Diagrammes de l'architecture
+| Sujet | Page de référence | Catégorie |
+| --- | --- | --- |
+| Modélisation des données | [Référence DSL](1-goa/dsl-reference/#modélisation-des-données) | Conception |
+| Services et méthodes | [DSL Reference](1-goa/dsl-reference/#services-et-méthodes) | Conception |
+| Streaming (conception) | [DSL Reference](1-goa/dsl-reference/#streaming) | Conception |
+| Fichiers statiques (conception) | [Référence DSL](1-goa/dsl-reference/#fichiers-statiques) | Conception |
+| Gestion des erreurs (conception) | [Référence DSL](1-goa/dsl-reference/#gestion-des-erreurs-niveau-conception) | Conception |
+| Schémas de sécurité | [Référence DSL](1-goa/dsl-reference/#sécurité) | Conception |
+| Transport HTTP | [HTTP Guide](1-goa/http-guide/) | Transport |
+| Streaming HTTP | [HTTP Guide](1-goa/http-guide/#intégration-websocket) | Transport |
+| Réponses d’erreur HTTP | [Guide HTTP](1-goa/http-guide/#gestion-des-erreurs) | Transport |
+| Transport gRPC | [Guide gRPC](1-goa/grpc-guide/) | Transport |
+| Streaming gRPC | [gRPC Guide](1-goa/grpc-guide/#streaming) | Transport |
+| Codes d’état gRPC | [Guide gRPC](1-goa/grpc-guide/#gestion-des-erreurs) | Transport |
+| Intercepteurs | [Intercepteurs](1-goa/interceptors/) | Transversal |
+| Observabilité | [Clue](3-ecosystem/clue/) | Écosystème |
+| Événements distribués | [Pulse](3-ecosystem/pulse/) | Écosystème |
+| Diagrammes d’architecture | [Model](3-ecosystem/model/) | Écosystème |
 
 ### Définitions des catégories
 
@@ -66,7 +66,7 @@ and `StreamingResult`. The same design works for HTTP (WebSocket/SSE) and gRPC.
 [code example]
 
 **Further reading:**
-- [HTTP Streaming](../http-guide/#streaming) — WebSocket and SSE implementation
+- [HTTP Streaming](../http-guide/#intégration-websocket) — WebSocket and SSE implementation
 - [gRPC Streaming](../grpc-guide/#streaming) — Bidirectional streaming patterns
 ```
 
@@ -82,11 +82,11 @@ Les guides de transport doivent être **détaillés et pratiques** :
 **Modèle d'appel "Récapitulation de la conception":**
 
 ```markdown
-{{< alert title="Design Recap" color="info" >}}
+{{</* alert title="Design Recap" color="info" */>}}
 Streaming is defined at the design level using `StreamingPayload` and 
 `StreamingResult`. See [Streaming in DSL Reference](../dsl-reference/#streaming) 
 for design patterns. This section covers HTTP-specific implementation details.
-{{< /alert >}}
+{{</* /alert */>}}
 ```
 
 ### Documentation sur l'écosystème
@@ -129,8 +129,8 @@ Goa supports [streaming](../dsl-reference/#streaming) for real-time data.
 
 ```markdown
 **Further reading:**
-- [HTTP Error Responses](../http-guide/#error-responses) — HTTP status code mapping
-- [gRPC Error Handling](../grpc-guide/#error-handling) — gRPC status code mapping
+- [HTTP Error Responses](../http-guide/#gestion-des-erreurs) — HTTP status code mapping
+- [gRPC Error Handling](../grpc-guide/#gestion-des-erreurs) — gRPC status code mapping
 ```
 
 ## Outils de l'écosystème Mise à jour du flux de travail

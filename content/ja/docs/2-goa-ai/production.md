@@ -1,7 +1,8 @@
 ---
+nav_group: guides
 title: "プロダクション"
 linkTitle: "プロダクション"
-weight: 8
+weight: 70
 description: "Temporal による耐久性のあるワークフロー、UI へのイベントストリーミング、適応型レート制限、システムリマインダー。"
 llm_optimized: true
 aliases:
@@ -537,7 +538,7 @@ host が所有する操作です。
 - replacement 中、各 downstream Service に ready endpoint が残る。
 - observation window に新しい workflow failure、container restart、readiness gap がない。
 
-1 turn につき 1 workflow と cross-workflow event identity の contract は [External Input and Workflow Continuations](../runtime/#external-input-and-workflow-continuations) を参照してください。
+1 turn につき 1 workflow と cross-workflow event identity の contract は [External Input and Workflow Continuations](../runtime/#外部入力と-workflow-continuation) を参照してください。
 
 ### ベストプラクティス
 

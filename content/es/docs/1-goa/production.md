@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Producción
-weight: 8
+weight: 60
 description: "Patrones listos para producción para servicios Goa: observabilidad, seguridad y patrones comunes de despliegue."
 llm_optimized: true
 aliases:
@@ -412,6 +413,6 @@ Estos patrones garantizan que sus servicios sean fiables, seguros y mantenibles 
 ## Ver también
 
 - [Documentación de Clue](../3-ecosystem/clue/) - Conjunto completo de herramientas de observabilidad con referencia detallada de la API
-- [Referencia DSL: Seguridad](dsl-reference/#security) - Definiciones de esquemas de seguridad
+- [Referencia DSL: Seguridad](dsl-reference/#seguridad) - Definiciones de esquemas de seguridad
 - [Guía de manejo de errores](error-handling/) - Patrones de manejo de errores y mejores prácticas
 - [Interceptores](interceptors/) - Patrones de middleware e interceptores

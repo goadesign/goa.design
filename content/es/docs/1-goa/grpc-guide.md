@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Guía gRPC
-weight: 5
+weight: 30
 description: "Complete guide to gRPC transport in Goa - service design, streaming patterns, error handling, and Protocol Buffer integration."
 llm_optimized: true
 aliases:
@@ -360,7 +361,7 @@ objetos, mapas o uniones.
 
 ## Tratamiento de errores
 
-**Recapitulación del diseño**: Los errores se definen a nivel de diseño utilizando el DSL `Error` en el ámbito de la API, servicio o método. Ver [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) para patrones de diseño. Esta sección cubre el mapeo de códigos de estado específico de gRPC.
+**Recapitulación del diseño**: Los errores se definen a nivel de diseño utilizando el DSL `Error` en el ámbito de la API, servicio o método. Ver [Referencia DSL: Tratamiento de errores](dsl-reference/#tratamiento-de-errores-nivel-de-diseño) para patrones de diseño. Esta sección cubre el mapeo de códigos de estado específico de gRPC.
 
 ### Códigos de Estado
 
@@ -560,7 +561,7 @@ var _ = Service("calculator", func() {
 ## Ver también
 
 - [Referencia DSL: Streaming](dsl-reference/#streaming) - Patrones de streaming a nivel de diseño
-- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#tratamiento-de-errores-nivel-de-diseño) - Definiciones de errores a nivel de diseño
 - [Guía HTTP](http-guide/) - Características del transporte HTTP
 - [Guía de manejo de errores](error-handling/) - Patrones completos de manejo de errores
 - [Documentación de Clue](../3-ecosystem/clue/) - Interceptores gRPC para observabilidad

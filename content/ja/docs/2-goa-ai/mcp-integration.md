@@ -1,17 +1,15 @@
 ---
+nav_group: guides
 title: MCP 統合
-weight: 6
-description: "生成されたラッパーと caller を使って、外部 MCP サーバーをエージェントへ統合します。"
+weight: 50
+description: "ツール、リソース、プロンプトを公開するMCPサーバーを構築し、外部MCPツールを利用します。"
 llm_optimized: true
 aliases:
 ---
 
-Goa-AI は、MCP (Model Context Protocol) サーバーをエージェントへ統合するためのファーストクラスのサポートを提供します。MCP ツールセットにより、エージェントは外部 MCP サーバーのツールを、生成されたラッパーと caller 経由で利用できます。
+Goa-AIは、**MCPサーバーの構築**と**外部MCPツールの利用**の両方に対応します。GoaサービスにMCP宣言を追加して、メソッドをツールとして公開し、リソースやプロンプトテンプレートを提供できます。JSON-RPCのプロトコル処理とサービスアダプターは生成されます。MCPサーバーの提供にGoa-AIエージェントの実行は不要です。
 
-handwritten caller が現在実装するのは MCP `2025-06-18` の tool contract
-です。session を初期化し、server の tools capability を必須とし、`tools/call`
-を呼びます。このページは prompts や resources を含む MCP 全体の実装を示すもの
-ではありません。
+エージェント側のHTTP・stdio callerはツール利用向けです。セッションを初期化し、サーバーのtools capabilityを確認して`tools/call`を呼び出します。このインターフェースはリソースやプロンプトの操作を公開しません。生成されたMCPサーバーは、設計で宣言したツール、リソース、プロンプトに対応します。
 
 ## 概要
 
@@ -42,9 +40,17 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
-    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
+    })
+
+    StaticPrompt("find-docs", "Help a user find documentation",
+        "user", "Find relevant documentation for the user's question.")
+
+    Method("readme", func() {
+        Result(String)
+        Resource("readme", "file:///docs/README.md", "text/markdown")
     })
 
     Method("search", func() {
@@ -271,7 +277,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
 
-    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })

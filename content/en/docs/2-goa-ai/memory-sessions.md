@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Memory & Sessions
-weight: 7
+weight: 60
 description: "Manage state with transcripts, memory stores, sessions, and runs in Goa-AI."
 llm_optimized: true
 aliases:

@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: "Internal Tool Registry"
 linkTitle: "Registry"
-weight: 9
+weight: 110
 description: "Deploy a clustered gateway for cross-process toolset discovery and invocation."
 llm_optimized: true
 ---

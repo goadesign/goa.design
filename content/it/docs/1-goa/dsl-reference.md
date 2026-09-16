@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Riferimento DSL
-weight: 2
+weight: 70
 description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
 llm_optimized: true
 aliases:
@@ -625,9 +626,9 @@ Method("watch", func() {
 ```
 
 **Vedi anche:**
-- [Guida HTTP: Integrazione WebSocket](http-guide/#websocket-integration) - implementazione dello streaming specifica per HTTP
-- [Guida HTTP: Eventi inviati dal server](http-guide/#server-sent-events) - SSE per lo streaming unidirezionale del server
-- [Guida gRPC: Modelli di streaming](grpc-guide/#streaming-patterns) - implementazione dello streaming gRPC
+- [Guida HTTP: Integrazione WebSocket](http-guide/#integrazione-websocket) - implementazione dello streaming specifica per HTTP
+- [Guida HTTP: Eventi inviati dal server](http-guide/#eventi-inviati-dal-server) - SSE per lo streaming unidirezionale del server
+- [Guida gRPC: Modelli di streaming](grpc-guide/#modelli-di-flusso) - implementazione dello streaming gRPC
 
 ---
 
@@ -834,8 +835,8 @@ progetto.
 
 **Vedi anche:**
 - [Guida alla gestione degli errori](error-handling/) - Schemi completi di gestione degli errori
-- [Guida HTTP: Risposte agli errori](http-guide/#best-practices) - Mappatura dei codici di stato HTTP
-- [Guida gRPC: Gestione degli errori](grpc-guide/#error-handling) - Mappatura dei codici di stato gRPC
+- [Guida HTTP: Risposte agli errori](http-guide/#migliori-pratiche) - Mappatura dei codici di stato HTTP
+- [Guida gRPC: Gestione degli errori](grpc-guide/#gestione-degli-errori) - Mappatura dei codici di stato gRPC
 
 ---
 

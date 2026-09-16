@@ -15,24 +15,24 @@ Cada tema de documentación tiene exactamente una **página de inicio canónica*
 
 ### Referencia canónica
 
-| Tema | Página de inicio canónica | Categoría
-|-------|---------------|----------|
-| Modelado de datos** [DSL Reference](1-goa/dsl-reference/#data-modeling) Diseño
-**Servicios y métodos** [DSL Reference](1-goa/dsl-reference/#services-and-methods) Diseño
-**Streaming (Diseño)** [DSL Reference](1-goa/dsl-reference/#streaming) Diseño
-| Archivos estáticos (Diseño)** [DSL Reference](1-goa/dsl-reference/#static-files) Diseño
-**Manejo de Errores (Diseño)** [DSL Reference](1-goa/dsl-reference/#error-handling) Diseño
-| Esquemas de seguridad** [DSL Reference](1-goa/dsl-reference/#security) Diseño
-| Transporte HTTP** [Guía HTTP](1-goa/http-guide/) Transporte
-**HTTP Streaming** [Guía HTTP](1-goa/http-guide/#streaming) Transporte
-**Respuestas de error HTTP** [Guía HTTP](1-goa/http-guide/#error-responses) Transporte
-**Transporte gRPC** [Guía gRPC](1-goa/grpc-guide/) Transporte
-**Streaming gRPC** [Guía gRPC](1-goa/grpc-guide/#streaming) Transporte
-| Códigos de estado gRPC** [Guía gRPC](1-goa/grpc-guide/#error-handling) Transporte
-interceptores** | [Interceptores](1-goa/interceptors/) | Cross-Cutting | Observabilidad** | Transporte
-| **Observabilidad** | [Pista](3-ecosystem/clue/) | Ecosistema |
-| **Eventos Distribuidos** | [Pulso](3-ecosystem/pulse/) | Ecosistema |
-| Diagramas de arquitectura** [Modelo](3-ecosystem/model/) Ecosistema
+| Tema | Página de referencia | Categoría |
+| --- | --- | --- |
+| Modelado de datos | [DSL Reference](1-goa/dsl-reference/#modelado-de-datos) | Diseño |
+| Servicios y métodos | [DSL Reference](1-goa/dsl-reference/#servicios-y-métodos) | Diseño |
+| Streaming (diseño) | [DSL Reference](1-goa/dsl-reference/#streaming) | Diseño |
+| Archivos estáticos (diseño) | [DSL Reference](1-goa/dsl-reference/#archivos-estáticos) | Diseño |
+| Tratamiento de errores (diseño) | [DSL Reference](1-goa/dsl-reference/#tratamiento-de-errores-nivel-de-diseño) | Diseño |
+| Esquemas de seguridad | [DSL Reference](1-goa/dsl-reference/#seguridad) | Diseño |
+| Transporte HTTP | [Guía HTTP](1-goa/http-guide/) | Transporte |
+| Streaming HTTP | [Guía HTTP](1-goa/http-guide/#integración-websocket) | Transporte |
+| Respuestas de error HTTP | [Guía HTTP](1-goa/http-guide/#tratamiento-de-errores) | Transporte |
+| Transporte gRPC | [Guía gRPC](1-goa/grpc-guide/) | Transporte |
+| Streaming gRPC | [Guía gRPC](1-goa/grpc-guide/#streaming) | Transporte |
+| Códigos de estado gRPC | [Guía gRPC](1-goa/grpc-guide/#tratamiento-de-errores) | Transporte |
+| Interceptores | [Interceptores](1-goa/interceptors/) | Transversal |
+| Observabilidad | [Clue](3-ecosystem/clue/) | Ecosistema |
+| Eventos distribuidos | [Pulse](3-ecosystem/pulse/) | Ecosistema |
+| Diagramas de arquitectura | [Model](3-ecosystem/model/) | Ecosistema |
 
 ### Definiciones de categoría
 
@@ -66,7 +66,7 @@ and `StreamingResult`. The same design works for HTTP (WebSocket/SSE) and gRPC.
 [code example]
 
 **Further reading:**
-- [HTTP Streaming](../http-guide/#streaming) — WebSocket and SSE implementation
+- [HTTP Streaming](../http-guide/#integración-websocket) — WebSocket and SSE implementation
 - [gRPC Streaming](../grpc-guide/#streaming) — Bidirectional streaming patterns
 ```
 
@@ -82,11 +82,11 @@ Las guías de transporte deben ser **detalladas y prácticas**:
 **Patrón de llamada de resumen de diseño:**
 
 ```markdown
-{{< alert title="Design Recap" color="info" >}}
+{{</* alert title="Design Recap" color="info" */>}}
 Streaming is defined at the design level using `StreamingPayload` and 
 `StreamingResult`. See [Streaming in DSL Reference](../dsl-reference/#streaming) 
 for design patterns. This section covers HTTP-specific implementation details.
-{{< /alert >}}
+{{</* /alert */>}}
 ```
 
 ### Documentación del ecosistema
@@ -129,8 +129,8 @@ Goa supports [streaming](../dsl-reference/#streaming) for real-time data.
 
 ```markdown
 **Further reading:**
-- [HTTP Error Responses](../http-guide/#error-responses) — HTTP status code mapping
-- [gRPC Error Handling](../grpc-guide/#error-handling) — gRPC status code mapping
+- [HTTP Error Responses](../http-guide/#tratamiento-de-errores) — HTTP status code mapping
+- [gRPC Error Handling](../grpc-guide/#tratamiento-de-errores) — gRPC status code mapping
 ```
 
 ## Flujo de trabajo de actualización de las herramientas del ecosistema

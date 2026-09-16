@@ -1,8 +1,9 @@
 ---
+nav_group: start
 title: "Quickstart"
 linkTitle: "Quickstart"
-weight: 1
-description: "Build a working AI agent in 10 minutes. Start with a stub, add streaming, validation, then connect a real LLM."
+weight: 10
+description: "Generate and run a local AI agent, then add your planner, typed tools, and model integration."
 llm_optimized: true
 aliases:
 ---
@@ -23,21 +24,13 @@ You will build:
 ## 1. Create a Module
 
 ```bash
-GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
-
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
+go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
 mkdir design
 ```
 
-These branch names select the integrated runtime storage contract used by this
-guide. The direct proxy setting is needed because the Goa preview branch name
-contains a slash. Go records exact pseudo-versions in `go.mod`, so later branch
-updates do not change an existing build until you run `go get` again.
-
-Goa-AI currently targets modern Go. Use the Go version declared by the
-`goa.design/goa-ai` module or newer.
+This guide uses a pinned Goa-AI development snapshot, not a stable release. Its Go module selects the matching Goa dependency. Run the generator through `go run` so it uses that selected version. Use the Go version declared by the module or newer.
 
 ---
 
@@ -103,8 +96,9 @@ and runtime contracts are generated from this design.
 ## 3. Generate Code and Example
 
 ```bash
-goa gen example.com/quickstart/design
-goa example example.com/quickstart/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/quickstart/design
+go run goa.design/goa/v3/cmd/goa example example.com/quickstart/design
 go mod tidy
 go run ./cmd/orchestrator
 ```

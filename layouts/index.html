@@ -1,277 +1,185 @@
 {{ define "main" }}
-<section class="section-goa-ai-hero">
-    <div class="goa-ai-hero-bg"></div>
-    <div class="goa-ai-hero-curves"></div>
-    <div class="goa-ai-hero-curves-extra"></div>
-    <div class="container">
-        <div class="goa-ai-hero-content">
-            <div class="goa-ai-badge">
-                <span class="badge-new">{{ T "goa_ai_hero_badge" }}</span>
-                <span class="badge-text">{{ T "goa_ai_hero_badge_text" }}</span>
-            </div>
-            <h2 class="goa-ai-hero-title">
-                <span class="title-gradient">{{ T "goa_ai_hero_title_1" }}</span>
-                <span class="title-light">{{ T "goa_ai_hero_title_2" }}</span>
-            </h2>
-            <p class="goa-ai-hero-lead">{{ T "goa_ai_hero_description" }}</p>
-            <ul class="goa-ai-hero-features-list">
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/" }}#design-first-agents" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_design" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_mcp" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/" }}#tool-registries" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_registries" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/" }}#run-trees-composition" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_runtrees" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/" }}#structured-streaming" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_streaming" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-            <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/" }}#temporal-durability" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_durability" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ relref . "/docs/2-goa-ai/toolsets/" }}#async-and-durable-execution" class="hero-feature-item">
-                        <span class="feature-text">{{ T "goa_ai_hero_feature_async" }}</span>
-                        <i class="fas fa-arrow-right feature-arrow"></i>
-                    </a>
-                </li>
-            </ul>
-            <div class="goa-ai-hero-cta">
-                <a href="{{ relref . "/docs/2-goa-ai/" }}" class="btn btn-goa-ai-primary">
-                    <span>{{ T "goa_ai_hero_cta_primary" }}</span>
-                    <i class="fas fa-rocket ms-2"></i>
-                </a>
-                <a href="{{ relref . "/docs/2-goa-ai/quickstart/" }}" class="btn btn-goa-ai-secondary">
-                    <span>{{ T "goa_ai_hero_cta_secondary" }}</span>
-                    <i class="fas fa-arrow-right ms-2"></i>
-                </a>
-            </div>
-        </div>
-        <div class="goa-ai-hero-visual">
-            <div class="visual-orbit">
-                <div class="orbit-ring ring-1"></div>
-                <div class="orbit-ring ring-2"></div>
-                <div class="orbit-ring ring-3"></div>
-                <div class="orbit-center">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="orbit-node node-1"><i class="fas fa-cog"></i></div>
-                <div class="orbit-node node-2"><i class="fas fa-code"></i></div>
-                <div class="orbit-node node-3"><i class="fas fa-database"></i></div>
-            </div>
-        </div>
+<div class="goa-home">
+  <section class="home-hero site-width" aria-labelledby="home-title">
+    <div class="hero-copy">
+      <h1 id="home-title">{{ T "home_heading" }} <span>{{ T "home_heading_second" }}</span></h1>
+      <p class="hero-lead">{{ T "home_intro" }}</p>
+      <div class="hero-actions">
+        <a class="goa-button" href="{{ relref . "/docs/1-goa/quickstart/" }}">{{ T "home_service_cta" }}</a>
+        <a class="goa-button" href="{{ relref . "/docs/2-goa-ai/quickstart/" }}">{{ T "home_agent_cta" }}</a>
+      </div>
+      <div class="hero-repositories" role="group" aria-label="GitHub">
+        <span class="hero-repositories__label"><i class="fa-brands fa-github" aria-hidden="true"></i> GitHub</span>
+        <a href="https://github.com/goadesign/goa" aria-label="GitHub: Goa"><span>Goa</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+        <a href="https://github.com/goadesign/goa-ai" aria-label="GitHub: Goa-AI"><span>Goa-AI</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+      </div>
+      <a class="hero-guide" href="#designer-skill">{{ T "home_skill_cta" }}</a>
+      <p class="hero-facts">{{ T "home_facts" }}</p>
+      <div id="goa-assistant" class="hero-assistant"><a href="https://gurubase.io/g/goa">Goa Guru</a></div>
     </div>
-    <div class="goa-ai-hero-particles"></div>
-    <a href="#goa-hero" class="scroll-indicator" aria-label="Scroll to next section">
-        <i class="fas fa-chevron-down"></i>
-    </a>
-</section>
-
-<section id="goa-hero" class="td-box td-box--primary td-box--gradient hero-section">
-    <div class="goa-hero-curves"></div>
-    <div class="goa-hero-curves-extra"></div>
-    <div class="container text-center">
-        <div class="hero-logo">
-            <img src="{{ "img/avatar.svg" | relURL }}" alt="Goa Design Logo" class="goa-avatar" loading="lazy" decoding="async">
-        </div>
-        <h1 class="display-1">{{ T "hero_title" }}</h1>
-        <p class="lead mb-3">{{ T "hero_description" | safeHTML }}</p>
-        <ul class="goa-hero-features-list">
-            <li>
-                <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_design" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ relref . "/docs/1-goa/code-generation/" }}" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_codegen" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ relref . "/docs/1-goa/http-guide/" }}" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_transports" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ relref . "/docs/1-goa/dsl-reference/" }}#validation" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_validation" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ relref . "/docs/1-goa/code-generation/" }}#openapi-generation" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_docs" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ relref . "/docs/1-goa/interceptors/" }}" class="hero-feature-item">
-                    <span class="feature-text">{{ T "goa_hero_feature_extensible" }}</span>
-                </a>
-            </li>
-        </ul>
-        <div class="goa-hero-cta">
-            <a href="{{ relref . "/docs/1-goa/" }}" class="btn btn-lg btn-secondary">
-                {{ T "goa_hero_cta_primary" }} <i class="fas fa-book ms-2"></i>
-            </a>
-            <a href="{{ relref . "/docs/1-goa/quickstart/" }}" class="btn btn-lg btn-outline-light">
-                {{ T "get_started" }} <i class="fas fa-arrow-right ms-2"></i>
-            </a>
-        </div>
+    <div class="contract-demo">
+      <fieldset class="demo-switch">
+        <legend class="visually-hidden">{{ T "home_example_label" }}</legend>
+        <input type="radio" name="contract-example" id="demo-service" checked>
+        <label for="demo-service">Goa <span>{{ T "home_services" }}</span></label>
+        <input type="radio" name="contract-example" id="demo-agent">
+        <label for="demo-agent">Goa-AI <span>{{ T "home_agents" }}</span></label>
+      </fieldset>
+      <div class="demo-service demo-panel">
+        <div class="demo-filename"><span>design/catalog.go</span><span>{{ T "home_excerpt" }}</span></div>
+        {{ highlight `Service("catalog", func() {
+    JSONRPC(func() { POST("/rpc") })
+    Method("lookup", func() {
+        Payload(LookupPayload)
+        Result(Product)
+        HTTP(func() { GET("/products/{sku}") })
+        GRPC(func() {})
+        JSONRPC(func() {})
+    })
+})` "go" "" }}
+        <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/catalog/design</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+          <li>HTTP + gRPC + JSON-RPC</li><li>{{ T "home_output_client" }}</li>
+          <li>{{ T "home_output_types" }}</li><li>{{ T "home_output_validation" }}</li>
+          <li>OpenAPI + Protocol Buffers</li><li>{{ T "home_output_cli" }}</li>
+        </ul></div>
+      </div>
+      <div class="demo-agent demo-panel">
+        <div class="demo-filename"><span>design/catalog.go</span><span>{{ T "home_excerpt" }}</span></div>
+        {{ highlight `Agent("assistant", "Find products", func() {
+    Use("catalog", func() {
+        Tool("lookup", "Find a product by SKU", func() {
+            Args(LookupPayload)
+            Return(Product)
+            BindTo("lookup")
+        })
+    })
+})` "go" "" }}
+        <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/catalog/design</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+          <li>{{ T "home_output_schemas" }}</li><li>{{ T "home_output_codecs" }}</li>
+          <li>{{ T "home_output_bindings" }}</li><li>{{ T "home_output_descriptors" }}</li>
+          <li>{{ T "home_output_registration" }}</li><li>AGENTS_QUICKSTART.md</li>
+        </ul></div>
+      </div>
+      <a class="demo-source" href="{{ relref . "/docs/ai-development/" }}#one-design-two-entry-points">{{ T "home_full_example" }}</a>
     </div>
-    <a href="#why-goa" class="scroll-indicator" aria-label="Scroll to next section">
-        <i class="fas fa-chevron-down"></i>
-    </a>
-</section>
+  </section>
 
-<section id="why-goa" class="section-why">
-    <div class="container">
-        <div class="text-center">
-            <h2>{{ T "why_goa_title" }}</h2>
-        </div>
-        <div class="features-container">
-            <div class="row features-grid">
-                <div class="col-md-4">
-                    <div class="feature-item text-center">
-                        <i class="fas fa-fast-forward"></i>
-                        <h4>{{ T "why_goa_type_safe_title" }}</h4>
-                        <p>{{ T "why_goa_type_safe_desc" }}</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="feature-item text-center">
-                        <i class="fas fa-bolt"></i>
-                        <h4>{{ T "why_goa_boilerplate_title" }}</h4>
-                        <p>{{ T "why_goa_boilerplate_desc" }}</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="feature-item text-center">
-                        <i class="fas fa-rocket"></i>
-                        <h4>{{ T "why_goa_production_title" }}</h4>
-                        <p>{{ T "why_goa_production_desc" }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <section class="benefits-section" aria-labelledby="benefits-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="benefits-title">{{ T "home_benefits_heading" }}</h2><p>{{ T "home_benefits_intro" }}</p></div>
+      <dl class="benefit-list">
+        {{ range slice "tokens" "context" "feedback" }}
+        <div><dt>{{ T (printf "home_benefit_%s" .) }}</dt><dd>{{ T (printf "home_benefit_%s_text" .) }}</dd></div>
+        {{ end }}
+      </dl>
+      <a class="section-link" href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }}</a>
     </div>
-</section>
+  </section>
 
-<section class="section section-sponsors">
-    <div class="container-fluid">
-        <div class="text-center">
-            <h2>{{ T "sponsors_title" }}</h2>
-        </div>
-        <div class="sponsor-grid">
-            {{ range .Site.Params.sponsors }}
-            <div class="sponsor-item">
-                <div class="sponsor-card">
-                    <div class="sponsor-card-grid">
-                        <div class="sponsor-logo-col">
-                            <a href="{{ .url }}" class="sponsor-logo">
-                                <img src="{{ .image }}" alt="{{ .name }}">
-                            </a>
-                        </div>
-                        <div class="sponsor-content-col">
-                            <div class="sponsor-info">
-                                <p class="text-muted">{{ T (printf "sponsor_%s_desc" .id) | safeHTML }}</p>
-                                <a href="{{ .url }}" class="btn btn-link ps-0">
-                                    {{ T (printf "sponsor_%s_link" .id) }} <i class="fas fa-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {{ end }}
-        </div>
+  <section class="skill-section site-width" id="designer-skill" aria-labelledby="skill-title">
+    <div class="skill-copy">
+      <h2 id="skill-title">{{ T "home_skill_heading" }}</h2>
+      <p>{{ T "home_skill_intro" }}</p>
+      <a href="{{ relref . "/docs/ai-development/" }}#install-the-skill">{{ T "home_skill_docs" }}</a>
     </div>
-</section>
-
-<section class="section-trust">
-    <div class="container">
-        <div class="text-center">
-            <h2>{{ T "trust_section_title" }}</h2>
-            <p class="trust-subtitle">{{ T "trust_section_subtitle" }}</p>
-        </div>
-        <div class="logos-grid">
-            <div class="row g-0 align-items-center justify-content-center">
-                {{ range .Site.Params.companies }}
-                <div class="col-lg-2 col-md-3 col-6">
-                    <div class="company-logo">
-                        <img src="{{ .logo | relURL }}" alt="{{ .name }}" class="img-fluid">
-                    </div>
-                </div>
-                {{ end }}
-            </div>
-        </div>
+    <div class="skill-install">
+      <div class="install-command">
+        <code id="skill-command">npx skills add goadesign/goa --skill goa-service-designer</code>
+        <button type="button" class="copy-install" aria-label="{{ T "home_skill_copy" }}" data-copy-target="skill-command" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="install-hint">{{ T "home_skill_hint" }} <span class="copy-install-status" role="status"></span></p>
+      <p class="skill-prompt-label">{{ T "home_skill_next" }}</p>
+      <blockquote>{{ T "home_skill_prompt" }}</blockquote>
     </div>
-</section>
+  </section>
 
-<!-- Scroll Position Restoration -->
-<script>
-  (function() {
-    // Save scroll position before navigating away
-    var links = document.querySelectorAll('.hero-feature-item, .goa-ai-hero-cta a, .goa-hero-cta a');
-    links.forEach(function(link) {
-      link.addEventListener('click', function() {
-        sessionStorage.setItem('homeScrollPos', window.scrollY.toString());
-      });
-    });
-    
-    // Restore scroll position when returning via back button
-    if (performance.navigation && performance.navigation.type === 2) {
-      // Back/forward navigation (older API)
-      var savedPos = sessionStorage.getItem('homeScrollPos');
-      if (savedPos) {
-        setTimeout(function() {
-          window.scrollTo(0, parseInt(savedPos, 10));
-        }, 0);
-      }
-    }
-    
-    // Modern API for back/forward cache
-    window.addEventListener('pageshow', function(event) {
-      if (event.persisted) {
-        var savedPos = sessionStorage.getItem('homeScrollPos');
-        if (savedPos) {
-          setTimeout(function() {
-            window.scrollTo(0, parseInt(savedPos, 10));
-          }, 0);
-        }
-      }
-    });
-  })();
-</script>
+  <section class="framework-section" aria-labelledby="frameworks-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="frameworks-title">{{ T "home_frameworks_heading" }}</h2><p>{{ T "home_frameworks_intro" }}</p></div>
+      <div class="framework-pair">
+        <article><h3>Goa</h3><p class="framework-purpose">{{ T "home_service_title" }}</p><p>{{ T "home_service_text" }}</p>
+          <dl class="framework-capabilities">
+            <div><dt>HTTP · gRPC · JSON-RPC</dt><dd>{{ T "home_service_transports" }}</dd></div>
+            <div><dt>{{ T "home_service_streams" }}</dt><dd>WebSocket, Server-Sent Events, gRPC streaming.</dd></div>
+            <div><dt>{{ T "home_service_contracts" }}</dt><dd>{{ T "home_service_contracts_text" }}</dd></div>
+          </dl>
+          <a class="goa-button" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_service_docs" }}</a><a class="repo-link" href="https://github.com/goadesign/goa">GitHub</a>
+        </article>
+        <article><h3>Goa-AI</h3><p class="framework-purpose">{{ T "home_agent_title" }}</p><p>{{ T "home_agent_text" }}</p>
+          <dl class="framework-capabilities">
+            <div><dt>{{ T "home_agent_contracts" }}</dt><dd>{{ T "home_agent_contracts_text" }}</dd></div>
+            <div><dt>{{ T "home_agent_composition" }}</dt><dd>{{ T "home_agent_composition_text" }}</dd></div>
+            <div><dt>{{ T "home_agent_execution" }}</dt><dd>{{ T "home_agent_execution_text" }}</dd></div>
+          </dl>
+          <a class="goa-button" href="{{ relref . "/docs/2-goa-ai/" }}">{{ T "home_agent_docs" }}</a><a class="repo-link" href="https://github.com/goadesign/goa-ai">GitHub</a>
+        </article>
+      </div>
+    </div>
+  </section>
 
-<!-- Gurubase Widget - theme controlled by theme-toggle.js -->
-<script>
-  // Set initial Gurubase widget theme based on current theme
-  (function() {
-    var theme = document.documentElement.getAttribute('data-theme') || 'light';
-    var lightMode = theme === 'light' ? 'true' : 'false';
-    document.write('<script async src="https://widget.gurubase.io/widget.latest.min.js" data-widget-id="_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc" data-text="Ask AI" data-margins=\'{"bottom": "1rem", "right": "1rem"}\' data-light-mode="' + lightMode + '" id="guru-widget-id"><\/script>');
-  })();
-</script>
+  <section class="connect-section site-width" aria-labelledby="connect-title">
+    <div class="section-intro"><h2 id="connect-title">{{ T "home_connect_heading" }}</h2><p>{{ T "home_connect_intro" }}</p></div>
+    <article class="connect-row">
+      <div><h3>{{ T "home_mcp_heading" }}</h3><p>{{ T "home_mcp_text" }}</p><a href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}">{{ T "home_mcp_cta" }}</a></div>
+      <div class="mcp-example">
+        {{ highlight `MCP("catalog", "1.0.0")
+JSONRPC(func() { POST("/mcp") })
 
+Method("lookup", func() {
+    Payload(LookupPayload)
+    Result(Product)
+    Tool("lookup", "Find a product by SKU")
+})` "go" "" }}
+        <p>{{ T "home_mcp_caption" }}</p>
+      </div>
+    </article>
+    <article class="connect-row">
+      <div><h3>{{ T "home_registry_heading" }}</h3><p>{{ T "home_registry_text" }}</p><a href="{{ relref . "/docs/2-goa-ai/registry/" }}">{{ T "home_registry_cta" }}</a></div>
+      <div class="registry-flow" aria-label="{{ T "home_registry_flow" }}">
+        <div class="registry-providers"><span>catalog</span><span>search</span><span>billing</span></div>
+        <svg class="registry-connector" viewBox="0 0 400 32" preserveAspectRatio="none" aria-hidden="true"><path d="M66 0V12H200M334 0V12H200M200 0V32" fill="none" stroke="currentColor"/></svg>
+        <div class="registry-node"><strong>{{ T "home_registry_node" }}</strong><span>{{ T "home_registry_node_text" }}</span></div>
+        <svg class="registry-connector" viewBox="0 0 400 24" preserveAspectRatio="none" aria-hidden="true"><path d="M200 0V24" fill="none" stroke="currentColor"/></svg>
+        <p class="registry-consumers">{{ T "home_registry_consumers" }}</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="workflow-section" aria-labelledby="workflow-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="workflow-title">{{ T "home_workflow_heading" }}</h2><p>{{ T "home_workflow_intro" }}</p></div>
+      <ol class="workflow-steps">
+        {{ range slice "design" "generate" "implement" "check" }}
+        <li><h3>{{ T (printf "home_step_%s" .) }}</h3><p>{{ T (printf "home_step_%s_text" .) }}</p></li>
+        {{ end }}
+      </ol>
+    </div>
+  </section>
+
+  <section class="faq-section site-width" aria-labelledby="faq-title">
+    <h2 id="faq-title">{{ T "home_faq_heading" }}</h2>
+    <dl>
+      {{ range slice "codegen" "difference" "mcp" "tokens" }}
+      <div><dt>{{ T (printf "home_faq_%s_q" .) }}</dt><dd>{{ T (printf "home_faq_%s_a" .) }}</dd></div>
+      {{ end }}
+    </dl>
+  </section>
+
+  <section class="site-width community-section" aria-labelledby="community-title">
+    <div><h2 id="community-title">{{ T "home_community_heading" }}</h2><p>{{ T "home_community_intro" }}</p><a href="{{ relref . "/docs/3-ecosystem/" }}">{{ T "home_ecosystem" }}</a></div>
+    <div class="community-links"><a href="https://github.com/goadesign/examples">{{ T "home_examples" }}</a><a href="https://github.com/goadesign/goa/discussions">{{ T "home_discussions" }}</a><a href="https://gophers.slack.com/messages/goa">Gophers Slack</a><a href="{{ relref . "/docs/contributing/" }}">{{ T "home_contribute" }}</a></div>
+  </section>
+
+  <section class="support-section site-width" aria-labelledby="support-title">
+    <h2 id="support-title">{{ T "sponsors_title" }}</h2>
+    <div class="sponsor-list">{{ range .Site.Params.sponsors }}<a href="{{ .url }}"><img src="{{ .image | relURL }}" alt="{{ .name }}" width="1280" height="640" loading="lazy" decoding="async"></a>{{ end }}</div>
+    <h2>{{ T "trust_section_title" }}</h2>
+    <div class="company-list">{{ range .Site.Params.companies }}<a class="company-logo{{ with .logo_shape }} company-logo--{{ . }}{{ end }}" href="{{ .url }}"><img src="{{ .logo | relURL }}" alt="{{ .name }}" width="200" height="80" loading="lazy" decoding="async"></a>{{ end }}</div>
+  </section>
+</div>
+{{ partial "guru-widget.html" . }}
 {{ end }}

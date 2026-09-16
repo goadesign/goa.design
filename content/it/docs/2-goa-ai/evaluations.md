@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Valutazioni generate
-weight: 10
+weight: 40
 description: "Definisci scenari nel design Goa, genera hook tipizzati e produci report affidabili."
 llm_optimized: true
 ---

@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: "ランタイム"
 linkTitle: "ランタイム"
-weight: 3
+weight: 100
 description: "Goa-AI ランタイムがエージェントをオーケストレーションし、ポリシーを強制し、状態を管理する仕組みを理解します。"
 llm_optimized: true
 aliases:
@@ -1604,7 +1605,7 @@ Bedrock Runtime は structured-output request を count できません。Claude
 
 ### 生成 system の協調 release
 
-compatible release は透過的に rollout できます。incompatible な生成 contract 変更には coordinated drain と cutover が必要です。checkpoint version、generated codec、required tool name、worker retention の要件は [production rollout contract](../production/#transparent-rollouts) を参照してください。
+compatible release は透過的に rollout できます。incompatible な生成 contract 変更には coordinated drain と cutover が必要です。checkpoint version、generated codec、required tool name、worker retention の要件は [production rollout contract](../production/#透過的なロールアウト) を参照してください。
 
 ### Bedrock メッセージ順序の検証
 

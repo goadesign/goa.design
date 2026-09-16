@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Référence DSL
-weight: 2
+weight: 70
 description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
 llm_optimized: true
 aliases:
@@ -625,9 +626,9 @@ Method("watch", func() {
 ```
 
 **Voir aussi :**
-- [Guide HTTP : Intégration WebSocket](http-guide/#websocket-integration) - Mise en œuvre de la diffusion en continu spécifique à HTTP
-- [Guide HTTP : Événements envoyés par le serveur](http-guide/#server-sent-events) - SSE pour le streaming serveur unidirectionnel
-- [Guide gRPC : modèles de diffusion en continu](grpc-guide/#streaming-patterns) - Mise en œuvre de la diffusion en continu gRPC
+- [Guide HTTP : Intégration WebSocket](http-guide/#intégration-websocket) - Mise en œuvre de la diffusion en continu spécifique à HTTP
+- [Guide HTTP : Événements envoyés par le serveur](http-guide/#événements-envoyés-par-le-serveur) - SSE pour le streaming serveur unidirectionnel
+- [Guide gRPC : modèles de diffusion en continu](grpc-guide/#modèles-de-flux) - Mise en œuvre de la diffusion en continu gRPC
 
 ---
 
@@ -679,7 +680,7 @@ var _ = Service("spa", func() {
 })
 ```
 
-**Note** : `Files` est HTTP uniquement. Pour des modèles détaillés incluant l'intégration de modèles, voir [Guide HTTP : contenu statique](http-guide/#static-content).
+**Note** : `Files` est HTTP uniquement. Pour des modèles détaillés incluant l'intégration de modèles, voir [Guide HTTP : contenu statique](http-guide/#contenu-statique).
 
 ---
 
@@ -833,8 +834,8 @@ Goa et n'est pas émis comme un type personnalisé défini dans la conception.
 
 **Voir aussi:**
 - [Guide de gestion des erreurs](error-handling/) - Modèles complets de gestion des erreurs
-- [Guide HTTP : Réponses aux erreurs](http-guide/#best-practices) - Correspondance des codes d'état HTTP
-- [Guide gRPC : Gestion des erreurs](grpc-guide/#error-handling) - Correspondance des codes d'état gRPC
+- [Guide HTTP : Réponses aux erreurs](http-guide/#meilleures-pratiques) - Correspondance des codes d'état HTTP
+- [Guide gRPC : Gestion des erreurs](grpc-guide/#gestion-des-erreurs) - Correspondance des codes d'état gRPC
 
 ---
 

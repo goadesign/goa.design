@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: エージェントの構成
-weight: 5
+weight: 30
 description: "Agent-as-Tool パターン、ランツリー、ストリーミングトポロジーを使ったエージェントの合成方法を学びます。"
 llm_optimized: true
 aliases:

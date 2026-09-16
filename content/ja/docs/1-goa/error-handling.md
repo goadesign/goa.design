@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: エラー処理
-weight: 6
+weight: 40
 description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
 llm_optimized: true
 aliases:

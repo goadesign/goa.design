@@ -1,7 +1,8 @@
 ---
+nav_group: guides
 title: "Production"
 linkTitle: "Production"
-weight: 8
+weight: 70
 description: "Set up Temporal for durable workflows, stream events to UIs, apply adaptive rate limiting, and use system reminders."
 llm_optimized: true
 aliases:
@@ -623,7 +624,7 @@ Une version n'est transparente que si :
 
 Le contrat d'un workflow par tour et d'identité des événements entre workflows
 est décrit dans
-[Entrées externes et continuations de workflow](../runtime/#external-input-and-workflow-continuations).
+[Entrées externes et continuations de workflow](../runtime/#entrées-externes-et-continuations-de-workflow).
 
 ### Meilleures pratiques
 
@@ -922,7 +923,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-C’est idéal lorsque le rappel s’applique à chaque invocation de l’outil. Voir la [Référence DSL](./dsl-reference.md#resultreminder) pour plus de détails.
+C’est idéal lorsque le rappel s’applique à chaque invocation de l’outil. Voir la [Référence DSL](./dsl-reference.md#rappel-de-résultat) pour plus de détails.
 
 **Rappels dynamiques des planificateurs**
 

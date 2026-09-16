@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: "内部ツールレジストリ"
 linkTitle: "レジストリ"
-weight: 9
+weight: 110
 description: "プロセス境界をまたぐツールセットの発見と呼び出しのために、クラスタ化されたゲートウェイをデプロイします。"
 llm_optimized: true
 ---

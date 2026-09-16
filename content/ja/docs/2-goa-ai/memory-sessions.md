@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: 記憶とセッション
-weight: 7
+weight: 60
 description: "Manage state with transcripts, memory stores, sessions, and runs in Goa-AI."
 llm_optimized: true
 aliases:
@@ -64,7 +65,7 @@ model adapter は call をまたいで state を持ちません。provider-ready
 
 agent の `History(...)` policy は、古い turn を要約しながら bounded な正確な末尾を保持できます。`CompressAt...` value は要約を始める時点を、`KeepMax...` value は変更せず保持する最新の完全な turn を決めます。runtime は turn を途中で切りません。
 
-compression には設定済みの `HistoryModel` が必要です。token-based trigger と retention には、その model client による正確な token count も必要です。Bedrock Runtime は structured-output request を count できず、現在の一部 Claude model は AWS の別の Mantle endpoint を必要とします。完全な contract は [Runtime → History Policies](../runtime/#history-policies) と [DSL Reference → History](../dsl-reference/#history) を参照してください。
+compression には設定済みの `HistoryModel` が必要です。token-based trigger と retention には、その model client による正確な token count も必要です。Bedrock Runtime は structured-output request を count できず、現在の一部 Claude model は AWS の別の Mantle endpoint を必要とします。完全な contract は [Runtime → History Policies](../runtime/#history-policy) と [DSL Reference → History](../dsl-reference/#history) を参照してください。
 
 ### プランナーと UI がどのように簡素化されるか
 

@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Set di strumenti
-weight: 4
+weight: 20
 description: "Scopri tipi di toolset, modelli di esecuzione, validazione, recupero strutturato dagli errori e cataloghi degli strumenti in Goa-AI."
 llm_optimized: true
 aliases:

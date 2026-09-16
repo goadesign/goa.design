@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: ツールセット
-weight: 4
+weight: 20
 description: "Goa-AI におけるツールセットの種類、実行モデル、検証、構造化された失敗回復、ツールカタログについて学びます。"
 llm_optimized: true
 aliases:

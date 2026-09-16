@@ -1,128 +1,47 @@
 ---
-title: "Marco de Goa"
+title: "Goa: servicios a partir de un diseño"
 linkTitle: "Goa"
 weight: 1
-description: "Design-first API development with automatic code generation for Go microservices."
+description: "Define el contrato API en Go. Genera tipos, transportes, clientes, validación y documentación."
 llm_optimized: true
-content_scope: "Complete Goa Documentation"
-aliases:
 ---
 
-## Resumen
+## Introducción
 
-Goa es un framework de diseño para construir microservicios en Go. Define tu API usando el potente DSL de Goa, y deja que Goa genere el código, la documentación y las librerías cliente.
+Goa construye servicios Go a partir de un diseño. Describe tipos, operaciones, errores y transportes en un lenguaje específico del dominio (DSL) escrito en Go. El generador produce el código derivado de esas decisiones; tú implementas el comportamiento con las interfaces generadas.
 
-### Características principales
+**[Crea tu primer servicio](quickstart/)** o sigue el **[flujo con un agente de programación](../ai-development/)**.
 
-- **Diseño-Primero** - Define tu API usando un potente DSL antes de escribir el código de implementación
-- **Generación de código** - Genera automáticamente código de servidor, cliente y documentación
-- **Seguridad de tipos** - Seguridad de tipos de extremo a extremo desde el diseño hasta la implementación
-- **Multi-Transporte** - Soporte para HTTP y gRPC desde un único diseño
-- **Validación** - Validación de peticiones integrada basada en su diseño
-- **Documentación** - Especificaciones OpenAPI autogeneradas
+## Por qué ayuda a los agentes de programación
 
-## Cómo funciona Goa
+El agente parte del contrato en lugar de reconstruirlo a partir de manejadores, clientes y esquemas separados. Cambia el diseño, regenera y utiliza los errores del compilador para actualizar la aplicación. El generador escribe el código repetitivo sin que lo redacte el modelo. Proporciona el diseño, la interfaz relevante y la implementación; consulta los transportes generados cuando la tarea lo requiera.
 
-Goa sigue un flujo de trabajo en tres fases que separa el diseño de la API de la implementación, garantizando la coherencia y reduciendo la repetición de tareas.
+## Cómo funciona
 
-{{< figure src="/images/diagrams/GoaWorkflow.svg" alt="Goa three-phase workflow: Design → Generate → Implement" class="img-fluid" >}}
+### Diseña {#phase-1-design-you-write}
 
-### Fase 1: Diseño (Tú escribes)
+Define métodos, datos, resultados, validación y correspondencias HTTP, gRPC o JSON-RPC en `design/*.go`. Las descripciones y ejemplos alimentan la documentación API.
 
-En la fase de diseño, defines tu API usando el DSL de Goa en archivos Go (típicamente en un directorio `design/`):
-
-- **Tipos**: Define estructuras de datos con reglas de validación
-- **Servicios**: Agrupan métodos relacionados
-- **Métodos**: Definir operaciones con cargas útiles y resultados
-- **Transportes**: Asignar métodos a puntos finales HTTP y/o procedimientos gRPC
-- **Seguridad**: Definir esquemas de autenticación y autorización
-
-**Lo que creas**: `design/*.go` archivos que contienen la especificación de tu API como código Go.
-
-### Fase 2: Generar (Automatizado)
-
-Ejecuta `goa gen` para generar automáticamente todo el código boilerplate:
+### Genera {#phase-2-generate-automated}
 
 ```bash
-goa gen myservice/design
+goa gen example.com/myservice/design
 ```
 
-**Lo que crea Goa** (en el directorio `gen/`):
-- Andamiaje de servidor con enrutamiento y validación de peticiones
-- Librerías cliente seguras
-- Especificaciones OpenAPI/Swagger
-- Definiciones de búfer de protocolo (para gRPC)
-- Codificadores/decodificadores de transporte
+Los transportes elegidos determinan los tipos, interfaces, servidores, clientes, validaciones, especificaciones OpenAPI y definiciones Protocol Buffer generados. No edites `gen/`: se reemplaza. `goa example` crea archivos iniciales sin sobrescribir los existentes.
 
-**Importante**: Nunca edites archivos en `gen/` - se regeneran cada vez que ejecutas `goa gen`.
+### Implementa {#phase-3-implement-you-write}
 
-### Fase 3: Implementar (Usted escribe)
+Escribe lógica, autorización, persistencia y pruebas. Tras cambiar una firma, regenera y compila para encontrar implementaciones y llamadas incompatibles.
 
-Escribe tu lógica de negocio implementando las interfaces de servicio generadas:
+## Responsabilidades {#whats-hand-written-vs-auto-generated}
 
-```go
-// service.go - You write this
-type helloService struct{}
+Tú y el agente mantenéis diseño, decisiones de dominio, lógica, autorización, inicio y pruebas. Goa genera tipos, interfaces, rutas, códecs, validación, clientes y especificaciones API. La validación comprueba las restricciones declaradas; la corrección de negocio, seguridad y compatibilidad con clientes desplegados requieren diseño y pruebas.
 
-func (s *helloService) SayHello(ctx context.Context, p *hello.SayHelloPayload) (string, error) {
-    return fmt.Sprintf("Hello, %s!", p.Name), nil
-}
-```
+## Añade capacidades de IA
 
-**Lo que creas**: Archivos de implementación de servicios que contienen tu lógica de negocio real.
+[Goa-AI](../2-goa-ai/) utiliza el mismo modelo para herramientas tipadas, respuestas estructuradas y agentes. Una herramienta puede reutilizar tipos y métodos de servicio para conectar los contratos.
 
-### What's Hand-Written vs Auto-Generated
+## Guías
 
-| Tu Escribes | Goa Genera |
-|-----------|---------------|
-| `design/*.go` - Definiciones de API | `gen/` - Todo el código de transporte |
-| `service.go` - Lógica de negocio | Especificaciones OpenAPI |
-| `cmd/*/main.go` - Puesta en marcha del servidor | Definiciones de búfer de protocolo |
-| Pruebas y middleware personalizado | Validación de peticiones |
-
-## Guías de documentación
-
-| Guía | Descripción | ~Tokens |
-|-------|-------------|---------|
-| [Inicio rápido](quickstart/) | Instalación de Goa y creación de su primer servicio | ~1.100 |
-| [Referencia DSL](dsl-reference/) | Referencia completa del lenguaje de diseño de Goa | ~2.900 |
-| [Generación de código](code-generation/) | Entender el proceso de generación de código de Goa | ~2.100 |
-| [Guía HTTP](http-guide/) | Características del transporte HTTP, enrutamiento y patrones | ~1.700 |
-| [Guía gRPC](grpc-guide/) | Características del transporte gRPC y streaming | ~1.800 |
-| [Tratamiento de errores](error-handling/) | Definir y gestionar errores | ~1.800 |
-| [Interceptores](interceptors/) | Interceptores y patrones de middleware | ~1.400 |
-| [Producción](production/) | Observabilidad, seguridad y despliegue | ~1.300 |
-
-**Sección total:** ~14.500 tokens
-
-## Ejemplo rápido
-
-```go
-package design
-
-import . "goa.design/goa/v3/dsl"
-
-var _ = Service("hello", func() {
-    Method("sayHello", func() {
-        Payload(String, "Name to greet")
-        Result(String, "Greeting message")
-        HTTP(func() {
-            GET("/hello/{name}")
-        })
-    })
-})
-```
-
-Generar y ejecutar:
-
-```bash
-goa gen hello/design
-goa example hello/design
-go run ./cmd/hello
-```
-
-## Empezando
-
-Empieza con la guía [Quickstart](quickstart/) para instalar Goa y construir tu primer servicio en minutos.
-
-Para una cobertura completa de DSL, consulte la [Referencia DSL](dsl-reference/).
+Empieza por la guía rápida, utiliza las guías de transporte para tareas prácticas y la referencia DSL para modificar diseños.

@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: DSL Reference
-weight: 2
+weight: 70
 description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
 llm_optimized: true
 aliases:

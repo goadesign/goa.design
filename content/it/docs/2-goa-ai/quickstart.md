@@ -1,8 +1,9 @@
 ---
+nav_group: start
 title: "Avvio rapido"
 linkTitle: "Avvio rapido"
-weight: 1
-description: "Build a working AI agent in 10 minutes. Start with a stub, add streaming, validation, then connect a real LLM."
+weight: 10
+description: "Genera ed esegui un agente IA locale, poi aggiungi planner, tool tipizzati e integrazione con il modello."
 llm_optimized: true
 aliases:
 ---
@@ -23,22 +24,13 @@ Costruirai:
 ## 1. Crea un modulo
 
 ```bash
-GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
-
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
+go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
 mkdir design
 ```
 
-Questi nomi di branch selezionano il contratto di storage integrato del runtime
-usato dalla guida. L'impostazione del proxy diretto è necessaria perché il nome
-del branch preliminare di Goa contiene una barra. Go registra pseudoversioni
-esatte in `go.mod`, quindi gli aggiornamenti successivi dei branch non modificano
-una build esistente finché non esegui di nuovo `go get`.
-
-Goa-AI attualmente prende di mira il moderno Go. Utilizza la versione Go dichiarata da
-Modulo `goa.design/goa-ai` o successivo.
+Questa guida usa uno snapshot di sviluppo Goa-AI fissato, non una release stabile. Il modulo Go seleziona la dipendenza Goa compatibile. Esegui il generatore con `go run` per usare quella versione. Usa la versione Go dichiarata dal modulo o una successiva.
 
 ---
 
@@ -104,8 +96,9 @@ e i contratti di runtime vengono generati da questo progetto.
 ## 3. Genera codice ed esempio
 
 ```bash
-goa gen example.com/quickstart/design
-goa example example.com/quickstart/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/quickstart/design
+go run goa.design/goa/v3/cmd/goa example example.com/quickstart/design
 go mod tidy
 go run ./cmd/orchestrator
 ```
@@ -417,4 +410,4 @@ Per la produzione, aggiungi il motore Temporal per la durabilità, un unico arch
 ## Passaggi successivi
 
 | Guida | Cosa imparerai ||-------|-------------------|
-| [DSL Reference](dsl-reference/) | Tutte le funzioni DSL: policy, MCP, registri || [Runtime](runtime/) | Pianifica/esegui loop, motori, archivi di memoria || [Toolsets](toolset/) | Strumenti supportati da servizi, trasformazioni, esecutori || [Agent Composition](agent-composition/) | Approfondimento sui modelli di agente come strumento || [Production](production/) | Configurazione temporale, streaming alle interfacce utente, limitazione della velocità |
+| [DSL Reference](dsl-reference/) | Tutte le funzioni DSL: policy, MCP, registri || [Runtime](runtime/) | Pianifica/esegui loop, motori, archivi di memoria || [Toolsets](../toolsets/) | Strumenti supportati da servizi, trasformazioni, esecutori || [Agent Composition](agent-composition/) | Approfondimento sui modelli di agente come strumento || [Production](production/) | Configurazione temporale, streaming alle interfacce utente, limitazione della velocità |

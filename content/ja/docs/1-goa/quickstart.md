@@ -1,6 +1,7 @@
 ---
+nav_group: start
 title: クイックスタート
-weight: 1
+weight: 10
 description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
 llm_optimized: true
 aliases:
@@ -12,7 +13,7 @@ aliases:
 
 始める前に、あなたの環境が以下の要件を満たしていることを確認してください：
 
-- **Go 1.18 以降** - Goa は最新の Go 機能を利用しています。
+- **Go 1.25 以降** - Goa は最新の Go 機能を利用しています。
 - **Go Modules enabled** - Go 1.16+ ではデフォルトですが、必要に応じて `GO111MODULE=on` で確認してください。
 - **curl または任意の HTTP クライアント** - サービスのテスト用
 
@@ -21,11 +22,8 @@ aliases:
 GoaパッケージとCLIツールをインストールします：
 
 ```bash
-# Pull the Goa packages
-go get goa.design/goa/v3/...
-
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@latest
+go install goa.design/goa/v3/cmd/goa@v3.31.1
 
 # Verify the installation
 goa version
@@ -52,6 +50,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
+go get goa.design/goa/v3@v3.31.1
 ```
 
 > このガイドでは、シンプルなモジュール名 `hello` を使います。実際のプロジェクトでは、通常`github.com/yourusername/hello-goa`のようなドメイン名を使います。コンセプトは全く同じように機能します。
@@ -102,7 +101,8 @@ var _ = Service("hello", func() {
 設計を完全に機能するサービス構造に変換します：
 
 ```bash
-goa gen hello/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 これにより、以下を含む`gen`フォルダが作成されます：
@@ -114,7 +114,7 @@ goa gen hello/design
 次に、動作する実装の足場を作る：
 
 ```bash
-goa example hello/design
+go run goa.design/goa/v3/cmd/goa example hello/design
 ```
 
 > **重要:** `gen` コマンドは実行するたびに `gen/` フォルダーを再生成します。`example` コマンドは、あなたが所有しカスタマイズするスターター実装ファイルを作成します（以後の実行で Goa が上書きしません）。
@@ -142,6 +142,8 @@ hello-goa/
 
 `hello.go`を開き、`SayHello`メソッドを見つけます。あなたの実装に置き換えてください：
 
+`hello.go` の import に `fmt` を追加してください。
+
 ```go
 func (s *hellosrvc) SayHello(ctx context.Context, name string) (string, error) {
     log.Printf(ctx, "hello.sayHello")
@@ -156,8 +158,11 @@ func (s *hellosrvc) SayHello(ctx context.Context, name string) (string, error) {
 まず、依存関係をダウンロードします：
 
 ```bash
+go get goa.design/clue@v1.2.6
 go mod tidy
 ```
+
+この Clue バージョンを使うことで、生成された初期コードを Go 1.25 で実行できます。
 
 サーバーを起動します：
 
@@ -209,7 +214,7 @@ go run ./cmd/hello-cli --help
 
 ```bash
 # After updating design/design.go
-goa gen hello/design
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 キーポイント

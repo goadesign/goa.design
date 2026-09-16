@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Conjuntos de herramientas
-weight: 4
+weight: 20
 description: "Aprende sobre los tipos de conjuntos de herramientas, modelos de ejecución, validación, recuperación estructurada de fallos y catálogos de herramientas en Goa-AI."
 llm_optimized: true
 aliases:

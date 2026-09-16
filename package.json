@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "autoprefixer": "^10.5.0",
     "fast-check": "^4.8.0",
     "jsdom": "^29.1.1",
@@ -10,7 +11,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "playwright test",
+    "check:links": "python3 scripts/check_links.py"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0"

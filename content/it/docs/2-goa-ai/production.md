@@ -1,7 +1,8 @@
 ---
+nav_group: guides
 title: "Produzione"
 linkTitle: "Produzione"
-weight: 8
+weight: 70
 description: "Set up Temporal for durable workflows, stream events to UIs, apply adaptive rate limiting, and use system reminders."
 llm_optimized: true
 aliases:
@@ -834,7 +835,7 @@ Tool("get_time_series", "Get time series data", func() {
 })
 ```
 
-Questa funzione è ideale quando il promemoria si applica a ogni invocazione dello strumento. Per maggiori dettagli, vedere il [Riferimento DSL](./dsl-reference.md#resultreminder).
+Questa funzione è ideale quando il promemoria si applica a ogni invocazione dello strumento. Per maggiori dettagli, vedere il [Riferimento DSL](./dsl-reference.md#promemoria-risultato).
 
 **Ricordi dinamici dai pianificatori**
 

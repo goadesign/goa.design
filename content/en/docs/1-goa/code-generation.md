@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Code Generation
-weight: 3
+weight: 80
 description: "Complete guide to Goa's code generation - commands, process, generated code structure, and customization options."
 llm_optimized: true
 aliases:
@@ -17,19 +18,19 @@ runnable starter wiring, while your application supplies the business logic.
 ### Installation
 
 ```bash
-GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
+go get goa.design/goa/v3@v3.31.1
+go install goa.design/goa/v3/cmd/goa@v3.31.1
 ```
 
-{{< alert title="Testing a generation preview" color="info" >}}
-Pre-release versions are opt-in. Pin both the Goa module and the `goa` command
-to the same preview commit. The current work is on the
-[`fix/goa-generation-plan` preview branch](https://github.com/goadesign/goa/tree/fix/goa-generation-plan)
-at
-[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
-Regenerate the complete `gen/` directory, never mix stable and preview output,
-then compile and test the complete application. Coordinate client and server
-updates when the guide identifies a wire change. To return to stable, pin the
-stable module and command together and regenerate everything again.
+{{< alert title="Upgrading to v3.31.1" color="info" >}}
+The generation preview is now stable. v3.31.1 includes intentional breaking
+changes when upgrading from v3.30.x; read the
+[upgrade guide](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+before regenerating an existing application. Pin the Goa module and command
+to the same version, regenerate the complete `gen/` directory, and compile and
+test the application. Coordinate client and server updates for the changed
+message formats identified in the guide. For rollback, restore the previous
+dependencies, generated output, and application code together.
 {{< /alert >}}
 
 ### Commands
@@ -536,10 +537,7 @@ var User = Type("User", func() {
 
 ### Validation Enforcement
 
-Goa validates data at system boundaries:
-- **Server-side**: Validates incoming requests
-- **Client-side**: Validates incoming responses
-- **Internal code**: Trusted to maintain invariants
+Goa's generated transport decoders validate incoming requests on the server and incoming responses on the client. Service code then maintains the application invariants. Direct calls to a service or generated endpoint bypass transport decoding; those callers must supply valid values or validate at their own input boundary.
 
 ### Pointer Rules for Struct Fields
 
@@ -547,6 +545,8 @@ Service types and transport types answer different questions. A service type
 represents a value after validation. A decoded transport type must also record
 whether an incoming field was absent so generated validation can reject a
 missing required value without rejecting an explicit zero value.
+
+This table describes ordinary scalar and object fields in Goa v3.31.1. Bytes, `Any`, and unions have distinct representations; inspect their generated types.
 
 | Field | Service type | HTTP/JSON-RPC body | Protobuf request or response |
 |---|---|---|---|
@@ -556,7 +556,7 @@ missing required value without rejecting an explicit zero value.
 | Array or map | Value | Value | Value |
 
 For HTTP and JSON-RPC, decoded input means a request on the server or a response
-on the client. Encoded client requests and server responses use values. In
+on the client. Required or defaulted scalar fields use values in encoded client requests and server responses; optional scalars without defaults remain pointers. In
 protobuf Go structs, required singular booleans, numbers, strings, enums, and
 their aliases are pointers in both requests and responses so validation can
 distinguish an omitted field from an explicit zero value. Byte slices remain
@@ -578,10 +578,17 @@ HTTP and JSON-RPC bodies use pointers for primitive elements and primitive
 aliases so `[null]` can be rejected. Valid input becomes an ordinary value slice
 in the service layer, and generated response bodies remain value slices.
 
+### Collection Presence
+
+`Required("items")` and `MinLength(1)` express different constraints. For JSON, a required collection must be present and non-null, but `[]` or `{}` is valid unless a length constraint forbids it. Protobuf repeated and map fields cannot distinguish absent from empty after a wire round trip, so generated validation checks their length and contents rather than presence. Required singular scalars, messages, and oneofs retain their own presence checks.
+
+Do not use nil versus empty Go collections to encode domain operations. Model an operation explicitly when callers must distinguish “leave unchanged” from “replace with empty.”
+
 ### Default Value Handling
 
-- **Marshaling**: Default values initialize nil arrays/maps
-- **Unmarshaling**: Default values apply to missing optional fields (not missing required fields)
+Defaults belong to the design and are applied by generated transport conversions. In preview gRPC decoding, an absent input receives its authored default; an explicit `0`, `false`, or empty value remains explicit. Service-to-protobuf conversion preserves the value supplied by the service and does not replace zero values with defaults.
+
+HTTP conversions have different rules: incoming body constructors apply defaults to missing values, and outgoing body constructors can apply authored defaults to zero-valued service fields. Inspect the generated constructor and decoder for the relevant direction when zero or absence has domain meaning; do not apply one default rule to every transport.
 
 ---
 
@@ -591,23 +598,17 @@ Views control how result types are rendered in responses.
 
 ### How Views Work
 
-1. Service method includes a view parameter
-2. A views package is generated at the service level
-3. View-specific validation is automatically generated
+1. Define the attributes of each view in the result type.
+2. Goa generates the view representations, conversions, and validators.
+3. A method can select a fixed view in the design. For a dynamic unary result, the generated service method returns the view name with the result; streaming interfaces expose the generated view-selection operation.
 
 ### Server-Side Response
 
-1. Viewed result type is marshalled
-2. Nil attributes are omitted
-3. View name is passed in "Goa-View" header
+The generated encoder selects the representation for the chosen view. Attributes outside that view are excluded; required attributes inside it remain part of the contract. Dynamic HTTP views carry the name in the `Goa-View` response header, and gRPC uses `goa-view` metadata. Preview JSON-RPC carries a dynamic view as `{ "view": ..., "body": ... }` inside `result`; unviewed and fixed-view results do not use that envelope.
 
 ### Client-Side Response
 
-1. Response is unmarshalled
-2. Transformed into viewed result type
-3. View name extracted from "Goa-View" header
-4. View-specific validation performed
-5. Converted back to service result type
+The generated client reads the selected view, decodes its representation, validates that view’s contract, and converts it to the service result. Custom clients must follow the representation of the selected transport and release.
 
 ### Default View
 
@@ -649,9 +650,9 @@ Released callbacks remain appropriate for plugins that edit generated values or
 files. A plugin that declares a package-level name must use the factory planning
 phase so Goa can reserve that name with every other declaration before
 rendering. See the
-[Code Generation Architecture](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
+[Code Generation Architecture](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)
 and the
-[preview upgrade guide](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
+[upgrade guide](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
 for the detailed plugin contract and migration steps.
 
 ---

@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Produzione
-weight: 8
+weight: 60
 description: "Production-ready patterns for Goa services - observability, security, and common deployment patterns."
 llm_optimized: true
 aliases:
@@ -412,6 +413,6 @@ Questi modelli assicurano che i servizi siano affidabili, sicuri e manutenibili 
 ## Vedi anche
 
 - [Documentazione di Clue](../3-ecosystem/clue/) - Toolkit completo per l'osservabilità con riferimenti dettagliati alle API
-- [Riferimento DSL: Sicurezza](dsl-reference/#security) - Definizioni dello schema di sicurezza
+- [Riferimento DSL: Sicurezza](dsl-reference/#sicurezza) - Definizioni dello schema di sicurezza
 - [Guida alla gestione degli errori](error-handling/) - Modelli di gestione degli errori e buone pratiche
 - [Intercettori](interceptors/) - Modelli di middleware e intercettori

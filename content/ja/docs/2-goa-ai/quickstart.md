@@ -1,8 +1,9 @@
 ---
+nav_group: start
 title: "クイックスタート"
 linkTitle: "クイックスタート"
-weight: 1
-description: "10 分で動く AI エージェントを作ります。スタブから始め、ストリーミングとバリデーションを追加し、最後に実際の LLM へ接続します。"
+weight: 10
+description: "ローカルでAIエージェントを生成・実行し、プランナー、型付きツール、モデル接続を追加します。"
 llm_optimized: true
 aliases:
 ---
@@ -22,20 +23,13 @@ aliases:
 ## 1. モジュールを作成する
 
 ```bash
-GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
-
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-GOPROXY=direct go get goa.design/goa/v3@fix/goa-generation-plan goa.design/goa-ai@main
+go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
 mkdir design
 ```
 
-これらの branch 名は、このガイドで使う統合ランタイムストレージ契約を選択します。
-Goa preview branch 名にはスラッシュが含まれるため、direct proxy の設定が必要です。
-Go は正確な疑似バージョンを `go.mod` に記録するため、後で branch が更新されても、
-再度 `go get` を実行するまで既存のビルドは変わりません。
-
-Goa-AI は現在、モダンな Go を対象にしています。`goa.design/goa-ai` モジュールが宣言している Go バージョン、またはそれ以降を使ってください。
+このガイドは安定版リリースではなく、固定したGoa-AIの開発スナップショットを使用します。Goモジュールが対応するGoaの依存バージョンを選択します。ジェネレーターは`go run`で実行し、そのバージョンを使ってください。Goはモジュールで宣言されたバージョン以降を使用します。
 
 ---
 
@@ -99,8 +93,9 @@ var _ = Service("orchestrator", func() {
 ## 3. コードとサンプルを生成する
 
 ```bash
-goa gen example.com/quickstart/design
-goa example example.com/quickstart/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/quickstart/design
+go run goa.design/goa/v3/cmd/goa example example.com/quickstart/design
 go mod tidy
 go run ./cmd/orchestrator
 ```

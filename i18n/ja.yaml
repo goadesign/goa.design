@@ -1,6 +1,6 @@
 # Site title and meta
-site_title: "Goa :: はじめにデザインを。"
-site_description: "Goa は Go で作られたコード生成フレームワークです。デザインファーストの方法論を使用して慣用的な API およびマイクロサービスアーキテクチャを生成するための明確で簡潔なパスを開発者に提供します。"
+site_title: "Goa・Goa-AI — コーディングエージェントのためのGoフレームワーク"
+site_description: "Goaは、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめるGoフレームワークです。HTTP・gRPC・JSON-RPCサーバー、型付きクライアント、検証、API仕様書を生成。Goa-AIでAIエージェント、MCPサーバー、ツールレジストリを構築できます。"
 
 # Navigation
 nav_search_placeholder: "検索"
@@ -16,18 +16,10 @@ footer_copyright: " 2015-%s by Raphael Simon and the Goa contributors"
 footer_logo_by: "Logo by Jason Melgoza"
 
 # Hero Section
-hero_title: "はじめにデザインを！"
-hero_description: "ボイラープレートの作成はもう終わり。重要なソリューションの設計に専念しましょう。</br>残りはGoaにお任せください。"
 
 # Features Section
-feature_codegen_title: "開発を加速"
-feature_codegen_desc: "Goaはコードベースの30〜50%を自動的に生成します。Goaがトランスポート、バリデーション、ドキュメント、クライアント生成を担うので、ビジネスロジックの実装に集中することが出来ます。"
 
-feature_design_title: "デザインベース"
-feature_design_desc: "デザインそのものが契約です。Goaは実装、ドキュメント、クライアントSDKのすべてが完全に同期された状態を保つことを保証します。仕様とコードの間にずれが生じることはもうありません。"
 
-feature_best_practice_title: "ベストプラクティス"
-feature_best_practice_desc: "組み込みのバリデーション、エラーハンドリング、ミドルウェア統合。エンタープライズグレードのセキュリティと信頼性を、複雑さなしで実現しましょう。"
 
 # Section Navigation
 subsections_title: "このセクションの内容"
@@ -82,17 +74,8 @@ sponsor_speakeasy_title: "Speakeasy: あなたのAPIのための企業向けDevE
 sponsor_speakeasy_desc: "私たちのプラットフォームは、機能豊富で本番環境に適したSDKの作成を簡単にします。<br/>APIにふさわしいDevExを提供することで、統合を加速し、エラーを減らします。"
 sponsor_speakeasy_link: "Goaとの統合"
 
-design_first_title: "開発のあるべき姿"
-design_first_description: "Goaは、Goでマイクロサービスを構築する方法を変革します。<br/>解決策を一度設計すれば、Goaが本番環境に適したサーバー、型安全なクライアント、そして包括的なドキュメントを生成します。<br/>重要なことに集中してください: スケーラブルな素晴らしいサービスを構築すること。"
 
 # Why Goa Section
-why_goa_title: "なぜGoaを選ぶのか"
-why_goa_type_safe_title: "高速な開発"
-why_goa_type_safe_desc: "自動コード生成により開発時間を大幅に短縮。30-50%のコード削減で、より早く市場に投入できます。"
-why_goa_boilerplate_title: "ボイラープレート不要"
-why_goa_boilerplate_desc: "ハンドラーやミドルウェアのコピー＆ペーストはもう必要ありません。ビジネスロジックに集中し、残りはGoaにお任せください。"
-why_goa_production_title: "本番環境対応"
-why_goa_production_desc: "世界中の企業がAPIの構築とスケーリングにGoaを使用。実戦で証明された、高性能で信頼性の高いフレームワークです。"
 
 # Trust Section
 trust_section_title: "世界中のエンジニアリングチームに信頼されています"
@@ -110,3 +93,237 @@ goa_hero_cta_primary: "Goaを探索"
 # Common actions
 learn_more: "詳細を見る"
 get_started: "クイックスタート"
+
+# Shared Goa ecosystem presentation.
+
+home_heading: "エージェントは推論に。"
+
+home_intro: "Goaは、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめるGoフレームワークです。HTTP・gRPC・JSON-RPCサーバー、型付きクライアント、検証、API仕様書を生成。Goa-AIでAIエージェント、MCPサーバー、ツールレジストリを構築できます。"
+
+home_service_cta: "サービスをつくる"
+
+home_agent_cta: "AIエージェントをつくる"
+
+home_workflow_cta: "コーディングエージェントと開発する"
+
+home_facts: "オープンソース。MITライセンス。Goで構築。"
+
+home_example_label: "設計例を選択"
+
+home_services: "サービス"
+
+home_agents: "AIエージェント"
+
+home_excerpt: "設計の抜粋"
+
+home_generated: "エージェントが書かずに済むコード"
+
+home_output_types: "サービスインターフェース"
+
+home_output_http: "HTTPサーバー"
+
+home_output_client: "型付きクライアント"
+
+home_output_openapi: "OpenAPI仕様"
+
+home_output_schemas: "ツールのJSONスキーマ"
+
+home_output_codecs: "型付きペイロードのコーデック"
+
+home_output_bindings: "サービスとの接続"
+
+home_full_example: "完全な例を見る"
+
+home_workflow_heading: "意図を設計し、繰り返すコードは生成する。"
+
+home_workflow_intro: "開発者、チーム、コーディングエージェントで共有する、ひとつの開発手順。"
+
+home_step_design: "契約を記述する"
+
+home_step_design_text: "型、操作、制約を読みやすいGoの設計に定義します。"
+
+home_step_generate: "ジェネレーターを実行する"
+
+home_step_generate_text: "goa genが契約から導出できるコードを生成します。"
+
+home_step_implement: "動作を実装する"
+
+home_step_implement_text: "開発者とエージェントがサービスのロジック、プランナー、テストを書きます。"
+
+home_step_check: "フィードバックで改善する"
+
+home_step_check_text: "設計を変更したら再生成し、コンパイル、テスト、レビューを行います。"
+
+home_benefits_heading: "コーディングエージェントの仕事を、絞り込む。"
+
+home_benefits_intro: "機能を追加するたびに、モデルがアーキテクチャを読み解き直したり、同じ接続コードを書き直したりする必要はありません。"
+
+home_benefit_tokens: "生成に任せ、その分のトークンを省く。"
+
+home_benefit_tokens_text: "生成されたトランスポート、クライアント、スキーマは、LLMが書く必要のないコードです。その分の作業をドメインロジック、有用なテスト、より良いツールに回せます。"
+
+home_benefit_context: "コンテキストの基準を、設計に。"
+
+home_benefit_context_text: "型、制約、説明、メソッドを設計に集約。一貫した生成コードの構造が、エージェントにコードベースの地図と変更すべき場所を示します。"
+
+home_benefit_feedback: "契約のずれを、コンパイルエラーに。"
+
+home_benefit_feedback_text: "契約を変えたら、すべての表現をまとめて再生成。Goが型の合わない呼び出し元や実装を検出し、エージェントの次の修正に具体的な手掛かりを与えます。"
+
+home_benefit_boundaries: "契約をつなげて保つ"
+
+home_benefit_boundaries_text: "サービスの型をエージェントのツールでも再利用。同じ設計からモデル向けスキーマとサービス接続を生成し、別々の定義を管理する手間を減らします。"
+
+home_frameworks_heading: "ひとつのエコシステム、ふたつの入り口。"
+
+home_frameworks_intro: "サービスからでも、エージェントからでも。その両方でも。同じ設計言語でつながります。"
+
+home_service_title: "ひとつの契約。多彩なトランスポート。"
+
+home_service_text: "サービスを一度定義し、API、クライアント、検証、仕様書をまとめて生成。型付きGoインターフェースの先に、ビジネスロジックを実装します。"
+
+home_service_features: "クライアント、検証、OpenAPIを生成"
+
+home_service_docs: "Goaを詳しく見る"
+
+home_agent_title: "システムとして設計するエージェント。"
+
+home_agent_text: "ツールと出力を設計し、契約を生成。ランタイムがモデル呼び出し、ツール実行、人間からの入力、永続化ワークフローを調整します。"
+
+home_agent_features: "ツールスキーマ、サービス接続、MCP"
+
+home_agent_runtime: "ローカル実行、永続的な実行にはTemporal"
+
+home_agent_docs: "Goa-AIを詳しく見る"
+
+home_community_heading: "オープンな基盤でつくる。"
+
+home_community_intro: "GoaとGoa-AIは、Goサービス、エージェント、可観測性、分散システムのためのオープンソースツール群の一部です。"
+
+home_ecosystem: "エコシステムを見る"
+
+home_examples: "動くサンプル"
+
+home_discussions: "コミュニティに質問"
+
+home_contribute: "貢献する"
+
+docs_skip: "本文へ移動"
+
+docs_navigation: "ドキュメントメニュー"
+
+docs_on_page: "このページの内容"
+
+docs_start: "はじめに"
+
+docs_explore: "ドキュメントを読む"
+
+docs_group_start: "使い始める"
+
+docs_group_guides: "ガイド"
+
+docs_group_reference: "リファレンス"
+
+docs_copy: "ページをコピー"
+
+docs_copy_markdown: "Markdownでコピー"
+
+docs_copy_text: "テキストでコピー"
+
+docs_overview: "ドキュメント"
+
+home_heading_second: "コード生成はGoaに。"
+
+home_output_validation: "検証とコーデック"
+
+home_output_cli: "CLIクライアント"
+
+home_output_descriptors: "型付きツール記述子"
+
+home_output_registration: "ランタイム登録"
+
+home_skill_cta: "コーディングエージェントにGoaスキルを追加"
+
+home_skill_heading: "エージェントに、Goaの作法を。"
+
+home_skill_intro: "Goa service designerスキルをプロジェクトにインストール。設計、生成、実装、検証の進め方から、編集するファイルと再生成するファイルの区別まで、コーディングエージェントを導きます。"
+
+home_skill_docs: "インストールとワークフロー"
+
+home_skill_copy: "スキルのインストールコマンドをコピー"
+
+home_skill_copied: "コピーしました。"
+
+home_skill_copy_failed: "コマンドを選択してコピーしてください。"
+
+home_skill_hint: "プロジェクト内で実行。Node.jsとnpmが必要です。"
+
+home_skill_next: "次に、エージェントへ具体的な依頼を："
+
+home_skill_prompt: "goa-service-designerスキルを使って、HTTPとgRPCのエンドポイントを持つカタログサービスを追加してください。コードを生成し、商品検索を実装してテストしてください。"
+
+home_service_transports: "同じサービス設計からサーバー、型付きクライアント、CLIクライアントを生成。"
+
+home_service_streams: "ストリーミングも設計で定義"
+
+home_service_contracts: "つながりを保つ契約"
+
+home_service_contracts_text: "Goの型、検証、エンコード、エラーマッピング、OpenAPI、Protocol Buffers。"
+
+home_agent_contracts: "型付きツールと構造化された回答"
+
+home_agent_contracts_text: "スキーマ、コーデック、サービスへのバインディング、完了ヘルパーを生成。"
+
+home_agent_composition: "組み合わせと評価"
+
+home_agent_composition_text: "エージェントのツール化、紐付いた子実行、型付き評価スイート、シナリオフック。"
+
+home_agent_execution: "運用できる実行基盤"
+
+home_agent_execution_text: "型付きイベント、確認、キャンセル、ポリシー。まずはローカル実行から。永続化にはTemporalを利用。"
+
+home_connect_heading: "サービスをAIエコシステムへ。"
+
+home_connect_intro: "Goa-AIは、ツールを自社エージェントや他のAIアプリケーションへ提供するための基盤も備えています。"
+
+home_mcp_heading: "サービスからMCPサーバーを構築。"
+
+home_mcp_text: "サービスのメソッドをMCPツールとして公開し、リソースやプロンプトテンプレートも提供。Goa-AIがプロトコル処理とアダプターを生成するため、MCPをアプリケーションの新たなインターフェースにできます。外部MCPツールの利用にも対応します。"
+
+home_mcp_cta: "MCPサーバーを構築する"
+
+home_mcp_caption: "Goaサービス内の記述例。ResourceとStaticPromptでMCPの公開機能を拡張できます。"
+
+home_registry_heading: "ツールレジストリを、自分で運用。"
+
+home_registry_text: "付属のレジストリサーバーを、共有カタログ兼呼び出しゲートウェイとして運用。ツールセットを公開し、スキーマを検索して、正常なプロバイダーへ呼び出しをルーティングします。エージェントとプロバイダーは独立してデプロイ・スケールできます。RedisとPulseを使用。"
+
+home_registry_cta: "ツールレジストリを運用する"
+
+home_registry_flow: "ツールプロバイダーとエージェントをレジストリが接続"
+
+home_registry_node: "ツールレジストリ"
+
+home_registry_node_text: "スキーマの検索。呼び出しの転送。稼働状況の確認。"
+
+home_registry_consumers: "エージェントとアプリケーション"
+
+home_faq_heading: "始める前の疑問"
+
+home_faq_codegen_q: "コーディングエージェントが書けるのに、なぜGoaを使うのですか？"
+
+home_faq_codegen_a: "エージェントは推論によってコードを書き、Goaは設計から契約のコードを導出します。サーバー、クライアント、コーデック、スキーマを個別に書く必要がなくなります。設計にコンテキストを集約し、構造を統一し、変更後の型の不整合をコンパイラーで検出できます。ビジネスロジックとテストはエージェントが実装します。"
+
+home_faq_difference_q: "GoaとGoa-AIの違いは何ですか？"
+
+home_faq_difference_a: "GoaはGoサービスのAPIを設計・生成します。HTTP、gRPC、JSON-RPC、クライアント、検証、仕様書が対象です。Goa-AIは同じDSLと生成器を拡張し、型付きツール、AIエージェント、構造化された完了、評価、MCPサーバーに対応。エージェントランタイムと自分で運用するツールレジストリも提供します。どちらからでも始められ、別途デプロイしたGoaサービスは不要です。"
+
+home_faq_tokens_q: "コード生成はLLMの作業をどう減らしますか？"
+
+home_faq_tokens_a: "Goaは、LLMにファイルを書かせることなく、トランスポートと契約のコードを生成します。その分の出力トークンを使った作業を省けます。総削減量はタスク、モデル、コンテキスト、反復回数によって異なるため、テストとレビューを含む変更全体で効果を測定してください。"
+
+home_faq_mcp_q: "MCPサーバーの構築だけにGoa-AIを使えますか？"
+
+home_faq_mcp_a: "はい。GoaサービスにMCP宣言を追加すると、ツール、リソース、プロンプトテンプレートを公開するサーバーを生成できます。生成されたアダプターの先にサービスメソッドを実装します。MCPを提供するためにGoa-AIエージェントを実行する必要はありません。"
+
+ui_search: "検索"

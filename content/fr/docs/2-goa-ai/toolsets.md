@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Ensembles d'outils
-weight: 4
+weight: 20
 description: "Découvrez les types d'ensembles d'outils, leurs modèles d'exécution, la validation, la récupération structurée et les catalogues dans Goa-AI."
 llm_optimized: true
 aliases:

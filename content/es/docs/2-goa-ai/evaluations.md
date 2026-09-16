@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Evaluaciones generadas
-weight: 10
+weight: 40
 description: "Define escenarios de evaluación en el diseño Goa, genera hooks tipados y produce informes fiables."
 llm_optimized: true
 ---

@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T05:01:36.397187+00:00",
+  "title": "Design System: Goa",
+  "extensions": {
+    "colorMeta": {
+      "doc-link-color": {
+        "role": "primary",
+        "displayName": "Action Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.18355 262.96)",
+          "oklch(26.43% 0.18355 262.96)",
+          "oklch(37.86% 0.18355 262.96)",
+          "oklch(49.29% 0.18355 262.96)",
+          "oklch(60.71% 0.18355 262.96)",
+          "oklch(72.14% 0.18355 262.96)",
+          "oklch(83.57% 0.18355 262.96)",
+          "oklch(95.00% 0.18355 262.96)"
+        ]
+      },
+      "doc-link-hover": {
+        "role": "primary",
+        "displayName": "Deep Link Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.15144 263.16)",
+          "oklch(26.43% 0.15144 263.16)",
+          "oklch(37.86% 0.15144 263.16)",
+          "oklch(49.29% 0.15144 263.16)",
+          "oklch(60.71% 0.15144 263.16)",
+          "oklch(72.14% 0.15144 263.16)",
+          "oklch(83.57% 0.15144 263.16)",
+          "oklch(95.00% 0.15144 263.16)"
+        ]
+      },
+      "button-bg": {
+        "role": "primary",
+        "displayName": "Action Blue Fill",
+        "tonalRamp": [
+          "oklch(15.00% 0.18355 262.96)",
+          "oklch(26.43% 0.18355 262.96)",
+          "oklch(37.86% 0.18355 262.96)",
+          "oklch(49.29% 0.18355 262.96)",
+          "oklch(60.71% 0.18355 262.96)",
+          "oklch(72.14% 0.18355 262.96)",
+          "oklch(83.57% 0.18355 262.96)",
+          "oklch(95.00% 0.18355 262.96)"
+        ]
+      },
+      "button-hover": {
+        "role": "primary",
+        "displayName": "Deep Button Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.14955 263.35)",
+          "oklch(26.43% 0.14955 263.35)",
+          "oklch(37.86% 0.14955 263.35)",
+          "oklch(49.29% 0.14955 263.35)",
+          "oklch(60.71% 0.14955 263.35)",
+          "oklch(72.14% 0.14955 263.35)",
+          "oklch(83.57% 0.14955 263.35)",
+          "oklch(95.00% 0.14955 263.35)"
+        ]
+      },
+      "button-text": {
+        "role": "neutral",
+        "displayName": "White Button Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "color-bg": {
+        "role": "neutral",
+        "displayName": "White Canvas",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "color-bg-alt": {
+        "role": "neutral",
+        "displayName": "Cool Alternate Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.00623 255.47)",
+          "oklch(26.43% 0.00623 255.47)",
+          "oklch(37.86% 0.00623 255.47)",
+          "oklch(49.29% 0.00623 255.47)",
+          "oklch(60.71% 0.00623 255.47)",
+          "oklch(72.14% 0.00623 255.47)",
+          "oklch(83.57% 0.00623 255.47)",
+          "oklch(95.00% 0.00623 255.47)"
+        ]
+      },
+      "color-bg-elevated": {
+        "role": "neutral",
+        "displayName": "White Elevated Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "color-text": {
+        "role": "neutral",
+        "displayName": "Slate Body Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.04350 255.11)",
+          "oklch(26.43% 0.04350 255.11)",
+          "oklch(37.86% 0.04350 255.11)",
+          "oklch(49.29% 0.04350 255.11)",
+          "oklch(60.71% 0.04350 255.11)",
+          "oklch(72.14% 0.04350 255.11)",
+          "oklch(83.57% 0.04350 255.11)",
+          "oklch(95.00% 0.04350 255.11)"
+        ]
+      },
+      "color-text-heading": {
+        "role": "neutral",
+        "displayName": "Navy Heading Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.05468 255.58)",
+          "oklch(26.43% 0.05468 255.58)",
+          "oklch(37.86% 0.05468 255.58)",
+          "oklch(49.29% 0.05468 255.58)",
+          "oklch(60.71% 0.05468 255.58)",
+          "oklch(72.14% 0.05468 255.58)",
+          "oklch(83.57% 0.05468 255.58)",
+          "oklch(95.00% 0.05468 255.58)"
+        ]
+      },
+      "color-text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Slate Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.04054 256.42)",
+          "oklch(26.43% 0.04054 256.42)",
+          "oklch(37.86% 0.04054 256.42)",
+          "oklch(49.29% 0.04054 256.42)",
+          "oklch(60.71% 0.04054 256.42)",
+          "oklch(72.14% 0.04054 256.42)",
+          "oklch(83.57% 0.04054 256.42)",
+          "oklch(95.00% 0.04054 256.42)"
+        ]
+      },
+      "color-border-subtle": {
+        "role": "neutral",
+        "displayName": "Cool Subtle Border",
+        "tonalRamp": [
+          "oklch(15.00% 0.01440 254.61)",
+          "oklch(26.43% 0.01440 254.61)",
+          "oklch(37.86% 0.01440 254.61)",
+          "oklch(49.29% 0.01440 254.61)",
+          "oklch(60.71% 0.01440 254.61)",
+          "oklch(72.14% 0.01440 254.61)",
+          "oklch(83.57% 0.01440 254.61)",
+          "oklch(95.00% 0.01440 254.61)"
+        ]
+      },
+      "color-highlight": {
+        "role": "neutral",
+        "displayName": "Pale Blue Highlight",
+        "tonalRamp": [
+          "oklch(15.00% 0.01863 265.98)",
+          "oklch(26.43% 0.01863 265.98)",
+          "oklch(37.86% 0.01863 265.98)",
+          "oklch(49.29% 0.01863 265.98)",
+          "oklch(60.71% 0.01863 265.98)",
+          "oklch(72.14% 0.01863 265.98)",
+          "oklch(83.57% 0.01863 265.98)",
+          "oklch(95.00% 0.01863 265.98)"
+        ]
+      },
+      "doc-inline-code-bg": {
+        "role": "neutral",
+        "displayName": "Cool Inline Code Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.00796 253.85)",
+          "oklch(26.43% 0.00796 253.85)",
+          "oklch(37.86% 0.00796 253.85)",
+          "oklch(49.29% 0.00796 253.85)",
+          "oklch(60.71% 0.00796 253.85)",
+          "oklch(72.14% 0.00796 253.85)",
+          "oklch(83.57% 0.00796 253.85)",
+          "oklch(95.00% 0.00796 253.85)"
+        ]
+      },
+      "doc-inline-code-text": {
+        "role": "neutral",
+        "displayName": "Blue Inline Code Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.09630 265.40)",
+          "oklch(26.43% 0.09630 265.40)",
+          "oklch(37.86% 0.09630 265.40)",
+          "oklch(49.29% 0.09630 265.40)",
+          "oklch(60.71% 0.09630 265.40)",
+          "oklch(72.14% 0.09630 265.40)",
+          "oklch(83.57% 0.09630 265.40)",
+          "oklch(95.00% 0.09630 265.40)"
+        ]
+      },
+      "selection": {
+        "role": "neutral",
+        "displayName": "Light Selection Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.04656 262.52)",
+          "oklch(26.43% 0.04656 262.52)",
+          "oklch(37.86% 0.04656 262.52)",
+          "oklch(49.29% 0.04656 262.52)",
+          "oklch(60.71% 0.04656 262.52)",
+          "oklch(72.14% 0.04656 262.52)",
+          "oklch(83.57% 0.04656 262.52)",
+          "oklch(95.00% 0.04656 262.52)"
+        ]
+      },
+      "doc-link-color-dark": {
+        "role": "primary",
+        "displayName": "Pale Action Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.08766 264.52)",
+          "oklch(26.43% 0.08766 264.52)",
+          "oklch(37.86% 0.08766 264.52)",
+          "oklch(49.29% 0.08766 264.52)",
+          "oklch(60.71% 0.08766 264.52)",
+          "oklch(72.14% 0.08766 264.52)",
+          "oklch(83.57% 0.08766 264.52)",
+          "oklch(95.00% 0.08766 264.52)"
+        ]
+      },
+      "doc-link-hover-dark": {
+        "role": "primary",
+        "displayName": "Light Link Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.04250 264.99)",
+          "oklch(26.43% 0.04250 264.99)",
+          "oklch(37.86% 0.04250 264.99)",
+          "oklch(49.29% 0.04250 264.99)",
+          "oklch(60.71% 0.04250 264.99)",
+          "oklch(72.14% 0.04250 264.99)",
+          "oklch(83.57% 0.04250 264.99)",
+          "oklch(95.00% 0.04250 264.99)"
+        ]
+      },
+      "button-bg-dark": {
+        "role": "primary",
+        "displayName": "Pale Blue Fill",
+        "tonalRamp": [
+          "oklch(15.00% 0.08766 264.52)",
+          "oklch(26.43% 0.08766 264.52)",
+          "oklch(37.86% 0.08766 264.52)",
+          "oklch(49.29% 0.08766 264.52)",
+          "oklch(60.71% 0.08766 264.52)",
+          "oklch(72.14% 0.08766 264.52)",
+          "oklch(83.57% 0.08766 264.52)",
+          "oklch(95.00% 0.08766 264.52)"
+        ]
+      },
+      "button-hover-dark": {
+        "role": "primary",
+        "displayName": "Light Button Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.04250 264.99)",
+          "oklch(26.43% 0.04250 264.99)",
+          "oklch(37.86% 0.04250 264.99)",
+          "oklch(49.29% 0.04250 264.99)",
+          "oklch(60.71% 0.04250 264.99)",
+          "oklch(72.14% 0.04250 264.99)",
+          "oklch(83.57% 0.04250 264.99)",
+          "oklch(95.00% 0.04250 264.99)"
+        ]
+      },
+      "button-text-dark": {
+        "role": "neutral",
+        "displayName": "Navy Button Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.03912 256.69)",
+          "oklch(26.43% 0.03912 256.69)",
+          "oklch(37.86% 0.03912 256.69)",
+          "oklch(49.29% 0.03912 256.69)",
+          "oklch(60.71% 0.03912 256.69)",
+          "oklch(72.14% 0.03912 256.69)",
+          "oklch(83.57% 0.03912 256.69)",
+          "oklch(95.00% 0.03912 256.69)"
+        ]
+      },
+      "color-bg-dark": {
+        "role": "neutral",
+        "displayName": "Navy Canvas",
+        "tonalRamp": [
+          "oklch(15.00% 0.03912 256.69)",
+          "oklch(26.43% 0.03912 256.69)",
+          "oklch(37.86% 0.03912 256.69)",
+          "oklch(49.29% 0.03912 256.69)",
+          "oklch(60.71% 0.03912 256.69)",
+          "oklch(72.14% 0.03912 256.69)",
+          "oklch(83.57% 0.03912 256.69)",
+          "oklch(95.00% 0.03912 256.69)"
+        ]
+      },
+      "color-bg-alt-dark": {
+        "role": "neutral",
+        "displayName": "Navy Alternate Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.04677 255.34)",
+          "oklch(26.43% 0.04677 255.34)",
+          "oklch(37.86% 0.04677 255.34)",
+          "oklch(49.29% 0.04677 255.34)",
+          "oklch(60.71% 0.04677 255.34)",
+          "oklch(72.14% 0.04677 255.34)",
+          "oklch(83.57% 0.04677 255.34)",
+          "oklch(95.00% 0.04677 255.34)"
+        ]
+      },
+      "color-bg-elevated-dark": {
+        "role": "neutral",
+        "displayName": "Raised Navy Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.04695 254.11)",
+          "oklch(26.43% 0.04695 254.11)",
+          "oklch(37.86% 0.04695 254.11)",
+          "oklch(49.29% 0.04695 254.11)",
+          "oklch(60.71% 0.04695 254.11)",
+          "oklch(72.14% 0.04695 254.11)",
+          "oklch(83.57% 0.04695 254.11)",
+          "oklch(95.00% 0.04695 254.11)"
+        ]
+      },
+      "color-text-dark": {
+        "role": "neutral",
+        "displayName": "Pale Body Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02267 254.40)",
+          "oklch(26.43% 0.02267 254.40)",
+          "oklch(37.86% 0.02267 254.40)",
+          "oklch(49.29% 0.02267 254.40)",
+          "oklch(60.71% 0.02267 254.40)",
+          "oklch(72.14% 0.02267 254.40)",
+          "oklch(83.57% 0.02267 254.40)",
+          "oklch(95.00% 0.02267 254.40)"
+        ]
+      },
+      "color-text-heading-dark": {
+        "role": "neutral",
+        "displayName": "Light Heading Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.01081 256.70)",
+          "oklch(26.43% 0.01081 256.70)",
+          "oklch(37.86% 0.01081 256.70)",
+          "oklch(49.29% 0.01081 256.70)",
+          "oklch(60.71% 0.01081 256.70)",
+          "oklch(72.14% 0.01081 256.70)",
+          "oklch(83.57% 0.01081 256.70)",
+          "oklch(95.00% 0.01081 256.70)"
+        ]
+      },
+      "color-text-muted-dark": {
+        "role": "neutral",
+        "displayName": "Muted Pale Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.03043 252.98)",
+          "oklch(26.43% 0.03043 252.98)",
+          "oklch(37.86% 0.03043 252.98)",
+          "oklch(49.29% 0.03043 252.98)",
+          "oklch(60.71% 0.03043 252.98)",
+          "oklch(72.14% 0.03043 252.98)",
+          "oklch(83.57% 0.03043 252.98)",
+          "oklch(95.00% 0.03043 252.98)"
+        ]
+      },
+      "color-border-subtle-dark": {
+        "role": "neutral",
+        "displayName": "Slate Subtle Border",
+        "tonalRamp": [
+          "oklch(15.00% 0.04549 254.84)",
+          "oklch(26.43% 0.04549 254.84)",
+          "oklch(37.86% 0.04549 254.84)",
+          "oklch(49.29% 0.04549 254.84)",
+          "oklch(60.71% 0.04549 254.84)",
+          "oklch(72.14% 0.04549 254.84)",
+          "oklch(83.57% 0.04549 254.84)",
+          "oklch(95.00% 0.04549 254.84)"
+        ]
+      },
+      "color-highlight-dark": {
+        "role": "neutral",
+        "displayName": "Navy Blue Highlight",
+        "tonalRamp": [
+          "oklch(15.00% 0.06380 258.28)",
+          "oklch(26.43% 0.06380 258.28)",
+          "oklch(37.86% 0.06380 258.28)",
+          "oklch(49.29% 0.06380 258.28)",
+          "oklch(60.71% 0.06380 258.28)",
+          "oklch(72.14% 0.06380 258.28)",
+          "oklch(83.57% 0.06380 258.28)",
+          "oklch(95.00% 0.06380 258.28)"
+        ]
+      },
+      "doc-inline-code-bg-dark": {
+        "role": "neutral",
+        "displayName": "Navy Inline Code Surface",
+        "tonalRamp": [
+          "oklch(15.00% 0.05335 254.36)",
+          "oklch(26.43% 0.05335 254.36)",
+          "oklch(37.86% 0.05335 254.36)",
+          "oklch(49.29% 0.05335 254.36)",
+          "oklch(60.71% 0.05335 254.36)",
+          "oklch(72.14% 0.05335 254.36)",
+          "oklch(83.57% 0.05335 254.36)",
+          "oklch(95.00% 0.05335 254.36)"
+        ]
+      },
+      "doc-inline-code-text-dark": {
+        "role": "neutral",
+        "displayName": "Pale Inline Code Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.06194 265.96)",
+          "oklch(26.43% 0.06194 265.96)",
+          "oklch(37.86% 0.06194 265.96)",
+          "oklch(49.29% 0.06194 265.96)",
+          "oklch(60.71% 0.06194 265.96)",
+          "oklch(72.14% 0.06194 265.96)",
+          "oklch(83.57% 0.06194 265.96)",
+          "oklch(95.00% 0.06194 265.96)"
+        ]
+      },
+      "selection-dark": {
+        "role": "neutral",
+        "displayName": "Slate Selection Blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.07321 258.77)",
+          "oklch(26.43% 0.07321 258.77)",
+          "oklch(37.86% 0.07321 258.77)",
+          "oklch(49.29% 0.07321 258.77)",
+          "oklch(60.71% 0.07321 258.77)",
+          "oklch(72.14% 0.07321 258.77)",
+          "oklch(83.57% 0.07321 258.77)",
+          "oklch(95.00% 0.07321 258.77)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing hero heading; responsive overrides are documented in Typography."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Landing section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Documentation page title."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "General interface text and prose."
+      },
+      "article": {
+        "displayName": "Article",
+        "purpose": "Long-form documentation; mobile size is documented in Typography."
+      },
+      "button": {
+        "displayName": "Filled Action Label",
+        "purpose": "Equal service and agent entry actions."
+      },
+      "navigation": {
+        "displayName": "Sidebar Navigation",
+        "purpose": "Compact documentation links."
+      },
+      "code": {
+        "displayName": "Documentation Code",
+        "purpose": "Scrollable code blocks, with system monospace fallbacks."
+      },
+      "display-compact": {
+        "displayName": "Compact Hero",
+        "purpose": "Hero size override at widths up to 1100px; retains display weight, line height, and tracking."
+      },
+      "display-mobile": {
+        "displayName": "Mobile Hero",
+        "purpose": "Hero size override at widths up to 800px; retains display weight, line height, and tracking."
+      },
+      "display-narrow": {
+        "displayName": "Narrow Hero",
+        "purpose": "Hero size override at widths up to 420px; retains display weight, line height, and tracking."
+      },
+      "hero-lead": {
+        "displayName": "Hero Introduction",
+        "purpose": "Opening benefit and complete generation scope; body family with a 44ch measure."
+      },
+      "hero-lead-mobile": {
+        "displayName": "Mobile Introduction",
+        "purpose": "Opening paragraph size at widths up to 800px, with a 58ch measure and the same content."
+      },
+      "benefit-title": {
+        "displayName": "Benefit Term",
+        "purpose": "Manrope titles in the three-column benefit definition list."
+      },
+      "benefit-body": {
+        "displayName": "Benefit Explanation",
+        "purpose": "System-font descriptions of the work generation removes from a coding agent."
+      },
+      "framework-title": {
+        "displayName": "Framework Name",
+        "purpose": "Equal Goa and Goa-AI names above their capability definitions."
+      },
+      "framework-purpose": {
+        "displayName": "Framework Purpose",
+        "purpose": "Weighted system-font purpose lines under the two framework names."
+      },
+      "subsection-title": {
+        "displayName": "Connection Heading",
+        "purpose": "MCP and registry headings; the same scale appears in documentation section headings."
+      },
+      "demonstration-code": {
+        "displayName": "Hero Contract Code",
+        "purpose": "Real service and agent excerpts; size increases to .875rem at widths up to 420px."
+      },
+      "output-title": {
+        "displayName": "Generated Output Heading",
+        "purpose": "System-font heading above each six-item output list; the font shorthand resets line height to normal."
+      },
+      "output-label": {
+        "displayName": "Generated Output Label",
+        "purpose": "Six contract outputs in body ink, arranged in two columns until the 420px breakpoint."
+      },
+      "install-command": {
+        "displayName": "Skill Installer",
+        "purpose": "Selectable monospace command that wraps anywhere beside the copy control."
+      },
+      "install-prompt": {
+        "displayName": "First Task Prompt",
+        "purpose": "System-font task example below the installer and its status region."
+      },
+      "mcp-code": {
+        "displayName": "MCP Example",
+        "purpose": "Selectable service declarations on the alternate surface."
+      },
+      "faq-question": {
+        "displayName": "FAQ Question",
+        "purpose": "Manrope definition terms above visible answers."
+      },
+      "faq-answer": {
+        "displayName": "FAQ Answer",
+        "purpose": "System-font answers in the open FAQ definition list."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "search-focus",
+        "value": "border-color .15s ease-in-out, box-shadow .15s ease-in-out",
+        "purpose": "Inherited Bootstrap search-field transition; the custom focus state removes the shadow and reduced-motion disables the transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "docs-hide-outline-max",
+        "value": "1200px"
+      },
+      {
+        "name": "landing-compact-max",
+        "value": "1100px"
+      },
+      {
+        "name": "docs-persistent-navigation-min",
+        "value": "801px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "800px"
+      },
+      {
+        "name": "narrow-mobile-max",
+        "value": "420px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Filled entry action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The same filled treatment introduces services and AI agents; inherited semantic properties supply its dark variant.",
+      "html": "<a class=\"ds-button-primary\" href=\"/docs/1-goa/quickstart/\">Build a service</a>",
+      "css": ".ds-button-primary { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: .7rem 1.1rem; border: 1px solid var(--button-bg, #2255c5); border-radius: 6px; background: var(--button-bg, #2255c5); color: var(--button-text, #ffffff); font-weight: 650; font-size: .95rem; text-decoration: none; } .ds-button-primary:hover { background: var(--button-hover, #193f96); border-color: var(--button-hover, #193f96); color: var(--button-text, #ffffff); } .ds-button-primary { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; line-height: 1.65; } .ds-button-primary:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; }"
+    },
+    {
+      "name": "Copy control",
+      "kind": "button",
+      "refersTo": "button-copy",
+      "description": "Compact page-tool button; this specimen shows its visual states without clipboard behavior.",
+      "html": "<button class=\"ds-button-copy\" type=\"button\">Copy page</button>",
+      "css": ".ds-button-copy { display: flex; align-items: center; gap: .5rem; padding: .5rem .65rem; border-radius: 6px; border: 1px solid var(--color-border-subtle, #dce3ec); background: var(--color-bg, #ffffff); color: var(--color-text, #35465c); font-size: .8rem; white-space: nowrap; } .ds-button-copy:hover { border-color: var(--doc-link-color, #2255c5); } .ds-button-copy { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; line-height: 1.75; } .ds-button-copy:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; }"
+    },
+    {
+      "name": "Theme control",
+      "kind": "button",
+      "refersTo": "button-theme",
+      "description": "Compact header control with the existing moon SVG; the specimen does not change the page theme.",
+      "html": "<button class=\"ds-button-theme\" type=\"button\" aria-label=\"Toggle dark mode\"><svg class=\"ds-theme-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z\"/></svg></button>",
+      "css": ".ds-button-theme { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--color-border-subtle, #dce3ec); background: var(--color-bg, #ffffff); color: var(--color-text, #35465c); border-radius: 6px; flex-shrink: 0; } .ds-theme-icon { width: 18px; height: 18px; fill: currentColor; } .ds-button-theme:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; }"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Header search input with its compiled Bootstrap padding and transition; search execution is outside this specimen.",
+      "html": "<input class=\"ds-search-input\" type=\"search\" aria-label=\"Search documentation\" placeholder=\"Search\">",
+      "css": ".ds-search-input { color: var(--color-text, #35465c); background: var(--color-bg-alt, #f3f6fa); border: 1px solid var(--color-border-subtle, #dce3ec); border-radius: 6px; } .ds-search-input::placeholder { color: var(--color-text-muted, #526278); opacity: 1; } .ds-search-input:focus { background: var(--color-bg, #ffffff); color: var(--color-text, #35465c); border-color: var(--doc-link-color, #2255c5); box-shadow: none; } .ds-search-input { width: 9rem; min-width: 0; } .ds-search-input { padding: .375rem .75rem; font: 400 1rem/1.65 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; } .ds-search-input:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; } @media (prefers-reduced-motion: reduce) { .ds-search-input { transition: none; } }"
+    },
+    {
+      "name": "Documentation navigation",
+      "kind": "nav",
+      "refersTo": "navigation-link",
+      "description": "Sidebar selection uses a tonal background, action-colored text, and increased weight.",
+      "html": "<nav class=\"ds-navigation\" aria-label=\"Documentation\"><a class=\"ds-nav-link ds-nav-active\" href=\"/docs/1-goa/quickstart/\" aria-current=\"page\">Quickstart</a><a class=\"ds-nav-link\" href=\"/docs/1-goa/dsl-reference/\">DSL reference</a></nav>",
+      "css": ".ds-navigation { padding: 0; margin: 0; font-size: .875rem; } .ds-navigation { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; line-height: 1.65; } .ds-nav-link { display: block; padding: .4rem .65rem; border-radius: 5px; text-decoration: none; color: var(--color-text-muted, #526278); } .ds-nav-link:hover { background: var(--color-bg-alt, #f3f6fa); color: var(--color-text-heading, #172b45); } .ds-nav-link.ds-nav-active { background: var(--color-highlight, #eaf0fd); color: var(--doc-link-color, #2255c5); font-weight: 600; } .ds-nav-link:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; }"
+    },
+    {
+      "name": "Scope badge",
+      "kind": "chip",
+      "refersTo": "chip-scope",
+      "description": "Passive documentation metadata; this text-only specimen has no interactive state.",
+      "html": "<span class=\"ds-scope-badge\">Complete DSL Reference</span>",
+      "css": ".ds-scope-badge { display: inline-block; background: var(--color-bg-alt, #f3f6fa); padding: .15rem .45rem; border-radius: 4px; } .ds-scope-badge { font: 400 .75rem/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; color: var(--color-text-muted, #526278); }"
+    },
+    {
+      "name": "Documentation note",
+      "kind": "card",
+      "refersTo": "card-note",
+      "description": "A bordered reading surface for supporting documentation.",
+      "html": "<div class=\"ds-note\" role=\"note\">The design defines contracts; application code implements behavior.</div>",
+      "css": ".ds-note { background: var(--color-bg-alt, #f3f6fa); color: var(--color-text, #35465c); border: 1px solid var(--color-border-subtle, #dce3ec); padding: 1.2rem; border-radius: 8px; } .ds-note { font: 400 1.125rem/1.75 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }"
+    },
+    {
+      "name": "Contract demonstration",
+      "kind": "custom",
+      "refersTo": "contract-demo",
+      "description": "Native radios switch between real service and agent contracts and six generated outputs each; source is selectable and all three service transports are explicit.",
+      "html": "<div class=\"ds-contract-demo\"><fieldset class=\"ds-demo-switch\"><legend class=\"ds-visually-hidden\">Choose a design example</legend><input type=\"radio\" name=\"ds-contract-example\" id=\"ds-demo-service\" checked><label for=\"ds-demo-service\">Goa <span>Services</span></label><input type=\"radio\" name=\"ds-contract-example\" id=\"ds-demo-agent\"><label for=\"ds-demo-agent\">Goa-AI <span>AI agents</span></label></fieldset><div class=\"ds-demo-service\"><div class=\"ds-demo-filename\"><span>design/catalog.go</span><span>Design excerpt</span></div><pre class=\"ds-demo-code\"><code>Service(<span class=\"ds-code-string\">&quot;catalog&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n    JSONRPC(<span class=\"ds-code-keyword\">func</span>() { POST(<span class=\"ds-code-string\">&quot;/rpc&quot;</span>) })\n    Method(<span class=\"ds-code-string\">&quot;lookup&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n        Payload(LookupPayload)\n        Result(Product)\n        HTTP(<span class=\"ds-code-keyword\">func</span>() { GET(<span class=\"ds-code-string\">&quot;/products/{sku}&quot;</span>) })\n        GRPC(<span class=\"ds-code-keyword\">func</span>() {})\n        JSONRPC(<span class=\"ds-code-keyword\">func</span>() {})\n    })\n})</code></pre><div class=\"ds-demo-command\"><span aria-hidden=\"true\">$</span><code>goa gen example.com/catalog/design</code></div><div class=\"ds-demo-output\"><h2>Code your agent doesn’t have to write</h2><ul><li>HTTP + gRPC + JSON-RPC</li><li>Typed clients</li><li>Service interfaces</li><li>Validation + codecs</li><li>OpenAPI + Protocol Buffers</li><li>Command-line clients</li></ul></div></div><div class=\"ds-demo-agent\"><div class=\"ds-demo-filename\"><span>design/catalog.go</span><span>Design excerpt</span></div><pre class=\"ds-demo-code\"><code>Agent(<span class=\"ds-code-string\">&quot;assistant&quot;</span>, <span class=\"ds-code-string\">&quot;Find products&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n    Use(<span class=\"ds-code-string\">&quot;catalog&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n        Tool(<span class=\"ds-code-string\">&quot;lookup&quot;</span>, <span class=\"ds-code-string\">&quot;Find a product by SKU&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n            Args(LookupPayload)\n            Return(Product)\n            BindTo(<span class=\"ds-code-string\">&quot;lookup&quot;</span>)\n        })\n    })\n})</code></pre><div class=\"ds-demo-command\"><span aria-hidden=\"true\">$</span><code>goa gen example.com/catalog/design</code></div><div class=\"ds-demo-output\"><h2>Code your agent doesn’t have to write</h2><ul><li>Tool JSON schemas</li><li>Typed payload codecs</li><li>Service bindings</li><li>Typed tool descriptors</li><li>Runtime registrations</li><li>AGENTS_QUICKSTART.md</li></ul></div></div><a class=\"ds-demo-source\" href=\"/docs/ai-development/#one-design-two-entry-points\">Read the complete example</a></div>",
+      "css": ".ds-contract-demo { min-width: 0; border: 1px solid var(--color-border-subtle, #dce3ec); border-radius: 14px; background: var(--color-bg-elevated, #ffffff); overflow: hidden; } .ds-contract-demo { font: 400 1rem/1.65 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; color: var(--color-text, #35465c); } .ds-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } .ds-demo-switch { display: flex; border: 0; margin: 0; padding: 0; background: var(--color-bg-alt, #f3f6fa); } .ds-demo-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; } .ds-demo-switch label { flex: 1; padding: .95rem 1.2rem; font-weight: 700; cursor: pointer; text-align: center; border-bottom: 1px solid var(--color-border-subtle, #dce3ec); color: var(--color-text-muted, #526278); } .ds-demo-switch label span { font-weight: 400; margin-left: .35rem; font-size: .85rem; } .ds-demo-switch input:checked + label { background: var(--color-bg-elevated, #ffffff); color: var(--color-text-heading, #172b45); border-bottom-color: var(--doc-link-color, #2255c5); } .ds-demo-switch input:focus-visible + label { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: -5px; } .ds-demo-filename { display: flex; justify-content: space-between; padding: 1.15rem 1.4rem .6rem; font-size: .75rem; color: var(--color-text-muted, #526278); } .ds-demo-filename span:first-child { font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; } .ds-demo-command { display: flex; gap: .65rem; padding: .85rem 1.4rem; background: var(--color-bg-alt, #f3f6fa); border-block: 1px solid var(--color-border-subtle, #dce3ec); font-size: .77rem; overflow-x: auto; white-space: nowrap; } .ds-demo-command code { color: var(--color-text-heading, #172b45); } .ds-demo-command > span { color: var(--color-text-muted, #526278); } .ds-demo-output { padding: 1.1rem 1.4rem .8rem; } .ds-demo-output h2 { font: 700 .92rem -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; margin: 0 0 .85rem; letter-spacing: 0; } .ds-demo-output ul { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem .7rem; list-style: none; padding: 0; margin: 0; font-size: .77rem; color: var(--color-text, #35465c); } .ds-demo-output li { display: flex; align-items: baseline; gap: .45rem; } .ds-demo-output li::before { content: \"\"; flex: 0 0 8px; width: 8px; height: 5px; border-bottom: 1.5px solid var(--doc-link-color, #2255c5); border-left: 1.5px solid var(--doc-link-color, #2255c5); transform: translateY(-2px) rotate(-45deg); } .ds-demo-source { display: block; padding: .55rem 1.4rem 1.2rem; font-size: .78rem; } .ds-demo-code { padding: .3rem 1.4rem 1.2rem; margin: 0; min-height: 244px; font-size: .8rem; line-height: 1.8; overflow: auto; background: var(--color-bg-elevated, #ffffff); } .ds-demo-code { font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; white-space: pre; color: #2d3748; } .ds-demo-code code { font: inherit; } .ds-code-string { color: #047857; } .ds-code-keyword { color: #075985; font-weight: 600; } :host-context([data-theme=\"dark\"]) .ds-demo-code { color: #c9d1d9; } :host-context([data-theme=\"dark\"]) .ds-code-string { color: #a5d6ff; } :host-context([data-theme=\"dark\"]) .ds-code-keyword { color: #ff79c6; font-weight: 500; } .ds-contract-demo:has(#ds-demo-service:checked) .ds-demo-agent, .ds-contract-demo:has(#ds-demo-agent:checked) .ds-demo-service { display: none; } .ds-demo-output h2 { color: var(--color-text-heading, #172b45); } .ds-demo-source { color: var(--doc-link-color, #2255c5); text-underline-offset: .2em; } .ds-demo-source:hover { color: var(--doc-link-hover, #163d95); } .ds-demo-command code { font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; } .ds-demo-source:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; } @media (max-width: 420px) { .ds-demo-switch label { padding-inline: .5rem; } .ds-demo-output ul { grid-template-columns: 1fr; } .ds-demo-code { font-size: .875rem; padding-inline: 1rem; } .ds-demo-command { font-size: .8rem; padding-inline: 1rem; } }"
+    },
+    {
+      "name": "Skill installer",
+      "kind": "custom",
+      "refersTo": "install-command",
+      "description": "Selectable command, copy control, status region, and a concrete first task. The live control announces success or selects the command after clipboard failure; this specimen has no clipboard script.",
+      "html": "<div class=\"ds-skill-install\"><div class=\"ds-install-command\"><code>npx skills add goadesign/goa --skill goa-service-designer</code><button type=\"button\" class=\"ds-copy-install\" aria-label=\"Copy skill install command\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><rect x=\"8\" y=\"8\" width=\"12\" height=\"13\" rx=\"2\"/><path d=\"M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3\"/></svg></button></div><p class=\"ds-install-hint\">Run in your project. Requires Node.js and npm. <span class=\"ds-copy-install-status\" role=\"status\"></span></p><p class=\"ds-skill-prompt-label\">Then give your agent a real task:</p><blockquote>Use the goa-service-designer skill to add a catalog service with HTTP and gRPC endpoints. Generate the code, implement product lookup, and test it.</blockquote></div>",
+      "css": ".ds-skill-install { min-width: 0; font: 400 1rem/1.65 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; color: var(--color-text, #35465c); } .ds-install-command { display: flex; align-items: center; gap: .7rem; padding: 1.15rem; background: var(--color-bg-alt, #f3f6fa); border: 1px solid var(--color-border-subtle, #dce3ec); border-radius: 8px; } .ds-install-command code { font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; color: var(--color-text-heading, #172b45); font-size: .86rem; line-height: 1.8; overflow-wrap: anywhere; } .ds-copy-install { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; margin-left: auto; color: var(--color-text, #35465c); background: var(--color-bg, #ffffff); border: 1px solid var(--color-border-subtle, #dce3ec); border-radius: 6px; } .ds-copy-install:hover { color: var(--doc-link-color, #2255c5); border-color: var(--doc-link-color, #2255c5); } .ds-copy-install:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; } .ds-copy-install svg { width: 20px; height: 20px; } .ds-install-hint { color: var(--color-text-muted, #526278); font-size: .8rem; margin: .7rem 0 1.6rem; min-height: 2.6em; } .ds-copy-install-status { display: block; color: var(--doc-link-color, #2255c5); } .ds-skill-prompt-label { font-size: .85rem; color: var(--color-text-muted, #526278); margin-bottom: .5rem; } .ds-skill-install blockquote { margin: 0; font-size: 1.02rem; line-height: 1.7; color: var(--color-text-heading, #172b45); }"
+    },
+    {
+      "name": "MCP and registry connections",
+      "kind": "custom",
+      "refersTo": "mcp-example",
+      "description": "Real MCP service declarations and a labeled provider-to-registry-to-application topology. The highlighted registry uses the existing selected-surface and link roles; SVG connectors carry no interaction.",
+      "html": "<div class=\"ds-connections\"><article class=\"ds-connect-row\"><div><h3>Create MCP servers from your services.</h3><p>Expose service methods as MCP tools. Publish resources and prompt templates. Goa-AI generates the protocol handling and adapters, so MCP becomes another interface to your application. Agents can also consume external MCP tools.</p><a href=\"/docs/2-goa-ai/mcp-integration/\">Build an MCP server</a></div><div class=\"ds-mcp-example\"><pre><code>MCP(<span class=\"ds-code-string\">&quot;catalog&quot;</span>, <span class=\"ds-code-string\">&quot;1.0.0&quot;</span>)\nJSONRPC(<span class=\"ds-code-keyword\">func</span>() { POST(<span class=\"ds-code-string\">&quot;/mcp&quot;</span>) })\n\nMethod(<span class=\"ds-code-string\">&quot;lookup&quot;</span>, <span class=\"ds-code-keyword\">func</span>() {\n    Payload(LookupPayload)\n    Result(Product)\n    Tool(<span class=\"ds-code-string\">&quot;lookup&quot;</span>, <span class=\"ds-code-string\">&quot;Find a product by SKU&quot;</span>)\n})</code></pre><p>Inside a Goa service. Add Resource and StaticPrompt to expose more MCP capabilities.</p></div></article><article class=\"ds-connect-row\"><div><h3>Host a registry for your tools.</h3><p>Run the included registry server as a shared catalog and invocation gateway. Publish toolsets, discover their schemas, and route calls to healthy providers. Agents and tool providers can deploy and scale independently. Backed by Redis and Pulse.</p><a href=\"/docs/2-goa-ai/registry/\">Host a tool registry</a></div><div class=\"ds-registry-flow\" aria-label=\"Tool providers connect through a registry to agents\"><div class=\"ds-registry-providers\"><span>catalog</span><span>search</span><span>billing</span></div><svg class=\"ds-registry-connector\" viewBox=\"0 0 400 32\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M66 0V12H200M334 0V12H200M200 0V32\" fill=\"none\" stroke=\"currentColor\"/></svg><div class=\"ds-registry-node\"><strong>Your tool registry</strong><span>Discover schemas. Route calls. Track health.</span></div><svg class=\"ds-registry-connector\" viewBox=\"0 0 400 24\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M200 0V24\" fill=\"none\" stroke=\"currentColor\"/></svg><p class=\"ds-registry-consumers\">Your agents and applications</p></div></article></div>",
+      "css": ".ds-connections { font: 400 1rem/1.65 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; color: var(--color-text, #35465c); } .ds-connect-row { display: grid; grid-template-columns: 1fr 1.06fr; gap: 64px; align-items: center; padding-block: 40px; } .ds-connect-row + .ds-connect-row { border-top: 1px solid var(--color-border-subtle, #dce3ec); } .ds-connect-row h3 { font: 700 1.7rem/1.3 \"Manrope\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; letter-spacing: -.025em; text-wrap: balance; color: var(--color-text-heading, #172b45); max-width: 26ch; margin: 0 0 1rem; } .ds-connect-row p { max-width: 52ch; margin: 0 0 1rem; } .ds-connect-row a { color: var(--doc-link-color, #2255c5); text-underline-offset: .2em; } .ds-connect-row a:hover { color: var(--doc-link-hover, #163d95); } .ds-connect-row a:focus-visible { outline: 3px solid var(--doc-link-color, #2255c5); outline-offset: 4px; } .ds-mcp-example { min-width: 0; } .ds-mcp-example pre { margin: 0; padding: 1.2rem 1.4rem; font: .85rem/1.8 \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; background: var(--color-bg-alt, #f3f6fa); border-radius: 8px; overflow: auto; white-space: pre; color: #2d3748; } .ds-mcp-example code { font: inherit; } .ds-mcp-example p { margin: .8rem 0 0; font-size: .8rem; color: var(--color-text-muted, #526278); } .ds-connections .ds-code-string { color: #047857; } .ds-connections .ds-code-keyword { color: #075985; font-weight: 600; } :host-context([data-theme=\"dark\"]) .ds-mcp-example pre { color: #c9d1d9; } :host-context([data-theme=\"dark\"]) .ds-connections .ds-code-string { color: #a5d6ff; } :host-context([data-theme=\"dark\"]) .ds-connections .ds-code-keyword { color: #ff79c6; font-weight: 500; } .ds-registry-flow { padding: 1.5rem 2rem; } .ds-registry-providers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; } .ds-registry-providers span { padding: .6rem .5rem; font: .85rem \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; text-align: center; background: var(--color-bg-alt, #f3f6fa); border: 1px solid var(--color-border-subtle, #dce3ec); border-radius: 6px; } .ds-registry-connector { display: block; width: 100%; height: 32px; color: var(--color-text-muted, #526278); } .ds-registry-node { display: grid; gap: .3rem; text-align: center; padding: 1.1rem .5rem; border: 1px solid var(--doc-link-color, #2255c5); border-radius: 8px; color: var(--color-text-heading, #172b45); background: var(--color-highlight, #eaf0fd); } .ds-registry-node strong { font: 700 1.05rem \"Manrope\", sans-serif; } .ds-registry-node span { font-size: .8rem; } .ds-connect-row .ds-registry-consumers { text-align: center; font-size: .9rem; margin: 0; } @media (max-width: 1100px) { .ds-connect-row { gap: 36px; } } @media (max-width: 800px) { .ds-connect-row { grid-template-columns: 1fr; gap: 2.5rem; padding-block: 28px; } .ds-registry-flow { padding-inline: 0; } }"
+    },
+    {
+      "name": "Original Goa badge",
+      "kind": "custom",
+      "refersTo": "brand-mark-header",
+      "description": "The original round black-and-white Goa badge, restored unchanged from commit 247fee7. Header size is 52 × 52px; footer size is 40 × 40px. Browser and social images derive from the same source.",
+      "html": "<img class=\"ds-brand-mark\" src=\"/img/goa-logo.png\" alt=\"Goa\" width=\"52\" height=\"52\">",
+      "css": ".ds-brand-mark { display: block; width: 52px; height: 52px; border-radius: 50%; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A software specification brought to life",
+    "overview": "Readable contracts, their generated outputs, and the behavior developers own\ngive Goa its visual identity. The presentation is professional and precise:\ngenerous landing-page spacing leads into a quiet, denser documentation\nenvironment. Real source code is the focal artifact; the original round Goa\nbadge anchors both surfaces in black and white.\n\nGoa and Goa-AI share one identity and equally prominent service and AI-agent\nentry points. Developers using coding agents and developers building agents\ninto products are equally important audiences; [PRODUCT.md](PRODUCT.md) owns\nthat distinction and the product claims.",
+    "keyCharacteristics": [
+      "Real contracts and generated outputs provide the visual focus.",
+      "Equal filled actions introduce services and AI agents.",
+      "Manrope headings pair with system body text and monospace code.",
+      "Shared semantic colors support light and dark reading surfaces.",
+      "Native controls and local scrolling keep dense content usable.",
+      "Selectable commands, visible answers, and simple topology make value extractable."
+    ],
+    "rules": [
+      {
+        "name": "The Shared Roles Rule",
+        "body": "Switch semantic color values between themes while keeping the same component structure and hierarchy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Visible Focus Rule",
+        "body": "Interactive controls retain a visible keyboard outline; the shared outline is (3px) with a (4px) offset, and the code switch places that outline inside its selected label.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Extractable Value Rule",
+        "body": "Put benefits, generation scope, and ownership in visible text that remains useful without an interaction or an image.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do use the original round black-and-white Goa badge and shared service/agent identity.",
+      "Do give both entry points the same filled action treatment.",
+      "Do show real, selectable source code with its generated outputs.",
+      "Do preserve native keyboard behavior, visible focus, and local overflow.",
+      "Do check both themes, narrow layouts, and translated pages after UI changes.",
+      "Do retain the full generation summary in the mobile opening paragraph.",
+      "Do keep installer commands and FAQ answers selectable and useful to humans and LLMs."
+    ],
+    "donts": [
+      "Don't replace the code demonstration with a raster composition.",
+      "Don't turn syntax colors into unrelated interface accents.",
+      "Don't position the Guru launcher over reading content.",
+      "Don't present unmeasured productivity or token savings as visual proof.",
+      "Don't add decorative gradients or card grids to the approved landing system.",
+      "Don't name an MCP protocol version in public copy or examples."
+    ]
+  }
+}

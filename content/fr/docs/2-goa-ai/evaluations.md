@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Évaluations générées
-weight: 10
+weight: 40
 description: "Définissez des scénarios dans le design Goa, générez des hooks typés et produisez des rapports fiables."
 llm_optimized: true
 ---
@@ -545,5 +546,5 @@ fournisseur avec `gateway.NewServer` et connectez-vous avec
 `gateway.NewRemoteClient` ou `gateway.NewCountingRemoteClient`. Le client de
 comptage est obligatoire lorsqu'une politique d'évaluation exige le nombre
 exact de jetons d'entrée. Consultez
-[Passerelles de modèles distants](./runtime/#remote-model-gateways) pour le
+[Passerelles de modèles distants (en anglais)](https://goa.design/docs/2-goa-ai/runtime/#remote-model-gateways) pour le
 contrat de transport et de validation.

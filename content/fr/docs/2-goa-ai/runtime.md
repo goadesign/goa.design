@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: "Temps d'exécution"
 linkTitle: "Temps d'exécution"
-weight: 3
+weight: 100
 description: "Understand how the Goa-AI runtime orchestrates agents, enforces policies, and manages state."
 llm_optimized: true
 aliases:

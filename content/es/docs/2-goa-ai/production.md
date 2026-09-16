@@ -1,7 +1,8 @@
 ---
+nav_group: guides
 title: "Producción"
 linkTitle: "Producción"
-weight: 8
+weight: 70
 description: "Configura Temporal para workflows duraderos, transmite eventos a las UIs, aplica limitación de tasa adaptativa y utiliza recordatorios del sistema."
 llm_optimized: true
 aliases:
