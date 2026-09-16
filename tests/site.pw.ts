@@ -86,6 +86,21 @@ test('search finds the shared coding-agent guide', async ({ page }) => {
   await expect(page.locator('.td-offline-search-results')).toContainText('Develop with a coding agent');
 });
 
+// Cloudflare reads these comments before serving HTML; they must survive the production minifier.
+test('documentation exempts versioned commands from email obfuscation', async ({ request }) => {
+  for (const lang of ['', 'it/', 'ja/', 'fr/', 'es/']) {
+    const response = await request.get(`/${lang}docs/1-goa/quickstart/`);
+    expect(response.ok()).toBe(true);
+    const html = await response.text();
+    expect(html).toContain('<!--/email_off-->');
+    const content = html.split('<!--email_off-->')[1]?.split('<!--/email_off-->')[0];
+    expect(content).toBeTruthy();
+    expect(content).toContain('goa.design/goa/v3/cmd/goa@v3.31.1');
+    expect(content).toContain('goa.design/clue@v1.2.6');
+    expect(html.indexOf('<!--/email_off-->')).toBeLessThan(html.indexOf('<footer'));
+  }
+});
+
 // Fetching HTML directly verifies that readers and crawlers receive the positioning without JavaScript.
 test('source HTML and Markdown expose the ecosystem and skill without client rendering', async ({ request }) => {
   const response = await request.get('/');
