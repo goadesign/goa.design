@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Composizione dell'agente
-weight: 5
+weight: 30
 description: "Learn how to compose agents using agent-as-tool patterns, run trees, and streaming topology."
 llm_optimized: true
 aliases:

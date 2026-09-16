@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Referencia DSL
-weight: 2
+weight: 70
 description: "Referencia completa del lenguaje de diseño de Goa: modelado de datos, servicios, métodos, asignación HTTP/gRPC y seguridad."
 llm_optimized: true
 aliases:
@@ -625,9 +626,9 @@ Method("watch", func() {
 ```
 
 **Véase también:**
-- [Guía HTTP: Integración WebSocket](http-guide/#websocket-integration) - Implementación de streaming específica para HTTP
-- [Guía HTTP: Eventos enviados por el servidor](http-guide/#server-sent-events) - SSE para streaming de servidor unidireccional
-- [Guía gRPC: Patrones de streaming](grpc-guide/#streaming-patterns) - Implementación de streaming gRPC
+- [Guía HTTP: Integración WebSocket](http-guide/#integración-websocket) - Implementación de streaming específica para HTTP
+- [Guía HTTP: Eventos enviados por el servidor](http-guide/#eventos-enviados-por-el-servidor) - SSE para streaming de servidor unidireccional
+- [Guía gRPC: Patrones de streaming](grpc-guide/#patrones-de-streaming) - Implementación de streaming gRPC
 
 ---
 
@@ -679,7 +680,7 @@ var _ = Service("spa", func() {
 })
 ```
 
-**Nota**: `Files` es sólo HTTP. Para obtener patrones detallados, incluida la integración de plantillas, consulte [Guía HTTP: Contenido estático](http-guide/#static-content).
+**Nota**: `Files` es sólo HTTP. Para obtener patrones detallados, incluida la integración de plantillas, consulte [Guía HTTP: Contenido estático](http-guide/#contenido-estático).
 
 ---
 
@@ -833,8 +834,8 @@ Goa y no se emite como un tipo personalizado definido en el diseño.
 
 **Véase también:**
 - [Guía de manejo de errores](error-handling/) - Patrones completos de manejo de errores
-- [Guía HTTP: Respuestas de error](http-guide/#best-practices) - Mapeo de códigos de estado HTTP
-- [Guía gRPC: Tratamiento de errores](grpc-guide/#error-handling) - Asignación de códigos de estado gRPC
+- [Guía HTTP: Respuestas de error](http-guide/#mejores-prácticas) - Mapeo de códigos de estado HTTP
+- [Guía gRPC: Tratamiento de errores](grpc-guide/#tratamiento-de-errores) - Asignación de códigos de estado gRPC
 
 ---
 

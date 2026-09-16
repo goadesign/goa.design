@@ -1,6 +1,7 @@
 ---
+nav_group: start
 title: Quickstart
-weight: 1
+weight: 10
 description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
 llm_optimized: true
 aliases:
@@ -12,7 +13,7 @@ This guide walks you through installing Goa and creating your first service. By 
 
 Before you begin, ensure your environment meets these requirements:
 
-- **Go 1.18 or later** - Goa leverages modern Go features
+- **Go 1.25 or later** - Goa leverages modern Go features
 - **Go Modules enabled** - This is the default in Go 1.16+, but verify with `GO111MODULE=on` if needed
 - **curl or any HTTP client** - For testing your service
 
@@ -21,11 +22,8 @@ Before you begin, ensure your environment meets these requirements:
 Install the Goa packages and CLI tool:
 
 ```bash
-# Pull the Goa packages
-go get goa.design/goa/v3/...
-
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@latest
+go install goa.design/goa/v3/cmd/goa@v3.31.1
 
 # Verify the installation
 goa version
@@ -50,6 +48,7 @@ Create a new directory and initialize a Go module:
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
+go get goa.design/goa/v3@v3.31.1
 ```
 
 > **Note:** We're using a simple module name `hello` for this guide. In real projects, you'd typically use a domain name like `github.com/yourusername/hello-goa`. The concepts work exactly the same way.
@@ -100,7 +99,8 @@ This declarative approach means you describe *what* your API does, and Goa handl
 Transform your design into a fully functional service structure:
 
 ```bash
-goa gen hello/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 This creates a `gen` folder containing:
@@ -112,7 +112,7 @@ This creates a `gen` folder containing:
 Now scaffold a working implementation:
 
 ```bash
-goa example hello/design
+go run goa.design/goa/v3/cmd/goa example hello/design
 ```
 
 > **Important:** The `gen` command regenerates the `gen/` folder each time you run it. The `example` command creates starter implementation files that you own and customize - Goa won't overwrite them on subsequent runs.
@@ -140,6 +140,8 @@ hello-goa/
 
 Open `hello.go` and find the `SayHello` method. Replace it with your implementation:
 
+Add `fmt` to the imports in `hello.go`.
+
 ```go
 func (s *hellosrvc) SayHello(ctx context.Context, name string) (string, error) {
     log.Printf(ctx, "hello.sayHello")
@@ -154,8 +156,11 @@ That's all the business logic you need - Goa handles everything else.
 First, download dependencies:
 
 ```bash
+go get goa.design/clue@v1.2.6
 go mod tidy
 ```
+
+This Clue version keeps the generated starter compatible with Go 1.25.
 
 Start the server:
 
@@ -207,7 +212,7 @@ As your service evolves, you'll modify the design and regenerate code:
 
 ```bash
 # After updating design/design.go
-goa gen hello/design
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 Key points:

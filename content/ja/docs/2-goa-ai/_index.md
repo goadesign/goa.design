@@ -1,356 +1,63 @@
 ---
-title: "Goa-AI フレームワーク"
+title: "Goa-AI：設計からエージェントへ"
 linkTitle: "Goa-AI"
 weight: 2
-description: "Go でエージェント型・ツール駆動システムを構築するための design-first フレームワーク。"
+description: "Goで型付きツールとエージェントの契約を設計。接続コードを生成し、明確な実行モデルで動かします。"
 llm_optimized: true
-content_scope: "Complete Goa-AI Documentation"
-aliases:
 ---
 
 ## 概要
 
-Goa-AI は、Goa の **design-first**（設計を単一の真実の源にする）哲学を、エージェント型システムに拡張します。DSL でエージェント・ツールセット・サービス所有の completion・ポリシーを宣言し、**型付けされたコントラクト**、**耐久性のあるワークフロー**、**ストリーミングイベント**を備えたプロダクション品質の実装を生成します。
+Goa-AIはGoaの設計言語とジェネレーターをAIアプリケーションに拡張します。エージェント、ツールの入力と結果、構造化出力、ポリシー、評価シナリオを定義し、型、スキーマ、コーデック、接続コードを生成します。プランナーとアプリケーションの動作は開発者が実装します。
 
----
+**[最初のエージェントをつくる](quickstart/)**、または**[コーディングエージェントとの開発手順](../ai-development/)**へ。別のGoaサービスを先にデプロイする必要はありません。
 
-## なぜ Goa-AI なのか？
+## コーディングエージェントと開発する
 
-### Design-First Agents {#design-first-agents}
+ツールスキーマとGoのコーデックは同じ設計から生成されます。`BindTo`を使うと、サービスの型と実装をツールから再利用できます。生成される**`AGENTS_QUICKSTART.md`**は、そのアプリケーションの設計に基づく実装ガイドです。設計ファイルと一緒にコーディングエージェントへ渡し、`gen/`の外でプランナーと実行処理を実装します。設計の変更に合わせて再生成、コンパイル、評価を行います。
 
-**壊れやすいエージェントコードを書くのをやめ、コントラクトから始めましょう。**
+この仕組みは、反復的なスキーマや接続コードをモデルに書かせる作業を減らします。一定の削減率を保証するものではありません。コンテキスト、再試行、レビューを含めたタスク全体で測定してください。
 
-多くのエージェントフレームワークでは、プロンプト、ツール、API 呼び出しを命令的につなぎ合わせます。壊れたとき (そして壊れます) には、明確な真実の情報源がない散在したコードをデバッグすることになります。
+## プロダクトにエージェントを組み込む
 
-Goa-AI はこれを反転します。**エージェントの能力を型付き DSL で定義**し、実装を生成します。設計がそのままドキュメントになり、コントラクトがそのまま検証になります。変更は自動的に反映されます。
+### ツールの契約 {#design-first-agents}
 
-```go
-Agent("assistant", "A helpful coding assistant", func() {
-    Use("code_tools", func() {
-        Tool("analyze", "Analyze code for issues", func() {
-            Args(func() {
-                Attribute("code", String, "Source code to analyze", func() {
-                    MinLength(1)           // Can't be empty
-                    MaxLength(100000)      // Reasonable size limit
-                })
-                Attribute("language", String, "Programming language", func() {
-                    Enum("go", "python", "javascript", "typescript", "rust", "java")
-                })
-                Required("code", "language")
-            })
-            Return(AnalysisResult)
-        })
-    })
-})
-```
+Goaの型、説明、例、検証で入力と結果を定義します。JSONスキーマと型付きコーデックが生成され、モデルの引数は実行前に検証されます。[ツールセット](toolsets/)を参照してください。
 
-プランナーコードが `planner.NewToolRequest` でこの呼び出しを組み立てる場合、生成されたエンコード処理のエラーはプランナーへ直接返ります。モデルがスキーマに適合しない引数（たとえば空の `code` や `language: "cobol"`）を生成した場合、検証済みモデルクライアントは `model.OutputValidationError` を返し、プランナー／ランタイムは executor やサービスコードを実行する前に `planner.OutputContractError` として公開します。
+### 構造化出力 {#typed-direct-completions}
 
-`ToolFailure` と `RecoveryCorrectCall` が適用されるのは、その後です。モデルが生成した呼び出しが検証を通過して実行対象として受理され、executor またはドメイン境界が回復可能な失敗を返した場合に限ります。ランタイムはその失敗を使い、手作業の文字列パースや手で保守する JSON schema なしで、次のプランナーターンを導きます。
+`Completion(...)`で型付きの回答を宣言します。生成された通常・ストリーミング用ヘルパーが完成した結果を検証します。[DSL](dsl-reference/)と[ランタイム](runtime/)を参照してください。
 
-**メリット:**
-- **単一の真実の情報源** — DSL が振る舞い、型、ドキュメントを定義
-- **コンパイル時の安全性** — 実行前に payload の不整合を検出
-- **自動生成クライアント** — 手配線なしで型安全なツール呼び出し
-- **一貫したパターン** — すべてのエージェントが同じ構造に従う
-- **修復可能な実行失敗** — 受理済みのモデル生成呼び出しは、型付きの失敗詳細と回復指示を返せる
+### 評価 {#generated-evaluations}
 
-→ 詳細は [DSL Reference](dsl-reference/) と [Quickstart](quickstart/) を参照してください。
+スイートとシナリオを宣言し、型付きフックを生成して、成果を確認する検査を実装します。意味の評価には評価モデルの較正が必要です。[生成される評価](evaluations/)を参照してください。
 
----
+### エージェントの連携 {#run-trees-composition}
 
-### 型付き直接 Completion {#typed-direct-completions}
+エージェントを別のエージェントのツールとして公開できます。子の実行には独自の識別子、親へのリンク、履歴があります。[連携ガイド](agent-composition/)を参照してください。
 
-**構造化されたやり取りのすべてがツール呼び出しである必要はありません。**
+### ストリーミング {#structured-streaming}
 
-適切なコントラクトが、型付きの最終アシスタント応答であることもあります。ツール呼び出しも、手書き JSON パースも、プロンプト文に隠した並行スキーマ定義も不要です。
+ランタイムは回答、ツールの進捗、人からの入力、実行状態を型付きイベントとして出力します。公開範囲と通信方法はアプリケーションが決めます。[ストリーミング](production/#ui-ストリーミング)を参照してください。
 
-Goa-AI はそれをサービス上の `Completion(...)` として明示的にモデル化します:
+### 永続的な実行 {#temporal-durability}
 
-```go
-var TaskDraft = Type("TaskDraft", func() {
-    Attribute("name", String, "Task name")
-    Attribute("goal", String, "Outcome-style goal")
-    Required("name", "goal")
-})
+ローカル開発にはインメモリエンジンを使います。永続化、復旧、アクティビティの再試行にはTemporalを設定します。外部への副作用にはアプリケーション側の冪等性と適切な再試行ポリシーが必要です。[本番運用](production/)を参照してください。
 
-var _ = Service("tasks", func() {
-    Completion("draft_from_transcript", "Produce a task draft directly", func() {
-        Return(TaskDraft)
-    })
-})
-```
+### MCPサーバーと自分で運用するツールレジストリ {#tool-registries}
 
-completion 名は structured-output contract の一部です。1-64 文字の ASCII で、英字、数字、`_`、`-` を使え、先頭は英字または数字でなければなりません。
+**MCPサーバーを構築。** 生成されたプロトコル処理とアダプターを使い、メソッドをツールとして公開し、リソースやプロンプトテンプレートを提供します。外部MCPツールも利用できます。[MCP統合](mcp-integration/)を参照してください。
 
-codegen は `gen/<service>/completions/` に、非公開の schema／codec の詳細と公開の型付き helper を出力します。unary helper は検証済みの型付き値を返します。streaming helper は `completion.Streamer[T]` を返し、`Recv` は preview 専用の `completion_delta` fragment を返し、`Value()` は provider が有効な stream を閉じた後にだけ型付き結果を返します。structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` で明示的に失敗し、不正な出力は再試行不能な `planner.OutputContractError` になります。
+**ツールレジストリを運用。** 付属サーバーをRedisとPulseに支えられた共有カタログ兼呼び出しゲートウェイとして実行します。プロバイダーがツールセットとスキーマを公開し、利用側はツールを検索して正常なプロバイダーを呼び出します。接続用のヘルパーも生成されます。[レジストリの運用](registry/)を参照してください。
 
-**メリット:**
-- **1 つの契約面** — 直接 assistant output にも Goa 型、validation、`OneOf` を再利用
-- **手書き JSON パース不要** — 生成 codec が encode/decode/validation を所有
-- **provider-neutral structured output** — helper が provider wiring を型付き API の背後に隠す
+### モデルと状態 {#model-providers}
 
-→ 詳細は [DSL Reference](dsl-reference/) と [Runtime](runtime/) を参照してください。
-
----
-
-### Run Trees {#run-trees-composition}
-
-**単純で観測可能な部品から、複雑なシステムを組み立てます。**
-
-現実の AI アプリケーションは、単一エージェントで完結しません。エージェントが別のエージェントへ委譲し、ツールがサブタスクを生成し、全体を追跡できることが求められます。
-
-Goa-AI の **ランツリー（run tree）モデル**は、完全な可観測性を備えた階層実行を提供します。各ランは一意の ID を持ち、子ランは親にリンクされ、イベントはリアルタイムでストリーミングされます。失敗時はツリーを辿って原因に到達できます。
-
-{{< figure src="/images/diagrams/RunTree.svg" alt="Hierarchical agent execution with run trees showing parent-child relationships" class="img-fluid" >}}
-
-**メリット:**
-- **Agent-as-tool** — 任意のエージェントを別エージェントからツールとして呼び出せる
-- **階層トレーシング** — エージェント境界を跨いだ実行を追跡できる
-- **失敗の分離** — 子ランの失敗は独立し、親はリトライや回復を選べる
-- **ストリーミング・トポロジ** — UI のためにツリーを遡ってイベントを流せる
-
-→ 詳細は [Agent Composition](agent-composition/) と [Runtime](runtime/) を参照してください。
-
----
-
-### Structured Streaming {#structured-streaming}
-
-**エージェントの意思決定をリアルタイムで可視化します。**
-
-ブラックボックスなエージェントはリスクです。ツール呼び出し、思考の開始、エラーの発生を *今すぐ* 知る必要があります（タイムアウト後では遅い）。
-
-Goa-AI は実行中に **型付けされたイベント**を発行します。たとえば、ストリーミングテキストの `assistant_reply`、ツールのライフサイクルを表す `tool_start`/`tool_end`、推論の可視化のための `planner_thought`、トークン消費の `usage` などです。イベントはシンプルな **Sink** インターフェースを介して任意のトランスポートへ流せます。プロダクションでは UI は **セッション所有ストリーム**（`session/<session_id>`）を 1 本購読し、アクティブ run の `run_stream_end` を観測したら SSE/WebSocket を終了します。
-
-```go
-// Wire a sink at startup — all events from all runs flow through it
-rt := runtime.New(runtimeStore, runtime.WithStream(mySink))
-```
-
-**Stream profiles** は消費者ごとにイベントをフィルタします。エンドユーザ UI 用の `UserChatProfile()`、開発者向けの `AgentDebugProfile()`、観測基盤向けの `MetricsProfile()` など。Pulse（Redis Streams）用の組み込み sink により、サービス間で分散ストリーミングできます。
-
-**メリット:**
-- **トランスポート非依存** — WebSocket / SSE / Pulse / 独自バックエンドで同一イベントを利用
-- **型付きコントラクト** — 文字列パースなし。ドキュメント化された強い型
-- **選択的配信** — プロファイルで消費者ごとに必要なイベントだけを配信
-- **マルチテナント対応** — `RunID` と `SessionID` によりルーティング・フィルタが可能
-
-→ 実装詳細は [Production Streaming](production/#streaming-ui) を参照してください。
-
----
-
-### Temporal Durability {#temporal-durability}
-
-**クラッシュ、再起動、ネットワーク障害に耐えるエージェント実行。**
-
-耐久性がないと、プロセスのクラッシュで進捗が消えます。レートリミットでラン全体が失敗します。ツール実行中のネットワーク瞬断で、高価な推論をやり直すことになります。
-
-Goa-AI は **Temporal** による耐久実行を採用します。エージェントランはワークフローになり、ツール呼び出しはリトライ設定可能なアクティビティになります。すべての状態遷移が永続化され、ツールがクラッシュしても **LLM 呼び出しを再実行することなく** 自動的にリトライできます。
-
-```go
-// Development: in-memory (no dependencies)
-rt := runtime.New(storageinmem.New())
-
-// Production: Temporal for durability
-eng, err := temporal.NewWorker(temporal.Options{
-    ClientOptions: &client.Options{HostPort: "localhost:7233"},
-    WorkerOptions: temporal.WorkerOptions{TaskQueue: "my-agents"},
-})
-if err != nil {
-    panic(err)
-}
-defer eng.Close()
-rt := runtime.New(runtimeStore, runtime.WithEngine(eng))
-```
-
-**メリット:**
-- **推論の無駄を削減** — ツール失敗は LLM を再呼び出しせずにリトライ
-- **クラッシュリカバリ** — ワーカーを再起動しても最後のチェックポイントから再開
-- **レート制限耐性** — 指数バックオフで API スロットリングを吸収
-- **バージョンを考慮したデプロイ** — 互換性のあるローリングリリースと、互換性のない生成契約変更については [Production のロールアウト契約](production/#transparent-rollouts) に従う
-
-→ セットアップとリトライ設定は [Production](production/#temporal-setup) を参照してください。
-
----
-
-### Tool Registries {#tool-registries}
-
-**どこからでもツールを発見し、利用できます（クラスタ内でもパブリッククラウドでも）。**
-
-AI エコシステムが拡大すると、ツールはあらゆる場所に散らばります。社内サービス、サードパーティ API、公開 MCP レジストリ。ツール定義をハードコードする方法はスケールしません。動的ディスカバリが必要です。
-
-Goa-AI は、自社ツールセット向けの **クラスタ対応の内部レジストリ**と、Anthropic の MCP カタログのような外部レジストリと連携する **フェデレーション**を提供します。一度定義すれば、どこからでも発見できます。
-
-```go
-// Connect to public registries
-var AnthropicRegistry = Registry("anthropic", func() {
-    Description("Anthropic MCP Registry")
-    URL("https://registry.anthropic.com/v1")
-    Security(AnthropicOAuth)
-    Federation(func() {
-        Include("web-search", "code-execution", "filesystem")
-        Exclude("experimental/*")
-    })
-    SyncInterval("1h")
-    CacheTTL("24h")
-})
-
-// Or run your own clustered registry
-var CorpRegistry = Registry("corp", func() {
-    Description("Internal tool registry")
-    URL("https://registry.corp.internal")
-    Security(CorpAPIKey)
-    SyncInterval("5m")
-})
-```
-
-**内部レジストリのクラスタリング:**
-
-同じ名前の複数ノードは、Redis を介して自動的にクラスタを形成します。共有状態、協調ヘルスチェック、水平スケール——すべて自動です。
-
-{{< figure src="/images/diagrams/RegistryCluster.svg" alt="Agent-registry-provider topology showing gRPC and Pulse Streams connections" class="img-fluid" >}}
-
-**メリット:**
-- **動的ディスカバリ** — コンパイル時ではなく実行時にツールを発見
-- **マルチクラスタ・スケール** — ノードが Redis 経由で自動協調
-- **公開レジストリ連携** — Anthropic/OpenAI など、任意の MCP レジストリからインポート
-- **ヘルス監視** — しきい値を持つ ping/pong の自動チェック
-- **選択的インポート** — include/exclude パターンで粒度の細かい制御
-
-→ 詳細は [MCP Integration](mcp-integration/) と [Production](production/) を参照してください。
-
----
-
-## 機能概要
-
-| 機能 | 得られるもの |
-|---------|--------------|
-| [Design-First Agents](#design-first-agents) | DSL でエージェントを定義し、型安全なコードを生成 |
-| [MCP Integration](mcp-integration/) | Model Context Protocol のネイティブサポート |
-| [Tool Registries](#tool-registries) | クラスタ対応のディスカバリ + 公開レジストリのフェデレーション |
-| [Run Trees](#run-trees-composition) | エージェントがエージェントを呼ぶ構成を完全に追跡 |
-| [Structured Streaming](#structured-streaming) | UI と観測のためのリアルタイム型付きイベント |
-| [Temporal Durability](#temporal-durability) | 障害に強い、耐久実行 |
-| [ランタイムストレージ](memory-sessions/#runtime-store) | 実行状態、継続用チェックポイント、変更不可の実行記録を一つにまとめる、ホスト所有のストア |
-| [Typed Contracts](dsl-reference/) | ツール操作のエンドツーエンド型安全性 |
-| [Typed Direct Completions](#typed-direct-completions) | 生成 codec と helper を備えた構造化された最終アシスタント応答 |
-| [Bounded Results & Server Data](toolsets/#server-data) | token 効率のよいモデル結果と、UI/監査向けの server-only data |
-| [Human-in-the-Loop](runtime/#pause--resume) | pause、resume、外部ツール結果、runtime-enforced confirmation |
-| [Bookkeeping & Terminal Tools](dsl-reference/#bookkeeping) | retrieval budget を消費しない progress/status tool と、run を原子的に終端できる tool |
-| [Prompt Overrides](production/#prompt-overrides-with-mongo-store) | baseline prompt spec と scoped Mongo-backed override/provenance |
-
-## ドキュメントガイド
-
-| ガイド | 説明 | ~Tokens |
-|-------|-------------|---------|
-| [Quickstart](quickstart/) | インストールと最初のエージェント | ~2,700 |
-| [DSL Reference](dsl-reference/) | 完全な DSL: agents / toolsets / policies / MCP | ~3,600 |
-| [Runtime](runtime/) | ランタイム構造、plan/execute ループ、エンジン | ~2,400 |
-| [Toolsets](toolsets/) | ツールセット種別、実行モデル、トランスフォーム | ~2,300 |
-| [Agent Composition](agent-composition/) | agent-as-tool、ランツリー、ストリーミングトポロジ | ~1,400 |
-| [MCP Integration](mcp-integration/) | MCP サーバ、トランスポート、生成ラッパ | ~1,200 |
-| [Memory & Sessions](memory-sessions/) | トランスクリプト、メモリストア、セッション、ラン | ~1,600 |
-| [Production](production/) | Temporal セットアップ、ストリーミング UI、モデル統合 | ~2,200 |
-| [Testing & Troubleshooting](testing/) | エージェント/プランナー/ツールのテスト、典型的なエラー | ~2,000 |
-
-**Total Section:** ~21,400 tokens
+OpenAI、Anthropic、AWS Bedrock、Google Vertex AIのアダプターを用意しています。機能の違いは[ランタイム](runtime/)で確認してください。保存領域、セッション、認可、メモリはアプリケーションが管理します。[メモリとセッション](memory-sessions/)を参照してください。
 
 ## アーキテクチャ
 
-Goa-AI は、宣言的な設計をプロダクション品質のエージェントシステムへ変換する **define → generate → execute** パイプラインに従います。
+設計が静的な契約を定義し、生成コードが型付きパッケージに変換します。ランタイムが実行を調整し、エンジンがローカルまたは永続的なワークフローを提供します。意味の判断はプランナー、ビジネス上の動作はアプリケーションサービスが担います。
 
-{{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI Architecture" class="img-fluid" >}}
+## ガイド
 
-**レイヤ概要:**
-
-| レイヤ | 目的 |
-|-------|---------|
-| **DSL** | バージョン管理された Go コードで、エージェント・ツール・ポリシー・外部統合を宣言 |
-| **Codegen** | 型安全な spec/codec/workflow 定義/レジストリクライアントを生成（`gen/` は編集しない） |
-| **Runtime** | ポリシー適用、必須のホスト所有ランタイムストレージ、任意のプロダクトメモリ、イベントストリーミングを伴う plan/execute ループを実行 |
-| **Engine** | 実行バックエンドを交換（開発は in-memory、本番は Temporal） |
-| **Features** | モデルプロバイダ（OpenAI/Anthropic/AWS Bedrock/Google Vertex AI）、プロダクトメモリとプロンプトの永続化、ストリーミング（Pulse）、レジストリなどをプラグイン |
-
-**主要な統合ポイント:**
-
-- **Model Clients** — LLM プロバイダを統一インターフェースの裏に抽象化し、OpenAI/Anthropic/Bedrock/Vertex AI（Gemini または Claude-on-Vertex）を設計変更なしに差し替え
-- **Registry** — プロセス境界を跨いでツールセットを発見・呼び出し。Redis でクラスタ化し水平スケール
-- **Pulse Streaming** — UI 更新、観測パイプライン、サービス間通信のためのリアルタイムイベントバス
-- **Temporal Engine** — activity の再試行、リプレイ、クラッシュリカバリを備えた耐久ワークフロー実行
-
-### モデルプロバイダと拡張性 {#model-providers}
-
-Goa-AI は 4 つの LLM プロバイダ向けにファーストクラスのアダプタを提供します。
-
-- **OpenAI** (`features/model/openai`)
-- **Anthropic Claude** (`features/model/anthropic`)
-- **AWS Bedrock** (`features/model/bedrock`)
-- **Google Vertex AI** (`features/model/vertex`) — ネイティブの Gemini アダプタに加え、Vertex 上でホストされる Claude モデル向けの純粋なコンストラクタヘルパーを提供（翻訳とエラー分類は `features/model/anthropic` に委譲）
-
-4 つはいずれも、プランナーが利用する同一の不透明な `model.Client` を公開します。アプリケーションは `rt.RegisterModel("provider-id", client)` でモデルクライアントを登録し、プランナーや生成されたエージェント設定から ID で参照します。プロバイダ差し替えは設計変更ではなく設定変更になります。Goa-AI は、アプリケーションコードが観測する前にすべてのリクエストと完全なレスポンスを検証します。
-
-Gemini 3 世代のモデルは、ツール呼び出し（`functionCall`）パートに、その呼び出しを生んだ推論を認証する不透明な thought signature を付与します。ランタイムはこのシグネチャの捕捉と再付与を完全にランタイム側で行い、プランナー向けの型には一切公開しません。そのため、設定されたモデルがこの機能を使うかどうかにかかわらず、プランナーコードは同一です。詳細は [Runtime → LLM 統合](./runtime/#llm-統合) を参照してください。
-
-新しいプロバイダを追加する手順も同様です。
-
-1. プロバイダ SDK を `model.Request`、`model.Response`、raw transport chunk へ対応付ける `model.Provider` を実装する。
-2. `model.NewClient(provider)` で検証済みクライアントを構築する。プロバイダ用 middleware は `model.WrapClient` で追加する。外部パッケージは `model.Client` を実装したり検証を迂回したりできない。
-3. `rt.RegisterModel("my-provider", client)` を呼び出し、プランナーやエージェント設定から `"my-provider"` を参照する。
-
-プランナーとランタイムは検証済みの `model.Client` のみに依存するため、新しいプロバイダは Goa の設計や生成コードの変更なしに追加できます。リクエスト／レスポンスの上限、プロバイダ能力の違い、remote model gateway、協調アップグレードの要件については [Runtime → LLM 統合](runtime/#llm-integration) を参照してください。
-
-## クイック例
-
-```go
-package design
-
-import (
-    . "goa.design/goa/v3/dsl"
-    . "goa.design/goa-ai/dsl"
-)
-
-var _ = Service("calculator", func() {
-    Description("Calculator service with an AI assistant")
-
-    // Define a service method that the tool will bind to
-    Method("add", func() {
-        Description("Add two numbers")
-        Payload(func() {
-            Attribute("a", Int, "First number")
-            Attribute("b", Int, "Second number")
-            Required("a", "b")
-        })
-        Result(Int)
-    })
-
-    // Define the agent within the service
-    Agent("assistant", "A helpful assistant agent", func() {
-        // Use a toolset with tools bound to service methods
-        Use("calculator", func() {
-            Tool("add", "Add two numbers", func() {
-                Args(func() {
-                    Attribute("a", Int, "First number")
-                    Attribute("b", Int, "Second number")
-                    Required("a", "b")
-                })
-                Return(Int)
-                BindTo("add")  // Bind to the service method
-            })
-        })
-
-        // Configure the agent's run policy
-        RunPolicy(func() {
-            DefaultCaps(MaxToolCalls(10))
-            TimeBudget("5m")
-        })
-    })
-})
-```
-
-## はじめに
-
-まずは [Quickstart](quickstart/) を参照し、Goa-AI をインストールして最初のエージェントを構築してください。
-
-DSL の全体像は [DSL Reference](dsl-reference/) を参照してください。
-
-ランタイムアーキテクチャは [Runtime](runtime/) を参照してください。
+ローカルのクイックスタートから始め、ツール、モデル、状態、デプロイを追加します。正確な契約にはDSLとランタイムのリファレンスを参照してください。

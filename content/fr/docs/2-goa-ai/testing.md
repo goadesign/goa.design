@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Tests et dépannage
-weight: 9
+weight: 80
 description: "Learn how to test agents, planners, and tools, and troubleshoot common issues."
 llm_optimized: true
 ---

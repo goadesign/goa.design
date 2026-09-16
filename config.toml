@@ -1,18 +1,15 @@
+baseURL = "https://goa.design/"
+title = "Goa"
+enableGitInfo = true
+enableRobotsTXT = true
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+
 [module]
   proxy = "direct"
   [[module.imports]]
     path = "github.com/google/docsy"
     disable = false
-
-baseURL = "https://goa.design/"
-title = "Goa"
-theme = "docsy"
-enableGitInfo = true
-enableRobotsTXT = true
-
-# Language configuration
-defaultContentLanguage = "en"
-defaultContentLanguageInSubdir = false
 
 # Configure languages
 [languages]
@@ -78,24 +75,22 @@ defaultContentLanguageInSubdir = false
       url = "/docs/2-goa-ai/"
 
 [params]
-  title = "Goa – Design. Generate. Scale."
-  description = "Transform the way you build APIs in Go. Goa bridges the gap between design and implementation, generating clean, scalable, and production-ready microservices."
+  title = "Goa — A better foundation for building with AI."
+  description = "Build Go services with coding agents and AI agents for your products. Design contracts once; generate typed code with Goa and Goa-AI."
   images = ["img/social/goa-card.png"]
   copyright = "Raphael Simon and the Goa contributors"
   offlineSearch = true
+  time_format_blog = "Monday, January 02, 2006"
+  time_format_default = "January 2, 2006"
+  github_repo = "https://github.com/goadesign/goa.design"
+  github_branch = "main"
+  github_subdir = ""
   
   # Enable Mermaid diagrams with custom dark theme
   [params.mermaid]
     enable = true
     version = "10"
   
-  # Repository configuration
-  github_repo = "https://github.com/goadesign/goa.design"
-  github_branch = "master"
-  
-  # Docsy theme params
-  time_format_blog = "Monday, January 02, 2006"
-  time_format_default = "January 2, 2006"
 
   # User interface configuration
   [params.ui]
@@ -114,7 +109,6 @@ defaultContentLanguageInSubdir = false
     enable = false
   
   # GitHub edit link - disable by not setting github_subdir
-  github_subdir = ""
 
   [params.links]
     [[params.links.user]]
@@ -174,11 +168,13 @@ defaultContentLanguageInSubdir = false
   [[params.companies]]
     name = "CrossnoKaye"
     logo = "img/companies/crossnokaye.png"
+    logo_shape = "wide"
     url = "https://www.crossnokaye.com"
 
   [[params.companies]]
     name = "Cluster, Inc."
     logo = "img/companies/clusterdev.jpeg"
+    logo_shape = "stacked"
     url = "https://corp.cluster.mu/en"
     
 [markup]
@@ -197,3 +193,23 @@ defaultContentLanguageInSubdir = false
     # Keep Hugo's default exec environment allowlist, plus BROWSERSLIST_ROOT_PATH
     # so Browserslist stops searching for config above the repository root.
     osEnv = ['(?i)^((HTTPS?|NO)_PROXY|PATH(EXT)?|APPDATA|TE?MP|TERM|GO\w+|(XDG_CONFIG_)?HOME|USERPROFILE|SSH_AUTH_SOCK|DISPLAY|LANG|SYSTEMDRIVE|PROGRAMDATA|BROWSERSLIST_ROOT_PATH)$']
+
+[mediaTypes."text/markdown"]
+  suffixes = ["md"]
+
+[outputFormats.Markdown]
+  mediaType = "text/markdown"
+  baseName = "index"
+  isPlainText = true
+  notAlternative = true
+
+[outputFormats.LLMs]
+  mediaType = "text/plain"
+  baseName = "llms"
+  isPlainText = true
+  notAlternative = true
+
+[outputs]
+  home = ["HTML", "RSS", "LLMs", "Markdown"]
+  page = ["HTML", "Markdown"]
+  section = ["HTML", "RSS", "Markdown"]

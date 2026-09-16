@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Guida HTTP
-weight: 4
+weight: 20
 description: "Complete guide to HTTP transport in Goa - routing, content negotiation, WebSocket, SSE, CORS, and static content."
 llm_optimized: true
 aliases:
@@ -523,7 +524,7 @@ var _ = Service("calc", func() {
 
 ## Contenuto statico
 
-> **Ripresa della progettazione**: Il servizio di file statici utilizza la funzione DSL `Files`. Si tratta di una funzione solo HTTP. Vedere [DSL Reference: Static Files] (dsl-reference/#static-files) per i modelli di progettazione.
+> **Ripresa della progettazione**: Il servizio di file statici utilizza la funzione DSL `Files`. Si tratta di una funzione solo HTTP. Vedere [DSL Reference: Static Files] (dsl-reference/#file-statici) per i modelli di progettazione.
 
 Servite i file statici usando la funzione `Files`:
 
@@ -560,8 +561,8 @@ var _ = Service("spa", func() {
 ## Vedi anche
 
 - [DSL di riferimento: Streaming](dsl-reference/#streaming) - Modelli di streaming a livello di progetto
-- [DSL di riferimento: File statici](dsl-reference/#static-files) - DSL per contenuti statici
-- [DSL di riferimento: Gestione degli errori](dsl-reference/#error-handling-design-level) - Definizione degli errori a livello di design
+- [DSL di riferimento: File statici](dsl-reference/#file-statici) - DSL per contenuti statici
+- [DSL di riferimento: Gestione degli errori](dsl-reference/#gestione-degli-errori-livello-di-progettazione) - Definizione degli errori a livello di design
 - [Guida gRPC](grpc-guide/) - Caratteristiche del trasporto gRPC
 - [Guida alla gestione degli errori](error-handling/) - Modelli completi di gestione degli errori
 - [Documentazione di Clue](../3-ecosystem/clue/) - Middleware HTTP per l'osservabilità

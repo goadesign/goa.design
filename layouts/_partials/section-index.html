@@ -1,0 +1,6 @@
+{{ with .Pages.ByWeight }}
+<div class="section-index">
+  <h2>{{ T "docs_explore" }}</h2>
+  {{ range . }}<div class="entry"><a href="{{ .RelPermalink }}"><h3>{{ .Title }}</h3><p>{{ .Description | markdownify }}</p></a>{{ partial "section-meta.html" . }}</div>{{ end }}
+</div>
+{{ end }}

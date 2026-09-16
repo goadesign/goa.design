@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Toolsets
-weight: 4
+weight: 20
 description: "Learn about toolset types, execution models, validation, structured failure recovery, and tool catalogs in Goa-AI."
 llm_optimized: true
 aliases:

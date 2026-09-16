@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Mémoire et sessions
-weight: 7
+weight: 60
 description: "Manage state with transcripts, memory stores, sessions, and runs in Goa-AI."
 llm_optimized: true
 aliases:
@@ -77,8 +78,8 @@ La compression exige un `HistoryModel` configuré. Les déclencheurs et limites
 fondés sur les jetons exigent aussi le comptage exact de ce client. Bedrock
 Runtime ne peut pas compter les requêtes avec sortie structurée, et certains
 modèles Claude actuels exigent l'endpoint Mantle distinct d'AWS. Consultez
-[Runtime → Politiques d'historique](../runtime/#history-policies) et
-[Référence DSL → History](../dsl-reference/#history).
+[Runtime → Politiques d'historique (en anglais)](https://goa.design/docs/2-goa-ai/runtime/#history-policies) et
+[Référence DSL → History](../dsl-reference/#histoire).
 
 ### Comment cela simplifie les planificateurs et les interfaces utilisateur
 

@@ -10,3 +10,6 @@
 {{/* TOC scroll spy - highlights current section in right nav */}}
 <script src="{{ "js/toc-scrollspy.js" | relURL }}"></script>
 
+{{ if .IsHome }}
+<script src="{{ "js/skill-install.js" | relURL }}"></script>
+{{ end }}

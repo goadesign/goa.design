@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Pruebas y resolución de problemas
-weight: 9
+weight: 80
 description: "Aprende a probar agentes, planners y herramientas, y a resolver problemas comunes."
 llm_optimized: true
 ---

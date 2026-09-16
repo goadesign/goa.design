@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Referencia DSL
-weight: 2
+weight: 90
 description: "Referencia completa de las funciones DSL de Goa-AI: agentes, toolsets, políticas e integración MCP."
 llm_optimized: true
 aliases:
@@ -1649,7 +1650,7 @@ Goa-AI provee funciones DSL para declarar servidores Model Context Protocol (MCP
 Service("calculator", func() {
     Description("Calculator MCP server")
     
-    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("calc", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })
@@ -1677,8 +1678,8 @@ Service("calculator", func() {
 
 ```go
 Service("calculator", func() {
-    // Specify protocol version as an option
-    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    // Use the default protocol supported by Goa-AI.
+    MCP("calc", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })
@@ -1783,7 +1784,7 @@ Service("assistant", func() {
 var _ = Service("assistant", func() {
     Description("MCP server example")
     
-    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })

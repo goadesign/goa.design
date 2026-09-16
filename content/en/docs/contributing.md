@@ -21,11 +21,11 @@ Every documentation topic has exactly one **canonical home** — the single auth
 | **Services & Methods** | [DSL Reference](1-goa/dsl-reference/#services-and-methods) | Design |
 | **Streaming (Design)** | [DSL Reference](1-goa/dsl-reference/#streaming) | Design |
 | **Static Files (Design)** | [DSL Reference](1-goa/dsl-reference/#static-files) | Design |
-| **Error Handling (Design)** | [DSL Reference](1-goa/dsl-reference/#error-handling) | Design |
+| **Error Handling (Design)** | [DSL Reference](1-goa/dsl-reference/#error-handling-design-level) | Design |
 | **Security Schemes** | [DSL Reference](1-goa/dsl-reference/#security) | Design |
 | **HTTP Transport** | [HTTP Guide](1-goa/http-guide/) | Transport |
-| **HTTP Streaming** | [HTTP Guide](1-goa/http-guide/#streaming) | Transport |
-| **HTTP Error Responses** | [HTTP Guide](1-goa/http-guide/#error-responses) | Transport |
+| **HTTP Streaming** | [HTTP Guide](1-goa/http-guide/#websocket-integration) | Transport |
+| **HTTP Error Responses** | [HTTP Guide](1-goa/http-guide/#error-handling) | Transport |
 | **gRPC Transport** | [gRPC Guide](1-goa/grpc-guide/) | Transport |
 | **gRPC Streaming** | [gRPC Guide](1-goa/grpc-guide/#streaming) | Transport |
 | **gRPC Status Codes** | [gRPC Guide](1-goa/grpc-guide/#error-handling) | Transport |
@@ -66,7 +66,7 @@ and `StreamingResult`. The same design works for HTTP (WebSocket/SSE) and gRPC.
 [code example]
 
 **Further reading:**
-- [HTTP Streaming](../http-guide/#streaming) — WebSocket and SSE implementation
+- [HTTP Streaming](../http-guide/#websocket-integration) — WebSocket and SSE implementation
 - [gRPC Streaming](../grpc-guide/#streaming) — Bidirectional streaming patterns
 ```
 
@@ -82,11 +82,11 @@ Transport guides should be **detailed and practical**:
 **Design Recap callout pattern:**
 
 ```markdown
-{{< alert title="Design Recap" color="info" >}}
+{{</* alert title="Design Recap" color="info" */>}}
 Streaming is defined at the design level using `StreamingPayload` and 
 `StreamingResult`. See [Streaming in DSL Reference](../dsl-reference/#streaming) 
 for design patterns. This section covers HTTP-specific implementation details.
-{{< /alert >}}
+{{</* /alert */>}}
 ```
 
 ### Ecosystem Documentation
@@ -129,7 +129,7 @@ Goa supports [streaming](../dsl-reference/#streaming) for real-time data.
 
 ```markdown
 **Further reading:**
-- [HTTP Error Responses](../http-guide/#error-responses) — HTTP status code mapping
+- [HTTP Error Responses](../http-guide/#error-handling) — HTTP status code mapping
 - [gRPC Error Handling](../grpc-guide/#error-handling) — gRPC status code mapping
 ```
 

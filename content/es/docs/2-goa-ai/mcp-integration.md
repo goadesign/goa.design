@@ -1,17 +1,15 @@
 ---
+nav_group: guides
 title: Integración MCP
-weight: 6
-description: "Integre servidores MCP externos en sus agentes mediante wrappers y llamadores generados."
+weight: 50
+description: "Crea servidores MCP con herramientas, recursos y prompts, y consume herramientas MCP externas."
 llm_optimized: true
 aliases:
 ---
 
-Goa-AI proporciona soporte de primera clase para integrar servidores MCP (Model Context Protocol) en sus agentes. Los conjuntos de herramientas MCP permiten a los agentes consumir herramientas de servidores MCP externos a través de wrappers y callers generados.
+Goa-AI permite **crear servidores MCP** y **consumir herramientas MCP externas**. Añade declaraciones MCP a un servicio Goa para exponer métodos como herramientas, publicar recursos y proporcionar plantillas de prompts. El generador produce el manejo del protocolo JSON-RPC y los adaptadores de servicio. Alojar un servidor MCP no requiere ejecutar un agente Goa-AI.
 
-Los callers escritos a mano implementan actualmente el contrato de herramientas
-MCP `2025-06-18`. Inicializan una sesión, exigen la capacidad de herramientas
-del servidor e invocan `tools/call`. Esta página no afirma que se implemente
-toda la superficie MCP, como prompts o recursos.
+Los callers HTTP y stdio de los agentes consumen herramientas: inicializan una sesión, verifican la capacidad tools del servidor e invocan `tools/call`. Su interfaz no expone operaciones de recursos o prompts. El servidor MCP generado admite las herramientas, recursos y prompts declarados en su diseño.
 
 ## Visión General
 
@@ -47,11 +45,19 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })
     
+    StaticPrompt("find-docs", "Help a user find documentation",
+        "user", "Find relevant documentation for the user's question.")
+
+    Method("readme", func() {
+        Result(String)
+        Resource("readme", "file:///docs/README.md", "text/markdown")
+    })
+
     Method("search", func() {
         Payload(func() {
             Attribute("query", String, "Search query")
@@ -285,7 +291,7 @@ import (
 var _ = Service("assistant", func() {
     Description("MCP server for assistant tools")
     
-    MCP("assistant-mcp", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant-mcp", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })

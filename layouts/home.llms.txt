@@ -1,0 +1,40 @@
+# Goa
+
+> {{ T "home_intro" }}
+
+## Why use Goa with a coding agent?
+
+{{ T "home_faq_codegen_a" }}
+
+## Goa and Goa-AI
+
+{{ T "home_faq_difference_a" }}
+
+## Install the Goa service designer skill
+
+Run in your application repository with Node.js and npm available:
+
+```bash
+npx skills add goadesign/goa --skill goa-service-designer
+```
+
+For Goa-AI, also read the generated AGENTS_QUICKSTART.md in your application.
+
+## Start here
+{{ with .Site.GetPage "/docs/ai-development" }}
+- [Develop with a coding agent]({{ .Permalink }}index.md): workflow, generated-code boundaries, and a shared service/agent example.
+{{ end }}
+## Documentation
+{{ range (.Site.GetPage "/docs").Sections.ByWeight }}
+### {{ .LinkTitle }}
+{{ range .Pages.ByWeight }}
+- [{{ .Title }}]({{ .Permalink }}index.md): {{ .Description }}
+{{ end }}
+{{ end }}
+## Source
+
+- [Goa](https://github.com/goadesign/goa): service DSL and generator.
+- [Goa-AI](https://github.com/goadesign/goa-ai): agent DSL, generator, and runtime.
+- [Goa coding skill](https://github.com/goadesign/goa/tree/v3/skills): design-first workflow for coding agents.
+
+Edit design and application code. Regenerate gen/ with goa gen; do not edit generated files. Goa-AI also generates AGENTS_QUICKSTART.md for the application's agent design. Generation does not replace business logic, authorization, or tests.

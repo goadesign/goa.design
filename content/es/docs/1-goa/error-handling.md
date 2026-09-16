@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Tratamiento de errores
-weight: 6
+weight: 40
 description: "Guía completa para el tratamiento de errores en Goa: definición de errores, asignación de transporte, tipos personalizados y buenas prácticas."
 llm_optimized: true
 aliases:
@@ -510,7 +511,7 @@ func secureErrorFormatter(ctx context.Context, err error) goahttp.Statuser {
 
 ## Ver también
 
-- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de error a nivel de diseño
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#tratamiento-de-errores-nivel-de-diseño) - Definiciones de error a nivel de diseño
 - [Guía HTTP](http-guide/) - Asignación de códigos de estado HTTP y respuestas de error
-- [Guía gRPC](grpc-guide/#error-handling) - Mapeo de códigos de estado gRPC
+- [Guía gRPC](grpc-guide/#tratamiento-de-errores) - Mapeo de códigos de estado gRPC
 - [Documentación de Clue](../3-ecosystem/clue/) - Registro de errores y observabilidad

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="{{ .Site.Language.Lang }}" class="no-js">
+<head>{{ partial "head.html" . }}</head>
+<body class="td-{{ .Kind }} goa-docs">
+  <a class="skip-link" href="#main-content">{{ T "docs_skip" }}</a>
+  <header>{{ partial "navbar.html" . }}</header>
+  <div class="docs-layout">
+    <aside class="docs-sidebar"><details><summary>{{ T "docs_navigation" }}</summary>{{ partial "sidebar-tree.html" (dict "context" .) }}</details></aside>
+    <aside class="docs-outline" aria-label="{{ T "docs_on_page" }}"><p class="docs-outline-title">{{ T "docs_on_page" }}</p>{{ partial "toc.html" . }}</aside>
+    <main id="main-content" class="docs-main">
+      {{ partial "breadcrumb.html" . }}
+      {{ block "main" . }}{{ end }}
+    </main>
+  </div>
+  {{ partial "footer.html" . }}
+  {{ partial "scripts.html" . }}
+</body>
+</html>

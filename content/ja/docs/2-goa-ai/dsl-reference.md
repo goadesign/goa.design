@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: DSLリファレンス
-weight: 2
+weight: 90
 description: "Goa-AI の DSL 関数（エージェント、ツールセット、ポリシー、MCP 連携）を網羅した完全リファレンス。"
 llm_optimized: true
 aliases:
@@ -1605,7 +1606,7 @@ Service("calculator", func() {
     Description("Calculator MCP server")
 
     // MCP を使う例
-    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("calc", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })
@@ -1633,8 +1634,8 @@ Service("calculator", func() {
 
 ```go
 Service("calculator", func() {
-    // Specify protocol version as an option
-    MCP("calc", "1.0.0", ProtocolVersion("2025-06-18"))
+    // Use the default protocol supported by Goa-AI.
+    MCP("calc", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })
@@ -1735,7 +1736,7 @@ Service("assistant", func() {
 var _ = Service("assistant", func() {
     Description("MCP server example")
 
-    MCP("assistant", "1.0.0", ProtocolVersion("2025-06-18"))
+    MCP("assistant", "1.0.0")
     JSONRPC(func() {
         POST("/mcp")
     })

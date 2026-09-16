@@ -1,6 +1,7 @@
 ---
+nav_group: reference
 title: Generación de código
-weight: 3
+weight: 80
 description: "Complete guide to Goa's code generation - commands, process, generated code structure, and customization options."
 llm_optimized: true
 aliases:
@@ -18,20 +19,19 @@ negocio.
 ### Instalación
 
 ```bash
-GOPROXY=direct go install goa.design/goa/v3/cmd/goa@fix/goa-generation-plan
+go get goa.design/goa/v3@v3.31.1
+go install goa.design/goa/v3/cmd/goa@v3.31.1
 ```
 
-{{< alert title="Probar una versión preliminar de la generación" color="info" >}}
-Las versiones preliminares son opcionales. Fije el módulo de Goa y el comando
-`goa` al mismo commit. El trabajo actual está en la
-[rama preliminar `fix/goa-generation-plan`](https://github.com/goadesign/goa/tree/fix/goa-generation-plan),
-en el commit
-[`318c40614944e151ec7de2cfb712e0d08b73f7af`](https://github.com/goadesign/goa/commit/318c40614944e151ec7de2cfb712e0d08b73f7af).
-Vuelva a generar todo el directorio `gen/`, no mezcle nunca resultados estables
-y preliminares y, a continuación, compile y pruebe la aplicación completa.
-Coordine las actualizaciones de cliente y servidor cuando la guía identifique
-un cambio en el formato intercambiado. Para volver a la versión estable, fije
-juntos el módulo y el comando estables y vuelva a generar todo.
+{{< alert title="Actualizar a v3.31.1" color="info" >}}
+La versión preliminar del generador ya es estable. Al actualizar desde v3.30.x,
+v3.31.1 incluye cambios incompatibles intencionados; consulte la
+[guía de actualización](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+antes de regenerar una aplicación existente. Fije el módulo y el comando de Goa
+a la misma versión, regenere todo el directorio `gen/`, y compile y pruebe la
+aplicación. Coordine las actualizaciones de cliente y servidor para los formatos
+de mensajes modificados que indica la guía. Para volver a la versión anterior,
+restaure juntos las dependencias, el código generado y el código de la aplicación.
 {{< /alert >}}
 
 ### Comandos
@@ -541,15 +541,14 @@ var User = Type("User", func() {
 
 ### Aplicación de la validación
 
-Goa valida los datos en los límites del sistema:
-- **Lado del servidor**: Valida las peticiones entrantes
-- **Del lado del cliente**: Valida las respuestas entrantes
-- **Código interno**: Se asume que preserva las invariantes
+Los decodificadores de transporte generados por Goa validan las peticiones entrantes en el servidor y las respuestas entrantes en el cliente. El servicio mantiene después las invariantes de la aplicación. Las llamadas directas a un servicio o endpoint generado omiten esa decodificación; sus llamadores deben proporcionar valores válidos o validar en su propio punto de entrada.
 
 ### Reglas de puntero para campos Struct
 
 Los tipos de servicio representan valores ya validados. Los tipos de transporte
 decodificados también deben conservar si un campo entrante estaba ausente.
+
+Esta tabla describe campos escalares y objetos habituales en Goa v3.31.1. Bytes, `Any` y las uniones tienen representaciones propias; consulta sus tipos generados.
 
 | Campo | Tipo de servicio | Cuerpo HTTP/JSON-RPC | Solicitud o respuesta protobuf |
 |---|---|---|---|
@@ -559,8 +558,7 @@ decodificados también deben conservar si un campo entrante estaba ausente.
 | Array o mapa | Valor | Valor | Valor |
 
 En HTTP y JSON-RPC, la entrada decodificada es una solicitud en el servidor o
-una respuesta en el cliente. Las solicitudes codificadas por el cliente y las
-respuestas codificadas por el servidor usan valores. En los structs protobuf,
+una respuesta en el cliente. Los campos escalares obligatorios o con valor por defecto usan valores en las solicitudes codificadas por el cliente y las respuestas codificadas por el servidor; los escalares opcionales sin valor por defecto siguen siendo punteros. En los structs protobuf,
 los booleanos, números, strings, enums y sus alias singulares requeridos son
 punteros tanto en solicitudes como en respuestas. Así la validación distingue
 un campo omitido de un valor cero explícito. Los slices de bytes siguen siendo
@@ -581,10 +579,17 @@ type Person struct {
 solo en cuerpos HTTP y JSON-RPC entrantes, para rechazar `[null]`. El servicio y
 las respuestas generadas usan slices de valores.
 
+### Presencia de colecciones
+
+`Required("items")` y `MinLength(1)` expresan restricciones distintas. En JSON, una colección obligatoria debe estar presente y no ser null, pero `[]` o `{}` es válido salvo que una restricción de longitud lo impida. Los campos repeated y map de protobuf no distinguen ausencia y vacío tras la serialización y deserialización; la validación generada comprueba su longitud y contenido, no su presencia. Los escalares singulares, mensajes y oneofs obligatorios conservan sus propias comprobaciones de presencia.
+
+No uses colecciones Go nil frente a vacías para representar operaciones del dominio. Modela una operación explícita cuando sea necesario distinguir «dejar sin cambios» de «reemplazar por vacío».
+
 ### Manejo de valores por defecto
 
-- **Serialización**: Los valores por defecto inicializan arrays/maps nulos
-- **Deserialización**: Los valores por defecto se aplican a los campos opcionales que faltan (no a los campos obligatorios que faltan)
+Los valores por defecto pertenecen al diseño y los aplican las conversiones de transporte generadas. Al decodificar gRPC en la versión preliminar, un valor ausente recibe el valor por defecto declarado; un `0`, `false` o valor vacío explícito se conserva. La conversión del servicio a protobuf conserva el valor del servicio y no sustituye ceros por valores por defecto.
+
+HTTP usa reglas distintas: los constructores de cuerpos entrantes aplican valores por defecto a los valores ausentes, y los de cuerpos salientes pueden aplicarlos a campos de servicio con valor cero. Consulta el constructor y decodificador generados para la dirección pertinente cuando cero o ausencia tenga significado; no apliques una sola regla a todos los transportes.
 
 ---
 
@@ -594,23 +599,17 @@ Las vistas controlan cómo se muestran los tipos de resultados en las respuestas
 
 ### Cómo funcionan las vistas
 
-1. El método de servicio incluye un parámetro de vista
-2. Se genera un paquete de vistas a nivel de servicio
-3. La validación específica de la vista se genera automáticamente
+1. Define los atributos de cada vista en el tipo de resultado.
+2. Goa genera las representaciones, conversiones y validadores de las vistas.
+3. Un método puede seleccionar una vista fija en el diseño. Para un resultado unario dinámico, el método generado devuelve el nombre de vista junto al resultado; las interfaces de streaming exponen la operación generada para seleccionar la vista.
 
 ### Respuesta del lado del servidor
 
-1. El tipo de resultado visto es marshalled
-2. Se omiten los atributos nulos
-3. El nombre de la vista se pasa en la cabecera "Goa-View
+El codificador generado selecciona la representación de la vista elegida. Excluye los atributos ajenos a esa vista; los atributos obligatorios incluidos siguen formando parte del contrato. Las vistas HTTP dinámicas llevan el nombre en la cabecera `Goa-View`, y gRPC usa los metadatos `goa-view`. En la versión preliminar, JSON-RPC representa una vista dinámica con `{ "view": ..., "body": ... }` dentro de `result`; los resultados sin vista o con vista fija no usan ese envoltorio.
 
 ### Respuesta del lado del cliente
 
-1. La respuesta no está marcada
-2. Transformada en tipo de resultado visualizado
-3. Nombre de la vista extraído de la cabecera "Goa-View
-4. Validación específica de la vista
-5. Conversión a tipo de resultado de servicio
+El cliente generado lee la vista seleccionada, decodifica su representación, valida su contrato y la convierte al resultado del servicio. Los clientes personalizados deben seguir la representación del transporte y la versión seleccionados.
 
 ### Vista por defecto
 
@@ -653,9 +652,9 @@ que editan valores o archivos generados. Un plugin que declara un nombre a
 nivel de paquete debe usar la fase de planificación de la factoría para que Goa
 pueda reservar ese nombre junto con todas las demás declaraciones antes de
 renderizar. Consulte la
-[arquitectura de generación de código](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/codegen/ARCHITECTURE.md)
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)
 y la
-[guía de actualización de la versión preliminar](https://github.com/goadesign/goa/blob/318c40614944e151ec7de2cfb712e0d08b73f7af/UPGRADING.md)
+[guía de actualización](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
 para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---

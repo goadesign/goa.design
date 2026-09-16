@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Guía HTTP
-weight: 4
+weight: 20
 description: "Complete guide to HTTP transport in Goa - routing, content negotiation, WebSocket, SSE, CORS, and static content."
 llm_optimized: true
 aliases:
@@ -523,7 +524,7 @@ var _ = Service("calc", func() {
 
 ## Contenido estático
 
-> **Recapitulación del diseño**: El servicio de archivos estáticos utiliza la función DSL `Files`. Se trata de una función exclusiva de HTTP. Ver [Referencia DSL: Archivos estáticos](dsl-reference/#static-files) para patrones de diseño.
+> **Recapitulación del diseño**: El servicio de archivos estáticos utiliza la función DSL `Files`. Se trata de una función exclusiva de HTTP. Ver [Referencia DSL: Archivos estáticos](dsl-reference/#archivos-estáticos) para patrones de diseño.
 
 Sirve archivos estáticos usando la función `Files`:
 
@@ -560,8 +561,8 @@ var _ = Service("spa", func() {
 ## Ver también
 
 - [Referencia DSL: Streaming](dsl-reference/#streaming) - Patrones de streaming a nivel de diseño
-- [Referencia DSL: Archivos estáticos](dsl-reference/#static-files) - DSL de archivos para contenido estático
-- [Referencia DSL: Tratamiento de errores](dsl-reference/#error-handling-design-level) - Definiciones de errores a nivel de diseño
+- [Referencia DSL: Archivos estáticos](dsl-reference/#archivos-estáticos) - DSL de archivos para contenido estático
+- [Referencia DSL: Tratamiento de errores](dsl-reference/#tratamiento-de-errores-nivel-de-diseño) - Definiciones de errores a nivel de diseño
 - [Guía gRPC](grpc-guide/) - Características del transporte gRPC
 - [Guía de manejo de errores](error-handling/) - Patrones completos de manejo de errores
 - [Documentación de Clue](../3-ecosystem/clue/) - Middleware HTTP para observabilidad

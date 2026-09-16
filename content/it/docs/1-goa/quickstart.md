@@ -1,6 +1,7 @@
 ---
+nav_group: start
 title: Avvio rapido
-weight: 1
+weight: 10
 description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
 llm_optimized: true
 aliases:
@@ -12,7 +13,7 @@ Questa guida vi guida attraverso l'installazione di Goa e la creazione del vostr
 
 Prima di iniziare, assicuratevi che il vostro ambiente soddisfi questi requisiti:
 
-- **Go 1.18 o successivo** - Goa sfrutta le moderne funzionalità di Go
+- **Go 1.25 o successivo** - Goa sfrutta le moderne funzionalità di Go
 - **Moduli Go abilitati** - Questo è l'impostazione predefinita in Go 1.16+, ma verificare con `GO111MODULE=on` se necessario
 - **curl o qualsiasi client HTTP** - Per testare il proprio servizio
 
@@ -21,11 +22,8 @@ Prima di iniziare, assicuratevi che il vostro ambiente soddisfi questi requisiti
 Installare i pacchetti Goa e lo strumento CLI:
 
 ```bash
-# Pull the Goa packages
-go get goa.design/goa/v3/...
-
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@latest
+go install goa.design/goa/v3/cmd/goa@v3.31.1
 
 # Verify the installation
 goa version
@@ -50,6 +48,7 @@ Creare una nuova cartella e inizializzare un modulo Go:
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
+go get goa.design/goa/v3@v3.31.1
 ```
 
 > **Nota:** Per questa guida usiamo un semplice nome di modulo `hello`. Nei progetti reali, in genere si usa un nome di dominio come `github.com/yourusername/hello-goa`. I concetti funzionano esattamente allo stesso modo.
@@ -100,7 +99,8 @@ Questo approccio dichiarativo significa che si descrive *cosa* fa la propria API
 Trasformate il progetto in una struttura di servizio completamente funzionale:
 
 ```bash
-goa gen hello/design
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 Questo crea una cartella `gen` contenente:
@@ -112,7 +112,7 @@ Questo crea una cartella `gen` contenente:
 Ora si crea un'implementazione funzionante:
 
 ```bash
-goa example hello/design
+go run goa.design/goa/v3/cmd/goa example hello/design
 ```
 
 > **Importante:** Il comando `gen` rigenera la cartella `gen/` ogni volta che lo si esegue. Il comando `example` crea file di implementazione iniziali che sono di vostra proprietà e personalizzabili; Goa non li sovrascriverà nelle esecuzioni successive.
@@ -140,6 +140,8 @@ hello-goa/
 
 Aprire `hello.go` e trovare il metodo `SayHello`. Sostituirlo con la propria implementazione:
 
+Aggiungi `fmt` agli import di `hello.go`.
+
 ```go
 func (s *hellosrvc) SayHello(ctx context.Context, name string) (string, error) {
     log.Printf(ctx, "hello.sayHello")
@@ -154,8 +156,11 @@ Questa è tutta la logica aziendale necessaria: Goa gestisce tutto il resto.
 Per prima cosa, scaricare le dipendenze:
 
 ```bash
+go get goa.design/clue@v1.2.6
 go mod tidy
 ```
+
+Questa versione di Clue mantiene il codice iniziale generato compatibile con Go 1.25.
 
 Avviare il server:
 
@@ -207,7 +212,7 @@ Man mano che il servizio si evolve, si modifica il progetto e si rigenera il cod
 
 ```bash
 # After updating design/design.go
-goa gen hello/design
+go run goa.design/goa/v3/cmd/goa gen hello/design
 ```
 
 Punti chiave:

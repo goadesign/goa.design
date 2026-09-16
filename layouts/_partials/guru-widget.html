@@ -1,0 +1,26 @@
+{{/* When the assistant loads, place its launcher in the hero so it cannot cover page content. */}}
+<script>
+(function() {
+  var host = document.getElementById('goa-assistant');
+  var observer = new MutationObserver(function() {
+    var widget = document.getElementById('gurubase-chat-widget-container');
+    if (!widget) return;
+    var style = document.createElement('style');
+    style.textContent = '.chat-widget { position: static !important; background: transparent !important; } .chat-button { position: static !important; padding: 8px 12px !important; border-radius: 6px !important; font-size: 14px !important; box-shadow: none !important; }';
+    widget.shadowRoot.appendChild(style);
+    host.replaceChildren(widget);
+    observer.disconnect();
+  });
+  observer.observe(document.body, { childList: true });
+  var script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://widget.gurubase.io/widget.latest.min.js';
+  script.id = 'guru-widget-id';
+  script.dataset.widgetId = '_pjRcK9Q0wT6zr7y_Xtz1j5nAreWPNoI8P_2WwDyAuc';
+  script.dataset.text = 'Goa Guru';
+  script.dataset.bgColor = '#2255c5';
+  script.dataset.margins = '{"bottom":"1rem","right":"1rem"}';
+  script.dataset.lightMode = document.documentElement.getAttribute('data-theme') === 'light' ? 'true' : 'false';
+  document.body.appendChild(script);
+})();
+</script>

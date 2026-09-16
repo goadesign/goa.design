@@ -1,7 +1,8 @@
 ---
+nav_group: reference
 title: "Registro interno de herramientas"
 linkTitle: "Registro"
-weight: 9
+weight: 110
 description: "Despliega una pasarela en clúster para descubrir e invocar toolsets entre procesos."
 llm_optimized: true
 ---

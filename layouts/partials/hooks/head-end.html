@@ -1,9 +1,26 @@
+<link rel="canonical" href="{{ .Permalink }}">
+{{ range .AllTranslations }}
+<link rel="alternate" hreflang="{{ .Language.Lang }}" href="{{ .Permalink }}">
+{{ if eq .Language.Lang "en" }}
+<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">
+{{ end }}
+{{ end }}
+
+{{ with .OutputFormats.Get "Markdown" }}
+<link rel="alternate" type="text/markdown" title="Markdown" href="{{ .Permalink }}">
+{{ end }}
 {{- $sha := getenv "HUGO_GIT_SHA" -}}
 {{- if and $sha (ge (len $sha) 12) -}}
   {{- $short := substr $sha 0 12 -}}
   <meta name="goa.design.git_sha" content="{{ $sha }}">
   <meta name="goa.design.git_short_sha" content="{{ $short }}">
 {{- end -}}
+
+{{ if .IsHome }}
+{{ $goa := dict "@type" "SoftwareSourceCode" "name" "Goa" "description" (T "home_service_text") "codeRepository" "https://github.com/goadesign/goa" "programmingLanguage" "Go" "license" "https://opensource.org/license/mit" "url" ("docs/1-goa/" | absLangURL) }}
+{{ $ai := dict "@type" "SoftwareSourceCode" "name" "Goa-AI" "description" (T "home_agent_text") "codeRepository" "https://github.com/goadesign/goa-ai" "programmingLanguage" "Go" "license" "https://opensource.org/license/mit" "url" ("docs/2-goa-ai/" | absLangURL) }}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@graph" (slice $goa $ai) | jsonify | safeJS }}</script>
+{{ end }}
 
 {{/* Theme initialization - runs early to prevent flash of wrong theme */}}
 <script>
@@ -13,5 +30,6 @@
   // Default to dark mode unless the user explicitly chose a theme.
   var theme = stored || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-bs-theme', theme);
 })();
 </script>

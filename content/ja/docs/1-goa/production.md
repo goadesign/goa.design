@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: プロダクション
-weight: 8
+weight: 60
 description: "Production-ready patterns for Goa services - observability, security, and common deployment patterns."
 llm_optimized: true
 aliases:

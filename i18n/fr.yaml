@@ -1,6 +1,6 @@
 # Site title and meta
-site_title: "Goa :: La conception d'abord."
-site_description: "Goa est un framework de génération de code puissant pour Go, permettant une approche conception d'abord pour construire des APIs et microservices idiomatiques — clairs, évolutifs et sans code répétitif."
+site_title: "Goa et Goa-AI — Frameworks Go pour agents de développement"
+site_description: "Goa est un framework Go qui donne aux agents de développement moins de code à écrire et un seul contrat pour raisonner. Générez des serveurs HTTP, gRPC et JSON-RPC, clients typés, validations et spécifications API. Créez des agents IA, serveurs MCP et registres d’outils avec Goa-AI."
 
 # Navigation
 nav_search_placeholder: "Rechercher"
@@ -16,18 +16,10 @@ footer_copyright: " 2015-%s par Raphael Simon et les contributeurs Goa"
 footer_logo_by: "Logo par Jason Melgoza"
 
 # Hero Section
-hero_title: "La Conception D'abord !"
-hero_description: "Arrêtez d'écrire du code répétitif. Commencez à concevoir des solutions qui comptent.</br>Laissez Goa s'occuper du reste."
 
 # Features Section
-feature_codegen_title: "Développement Accéléré"
-feature_codegen_desc: "Goa génère automatiquement 30 à 50% de votre base de code. Concentrez-vous sur votre logique métier tandis que Goa gère le transport, la validation, la documentation et la génération de clients."
 
-feature_design_title: "Basé sur la Conception"
-feature_design_desc: "Votre conception est votre contrat. Goa assure que votre implémentation, documentation et SDKs clients restent parfaitement synchronisés. Plus de dérive entre les spécifications et le code."
 
-feature_best_practice_title: "Meilleures Pratiques"
-feature_best_practice_desc: "Validation intégrée, gestion des erreurs et intégration de middleware. Obtenez des fonctionnalités de sécurité et de fiabilité de niveau entreprise sans la complexité de niveau entreprise."
 
 # Section Navigation
 subsections_title: "Dans Cette Section"
@@ -82,17 +74,8 @@ sponsor_speakeasy_title: "Speakeasy : DevEx Entreprise pour votre API"
 sponsor_speakeasy_desc: "Notre plateforme facilite la création de SDKs prêts pour la production riches en fonctionnalités.<br/>Accélérez les intégrations et réduisez les erreurs en donnant à votre API la DevEx qu'elle mérite."
 sponsor_speakeasy_link: "Intégrer avec Goa"
 
-design_first_title: "Développement Bien Fait"
-design_first_description: "Goa transforme la façon dont vous construisez des microservices en Go.<br/>Concevez votre solution une fois, et regardez Goa générer des serveurs prêts pour la production, des clients typés et une documentation complète.<br/>Concentrez-vous sur l'essentiel : construire d'excellents services qui évoluent."
 
 # Why Goa Section
-why_goa_title: "Pourquoi les Équipes Choisissent Goa"
-why_goa_type_safe_title: "Développement Rapide"
-why_goa_type_safe_desc: "Réduisez le temps de développement avec la génération automatique de code. 30 à 50% de code en moins à écrire, tester et maintenir signifie une mise sur le marché plus rapide."
-why_goa_boilerplate_title: "Zéro Code Répétitif"
-why_goa_boilerplate_desc: "Plus besoin de copier-coller des handlers et middleware. Concentrez-vous sur votre logique métier tandis que Goa s'occupe du reste."
-why_goa_production_title: "Prêt pour la Production"
-why_goa_production_desc: "Utilisé par des entreprises du monde entier pour construire et faire évoluer leurs APIs. Éprouvé au combat, performant et fiable."
 
 # Trust Section
 trust_section_title: "Adopté par des Équipes d'Ingénierie dans le Monde Entier"
@@ -112,3 +95,237 @@ learn_more: "En Savoir Plus"
 get_started: "Démarrage Rapide"
 
 
+
+# Shared Goa ecosystem presentation.
+
+home_heading: "Les agents raisonnent."
+
+home_intro: "Goa est un framework Go qui donne aux agents de développement moins de code à écrire et un seul contrat pour raisonner. Générez des serveurs HTTP, gRPC et JSON-RPC, clients typés, validations et spécifications API. Créez des agents IA, serveurs MCP et registres d’outils avec Goa-AI."
+
+home_service_cta: "Créer un service"
+
+home_agent_cta: "Créer un agent IA"
+
+home_workflow_cta: "Développer avec un agent de code"
+
+home_facts: "Open source. Licence MIT. Écrit en Go."
+
+home_example_label: "Choisir un exemple de conception"
+
+home_services: "Services"
+
+home_agents: "Agents IA"
+
+home_excerpt: "Extrait de conception"
+
+home_generated: "Du code que votre agent n’a pas à écrire"
+
+home_output_types: "Interfaces de service"
+
+home_output_http: "Serveur HTTP"
+
+home_output_client: "Clients typés"
+
+home_output_openapi: "Spécification OpenAPI"
+
+home_output_schemas: "Schémas JSON des outils"
+
+home_output_codecs: "Codecs de données typées"
+
+home_output_bindings: "Liaisons aux services"
+
+home_full_example: "Voir l’exemple complet"
+
+home_workflow_heading: "Concevez l’intention. Générez la répétition."
+
+home_workflow_intro: "Un même processus pour vous, votre équipe et votre agent de développement."
+
+home_step_design: "Décrire le contrat"
+
+home_step_design_text: "Définissez types, opérations et contraintes dans une conception Go lisible."
+
+home_step_generate: "Lancer le générateur"
+
+home_step_generate_text: "Laissez goa gen produire le code qui découle du contrat."
+
+home_step_implement: "Implémenter le comportement"
+
+home_step_implement_text: "Vous et votre agent écrivez la logique métier, les planificateurs et les tests."
+
+home_step_check: "Évoluer avec des contrôles"
+
+home_step_check_text: "Régénérez après une modification. Compilez, testez et examinez le résultat."
+
+home_benefits_heading: "Moins de travail pour votre agent."
+
+home_benefits_intro: "Un modèle ne devrait pas avoir à redécouvrir votre architecture ni à réécrire les mêmes intégrations à chaque fonctionnalité."
+
+home_benefit_tokens: "Générez le code. Épargnez ces tokens."
+
+home_benefit_tokens_text: "Chaque transport, client et schéma généré est du code que le LLM n’a pas à composer. Consacrez ce travail à la logique métier, aux tests utiles et à de meilleurs outils."
+
+home_benefit_context: "Un contrat pour comprendre le système."
+
+home_benefit_context_text: "Types, contraintes, descriptions et méthodes sont réunis dans le design. La structure générée donne à l’agent une carte du code et un endroit précis où intervenir."
+
+home_benefit_feedback: "Le compilateur repère les écarts."
+
+home_benefit_feedback_text: "Modifiez le contrat et régénérez ses représentations ensemble. Go signale les appels et implémentations incompatibles : un retour concret pour la prochaine modification de votre agent."
+
+home_benefit_boundaries: "Relier les contrats"
+
+home_benefit_boundaries_text: "Réutilisez les types des services dans les outils des agents. Générez schémas et liaisons depuis la même conception sans maintenir des définitions parallèles."
+
+home_frameworks_heading: "Un écosystème. Deux façons de construire."
+
+home_frameworks_intro: "Commencez par un service, un agent ou les deux. Le même langage de conception les relie."
+
+home_service_title: "Un contrat. Tous les transports."
+
+home_service_text: "Définissez votre service une fois. Générez ses API, clients, validations et spécifications ensemble. Implémentez la logique métier derrière une interface Go typée."
+
+home_service_features: "Clients, validation et OpenAPI générés"
+
+home_service_docs: "Découvrir Goa"
+
+home_agent_title: "Des agents soutenus par un système."
+
+home_agent_text: "Concevez les outils et les résultats. Générez les contrats. Le runtime coordonne les appels aux modèles, les outils, les interventions humaines et les workflows durables."
+
+home_agent_features: "Schémas d’outils, liaisons aux services et MCP"
+
+home_agent_runtime: "Exécution locale ; durabilité avec Temporal"
+
+home_agent_docs: "Découvrir Goa-AI"
+
+home_community_heading: "Construisez sur des bases ouvertes."
+
+home_community_intro: "Goa et Goa-AI font partie d’un ensemble d’outils open source pour les services Go, les agents, l’observabilité et les systèmes distribués."
+
+home_ecosystem: "Découvrir l’écosystème"
+
+home_examples: "Exemples exécutables"
+
+home_discussions: "Interroger la communauté"
+
+home_contribute: "Contribuer"
+
+docs_skip: "Aller au contenu"
+
+docs_navigation: "Menu de documentation"
+
+docs_on_page: "Sur cette page"
+
+docs_start: "Commencer ici"
+
+docs_explore: "Explorer la documentation"
+
+docs_group_start: "Premiers pas"
+
+docs_group_guides: "Guides"
+
+docs_group_reference: "Référence"
+
+docs_copy: "Copier la page"
+
+docs_copy_markdown: "Copier en Markdown"
+
+docs_copy_text: "Copier en texte brut"
+
+docs_overview: "Documentation"
+
+home_heading_second: "Goa génère."
+
+home_output_validation: "Validation et codecs"
+
+home_output_cli: "Clients en ligne de commande"
+
+home_output_descriptors: "Descripteurs d’outils typés"
+
+home_output_registration: "Enregistrements du runtime"
+
+home_skill_cta: "Équipez votre agent de la skill Goa"
+
+home_skill_heading: "Apprenez la méthode Goa à votre agent."
+
+home_skill_intro: "Installez la skill Goa service designer dans votre projet. Elle guide votre agent du design à la vérification, en précisant quels fichiers modifier et lesquels régénérer."
+
+home_skill_docs: "Installation et méthode"
+
+home_skill_copy: "Copier la commande d’installation"
+
+home_skill_copied: "Commande copiée."
+
+home_skill_copy_failed: "Sélectionnez et copiez la commande."
+
+home_skill_hint: "À exécuter dans votre projet. Nécessite Node.js et npm."
+
+home_skill_next: "Puis confiez une vraie tâche à votre agent :"
+
+home_skill_prompt: "Utilise la skill goa-service-designer pour ajouter un service catalogue avec des endpoints HTTP et gRPC. Génère le code, implémente la recherche de produits et teste-la."
+
+home_service_transports: "Serveurs, clients typés et clients CLI à partir du même design."
+
+home_service_streams: "Le streaming dans le design"
+
+home_service_contracts: "Des contrats qui restent liés"
+
+home_service_contracts_text: "Types Go, validation, encodage, correspondance des erreurs, OpenAPI et Protocol Buffers."
+
+home_agent_contracts: "Outils typés et réponses structurées"
+
+home_agent_contracts_text: "Schémas, codecs, liaisons aux services et helpers de complétion générés."
+
+home_agent_composition: "Composition et évaluation"
+
+home_agent_composition_text: "Agents utilisés comme outils, exécutions enfants liées, suites d’évaluation typées et hooks de scénarios."
+
+home_agent_execution: "Une exécution que vous maîtrisez"
+
+home_agent_execution_text: "Événements typés, confirmations, annulation et politiques. Exécution locale pour commencer ; Temporal pour la durabilité."
+
+home_connect_heading: "Vos services dans l’écosystème IA."
+
+home_connect_intro: "Goa-AI fournit aussi l’infrastructure qui rend vos outils accessibles à vos agents et aux autres applications IA."
+
+home_mcp_heading: "Créez des serveurs MCP à partir de vos services."
+
+home_mcp_text: "Exposez vos méthodes comme outils MCP. Publiez des ressources et des modèles de prompts. Goa-AI génère le protocole et les adaptateurs : MCP devient une interface de votre application. Les agents peuvent aussi utiliser des outils MCP externes."
+
+home_mcp_cta: "Créer un serveur MCP"
+
+home_mcp_caption: "Dans un service Goa. Ajoutez Resource et StaticPrompt pour exposer d’autres capacités MCP."
+
+home_registry_heading: "Hébergez votre registre d’outils."
+
+home_registry_text: "Exécutez le serveur de registre inclus comme catalogue partagé et passerelle d’invocation. Publiez des toolsets, découvrez leurs schémas et routez les appels vers les fournisseurs disponibles. Agents et fournisseurs se déploient et évoluent indépendamment. Avec Redis et Pulse."
+
+home_registry_cta: "Héberger un registre d’outils"
+
+home_registry_flow: "Les fournisseurs d’outils se connectent aux agents via un registre"
+
+home_registry_node: "Votre registre d’outils"
+
+home_registry_node_text: "Découvrir les schémas. Router les appels. Suivre l’état."
+
+home_registry_consumers: "Vos agents et applications"
+
+home_faq_heading: "Avant de commencer"
+
+home_faq_codegen_q: "Pourquoi utiliser Goa si un agent peut écrire le code ?"
+
+home_faq_codegen_a: "Un agent écrit du code par inférence ; Goa dérive le code des contrats du design. Serveurs, clients, codecs et schémas générés sont autant de code que le modèle n’a pas à écrire séparément. Le design concentre le contexte, la structure reste cohérente et le compilateur repère les implémentations incompatibles après une modification. L’agent écrit toujours la logique métier et les tests."
+
+home_faq_difference_q: "Quelle est la différence entre Goa et Goa-AI ?"
+
+home_faq_difference_a: "Goa conçoit et génère les API de services Go : HTTP, gRPC, JSON-RPC, clients, validation et spécifications. Goa-AI étend le même DSL et générateur avec des outils typés, agents IA, complétions structurées, évaluations et serveurs MCP. Il fournit aussi un runtime d’agents et un serveur de registre à héberger. Vous pouvez commencer par l’un ou l’autre ; Goa-AI n’exige pas de service Goa déployé séparément."
+
+home_faq_tokens_q: "Comment la génération réduit-elle le travail du LLM ?"
+
+home_faq_tokens_a: "Goa génère le code de transport et des contrats sans demander au LLM de composer ces fichiers. Une catégorie de travail en tokens de sortie disparaît. L’économie totale dépend de la tâche, du modèle, du contexte et des itérations : comparez des changements complets, tests et revue inclus, pour mesurer l’effet dans votre projet."
+
+home_faq_mcp_q: "Puis-je utiliser Goa-AI uniquement pour créer un serveur MCP ?"
+
+home_faq_mcp_a: "Oui. Ajoutez des déclarations MCP à un service Goa pour générer un serveur exposant outils, ressources et modèles de prompts. Implémentez les méthodes derrière les adaptateurs générés. Aucun agent Goa-AI n’est nécessaire pour servir MCP."
+
+ui_search: "Rechercher"

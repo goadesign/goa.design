@@ -31,6 +31,7 @@
   // Apply the theme to the document
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-bs-theme', theme);
     
     // Also set on body for td-home class combination
     if (document.body) {
@@ -128,4 +129,3 @@
     insertToggleButton();
   }
 })();
-

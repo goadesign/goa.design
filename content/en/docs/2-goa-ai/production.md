@@ -1,7 +1,8 @@
 ---
+nav_group: guides
 title: "Production"
 linkTitle: "Production"
-weight: 8
+weight: 70
 description: "Set up Temporal for durable workflows, stream events to UIs, apply adaptive rate limiting, and use system reminders."
 llm_optimized: true
 aliases:

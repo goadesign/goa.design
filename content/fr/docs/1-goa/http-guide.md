@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: HTTP Guide
-weight: 4
+weight: 20
 description: "Complete guide to HTTP transport in Goa - routing, content negotiation, WebSocket, SSE, CORS, and static content."
 llm_optimized: true
 aliases:
@@ -523,7 +524,7 @@ var _ = Service("calc", func() {
 
 ## Contenu statique
 
-**Récapitulation de la conception** : Le service de fichiers statiques utilise la fonction DSL `Files`. Il s'agit d'une fonctionnalité HTTP uniquement. Voir [Référence DSL : Fichiers statiques] (dsl-reference/#static-files) pour les modèles de conception.
+**Récapitulation de la conception** : Le service de fichiers statiques utilise la fonction DSL `Files`. Il s'agit d'une fonctionnalité HTTP uniquement. Voir [Référence DSL : Fichiers statiques] (dsl-reference/#fichiers-statiques) pour les modèles de conception.
 
 Servez les fichiers statiques à l'aide de la fonction `Files` :
 
@@ -560,8 +561,8 @@ var _ = Service("spa", func() {
 ## Voir aussi
 
 - [Référence DSL : Streaming](dsl-reference/#streaming) - Modèles de streaming au niveau de la conception
-- [Référence DSL : Fichiers statiques](dsl-reference/#static-files) - DSL de fichiers pour le contenu statique
-- [DSL Reference : Error Handling](dsl-reference/#error-handling-design-level) - Définitions des erreurs au niveau de la conception
+- [Référence DSL : Fichiers statiques](dsl-reference/#fichiers-statiques) - DSL de fichiers pour le contenu statique
+- [DSL Reference : Error Handling](dsl-reference/#gestion-des-erreurs-niveau-conception) - Définitions des erreurs au niveau de la conception
 - [Guide gRPC](grpc-guide/) - Caractéristiques du transport gRPC
 - [Guide de gestion des erreurs](error-handling/) - Modèles complets de gestion des erreurs
 - [Clue Documentation](../3-ecosystem/clue/) - Logiciel intermédiaire HTTP pour l'observabilité

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="{{ .Site.Language.Lang }}" class="no-js">
+<head>{{ partial "head.html" . }}</head>
+<body class="td-{{ .Kind }}">
+  <a class="skip-link" href="#main-content">{{ T "docs_skip" }}</a>
+  <header>{{ partial "navbar.html" . }}</header>
+  <main id="main-content" class="td-main">{{ block "main" . }}{{ end }}</main>
+  {{ partial "footer.html" . }}
+  {{ partial "scripts.html" . }}
+</body>
+</html>

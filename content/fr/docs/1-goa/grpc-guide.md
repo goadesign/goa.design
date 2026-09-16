@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: gRPC Guide
-weight: 5
+weight: 30
 description: "Complete guide to gRPC transport in Goa - service design, streaming patterns, error handling, and Protocol Buffer integration."
 llm_optimized: true
 aliases:
@@ -360,7 +361,7 @@ le protocole actuel pour les payloads d'objets, de maps ou d'unions.
 
 ## Gestion des erreurs
 
-**Rappel de la conception** : Les erreurs sont définies au niveau de la conception à l'aide du DSL `Error` au niveau de l'API, du service ou de la méthode. Voir [DSL Reference : Error Handling](dsl-reference/#error-handling-design-level) pour les modèles de conception. Cette section couvre le mappage des codes d'état spécifiques à gRPC.
+**Rappel de la conception** : Les erreurs sont définies au niveau de la conception à l'aide du DSL `Error` au niveau de l'API, du service ou de la méthode. Voir [DSL Reference : Error Handling](dsl-reference/#gestion-des-erreurs-niveau-conception) pour les modèles de conception. Cette section couvre le mappage des codes d'état spécifiques à gRPC.
 
 ### Codes d'état
 
@@ -560,7 +561,7 @@ var _ = Service("calculator", func() {
 ## Voir aussi
 
 - [Référence DSL : Streaming](dsl-reference/#streaming) - Modèles de streaming au niveau de la conception
-- [Référence DSL : Traitement des erreurs](dsl-reference/#error-handling-design-level) - Définitions d'erreurs au niveau de la conception
+- [Référence DSL : Traitement des erreurs](dsl-reference/#gestion-des-erreurs-niveau-conception) - Définitions d'erreurs au niveau de la conception
 - [Guide HTTP](http-guide/) - Caractéristiques du transport HTTP
 - [Guide de gestion des erreurs](error-handling/) - Modèles complets de gestion des erreurs
 - [Clue Documentation](../3-ecosystem/clue/) - Intercepteurs gRPC pour l'observabilité

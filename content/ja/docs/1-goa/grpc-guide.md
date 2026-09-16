@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: gRPCガイド
-weight: 5
+weight: 30
 description: "Complete guide to gRPC transport in Goa - service design, streaming patterns, error handling, and Protocol Buffer integration."
 llm_optimized: true
 aliases:

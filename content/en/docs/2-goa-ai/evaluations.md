@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: Generated Evaluations
-weight: 6
+weight: 40
 description: "Declare agent test scenarios in your Goa design, implement one typed hook per scenario, and get calibrated, model-graded reports."
 llm_optimized: true
 ---

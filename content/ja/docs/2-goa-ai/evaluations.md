@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: 生成型評価
-weight: 10
+weight: 40
 description: "Goa design で評価 scenario を定義し、型付き hook と信頼できる report を生成します。"
 llm_optimized: true
 ---
@@ -392,4 +393,4 @@ application code を compile する前に再生成してください。生成 su
 
 ## Remote Judge Model
 
-evaluation suite は planner と同じ不透明な検証済み `model.Client` を使います。judge model が別 process で動く場合は `gateway.NewServer` で provider を公開し、`gateway.NewRemoteClient` または `gateway.NewCountingRemoteClient` で接続します。evaluation policy が正確な input-token count を必要とする場合は counting client が必要です。transport と validation contract は [Remote Model Gateway](./runtime/#remote-model-gateways) を参照してください。
+evaluation suite は planner と同じ不透明な検証済み `model.Client` を使います。judge model が別 process で動く場合は `gateway.NewServer` で provider を公開し、`gateway.NewRemoteClient` または `gateway.NewCountingRemoteClient` で接続します。evaluation policy が正確な input-token count を必要とする場合は counting client が必要です。transport と validation contract は [Remote Model Gateway](./runtime/#remote-model-gateway) を参照してください。

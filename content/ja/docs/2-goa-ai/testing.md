@@ -1,6 +1,7 @@
 ---
+nav_group: guides
 title: テストとトラブルシューティング
-weight: 9
+weight: 80
 description: "エージェント、プランナー、ツールのテスト方法と、よくある問題のトラブルシューティングを学びます。"
 llm_optimized: true
 ---

@@ -28,3 +28,9 @@ static/img/social/.DS_Store
 
 # go-app build artifact (App Engine binary)
 go-app/goa.design
+
+# Local design and browser verification artifacts
+.impeccable/review/
+.impeccable/*.py
+playwright-report/
+test-results/
