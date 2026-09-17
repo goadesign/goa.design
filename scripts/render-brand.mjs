@@ -9,22 +9,55 @@ const logo = `data:image/png;base64,${(await readFile(`${root}/static/img/goa-lo
 const font = (await readFile(`${root}/static/fonts/manrope-latin.ttf`)).toString('base64');
 const browser = await chromium.launch({ channel: 'chrome' });
 const bannerPage = await browser.newPage({ deviceScaleFactor: 2 });
-const banner = (await readFile(`${root}/scripts/readme-banner.html`, 'utf8'))
+const bannerTemplate = (await readFile(`${root}/scripts/readme-banner.html`, 'utf8'))
   .replace('{{FONT}}', `data:font/ttf;base64,${font}`)
   .replace('{{LOGO}}', logo);
-// Render the same composition for each GitHub theme and screen size at twice its display resolution.
-for (const [name, width, height, colorScheme] of [
-  ['goa-banner', 1200, 440, 'light'],
-  ['goa-banner-dark', 1200, 440, 'dark'],
-  ['goa-banner-mobile', 720, 460, 'light'],
-  ['goa-banner-mobile-dark', 720, 460, 'dark'],
+// Both frameworks share the site's typography and colors; their diagrams show
+// the different contracts each framework generates.
+for (const [prefix, copy] of [
+  ['goa', {
+    TITLE: 'Goa',
+    NAME: '',
+    HEADLINE: 'Let agents reason.<br>Let Goa generate.',
+    SUBLINE: 'Go services, built with coding agents.',
+    MOBILE_LABEL: 'Generated transports',
+    MOBILE_ITEMS: '<li>HTTP</li><li>gRPC</li><li>JSON-RPC</li>',
+    DIAGRAM_LABEL: 'One Go contract generates HTTP, gRPC, JSON-RPC, typed clients, validation, and API specifications',
+    CONTRACT: 'One Go contract',
+    OUTPUT_ITEMS: '<li>HTTP</li><li>gRPC</li><li>JSON-RPC</li>',
+    FOOTER: 'Typed clients, validation, API specs',
+  }],
+  ['goa-ai', {
+    TITLE: 'Goa-AI',
+    NAME: '<strong class="framework-name">Goa-AI</strong>',
+    HEADLINE: 'Build agents.<br>Keep tools in sync.',
+    SUBLINE: 'Generated contracts. Built-in call correction.',
+    MOBILE_LABEL: 'Build with Goa-AI',
+    MOBILE_ITEMS: '<li>AI agents</li><li>MCP</li><li>Tool registries</li>',
+    DIAGRAM_LABEL: 'One Go design generates model schemas, Go types, and configured API specifications',
+    CONTRACT: 'One Go design',
+    OUTPUT_ITEMS: '<li>Model<br>schemas</li><li>Go<br>types</li><li>API<br>specs</li>',
+    FOOTER: 'Contracts that stay in sync',
+  }],
 ]) {
-  await bannerPage.setViewportSize({ width, height });
-  await bannerPage.emulateMedia({ colorScheme });
-  await bannerPage.setContent(banner);
-  await bannerPage.evaluate(() => document.fonts.ready);
-  await bannerPage.locator('img').evaluate(image => image.decode());
-  await bannerPage.screenshot({ path: `${root}/static/img/social/${name}.png`, omitBackground: true });
+  const banner = bannerTemplate.replace(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
+    if (!(key in copy)) throw new Error(`Missing banner text: ${key}`);
+    return copy[key];
+  });
+  // Render each GitHub theme and screen size at twice its display resolution.
+  for (const [suffix, width, height, colorScheme] of [
+    ['', 1200, 440, 'light'],
+    ['-dark', 1200, 440, 'dark'],
+    ['-mobile', 720, 460, 'light'],
+    ['-mobile-dark', 720, 460, 'dark'],
+  ]) {
+    await bannerPage.setViewportSize({ width, height });
+    await bannerPage.emulateMedia({ colorScheme });
+    await bannerPage.setContent(banner);
+    await bannerPage.evaluate(() => document.fonts.ready);
+    await bannerPage.locator('img').evaluate(image => image.decode());
+    await bannerPage.screenshot({ path: `${root}/static/img/social/${prefix}-banner${suffix}.png`, omitBackground: true });
+  }
 }
 await bannerPage.close();
 if (!process.argv.includes('--readme-only')) {
@@ -32,7 +65,6 @@ if (!process.argv.includes('--readme-only')) {
   const style = `<style>@font-face{font-family:Manrope;src:url(data:font/ttf;base64,${font})}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172b45;font-family:Manrope,sans-serif}.brand{display:flex;align-items:center;gap:16px;color:#172b45;font-size:58px;font-weight:800;letter-spacing:-2px}.brand img{width:88px;height:88px;border-radius:50%}h1{font-size:60px;line-height:1.16;letter-spacing:-2px;margin:36px 0 24px;font-weight:750}p{font-size:25px;color:#35465c;line-height:1.6;margin:0}.frame{height:100vh;padding:64px 76px;position:relative}.foot{position:absolute;bottom:54px;left:76px;right:76px;display:flex;justify-content:space-between;border-top:1px solid #dce3ec;padding-top:24px;font-size:20px;color:#526278}.compact{padding:54px 70px}.compact h1{font-size:46px;margin:20px 0 12px}.compact .brand{font-size:42px}.compact .brand img{width:70px;height:70px}</style>`;
   for (const [name, width, height, label, headline, subline] of [
     ['goa-card', 1200, 630, 'Goa', 'Let agents reason.<br>Let Goa generate.', 'Less code to write. One contract to reason from.'],
-    ['goa-ai-banner', 1200, 360, 'Goa-AI', 'Design the tools. Generate the contracts.', 'AI agents, MCP servers, and tool registries.'],
   ]) {
     await page.setViewportSize({ width, height });
     await page.setContent(`${style}<main class="frame ${height < 400 ? 'compact' : ''}"><div class="brand"><img src="${logo}" alt=""><span>${label}</span></div><h1>${headline}</h1><p>${subline}</p>${height > 400 ? '<div class="foot"><span>Go services / AI agents / MCP / Tool registries</span><span>goa.design</span></div>' : ''}</main>`);

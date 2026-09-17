@@ -117,7 +117,7 @@ logo:
 	rm static/img/social/goa-square-temp.png
 	$(MAKE) readme-banner
 
-## Render the Goa README banner for light, dark, desktop, and mobile
+## Render both README banners for light, dark, desktop, and mobile
 readme-banner:
 	node scripts/render-brand.mjs --readme-only
 

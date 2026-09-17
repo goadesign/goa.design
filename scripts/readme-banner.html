@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Goa README banner</title>
+  <title>{{TITLE}} README banner</title>
   <style>
     @font-face {
       font-family: Manrope;
@@ -60,6 +60,14 @@
 
     .identity img { width: 64px; height: 64px; border-radius: 50%; }
     .identity span { color: var(--muted); font-size: 22px; font-weight: 600; }
+    .framework-name {
+      margin-left: 18px;
+      margin-right: auto;
+      color: var(--heading);
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -.035em;
+    }
 
     .content {
       display: grid;
@@ -155,23 +163,24 @@
   <main class="banner">
     <div class="identity">
       <img src="{{LOGO}}" alt="Goa">
+      {{NAME}}
       <span>goa.design</span>
     </div>
     <div class="content">
       <div class="message">
-        <h1>Let agents reason.<br>Let Goa generate.</h1>
-        <p>Go services, built with coding agents.</p>
-        <ul class="mobile-transports" aria-label="Generated transports">
-          <li>HTTP</li><li>gRPC</li><li>JSON-RPC</li>
+        <h1>{{HEADLINE}}</h1>
+        <p>{{SUBLINE}}</p>
+        <ul class="mobile-transports" aria-label="{{MOBILE_LABEL}}">
+          {{MOBILE_ITEMS}}
         </ul>
       </div>
-      <div class="generation" aria-label="One Go contract generates HTTP, gRPC, JSON-RPC, typed clients, validation, and API specifications">
-        <div class="contract">One Go contract</div>
+      <div class="generation" aria-label="{{DIAGRAM_LABEL}}">
+        <div class="contract">{{CONTRACT}}</div>
         <svg class="branches" viewBox="0 0 300 54" fill="none" aria-hidden="true">
           <path d="M150 0v54M50 54V27h200v27" stroke="currentColor" stroke-width="1.5"/>
         </svg>
-        <ul class="transports"><li>HTTP</li><li>gRPC</li><li>JSON-RPC</li></ul>
-        <p class="outputs">Typed clients, validation, API specs</p>
+        <ul class="transports">{{OUTPUT_ITEMS}}</ul>
+        <p class="outputs">{{FOOTER}}</p>
       </div>
     </div>
   </main>
