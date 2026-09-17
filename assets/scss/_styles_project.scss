@@ -57,7 +57,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .goa-home .td-click-to-copy:hover { color: var(--doc-link-color); border-color: var(--doc-link-color); }
 .home-hero { display: grid; grid-template-columns: 1fr 1.06fr; align-items: center; gap: 64px; padding-block: 80px 88px; }
 .hero-copy h1 { font-size: clamp(2.625rem, 4.35vw, 4rem); font-weight: 750; line-height: 1.12; letter-spacing: -.035em; margin-bottom: 1.65rem; max-width: none; text-wrap: initial; }
-.hero-copy h1 span { display: block; }
+.hero-copy h1 span { display: block; color: var(--doc-link-color); }
 .hero-lead { font-size: 1.16rem; line-height: 1.75; max-width: 44ch; margin-bottom: 2rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 1.25rem; }
 .goa-button { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: .7rem 1.1rem; border: 1px solid var(--button-bg); border-radius: 6px; background: var(--button-bg); color: var(--button-text); font-weight: 650; font-size: .95rem; text-decoration: none; }
@@ -79,7 +79,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .demo-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .demo-switch label { flex: 1; padding: .95rem 1.2rem; font-weight: 700; cursor: pointer; text-align: center; border-bottom: 1px solid var(--color-border-subtle); color: var(--color-text-muted); }
 .demo-switch label span { font-weight: 400; margin-left: .35rem; font-size: .85rem; }
-.demo-switch input:checked + label { background: var(--color-bg-elevated); color: var(--color-text-heading); border-bottom-color: var(--doc-link-color); }
+.demo-switch input:checked + label { background: var(--color-highlight); color: var(--doc-link-color); border-bottom-color: var(--doc-link-color); }
 .demo-switch input:focus-visible + label { outline: 3px solid var(--doc-link-color); outline-offset: -5px; }
 .contract-demo:has(#demo-service:checked) .demo-agent, .contract-demo:has(#demo-agent:checked) .demo-service { display: none; }
 .demo-filename { display: flex; justify-content: space-between; padding: 1.15rem 1.4rem .6rem; font-size: .75rem; color: var(--color-text-muted); }
@@ -101,13 +101,13 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .section-intro p { max-width: 46ch; margin: 0; }
 .benefits-section { padding-block: 64px; background: var(--color-bg-alt); }
 .benefit-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem; margin: 0; }
-.benefit-list dt { font: 700 1.08rem/1.5 "Manrope", sans-serif; color: var(--color-text-heading); margin-bottom: .65rem; }
+.benefit-list dt { font: 700 1.08rem/1.5 "Manrope", sans-serif; color: var(--doc-link-color); margin-bottom: .65rem; }
 .benefit-list dd { margin: 0; font-size: .98rem; line-height: 1.7; }
 .section-link { display: inline-block; margin-top: 2rem; }
 .skill-section { padding-block: 88px; display: grid; grid-template-columns: .88fr 1.12fr; align-items: center; gap: 64px; }
 .skill-copy p { max-width: 43ch; margin-block: 1.3rem; }
 .skill-install { min-width: 0; }
-.install-command { display: flex; align-items: center; gap: .7rem; padding: 1.15rem; background: var(--color-bg-alt); border: 1px solid var(--color-border-subtle); border-radius: 8px; }
+.install-command { display: flex; align-items: center; gap: .7rem; padding: 1.15rem; background: var(--color-bg-alt); border: 1px solid var(--doc-link-color); border-radius: 8px; }
 .install-command code { color: var(--color-text-heading); font-size: .86rem; line-height: 1.8; overflow-wrap: anywhere; }
 .copy-install { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; margin-left: auto; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border-subtle); border-radius: 6px; }
 .copy-install:hover { color: var(--doc-link-color); border-color: var(--doc-link-color); }
@@ -120,7 +120,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .framework-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
 .framework-pair article { min-width: 0; }
 .framework-pair article + article { border-left: 1px solid var(--color-border-subtle); padding-left: 64px; }
-.framework-pair h3 { font-size: 2.4rem; margin-bottom: .6rem; }
+.framework-pair h3 { font-size: 2.4rem; margin-bottom: .6rem; color: var(--doc-link-color); }
 .framework-purpose { font-size: 1.25rem; font-weight: 600; color: var(--color-text-heading); margin-bottom: 1rem; }
 .framework-capabilities { margin-block: 1.8rem; }
 .framework-capabilities > div { margin-bottom: 1.35rem; }
@@ -140,7 +140,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .registry-flow { padding: 1.5rem 2rem; }
 .registry-providers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .registry-providers span { padding: .6rem .5rem; font: .85rem $font-family-monospace; text-align: center; background: var(--color-bg-alt); border: 1px solid var(--color-border-subtle); border-radius: 6px; }
-.registry-connector { display: block; width: 100%; height: 32px; color: var(--color-text-muted); }
+.registry-connector { display: block; width: 100%; height: 32px; color: var(--doc-link-color); }
 .registry-node { display: grid; gap: .3rem; text-align: center; padding: 1.1rem .5rem; border: 1px solid var(--doc-link-color); border-radius: 8px; color: var(--color-text-heading); background: var(--color-highlight); }
 .registry-node strong { font: 700 1.05rem "Manrope", sans-serif; }
 .registry-node span { font-size: .8rem; }
@@ -148,7 +148,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .workflow-section { padding-block: 64px; background: var(--color-bg-alt); }
 .workflow-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.2rem; list-style: none; counter-reset: step; padding: 0; margin: 0; }
 .workflow-steps li { counter-increment: step; }
-.workflow-steps li::before { content: counter(step); display: block; color: var(--doc-link-color); font: 500 1.1rem "Manrope", sans-serif; margin-bottom: .8rem; }
+.workflow-steps li::before { content: counter(step); display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--color-highlight); color: var(--doc-link-color); font: 700 1.1rem "Manrope", sans-serif; margin-bottom: .8rem; }
 .workflow-steps h3 { font-size: 1.15rem; margin-bottom: .7rem; }
 .workflow-steps p { font-size: .94rem; margin: 0; }
 .faq-section { display: grid; grid-template-columns: .6fr 1.4fr; gap: 64px; padding-block: 88px 0; }

@@ -18,7 +18,7 @@ for (const [prefix, copy] of [
   ['goa', {
     TITLE: 'Goa',
     NAME: '',
-    HEADLINE: 'Let agents reason.<br>Let Goa generate.',
+    HEADLINE: 'Let agents reason.<br><span>Let Goa generate.</span>',
     SUBLINE: 'Go services, built with coding agents.',
     MOBILE_LABEL: 'Generated transports',
     MOBILE_ITEMS: '<li>HTTP</li><li>gRPC</li><li>JSON-RPC</li>',
@@ -30,7 +30,7 @@ for (const [prefix, copy] of [
   ['goa-ai', {
     TITLE: 'Goa-AI',
     NAME: '<strong class="framework-name">Goa-AI</strong>',
-    HEADLINE: 'Build agents.<br>Keep tools in sync.',
+    HEADLINE: 'Build agents.<br><span>Keep tools in sync.</span>',
     SUBLINE: 'Generated contracts. Built-in call correction.',
     MOBILE_LABEL: 'Build with Goa-AI',
     MOBILE_ITEMS: '<li>AI agents</li><li>MCP</li><li>Tool registries</li>',
@@ -62,9 +62,9 @@ for (const [prefix, copy] of [
 await bannerPage.close();
 if (!process.argv.includes('--readme-only')) {
   const page = await browser.newPage({ deviceScaleFactor: 1 });
-  const style = `<style>@font-face{font-family:Manrope;src:url(data:font/ttf;base64,${font})}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172b45;font-family:Manrope,sans-serif}.brand{display:flex;align-items:center;gap:16px;color:#172b45;font-size:58px;font-weight:800;letter-spacing:-2px}.brand img{width:88px;height:88px;border-radius:50%}h1{font-size:60px;line-height:1.16;letter-spacing:-2px;margin:36px 0 24px;font-weight:750}p{font-size:25px;color:#35465c;line-height:1.6;margin:0}.frame{height:100vh;padding:64px 76px;position:relative}.foot{position:absolute;bottom:54px;left:76px;right:76px;display:flex;justify-content:space-between;border-top:1px solid #dce3ec;padding-top:24px;font-size:20px;color:#526278}.compact{padding:54px 70px}.compact h1{font-size:46px;margin:20px 0 12px}.compact .brand{font-size:42px}.compact .brand img{width:70px;height:70px}</style>`;
+  const style = `<style>@font-face{font-family:Manrope;src:url(data:font/ttf;base64,${font})}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172b45;font-family:Manrope,sans-serif}.brand{display:flex;align-items:center;gap:16px;color:#172b45;font-size:58px;font-weight:800;letter-spacing:-2px}.brand img{width:88px;height:88px;border-radius:50%}h1{font-size:60px;line-height:1.16;letter-spacing:-2px;margin:36px 0 24px;font-weight:750}h1 span{color:#2255c5}p{font-size:25px;color:#35465c;line-height:1.6;margin:0}.frame{height:100vh;padding:64px 76px;position:relative}.foot{position:absolute;bottom:54px;left:76px;right:76px;display:flex;justify-content:space-between;border-top:1px solid #dce3ec;padding-top:24px;font-size:20px;color:#526278}.compact{padding:54px 70px}.compact h1{font-size:46px;margin:20px 0 12px}.compact .brand{font-size:42px}.compact .brand img{width:70px;height:70px}</style>`;
   for (const [name, width, height, label, headline, subline] of [
-    ['goa-card', 1200, 630, 'Goa', 'Let agents reason.<br>Let Goa generate.', 'Less code to write. One contract to reason from.'],
+    ['goa-card', 1200, 630, 'Goa', 'Let agents reason.<br><span>Let Goa generate.</span>', 'Less code to write. One contract to reason from.'],
   ]) {
     await page.setViewportSize({ width, height });
     await page.setContent(`${style}<main class="frame ${height < 400 ? 'compact' : ''}"><div class="brand"><img src="${logo}" alt=""><span>${label}</span></div><h1>${headline}</h1><p>${subline}</p>${height > 400 ? '<div class="foot"><span>Go services / AI agents / MCP / Tool registries</span><span>goa.design</span></div>' : ''}</main>`);

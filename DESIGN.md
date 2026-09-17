@@ -207,6 +207,7 @@ components:
   navigation-link-active:
     backgroundColor: "{colors.color-highlight}"
     textColor: "{colors.doc-link-color}"
+    borderInlineStart: "2px solid {colors.doc-link-color}"
   docs-disclosure:
     textColor: "{colors.color-text-heading}"
     rounded: "{rounded.control}"
@@ -229,8 +230,8 @@ components:
     textColor: "{colors.color-text-muted}"
     padding: ".95rem 1.2rem"
   code-switch-selected:
-    backgroundColor: "{colors.color-bg-elevated}"
-    textColor: "{colors.color-text-heading}"
+    backgroundColor: "{colors.color-highlight}"
+    textColor: "{colors.doc-link-color}"
   generated-output:
     textColor: "{colors.color-text}"
     typography: "{typography.output-label}"
@@ -238,6 +239,7 @@ components:
   install-command:
     backgroundColor: "{colors.color-bg-alt}"
     textColor: "{colors.color-text-heading}"
+    border: "1px solid {colors.doc-link-color}"
     typography: "{typography.install-command}"
     rounded: "{rounded.panel}"
     padding: "1.15rem"
@@ -329,9 +331,11 @@ body, and muted text roles.
 
 ### Primary
 
-- **Action blue:** links, filled calls to action, selected
-  navigation, registry borders, output checks, and keyboard focus. Dark mode
-  uses pale blue with navy text on filled actions.
+- **Action blue:** the second hero line, benefit titles, framework names,
+  links, filled calls to action, selected navigation and code tabs, installer
+  border, workflow markers, registry connectors, output checks, and keyboard
+  focus. Dark mode uses pale blue with navy text on filled actions. Reuse this
+  color for emphasis; keep section headings and reading text in their ink roles.
 - Link hover and button hover are separate roles even where a theme gives
   them the same value.
 
@@ -490,8 +494,9 @@ they have no selected or hover behavior.
 
 ### Cards / Containers
 
-Documentation notes use a bordered alternate surface. Code blocks use the
-same semantic surface with local scrolling. Landing framework choices and
+Documentation notes use a bordered alternate surface. Informational and primary
+notes, LLM information banners, and blockquotes have a three-pixel blue leading
+border. Code blocks use the same semantic surface with local scrolling. Landing framework choices and
 benefit definitions use open columns with dividers or spacing. The installer
 and MCP code use the panel radius; registry providers use the control radius
 and the central registry uses the panel radius. These functional boundaries
@@ -517,7 +522,8 @@ Hover changes the tile border to the action color; keyboard focus remains visibl
 The original Goa badge leads the header and repeats in the footer; services and agents
 are peer links.
 Sidebar groups distinguish quickstarts, guides, and references. Active links
-combine a tinted background, blue text, and increased weight. Mobile uses
+combine a tinted background, blue text, a two-pixel leading border, and increased
+weight. The border preserves the existing text alignment. Mobile uses
 native `details`/`summary`; the same navigation remains visible on desktop.
 
 ### GitHub repositories
@@ -539,7 +545,8 @@ Buffers, and command-line clients. The agent example names schemas, payload
 codecs, service bindings, tool descriptors, runtime registrations, and
 `AGENTS_QUICKSTART.md`.
 
-Equal-width labels show selection through surface, text, and border changes.
+Equal-width labels show selection through a blue-tinted surface, blue text, and
+a blue bottom border.
 Keyboard focus follows the radio input onto its visible label. Output entries
 use small checks drawn with borders in the link color. Keep source readable
 and selectable; the code area has a minimum height of (244px), and outputs use
@@ -571,7 +578,14 @@ as a protocol version or add a protocol-version argument.
 
 ### Extractable copy and FAQ
 
-The first viewport reads “Let agents reason. Let Goa generate.” Its opening
+The first viewport reads “Let agents reason. Let Goa generate.” The second line
+uses the theme's blue accent. The same treatment appears on the second line of
+both repository banners and the Goa social card. Benefit titles and the Goa /
+Goa-AI framework names repeat the accent; workflow numbers sit in quiet circular
+blue-tinted markers. This gives the major sections a shared emphasis without
+coloring every heading.
+
+Its opening
 paragraph states the coding-agent benefit and full HTTP/gRPC/JSON-RPC, typed
 client, validation, and specification scope, followed by Goa-AI agents, MCP
 servers, and tool registries. Keep that scope in the mobile opening paragraph
