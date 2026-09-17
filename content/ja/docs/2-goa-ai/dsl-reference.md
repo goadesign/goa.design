@@ -827,8 +827,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
     Return(DangerousWriteResult)
     Confirmation(func() {
         Title("Confirm change")
-        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
-        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+        PromptTemplate(`Approve write: set {{ .key }} to {{ json .value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":{{ json .key }}}`)
     })
 })
 ```
@@ -1862,7 +1862,6 @@ var MyTools = Toolset("my-tools", FromRegistry(CorpRegistry, "data-tools"))
 // With additional configuration
 var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
     Version("1.2.3")
-    Tags("data", "etl")
 })
 ```
 
@@ -1877,6 +1876,12 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
     Version("1.2.3")
 })
 ```
+
+名前付き `Toolset(FromRegistry(...))` を `Use` で利用するか、`Registry` 全体を直接利用できます。`Use` 内に `Deferred()` を追加するとネイティブ検索を使います。生成済みエージェントは各計画アクティビティで現在の契約を1回解決します。構築済みの分散レジストリと Pulse クライアントを `rt.RegisterRegistry` で接続します。`Definition()` と `NewClient(rt)` にカタログ引数はありません。
+
+プロバイダーは確認、ページネーション、フィールド情報、サーバー専用データを含む `ToolSchemas()` を公開します。動的なサービスツールは保存済み契約を使い、エージェント・制御連携はコンパイル済みのままです。名前付きソースは存在し、指定版と一致する必要があります。レジストリ全体は空でも有効です。重複・重なりのある利用やレジストリ参照内のインライン・エクスポート宣言は拒否されます。
+
+現在のソース解決、生成済み契約、プロバイダー動作、移行については[ツール検索と動的カタログ](../tool-search/)を参照してください。
 
 ### PublishTo
 

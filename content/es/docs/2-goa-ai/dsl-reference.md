@@ -850,8 +850,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
     Return(DangerousWriteResult)
     Confirmation(func() {
         Title("Confirm change")
-        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
-        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+        PromptTemplate(`Approve write: set {{ .key }} to {{ json .value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":{{ json .key }}}`)
     })
 })
 ```
@@ -1914,7 +1914,6 @@ var MyTools = Toolset("my-tools", FromRegistry(CorpRegistry, "data-tools"))
 // With additional configuration
 var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
     Version("1.2.3")
-    Tags("data", "etl")
 })
 ```
 
@@ -1929,6 +1928,12 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
     Version("1.2.3")
 })
 ```
+
+Consume un `Toolset(FromRegistry(...))` con nombre mediante `Use`, o un `Registry` completo directamente. Añade `Deferred()` dentro de `Use` para búsqueda nativa. El agente generado resuelve contratos actuales una vez por actividad de planificación. Conecta clientes del registro distribuido y Pulse ya construidos con `rt.RegisterRegistry`; `Definition()` y `NewClient(rt)` no reciben catálogos.
+
+El proveedor publica `ToolSchemas()` con confirmación, paginación, metadatos y datos del servidor. Las herramientas dinámicas de servicio usan esos contratos; agentes y control siguen compilados. Las fuentes con nombre deben existir y coincidir con la versión fijada; el registro completo puede estar vacío. Se rechazan consumos duplicados o solapados y declaraciones de herramientas en línea o exportadas en referencias de registro.
+
+Consulta [Búsqueda de herramientas y catálogos dinámicos](../tool-search/) para la resolución actual, contratos generados, proveedores y migración.
 
 ### PublishTo
 

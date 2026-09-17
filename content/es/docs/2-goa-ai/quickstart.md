@@ -426,3 +426,6 @@ Para producción, añade el motor Temporal para durabilidad, un único almacén 
 | [Toolsets](toolsets/) | Herramientas respaldadas por servicios, transformaciones, ejecutores |
 | [Agent Composition](agent-composition/) | Inmersión profunda en patrones de agente como herramienta |
 | [Production](production/) | Configuración de Temporal, streaming a interfaces de usuario, limitación de tasa |
+
+
+Consulta [Búsqueda de herramientas y catálogos dinámicos](../tool-search/) para la resolución actual, contratos generados, proveedores y migración.

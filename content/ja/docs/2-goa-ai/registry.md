@@ -355,3 +355,6 @@ registry は次の gRPC method を公開します:
 - [Toolsets](./toolsets/) で tool の定義方法を学ぶ
 - [Production](./production/) で deployment pattern を確認する
 - [Agent Composition](./agent-composition/) で cross-agent tool sharing を理解する
+
+
+現在のソース解決、生成済み契約、プロバイダー動作、移行については[ツール検索と動的カタログ](../tool-search/)を参照してください。

@@ -427,3 +427,6 @@ Pour la production, ajoutez le moteur Temporal pour la durabilité, un stockage 
 | [Jeux d'outils](toolsets/) | Outils, transformations, exécuteurs basés sur des services |
 | [Composition d'agent](agent-composition/) | Analyse approfondie des modèles d'agent en tant qu'outil |
 | [Production](production/) | Configuration Temporal, streaming vers UIs, limitation de débit |
+
+
+Consultez [Recherche d’outils et catalogues dynamiques](../tool-search/) pour la résolution actuelle, les contrats générés, les fournisseurs et la migration.

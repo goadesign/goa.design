@@ -348,3 +348,6 @@ Il registro espone i seguenti metodi gRPC:
 - Imparare a conoscere [Toolsets](./toolsets/) per definire gli strumenti
 - Esplorare [Production](./production/) per i modelli di distribuzione
 - Leggere [Agent Composition](./agent-composition/) per la condivisione di strumenti tra agenti
+
+
+Vedi [Ricerca degli strumenti e cataloghi dinamici](../tool-search/) per risoluzione attuale, contratti generati, provider e migrazione.

@@ -411,3 +411,6 @@ Per la produzione, aggiungi il motore Temporal per la durabilità, un unico arch
 
 | Guida | Cosa imparerai ||-------|-------------------|
 | [DSL Reference](dsl-reference/) | Tutte le funzioni DSL: policy, MCP, registri || [Runtime](runtime/) | Pianifica/esegui loop, motori, archivi di memoria || [Toolsets](../toolsets/) | Strumenti supportati da servizi, trasformazioni, esecutori || [Agent Composition](agent-composition/) | Approfondimento sui modelli di agente come strumento || [Production](production/) | Configurazione temporale, streaming alle interfacce utente, limitazione della velocità |
+
+
+Vedi [Ricerca degli strumenti e cataloghi dinamici](../tool-search/) per risoluzione attuale, contratti generati, provider e migrazione.

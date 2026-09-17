@@ -897,8 +897,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
     Return(DangerousWriteResult)
     Confirmation(func() {
         Title("Confirm change")
-        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
-        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+        PromptTemplate(`Approve write: set {{ .key }} to {{ json .value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":{{ json .key }}}`)
     })
 })
 ```
@@ -2014,7 +2014,6 @@ var MyTools = Toolset("my-tools", FromRegistry(CorpRegistry, "data-tools"))
 // With additional configuration
 var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
     Version("1.2.3")
-    Tags("data", "etl")
 })
 ```
 
@@ -2029,6 +2028,12 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
     Version("1.2.3")
 })
 ```
+
+Consume a named `Toolset(FromRegistry(...))` with `Use`, or consume a whole `Registry` directly. Add `Deferred()` inside `Use` for native tool search. Generated agents resolve current contracts once per planning activity. Connect already-built clustered registry and Pulse clients using `rt.RegisterRegistry` before runs; `Definition()` and `NewClient(rt)` have no catalog arguments.
+
+Providers publish generated `ToolSchemas()` including confirmation, pagination, field metadata, and server-only data. Dynamic service tools use those saved contracts; agent/control integration stays compiled. Named sources must exist and match a version pin; whole registries may be empty. Duplicate/overlapping consumption and inline or exported registry tool declarations are rejected.
+
+See [Tool search and dynamic catalogs](../tool-search/) for current source resolution, generated contracts, provider behavior, and migration.
 
 ### PublishTo
 

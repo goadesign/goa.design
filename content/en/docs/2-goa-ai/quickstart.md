@@ -442,3 +442,6 @@ remains the source of truth.
 | [Agent Composition](agent-composition/) | Deep dive on agent-as-tool patterns |
 | [Evaluations](evaluations/) | Generated eval suites, evidence collection, LLM judge |
 | [Production](production/) | Temporal setup, streaming to UIs, rate limiting |
+
+
+See [Tool search and dynamic catalogs](../tool-search/) for current source resolution, generated contracts, provider behavior, and migration.

@@ -1072,3 +1072,6 @@ server-data は次の場合に使います:
 - **[Agent Composition](./agent-composition.md)** - agent-as-tool パターンで複雑なシステムを構築する
 - **[MCP Integration](./mcp-integration.md)** - 外部ツールサーバに接続する
 - **[Runtime](./runtime.md)** - ツール実行フローを理解する
+
+
+現在のソース解決、生成済み契約、プロバイダー動作、移行については[ツール検索と動的カタログ](../tool-search/)を参照してください。

@@ -1109,3 +1109,6 @@ Utilisez les données du serveur lorsque :
 - **[Composition de l'agent](./agent-composition.md)** – Créez des systèmes complexes avec des modèles d'agent en tant qu'outil
 - **[Intégration MCP](./mcp-integration.md)** - Connectez-vous à des serveurs d'outils externes
 - **[Runtime](./runtime.md)** - Comprendre le flux d'exécution des outils
+
+
+Consultez [Recherche d’outils et catalogues dynamiques](../tool-search/) pour la résolution actuelle, les contrats générés, les fournisseurs et la migration.
