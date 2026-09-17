@@ -9,7 +9,30 @@ llm_optimized: true
 
 La recherche charge les définitions lorsque le modèle en a besoin. Un registre permet aux fournisseurs de modifier les outils disponibles sans recompiler le consommateur. Ces choix sont indépendants : des outils statiques peuvent utiliser la recherche et des outils dynamiques peuvent être annoncés immédiatement.
 
-Pour les outils compilés, ajoutez `Deferred()` dans le `Use` consommateur. Le générateur prépare les fréquences de mots et les choix de chargement de l’agent. Un autre agent peut charger les mêmes outils immédiatement. Pour un catalogue évolutif, réutilisez `Registry` :
+## Choisir les outils à charger par recherche
+
+Supposons que l’ensemble d’outils compilé `Records` définisse `lookup`, `search` et `analyze`. Gardez `lookup`, souvent utilisé, immédiatement disponible en différant uniquement les deux autres :
+
+```go
+Agent("assistant", "Find and analyze records.", func() {
+    Use(Records, func() {
+        Deferred("search", "analyze")
+    })
+})
+```
+
+Seuls `search` et `analyze` sont chargés par recherche ; `lookup` est annoncé immédiatement. Ce choix modifie le chargement des définitions, pas les permissions ni l’exécution. Il appartient au `Use` consommateur, jamais à une définition partagée de `Toolset` ni à un `Export`. Les fournisseurs partagés, les exports et les autres consommateurs restent inchangés.
+
+Les noms doivent correspondre exactement aux noms locaux déclarés dans l’ensemble compilé : `"search"`, pas `"records.search"` ni un nom Go généré. La sélection par nom prend en charge les outils locaux, les agents exposés comme outils, les outils MCP externes dont les schémas sont déclarés et les outils MCP issus de Goa.
+
+- `Deferred()` sélectionne tous les outils de ce `Use` ; le répéter est valide.
+- Plusieurs déclarations nommées combinent leurs sélections : `Deferred("search")` suivi de `Deferred("analyze")` sélectionne les deux.
+- Les noms vides ou dupliqués sont rejetés, y compris les doublons entre déclarations. La génération de code rejette les noms inconnus après avoir rassemblé la liste complète des outils compilés.
+- Combiner `Deferred()` avec une sélection par nom dans le même `Use` est rejeté.
+
+## Consommer un catalogue évolutif
+
+Pour un catalogue évolutif, utilisez `Registry`. Les ensembles `FromRegistry` et les registres entiers rejettent les sélections nommées de `Deferred`, car leurs outils sont résolus à l’exécution :
 
 ```go
 var Company = Registry("company", func() {
@@ -29,7 +52,7 @@ var _ = Service("assistant", func() {
 
 Le lecteur résout un ensemble d’outils obligatoire ; le généraliste résout tous les ensembles actuellement listés. Retirer `Deferred()` annonce immédiatement ce même catalogue. Une source nommée peut exiger `Version("1.2.3")` : cela vérifie la version publiée, sans sélectionner une ancienne version.
 
-`Deferred()` est valide uniquement dans `Use`. Les sources dupliquées ou qui se recouvrent, les outils déclarés en ligne sur une référence de registre et l’export de cette référence sont rejetés. Le fournisseur possède les définitions ; la politique d’exécution filtre le catalogue avant son envoi au modèle.
+Les sources dupliquées ou qui se recouvrent, les outils déclarés en ligne sur une référence de registre et l’export de cette référence sont rejetés. Le fournisseur possède les définitions ; la politique d’exécution filtre le catalogue avant son envoi au modèle.
 
 Les références de registre rejettent aussi `Tags(...)` et `PublishTo(...)` côté consommateur. Les tags appartiennent au fournisseur ; le consommateur les filtre par sa politique d’exécution.
 
@@ -74,6 +97,8 @@ Les traces de recherche native restent dans les métadonnées des messages. Pré
 L’historique d’ajout/retrait de Claude nécessite un modèle compatible. Une définition modifiée sous un nom encore retenu ne peut pas être rejouée par ce protocole et est rejetée. Démarrez une nouvelle conversation ou compactez délibérément pour supprimer cette définition ; l’adaptateur ne réinitialise jamais silencieusement l’historique. La continuation des pauses de Claude contenant uniquement du travail natif n’est pas implémentée.
 
 ## Exemples et mise à niveau
+
+Régénérez l’agent consommateur après avoir modifié sa sélection `Deferred`. La génération de code prépare les fréquences des mots de recherche et émet les identifiants fixes existants des outils sélectionnés via la même API du runtime. La sélection par nom n’ajoute aucune API fournisseur, aucun état fournisseur ni aucun espace de noms.
 
 Régénérez fournisseurs et consommateurs avec Goa v3.31.1. Remplacez `Discover`, les entrées `RegistryToolsets` et le câblage d’exécuteurs dynamiques par `RegisterRegistry`. Mettez à niveau le registre pour exposer `ResolveToolset` et `CallResolvedTool`, puis publiez `ToolSchemas()` complet avant d’activer les consommateurs dynamiques. Les anciens enregistrements limités aux schémas restent utilisables par leurs intégrations statiques, mais pas par ce chemin dynamique.
 
