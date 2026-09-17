@@ -30,18 +30,19 @@
 .td-content img, .td-content svg { max-width: 100%; height: auto; }
 .td-content figure { margin: 2rem 0; }
 .td-content figcaption { font-size: .85rem; color: var(--color-text-muted); margin-top: .75rem; }
-.td-content blockquote { padding: 1rem 1.4rem; background: var(--color-bg-alt); border-left: 1px solid var(--color-border-subtle); font-size: 1rem; }
+.td-content blockquote { padding: 1rem 1.4rem; background: var(--color-bg-alt); border-left: 3px solid var(--doc-link-color); font-size: 1rem; }
 .td-content blockquote p:last-child { margin: 0; }
 .td-content .alert, .llm-info-banner { background: var(--color-bg-alt); color: var(--color-text); border: 1px solid var(--color-border-subtle); padding: 1.2rem; border-radius: 8px; }
+.td-content .alert-info, .td-content .alert-primary, .llm-info-banner { border-inline-start: 3px solid var(--doc-link-color); }
 .td-content .mermaid { overflow-x: auto; background: var(--mermaid-bg); padding: 1rem; }
 .td-breadcrumb { margin: 0 0 1.5rem; padding: 0; font-size: .8rem; }
 .td-breadcrumb .breadcrumb-item a { color: var(--color-text-muted); }
 .td-breadcrumb .breadcrumb-item.active { color: var(--color-text-heading); }
 .td-sidebar-nav { padding: 0; margin: 0; font-size: .875rem; }
 .td-sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
-.td-sidebar-nav a { display: block; padding: .4rem .65rem; border-radius: 5px; text-decoration: none; color: var(--color-text-muted); }
+.td-sidebar-nav a { display: block; padding: .4rem .65rem; padding-inline-start: calc(.65rem - 2px); border-inline-start: 2px solid transparent; border-radius: 5px; text-decoration: none; color: var(--color-text-muted); }
 .td-sidebar-nav a:hover { background: var(--color-bg-alt); color: var(--color-text-heading); }
-.td-sidebar-nav a.active { background: var(--color-highlight); color: var(--doc-link-color); font-weight: 600; }
+.td-sidebar-nav a.active { background: var(--color-highlight); color: var(--doc-link-color); border-inline-start-color: var(--doc-link-color); font-weight: 600; }
 .td-sidebar-nav-link--section { color: var(--color-text-heading) !important; font-weight: 700; margin: 1.5rem 0 .3rem; }
 .nav-group-title { display: block; padding: .8rem .65rem .25rem; font-size: .75rem; font-weight: 600; color: var(--color-text-muted); }
 .docs-start-links { padding-bottom: .75rem; border-bottom: 1px solid var(--color-border-subtle); }
