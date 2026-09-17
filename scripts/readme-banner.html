@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Goa README banner</title>
+  <style>
+    @font-face {
+      font-family: Manrope;
+      src: url("{{FONT}}") format("truetype");
+      font-weight: 200 800;
+    }
+
+    :root {
+      color-scheme: light dark;
+      --canvas: #f3f6fa;
+      --surface: #ffffff;
+      --heading: #172b45;
+      --text: #35465c;
+      --muted: #526278;
+      --line: #dce3ec;
+      --accent: #2255c5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --canvas: #142133;
+        --surface: #1b2d43;
+        --heading: #edf2f9;
+        --text: #cfdae8;
+        --muted: #b0bfd1;
+        --line: #35475e;
+        --accent: #a9c5ff;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: Manrope, sans-serif;
+    }
+
+    .banner {
+      height: 100vh;
+      padding: 44px 56px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--canvas);
+      color: var(--text);
+    }
+
+    .identity {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .identity img { width: 64px; height: 64px; border-radius: 50%; }
+    .identity span { color: var(--muted); font-size: 22px; font-weight: 600; }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      align-items: center;
+      gap: 44px;
+      margin-top: 32px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--heading);
+      font-size: 64px;
+      font-weight: 750;
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+
+    .message p {
+      margin: 22px 0 0;
+      font-size: 23px;
+      line-height: 1.45;
+    }
+
+    .generation {
+      padding: 24px 22px 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      text-align: center;
+    }
+
+    .contract {
+      color: var(--heading);
+      font-size: 25px;
+      font-weight: 700;
+    }
+
+    .branches {
+      display: block;
+      width: 100%;
+      height: 54px;
+      margin-top: 14px;
+      color: var(--accent);
+    }
+
+    .transports {
+      display: flex;
+      justify-content: space-between;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--heading);
+      font-size: 20px;
+      font-weight: 650;
+    }
+
+    .transports li { width: 33.333%; }
+
+    .outputs {
+      margin: 24px -22px 0;
+      padding: 18px 16px;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .mobile-transports { display: none; }
+
+    @media (max-width: 800px) {
+      .banner { padding: 36px 44px; }
+      .identity img { width: 60px; height: 60px; }
+      .identity span { font-size: 24px; }
+      .content { display: block; margin-top: 34px; }
+      h1 { font-size: 66px; }
+      .message p { margin-top: 20px; font-size: 26px; }
+      .generation { display: none; }
+      .mobile-transports {
+        display: flex;
+        gap: 28px;
+        margin: 28px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--accent);
+        font-size: 24px;
+        font-weight: 650;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="banner">
+    <div class="identity">
+      <img src="{{LOGO}}" alt="Goa">
+      <span>goa.design</span>
+    </div>
+    <div class="content">
+      <div class="message">
+        <h1>Let agents reason.<br>Let Goa generate.</h1>
+        <p>Go services, built with coding agents.</p>
+        <ul class="mobile-transports" aria-label="Generated transports">
+          <li>HTTP</li><li>gRPC</li><li>JSON-RPC</li>
+        </ul>
+      </div>
+      <div class="generation" aria-label="One Go contract generates HTTP, gRPC, JSON-RPC, typed clients, validation, and API specifications">
+        <div class="contract">One Go contract</div>
+        <svg class="branches" viewBox="0 0 300 54" fill="none" aria-hidden="true">
+          <path d="M150 0v54M50 54V27h200v27" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <ul class="transports"><li>HTTP</li><li>gRPC</li><li>JSON-RPC</li></ul>
+        <p class="outputs">Typed clients, validation, API specs</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

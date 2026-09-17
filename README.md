@@ -68,6 +68,15 @@ and social images from that mark and the local font. The monochrome letter paths
 in `assets/icons/logo.svg` supply the Safari pinned-tab mask. The script uses the same
 installed Chrome as the browser tests and needs no image-processing service.
 
+The Goa README banner is composed in `scripts/readme-banner.html`, using the
+site's Manrope font, navy and blue palette, and original badge. Run
+`make readme-banner` to render only its four light/dark and desktop/mobile PNGs
+in `static/img/social/`. Copy those `goa-banner*.png` files into the Goa
+repository's `docs/` directory together; its README selects the image with a
+`picture` element. The desktop composition includes the contract-to-transports
+diagram, while the mobile composition keeps the headline and transport names
+legible. The PNGs are rendered at twice their layout dimensions.
+
 The first paragraph, capability explanations, and FAQ answers are plain,
 server-rendered text. Homepage `SoftwareSourceCode` structured data identifies
 the two repositories; it mirrors the visible content. Markdown and `llms.txt`
