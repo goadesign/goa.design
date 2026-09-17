@@ -100,6 +100,18 @@ L’historique d’ajout/retrait de Claude nécessite un modèle compatible. Une
 
 Régénérez l’agent consommateur après avoir modifié sa sélection `Deferred`. La génération de code prépare les fréquences des mots de recherche et émet les identifiants fixes existants des outils sélectionnés via la même API du runtime. La sélection par nom n’ajoute aucune API fournisseur, aucun état fournisseur ni aucun espace de noms.
 
+Dans v0.80.0, le type de `Deferred` est passé de `func()` à `func(...string)`. Les appels à `Deferred()` restent valides, mais passer directement `Deferred` comme callback de type `func()` ne compile plus. Encapsulez les références directes :
+
+```go
+// Avant
+Use(Records, Deferred)
+
+// Après
+Use(Records, func() { Deferred() })
+```
+
+Utilisez la même fonction d’encapsulation pour les autres affectations de `Deferred` à un callback de type `func()`. Le chargement différé de tout le groupe d’outils est préservé. Encapsuler un callback existant sans modifier la sélection ne nécessite pas de régénération.
+
 Régénérez fournisseurs et consommateurs avec Goa v3.31.1. Remplacez `Discover`, les entrées `RegistryToolsets` et le câblage d’exécuteurs dynamiques par `RegisterRegistry`. Mettez à niveau le registre pour exposer `ResolveToolset` et `CallResolvedTool`, puis publiez `ToolSchemas()` complet avant d’activer les consommateurs dynamiques. Les anciens enregistrements limités aux schémas restent utilisables par leurs intégrations statiques, mais pas par ce chemin dynamique.
 
 Les modèles de confirmation utilisent les noms JSON comme `{{ .key }}`, au lieu des champs Go comme `{{ .Key }}`. Utilisez `{{ json .value }}` pour les valeurs JSON et `index` pour les propriétés facultatives.
