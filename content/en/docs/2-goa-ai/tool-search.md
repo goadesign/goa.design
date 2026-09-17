@@ -63,6 +63,8 @@ Planners pass `input.Agent.AdvertisedToolDefinitions()` with the current message
 
 ## Catalog changes and history
 
+OpenAI search results place each selected function in a native namespace with the same provider name. This lets Bedrock return a complete call identity for replay. The adapter owns this representation; no namespace DSL, application mapping, or separate loaded-tool state is needed. Eager tools keep their existing representation. Bedrock histories created with bare dynamically loaded functions may contain calls without a namespace that Bedrock rejects during replay. Start a new conversation or deliberately trim the complete affected exchange; the adapter never invents missing provider fields.
+
 Each planning activity that can start work reads the declared sources once and keeps that catalog fixed during inference. A later activity reads again, including providers registered since the previous turn. Final-answer-only and explicit finalizer activities do not read the registry. Empty whole registries are valid; missing named sources, version mismatches, duplicate tool identities, failed reads, and removals during resolution fail explicitly.
 
 Accepted calls save only their selected definition, any fixed pagination partner, and the existing registration token. Confirmation, result decoding, and checkpoint restoration use that saved contract without fetching today's catalog. `CallResolvedTool` checks the original token before publication; replacement before publication records `call_not_admitted`. Overload retries retain the token and report `admission_conflict` if that admission was replaced. Published calls retain their original assignment and result.
