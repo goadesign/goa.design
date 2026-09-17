@@ -72,8 +72,12 @@ The Goa README banner is composed in `scripts/readme-banner.html`, using the
 site's Manrope font, navy and blue palette, and original badge. Run
 `make readme-banner` to render only its four light/dark and desktop/mobile PNGs
 in `static/img/social/`. Copy those `goa-banner*.png` files into the Goa
-repository's `docs/` directory together; its README selects the image with a
-`picture` element. The desktop composition includes the contract-to-transports
+repository's `docs/` directory together. Its README uses GitHub's
+`#gh-light-mode-only` and `#gh-dark-mode-only` link markers for theme selection,
+with a `picture` element inside each link for the mobile variant. Keep theme
+selection separate from width queries: GitHub's `themed-picture` component
+replaces theme media queries and discards any width condition they contain.
+The desktop composition includes the contract-to-transports
 diagram, while the mobile composition keeps the headline and transport names
 legible. The PNGs are rendered at twice their layout dimensions.
 
