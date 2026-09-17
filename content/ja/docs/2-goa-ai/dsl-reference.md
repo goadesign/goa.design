@@ -1878,6 +1878,62 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
+エージェントを構築する前に、レジストリからツールセットを読み込みます。
+生成されたツールセットのパッケージは `Discover(ctx, client)` を公開し、
+不変の `*registry.Toolset` を返します。クライアントは
+`runtime/registry.RegistryClient` を実装します。分散レジストリの生成済み
+サービスクライアントは、`runtime/registry.NewClient` でラップして使います。
+
+`data-tools` を利用する `analyst` エージェントでは、取得した同じ値を
+エージェントの設定と実行ハンドラの登録に渡します:
+
+```go
+discovered, err := gendatatools.Discover(ctx, catalogClient)
+if err != nil {
+    return err
+}
+toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
+if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
+    Planner:         planner,
+    RegistryToolsets: toolsets,
+}); err != nil {
+    return err
+}
+if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
+    genanalyst.WithDataToolsExecutor(executor),
+); err != nil {
+    return err
+}
+```
+
+検出時に要求した名前とバージョンを確認し、重複したツール名や別の
+ツールセットに属する名前を拒否します。モデル引数、プロバイダ引数、
+結果のスキーマが必須です。コンパイルされたコーデックは入出力の両方向を
+検証し、JSON 数値の正確な値を保持します。参照は渡されたスキーマ文書内で
+解決できなければなりません。`Definition(toolsets)` と
+`NewClient(rt, toolsets)` もこれらの値を必要とし、不完全な設定にはエラーを
+返します。レジストリに依存しないエージェントの生成 API は変わりません。
+
+この経路は、呼び出しが予算に計上される、スキーマで記述された通常の
+ツールをサポートします。確認、件数などを制限した結果、継続処理、
+bookkeeping、子ワークフロー、独自のフィールドメタデータ、サーバー専用の
+結果データを必要とするツールには、引き続き静的な生成済み契約が必要です。
+カタログにはこれらの完全な宣言が含まれていません。サーバー専用の
+結果スキーマが渡された場合、検出はエラーになります。
+
+構築した各エージェントの定義は固定されます。カタログの変更を取り込むには
+再度検出を行い、新しいランタイムを構築してください。レジストリ
+マネージャーの更新によって稼働中のエージェントが変わることはありません。
+プロバイダは稼働中のコンシューマとの互換性を維持する必要があります。
+レジストリからの検出は、遅延ロードやツール検索を有効にするものではありません。
+
+アップグレード時はコードを再生成し、`DiscoverAndPopulate` を `Discover` と
+明示的な `RegistryToolsets` 入力に置き換えます。独自の HTTP カタログは、
+入力のみを記述する従来の `inputSchema` 形式に代えて、完全な JSON 文書である
+`payloadSchema`、`executionPayloadSchema`、`resultSchema` を返す必要があります。
+生成 HTTP クライアントはランタイムのリソース型を共有します。その
+エンドポイントは、変更のない分散レジストリの gRPC 契約とは別のものです。
+
 ### PublishTo
 
 `PublishTo(registry)` は、エクスポートされたツールセットをレジストリへ公開する設定を行います。Export DSL 内で `PublishTo` を使用して公開先レジストリを指定します。

@@ -1930,6 +1930,66 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
+Carga los toolsets del registry antes de construir el agente. El paquete
+generado del toolset expone `Discover(ctx, client)`, que devuelve un
+`*registry.Toolset` inmutable. El cliente implementa
+`runtime/registry.RegistryClient`; adapta el cliente de servicio generado del
+registry distribuido con `runtime/registry.NewClient`.
+
+Para un agente `analyst` que consume `data-tools`, pasa el mismo valor descubierto
+a la configuración del agente y al registro de su ejecutor:
+
+```go
+discovered, err := gendatatools.Discover(ctx, catalogClient)
+if err != nil {
+    return err
+}
+toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
+if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
+    Planner:         planner,
+    RegistryToolsets: toolsets,
+}); err != nil {
+    return err
+}
+if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
+    genanalyst.WithDataToolsExecutor(executor),
+); err != nil {
+    return err
+}
+```
+
+El descubrimiento comprueba el nombre y la versión solicitados, rechaza nombres
+de herramientas duplicados o ajenos al toolset y exige esquemas para argumentos
+del modelo, argumentos del proveedor y resultados. Los codecs compilados validan
+ambas direcciones y conservan los números JSON exactos. Las referencias deben
+resolverse dentro del documento de esquema suministrado.
+`Definition(toolsets)` y `NewClient(rt, toolsets)` también exigen estos valores
+y devuelven errores si la configuración está incompleta. Los agentes sin
+dependencias de registry conservan sus APIs generadas.
+
+Esta vía admite herramientas ordinarias descritas por esquemas, cuyas llamadas
+cuentan para el presupuesto. Las herramientas que necesitan confirmación,
+resultados acotados, continuaciones, bookkeeping, flujos de agentes hijos,
+metadatos de campos personalizados o datos de resultado exclusivos del servidor
+siguen necesitando contratos generados estáticos: el catálogo no contiene esas
+declaraciones completas. El descubrimiento rechaza un esquema de resultado
+exclusivo del servidor.
+
+Las definiciones permanecen fijas para cada agente construido. Repite el
+descubrimiento y construye un nuevo runtime para adoptar cambios del catálogo;
+la actualización de un registry manager no modifica los agentes activos.
+Los proveedores deben mantener la compatibilidad con los consumidores activos.
+El descubrimiento del registry no habilita la carga diferida ni la búsqueda de
+herramientas.
+
+Al actualizar, regenera y sustituye `DiscoverAndPopulate` por `Discover` y
+entradas explícitas `RegistryToolsets`. Los catálogos HTTP personalizados deben
+devolver documentos JSON completos `payloadSchema`, `executionPayloadSchema` y
+`resultSchema`, sustituyendo el antiguo formato `inputSchema` que solo describía
+la entrada. Sus clientes HTTP generados comparten los tipos de recursos del
+runtime; sus endpoints siguen siendo distintos del contrato gRPC del registry
+distribuido, que no cambia.
+
 ### PublishTo
 
 `PublishTo(registry)` configura la publicación en el registry para un toolset exportado. Usa PublishTo dentro de un DSL Export para especificar a qué registries debe publicarse el toolset.

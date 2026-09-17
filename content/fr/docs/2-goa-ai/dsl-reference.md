@@ -1949,6 +1949,66 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
+Chargez les ensembles d’outils du registre avant de construire l’agent. Le
+paquet généré expose `Discover(ctx, client)`, qui renvoie un
+`*registry.Toolset` immuable. Le client implémente
+`runtime/registry.RegistryClient` ; adaptez le client de service généré du
+registre distribué avec `runtime/registry.NewClient`.
+
+Pour un agent `analyst` consommant `data-tools`, passez la même valeur découverte
+à la configuration de l’agent et à l’enregistrement de son exécuteur :
+
+```go
+discovered, err := gendatatools.Discover(ctx, catalogClient)
+if err != nil {
+    return err
+}
+toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
+if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
+    Planner:         planner,
+    RegistryToolsets: toolsets,
+}); err != nil {
+    return err
+}
+if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
+    genanalyst.WithDataToolsExecutor(executor),
+); err != nil {
+    return err
+}
+```
+
+La découverte vérifie le nom et la version demandés, rejette les noms d’outils
+dupliqués ou appartenant à un autre ensemble et exige les schémas des arguments
+du modèle, des arguments du fournisseur et des résultats. Les codecs compilés
+valident les deux sens et préservent la valeur exacte des nombres JSON. Les
+références doivent se résoudre dans le document de schéma fourni.
+`Definition(toolsets)` et `NewClient(rt, toolsets)` exigent aussi ces valeurs
+et renvoient une erreur si la configuration est incomplète. Les agents sans
+dépendance de registre conservent leurs API générées.
+
+Cette voie prend en charge les outils ordinaires décrits par des schémas, dont
+les appels comptent dans le budget. Les outils nécessitant une confirmation,
+des résultats bornés, des continuations, du bookkeeping, des workflows enfants,
+des métadonnées de champs personnalisées ou des données de résultat réservées au
+serveur nécessitent encore des contrats générés statiques : le catalogue ne
+contient pas ces déclarations complètes. La découverte rejette un schéma de
+résultat réservé au serveur.
+
+Les définitions restent fixes pour chaque agent construit. Relancez la
+découverte et construisez un nouveau runtime pour adopter les changements du
+catalogue ; une actualisation du gestionnaire de registre ne modifie pas les
+agents actifs. Les fournisseurs doivent rester compatibles avec les
+consommateurs actifs. La découverte du registre n’active ni le chargement différé
+ni la recherche d’outils.
+
+Lors d’une mise à niveau, régénérez le code et remplacez `DiscoverAndPopulate`
+par `Discover` et des entrées explicites `RegistryToolsets`. Les catalogues HTTP
+personnalisés doivent renvoyer les documents JSON complets `payloadSchema`,
+`executionPayloadSchema` et `resultSchema`, à la place de l’ancien format
+`inputSchema` limité aux entrées. Leurs clients HTTP générés partagent les types
+de ressources du runtime ; leurs endpoints restent distincts du contrat gRPC
+inchangé du registre distribué.
+
 ### Publier vers
 
 `PublishTo(registry)` configure la publication du registre pour un jeu d'outils exporté. Utilisez PublishTo dans un Export DSL pour spécifier dans quels registres l'ensemble d'outils doit être publié.

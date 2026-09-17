@@ -2030,6 +2030,60 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
+Load registry toolsets before constructing the agent. The generated toolset
+package exposes `Discover(ctx, client)`, returning an immutable
+`*registry.Toolset`. The client implements `runtime/registry.RegistryClient`;
+wrap the clustered registry's generated service client with
+`runtime/registry.NewClient`.
+
+For an `analyst` agent consuming `data-tools`, pass the same discovered value
+to the agent configuration and its executor registration:
+
+```go
+discovered, err := gendatatools.Discover(ctx, catalogClient)
+if err != nil {
+    return err
+}
+toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
+if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
+    Planner:         planner,
+    RegistryToolsets: toolsets,
+}); err != nil {
+    return err
+}
+if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
+    genanalyst.WithDataToolsExecutor(executor),
+); err != nil {
+    return err
+}
+```
+
+Discovery checks the requested name and version, rejects duplicate or foreign
+tool names, and requires schemas for model arguments, provider arguments, and
+results. The compiled codecs validate both directions and preserve exact JSON
+numbers. References must resolve within the supplied schema document.
+`Definition(toolsets)` and `NewClient(rt, toolsets)` also require these inputs
+and return errors for incomplete configuration. Agents without registry
+dependencies retain their existing generated APIs.
+
+This path supports ordinary, budgeted tools described by schemas. Tools needing
+confirmation, bounded results, continuations, bookkeeping, child workflows,
+custom field metadata, or server-only result data still need static generated
+contracts: the catalog does not contain those complete declarations. Discovery
+rejects a supplied server-only result schema.
+
+Definitions stay fixed for each constructed agent. Discover again and construct
+a new runtime to adopt catalog changes; a registry manager refresh does not
+change active agents. Providers must remain compatible with active consumers.
+Registry discovery does not enable deferred loading or tool search.
+
+When upgrading, regenerate and replace `DiscoverAndPopulate` with `Discover`
+and explicit `RegistryToolsets` inputs. Custom HTTP catalogs must return complete
+`payloadSchema`, `executionPayloadSchema`, and `resultSchema` JSON documents,
+replacing the former input-only `inputSchema` format. Their generated HTTP
+clients share the runtime resource types; their endpoints remain separate from
+the clustered registry's unchanged gRPC contract.
+
 ### PublishTo
 
 `PublishTo(registry)` configures registry publication for an exported toolset. Use PublishTo inside an Export DSL to specify which registries the toolset should be published to.
