@@ -371,3 +371,6 @@ Le registre expose les méthodes gRPC suivantes :
 - En savoir plus sur les [Ensembles d'outils](./toolsets/) pour définir des outils
 - Explorez [Production](./production/) pour les modèles de déploiement
 - En savoir plus sur la [Composition d'agent](./agent-composition/) pour le partage d'outils entre agents
+
+
+Consultez [Recherche d’outils et catalogues dynamiques](../tool-search/) pour la résolution actuelle, les contrats générés, les fournisseurs et la migration.

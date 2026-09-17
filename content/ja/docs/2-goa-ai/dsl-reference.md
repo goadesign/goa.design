@@ -827,8 +827,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
     Return(DangerousWriteResult)
     Confirmation(func() {
         Title("Confirm change")
-        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
-        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+        PromptTemplate(`Approve write: set {{ .key }} to {{ json .value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":{{ json .key }}}`)
     })
 })
 ```
@@ -1862,7 +1862,6 @@ var MyTools = Toolset("my-tools", FromRegistry(CorpRegistry, "data-tools"))
 // With additional configuration
 var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
     Version("1.2.3")
-    Tags("data", "etl")
 })
 ```
 
@@ -1878,61 +1877,11 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
-エージェントを構築する前に、レジストリからツールセットを読み込みます。
-生成されたツールセットのパッケージは `Discover(ctx, client)` を公開し、
-不変の `*registry.Toolset` を返します。クライアントは
-`runtime/registry.RegistryClient` を実装します。分散レジストリの生成済み
-サービスクライアントは、`runtime/registry.NewClient` でラップして使います。
+名前付き `Toolset(FromRegistry(...))` を `Use` で利用するか、`Registry` 全体を直接利用できます。`Use` 内に `Deferred()` を追加するとネイティブ検索を使います。生成済みエージェントは各計画アクティビティで現在の契約を1回解決します。構築済みの分散レジストリと Pulse クライアントを `rt.RegisterRegistry` で接続します。`Definition()` と `NewClient(rt)` にカタログ引数はありません。
 
-`data-tools` を利用する `analyst` エージェントでは、取得した同じ値を
-エージェントの設定と実行ハンドラの登録に渡します:
+プロバイダーは確認、ページネーション、フィールド情報、サーバー専用データを含む `ToolSchemas()` を公開します。動的なサービスツールは保存済み契約を使い、エージェント・制御連携はコンパイル済みのままです。名前付きソースは存在し、指定版と一致する必要があります。レジストリ全体は空でも有効です。重複・重なりのある利用やレジストリ参照内のインライン・エクスポート宣言は拒否されます。
 
-```go
-discovered, err := gendatatools.Discover(ctx, catalogClient)
-if err != nil {
-    return err
-}
-toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
-if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
-    Planner:         planner,
-    RegistryToolsets: toolsets,
-}); err != nil {
-    return err
-}
-if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
-    genanalyst.WithDataToolsExecutor(executor),
-); err != nil {
-    return err
-}
-```
-
-検出時に要求した名前とバージョンを確認し、重複したツール名や別の
-ツールセットに属する名前を拒否します。モデル引数、プロバイダ引数、
-結果のスキーマが必須です。コンパイルされたコーデックは入出力の両方向を
-検証し、JSON 数値の正確な値を保持します。参照は渡されたスキーマ文書内で
-解決できなければなりません。`Definition(toolsets)` と
-`NewClient(rt, toolsets)` もこれらの値を必要とし、不完全な設定にはエラーを
-返します。レジストリに依存しないエージェントの生成 API は変わりません。
-
-この経路は、呼び出しが予算に計上される、スキーマで記述された通常の
-ツールをサポートします。確認、件数などを制限した結果、継続処理、
-bookkeeping、子ワークフロー、独自のフィールドメタデータ、サーバー専用の
-結果データを必要とするツールには、引き続き静的な生成済み契約が必要です。
-カタログにはこれらの完全な宣言が含まれていません。サーバー専用の
-結果スキーマが渡された場合、検出はエラーになります。
-
-構築した各エージェントの定義は固定されます。カタログの変更を取り込むには
-再度検出を行い、新しいランタイムを構築してください。レジストリ
-マネージャーの更新によって稼働中のエージェントが変わることはありません。
-プロバイダは稼働中のコンシューマとの互換性を維持する必要があります。
-レジストリからの検出は、遅延ロードやツール検索を有効にするものではありません。
-
-アップグレード時はコードを再生成し、`DiscoverAndPopulate` を `Discover` と
-明示的な `RegistryToolsets` 入力に置き換えます。独自の HTTP カタログは、
-入力のみを記述する従来の `inputSchema` 形式に代えて、完全な JSON 文書である
-`payloadSchema`、`executionPayloadSchema`、`resultSchema` を返す必要があります。
-生成 HTTP クライアントはランタイムのリソース型を共有します。その
-エンドポイントは、変更のない分散レジストリの gRPC 契約とは別のものです。
+現在のソース解決、生成済み契約、プロバイダー動作、移行については[ツール検索と動的カタログ](../tool-search/)を参照してください。
 
 ### PublishTo
 

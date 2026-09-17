@@ -1170,3 +1170,6 @@ Avoid server-data when:
 - **[Agent Composition](./agent-composition.md)** - Build complex systems with agent-as-tool patterns
 - **[MCP Integration](./mcp-integration.md)** - Connect to external tool servers
 - **[Runtime](./runtime.md)** - Understand tool execution flow
+
+
+See [Tool search and dynamic catalogs](../tool-search/) for current source resolution, generated contracts, provider behavior, and migration.

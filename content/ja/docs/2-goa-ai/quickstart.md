@@ -387,3 +387,6 @@ Agent("coordinator", "Delegates specialist work", func() {
 | [Agent Composition](agent-composition/) | agent-as-tool パターンの詳細 |
 | [Evaluations](evaluations/) | 生成 eval suite、evidence collection、LLM judge |
 | [Production](production/) | Temporal セットアップ、UI へのストリーミング、レート制限 |
+
+
+現在のソース解決、生成済み契約、プロバイダー動作、移行については[ツール検索と動的カタログ](../tool-search/)を参照してください。

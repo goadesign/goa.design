@@ -859,8 +859,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
     Return(DangerousWriteResult)
     Confirmation(func() {
         Title("Confirm change")
-        PromptTemplate(`Approve write: set {{ .Key }} to {{ .Value }}`)
-        DeniedResultTemplate(`{"summary":"Cancelled","key":"{{ .Key }}"}`)
+        PromptTemplate(`Approve write: set {{ .key }} to {{ json .value }}`)
+        DeniedResultTemplate(`{"summary":"Cancelled","key":{{ json .key }}}`)
     })
 })
 ```
@@ -1918,7 +1918,6 @@ var MyTools = Toolset("my-tools", FromRegistry(CorpRegistry, "data-tools"))
 // With additional configuration
 var ConfiguredTools = Toolset(FromRegistry(CorpRegistry, "data-tools"), func() {
     Version("1.2.3")
-    Tags("data", "etl")
 })
 ```
 
@@ -1934,64 +1933,11 @@ var PinnedTools = Toolset("stable-tools", FromRegistry(CorpRegistry, "data-tools
 })
 ```
 
-Carica i set di strumenti del registro prima di costruire l’agente. Il pacchetto
-generato espone `Discover(ctx, client)`, che restituisce un
-`*registry.Toolset` immutabile. Il client implementa
-`runtime/registry.RegistryClient`; adatta il client di servizio generato del
-registro distribuito con `runtime/registry.NewClient`.
+Consuma un `Toolset(FromRegistry(...))` nominato con `Use`, oppure direttamente un intero `Registry`. Aggiungi `Deferred()` in `Use` per la ricerca nativa. L’agente generato risolve i contratti attuali una volta per attività di pianificazione. Collega client del registro distribuito e Pulse già costruiti con `rt.RegisterRegistry`; `Definition()` e `NewClient(rt)` non ricevono cataloghi.
 
-Per un agente `analyst` che usa `data-tools`, passa lo stesso valore scoperto
-alla configurazione dell’agente e alla registrazione del suo esecutore:
+I provider pubblicano `ToolSchemas()` con conferma, paginazione, metadati e dati server. Gli strumenti dinamici di servizio usano quei contratti; agenti e controllo restano compilati. Le fonti nominate devono esistere e rispettare la versione fissata; un registro completo può essere vuoto. Consumi duplicati o sovrapposti e strumenti inline o esportati su riferimenti al registro sono rifiutati.
 
-```go
-discovered, err := gendatatools.Discover(ctx, catalogClient)
-if err != nil {
-    return err
-}
-toolsets := genanalyst.RegistryToolsets{DataTools: discovered}
-if err := genanalyst.RegisterAnalystAgent(ctx, rt, genanalyst.AnalystAgentConfig{
-    Planner:         planner,
-    RegistryToolsets: toolsets,
-}); err != nil {
-    return err
-}
-if err := genanalyst.RegisterUsedToolsets(ctx, rt, toolsets,
-    genanalyst.WithDataToolsExecutor(executor),
-); err != nil {
-    return err
-}
-```
-
-Il caricamento verifica il nome e la versione richiesti, rifiuta nomi di
-strumenti duplicati o appartenenti a un altro set e richiede gli schemi degli
-argomenti del modello, degli argomenti del provider e dei risultati. I codec
-compilati validano entrambe le direzioni e preservano il valore esatto dei
-numeri JSON. I riferimenti devono risolversi all’interno del documento di
-schema fornito. Anche `Definition(toolsets)` e `NewClient(rt, toolsets)`
-richiedono questi valori e restituiscono errori se la configurazione è
-incompleta. Gli agenti senza dipendenze da registri mantengono le API generate
-esistenti.
-
-Questo percorso supporta strumenti ordinari descritti da schemi, le cui chiamate
-contano nel budget. Gli strumenti che richiedono conferma, risultati limitati,
-continuazioni, bookkeeping, workflow figli, metadati di campo personalizzati o
-dati di risultato riservati al server richiedono ancora contratti generati
-statici: il catalogo non contiene tali dichiarazioni complete. Il caricamento
-rifiuta uno schema di risultato riservato al server.
-
-Le definizioni restano fisse per ogni agente costruito. Ripeti il caricamento e
-costruisci un nuovo runtime per adottare modifiche al catalogo; un aggiornamento
-del gestore del registro non modifica gli agenti attivi. I provider devono
-restare compatibili con i consumatori attivi. Il caricamento dal registro non
-attiva il caricamento differito né la ricerca degli strumenti.
-
-Durante l’aggiornamento, rigenera il codice e sostituisci `DiscoverAndPopulate`
-con `Discover` e input espliciti `RegistryToolsets`. I cataloghi HTTP
-personalizzati devono restituire documenti JSON completi `payloadSchema`,
-`executionPayloadSchema` e `resultSchema`, al posto del precedente formato
-`inputSchema` limitato all’input. I client HTTP generati condividono i tipi di
-risorse del runtime; i loro endpoint restano distinti dal contratto gRPC del
-registro distribuito, che non cambia.
+Vedi [Ricerca degli strumenti e cataloghi dinamici](../tool-search/) per risoluzione attuale, contratti generati, provider e migrazione.
 
 ### Pubblica su
 

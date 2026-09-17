@@ -1116,3 +1116,6 @@ Evita server-data cuando:
 - **[Composición de agentes](./agent-composition.md)** - Construye sistemas complejos con patrones agent-as-tool
 - **[Integración MCP](./mcp-integration.md)** - Conecta con servidores de herramientas externos
 - **[Runtime](./runtime.md)** - Comprende el flujo de ejecución de herramientas
+
+
+Consulta [Búsqueda de herramientas y catálogos dinámicos](../tool-search/) para la resolución actual, contratos generados, proveedores y migración.

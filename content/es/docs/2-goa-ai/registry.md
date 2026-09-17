@@ -347,3 +347,6 @@ El registro expone los siguientes métodos gRPC:
 - Conoce los [Toolsets](./toolsets/) para definir herramientas.
 - Explora [Producción](./production/) para patrones de despliegue.
 - Lee sobre [Composición de agentes](./agent-composition/) para compartir herramientas entre agentes.
+
+
+Consulta [Búsqueda de herramientas y catálogos dinámicos](../tool-search/) para la resolución actual, contratos generados, proveedores y migración.

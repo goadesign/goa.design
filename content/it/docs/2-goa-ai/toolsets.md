@@ -1106,3 +1106,6 @@ Evitare server-data quando:
 - **[Composizione di agenti](./agent-composition.md)** - Costruire sistemi complessi con modelli di agenti come strumenti
 - **[Integrazione MCP](./mcp-integration.md)** - Connettersi a server di strumenti esterni
 - **[Runtime](./runtime.md)** - Comprendere il flusso di esecuzione degli strumenti
+
+
+Vedi [Ricerca degli strumenti e cataloghi dinamici](../tool-search/) per risoluzione attuale, contratti generati, provider e migrazione.

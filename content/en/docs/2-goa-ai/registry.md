@@ -370,3 +370,6 @@ The registry exposes the following gRPC methods:
 - Learn about [Toolsets](./toolsets/) for defining tools
 - Explore [Production](./production/) for deployment patterns
 - Read about [Agent Composition](./agent-composition/) for cross-agent tool sharing
+
+
+See [Tool search and dynamic catalogs](../tool-search/) for current source resolution, generated contracts, provider behavior, and migration.
