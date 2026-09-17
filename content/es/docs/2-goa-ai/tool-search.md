@@ -100,6 +100,18 @@ El historial de altas y bajas de Claude exige un modelo compatible. Una definici
 
 Regenera el agente consumidor después de cambiar su selección de `Deferred`. La generación de código prepara los recuentos de palabras de búsqueda y emite los ID fijos existentes de las herramientas seleccionadas mediante la misma API del runtime. La selección por nombre no añade ninguna API del proveedor, estado del proveedor ni espacio de nombres.
 
+En v0.80.0, `Deferred` pasó de `func()` a `func(...string)`. Las llamadas a `Deferred()` siguen siendo válidas, pero pasar directamente `Deferred` como callback de tipo `func()` ya no compila. Envuelve las referencias directas:
+
+```go
+// Antes
+Use(Records, Deferred)
+
+// Después
+Use(Records, func() { Deferred() })
+```
+
+Aplica la misma función envolvente a otras asignaciones de `Deferred` a un callback de tipo `func()`. Esto conserva la carga diferida de todo el conjunto de herramientas. Envolver un callback existente, sin cambiar la selección, no requiere regenerar el código.
+
 Regenera proveedores y consumidores con Goa v3.31.1. Sustituye `Discover`, `RegistryToolsets` y el cableado de ejecutores dinámicos por `RegisterRegistry`. Actualiza el registro para servir `ResolveToolset` y `CallResolvedTool`, y publica `ToolSchemas()` completo antes de habilitar consumidores dinámicos. Los registros antiguos con solo esquemas siguen disponibles para integraciones estáticas, pero no para esta ruta.
 
 Las plantillas de confirmación usan nombres JSON como `{{ .key }}`, en lugar de campos Go como `{{ .Key }}`. Usa `{{ json .value }}` para valores JSON e `index` para propiedades opcionales.

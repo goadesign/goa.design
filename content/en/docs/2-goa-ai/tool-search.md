@@ -100,6 +100,18 @@ Claude add/remove history requires a model supporting tool availability changes.
 
 Regenerate the consuming agent after changing its `Deferred` selection. Code generation prepares search word counts and emits the selected tools' existing fixed IDs through the same runtime API. Named selection adds no provider API, provider state, or namespace.
 
+In v0.80.0, `Deferred` changed from `func()` to `func(...string)`. Calls to `Deferred()` remain valid, but passing `Deferred` itself as a `func()` callback no longer compiles. Wrap direct callback references:
+
+```go
+// Before
+Use(Records, Deferred)
+
+// After
+Use(Records, func() { Deferred() })
+```
+
+Apply the same wrapper to other assignments of `Deferred` to a `func()` callback. This preserves whole-toolset deferral. Wrapping an existing callback alone does not require regeneration.
+
 Regenerate providers and consumers with Goa v3.31.1. Replace startup `Discover` calls, `RegistryToolsets` inputs, and dynamic executor wiring with `RegisterRegistry`. Upgrade the registry to expose `ResolveToolset` and `CallResolvedTool`, and publish complete `ToolSchemas()` before enabling dynamic consumers. Old schema-only registrations remain usable by existing static integrations, but not by this dynamic path.
 
 Confirmation templates now use JSON names, such as `{{ .key }}`, rather than Go field names such as `{{ .Key }}`. Use `{{ json .value }}` for JSON values and `index` for optional properties.
