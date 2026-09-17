@@ -9,7 +9,30 @@ llm_optimized: true
 
 Tool search loads definitions when the model needs them. A registry lets providers change the available tools without rebuilding the consumer. These are independent: static tools can use search, and dynamic tools can be advertised immediately.
 
-For compiled tools, add `Deferred()` inside their consuming `Use`. The generator prepares search word counts and the agent's loading choices. Another agent can consume the same tools immediately. For a changing catalog, reuse `Registry`:
+## Choose which tools load through search
+
+Suppose the compiled `Records` toolset defines `lookup`, `search`, and `analyze`. Keep the frequently used `lookup` tool immediately available by deferring only the other two:
+
+```go
+Agent("assistant", "Find and analyze records.", func() {
+    Use(Records, func() {
+        Deferred("search", "analyze")
+    })
+})
+```
+
+Only `search` and `analyze` load through search; `lookup` is advertised immediately. This changes definition loading, not permission or execution. The choice belongs inside the consuming `Use`, never on a shared `Toolset` definition or an `Export`. Shared providers, exports, and other consumers remain unchanged.
+
+Names must exactly match authored local tool names in the compiled toolset: `"search"`, not `"records.search"` or a generated Go name. Named selection supports local tools, agents exposed as tools, external MCP tools with declared schemas, and Goa-backed MCP tools.
+
+- `Deferred()` selects all tools in that `Use`; repeating it is valid.
+- Multiple named declarations combine: `Deferred("search")` followed by `Deferred("analyze")` selects both.
+- Empty or duplicate names are rejected, including duplicates across declarations. Code generation rejects unknown names after collecting the complete compiled tool list.
+- Combining `Deferred()` with any named selection in the same `Use` is rejected.
+
+## Consume a changing catalog
+
+For a changing catalog, use `Registry`. Both `FromRegistry` toolsets and whole registries reject named `Deferred` selections because their tools are resolved at runtime:
 
 ```go
 var Company = Registry("company", func() {
@@ -29,7 +52,7 @@ var _ = Service("assistant", func() {
 
 The reader resolves one required toolset; the generalist resolves every currently listed toolset. Removing `Deferred()` advertises that same catalog immediately. A named source may require `Version("1.2.3")`; this checks the current version, rather than selecting an archived one.
 
-`Deferred()` is valid only inside `Use`. Duplicate or overlapping sources, inline tool declarations on registry references, and exporting registry references are rejected. Provider contracts own tool definitions; run policy filters the resolved catalog before it reaches the model.
+Duplicate or overlapping sources, inline tool declarations on registry references, and exporting registry references are rejected. Provider contracts own tool definitions; run policy filters the resolved catalog before it reaches the model.
 
 Registry references also reject consumer `Tags(...)` overrides and `PublishTo(...)`. Providers own tool tags; consumers filter them through run policy.
 
@@ -74,6 +97,8 @@ Native search records remain in existing message metadata. Preserve that metadat
 Claude add/remove history requires a model supporting tool availability changes. A changed definition under a retained name cannot be replayed by that protocol and is rejected. Start a new conversation or deliberately compact away that retained definition; the adapter never silently resets history. Native-only Claude pause continuation is not implemented.
 
 ## Examples and upgrades
+
+Regenerate the consuming agent after changing its `Deferred` selection. Code generation prepares search word counts and emits the selected tools' existing fixed IDs through the same runtime API. Named selection adds no provider API, provider state, or namespace.
 
 Regenerate providers and consumers with Goa v3.31.1. Replace startup `Discover` calls, `RegistryToolsets` inputs, and dynamic executor wiring with `RegisterRegistry`. Upgrade the registry to expose `ResolveToolset` and `CallResolvedTool`, and publish complete `ToolSchemas()` before enabling dynamic consumers. Old schema-only registrations remain usable by existing static integrations, but not by this dynamic path.
 
