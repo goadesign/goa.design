@@ -36,7 +36,7 @@ Varios nodos de registro pueden participar en el mismo registro lógico utilizan
 Los nodos con el mismo nombre automáticamente:
 
 - **Comparten los registros de toolsets** a través de mapas replicados Pulse.
-- **Coordinan los pings de comprobación de estado** mediante tickers distribuidos (solo un nodo envía pings en cada instante).
+- **Coordinan los pings de salud** con concesiones Redis que caducan, adquiridas por separado para cada toolset.
 - **Comparten el estado de salud de los proveedores** entre todos los nodos.
 
 Esto permite el escalado horizontal y la alta disponibilidad. Los clientes pueden conectarse a cualquier nodo y ver el mismo estado del registro.
@@ -47,7 +47,11 @@ Esto permite el escalado horizontal y la alta disponibilidad. Los clientes puede
 
 ### Uso de la biblioteca
 
-Crea y ejecuta un nodo de registro mediante programación. Cuando se invoca `New()`, el registro se conecta a Redis e inicializa varios componentes Pulse: un nodo pool para la coordinación distribuida, dos mapas replicados para el estado de salud y el seguimiento de toolsets, y gestores de streams para el enrutamiento de llamadas a herramientas. El método `Run()` arranca el servidor gRPC y se bloquea hasta el apagado, gestionando automáticamente la terminación graceful.
+Crea y ejecuta un nodo de registro mediante programación. `registry.New`
+inicializa el catálogo y los registros de llamadas en Redis, los streams Pulse
+y el planificador de salud. `Run` inicia el servidor gRPC y espera hasta el
+apagado. El ejemplo usa direcciones locales de desarrollo; configura las
+credenciales Redis y gRPC de tu despliegue.
 
 ```go
 package main
@@ -120,26 +124,51 @@ REGISTRY_NAME=prod REGISTRY_ADDR=:9092 REDIS_URL=redis:6379 ./registry
 | Componente | Descripción |
 |-----------|-------------|
 | **Service** | Manejadores gRPC para descubrimiento e invocación |
-| **Store** | Capa de persistencia para los metadatos de toolsets (memoria o MongoDB) |
+| **Catálogo** | Esquemas de herramientas, identidades de admisión, concesiones de proveedores e historial de retiradas almacenados en Redis |
 | **Health Tracker** | Supervisa la actividad del proveedor mediante ping/pong |
 | **Stream Manager** | Gestiona los streams Pulse para el enrutamiento de llamadas a herramientas |
-| **Result Stream Manager** | Gestiona la entrega de los resultados de las herramientas |
+| **Registros de llamadas** | Conservan la identidad de la solicitud, el proveedor asignado, las fechas límite, el estado de publicación y el resultado final canónico |
 
 ### Flujo de llamadas a herramientas
 
 Cuando se invoca `CallTool`, el registro ejecuta los siguientes pasos en secuencia:
 
-1. **Validación del esquema**: La carga útil se valida contra el JSON Schema de la herramienta utilizando el validador de esquemas del toolregistry del runtime.
-2. **Comprobación de salud**: El registro verifica si el toolset ha respondido a los pings recientes; los toolsets no saludables devuelven `service_unavailable` inmediatamente.
-3. **Creación del stream de resultados**: Se crea un stream Pulse temporal con un `tool_use_id` único, y la asignación se almacena en Redis para la entrega de resultados entre nodos.
-4. **Publicación de la solicitud**: La llamada a la herramienta se publica en el stream de solicitudes del toolset (`toolset:<name>:requests`).
-5. **Espera del resultado**: La pasarela se suscribe al stream de resultados y se bloquea hasta que el proveedor responde o expira el timeout de 30 segundos.
+1. **Validación de identidad y esquema**: El registro valida la carga útil y
+   deriva un `tool_use_id` único dentro de la ejecución. Un reintento idéntico
+   se vincula al mismo registro conservado.
+2. **Espera de un proveedor**: Una llamada aún no publicada espera a que el
+   toolset activo tenga un proveedor saludable, dentro de la fecha límite de
+   ejecución existente de la llamada.
+3. **Publicación atómica**: Una operación de Redis verifica que el proveedor
+   seleccionado siga siendo el actual y acepte nuevas llamadas, y añade la
+   solicitud exactamente una vez. Si un despliegue cambió el proveedor tras la
+   comprobación de salud, la llamada aún no publicada selecciona al sustituto
+   y vuelve a intentarlo dentro de la misma fecha límite.
+4. **Ejecución inmutable**: La publicación fija la asignación al proveedor.
+   La llamada ya no puede trasladarse porque podría haber comenzado un efecto
+   externo.
+5. **Entrega del resultado**: `CallTool` devuelve el token exacto del proveedor,
+   la identidad del stream de resultados y las fechas límite de ejecución y
+   conservación. El ejecutor lee ese stream hasta que el proveedor devuelve un
+   resultado final o la fecha límite de ejecución determina el resultado de la
+   llamada.
 
-Este diseño garantiza que las llamadas a herramientas fallen rápidamente cuando los proveedores no están saludables, en lugar de esperar a que venzan los timeouts.
+Si la fecha límite de ejecución vence antes de la publicación, el registro
+guarda `call_not_admitted`, lo que permite al ejecutor elegir otro plan. Una
+llamada publicada cuyo resultado sea incierto devuelve `outcome_unknown` y no
+puede sustituirse.
 
 ## Integración del proveedor (lado del servicio)
 
 El enrutamiento del registro es solo la mitad de la historia: los **proveedores deben ejecutar un bucle de ejecución de herramientas** dentro del proceso del servicio propietario del toolset.
+Antes de invocar un manejador, el proveedor llama a `ClaimToolCall` con el
+contexto del ciclo de vida de su worker y el timeout acotado existente para esa
+solicitud, independientemente de la fecha límite de ejecución del mensaje. El
+registro determina si la llamada ha expirado, ya tiene un resultado final o si
+otra entrega posee el derecho de ejecución. En estos casos, el proveedor confirma
+la recepción del mensaje sin invocar el manejador ni detener su bucle de ejecución. Solo tras
+una decisión `execute` invoca el manejador con la fecha límite de ejecución
+original del mensaje, sin ampliarla.
 
 Para toolsets propios del servicio y respaldados por métodos (herramientas declaradas con `BindTo(...)`), la generación de código emite un adaptador de proveedor en:
 
@@ -152,23 +181,190 @@ El proveedor generado:
 - Llama al método del servicio enlazado.
 - Codifica el JSON del resultado junto con cualquier server-data declarado usando el códec de resultado generado.
 
-Para servir llamadas a herramientas desde la pasarela del registro, conecta el proveedor generado al bucle de proveedor del runtime (`goa.design/goa-ai/runtime/toolregistry/provider`):
+El siguiente ejemplo usa el módulo `example.com/registry-provider`, el
+servicio `catalog` y su toolset `search`, enlazado a métodos y registrado como
+`catalog.search`. Sustituye las dos rutas de importación de la aplicación y el
+nombre del toolset por tus valores generados. `NewProvider`, `ToolSchemas` y
+`SchemaFingerprint` proceden del paquete generado del toolset; conserva intactos
+los esquemas generados. Los callbacks de registro siguen el ejemplo
+**Service-Side Tool Providers** del archivo `AGENTS_QUICKSTART.md` generado en
+la raíz del módulo ([Inicio rápido](../quickstart/)).
+
+Pasa la implementación de tu servicio, un cliente Pulse creado con
+`pulse.New(pulse.Options{Redis: rdb})` y una conexión gRPC al registro creada
+con `grpc.NewClient` y las credenciales de tu despliegue. Proporciona un
+`providerID` estable para este proceso y toolset, único entre las réplicas
+activas, y el valor obligatorio `admissionRevision`, suministrado por el
+despliegue y compartido por las réplicas del mismo registro. `Serve` crea el
+identificador de instancia y lo pasa a los callbacks. Los métodos de servicio
+enlazados deben respetar la cancelación del contexto. Ejecuta `serveTools`
+dentro del ciclo de vida del servicio y espera a que termine antes de cerrar
+cualquiera de los clientes. Al apagarse, el proveedor deja de aceptar trabajo
+y finaliza las llamadas cuya ejecución posee, sus resultados y los acuses de
+recibo dentro de `Options.ShutdownTimeout`. Solo una finalización correcta
+permite liberar la concesión exacta, con el plazo independiente
+`Registration.ReleaseTimeout`. Si la finalización falla, la autoridad termina
+al caducar la concesión. Conserva y comunica los errores de finalización o
+liberación aunque el error devuelto también coincida con `context.Canceled`.
+A continuación se conectan todos los callbacks de registro obligatorios:
 
 ```go
-handler := toolsetpkg.NewProvider(serviceImpl)
-go func() {
-    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
-        Pong: func(ctx context.Context, pingID string) error {
-            return registryClient.Pong(ctx, &registry.PongPayload{
-                PingID:  pingID,
-                Toolset: toolsetID,
-            })
-        },
-    })
-    if err != nil {
-        panic(err)
-    }
-}()
+package providers
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	gencatalog "example.com/registry-provider/gen/catalog"
+	gensearch "example.com/registry-provider/gen/catalog/toolsets/search"
+	"goa.design/goa-ai/features/stream/pulse/clients/pulse"
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	registrywire "goa.design/goa-ai/runtime/toolregistry"
+	"goa.design/goa-ai/runtime/toolregistry/provider"
+	"google.golang.org/grpc"
+)
+
+// serveTools runs the generated catalog provider until shutdown or a provider error.
+// The caller owns the clients, service implementation, and deployment identifiers.
+func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
+	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	const toolsetID = "catalog.search"
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	registryClient := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	toolSchemas := gensearch.ToolSchemas()
+	handler := gensearch.NewProvider(serviceImpl)
+	return provider.Serve(ctx, pulseClient, toolsetID, handler,
+		provider.Registration{
+			AdmissionRevision: admissionRevision,
+			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				result, err := registryClient.Register(ctx, &genregistry.RegisterPayload{
+					Name:                  toolset,
+					Tools:                 toolSchemas,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+					AdmissionRevision:     admissionRevision,
+					WireProtocolVersion:   registrywire.WireProtocolVersion,
+					SchemaFingerprint:     schemaFingerprint,
+				})
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				return provider.RegistrationLease{
+					RegistrationToken: result.RegistrationToken,
+					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
+				}, nil
+			},
+			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
+				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+					SettlementDurationMs:      settlementDuration.Milliseconds(),
+				})
+			},
+			Release: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) error {
+				return registryClient.ReleaseProvider(ctx, &genregistry.ReleaseProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+			},
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+				resultJSON, err := json.Marshal(result)
+				if err != nil {
+					return err
+				}
+				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					RegistrationToken:         result.RegistrationToken,
+					ToolUseID:                 result.ToolUseID,
+					ResultJSON:                resultJSON,
+					RequestEventID:            requestEventID,
+					ProviderRegistrationToken: providerToken,
+				})
+			},
+			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
+				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+					Stream:                    stream,
+					Delta:                     delta,
+				})
+			},
+			ReportOverload: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID string) error {
+				return registryClient.ReportToolCallOverload(ctx, &genregistry.ProviderToolCallClaimPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+				})
+			},
+			Claim: func(ctx context.Context, claim provider.ClaimRequest) (provider.ClaimDisposition, error) {
+				result, err := registryClient.ClaimToolCall(ctx, &genregistry.ClaimToolCallPayload{
+					Toolset:                   claim.Toolset,
+					ProviderID:                claim.ProviderID,
+					ProviderIncarnationID:     claim.ProviderIncarnationID,
+					ProviderRegistrationToken: claim.ProviderRegistrationToken,
+					CallRegistrationToken:     claim.CallRegistrationToken,
+					ToolUseID:                 claim.ToolUseID,
+					RequestEventID:            claim.RequestEventID,
+					ClaimOperationID:          claim.OperationID,
+				})
+				if err != nil {
+					return "", err
+				}
+				return provider.ClaimDisposition(result.Disposition), nil
+			},
+		},
+		provider.Options{
+			ProviderID: providerID,
+			Pong: func(ctx context.Context, providerID, incarnationID, pingID string) error {
+				return registryClient.Pong(ctx, &genregistry.PongPayload{
+					PingID:                pingID,
+					Toolset:               toolsetID,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+				})
+			},
+		},
+	)
+}
 ```
 
 Los IDs de stream son deterministas:
@@ -178,119 +374,122 @@ Los IDs de stream son deterministas:
 
 ## Configuración
 
-### Struct Config
+### Opciones del registro {#struct-config}
 
-El campo `Name` es especialmente importante: determina los nombres de los recursos Pulse utilizados para la coordinación. El pool se denomina `<name>`, el mapa de salud `<name>:health`, y el mapa de registro `<name>:toolsets`. Los nodos con nombres y conexiones Redis coincidentes se descubren automáticamente entre sí.
+El [ejemplo de la biblioteca](#uso-de-la-biblioteca) muestra la configuración
+mínima: pasa el cliente Redis de la aplicación en `Redis` y elige un `Name`
+compartido para el clúster. Los nodos con el mismo nombre y base de datos Redis
+comparten el catálogo, los registros de llamadas y la coordinación de salud.
+El catálogo usa el mapa replicado Pulse `<name>:toolsets`.
 
-```go
-type Config struct {
-    // Redis is the Redis client for Pulse operations. Required.
-    Redis *redis.Client
+Consulta [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) para ver la API completa y sus valores por
+defecto. `PingInterval` y `MissedPingThreshold` controlan las comprobaciones
+de salud; `ExecutionTimeout` limita las nuevas ejecuciones admitidas;
+`ResultStreamTTL` controla la conservación de resultados; y
+`ProviderLeaseDuration` controla la renovación del registro de proveedores.
+`ExpectedToolsets` registra los nombres requeridos del catálogo en la
+telemetría sin rechazar registros ni llamadas. `Logger` recibe los errores
+al finalizar llamadas. Configura estas opciones al construir el registro.
 
-    // Store is the persistence layer for toolset metadata.
-    // Defaults to an in-memory store if not provided.
-    Store store.Store
+### Almacenamiento en Redis {#implementaciones-de-almacén}
 
-    // Name is the registry cluster name.
-    // Nodes with the same Name and Redis connection form a cluster.
-    // Defaults to "registry" if not provided.
-    Name string
-
-    // PingInterval is the interval between health check pings.
-    // Defaults to 10 seconds if not provided.
-    PingInterval time.Duration
-
-    // MissedPingThreshold is the number of consecutive missed pings
-    // before marking a toolset as unhealthy.
-    // Defaults to 3 if not provided.
-    MissedPingThreshold int
-
-    // ResultStreamMappingTTL is the TTL for tool_use_id to stream_id mappings.
-    // Defaults to 5 minutes if not provided.
-    ResultStreamMappingTTL time.Duration
-
-    // PoolNodeOptions are additional options for the Pulse pool node.
-    PoolNodeOptions []pool.NodeOption
-}
-```
-
-### Implementaciones de almacén
-
-El registro soporta backends de almacenamiento intercambiables. El almacén persiste los metadatos de toolsets (nombre, descripción, versión, etiquetas y esquemas de herramientas). Ten en cuenta que el estado de salud y la coordinación de streams siempre se gestionan a través de Redis/Pulse con independencia del almacén que elijas: el almacén solo afecta a la persistencia de los metadatos del toolset.
-
-```go
-import (
-    "goa.design/goa-ai/registry/store/memory"
-    "goa.design/goa-ai/registry/store/mongo"
-)
-
-// In-memory store (default, for development)
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    // Store defaults to memory.New()
-})
-
-// MongoDB store (for production persistence)
-mongoStore, _ := mongo.New(mongoClient, "registry", "toolsets")
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    Store: mongoStore,
-})
-```
+Redis almacena en el catálogo los esquemas de herramientas, las identidades
+de admisión, las concesiones de proveedores, las marcas de tiempo de salud y
+el historial de retiradas. Los registros de llamadas y los streams Pulse de
+solicitudes y resultados también usan Redis. Usa Redis duradero para que las
+réplicas y los procesos reiniciados observen los mismos registros y decisiones
+de llamadas. La aplicación es propietaria del cliente Redis y lo cierra
+después de detener el registro.
 
 ## Monitorización de la salud
 
-El registro monitoriza automáticamente la salud de los proveedores mediante mensajes ping/pong a través de streams Pulse.
+El registro envía pings de salud por streams Pulse. Los proveedores responden mediante el método gRPC `Pong`.
 
 ### Cómo funciona
 
-1. El registro envía mensajes `ping` periódicos al stream de cada toolset registrado.
-2. Los proveedores responden con mensajes `pong` a través del método gRPC `Pong`.
-3. Si un proveedor pierde `MissedPingThreshold` pings consecutivos, se marca como no saludable.
-4. Los toolsets no saludables quedan excluidos del enrutamiento de `CallTool`.
+1. El planificador de salud lee los toolsets activos del catálogo compartido.
+2. El nodo que posee la concesión de ping de un toolset envía un ping mientras exista un proveedor activo que acepte llamadas.
+3. `Pong` actualiza el catálogo solo si la respuesta coincide con el registro, el proceso proveedor y la identidad de comprobación de salud actuales.
+4. El enrutamiento requiere una concesión de proveedor no caducada que acepte nuevas llamadas y un pong aceptado suficientemente reciente.
 
-El health tracker utiliza un umbral de obsolescencia calculado como `(MissedPingThreshold + 1) × PingInterval`. Con los valores por defecto (3 pings perdidos, intervalo de 10s), un toolset se considera no saludable tras 40 segundos sin un pong. Esto concede a los proveedores tiempo suficiente para responder y, al mismo tiempo, detecta los fallos con rapidez razonable.
+La salud se deriva del catálogo usando la hora de Redis. La antigüedad del
+último pong aceptado no debe superar
+`(MissedPingThreshold + 1) × PingInterval`. Una llamada aún no publicada
+espera a un proveedor saludable solo hasta su fecha límite de ejecución
+existente.
 
 ### Coordinación distribuida
 
-En un clúster multinodo, los pings de comprobación de salud se coordinan mediante tickers distribuidos de Pulse. El ticker garantiza que exactamente un nodo envía pings en cada instante: si ese nodo cae, otro nodo toma el relevo automáticamente en un intervalo de ping.
+Cada nodo ejecuta un planificador local y compite por una concesión Redis
+que caduca para cada toolset. El nodo que la adquiere realiza esa
+comprobación de salud; tras su caducidad, otro nodo puede adquirirla.
+Los nombres de las concesiones pertenecen al clúster del registro.
 
-Todos los nodos comparten el estado de salud a través de un mapa replicado de Pulse. Cuando se recibe un pong en cualquier nodo, este actualiza el mapa compartido con la marca de tiempo actual. Cuando cualquier nodo comprueba el estado de salud, lee de este mapa compartido, de modo que todos los nodos tienen una visión coherente del estado de salud de los proveedores.
+Las concesiones de proveedores, la identidad de comprobación de salud actual
+y el último pong aceptado se guardan juntos en el catálogo. Cada nodo deriva
+la salud de ese registro, por lo que una respuesta tardía de un proveedor
+obsoleto no puede hacer que el registro actual se considere saludable.
 
 ## Integración del cliente
 
-Los agentes se conectan al registro utilizando el cliente gRPC generado. El `GRPCClientAdapter` envuelve el cliente gRPC crudo y proporciona una interfaz más limpia para el descubrimiento y la invocación. Dado que todos los nodos del registro comparten estado, los clientes pueden conectarse a cualquier nodo: utiliza un balanceador de carga en producción para la conmutación por error automática.
+Usa el cliente de servicio generado del registro para las API de proveedores
+y de invocación. Para descubrir el catálogo, `runtime/registry.NewClient`
+envuelve ese mismo cliente y expone `ListToolsets`, `GetToolset` y `Search`,
+con los tipos de recursos usados por `runtime/registry.Manager`.
+
+El ejemplo lista el catálogo y recupera el esquema completo de un toolset
+por nombre. Pasa una conexión creada con `grpc.NewClient` y las credenciales
+de tu despliegue; quien llama conserva la propiedad de esa conexión. Se
+conectan todos los endpoints del cliente generado, como en el ejemplo del
+proveedor anterior.
 
 ```go
+package discovery
+
 import (
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
-    
-    registrypb "goa.design/goa-ai/registry/gen/grpc/registry/pb"
-    runtimeregistry "goa.design/goa-ai/runtime/registry"
+	"context"
+
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	runtimeregistry "goa.design/goa-ai/runtime/registry"
+	"google.golang.org/grpc"
 )
 
-// Connect to the registry
-conn, _ := grpc.NewClient("localhost:9090",
-    grpc.WithTransportCredentials(insecure.NewCredentials()),
-)
-defer conn.Close()
-
-// Create the client adapter
-client := runtimeregistry.NewGRPCClientAdapter(
-    registrypb.NewRegistryClient(conn),
-)
-
-// Discover toolsets
-toolsets, _ := client.ListToolsets(ctx)
-for _, ts := range toolsets {
-    fmt.Printf("Toolset: %s (%d tools)\n", ts.Name, ts.ToolCount)
-}
-
-// Get full schema for a toolset
-schema, _ := client.GetToolset(ctx, "data-tools")
-for _, tool := range schema.Tools {
-    fmt.Printf("  Tool: %s - %s\n", tool.Name, tool.Description)
+// discoverTools lists the catalog and retrieves the schema of the named toolset.
+// The caller creates the gRPC connection and keeps it open during discovery.
+func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName string) (
+	[]*runtimeregistry.ToolsetInfo, *runtimeregistry.ToolsetSchema, error,
+) {
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	generated := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	client := runtimeregistry.NewClient(generated)
+	toolsets, err := client.ListToolsets(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	schema, err := client.GetToolset(ctx, toolsetName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return toolsets, schema, nil
 }
 ```
 
@@ -302,10 +501,15 @@ El registro expone los siguientes métodos gRPC:
 
 | Método | Descripción |
 |--------|-------------|
-| `Register` | Registra un toolset en el registro. Valida los esquemas de herramientas, crea el stream de solicitudes e inicia el seguimiento de salud. Devuelve el ID del stream al que se suscribirá el proveedor. |
-| `Unregister` | Elimina un toolset del registro. Detiene los pings de salud y borra los metadatos, pero no destruye el stream subyacente. |
-| `EmitToolResult` | Emite el resultado de la ejecución de una herramienta. Busca el stream de resultados en Redis (permitiendo la entrega entre nodos) y publica el resultado. |
-| `Pong` | Responde a un ping de comprobación de salud. Actualiza la marca de tiempo del último pong en el mapa de salud compartido. |
+| `Register` | Añade o renueva la concesión de un proveedor para el contrato de herramientas activo. Un contrato diferente espera a que terminen las concesiones anteriores. |
+| `DrainProvider` | Impide que una concesión de proveedor reciba nuevas llamadas, pero conserva su autoridad para terminar las que ya posee. |
+| `ReleaseProvider` | Elimina una concesión de proveedor concreta una vez que su proceso ha completado el trabajo aceptado. |
+| `Unregister` | Retira intencionadamente la admisión activa exacta. La elimina del descubrimiento y del enrutamiento e impide permanentemente que vuelva el mismo token de admisión; no es una operación de despliegue. |
+| `Pong` | Registra la salud del proveedor para la concesión actual y la época exacta de comprobación de salud. |
+| `ClaimToolCall` | Concede la ejecución de una solicitud publicada a una concesión de proveedor concreta. |
+| `CompleteToolCall` | Guarda el resultado final canónico de la llamada cuya ejecución se ha concedido y lo publica en el stream de resultados. |
+| `PublishToolOutputDelta` | Publica un fragmento de progreso acotado, sin garantía de entrega, para una llamada cuya ejecución se ha concedido. |
+| `ReportToolCallOverload` | Registra una instrucción de reintento acotada antes de que un proveedor ejecute una llamada que excede su capacidad. |
 
 ### Operaciones de descubrimiento
 
@@ -319,27 +523,28 @@ El registro expone los siguientes métodos gRPC:
 
 | Método | Descripción |
 |--------|-------------|
-| `CallTool` | Invoca una herramienta a través de la pasarela del registro. Valida la carga útil, comprueba la salud, enruta al proveedor y espera el resultado (timeout de 30s). |
+| `CallTool` | Valida y publica una llamada identificada dentro de una ejecución. Espera a un proveedor saludable dentro de la fecha límite existente, permite un cambio de proveedor solo antes de la publicación y devuelve la referencia exacta e inmutable de ejecución. |
+| `RetryTool` | Vuelve a publicar la admisión original exacta después de registrar una sobrecarga del proveedor. Nunca traslada la ejecución a un proveedor sustituto. |
 
 ## Buenas prácticas
 
 ### Despliegue
 
-- **Utiliza el mismo `Name`** para todos los nodos de un clúster: esto determina los nombres compartidos de los recursos Pulse.
+- **Usa el mismo `Name`** para todos los nodos de un clúster para compartir el catálogo y las llamadas y coordinar las comprobaciones de salud.
 - **Apunta a la misma instancia de Redis** para la coordinación del estado.
 - **Despliega detrás de un balanceador de carga** para las conexiones de los clientes: todos los nodos sirven un estado idéntico.
-- **Usa el almacén MongoDB** en producción para la persistencia entre reinicios (el almacén en memoria pierde los registros al reiniciar).
+- **Usa Redis duradero** para el catálogo, los registros de llamadas y los streams Pulse, de modo que las réplicas y los procesos reiniciados observen las mismas decisiones.
 
 ### Monitorización de la salud
 
-- **Establece un `PingInterval` apropiado** según tus requisitos de latencia (por defecto: 10s). Valores más bajos detectan fallos más rápidamente, pero aumentan el tráfico de Redis.
-- **Ajusta `MissedPingThreshold`** para equilibrar falsos positivos y velocidad de detección (por defecto: 3). El umbral de obsolescencia es `(threshold + 1) × interval`.
-- **Monitoriza el estado de salud** mediante métricas o logs: los toolsets no saludables provocan errores `service_unavailable` inmediatos en lugar de timeouts.
+- **Configura `PingInterval` y `MissedPingThreshold`** según la frecuencia de comprobación y la antigüedad de pong tolerada. Consulta los valores por defecto en `registry.Config`.
+- **Observa la telemetría del catálogo y de salud** para distinguir los toolsets ausentes de los proveedores que no pueden aceptar llamadas en ese momento.
+- **Conserva la fecha límite de ejecución**: las llamadas aún no publicadas esperan la recuperación del proveedor solo hasta su fecha límite existente.
 
 ### Escalado
 
 - **Añade nodos** para manejar más conexiones gRPC: cada nodo puede servir cualquier petición.
-- **Los nodos se reparten el trabajo** mediante los tickers distribuidos de Pulse: solo un nodo hace ping a cada toolset en cada momento.
+- **Los nodos coordinan las comprobaciones de salud** mediante concesiones Redis que caducan para cada toolset.
 - **No se requieren sesiones con afinidad**: los streams de resultados utilizan Redis para la entrega entre nodos, por lo que una llamada a una herramienta puede iniciarse en un nodo y completarse en otro.
 
 ## Próximos pasos
