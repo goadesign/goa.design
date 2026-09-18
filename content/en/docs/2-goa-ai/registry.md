@@ -38,7 +38,7 @@ Multiple registry nodes can participate in the same logical registry by using th
 Nodes with the same name automatically:
 
 - **Share toolset registrations** via Pulse replicated maps
-- **Coordinate health check pings** via distributed tickers (only one node pings at a time)
+- **Coordinate health check pings** with expiring Redis leases, acquired separately for each toolset
 - **Share provider health state** across all nodes
 
 This enables horizontal scaling and high availability. Clients can connect to any node and see the same registry state.
@@ -49,7 +49,10 @@ This enables horizontal scaling and high availability. Clients can connect to an
 
 ### Library Usage
 
-Create and run a registry node programmatically. When `New()` is called, the registry connects to Redis and initializes several Pulse components: a pool node for distributed coordination, two replicated maps for health state and toolset tracking, and stream managers for tool call routing. The `Run()` method starts the gRPC server and blocks until shutdown, handling graceful termination automatically.
+Create and run a registry node programmatically. `registry.New` initializes
+the Redis-backed catalog, call records, Pulse streams, and health scheduler.
+`Run` starts the gRPC server and blocks until shutdown. The example uses local
+development addresses; configure Redis and gRPC credentials for your deployment.
 
 ```go
 package main
@@ -175,24 +178,188 @@ The generated provider:
 - Calls the bound service method
 - Encodes the tool result JSON together with any declared server-data using the generated result codec
 
-To serve tool calls from the registry gateway, wire the generated provider into
-the runtime provider loop (`goa.design/goa-ai/runtime/toolregistry/provider`):
+The example below uses module `example.com/registry-provider`, service
+`catalog`, and its method-backed toolset `search`, registered as
+`catalog.search`. Replace the two application import paths and the toolset name
+with your generated values. `NewProvider`, `ToolSchemas`, and
+`SchemaFingerprint` come from the generated toolset package; keep the generated
+schemas intact. The registration callbacks follow the **Service-Side Tool
+Providers** example in the module's generated `AGENTS_QUICKSTART.md`
+([Quickstart](../quickstart/)).
+
+Pass your service implementation, a Pulse client constructed with
+`pulse.New(pulse.Options{Redis: rdb})`, and a registry gRPC connection created
+with `grpc.NewClient` using your deployment's credentials. Supply a stable
+`providerID` for this process and toolset, unique among active replicas, and
+the required deployment-issued `admissionRevision` shared by replicas of the
+same registration. `Serve` creates the incarnation ID and supplies it to the
+callbacks. Bound service methods must honor context cancellation. Run
+`serveTools` as part of your service lifecycle and wait for it to return before
+closing either client. On shutdown, the provider stops intake and settles
+claimed calls, results, and acknowledgements within `Options.ShutdownTimeout`.
+Only successful settlement permits release of the exact lease, using the
+separate `Registration.ReleaseTimeout` budget. Failed settlement leaves
+ownership to end through lease expiry. Preserve and report settlement or
+release errors even when the returned error also matches `context.Canceled`.
+Every required registration callback is wired below:
 
 ```go
-handler := toolsetpkg.NewProvider(serviceImpl)
-go func() {
-    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
-        Pong: func(ctx context.Context, pingID string) error {
-            return registryClient.Pong(ctx, &registry.PongPayload{
-                PingID:  pingID,
-                Toolset: toolsetID,
-            })
-        },
-    })
-    if err != nil {
-        panic(err)
-    }
-}()
+package providers
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	gencatalog "example.com/registry-provider/gen/catalog"
+	gensearch "example.com/registry-provider/gen/catalog/toolsets/search"
+	"goa.design/goa-ai/features/stream/pulse/clients/pulse"
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	registrywire "goa.design/goa-ai/runtime/toolregistry"
+	"goa.design/goa-ai/runtime/toolregistry/provider"
+	"google.golang.org/grpc"
+)
+
+// serveTools runs the generated catalog provider until shutdown or a provider error.
+// The caller owns the clients, service implementation, and deployment identifiers.
+func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
+	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	const toolsetID = "catalog.search"
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	registryClient := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	toolSchemas := gensearch.ToolSchemas()
+	handler := gensearch.NewProvider(serviceImpl)
+	return provider.Serve(ctx, pulseClient, toolsetID, handler,
+		provider.Registration{
+			AdmissionRevision: admissionRevision,
+			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				result, err := registryClient.Register(ctx, &genregistry.RegisterPayload{
+					Name:                  toolset,
+					Tools:                 toolSchemas,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+					AdmissionRevision:     admissionRevision,
+					WireProtocolVersion:   registrywire.WireProtocolVersion,
+					SchemaFingerprint:     schemaFingerprint,
+				})
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				return provider.RegistrationLease{
+					RegistrationToken: result.RegistrationToken,
+					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
+				}, nil
+			},
+			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
+				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+					SettlementDurationMs:      settlementDuration.Milliseconds(),
+				})
+			},
+			Release: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) error {
+				return registryClient.ReleaseProvider(ctx, &genregistry.ReleaseProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+			},
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+				resultJSON, err := json.Marshal(result)
+				if err != nil {
+					return err
+				}
+				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					RegistrationToken:         result.RegistrationToken,
+					ToolUseID:                 result.ToolUseID,
+					ResultJSON:                resultJSON,
+					RequestEventID:            requestEventID,
+					ProviderRegistrationToken: providerToken,
+				})
+			},
+			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
+				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+					Stream:                    stream,
+					Delta:                     delta,
+				})
+			},
+			ReportOverload: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID string) error {
+				return registryClient.ReportToolCallOverload(ctx, &genregistry.ProviderToolCallClaimPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+				})
+			},
+			Claim: func(ctx context.Context, claim provider.ClaimRequest) (provider.ClaimDisposition, error) {
+				result, err := registryClient.ClaimToolCall(ctx, &genregistry.ClaimToolCallPayload{
+					Toolset:                   claim.Toolset,
+					ProviderID:                claim.ProviderID,
+					ProviderIncarnationID:     claim.ProviderIncarnationID,
+					ProviderRegistrationToken: claim.ProviderRegistrationToken,
+					CallRegistrationToken:     claim.CallRegistrationToken,
+					ToolUseID:                 claim.ToolUseID,
+					RequestEventID:            claim.RequestEventID,
+					ClaimOperationID:          claim.OperationID,
+				})
+				if err != nil {
+					return "", err
+				}
+				return provider.ClaimDisposition(result.Disposition), nil
+			},
+		},
+		provider.Options{
+			ProviderID: providerID,
+			Pong: func(ctx context.Context, providerID, incarnationID, pingID string) error {
+				return registryClient.Pong(ctx, &genregistry.PongPayload{
+					PingID:                pingID,
+					Toolset:               toolsetID,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+				})
+			},
+		},
+	)
+}
 ```
 
 Stream IDs are deterministic:
@@ -202,119 +369,117 @@ Stream IDs are deterministic:
 
 ## Configuration
 
-### Config Struct
+### Registry Options {#config-struct}
 
-The `Name` field is particularly important: it determines the Pulse resource names used for coordination. The pool is named `<name>`, the health map `<name>:health`, and the registry map `<name>:toolsets`. Nodes with matching names and Redis connections automatically discover each other.
+The [library example](#library-usage) shows the minimal configuration:
+pass the application-owned Redis client in `Redis` and choose a shared `Name`
+for the registry cluster. Nodes using the same name and Redis database share
+the catalog, call records, and health-check coordination. The catalog uses the
+Pulse replicated map `<name>:toolsets`.
 
-```go
-type Config struct {
-    // Redis is the Redis client for Pulse operations. Required.
-    Redis *redis.Client
+See [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) for the complete API and defaults.
+`PingInterval` and `MissedPingThreshold` control health checks;
+`ExecutionTimeout` bounds newly admitted execution; `ResultStreamTTL` controls
+result retention; and `ProviderLeaseDuration` controls provider registration
+renewal. `ExpectedToolsets` records required catalog names in telemetry without
+rejecting registrations or calls. `Logger` receives call-settlement failures.
+Configure these options when constructing the registry.
 
-    // Store is the persistence layer for toolset metadata.
-    // Defaults to an in-memory store if not provided.
-    Store store.Store
+### Redis Storage {#store-implementations}
 
-    // Name is the registry cluster name.
-    // Nodes with the same Name and Redis connection form a cluster.
-    // Defaults to "registry" if not provided.
-    Name string
-
-    // PingInterval is the interval between health check pings.
-    // Defaults to 10 seconds if not provided.
-    PingInterval time.Duration
-
-    // MissedPingThreshold is the number of consecutive missed pings
-    // before marking a toolset as unhealthy.
-    // Defaults to 3 if not provided.
-    MissedPingThreshold int
-
-    // ResultStreamMappingTTL is the TTL for tool_use_id to stream_id mappings.
-    // Defaults to 5 minutes if not provided.
-    ResultStreamMappingTTL time.Duration
-
-    // PoolNodeOptions are additional options for the Pulse pool node.
-    PoolNodeOptions []pool.NodeOption
-}
-```
-
-### Store Implementations
-
-The registry supports pluggable storage backends. The store persists toolset metadata (name, description, version, tags, and tool schemas). Note that health state and stream coordination are always handled via Redis/Pulse regardless of which store you choose—the store only affects toolset metadata persistence.
-
-```go
-import (
-    "goa.design/goa-ai/registry/store/memory"
-    "goa.design/goa-ai/registry/store/mongo"
-)
-
-// In-memory store (default, for development)
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    // Store defaults to memory.New()
-})
-
-// MongoDB store (for production persistence)
-mongoStore, _ := mongo.New(mongoClient, "registry", "toolsets")
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    Store: mongoStore,
-})
-```
+Redis stores the catalog's tool schemas, admission identities, provider leases,
+health timestamps, and retirement history. Call records and Pulse request and
+result streams also use Redis. Use durable Redis so registry replicas and
+process restarts observe the same registrations and call decisions. The
+application owns the Redis client and closes it after the registry stops.
 
 ## Health Monitoring
 
-The registry automatically monitors provider health using ping/pong messages over Pulse streams.
+The registry sends health pings over Pulse streams. Providers reply through the `Pong` gRPC method.
 
 ### How It Works
 
-1. Registry sends periodic `ping` messages to each registered toolset's stream
-2. Providers respond with `pong` messages via the `Pong` gRPC method
-3. If a provider misses `MissedPingThreshold` consecutive pings, it's marked unhealthy
-4. Unhealthy toolsets are excluded from `CallTool` routing
+1. The health scheduler reads the active toolsets from the shared catalog.
+2. The node holding a toolset's ping lease sends a ping while that toolset has a live provider accepting calls.
+3. `Pong` updates the catalog only when the reply matches the current registration, provider process, and health-check identity.
+4. Routing requires an unexpired provider lease that accepts new calls and a sufficiently recent accepted pong.
 
-The health tracker uses a staleness threshold calculated as `(MissedPingThreshold + 1) × PingInterval`. With defaults (3 missed pings, 10s interval), a toolset becomes unhealthy after 40 seconds without a pong. This gives providers enough time to respond while still detecting failures reasonably quickly.
+Health is derived from the catalog using Redis time. The last accepted pong
+must be no older than `(MissedPingThreshold + 1) × PingInterval`. An
+unpublished call waits for a healthy provider only within its existing
+execution deadline.
 
 ### Distributed Coordination
 
-In a multi-node cluster, health check pings are coordinated via Pulse distributed tickers. The ticker ensures exactly one node sends pings at any given time—if that node crashes, another node automatically takes over within one ping interval.
+Each registry node runs a local scheduler and competes for an expiring Redis
+lease for each toolset. The node that acquires the lease performs that health
+check; after it expires, another node can acquire it. Lease names are scoped
+to the registry cluster.
 
-All nodes share health state via a Pulse replicated map. When a pong is received on any node, it updates the shared map with the current timestamp. When any node checks health, it reads from this shared map, so all nodes have a consistent view of provider health.
+Provider leases, the current health-check identity, and the last accepted pong
+are stored together in the catalog. Every node derives health from that
+record, so a delayed reply from an obsolete provider cannot make the current
+registration healthy.
 
 ## Client Integration
 
-Agents connect to the registry using the generated gRPC client. The `GRPCClientAdapter` wraps the raw gRPC client and provides a cleaner interface for discovery and invocation. Since all registry nodes share state, clients can connect to any node—use a load balancer in production for automatic failover.
+Use the generated registry service client for provider and invocation APIs.
+For catalog discovery, `runtime/registry.NewClient` wraps that same generated
+client and exposes `ListToolsets`, `GetToolset`, and `Search`, including the
+resource types used by `runtime/registry.Manager`.
+
+The example lists the catalog and retrieves one named toolset's full schema.
+Pass a connection created with `grpc.NewClient` and your deployment's
+credentials; the caller retains ownership of that connection. The generated
+client is wired with every endpoint, as in the provider example above.
 
 ```go
+package discovery
+
 import (
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
-    
-    registrypb "goa.design/goa-ai/registry/gen/grpc/registry/pb"
-    runtimeregistry "goa.design/goa-ai/runtime/registry"
+	"context"
+
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	runtimeregistry "goa.design/goa-ai/runtime/registry"
+	"google.golang.org/grpc"
 )
 
-// Connect to the registry
-conn, _ := grpc.NewClient("localhost:9090",
-    grpc.WithTransportCredentials(insecure.NewCredentials()),
-)
-defer conn.Close()
-
-// Create the client adapter
-client := runtimeregistry.NewGRPCClientAdapter(
-    registrypb.NewRegistryClient(conn),
-)
-
-// Discover toolsets
-toolsets, _ := client.ListToolsets(ctx)
-for _, ts := range toolsets {
-    fmt.Printf("Toolset: %s (%d tools)\n", ts.Name, ts.ToolCount)
-}
-
-// Get full schema for a toolset
-schema, _ := client.GetToolset(ctx, "data-tools")
-for _, tool := range schema.Tools {
-    fmt.Printf("  Tool: %s - %s\n", tool.Name, tool.Description)
+// discoverTools lists the catalog and retrieves the schema of the named toolset.
+// The caller creates the gRPC connection and keeps it open during discovery.
+func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName string) (
+	[]*runtimeregistry.ToolsetInfo, *runtimeregistry.ToolsetSchema, error,
+) {
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	generated := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	client := runtimeregistry.NewClient(generated)
+	toolsets, err := client.ListToolsets(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	schema, err := client.GetToolset(ctx, toolsetName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return toolsets, schema, nil
 }
 ```
 
@@ -355,21 +520,21 @@ The registry exposes the following gRPC methods:
 
 ### Deployment
 
-- **Use the same `Name`** for all nodes in a cluster—this determines the shared Pulse resource names
+- **Use the same `Name`** for all nodes in a cluster to share catalog and call state and coordinate health checks
 - **Point to the same Redis** instance for state coordination
 - **Deploy behind a load balancer** for client connections—all nodes serve identical state
 - **Use durable Redis** for the catalog, call records, and Pulse streams so registry replicas and process restarts observe the same decisions
 
 ### Health Monitoring
 
-- **Set appropriate `PingInterval`** based on your latency requirements (default: 10s). Lower values detect failures faster but increase Redis traffic.
-- **Tune `MissedPingThreshold`** to balance between false positives and detection speed (default: 3). The staleness threshold is `(threshold + 1) × interval`.
-- **Monitor health state** via metrics or logs. Unpublished calls wait for provider recovery only until their existing execution deadline; they do not wait forever.
+- **Configure `PingInterval` and `MissedPingThreshold`** for the desired health-check cadence and tolerated pong age. See `registry.Config` for defaults.
+- **Observe catalog and health telemetry** to distinguish missing toolsets from providers that cannot currently accept calls.
+- **Keep the execution deadline**: unpublished calls wait for provider recovery only until their existing deadline.
 
 ### Scaling
 
 - **Add nodes** to handle more gRPC connections—each node can serve any request
-- **Nodes share work** via Pulse distributed tickers—only one node pings each toolset at a time
+- **Nodes coordinate health checks** with expiring Redis leases for each toolset
 - **No sticky sessions** required—result streams use Redis for cross-node delivery, so a tool call can be initiated on one node and completed on another
 
 ## Next Steps

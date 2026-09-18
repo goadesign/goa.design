@@ -36,7 +36,7 @@ tool registry は prompt template を保存せず、prompt override も解決し
 同じ名前の node は自動的に次を行います:
 
 - **ツールセット登録を共有**: Pulse replicated maps 経由で共有
-- **ヘルスチェック ping を協調**: distributed tickers により、常に 1 node だけが ping します
+- **ヘルスチェック ping を協調**: toolset ごとに取得する有効期限付き Redis lease を使います
 - **provider health state を共有**: すべての node でヘルス状態を共有
 
 これにより水平スケールと高可用性を実現できます。クライアントは任意の node に接続でき、同じ registry state を参照できます。
@@ -47,7 +47,7 @@ tool registry は prompt template を保存せず、prompt override も解決し
 
 ### ライブラリとして使う
 
-registry node をプログラムから作成して実行します。`New()` が呼ばれると、registry は Redis に接続し、分散協調用の pool node、health state と toolset tracking 用の 2 つの replicated map、tool call routing 用の stream manager など、複数の Pulse component を初期化します。`Run()` は gRPC server を起動し、shutdown まで block し、graceful termination を自動的に処理します。
+registry node をプログラムから作成して実行します。`registry.New` は Redis 上の catalog と call record、Pulse stream、health scheduler を初期化します。`Run` は gRPC server を起動し、shutdown まで待機します。この例はローカル開発用のアドレスを使います。deployment に合わせて Redis と gRPC の認証情報を設定してください。
 
 ```go
 package main
@@ -153,23 +153,167 @@ service-owned で method-backed な toolset (`BindTo(...)` で宣言された to
 - bound service method を呼び出し
 - 生成 result codec を使って、tool result JSON と宣言済み server-data をエンコード
 
-registry gateway からの tool call を処理するには、生成 provider を runtime provider loop (`goa.design/goa-ai/runtime/toolregistry/provider`) に配線します:
+次の例は module `example.com/registry-provider`、service `catalog`、その method-backed toolset `search` を使い、`catalog.search` として登録します。アプリケーションの 2 つの import path と toolset 名を、自分のプロジェクトで生成された値に置き換えてください。`NewProvider`、`ToolSchemas`、`SchemaFingerprint` は生成 toolset package の関数です。生成 schema はそのまま使用します。登録 callback は、module root に生成される `AGENTS_QUICKSTART.md` の **Service-Side Tool Providers** の例に沿っています ([クイックスタート](../quickstart/))。
+
+service の実装、`pulse.New(pulse.Options{Redis: rdb})` で作成した Pulse client、deployment の認証情報を指定して `grpc.NewClient` で作成した registry への gRPC connection を渡します。この process と toolset に対して安定し、稼働中の replica 間で一意な `providerID` と、同じ登録の replica が共有する deployment 指定の必須値 `admissionRevision` を渡してください。`Serve` が incarnation ID を作成し、callback へ渡します。bound service method は context cancellation に従う必要があります。`serveTools` を service のライフサイクル内で実行し、両 client を開いたまま終了を待ってください。shutdown 時には新しい処理の受け付けを止め、実行権を取得済みの call、result、受信確認を `Options.ShutdownTimeout` 内で完了させます。この処理が成功した場合だけ、別の時間枠 `Registration.ReleaseTimeout` で正確な lease を解放します。完了処理に失敗した場合は lease の期限切れによって実行権が終了します。戻り値の error が `context.Canceled` にも一致する場合でも、完了処理や lease 解放の error を保持して報告してください。以下では必要な登録 callback をすべて設定しています:
 
 ```go
-handler := toolsetpkg.NewProvider(serviceImpl)
-go func() {
-    err := provider.Serve(ctx, pulseClient, toolsetID, handler, provider.Options{
-        Pong: func(ctx context.Context, pingID string) error {
-            return registryClient.Pong(ctx, &registry.PongPayload{
-                PingID:  pingID,
-                Toolset: toolsetID,
-            })
-        },
-    })
-    if err != nil {
-        panic(err)
-    }
-}()
+package providers
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	gencatalog "example.com/registry-provider/gen/catalog"
+	gensearch "example.com/registry-provider/gen/catalog/toolsets/search"
+	"goa.design/goa-ai/features/stream/pulse/clients/pulse"
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	registrywire "goa.design/goa-ai/runtime/toolregistry"
+	"goa.design/goa-ai/runtime/toolregistry/provider"
+	"google.golang.org/grpc"
+)
+
+// serveTools runs the generated catalog provider until shutdown or a provider error.
+// The caller owns the clients, service implementation, and deployment identifiers.
+func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
+	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	const toolsetID = "catalog.search"
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	registryClient := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	toolSchemas := gensearch.ToolSchemas()
+	handler := gensearch.NewProvider(serviceImpl)
+	return provider.Serve(ctx, pulseClient, toolsetID, handler,
+		provider.Registration{
+			AdmissionRevision: admissionRevision,
+			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				result, err := registryClient.Register(ctx, &genregistry.RegisterPayload{
+					Name:                  toolset,
+					Tools:                 toolSchemas,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+					AdmissionRevision:     admissionRevision,
+					WireProtocolVersion:   registrywire.WireProtocolVersion,
+					SchemaFingerprint:     schemaFingerprint,
+				})
+				if err != nil {
+					return provider.RegistrationLease{}, err
+				}
+				return provider.RegistrationLease{
+					RegistrationToken: result.RegistrationToken,
+					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
+				}, nil
+			},
+			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
+				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+					SettlementDurationMs:      settlementDuration.Milliseconds(),
+				})
+			},
+			Release: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) error {
+				return registryClient.ReleaseProvider(ctx, &genregistry.ReleaseProviderPayload{
+					Name:                      toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+			},
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+				resultJSON, err := json.Marshal(result)
+				if err != nil {
+					return err
+				}
+				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					RegistrationToken:         result.RegistrationToken,
+					ToolUseID:                 result.ToolUseID,
+					ResultJSON:                resultJSON,
+					RequestEventID:            requestEventID,
+					ProviderRegistrationToken: providerToken,
+				})
+			},
+			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
+				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+					Stream:                    stream,
+					Delta:                     delta,
+				})
+			},
+			ReportOverload: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID string) error {
+				return registryClient.ReportToolCallOverload(ctx, &genregistry.ProviderToolCallClaimPayload{
+					Toolset:                   toolset,
+					ProviderID:                providerID,
+					ProviderIncarnationID:     incarnationID,
+					ProviderRegistrationToken: providerToken,
+					CallRegistrationToken:     callToken,
+					ToolUseID:                 toolUseID,
+					RequestEventID:            requestEventID,
+				})
+			},
+			Claim: func(ctx context.Context, claim provider.ClaimRequest) (provider.ClaimDisposition, error) {
+				result, err := registryClient.ClaimToolCall(ctx, &genregistry.ClaimToolCallPayload{
+					Toolset:                   claim.Toolset,
+					ProviderID:                claim.ProviderID,
+					ProviderIncarnationID:     claim.ProviderIncarnationID,
+					ProviderRegistrationToken: claim.ProviderRegistrationToken,
+					CallRegistrationToken:     claim.CallRegistrationToken,
+					ToolUseID:                 claim.ToolUseID,
+					RequestEventID:            claim.RequestEventID,
+					ClaimOperationID:          claim.OperationID,
+				})
+				if err != nil {
+					return "", err
+				}
+				return provider.ClaimDisposition(result.Disposition), nil
+			},
+		},
+		provider.Options{
+			ProviderID: providerID,
+			Pong: func(ctx context.Context, providerID, incarnationID, pingID string) error {
+				return registryClient.Pong(ctx, &genregistry.PongPayload{
+					PingID:                pingID,
+					Toolset:               toolsetID,
+					ProviderID:            providerID,
+					ProviderIncarnationID: incarnationID,
+				})
+			},
+		},
+	)
+}
 ```
 
 stream ID は決定的です:
@@ -179,121 +323,88 @@ stream ID は決定的です:
 
 ## 設定
 
-### Config 構造体
+### Registry のオプション {#config-構造体}
 
-`Name` field は特に重要です。協調に使う Pulse resource name を決めます。pool は `<name>`、health map は `<name>:health`、registry map は `<name>:toolsets` です。Name と Redis connection が一致する node は自動的に互いを発見します。
+[ライブラリの例](#ライブラリとして使う)は最小限の設定を示しています。application が所有する Redis client を `Redis` に渡し、registry cluster で共有する `Name` を指定します。同じ名前と Redis database を使う node は、catalog、call record、health check の協調状態を共有します。catalog は Pulse replicated map `<name>:toolsets` を使います。
 
-```go
-type Config struct {
-    // Redis is the Redis client for Pulse operations. Required.
-    Redis *redis.Client
+全 API と default 値は [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) を参照してください。`PingInterval` と `MissedPingThreshold` は health check、`ExecutionTimeout` は新しく受け付けた実行の時間上限、`ResultStreamTTL` は result の保持、`ProviderLeaseDuration` は provider 登録の更新を設定します。`ExpectedToolsets` は必要な catalog 名を telemetry に記録しますが、登録や call を拒否しません。`Logger` は call の確定処理の失敗を受け取ります。これらのオプションは registry の構築時に指定します。
 
-    // Store is the persistence layer for toolset metadata.
-    // Defaults to an in-memory store if not provided.
-    Store store.Store
+### Redis ストレージ {#store-実装}
 
-    // Name is the registry cluster name.
-    // Nodes with the same Name and Redis connection form a cluster.
-    // Defaults to "registry" if not provided.
-    Name string
-
-    // PingInterval is the interval between health check pings.
-    // Defaults to 10 seconds if not provided.
-    PingInterval time.Duration
-
-    // MissedPingThreshold is the number of consecutive missed pings
-    // before marking a toolset as unhealthy.
-    // Defaults to 3 if not provided.
-    MissedPingThreshold int
-
-    // ResultStreamMappingTTL is the TTL for tool_use_id to stream_id mappings.
-    // Defaults to 5 minutes if not provided.
-    ResultStreamMappingTTL time.Duration
-
-    // PoolNodeOptions are additional options for the Pulse pool node.
-    PoolNodeOptions []pool.NodeOption
-}
-```
-
-### Store 実装
-
-registry は差し替え可能な storage backend をサポートします。store は toolset metadata (name, description, version, tags, tool schemas) を永続化します。health state と stream coordination は、どの store を選んでも常に Redis/Pulse 経由で処理されます。store は toolset metadata persistence だけに影響します。
-
-```go
-import (
-    "goa.design/goa-ai/registry/store/memory"
-    "goa.design/goa-ai/registry/store/mongo"
-)
-
-// In-memory store (default, for development)
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    // Store defaults to memory.New()
-})
-
-// MongoDB store (for production persistence)
-mongoStore, _ := mongo.New(mongoClient, "registry", "toolsets")
-reg, _ := registry.New(ctx, registry.Config{
-    Redis: rdb,
-    Store: mongoStore,
-})
-```
+Redis の catalog は tool schema、admission identity、provider lease、health timestamp、登録撤回の履歴を保持します。call record と Pulse の request/result stream も Redis を使います。registry replica や再起動した process が同じ登録と call の判断を参照できるよう、永続化した Redis を使ってください。application が Redis client を所有し、registry の停止後に閉じます。
 
 ## ヘルス監視
 
-registry は Pulse streams 上の ping/pong message を使って provider health を自動的に監視します。
+registry は Pulse stream で health ping を送信し、provider は gRPC の `Pong` メソッドで応答します。
 
 ### 仕組み
 
-1. Registry は登録済み toolset の stream へ定期的に `ping` message を送ります
-2. Provider は `Pong` gRPC method 経由で `pong` message を返します
-3. provider が `MissedPingThreshold` 回連続で ping を逃すと unhealthy に mark されます
-4. unhealthy な toolset は `CallTool` routing から除外されます
+1. health scheduler は共有 catalog から active toolset を読みます。
+2. toolset の ping lease を持つ node は、call を受け付ける有効な provider が存在する間、ping を送信します。
+3. `Pong` は、応答が現在の登録、provider process、health check identity に一致する場合だけ catalog を更新します。
+4. routing には、新しい call を受け付ける期限内の provider lease と、十分に新しい受理済み pong が必要です。
 
-health tracker は `(MissedPingThreshold + 1) × PingInterval` として計算される staleness threshold を使います。default (3 missed pings, 10s interval) では、40 秒 pong がないと toolset は unhealthy になります。provider に応答時間を与えつつ、合理的に素早く failure を検出できます。
+health は Redis の時刻を使って catalog から計算します。最後に受理した pong の経過時間は `(MissedPingThreshold + 1) × PingInterval` 以下である必要があります。未 publish の call は、既存の execution deadline までだけ healthy provider を待ちます。
 
 ### 分散協調
 
-multi-node cluster では、health check pings は Pulse distributed tickers で協調されます。ticker により、任意の時点で ping を送る node は正確に 1 つになります。その node が crash した場合、別の node が 1 ping interval 以内に自動的に引き継ぎます。
+各 registry node はローカル scheduler を実行し、toolset ごとに有効期限付き Redis lease の取得を試みます。lease を取得した node がその health check を実行し、期限切れ後は別の node が取得できます。lease 名は registry cluster ごとに分かれています。
 
-すべての node は Pulse replicated map で health state を共有します。どの node が pong を受け取っても、共有 map に現在 timestamp を更新します。どの node が health を check してもこの共有 map を読むため、すべての node は一貫した provider health view を持ちます。
+provider lease、現在の health check identity、最後に受理した pong は catalog の同じ record に保存されます。各 node はその record から health を計算するため、古い provider の遅れた応答によって現在の登録が healthy になることはありません。
 
 ## クライアント統合
 
-エージェントは生成 gRPC client を使って registry に接続します。`GRPCClientAdapter` は raw gRPC client を wrap し、discovery と invocation に使いやすい interface を提供します。すべての registry node は state を共有するため、client は任意の node に接続できます。本番では automatic failover のため load balancer を使ってください。
+provider と invocation の API には、生成された registry service client を使います。catalog discovery では `runtime/registry.NewClient` が同じ生成 client を包み、`ListToolsets`、`GetToolset`、`Search` と、`runtime/registry.Manager` が使う resource type を提供します。
+
+以下の例は catalog の一覧と、名前で指定した toolset の完全な schema を取得します。`grpc.NewClient` と deployment の認証情報で作成した connection を渡してください。呼び出し側が connection の所有権を保持します。上の provider の例と同じく、生成 client のすべての endpoint を接続しています。
 
 ```go
+package discovery
+
 import (
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
+	"context"
 
-    registrypb "goa.design/goa-ai/registry/gen/grpc/registry/pb"
-    runtimeregistry "goa.design/goa-ai/runtime/registry"
+	genregistrygrpc "goa.design/goa-ai/registry/gen/grpc/registry/client"
+	genregistry "goa.design/goa-ai/registry/gen/registry"
+	runtimeregistry "goa.design/goa-ai/runtime/registry"
+	"google.golang.org/grpc"
 )
 
-// Connect to the registry
-conn, _ := grpc.NewClient("localhost:9090",
-    grpc.WithTransportCredentials(insecure.NewCredentials()),
-)
-defer conn.Close()
-
-// Create the client adapter
-client := runtimeregistry.NewGRPCClientAdapter(
-    registrypb.NewRegistryClient(conn),
-)
-
-// Discover toolsets
-toolsets, _ := client.ListToolsets(ctx)
-for _, ts := range toolsets {
-    fmt.Printf("Toolset: %s (%d tools)
-", ts.Name, ts.ToolCount)
-}
-
-// Get full schema for a toolset
-schema, _ := client.GetToolset(ctx, "data-tools")
-for _, tool := range schema.Tools {
-    fmt.Printf("  Tool: %s - %s
-", tool.Name, tool.Description)
+// discoverTools lists the catalog and retrieves the schema of the named toolset.
+// The caller creates the gRPC connection and keeps it open during discovery.
+func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName string) (
+	[]*runtimeregistry.ToolsetInfo, *runtimeregistry.ToolsetSchema, error,
+) {
+	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
+	generated := genregistry.NewClient(
+		transport.Register(),
+		transport.ReleaseProvider(),
+		transport.DrainProvider(),
+		transport.Unregister(),
+		transport.Pong(),
+		transport.ListToolsets(),
+		transport.GetToolset(),
+		transport.ResolveToolset(),
+		transport.CheckAdmission(),
+		transport.Search(),
+		transport.CallTool(),
+		transport.CallResolvedTool(),
+		transport.RetryTool(),
+		transport.CompleteToolCall(),
+		transport.PublishToolOutputDelta(),
+		transport.ReportToolCallOverload(),
+		transport.ClaimToolCall(),
+	)
+	client := runtimeregistry.NewClient(generated)
+	toolsets, err := client.ListToolsets(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	schema, err := client.GetToolset(ctx, toolsetName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return toolsets, schema, nil
 }
 ```
 
@@ -334,21 +445,21 @@ registry は次の gRPC method を公開します:
 
 ### デプロイ
 
-- **すべての node で同じ `Name` を使う**: これが共有 Pulse resource name を決めます
+- **cluster 内のすべての node で同じ `Name` を使う**: catalog と call の状態を共有し、health check を協調します
 - **同じ Redis instance を指す**: state coordination のため
 - **load balancer の背後にデプロイする**: すべての node が同一 state を返します
-- **catalog、call record、Pulse stream には durable Redis を使う**: registry replica と process restart が同じ決定を観測できるようにします
+- **catalog、call record、Pulse stream には永続化した Redis を使う**: registry replica と再起動した process が同じ判断を参照できるようにします
 
 ### ヘルス監視
 
-- **適切な `PingInterval` を設定する**: latency 要件に合わせます (default: 10s)。小さくすると failure 検出は速くなりますが Redis traffic が増えます。
-- **`MissedPingThreshold` を調整する**: false positive と検出速度の balance を取ります (default: 3)。staleness threshold は `(threshold + 1) × interval` です。
-- **health state を監視する**: 未 publish の call は provider recovery を既存 execution deadline までだけ待ち、無期限には待ちません
+- **`PingInterval` と `MissedPingThreshold` を設定する**: health check の頻度と許容する pong の経過時間を指定します。default 値は `registry.Config` を参照してください。
+- **catalog と health の telemetry を確認する**: toolset が存在しない場合と、provider が現在 call を受け付けられない場合を区別します。
+- **execution deadline を維持する**: 未 publish の call は既存の deadline までだけ provider の回復を待ちます。
 
 ### スケーリング
 
 - **node を追加する**: gRPC connection を増やしても、各 node は任意の request を処理できます
-- **node は Pulse distributed tickers で作業を共有する**: toolset ごとの ping は一度に 1 node だけが行います
+- **node は health check を協調する**: toolset ごとの有効期限付き Redis lease を使います
 - **sticky session は不要**: result stream は Redis により cross-node delivery されるため、ある node で開始した tool call が別 node で完了できます
 
 ## 次のステップ
