@@ -37,7 +37,7 @@ Plusieurs nœuds de registre peuvent participer au même registre logique en uti
 
 Nœuds portant le même nom automatiquement :
 
-- **Partager les enregistrements des jeux d'outils** via les cartes répliquées Pulse
+- **Partager les inscriptions des outils** en lisant directement leur état dans Redis
 - **Coordonner les pings de santé** avec des baux Redis à expiration, acquis séparément pour chaque ensemble d'outils
 - **Partager l'état de santé du fournisseur** sur tous les nœuds
 
@@ -237,6 +237,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -280,6 +281,18 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RegistrationToken: result.RegistrationToken,
 					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
 				}, nil
+			},
+			Renew: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) (time.Duration, error) {
+				result, err := registryClient.RenewProvider(ctx, &genregistry.RenewProviderPayload{
+					Name: toolset,
+					ProviderID: providerID,
+					ProviderIncarnationID: incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+				if err != nil {
+					return 0, err
+				}
+				return time.Duration(result.LeaseDurationMs) * time.Millisecond, nil
 			},
 			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
 				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
@@ -383,8 +396,8 @@ L'[exemple de la bibliothèque](#utilisation-de-la-bibliothèque) montre la
 configuration minimale : passez le client Redis de l'application dans `Redis`
 et choisissez un `Name` partagé pour le cluster. Les nœuds utilisant le même
 nom et la même base Redis partagent le catalogue, les enregistrements d'appels
-et la coordination des contrôles de santé. Le catalogue utilise la carte
-répliquée Pulse `<name>:toolsets`.
+et la coordination des contrôles de santé. Chaque nœud lit directement l'état compact du catalogue dans Redis ; les
+définitions complètes sont stockées séparément.
 
 Consultez [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) pour l'API complète et les valeurs par défaut.
 `PingInterval` et `MissedPingThreshold` règlent les contrôles de santé ;
@@ -404,6 +417,40 @@ résultats utilisent aussi Redis. Utilisez un Redis durable pour que les
 répliques et les processus redémarrés observent les mêmes inscriptions et
 décisions d'appel. L'application possède le client Redis et le ferme après
 l'arrêt du registre.
+
+### Renouvellement des fournisseurs et mise à niveau du stockage {#provider-renewal-and-storage-upgrades}
+
+Les fournisseurs envoient les schémas générés une fois au démarrage. Le callback
+obligatoire `Renew` appelle `RenewProvider` avec le nom de l'ensemble d'outils,
+l'identifiant du fournisseur, celui de son incarnation et le jeton d'inscription
+attendu. Il renvoie uniquement la durée accordée au bail. Le renouvellement ne
+crée aucun bail, ne change pas son jeton et n'annule pas le drainage. Un bail
+absent, expiré, remplacé ou retiré renvoie `provider_lease_lost` et `Serve`
+s'arrête. Les erreurs de communication temporaires sont réessayées uniquement
+avant la limite du bail existant. La réparation des flux, groupes et pings reste
+prise en charge.
+
+Le registre sépare l'état compact d'admission, des baux, de santé et de découverte
+des définitions complètes et des jetons définitivement retirés. L'inscription
+met à jour les données concernées atomiquement. Les contrôles de santé et les
+opérations sur les baux ne transfèrent que l'état compact. Chaque processus
+réutilise les définitions par empreinte et conserve les validateurs compilés ;
+Get et Resolve renvoient des valeurs complètes indépendantes.
+
+La migration de l'ancien catalogue combiné exige une maintenance coordonnée.
+Arrêtez les nouvelles demandes, terminez les appels acceptés, arrêtez proprement
+les fournisseurs pendant que l'ancien registre peut encore drainer et libérer
+leurs baux, puis arrêtez tous les processus écrivant dans l'ancien registre.
+Sauvegardez et convertissez le catalogue hors ligne en préservant chaque
+définition, identité, bail, horodatage et jeton retiré. Conservez les appels,
+flux, index de finalisation et échéances de rétention. Démarrez le nouveau
+registre et les fournisseurs mis à jour ; reprenez après validation stricte au
+démarrage et réussite des contrôles `CheckAdmission` exacts. Les empreintes des
+outils et la version des messages fournisseurs ne changent pas. Ajoutez `Renew`
+et régénérez les clients. Ne mélangez jamais les anciens et nouveaux processus
+d'écriture. Restaurez la sauvegarde intacte uniquement tant que tous sont arrêtés
+et qu'aucune nouvelle écriture n'a repris ; ensuite, corrigez avec une nouvelle
+version. Le démarrage normal ne décode pas l'ancien format.
 
 ## Surveillance de la santé
 
@@ -466,6 +513,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -504,7 +552,8 @@ Le registre expose les méthodes gRPC suivantes :
 
 | Méthode | Description |
 |--------|-------------|
-| `Register` | Ajoute ou renouvelle le bail d'un fournisseur pour le contrat actif. Un contrat différent attend la fin des anciens baux. |
+| `Register` | Admet un fournisseur au démarrage avec ses définitions générées. Un contrat différent attend la fin des anciens baux. |
+| `RenewProvider` | Prolonge le bail exact non expiré sans envoyer les définitions. Préserve le drainage et toute échéance de finalisation plus longue ; la perte du bail renvoie `provider_lease_lost`. |
 | `DrainProvider` | Rend un bail indisponible pour les nouveaux appels tout en conservant son autorité sur les appels déjà admis. |
 | `ReleaseProvider` | Retire le bail exact après que le processus a réglé le travail accepté. |
 | `Unregister` | Retire intentionnellement l'admission active exacte, la supprime de la découverte et du routage et empêche définitivement le retour du même jeton. Ce n'est pas une opération de déploiement. |
