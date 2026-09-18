@@ -158,6 +158,14 @@ admis.
 ## Intégration du fournisseur (côté service)
 
 Le routage du registre ne représente que la moitié du problème : **les fournisseurs doivent exécuter une boucle d'exécution d'outils** dans le processus de service propriétaire de l'ensemble d'outils.
+Avant d'invoquer un gestionnaire, le fournisseur appelle `ClaimToolCall` avec le
+contexte lié au cycle de vie de son worker et le délai maximal existant pour cet
+appel, indépendamment de l'échéance d'exécution du message. Le registre détermine
+si l'appel a expiré, dispose déjà d'un résultat final ou si une autre livraison
+en détient l'exécution. Dans ces cas, le fournisseur accuse réception du message
+sans invoquer le gestionnaire ni arrêter sa boucle d'exécution. Ce n'est qu'après une
+décision `execute` qu'il invoque le gestionnaire avec l'échéance d'exécution
+initiale du message, sans la prolonger.
 
 Pour les ensembles d'outils appartenant au service et basés sur des méthodes (outils déclarés avec `BindTo(...)`), la génération de code émet un adaptateur de fournisseur à l'adresse :
 

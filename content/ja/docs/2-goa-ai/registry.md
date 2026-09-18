@@ -140,6 +140,7 @@ publish 前に execution deadline が切れた場合、registry は `call_not_ad
 ## Provider 統合 (サービス側)
 
 registry routing は半分にすぎません。**provider は toolset 所有サービスプロセス内で tool execution loop を実行する必要があります**。
+handler を呼び出す前に、provider は message の execution deadline とは独立した、worker のライフサイクルに紐づく context と既存の claim timeout を使って `ClaimToolCall` を呼び出します。registry は call が期限切れか、すでに最終結果を持つか、別の配信が実行権限を持つかを判断します。provider はこれらの結果を受けると、handler を呼び出したり execution loop を停止したりせず、message の受信確認を行います。`execute` の判断を受けた場合に限り、message の元の execution deadline を延長せずに handler へ適用して呼び出します。
 
 service-owned で method-backed な toolset (`BindTo(...)` で宣言された tool) の場合、code generation は次の provider adapter を出力します:
 

@@ -156,6 +156,13 @@ replaced.
 ## Provider Integration (Service-Side)
 
 Registry routing is only half of the story: **providers must run a tool execution loop** in the toolset-owning service process.
+Before invoking a handler, the provider calls `ClaimToolCall` using its worker
+lifecycle context and existing bounded claim timeout, independently of the
+message's execution deadline. The registry decides whether the call has expired,
+already has a final result, or is owned by another delivery. For these outcomes,
+the provider acknowledges the message without invoking the handler or stopping its
+execution loop. Only after an `execute` decision does the provider invoke the
+handler with the message's original execution deadline, without extending it.
 
 For service-owned, method-backed toolsets (tools declared with `BindTo(...)`), code generation emits a provider adapter at:
 

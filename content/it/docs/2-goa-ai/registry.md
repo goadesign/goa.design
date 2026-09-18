@@ -141,6 +141,14 @@ Questo design assicura che le chiamate agli strumenti falliscano rapidamente qua
 ## Integrazione del provider (lato servizio)
 
 L'instradamento tramite registro è solo metà della storia: i **provider devono eseguire un loop di esecuzione degli strumenti** all'interno del processo del servizio proprietario del toolset.
+Prima di invocare un gestore, il provider chiama `ClaimToolCall` usando il
+contesto del ciclo di vita del proprio worker e il timeout limitato già previsto
+per questa richiesta, indipendentemente dalla scadenza di esecuzione del
+messaggio. Il registro stabilisce se la chiamata è scaduta, ha già un risultato
+finale o se un'altra consegna detiene il diritto di esecuzione. In questi casi, il
+provider conferma la ricezione del messaggio senza invocare il gestore né arrestare il
+loop di esecuzione. Solo dopo una decisione `execute` invoca il gestore con la
+scadenza di esecuzione originale del messaggio, senza prolungarla.
 
 Per i toolset di proprietà del servizio e supportati da metodi (strumenti dichiarati con `BindTo(...)`), la generazione del codice emette un adattatore provider in:
 

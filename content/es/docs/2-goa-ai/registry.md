@@ -140,6 +140,14 @@ Este diseño garantiza que las llamadas a herramientas fallen rápidamente cuand
 ## Integración del proveedor (lado del servicio)
 
 El enrutamiento del registro es solo la mitad de la historia: los **proveedores deben ejecutar un bucle de ejecución de herramientas** dentro del proceso del servicio propietario del toolset.
+Antes de invocar un manejador, el proveedor llama a `ClaimToolCall` con el
+contexto del ciclo de vida de su worker y el timeout acotado existente para esa
+solicitud, independientemente de la fecha límite de ejecución del mensaje. El
+registro determina si la llamada ha expirado, ya tiene un resultado final o si
+otra entrega posee el derecho de ejecución. En estos casos, el proveedor confirma
+la recepción del mensaje sin invocar el manejador ni detener su bucle de ejecución. Solo tras
+una decisión `execute` invoca el manejador con la fecha límite de ejecución
+original del mensaje, sin ampliarla.
 
 Para toolsets propios del servicio y respaldados por métodos (herramientas declaradas con `BindTo(...)`), la generación de código emite un adaptador de proveedor en:
 
