@@ -35,7 +35,7 @@ tool registry は prompt template を保存せず、prompt override も解決し
 
 同じ名前の node は自動的に次を行います:
 
-- **ツールセット登録を共有**: Pulse replicated maps 経由で共有
+- **ツールセット登録を共有**: Redis の状態を直接読み取ります
 - **ヘルスチェック ping を協調**: toolset ごとに取得する有効期限付き Redis lease を使います
 - **provider health state を共有**: すべての node でヘルス状態を共有
 
@@ -183,6 +183,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -226,6 +227,18 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RegistrationToken: result.RegistrationToken,
 					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
 				}, nil
+			},
+			Renew: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) (time.Duration, error) {
+				result, err := registryClient.RenewProvider(ctx, &genregistry.RenewProviderPayload{
+					Name: toolset,
+					ProviderID: providerID,
+					ProviderIncarnationID: incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+				if err != nil {
+					return 0, err
+				}
+				return time.Duration(result.LeaseDurationMs) * time.Millisecond, nil
 			},
 			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
 				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
@@ -325,13 +338,21 @@ stream ID は決定的です:
 
 ### Registry のオプション {#config-構造体}
 
-[ライブラリの例](#ライブラリとして使う)は最小限の設定を示しています。application が所有する Redis client を `Redis` に渡し、registry cluster で共有する `Name` を指定します。同じ名前と Redis database を使う node は、catalog、call record、health check の協調状態を共有します。catalog は Pulse replicated map `<name>:toolsets` を使います。
+[ライブラリの例](#ライブラリとして使う)は最小限の設定を示しています。application が所有する Redis client を `Redis` に渡し、registry cluster で共有する `Name` を指定します。同じ名前と Redis database を使う node は、catalog、call record、health check の協調状態を共有します。各 node は Redis からコンパクトな catalog 状態を直接読み取り、完全な定義は別に保存します。
 
 全 API と default 値は [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) を参照してください。`PingInterval` と `MissedPingThreshold` は health check、`ExecutionTimeout` は新しく受け付けた実行の時間上限、`ResultStreamTTL` は result の保持、`ProviderLeaseDuration` は provider 登録の更新を設定します。`ExpectedToolsets` は必要な catalog 名を telemetry に記録しますが、登録や call を拒否しません。`Logger` は call の確定処理の失敗を受け取ります。これらのオプションは registry の構築時に指定します。
 
 ### Redis ストレージ {#store-実装}
 
 Redis の catalog は tool schema、admission identity、provider lease、health timestamp、登録撤回の履歴を保持します。call record と Pulse の request/result stream も Redis を使います。registry replica や再起動した process が同じ登録と call の判断を参照できるよう、永続化した Redis を使ってください。application が Redis client を所有し、registry の停止後に閉じます。
+
+### provider の更新とストレージの移行 {#provider-renewal-and-storage-upgrades}
+
+provider は起動時に一度だけ生成済み schema を送信します。必須の `Renew` callback は、toolset、provider ID、incarnation ID、期待する登録 token を指定して `RenewProvider` を呼び、許可された lease 期間だけを返します。更新は lease を新規作成せず、token を変更せず、draining を解除しません。lease が消失、期限切れ、置換、撤回された場合は `provider_lease_lost` を返し、`Serve` が停止します。一時的な通信障害は既存 lease の制限時間内だけ再試行します。stream、consumer group、ping の協調状態の修復は引き続き利用できます。
+
+registry は admission、lease、health、discovery のコンパクトな状態を、完全な定義と永久に撤回された token から分離して保存します。登録は関連するデータを原子的に更新します。health check と lease 操作はコンパクトな状態だけを転送します。各 process は fingerprint により定義を再利用し、コンパイル済み validator を保持します。Get と Resolve は呼び出し側ごとに独立した完全な値を返します。
+
+以前の一体型 catalog からの移行には、計画的なメンテナンス停止が必要です。新しい作業を止め、受け付け済み call を完了させ、旧 registry が drain と lease 解放を処理できる間に provider を正常終了します。その後、旧 registry の書き込み process をすべて停止します。backup を取得して catalog を offline で変換し、すべての定義、identity、lease、timestamp、撤回済み token を保持します。call、stream、完了処理の index、保持期限は変更しません。新 registry と更新済み provider を起動し、厳密な起動時検証と正確な `CheckAdmission` が成功してから再開します。tool fingerprint と provider message version は変更されません。`Renew` callback を追加し、client を再生成してください。旧版と新版の writer を同時に動かしてはいけません。未変更の backup を復元できるのは、全 writer が停止し、新たな書き込みが再開される前だけです。再開後は新しい version で修復します。通常の起動は旧形式を受け付けません。
 
 ## ヘルス監視
 
@@ -378,6 +399,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -416,7 +438,8 @@ registry は次の gRPC method を公開します:
 
 | Method | 説明 |
 |--------|-------------|
-| `Register` | active tool contract に対する 1 つの provider lease を追加または更新します。別 contract は古い lease が終了するまで待ちます。 |
+| `Register` | 起動時に生成済み定義を送信して provider を登録します。別の contract は古い lease の終了を待ちます。 |
+| `RenewProvider` | 期限内の正確な lease だけを、定義を送らずに延長します。draining と長い完了期限を維持し、権限を失った場合は `provider_lease_lost` を返します。 |
 | `DrainProvider` | 1 つの provider lease を新規 call に使えなくし、すでに所有する call を完了する権限は保ちます。 |
 | `ReleaseProvider` | process が受理済み work を確定した後、正確な provider lease を削除します。 |
 | `Unregister` | 正確な active admission を意図して廃止します。discovery と routing から削除し、同じ admission token が戻ることを永久に防ぎます。rollout 操作ではありません。 |

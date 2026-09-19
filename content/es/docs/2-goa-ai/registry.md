@@ -35,7 +35,7 @@ Varios nodos de registro pueden participar en el mismo registro lógico utilizan
 
 Los nodos con el mismo nombre automáticamente:
 
-- **Comparten los registros de toolsets** a través de mapas replicados Pulse.
+- **Comparten los registros de toolsets** leyendo su estado directamente en Redis.
 - **Coordinan los pings de salud** con concesiones Redis que caducan, adquiridas por separado para cada toolset.
 - **Comparten el estado de salud de los proveedores** entre todos los nodos.
 
@@ -234,6 +234,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -277,6 +278,18 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RegistrationToken: result.RegistrationToken,
 					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
 				}, nil
+			},
+			Renew: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) (time.Duration, error) {
+				result, err := registryClient.RenewProvider(ctx, &genregistry.RenewProviderPayload{
+					Name: toolset,
+					ProviderID: providerID,
+					ProviderIncarnationID: incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+				if err != nil {
+					return 0, err
+				}
+				return time.Duration(result.LeaseDurationMs) * time.Millisecond, nil
 			},
 			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
 				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
@@ -380,7 +393,8 @@ El [ejemplo de la biblioteca](#uso-de-la-biblioteca) muestra la configuración
 mínima: pasa el cliente Redis de la aplicación en `Redis` y elige un `Name`
 compartido para el clúster. Los nodos con el mismo nombre y base de datos Redis
 comparten el catálogo, los registros de llamadas y la coordinación de salud.
-El catálogo usa el mapa replicado Pulse `<name>:toolsets`.
+Cada nodo lee el estado compacto del catálogo directamente en Redis; las
+definiciones completas se almacenan por separado.
 
 Consulta [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) para ver la API completa y sus valores por
 defecto. `PingInterval` y `MissedPingThreshold` controlan las comprobaciones
@@ -400,6 +414,38 @@ solicitudes y resultados también usan Redis. Usa Redis duradero para que las
 réplicas y los procesos reiniciados observen los mismos registros y decisiones
 de llamadas. La aplicación es propietaria del cliente Redis y lo cierra
 después de detener el registro.
+
+### Renovación de proveedores y actualización del almacenamiento {#provider-renewal-and-storage-upgrades}
+
+Los proveedores envían los esquemas generados una vez al iniciar. El callback
+obligatorio `Renew` llama a `RenewProvider` con el toolset, el ID del proveedor,
+el ID de su encarnación y el token de registro esperado. Solo devuelve la duración
+concedida. Renovar nunca crea una concesión, cambia su token ni cancela el drenaje.
+Una concesión ausente, caducada, sustituida o retirada devuelve
+`provider_lease_lost` y detiene `Serve`. Los fallos temporales de comunicación
+se reintentan solo dentro del plazo de la concesión existente; se mantiene la
+reparación de streams, grupos y coordinación de pings.
+
+El registro separa el estado compacto de admisión, concesiones, salud y
+descubrimiento de las definiciones completas y los tokens retirados permanentemente.
+El registro inicial actualiza los datos afectados de forma atómica. Las operaciones
+de salud y concesiones solo transfieren estado compacto. Cada proceso reutiliza
+definiciones por huella y conserva los validadores compilados; Get y Resolve
+devuelven valores completos independientes.
+
+Actualizar el catálogo combinado anterior requiere una parada de mantenimiento
+coordinada. Detén el trabajo nuevo, termina las llamadas aceptadas y detén los
+proveedores de forma ordenada mientras el registro anterior aún puede drenar y
+liberar sus concesiones. Después, detén todos los procesos que escriben en el
+registro anterior. Guarda una copia y convierte el catálogo sin conexión,
+preservando cada definición, identidad, concesión, marca de tiempo y token retirado.
+Conserva llamadas, streams, índices de finalización y plazos de retención. Inicia
+el registro nuevo y los proveedores actualizados; reanuda solo tras la validación
+estricta de inicio y los controles exactos de `CheckAdmission`. Las huellas de las
+herramientas y la versión de los mensajes no cambian. Añade `Renew` y regenera los
+clientes. Nunca mezcles escritores antiguos y nuevos. Restaura la copia intacta
+solo mientras todos sigan detenidos y no se hayan reanudado escrituras; después,
+recupera con una versión nueva. El inicio normal no acepta el formato anterior.
 
 ## Monitorización de la salud
 
@@ -463,6 +509,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -501,7 +548,8 @@ El registro expone los siguientes métodos gRPC:
 
 | Método | Descripción |
 |--------|-------------|
-| `Register` | Añade o renueva la concesión de un proveedor para el contrato de herramientas activo. Un contrato diferente espera a que terminen las concesiones anteriores. |
+| `Register` | Admite un proveedor al iniciar con sus definiciones generadas. Un contrato diferente espera a que terminen las concesiones anteriores. |
+| `RenewProvider` | Amplía la concesión exacta que aún no ha caducado sin enviar definiciones. Conserva el drenaje y cualquier plazo de finalización mayor; perder la concesión devuelve `provider_lease_lost`. |
 | `DrainProvider` | Impide que una concesión de proveedor reciba nuevas llamadas, pero conserva su autoridad para terminar las que ya posee. |
 | `ReleaseProvider` | Elimina una concesión de proveedor concreta una vez que su proceso ha completado el trabajo aceptado. |
 | `Unregister` | Retira intencionadamente la admisión activa exacta. La elimina del descubrimiento y del enrutamiento e impide permanentemente que vuelva el mismo token de admisión; no es una operación de despliegue. |

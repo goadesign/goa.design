@@ -67,17 +67,17 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 	var RegistryClusterSystem = SoftwareSystem("Registry Cluster", "Multi-node registry cluster", func() {
 		Container("Registry 1", "gRPC server handling discovery and invocation", "Registry", func() {
 			Tag("goa")
-			Uses("Shared State", "Pulse streams, replicated maps")
+			Uses("Shared State", "Pulse streams, catalog state")
 		})
 
 		Container("Registry 2", "gRPC server handling discovery and invocation", "Registry", func() {
 			Tag("goa")
-			Uses("Shared State", "Pulse streams, replicated maps")
+			Uses("Shared State", "Pulse streams, catalog state")
 		})
 
 		Container("Registry N", "gRPC server handling discovery and invocation", "Registry", func() {
 			Tag("goa")
-			Uses("Shared State", "Pulse streams, replicated maps")
+			Uses("Shared State", "Pulse streams, catalog state")
 		})
 
 		Container("Shared State", "Toolset registrations, health, streams", "Redis", func() {

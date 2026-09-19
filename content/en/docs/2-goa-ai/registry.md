@@ -37,7 +37,7 @@ Multiple registry nodes can participate in the same logical registry by using th
 
 Nodes with the same name automatically:
 
-- **Share toolset registrations** via Pulse replicated maps
+- **Share toolset registrations** through directly read Redis state
 - **Coordinate health check pings** with expiring Redis leases, acquired separately for each toolset
 - **Share provider health state** across all nodes
 
@@ -229,6 +229,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -272,6 +273,18 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RegistrationToken: result.RegistrationToken,
 					Duration:          time.Duration(result.LeaseDurationMs) * time.Millisecond,
 				}, nil
+			},
+			Renew: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string) (time.Duration, error) {
+				result, err := registryClient.RenewProvider(ctx, &genregistry.RenewProviderPayload{
+					Name: toolset,
+					ProviderID: providerID,
+					ProviderIncarnationID: incarnationID,
+					ExpectedRegistrationToken: expectedToken,
+				})
+				if err != nil {
+					return 0, err
+				}
+				return time.Duration(result.LeaseDurationMs) * time.Millisecond, nil
 			},
 			Drain: func(ctx context.Context, toolset, providerID, incarnationID, expectedToken string, settlementDuration time.Duration) error {
 				return registryClient.DrainProvider(ctx, &genregistry.DrainProviderPayload{
@@ -374,8 +387,8 @@ Stream IDs are deterministic:
 The [library example](#library-usage) shows the minimal configuration:
 pass the application-owned Redis client in `Redis` and choose a shared `Name`
 for the registry cluster. Nodes using the same name and Redis database share
-the catalog, call records, and health-check coordination. The catalog uses the
-Pulse replicated map `<name>:toolsets`.
+the catalog, call records, and health-check coordination. Each node reads compact catalog state directly from Redis; full definitions
+are stored separately.
 
 See [registry.Config](https://pkg.go.dev/goa.design/goa-ai/registry#Config) for the complete API and defaults.
 `PingInterval` and `MissedPingThreshold` control health checks;
@@ -392,6 +405,35 @@ health timestamps, and retirement history. Call records and Pulse request and
 result streams also use Redis. Use durable Redis so registry replicas and
 process restarts observe the same registrations and call decisions. The
 application owns the Redis client and closes it after the registry stops.
+
+### Provider renewal and storage upgrades {#provider-renewal-and-storage-upgrades}
+
+Providers send generated schemas once during startup. The required `Renew`
+callback calls `RenewProvider` with the toolset, provider ID, incarnation ID,
+and expected registration token. It returns only the granted lease duration.
+Renewal never creates a lease, changes its token, or clears draining. A missing,
+expired, replaced, or retired lease returns `provider_lease_lost`, and `Serve`
+stops. Temporary communication failures retry only within the existing lease
+cutoff; stream/group and ping coordination repair remain supported.
+
+The registry stores compact admission, lease, health, and discovery state
+separately from full definitions and permanent retired tokens. Registration
+updates affected records atomically. Health checks and lease operations transfer
+only compact state. Each process reuses definitions by fingerprint and retains
+compiled execution validators; Get and Resolve return independent full values.
+
+Upgrading from the combined catalog format requires a coordinated maintenance
+cutover. Stop new work, settle accepted calls, gracefully stop providers while
+the old registry can drain and release them, then stop every old registry writer.
+Back up and convert the catalog offline, preserving every definition, identity,
+lease, timestamp, and retired token. Leave calls, streams, settlement indexes,
+and retention deadlines intact. Start the new registry and updated providers;
+resume only after strict startup validation and exact `CheckAdmission` checks
+pass. This storage change does not change tool fingerprints or the provider
+message version. Add the required `Renew` callback and regenerate clients.
+Never run old and new registry writers together. Restore the untouched backup
+only while all writers remain stopped and no new writes have resumed; afterward,
+recover forward. Normal startup has no legacy decoder.
 
 ## Health Monitoring
 
@@ -453,6 +495,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
 		transport.Register(),
+		transport.RenewProvider(),
 		transport.ReleaseProvider(),
 		transport.DrainProvider(),
 		transport.Unregister(),
@@ -491,7 +534,8 @@ The registry exposes the following gRPC methods:
 
 | Method | Description |
 |--------|-------------|
-| `Register` | Add or renew one provider lease for the active tool contract. A different contract waits until the old leases end. |
+| `Register` | Admit a provider at startup with its generated tool definitions. A different contract waits until old leases end. |
+| `RenewProvider` | Extend the exact unexpired lease without sending definitions. Preserve draining and any longer settlement deadline; lost authority returns `provider_lease_lost`. |
 | `DrainProvider` | Make one provider lease unavailable for new calls while preserving its authority to finish calls it already owns. |
 | `ReleaseProvider` | Remove one exact provider lease after its process has settled accepted work. |
 | `Unregister` | Intentionally retire the exact active admission. This removes it from discovery and routing and permanently prevents the same admission token from returning; it is not a rollout operation. |
