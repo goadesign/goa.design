@@ -74,7 +74,17 @@ client := genreader.NewClient(rt)
 
 `Definition()` e `NewClient(rt)` non richiedono cataloghi e non fanno chiamate di rete. Registra gli strumenti compilati con i consueti helper generati. Il runtime esegue quelli del registro senza callback di discovery o executor dinamici personalizzati. I client HTTP del catalogo sono un trasporto separato per server HTTP corrispondenti.
 
-I provider pubblicano `ToolSchemas()` generato con l’impronta dello schema e il ciclo di registrazione esistente. `ConsumerContract` include termini di ricerca, metadati dei campi, etichette obbligatorie, conferma, paginazione e dati riservati al server. Gli strumenti dinamici di servizio supportano queste funzioni; quelli di agenti figli e controllo restano compilati. Registrazioni con soli schemi e tipi di esecuzione non supportati falliscono esplicitamente.
+I provider pubblicano i record generati da `ToolSchemas()` con l'impronta dello schema e il ciclo di registrazione esistente. `ConsumerContract` contiene termini di ricerca, metadati dei campi, etichette obbligatorie, conferma, paginazione e dati riservati al server. Strumenti dinamici di servizio e [strumenti nativi basati su agenti](../agent-composition/#dynamic-agent-tools) supportano questi contratti; gli strumenti di controllo del planner restano compilati. Registrazioni con soli schemi e tipi di esecuzione non supportati vengono rifiutati esplicitamente.
+
+## Strumenti definiti a runtime e cataloghi per ambito
+
+Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
+
+I package generati degli strumenti espongono anche `Toolset()`: nome di registrazione, descrizione, tag e nuove copie degli schemi. Per dichiarazioni definite dinamicamente in Go, `runtime/toolregistry/contract.Compile` valida un `*genregistry.ToolSchema` e restituisce un `tools.ToolSpec` indipendente con codec JSON validanti. Fornisci i metadati esplicitamente: il compilatore non deduce contesto o permessi dai nomi dei campi.
+
+Usa `contract.Fingerprint(toolset)` per una dichiarazione dinamica o un valore `Toolset()` completo, inclusi descrizione e tag. Il timestamp di registrazione è escluso. L'helper generato `SchemaFingerprint(name)` continua a descrivere la registrazione del provider senza annotazioni opzionali a livello di toolset. Gli strumenti di servizio generati mantengono i codec tipizzati.
+
+Per selezionare fonti in base all'applicazione, implementa `runtime.RegistryTools` e collegalo con `WithRegistryTools`. In `Resolve`, `catalog.RunLabels()` restituisce una copia delle etichette dell'esecuzione corrente. Usale con `IncludeToolset` o `IncludeRegistry`; `Allows` determina le fonti che le chiamate salvate possono continuare a usare. La policy dell'esecuzione filtra comunque gli strumenti. Ogni activity di pianificazione possiede il proprio catalogo: sessioni simultanee non cambiano gli strumenti delle altre. Namespace e autorizzazione restano responsabilità applicative.
 
 ## Chi esegue la ricerca?
 
@@ -90,7 +100,9 @@ I risultati della ricerca OpenAI inseriscono ogni funzione selezionata in un nam
 
 Ogni attività di pianificazione che può iniziare lavoro legge le fonti una volta e mantiene il catalogo durante l’inferenza. La successiva le rilegge, includendo nuovi provider. Le attività dedicate alla risposta finale e i finalizzatori espliciti non leggono il registro. Un registro completo vuoto è valido; fonti nominate assenti, versioni errate, identità duplicate, errori di lettura e rimozioni durante la risoluzione falliscono esplicitamente.
 
-Una chiamata accettata conserva solo la definizione selezionata, l’eventuale partner fisso di paginazione e il token di registrazione esistente. Conferma, decodifica e ripristino usano quel contratto salvato senza leggere il catalogo attuale. `CallResolvedTool` controlla il token prima della pubblicazione; una sostituzione prima della pubblicazione registra `call_not_admitted`. I retry per sovraccarico conservano il token e restituiscono `admission_conflict` se quell’ammissione è stata sostituita. Le chiamate pubblicate mantengono assegnazione e risultato originali.
+Una chiamata accettata conserva solo la definizione selezionata, l’eventuale partner fisso di paginazione e il token di registrazione esistente. Conferma, decodifica e ripristino usano quel contratto salvato senza leggere il catalogo attuale. Per gli strumenti di servizio, `CallResolvedTool` controlla il token prima della pubblicazione; una sostituzione prima della pubblicazione registra `call_not_admitted`. I retry per sovraccarico conservano il token e restituiscono `admission_conflict` se quell’ammissione è stata sostituita. Le chiamate pubblicate mantengono assegnazione e risultato originali.
+
+Le chiamate native ad agenti conservano esecutore, configurazione e contratto del risultato selezionati e avviano workflow figli. Le modifiche al registro riguardano le activity di pianificazione successive, non le chiamate già accettate.
 
 La ricerca nativa resta nei metadati dei messaggi. Preservali durante archiviazione e compattazione. Non esiste un database separato degli strumenti caricati. Le definizioni storiche spiegano vecchie chiamate; consumo e policy attuali autorizzano quelle nuove.
 
@@ -112,7 +124,7 @@ Use(Records, func() { Deferred() })
 
 Usa la stessa funzione nelle altre assegnazioni di `Deferred` a un callback di tipo `func()`. La selezione differita dell’intero toolset resta invariata. Racchiudere un callback esistente senza cambiare la selezione non richiede rigenerazione.
 
-Rigenera provider e consumer con Goa v3.31.1. Sostituisci `Discover`, gli input `RegistryToolsets` e gli executor dinamici con `RegisterRegistry`. Aggiorna il registro per esporre `ResolveToolset` e `CallResolvedTool`, poi pubblica `ToolSchemas()` completo prima di abilitare i consumer dinamici. Le vecchie registrazioni con soli schemi restano utilizzabili dalle integrazioni statiche, ma non da questa modalità dinamica.
+Rigenera provider e consumer con Goa v3.32.0. Sostituisci `Discover`, gli input `RegistryToolsets` e gli executor dinamici con `RegisterRegistry`. Aggiorna il registro per esporre `ResolveToolset` e `CallResolvedTool`, poi pubblica `ToolSchemas()` completo prima di abilitare i consumer dinamici. Le vecchie registrazioni con soli schemi restano utilizzabili dalle integrazioni statiche, ma non da questa modalità dinamica.
 
 I template di conferma usano nomi JSON come `{{ .key }}`, invece di campi Go come `{{ .Key }}`. Usa `{{ json .value }}` per valori JSON e `index` per proprietà opzionali.
 

@@ -74,7 +74,17 @@ client := genreader.NewClient(rt)
 
 `Definition()` and `NewClient(rt)` require no catalog arguments and make no network calls. Register compiled tools through the usual generated helpers. The runtime executes registry tools; no discovery callback or custom dynamic executor is required. Generated HTTP catalog clients are a separate transport for matching HTTP servers.
 
-Providers publish generated `ToolSchemas()` records with the existing schema fingerprint and provider registration lifecycle. Their `ConsumerContract` carries search terms, field metadata, required labels, confirmation, pagination, and server-only data. Dynamic service tools support these features; child-agent and control tools remain compiled. Schema-only registrations and unsupported execution kinds fail resolution explicitly.
+Providers publish generated `ToolSchemas()` records with the existing schema fingerprint and provider registration lifecycle. `ConsumerContract` carries search terms, field metadata, required labels, confirmation, pagination, and server-only data. Dynamic service tools and [native Agent tools](../agent-composition/#dynamic-agent-tools) support these contracts; planner control tools remain compiled. Schema-only registrations and unsupported execution kinds fail resolution explicitly.
+
+## Runtime-authored tools and scoped catalogs
+
+The dynamic Agent APIs described here require Goa-AI v0.84.0 or later.
+
+Generated toolset packages also expose `Toolset()`: the authored registration name, description, tags, and fresh tool schemas. For declarations authored dynamically in Go, `runtime/toolregistry/contract.Compile` validates a `*genregistry.ToolSchema` and returns an owned `tools.ToolSpec` with validating JSON codecs. Supply metadata explicitly; the compiler does not infer context or permissions from field names.
+
+Use `contract.Fingerprint(toolset)` for a runtime-authored declaration or a complete `Toolset()` value, including its description and tags. The registration timestamp is excluded. The existing generated `SchemaFingerprint(name)` continues to describe provider registration without optional toolset-level annotations. Generated service tools keep their typed codecs.
+
+For application-specific source selection, implement `runtime.RegistryTools` and attach it with `WithRegistryTools`. Inside `Resolve`, `catalog.RunLabels()` returns a copy of the current run's labels. Use them to choose sources with `IncludeToolset` or `IncludeRegistry`; `Allows` determines which sources saved calls may continue using. Run policy still filters tools. Catalogs belong to individual planning activities, so concurrent sessions do not change one another's tools. Application namespaces and authorization remain application responsibilities.
 
 ## Who performs search?
 
@@ -90,7 +100,9 @@ OpenAI search results place each selected function in a native namespace with th
 
 Each planning activity that can start work reads the declared sources once and keeps that catalog fixed during inference. A later activity reads again, including providers registered since the previous turn. Final-answer-only and explicit finalizer activities do not read the registry. Empty whole registries are valid; missing named sources, version mismatches, duplicate tool identities, failed reads, and removals during resolution fail explicitly.
 
-Accepted calls save only their selected definition, any fixed pagination partner, and the existing registration token. Confirmation, result decoding, and checkpoint restoration use that saved contract without fetching today's catalog. `CallResolvedTool` checks the original token before publication; replacement before publication records `call_not_admitted`. Overload retries retain the token and report `admission_conflict` if that admission was replaced. Published calls retain their original assignment and result.
+Accepted calls save only their selected definition, any fixed pagination partner, and the existing registration token. Confirmation, result decoding, and checkpoint restoration use that saved contract without fetching today's catalog. For service tools, `CallResolvedTool` checks the original token before publication; replacement before publication records `call_not_admitted`. Overload retries retain the token and report `admission_conflict` if that admission was replaced. Published calls retain their original assignment and result.
+
+Native Agent calls retain their selected executor, configuration, and result contract and run as child workflows. Later registry changes affect subsequent planning activities, not already accepted calls.
 
 Native search records remain in existing message metadata. Preserve that metadata through storage and compaction. There is no separate loaded-tool database. Historical definitions explain past calls; current consumption and policy authorize new ones.
 
@@ -112,7 +124,7 @@ Use(Records, func() { Deferred() })
 
 Apply the same wrapper to other assignments of `Deferred` to a `func()` callback. This preserves whole-toolset deferral. Wrapping an existing callback alone does not require regeneration.
 
-Regenerate providers and consumers with Goa v3.31.1. Replace startup `Discover` calls, `RegistryToolsets` inputs, and dynamic executor wiring with `RegisterRegistry`. Upgrade the registry to expose `ResolveToolset` and `CallResolvedTool`, and publish complete `ToolSchemas()` before enabling dynamic consumers. Old schema-only registrations remain usable by existing static integrations, but not by this dynamic path.
+Regenerate providers and consumers with Goa v3.32.0. Replace startup `Discover` calls, `RegistryToolsets` inputs, and dynamic executor wiring with `RegisterRegistry`. Upgrade the registry to expose `ResolveToolset` and `CallResolvedTool`, and publish complete `ToolSchemas()` before enabling dynamic consumers. Old schema-only registrations remain usable by existing static integrations, but not by this dynamic path.
 
 Confirmation templates now use JSON names, such as `{{ .key }}`, rather than Go field names such as `{{ .Key }}`. Use `{{ json .value }}` for JSON values and `index` for optional properties.
 

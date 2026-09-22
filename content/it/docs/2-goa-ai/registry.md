@@ -9,6 +9,10 @@ llm_optimized: true
 
 Il **Registro degli strumenti interni** è un servizio di gateway in cluster che consente di individuare e invocare i set di strumenti attraverso i confini dei processi. È progettato per scenari in cui i set di strumenti sono forniti da servizi separati che possono scalare indipendentemente dagli agenti che li utilizzano.
 
+Il catalogo conserva anche [dichiarazioni native di strumenti basati su agenti](../agent-composition/#dynamic-agent-tools), con un worker esistente e una configurazione applicativa immutabile. Il runtime consumatore avvia un workflow figlio; lease dei provider, ping di salute e invocazioni Pulse riguardano solo gli strumenti di servizio.
+
+Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
+
 ## Panoramica
 
 Il registro funge sia da **catalogo** che da **gateway**:
@@ -241,6 +245,8 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -513,6 +519,8 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -551,12 +559,19 @@ Il registro espone i seguenti metodi gRPC:
 | `RenewProvider` | Estende il lease esatto non scaduto senza inviare definizioni. Conserva il drenaggio e ogni scadenza di completamento più lunga; la perdita del lease restituisce `provider_lease_lost`. |
 | `DrainProvider` | Rende il lease di un provider indisponibile per nuove chiamate, conservandone l'autorità di terminare quelle che già possiede. |
 | `ReleaseProvider` | Rimuove un lease preciso dopo che il processo del provider ha completato il lavoro accettato. |
-| `Unregister` | Ritira intenzionalmente l'ammissione attiva esatta. La rimuove dalla scoperta e dall'instradamento e impedisce definitivamente il ritorno dello stesso token di ammissione; non è un'operazione di deployment. |
+| `Unregister` | Rimuove dalla scoperta la registrazione corrente esatta. I token dei servizi sono ritirati definitivamente; le dichiarazioni native si possono riattivare con `ReplaceAgentToolset`. Le chiamate figlie native già accettate conservano la dichiarazione selezionata. |
 | `Pong` | Registra lo stato di salute del provider per il lease corrente e l'epoca esatta del controllo di salute. |
 | `ClaimToolCall` | Concede l'esecuzione di una richiesta pubblicata a un lease preciso del provider. |
 | `CompleteToolCall` | Memorizza il risultato finale canonico della chiamata la cui esecuzione è stata assegnata e lo pubblica nel flusso dei risultati. |
 | `PublishToolOutputDelta` | Pubblica un frammento di avanzamento limitato, senza garanzia di consegna, per una chiamata la cui esecuzione è stata assegnata. |
 | `ReportToolCallOverload` | Registra un'istruzione di nuovo tentativo limitata prima che un provider esegua una chiamata che supera la sua capacità. |
+
+### Operazioni per agenti nativi
+
+| Metodo | Descrizione |
+|---|---|
+| `RegisterAgentToolset` | Crea una dichiarazione nativa senza lease del provider; ripetere una registrazione attiva identica ha successo. |
+| `ReplaceAgentToolset` | Sostituisce o riattiva una dichiarazione nativa con il token corrente. Un token obsoleto restituisce `admission_conflict`. |
 
 ### Operazioni di scoperta
 
@@ -564,6 +579,8 @@ Il registro espone i seguenti metodi gRPC:
 |--------|-------------|
 | `ListToolsets` | Elenca tutti i set di strumenti registrati (con un filtro opzionale sui tag). Restituisce solo i metadati, non gli schemi completi. |
 | `GetToolset` | Ottenere lo schema completo per uno specifico set di strumenti, compresi tutti gli schemi di input/output degli strumenti. |
+| `ResolveToolset` | Legge insieme la definizione attiva e il suo token esatto; la salute del provider si controlla separatamente. |
+| `CheckAdmission` | Verifica che una registrazione di servizio esatta abbia un lease non scaduto e non in drenaggio e una risposta di salute recente. |
 | `Search` | Cerca i set di strumenti per parola chiave corrispondente al nome, alla descrizione o ai tag. |
 
 ### Operazioni di invocazione
@@ -571,6 +588,7 @@ Il registro espone i seguenti metodi gRPC:
 | Metodo | Descrizione |
 |--------|-------------|
 | `CallTool` | Convalida e pubblica una chiamata identificata all'interno di un'esecuzione. Attende un provider sano entro la scadenza esistente, segue un eventuale sostituto solo prima della pubblicazione e restituisce il riferimento esatto e immutabile dell'esecuzione. |
+| `CallResolvedTool` | Pubblica una chiamata di servizio solo con il token conservato; una sostituzione precedente alla pubblicazione registra `call_not_admitted`. |
 | `RetryTool` | Ripubblica l'ammissione originale esatta dopo la registrazione di un sovraccarico del provider. Non sposta mai l'esecuzione a un provider sostitutivo. |
 
 ## Migliori pratiche

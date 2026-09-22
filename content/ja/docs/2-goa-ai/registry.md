@@ -9,6 +9,10 @@ llm_optimized: true
 
 **内部ツールレジストリ (Internal Tool Registry)** は、プロセス境界をまたいでツールセットの発見と呼び出しを可能にするクラスタ化されたゲートウェイサービスです。ツールセットを別サービスで提供し、消費側エージェントとは独立してスケールさせたい場面向けに設計されています。
 
+カタログは [native Agent ツール宣言](../agent-composition/#dynamic-agent-tools) も保存し、既存の worker と不変のアプリケーション設定を指定します。利用側 runtime が子 workflow を開始します。provider lease、health ping、Pulse 経由の呼び出しはサービスツールだけに適用されます。
+
+ここで説明する動的 Agent API には Goa-AI v0.84.0 以降が必要です。
+
 ## 概要
 
 レジストリは **catalog** と **gateway** の両方として動作します:
@@ -188,6 +192,8 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -404,6 +410,8 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -442,12 +450,19 @@ registry は次の gRPC method を公開します:
 | `RenewProvider` | 期限内の正確な lease だけを、定義を送らずに延長します。draining と長い完了期限を維持し、権限を失った場合は `provider_lease_lost` を返します。 |
 | `DrainProvider` | 1 つの provider lease を新規 call に使えなくし、すでに所有する call を完了する権限は保ちます。 |
 | `ReleaseProvider` | process が受理済み work を確定した後、正確な provider lease を削除します。 |
-| `Unregister` | 正確な active admission を意図して廃止します。discovery と routing から削除し、同じ admission token が戻ることを永久に防ぎます。rollout 操作ではありません。 |
+| `Unregister` | 正確な現在の登録を discovery から除外します。サービスの token は永久に廃止されますが、native 宣言は `ReplaceAgentToolset` で再有効化できます。受理済みの native な子呼び出しは選択した宣言を保持します。 |
 | `Pong` | 正確な current lease と health-check epoch に対して provider health を記録します。 |
 | `ClaimToolCall` | publish 済み request の実行権限を、正確に 1 つの provider lease に付与します。 |
 | `CompleteToolCall` | claim 済み call の正規 terminal result を commit し、result stream へ publish します。 |
 | `PublishToolOutputDelta` | claim 済み call の bounded な best-effort progress fragment を publish します。 |
 | `ReportToolCallOverload` | provider が overloaded call を実行する前に、bounded retry control を記録します。 |
+
+### native Agent の操作
+
+| Method | 説明 |
+|---|---|
+| `RegisterAgentToolset` | provider lease なしで native 宣言を登録します。有効な登録と同じ宣言を繰り返しても成功します。 |
+| `ReplaceAgentToolset` | 現在の token で native 宣言を置換または再有効化します。古い token には `admission_conflict` を返します。 |
 
 ### Discovery Operations
 
@@ -455,6 +470,8 @@ registry は次の gRPC method を公開します:
 |--------|-------------|
 | `ListToolsets` | 登録済み toolset を一覧します (任意で tag filtering)。metadata のみを返し、full schema は返しません。 |
 | `GetToolset` | 指定 toolset の full schema を取得します。すべての tool input/output schema を含みます。 |
+| `ResolveToolset` | 有効な定義と正確な登録 token を一緒に読み取ります。provider の健全性は別に確認します。 |
+| `CheckAdmission` | 正確なサービス登録について、期限内で draining ではない provider lease と最近の health 応答を確認します。 |
 | `Search` | name、description、tags に対する keyword match で toolset を検索します。 |
 
 ### Invocation Operations
@@ -462,6 +479,7 @@ registry は次の gRPC method を公開します:
 | Method | 説明 |
 |--------|-------------|
 | `CallTool` | run 内で一意な call を検証して publish します。call は既存 deadline 内で provider health を待ち、publish 前だけ replacement に追随し、その後は正確で不変な execution reference を返します。 |
+| `CallResolvedTool` | 保持した登録 token のサービス呼び出しだけを発行します。発行前に置換されていれば `call_not_admitted` を記録します。 |
 | `RetryTool` | provider overload が記録された後、元の admission をそのまま再 publish します。replacement provider へ実行を移しません。 |
 
 ## ベストプラクティス
