@@ -11,7 +11,7 @@ Le **Internal Tool Registry** est un service de passerelle en cluster qui permet
 
 Le catalogue conserve aussi les [déclarations natives d'outils d'agents](../agent-composition/#dynamic-agent-tools), qui désignent un worker existant et une configuration applicative immuable. Le runtime consommateur lance un workflow enfant ; les baux des fournisseurs, les pings de santé et les appels Pulse concernent uniquement les outils de service.
 
-Les API d'agents dynamiques décrites ici sont disponibles sur `main` de Goa-AI après la PR #373. Elles ne figurent pas dans v0.83.0 ; utilisez une version qui contient ce changement ou la révision source correspondante.
+Les API d'agents dynamiques décrites ici nécessitent Goa-AI v0.84.0 ou une version ultérieure.
 
 ## Aperçu
 

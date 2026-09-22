@@ -144,7 +144,7 @@ avec `WithTaskQueue`.
 
 ## Agents configurés dynamiquement {#dynamic-agent-tools}
 
-Les API d'agents dynamiques décrites ici sont disponibles sur `main` de Goa-AI après la PR #373. Elles ne figurent pas dans v0.83.0 ; utilisez une version qui contient ce changement ou la révision source correspondante.
+Les API d'agents dynamiques décrites ici nécessitent Goa-AI v0.84.0 ou une version ultérieure.
 
 Une configuration d'agent sauvegardée peut devenir un outil sans enregistrer un
 nouveau worker pour chaque configuration. Le registre conserve le contrat de

@@ -78,7 +78,7 @@ Providers publish generated `ToolSchemas()` records with the existing schema fin
 
 ## Runtime-authored tools and scoped catalogs
 
-The dynamic Agent APIs described here are available on Goa-AI `main` after PR #373. They are not included in v0.83.0; use a release containing that change or the corresponding source revision.
+The dynamic Agent APIs described here require Goa-AI v0.84.0 or later.
 
 Generated toolset packages also expose `Toolset()`: the authored registration name, description, tags, and fresh tool schemas. For declarations authored dynamically in Go, `runtime/toolregistry/contract.Compile` validates a `*genregistry.ToolSchema` and returns an owned `tools.ToolSpec` with validating JSON codecs. Supply metadata explicitly; the compiler does not infer context or permissions from field names.
 

@@ -144,7 +144,7 @@ stesso modo. Una singola esecuzione può scegliere un'altra coda con
 
 ## Agenti configurati dinamicamente {#dynamic-agent-tools}
 
-Le API per agenti dinamici descritte qui sono disponibili su `main` di Goa-AI dopo la PR #373. Non sono incluse nella v0.83.0: usa una release che contenga la modifica o la corrispondente revisione del codice.
+Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
 
 Una configurazione salvata di un agente può diventare uno strumento senza
 registrare un nuovo worker per ogni configurazione. Il registro conserva il

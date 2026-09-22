@@ -11,7 +11,7 @@ Il **Registro degli strumenti interni** è un servizio di gateway in cluster che
 
 Il catalogo conserva anche [dichiarazioni native di strumenti basati su agenti](../agent-composition/#dynamic-agent-tools), con un worker esistente e una configurazione applicativa immutabile. Il runtime consumatore avvia un workflow figlio; lease dei provider, ping di salute e invocazioni Pulse riguardano solo gli strumenti di servizio.
 
-Le API per agenti dinamici descritte qui sono disponibili su `main` di Goa-AI dopo la PR #373. Non sono incluse nella v0.83.0: usa una release che contenga la modifica o la corrispondente revisione del codice.
+Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
 
 ## Panoramica
 

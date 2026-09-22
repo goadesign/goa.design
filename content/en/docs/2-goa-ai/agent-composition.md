@@ -142,7 +142,7 @@ may still use `WithTaskQueue` to select another queue for one explicit start.
 
 ## Dynamically configured Agents {#dynamic-agent-tools}
 
-The dynamic Agent APIs described here are available on Goa-AI `main` after PR #373. They are not included in v0.83.0; use a release containing that change or the corresponding source revision.
+The dynamic Agent APIs described here require Goa-AI v0.84.0 or later.
 
 A saved Agent configuration can become a tool without registering a new worker
 for each configuration. The registry stores the tool's contract, the ID of an

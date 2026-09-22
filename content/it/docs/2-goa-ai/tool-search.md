@@ -78,7 +78,7 @@ I provider pubblicano i record generati da `ToolSchemas()` con l'impronta dello 
 
 ## Strumenti definiti a runtime e cataloghi per ambito
 
-Le API per agenti dinamici descritte qui sono disponibili su `main` di Goa-AI dopo la PR #373. Non sono incluse nella v0.83.0: usa una release che contenga la modifica o la corrispondente revisione del codice.
+Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
 
 I package generati degli strumenti espongono anche `Toolset()`: nome di registrazione, descrizione, tag e nuove copie degli schemi. Per dichiarazioni definite dinamicamente in Go, `runtime/toolregistry/contract.Compile` valida un `*genregistry.ToolSchema` e restituisce un `tools.ToolSpec` indipendente con codec JSON validanti. Fornisci i metadati esplicitamente: il compilatore non deduce contesto o permessi dai nomi dei campi.
 

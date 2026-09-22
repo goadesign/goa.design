@@ -78,7 +78,7 @@ provider は既存の schema fingerprint と登録ライフサイクルを使っ
 
 ## 実行時に定義するツールと適用範囲別のカタログ
 
-ここで説明する動的 Agent API は PR #373 以降の Goa-AI の `main` で利用できます。v0.83.0 には含まれません。この変更を含むリリースか、対応するソースのリビジョンを使用してください。
+ここで説明する動的 Agent API には Goa-AI v0.84.0 以降が必要です。
 
 生成されたツール package は `Toolset()` も公開します。宣言された登録名、説明、tag、スキーマの新しいコピーを返します。Go で実行時に作る宣言には `runtime/toolregistry/contract.Compile` を使います。`*genregistry.ToolSchema` を検証し、検証用 JSON codec を持つ独立した `tools.ToolSpec` を返します。metadata は明示的に指定してください。コンパイラーはフィールド名から context や権限を推測しません。
 

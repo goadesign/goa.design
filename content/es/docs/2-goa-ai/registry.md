@@ -11,7 +11,7 @@ El **Registro interno de herramientas** es un servicio de pasarela en clúster q
 
 El catálogo también guarda [declaraciones nativas de herramientas de agentes](../agent-composition/#dynamic-agent-tools), que identifican un worker existente y una configuración inmutable de la aplicación. El runtime consumidor inicia un workflow hijo; las concesiones, las comprobaciones de salud y las invocaciones Pulse solo se aplican a herramientas de servicio.
 
-Las API de agentes dinámicos descritas aquí están en `main` de Goa-AI tras la PR #373. No están incluidas en v0.83.0; usa una versión que contenga el cambio o la revisión correspondiente del código.
+Las API de agentes dinámicos descritas aquí requieren Goa-AI v0.84.0 o posterior.
 
 ## Descripción general
 

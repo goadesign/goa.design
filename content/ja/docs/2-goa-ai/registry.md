@@ -11,7 +11,7 @@ llm_optimized: true
 
 カタログは [native Agent ツール宣言](../agent-composition/#dynamic-agent-tools) も保存し、既存の worker と不変のアプリケーション設定を指定します。利用側 runtime が子 workflow を開始します。provider lease、health ping、Pulse 経由の呼び出しはサービスツールだけに適用されます。
 
-ここで説明する動的 Agent API は PR #373 以降の Goa-AI の `main` で利用できます。v0.83.0 には含まれません。この変更を含むリリースか、対応するソースのリビジョンを使用してください。
+ここで説明する動的 Agent API には Goa-AI v0.84.0 以降が必要です。
 
 ## 概要
 
