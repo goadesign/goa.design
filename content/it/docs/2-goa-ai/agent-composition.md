@@ -142,6 +142,119 @@ stesso modo. Una singola esecuzione può scegliere un'altra coda con
 
 ---
 
+## Agenti configurati dinamicamente {#dynamic-agent-tools}
+
+Le API per agenti dinamici descritte qui sono disponibili su `main` di Goa-AI dopo la PR #373. Non sono incluse nella v0.83.0: usa una release che contenga la modifica o la corrispondente revisione del codice.
+
+Una configurazione salvata di un agente può diventare uno strumento senza
+registrare un nuovo worker per ogni configurazione. Il registro conserva il
+contratto dello strumento, l'ID di un esecutore esistente e un riferimento
+immutabile alla configurazione. Il runtime avvia quell'esecutore come workflow
+figlio, con avanzamento, cancellazione e richieste di input umano.
+
+### Registrare una configurazione salvata
+
+Ogni `genregistry.ToolSchema` deve avere `ConsumerContract.Kind: "agent"`, un
+contratto completo di input e risultato e un `AgentToolTarget`:
+
+```go
+&genregistry.AgentToolTarget{
+    Executor:      "generic.agent",
+    Configuration: "support/revisions/7",
+}
+```
+
+L'applicazione gestisce il prompt, il modello e la policy degli strumenti
+indicati dal riferimento. Conserva quella revisione finché le chiamate accettate
+non hanno preparato il figlio. Il modello fornisce gli argomenti del dominio;
+non sceglie il worker o la revisione.
+
+Registra le dichiarazioni complete tramite il client generato del registro:
+
+```go
+registered, err := registryClient.RegisterAgentToolset(ctx,
+    &genregistry.AgentToolsetDeclaration{
+        Name:  "support",
+        Tools: declarations,
+    },
+)
+if err != nil {
+    return err
+}
+```
+
+Ripetere una registrazione attiva identica ha successo. Per cambiarla, passa
+`registered.RegistrationToken` corrente come `ExpectedRegistrationToken` in
+`*genregistry.ReplaceAgentToolsetPayload`. Un token obsoleto restituisce
+`admission_conflict`. `Unregister` rimuove la dichiarazione dalla scoperta;
+`ReplaceAgentToolset` può riattivarla usando il token corrente.
+
+Questi strumenti nativi basati su agenti non richiedono lease del provider Pulse
+né ping di salute. La registrazione non avvia né distribuisce il worker.
+`CallTool` e `CallResolvedTool` li rifiutano: è il runtime consumatore ad avviare
+il workflow figlio. Registrazioni di servizio e di agenti nativi non possono
+sovrascriversi a vicenda.
+
+### Preparare il figlio su un worker consentito
+
+La definizione di un agente consente il proprio worker e i worker figli generati.
+Per consentire un altro esecutore:
+
+```go
+executor := genspecialist.Definition()
+consumer := genassistant.Definition().WithAgentExecutors(&executor)
+if err := rt.RegisterAgentToolResolver(executor.Route().ID, prepareConfiguration); err != nil {
+    return err
+}
+```
+
+`WithAgentExecutors` accetta puntatori, copia le definizioni ricevute e ne
+restituisce una nuova. Usa `consumer` sia in `AgentRegistration.Definition` sul
+worker consumatore sia in `rt.ClientFor(consumer)`. Gli helper generati per
+registrazione e client continuano a usare la definizione originale. `Executor`
+nella dichiarazione deve corrispondere all'ID di un worker consentito; altri
+esecutori vengono rifiutati durante la scoperta, prima della chiamata al modello.
+
+`prepareConfiguration` è codice applicativo con firma
+`func(context.Context, string, *runtime.ToolCall) (*runtime.AgentToolConfiguration, error)`.
+Registralo sul runtime consumatore prima di chiudere la registrazione o avviare
+esecuzioni. Riceve il riferimento selezionato e una copia della chiamata validata.
+Restituisce `Messages`, `Labels`, `Policy` e gli eventuali `RenderedPrompts`.
+Le etichette estendono o sostituiscono quelle ereditate dal padre; autorizzazione
+e ambito appartengono all'applicazione. Il runtime gestisce gli ID di sessione ed
+esecuzione e i collegamenti al padre.
+
+La preparazione avviene in un'activity il cui risultato registrato viene
+riutilizzato durante il replay del workflow. Dopo una richiesta di input umano,
+la continuazione ripristina messaggi, etichette, policy e contratto del padre dal
+checkpoint del figlio, senza caricare di nuovo la configurazione.
+
+### Restituire il risultato selezionato
+
+`planner.PlanInput.ParentTool` e `planner.PlanResumeInput.ParentTool` espongono
+il contratto accettato dal padre. Un planner generico può usare `ParentTool.Result`
+con `model.StructuredOutput` nella richiesta finale al modello e restituire
+`planner.FinalToolResult`. Output strutturato e chiamate a strumenti usano
+richieste al modello separate. Un figlio nativo che restituisce solo testo viene
+rifiutato. Le esecuzioni principali non hanno `ParentTool`; gli strumenti basati
+su agenti compilati mantengono il comportamento esistente.
+
+Un'activity di pianificazione successiva scopre le nuove registrazioni. Sostituire
+una dichiarazione non cambia configurazione, schema del risultato o approvazione
+in attesa di una chiamata già accettata. Il risultato mantiene il collegamento
+all'esecuzione figlia.
+
+### Aggiornare prima di pubblicare
+
+Aggiorna registro, worker esecutori e tutti i consumatori che possono scoprire le
+dichiarazioni native prima di pubblicarle. I consumatori precedenti le rifiutano.
+Le impronte dei servizi, i messaggi dei provider e i record di servizio salvati
+non cambiano. I registri precedenti non leggono record nativi, neppure quelli
+ritirati; i worker precedenti non ripristinano checkpoint di figli nativi. Prima
+di un rollback, rimuovi quei record e termina le relative esecuzioni.
+
+---
+
 ## Passthrough: Inoltro deterministico degli strumenti
 
 Per gli strumenti esportati che devono bypassare completamente il pianificatore e inoltrare direttamente a un metodo di servizio, utilizzare `Passthrough`. Questo è utile quando:

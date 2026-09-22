@@ -9,6 +9,10 @@ llm_optimized: true
 
 El **Registro interno de herramientas** es un servicio de pasarela en clúster que permite el descubrimiento y la invocación de toolsets a través de los límites de los procesos. Está diseñado para escenarios en los que los toolsets son proporcionados por servicios separados que pueden escalar independientemente de los agentes que los consumen.
 
+El catálogo también guarda [declaraciones nativas de herramientas de agentes](../agent-composition/#dynamic-agent-tools), que identifican un worker existente y una configuración inmutable de la aplicación. El runtime consumidor inicia un workflow hijo; las concesiones, las comprobaciones de salud y las invocaciones Pulse solo se aplican a herramientas de servicio.
+
+Las API de agentes dinámicos descritas aquí están en `main` de Goa-AI tras la PR #373. No están incluidas en v0.83.0; usa una versión que contenga el cambio o la revisión correspondiente del código.
+
 ## Descripción general
 
 El registro actúa simultáneamente como **catálogo** y como **pasarela**:
@@ -239,6 +243,8 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -514,6 +520,8 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -552,12 +560,19 @@ El registro expone los siguientes métodos gRPC:
 | `RenewProvider` | Amplía la concesión exacta que aún no ha caducado sin enviar definiciones. Conserva el drenaje y cualquier plazo de finalización mayor; perder la concesión devuelve `provider_lease_lost`. |
 | `DrainProvider` | Impide que una concesión de proveedor reciba nuevas llamadas, pero conserva su autoridad para terminar las que ya posee. |
 | `ReleaseProvider` | Elimina una concesión de proveedor concreta una vez que su proceso ha completado el trabajo aceptado. |
-| `Unregister` | Retira intencionadamente la admisión activa exacta. La elimina del descubrimiento y del enrutamiento e impide permanentemente que vuelva el mismo token de admisión; no es una operación de despliegue. |
+| `Unregister` | Retira del descubrimiento el registro actual exacto. Los tokens de servicio se retiran permanentemente; las declaraciones nativas pueden reactivarse con `ReplaceAgentToolset`. Las llamadas hijas nativas aceptadas conservan su declaración. |
 | `Pong` | Registra la salud del proveedor para la concesión actual y la época exacta de comprobación de salud. |
 | `ClaimToolCall` | Concede la ejecución de una solicitud publicada a una concesión de proveedor concreta. |
 | `CompleteToolCall` | Guarda el resultado final canónico de la llamada cuya ejecución se ha concedido y lo publica en el stream de resultados. |
 | `PublishToolOutputDelta` | Publica un fragmento de progreso acotado, sin garantía de entrega, para una llamada cuya ejecución se ha concedido. |
 | `ReportToolCallOverload` | Registra una instrucción de reintento acotada antes de que un proveedor ejecute una llamada que excede su capacidad. |
+
+### Operaciones de agentes nativos
+
+| Método | Descripción |
+|---|---|
+| `RegisterAgentToolset` | Crea una declaración nativa sin concesión de proveedor; repetir un registro activo idéntico tiene éxito. |
+| `ReplaceAgentToolset` | Reemplaza o reactiva una declaración nativa con su token actual. Un token desactualizado devuelve `admission_conflict`. |
 
 ### Operaciones de descubrimiento
 
@@ -565,6 +580,8 @@ El registro expone los siguientes métodos gRPC:
 |--------|-------------|
 | `ListToolsets` | Lista todos los toolsets registrados (con filtrado opcional por etiquetas). Devuelve solo metadatos, no los esquemas completos. |
 | `GetToolset` | Obtiene el esquema completo de un toolset concreto, incluidos todos los esquemas de entrada/salida de sus herramientas. |
+| `ResolveToolset` | Lee juntos una definición activa y su token exacto; la salud del proveedor se comprueba por separado. |
+| `CheckAdmission` | Comprueba que un registro de servicio exacto tenga una concesión vigente, sin drenaje, y una respuesta de salud reciente. |
 | `Search` | Busca toolsets por palabras clave que coincidan con el nombre, la descripción o las etiquetas. |
 
 ### Operaciones de invocación
@@ -572,6 +589,7 @@ El registro expone los siguientes métodos gRPC:
 | Método | Descripción |
 |--------|-------------|
 | `CallTool` | Valida y publica una llamada identificada dentro de una ejecución. Espera a un proveedor saludable dentro de la fecha límite existente, permite un cambio de proveedor solo antes de la publicación y devuelve la referencia exacta e inmutable de ejecución. |
+| `CallResolvedTool` | Publica una llamada de servicio solo con su token conservado; un reemplazo anterior a la publicación registra `call_not_admitted`. |
 | `RetryTool` | Vuelve a publicar la admisión original exacta después de registrar una sobrecarga del proveedor. Nunca traslada la ejecución a un proveedor sustituto. |
 
 ## Buenas prácticas

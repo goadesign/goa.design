@@ -74,7 +74,17 @@ client := genreader.NewClient(rt)
 
 `Definition()` et `NewClient(rt)` ne prennent aucun catalogue et ne font aucun appel réseau. Enregistrez les outils compilés avec les helpers générés habituels. Le runtime exécute les outils du registre sans callback de découverte ni exécuteur dynamique personnalisé. Les clients HTTP de catalogue sont un transport distinct pour des serveurs HTTP correspondants.
 
-Les fournisseurs publient le résultat de `ToolSchemas()` avec l’empreinte de schéma générée et le cycle d’enregistrement existant. `ConsumerContract` contient les termes de recherche, métadonnées de champs, labels requis, confirmation, pagination et données réservées au serveur. Les outils dynamiques de service les prennent en charge ; les outils d’agents enfants et de contrôle restent compilés. Les enregistrements limités aux schémas et les types d’exécution non pris en charge sont rejetés explicitement.
+Les fournisseurs publient les déclarations générées par `ToolSchemas()` avec l'empreinte de schéma et le cycle d'enregistrement existants. `ConsumerContract` contient termes de recherche, métadonnées de champs, labels requis, confirmation, pagination et données réservées au serveur. Les outils dynamiques de service et les [outils natifs d'agents](../agent-composition/#dynamic-agent-tools) prennent en charge ces contrats ; les outils de contrôle du planner restent compilés. Les enregistrements limités aux schémas et les types d'exécution non pris en charge sont explicitement refusés.
+
+## Outils définis à l’exécution et catalogues par périmètre
+
+Les API d'agents dynamiques décrites ici sont disponibles sur `main` de Goa-AI après la PR #373. Elles ne figurent pas dans v0.83.0 ; utilisez une version qui contient ce changement ou la révision source correspondante.
+
+Les packages d'outils générés exposent aussi `Toolset()` : nom d'enregistrement déclaré, description, tags et nouvelles copies des schémas. Pour les déclarations définies dynamiquement en Go, `runtime/toolregistry/contract.Compile` valide un `*genregistry.ToolSchema` et renvoie un `tools.ToolSpec` indépendant avec des codecs JSON de validation. Fournissez les métadonnées explicitement : le compilateur ne déduit ni contexte ni permissions des noms de champs.
+
+Utilisez `contract.Fingerprint(toolset)` pour une déclaration dynamique ou un `Toolset()` complet, description et tags compris. L'horodatage d'enregistrement est exclu. Le helper généré `SchemaFingerprint(name)` décrit toujours l'enregistrement du fournisseur sans annotations facultatives au niveau du toolset. Les outils de service générés conservent leurs codecs typés.
+
+Pour choisir les sources selon l'application, implémentez `runtime.RegistryTools` et attachez-le avec `WithRegistryTools`. Dans `Resolve`, `catalog.RunLabels()` renvoie une copie des labels de l'exécution courante. Utilisez-les avec `IncludeToolset` ou `IncludeRegistry` ; `Allows` détermine les sources que les appels sauvegardés peuvent continuer à utiliser. La politique d'exécution filtre toujours les outils. Chaque activité de planification possède son catalogue : les sessions concurrentes ne modifient pas les outils des autres. Espaces de noms et autorisation restent des responsabilités applicatives.
 
 ## Qui effectue la recherche ?
 
@@ -90,7 +100,9 @@ Les résultats de recherche OpenAI placent chaque fonction sélectionnée dans u
 
 Chaque activité de planification pouvant commencer du travail lit ses sources une fois et conserve ce catalogue pendant l’inférence. La suivante relit les sources, y compris les nouveaux fournisseurs. Les activités de réponse finale seule et les finaliseurs explicites ne lisent pas le registre. Un registre complet vide est valide ; une source nommée absente, une version incorrecte, des identités dupliquées, une erreur de lecture ou une suppression pendant la résolution échouent explicitement.
 
-Un appel accepté conserve sa définition, son éventuel partenaire de pagination fixe et le jeton d’enregistrement existant. Confirmation, décodage et restauration utilisent ce contrat sauvegardé sans lire le catalogue actuel. `CallResolvedTool` vérifie le jeton avant publication ; un remplacement avant publication enregistre `call_not_admitted`. Les reprises après surcharge conservent le jeton et retournent `admission_conflict` si cette admission a été remplacée. Les appels publiés gardent leur affectation et leur résultat d’origine.
+Un appel accepté conserve sa définition, son éventuel partenaire de pagination fixe et le jeton d’enregistrement existant. Confirmation, décodage et restauration utilisent ce contrat sauvegardé sans lire le catalogue actuel. Pour les outils de service, `CallResolvedTool` vérifie le jeton avant publication ; un remplacement avant publication enregistre `call_not_admitted`. Les reprises après surcharge conservent le jeton et retournent `admission_conflict` si cette admission a été remplacée. Les appels publiés gardent leur affectation et leur résultat d’origine.
+
+Les appels natifs d'agents conservent l'exécuteur, la configuration et le contrat de résultat sélectionnés et lancent des workflows enfants. Les changements du registre concernent les activités de planification ultérieures, pas les appels déjà acceptés.
 
 Les traces de recherche native restent dans les métadonnées des messages. Préservez-les lors du stockage et de la compaction. Il n’existe aucune base distincte d’outils chargés. Les définitions historiques expliquent les anciens appels ; la consommation et la politique actuelles autorisent les nouveaux.
 
@@ -112,7 +124,7 @@ Use(Records, func() { Deferred() })
 
 Utilisez la même fonction d’encapsulation pour les autres affectations de `Deferred` à un callback de type `func()`. Le chargement différé de tout le groupe d’outils est préservé. Encapsuler un callback existant sans modifier la sélection ne nécessite pas de régénération.
 
-Régénérez fournisseurs et consommateurs avec Goa v3.31.1. Remplacez `Discover`, les entrées `RegistryToolsets` et le câblage d’exécuteurs dynamiques par `RegisterRegistry`. Mettez à niveau le registre pour exposer `ResolveToolset` et `CallResolvedTool`, puis publiez `ToolSchemas()` complet avant d’activer les consommateurs dynamiques. Les anciens enregistrements limités aux schémas restent utilisables par leurs intégrations statiques, mais pas par ce chemin dynamique.
+Régénérez fournisseurs et consommateurs avec Goa v3.32.0. Remplacez `Discover`, les entrées `RegistryToolsets` et le câblage d’exécuteurs dynamiques par `RegisterRegistry`. Mettez à niveau le registre pour exposer `ResolveToolset` et `CallResolvedTool`, puis publiez `ToolSchemas()` complet avant d’activer les consommateurs dynamiques. Les anciens enregistrements limités aux schémas restent utilisables par leurs intégrations statiques, mais pas par ce chemin dynamique.
 
 Les modèles de confirmation utilisent les noms JSON comme `{{ .key }}`, au lieu des champs Go comme `{{ .Key }}`. Utilisez `{{ json .value }}` pour les valeurs JSON et `index` pour les propriétés facultatives.
 

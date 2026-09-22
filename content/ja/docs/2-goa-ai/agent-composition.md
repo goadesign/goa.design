@@ -138,6 +138,110 @@ policy、およびエージェントツールから到達できるすべての�
 
 ---
 
+## 動的に構成するエージェント {#dynamic-agent-tools}
+
+ここで説明する動的 Agent API は PR #373 以降の Goa-AI の `main` で利用できます。v0.83.0 には含まれません。この変更を含むリリースか、対応するソースのリビジョンを使用してください。
+
+保存したエージェント設定を、設定ごとに worker を登録し直すことなくツールとして公開できます。
+レジストリはツール契約、既存の executor の ID、不変の設定参照を保存します。
+runtime はその executor を子 workflow として起動し、通常の進捗通知、キャンセル、
+人への入力要求を処理します。
+
+### 保存した設定を登録する
+
+各 `genregistry.ToolSchema` には `ConsumerContract.Kind: "agent"`、完全な入力・結果契約、
+そして `AgentToolTarget` が必要です。
+
+```go
+&genregistry.AgentToolTarget{
+    Executor:      "generic.agent",
+    Configuration: "support/revisions/7",
+}
+```
+
+参照先のプロンプト、モデル選択、ツール policy はアプリケーションが管理します。
+受理済みの呼び出しが子の準備を完了するまで、そのリビジョンを保持してください。
+モデルが指定するのは業務上の引数であり、worker やリビジョンではありません。
+
+生成されたレジストリ client で完全な宣言を登録します。
+
+```go
+registered, err := registryClient.RegisterAgentToolset(ctx,
+    &genregistry.AgentToolsetDeclaration{
+        Name:  "support",
+        Tools: declarations,
+    },
+)
+if err != nil {
+    return err
+}
+```
+
+有効な登録と同一の宣言を繰り返し登録しても成功します。変更する場合は、現在の
+`registered.RegistrationToken` を `*genregistry.ReplaceAgentToolsetPayload` の
+`ExpectedRegistrationToken` に渡します。古い token には `admission_conflict` が返ります。
+`Unregister` は宣言を discovery から除外し、`ReplaceAgentToolset` は現在の token で
+再び有効にできます。
+
+これらの native Agent ツールには Pulse provider lease や health ping は不要です。
+登録しても worker の起動やデプロイは行われません。`CallTool` と `CallResolvedTool` は
+native Agent ツールを拒否し、利用側の runtime が子 workflow を開始します。
+サービスの登録と native Agent の登録は互いを上書きできません。
+
+### 許可された worker で子を準備する
+
+エージェント定義は自身の worker と生成された子 worker を許可します。
+追加の executor を許可する場合は次のようにします。
+
+```go
+executor := genspecialist.Definition()
+consumer := genassistant.Definition().WithAgentExecutors(&executor)
+if err := rt.RegisterAgentToolResolver(executor.Route().ID, prepareConfiguration); err != nil {
+    return err
+}
+```
+
+`WithAgentExecutors` はポインターを受け取り、渡された定義をコピーして新しい定義を返します。
+利用側 worker の `AgentRegistration.Definition` と `rt.ClientFor(consumer)` の両方に
+同じ `consumer` を使ってください。生成済みの登録 helper と client helper は元の定義を
+使い続けます。宣言の `Executor` は許可された worker の ID と一致する必要があり、
+それ以外の対象はモデルを呼ぶ前の discovery で拒否されます。
+
+`prepareConfiguration` は次のシグネチャを持つアプリケーション関数です。
+`func(context.Context, string, *runtime.ToolCall) (*runtime.AgentToolConfiguration, error)`。
+登録を確定するか実行を開始する前に、利用側 runtime に登録します。選択された設定参照と
+検証済み呼び出しのコピーを受け取り、`Messages`、`Labels`、`Policy`、必要に応じて
+`RenderedPrompts` を返します。ラベルは親から継承した値を追加・置換します。認可と
+適用範囲はアプリケーションが管理し、session ID、run ID、親との関連付けは runtime が
+管理します。
+
+準備は activity 内で行われ、記録された結果を workflow の replay で再利用します。
+人への入力要求後に再開する場合は、子の checkpoint からメッセージ、ラベル、policy、
+選択した親の契約を復元し、設定を読み直しません。
+
+### 選択された結果を返す
+
+`planner.PlanInput.ParentTool` と `planner.PlanResumeInput.ParentTool` は親が受理した
+契約を提供します。汎用 planner は `ParentTool.Result` を最後のモデル要求で
+`model.StructuredOutput` とともに使い、`planner.FinalToolResult` を返せます。
+構造化出力とツール呼び出しは別々のモデル要求で行います。会話テキストだけを返す native な
+子は拒否されます。最上位の実行には `ParentTool` はなく、コンパイル済み Agent ツールの
+既存の結果処理は変わりません。
+
+後続の planning activity は新しい登録を取得します。宣言を置き換えても、受理済み呼び出しの
+設定、結果スキーマ、保留中の承認は変わりません。ツール結果には子 run へのリンクが残ります。
+
+### 公開前に更新する
+
+native 宣言を公開する前に、レジストリ、executor worker、その宣言を取得するすべての
+利用側を更新してください。古い利用側は discovery で拒否します。既存サービスの
+fingerprint、provider message、保存済みサービス登録は変わりません。古いレジストリは
+廃止済みを含む native 登録を読み取れず、古い worker は native な子の checkpoint を
+復元できません。ロールバックするには、先に該当する登録を削除し、その実行を完了させる
+必要があります。
+
+---
+
 ## パススルー: 決定論的なツール転送
 
 エクスポートされたツールのうち、プランナーを完全にバイパスしてサービスメソッドへ直接転送したいものには `Passthrough` を使います。これは次のような場合に有用です:

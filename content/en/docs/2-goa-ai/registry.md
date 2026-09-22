@@ -9,6 +9,10 @@ llm_optimized: true
 
 The **Internal Tool Registry** is a clustered gateway service that enables toolset discovery and invocation across process boundaries. It's designed for scenarios where toolsets are provided by separate services that may scale independently from the agents consuming them.
 
+The catalog also stores [native Agent tool declarations](../agent-composition/#dynamic-agent-tools). These name an existing worker and an immutable application configuration. The consuming runtime starts a child workflow; provider leases, health pings, and Pulse invocation apply only to service tools.
+
+The dynamic Agent APIs described here are available on Goa-AI `main` after PR #373. They are not included in v0.83.0; use a release containing that change or the corresponding source revision.
+
 ## Overview
 
 The registry acts as both a **catalog** and a **gateway**:
@@ -234,6 +238,8 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -500,6 +506,8 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -538,12 +546,19 @@ The registry exposes the following gRPC methods:
 | `RenewProvider` | Extend the exact unexpired lease without sending definitions. Preserve draining and any longer settlement deadline; lost authority returns `provider_lease_lost`. |
 | `DrainProvider` | Make one provider lease unavailable for new calls while preserving its authority to finish calls it already owns. |
 | `ReleaseProvider` | Remove one exact provider lease after its process has settled accepted work. |
-| `Unregister` | Intentionally retire the exact active admission. This removes it from discovery and routing and permanently prevents the same admission token from returning; it is not a rollout operation. |
+| `Unregister` | Remove the exact current registration from discovery. Service tokens are permanently retired; native declarations can be reactivated with `ReplaceAgentToolset`. Accepted native child calls retain their selected declaration. |
 | `Pong` | Record provider health for the exact current lease and health-check epoch. |
 | `ClaimToolCall` | Grant execution of a published request to one exact provider lease. |
 | `CompleteToolCall` | Commit the canonical terminal result for the claimed call and publish it to the result stream. |
 | `PublishToolOutputDelta` | Publish a bounded, best-effort progress fragment for a claimed call. |
 | `ReportToolCallOverload` | Record bounded retry control before a provider executes an overloaded call. |
+
+### Native Agent operations
+
+| Method | Description |
+|---|---|
+| `RegisterAgentToolset` | Create a native Agent declaration without a provider lease; an identical active registration succeeds. |
+| `ReplaceAgentToolset` | Replace or reactivate a native declaration using its current token. A stale token returns `admission_conflict`. |
 
 ### Discovery Operations
 
@@ -551,6 +566,8 @@ The registry exposes the following gRPC methods:
 |--------|-------------|
 | `ListToolsets` | List all registered toolsets (with optional tag filtering). Returns metadata only, not full schemas. |
 | `GetToolset` | Get full schema for a specific toolset, including all tool input/output schemas. |
+| `ResolveToolset` | Read an active definition and its exact registration token together; provider health is a separate check. |
+| `CheckAdmission` | Check whether an exact service registration has an unexpired, non-draining provider lease and a fresh health response. |
 | `Search` | Search toolsets by keyword matching name, description, or tags. |
 
 ### Invocation Operations
@@ -558,6 +575,7 @@ The registry exposes the following gRPC methods:
 | Method | Description |
 |--------|-------------|
 | `CallTool` | Validate and publish one run-scoped call. The call waits for provider health within its existing deadline, follows a replacement only before publication, and then returns its exact immutable execution reference. |
+| `CallResolvedTool` | Publish a service call only against its retained registration token; a replacement before publication records `call_not_admitted`. |
 | `RetryTool` | Republish the exact original admission after recorded provider overload. It never moves execution to a replacement provider. |
 
 ## Best Practices

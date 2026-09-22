@@ -140,6 +140,116 @@ may still use `WithTaskQueue` to select another queue for one explicit start.
 
 ---
 
+## Dynamically configured Agents {#dynamic-agent-tools}
+
+The dynamic Agent APIs described here are available on Goa-AI `main` after PR #373. They are not included in v0.83.0; use a release containing that change or the corresponding source revision.
+
+A saved Agent configuration can become a tool without registering a new worker
+for each configuration. The registry stores the tool's contract, the ID of an
+existing executor, and an immutable configuration reference. The runtime invokes
+that executor as a child workflow, with the usual progress, cancellation, and
+human-input handling.
+
+### Register a saved configuration
+
+Each `genregistry.ToolSchema` must have `ConsumerContract.Kind: "agent"`, a
+complete input and result contract, and an `AgentToolTarget`:
+
+```go
+&genregistry.AgentToolTarget{
+    Executor:      "generic.agent",
+    Configuration: "support/revisions/7",
+}
+```
+
+The application owns the referenced prompt, model choice, and tool policy.
+Keep that revision available until accepted calls have prepared their child.
+The model supplies domain arguments; it does not choose the worker or revision.
+
+Register the complete declarations through the generated registry client:
+
+```go
+registered, err := registryClient.RegisterAgentToolset(ctx,
+    &genregistry.AgentToolsetDeclaration{
+        Name:  "support",
+        Tools: declarations,
+    },
+)
+if err != nil {
+    return err
+}
+```
+
+Repeating an identical active registration succeeds. To change it, pass the
+current `registered.RegistrationToken` as `ExpectedRegistrationToken` in
+`*genregistry.ReplaceAgentToolsetPayload`. A stale token returns
+`admission_conflict`. `Unregister` removes the declaration from discovery;
+`ReplaceAgentToolset` can reactivate it using its current token.
+
+These native Agent tools need no Pulse provider lease or health ping.
+Registration does not start or deploy the worker. `CallTool` and
+`CallResolvedTool` reject native Agent tools; the consuming runtime starts the
+child workflow. Service and native Agent registrations cannot overwrite one
+another.
+
+### Prepare the child on an allowed worker
+
+An Agent definition permits its own worker and its generated child workers.
+To permit an additional executor:
+
+```go
+executor := genspecialist.Definition()
+consumer := genassistant.Definition().WithAgentExecutors(&executor)
+if err := rt.RegisterAgentToolResolver(executor.Route().ID, prepareConfiguration); err != nil {
+    return err
+}
+```
+
+`WithAgentExecutors` accepts pointers, copies the supplied definitions, and
+returns a new definition. Use `consumer` both in `AgentRegistration.Definition`
+on the consuming worker and in `rt.ClientFor(consumer)`. Generated registration
+and client helpers continue using their original definition. The declaration's
+`Executor` must match an allowed worker ID; other targets fail discovery before
+the model is called.
+
+Here `prepareConfiguration` is application code with the signature
+`func(context.Context, string, *runtime.ToolCall) (*runtime.AgentToolConfiguration, error)`.
+Register it on the consuming runtime before sealing or starting runs. It receives
+the selected configuration reference and a copy of the validated call. It returns
+`Messages`, `Labels`, `Policy`, and optional `RenderedPrompts`. Labels extend or
+replace inherited parent labels; the application owns authorization and scope.
+The runtime owns session and run IDs and parent links.
+
+Preparation runs in an activity whose recorded result is reused during workflow
+replay. After a request for human input, continuation restores messages, labels,
+policy, and the selected parent contract from the child's checkpoint rather than
+loading the configuration again.
+
+### Return the selected result
+
+`planner.PlanInput.ParentTool` and `planner.PlanResumeInput.ParentTool` expose
+the accepted parent contract. A generic planner can use `ParentTool.Result`
+with `model.StructuredOutput` for its final model request and return
+`planner.FinalToolResult`. Structured output and tool calls use separate model
+requests. A native child that returns only conversation text is rejected.
+Top-level runs have no `ParentTool`; compiled Agent tools keep their existing
+result behavior.
+
+A later planning activity discovers new registrations. Replacing a declaration
+cannot change an accepted call's configuration, result schema, or pending
+approval. The returned tool result retains its link to the child run.
+
+### Upgrade together before publishing
+
+Upgrade the registry, executor workers, and every consumer that can discover
+native declarations before publishing them. Older consumers reject them during
+discovery. Existing service fingerprints, provider messages, and stored service
+records remain unchanged. Older registries cannot read native records, including
+retired ones; older workers cannot restore native child checkpoints. Rollback
+requires removing those records and finishing their runs first.
+
+---
+
 ## Passthrough: Deterministic Tool Forwarding
 
 For exported tools that should bypass the planner entirely and forward directly to a service method, use `Passthrough`. This is useful when:

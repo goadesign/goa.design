@@ -9,6 +9,10 @@ llm_optimized: true
 
 Le **Internal Tool Registry** est un service de passerelle en cluster qui permet la découverte et l'appel d'un ensemble d'outils au-delà des limites des processus. Il est conçu pour les scénarios dans lesquels les ensembles d'outils sont fournis par des services distincts qui peuvent évoluer indépendamment des agents qui les utilisent.
 
+Le catalogue conserve aussi les [déclarations natives d'outils d'agents](../agent-composition/#dynamic-agent-tools), qui désignent un worker existant et une configuration applicative immuable. Le runtime consommateur lance un workflow enfant ; les baux des fournisseurs, les pings de santé et les appels Pulse concernent uniquement les outils de service.
+
+Les API d'agents dynamiques décrites ici sont disponibles sur `main` de Goa-AI après la PR #373. Elles ne figurent pas dans v0.83.0 ; utilisez une version qui contient ce changement ou la révision source correspondante.
+
 ## Aperçu
 
 Le registre fait office à la fois de **catalogue** et de **passerelle** :
@@ -242,6 +246,8 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -518,6 +524,8 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.DrainProvider(),
 		transport.Unregister(),
 		transport.Pong(),
+		transport.RegisterAgentToolset(),
+		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
 		transport.ResolveToolset(),
@@ -556,12 +564,19 @@ Le registre expose les méthodes gRPC suivantes :
 | `RenewProvider` | Prolonge le bail exact non expiré sans envoyer les définitions. Préserve le drainage et toute échéance de finalisation plus longue ; la perte du bail renvoie `provider_lease_lost`. |
 | `DrainProvider` | Rend un bail indisponible pour les nouveaux appels tout en conservant son autorité sur les appels déjà admis. |
 | `ReleaseProvider` | Retire le bail exact après que le processus a réglé le travail accepté. |
-| `Unregister` | Retire intentionnellement l'admission active exacte, la supprime de la découverte et du routage et empêche définitivement le retour du même jeton. Ce n'est pas une opération de déploiement. |
+| `Unregister` | Retire de la découverte l'enregistrement courant exact. Les jetons de services sont retirés définitivement ; les déclarations natives peuvent être réactivées avec `ReplaceAgentToolset`. Les appels enfants natifs déjà acceptés gardent leur déclaration. |
 | `Pong` | Enregistre la santé pour le bail et l'époque de contrôle exacts. |
 | `ClaimToolCall` | Accorde l'exécution d'une requête publiée à un bail exact. |
 | `CompleteToolCall` | Valide le résultat terminal canonique d'un appel réclamé et le publie dans le flux de résultat. |
 | `PublishToolOutputDelta` | Publie un fragment de progression limité et au mieux pour un appel réclamé. |
 | `ReportToolCallOverload` | Enregistre une commande de nouvelle tentative limitée avant l'exécution d'un appel en surcharge. |
+
+### Opérations d'agents natifs
+
+| Méthode | Description |
+|---|---|
+| `RegisterAgentToolset` | Crée une déclaration native sans bail de fournisseur ; répéter un enregistrement actif identique réussit. |
+| `ReplaceAgentToolset` | Remplace ou réactive une déclaration native avec son jeton courant. Un jeton périmé renvoie `admission_conflict`. |
 
 ### Opérations de découverte
 
@@ -569,6 +584,8 @@ Le registre expose les méthodes gRPC suivantes :
 |--------|-------------|
 | `ListToolsets` | Répertoriez tous les ensembles d’outils enregistrés (avec filtrage de balises facultatif). Renvoie uniquement les métadonnées, pas les schémas complets. |
 | `GetToolset` | Obtenez le schéma complet pour un ensemble d'outils spécifique, y compris tous les schémas d'entrée/sortie des outils. |
+| `ResolveToolset` | Lit ensemble une définition active et son jeton exact ; la santé du fournisseur fait l'objet d'un contrôle distinct. |
+| `CheckAdmission` | Vérifie qu'un enregistrement de service exact possède un bail non expiré, hors drainage, et une réponse de santé récente. |
 | `Search` | Recherchez des ensembles d’outils par mot-clé correspondant au nom, à la description ou aux balises. |
 
 ### Opérations d'appel
@@ -576,6 +593,8 @@ Le registre expose les méthodes gRPC suivantes :
 | Méthode | Description |
 |--------|-------------|
 | `CallTool` | Appelle un outil via le registre, rejoint une tentative identique, attend un fournisseur sain dans l'échéance existante, publie atomiquement puis renvoie l'identité exacte nécessaire pour lire le résultat. |
+| `CallResolvedTool` | Publie un appel de service uniquement avec son jeton conservé ; un remplacement avant publication enregistre `call_not_admitted`. |
+| `RetryTool` | Republie l'admission originale exacte après une surcharge enregistrée. Ne transfère jamais l'exécution à un fournisseur de remplacement. |
 
 ## Meilleures pratiques
 
