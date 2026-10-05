@@ -103,6 +103,23 @@ Agent("helper", "", func() {
 
 ---
 
+## URL 値と属性のマッピング
+
+Goa の `Param("payload_field:url_name")` を使うと、payload のフィールド名と URL パラメーター名を分けられます。
+
+```go
+JSONRPC(func() {
+    POST("/organizations/{organization}/mcp")
+    Param("organization_id:organization")
+})
+```
+
+URL が `organization_id` を指定します。このフィールドはツールやプロンプトの引数、スキーマ、例、生成された引数 codec に含まれません。独立したドメインフィールド `organization` は引数として残ります。各メソッドの型、Go フィールド名、検証を維持し、不正な URL 値は設定済み endpoint の実行前に拒否します。API と親サービスの完全なパスも維持します。
+
+生成されたプロトコルクライアントは、この値を JSON-RPC パラメーターの外で送信します。生成された `NewCaller` は retry policy の後にパス順で URL 値を受け取ります。このパスでは最後に `"blue"` を渡してください。その caller は各ツール呼び出しで同じアドレスを使います。`NewHTTPCaller` には `https://example.com/organizations/blue/mcp` のような完全な URL を渡します。クライアント、サーバー、agent 契約をまとめて再生成してください。
+
+---
+
 ## ランタイム配線
 
 実行時には MCP caller を作成し、ツールセットを登録します:

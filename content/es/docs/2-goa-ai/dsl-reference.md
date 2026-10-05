@@ -1669,6 +1669,8 @@ Service("calculator", func() {
 })
 ```
 
+Los valores de URL usan el mapeo nativo `Param("payload_field:url_name")` de Goa. Quedan fuera de los argumentos de herramientas y prompts y conservan los tipos y la validación de cada método. Consulte [Valores de URL y atributos mapeados](../mcp-integration/#valores-de-url-y-atributos-mapeados).
+
 ### ProtocolVersion
 
 Goa-AI implementa una revisión del protocolo. `MCP(name, version)` usa el valor predeterminado del framework; `version` identifica su servidor. La opción DSL `ProtocolVersion` se ha eliminado. Regenere clientes y servidores juntos al actualizar.

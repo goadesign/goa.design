@@ -106,6 +106,23 @@ Agent("helper", "", func() {
 
 ---
 
+## Valeurs d’URL et attributs mappés
+
+Utilisez la notation Goa `Param("payload_field:url_name")` pour distinguer un champ de la charge utile d’un paramètre d’URL :
+
+```go
+JSONRPC(func() {
+    POST("/organizations/{organization}/mcp")
+    Param("organization_id:organization")
+})
+```
+
+L’URL fournit `organization_id`. Les arguments des outils et des invites, leurs schémas, exemples et codecs générés excluent ce champ. Un champ de domaine indépendant nommé `organization` reste un argument. Chaque méthode conserve son type, son nom de champ Go et sa validation. Une valeur d’URL invalide est rejetée avant l’exécution du point de terminaison configuré. Les chemins complets de l’API et du service parent sont conservés.
+
+Les clients de protocole générés transportent ces valeurs hors des paramètres JSON-RPC. Le `NewCaller` généré les reçoit dans l’ordre du chemin après la politique de nouvelle tentative ; pour ce chemin, passez `"blue"` en dernier. Cet appelant garde la même adresse pour chaque appel. `NewHTTPCaller` reçoit l’URL complète, telle que `https://example.com/organizations/blue/mcp`. Régénérez ensemble les clients, les serveurs et les contrats d’agents.
+
+---
+
 ## Câblage d'exécution
 
 Au moment de l'exécution, instanciez un appelant MCP et enregistrez l'ensemble d'outils :

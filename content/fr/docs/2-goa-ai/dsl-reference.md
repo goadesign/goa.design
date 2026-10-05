@@ -1688,6 +1688,8 @@ Service("calculator", func() {
 })
 ```
 
+Les valeurs d’URL utilisent le mappage natif Goa `Param("payload_field:url_name")`. Elles restent hors des arguments des outils et des invites, avec les types et validations propres à chaque méthode. Voir [Valeurs d’URL et attributs mappés](../mcp-integration/#valeurs-durl-et-attributs-mappés).
+
 ### Version du protocole
 
 Goa-AI implémente une seule révision du protocole. `MCP(name, version)` utilise la valeur par défaut du framework ; `version` identifie votre serveur. L’option DSL `ProtocolVersion` a été supprimée. Régénérez les clients et les serveurs ensemble lors de la mise à niveau.

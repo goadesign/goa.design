@@ -108,6 +108,23 @@ Agent("helper", "", func() {
 
 ---
 
+## URL values and mapped attributes
+
+Use Goa’s `Param("payload_field:url_name")` notation to distinguish a payload field from a URL wildcard:
+
+```go
+JSONRPC(func() {
+    POST("/organizations/{organization}/mcp")
+    Param("organization_id:organization")
+})
+```
+
+The URL supplies `organization_id`. Tool and prompt arguments, schemas, examples, and generated argument codecs exclude that field. An independent domain field named `organization` remains an argument. Each method keeps its declared type, custom Go field name, and validation. Invalid URL values stop before its configured endpoint runs. API and parent service prefixes retain their complete authored paths.
+
+Generated protocol clients carry URL values outside JSON-RPC parameters. Generated `NewCaller` accepts those values in route order after its retry policy; pass `"blue"` last for this route. That caller keeps the same address for every tool call. `NewHTTPCaller` instead receives the complete URL, such as `https://example.com/organizations/blue/mcp`. Regenerate clients, servers, and agent contracts together.
+
+---
+
 ## Runtime Wiring
 
 At runtime, instantiate an MCP caller and register the toolset:

@@ -108,6 +108,23 @@ Agent("helper", "", func() {
 
 ---
 
+## Valores de URL y atributos mapeados
+
+Use la notación `Param("payload_field:url_name")` de Goa para distinguir un campo del payload de un parámetro de la URL:
+
+```go
+JSONRPC(func() {
+    POST("/organizations/{organization}/mcp")
+    Param("organization_id:organization")
+})
+```
+
+La URL proporciona `organization_id`. Los argumentos de herramientas y prompts, sus esquemas, ejemplos y codecs generados excluyen ese campo. Un campo de dominio independiente llamado `organization` sigue siendo un argumento. Cada método conserva su tipo, nombre de campo Go y validación. Los valores de URL inválidos se rechazan antes de ejecutar el endpoint configurado. Se conservan las rutas completas de la API y del servicio padre.
+
+Los clientes de protocolo generados transportan estos valores fuera de los parámetros JSON-RPC. `NewCaller` generado los recibe en el orden de la ruta después de la política de reintentos; para esta ruta, pase `"blue"` al final. Ese caller mantiene la misma dirección en cada llamada. `NewHTTPCaller` recibe la URL completa, como `https://example.com/organizations/blue/mcp`. Regenere juntos clientes, servidores y contratos de agentes.
+
+---
+
 ## Cableado en tiempo de ejecución
 
 En tiempo de ejecución, instancie un caller MCP y registre el conjunto de herramientas:

@@ -1625,6 +1625,8 @@ Service("calculator", func() {
 })
 ```
 
+URL 値には Goa 標準の `Param("payload_field:url_name")` マッピングを使います。ツールやプロンプトの引数に含めず、各メソッドの型と検証を維持します。[URL 値と属性のマッピング](../mcp-integration/#url-値と属性のマッピング)を参照してください。
+
 ### ProtocolVersion
 
 Goa-AI は一つのプロトコル改訂を実装します。`MCP(name, version)` はフレームワークの既定値を使い、`version` はサービス自身のバージョンを表します。DSL の `ProtocolVersion` オプションは削除されました。更新時はクライアントとサーバーを合わせて再生成してください。
