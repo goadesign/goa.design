@@ -87,7 +87,6 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `OnMissingFields` | RunPolicy | 必須フィールド欠落時の扱い |
 | **MCP Functions** | | |
 | `MCP` | Service | MCP を有効化する |
-| `ProtocolVersion` | MCP option | MCP プロトコルバージョンを設定する |
 | `Tool` | Method | MCP が有効なサービス内でメソッドを MCP ツールとして扱う |
 | `Toolset(FromMCP(...))` | Top-level | Goa バックエンドの MCP 由来ツールセットを宣言する |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level | インラインスキーマ付きの外部 MCP ツールセットを宣言する |
@@ -1596,7 +1595,7 @@ Goa-AI は、Goa サービス内で Model Context Protocol（MCP）サーバを�
 
 ### MCP
 
-`MCP(name, version, opts...)` は現在のサービスで MCP を有効化します。MCP プロトコルを通じてツール、リソース、プロンプトを公開するようサービスを構成します。
+`MCP(name, version)` は現在のサービスで MCP を有効化します。MCP プロトコルを通じてツール、リソース、プロンプトを公開するようサービスを構成します。
 
 
 **コンテキスト**: `Service` の内部
@@ -1628,19 +1627,7 @@ Service("calculator", func() {
 
 ### ProtocolVersion
 
-`ProtocolVersion(version)` は、サーバがサポートする MCP プロトコルバージョンを設定します。`MCP` に渡す設定関数を返します。
-
-**コンテキスト**: `MCP` へのオプション引数
-
-```go
-Service("calculator", func() {
-    // Use the default protocol supported by Goa-AI.
-    MCP("calc", "1.0.0")
-    JSONRPC(func() {
-        POST("/mcp")
-    })
-})
-```
+Goa-AI は一つのプロトコル改訂を実装します。`MCP(name, version)` はフレームワークの既定値を使い、`version` はサービス自身のバージョンを表します。DSL の `ProtocolVersion` オプションは削除されました。更新時はクライアントとサーバーを合わせて再生成してください。
 
 ### Tool (in Method Context)
 
@@ -1657,7 +1644,6 @@ Method("search", func() {
     })
     Result(func() {
         Attribute("results", ArrayOf(String), "Search results")
-        Required("results")
     })
     Tool("search", "Search documents by query")
 })
@@ -1711,6 +1697,16 @@ Method("readme", func() {
 })
 ```
 
+### ResourceTemplate, Prompt, ResourceCompletion, PromptCompletion, ToolContent
+
+`ResourceTemplate` は URI テンプレートを型付き読み取りメソッドに対応付けます。`Prompt` はメッセージを返すメソッドに対応付けます。`ResourceCompletion` と `PromptCompletion` は型付き引数候補を提供します。`ToolContent` は構造化結果と別に返すリッチコンテンツのフィールドを指定します。いずれも通常のサービスメソッドと同じ Goa 設計・生成の手順を使います。
+
+### ResourceSubscription
+
+リソースを持つ HTTP MCP サービスでは、サーバーストリーミングメソッドを一つ `ResourceSubscription()` で指定できます。任意の入力 `resources` は URI の配列です。必須の共用体 `change` は任意の `resources` 配列を持つ `acknowledged`、または必須の `uri` を持つ `updated` です。各 URI に `Format(FormatURI)` を指定します。購読元は許可した部分集合を最初に通知し、メソッドが戻るかキャンセルされるまで変更を送ります。
+
+購読元が指定されたサービスだけがリソース購読機能を公開します。認可、変更検出、関連するサブリソースの選択は購読元が管理します。生成コードは認証情報、スコープ、インターセプター、ミドルウェアを含む Goa エンドポイントを使います。共有トランスポートは通知の順序とリクエスト ID を管理します。固定カタログはカタログ変更通知を送りません。
+
 ### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` は静的プロンプトテンプレートを追加します。
@@ -1725,7 +1721,7 @@ Service("assistant", func() {
     })
 
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 })
 ```
@@ -1742,7 +1738,7 @@ var _ = Service("assistant", func() {
     })
 
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 
     Method("search", func() {
@@ -1753,7 +1749,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })

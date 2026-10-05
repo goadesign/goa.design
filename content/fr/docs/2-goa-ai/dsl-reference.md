@@ -73,7 +73,6 @@ Ce document fournit une référence complète pour les fonctions DSL du Goa-AI. 
 | `OnMissingFields`                                       | Exécuter la politique                | Comportement de validation                                                                                                |
 | **Fonctions MCP**                                       |                          |                                                                                                                    |
 | `MCP`                                                   | Service                  | Active la prise en charge de MCP                                                                                                |
-| `ProtocolVersion`                                       | Option MCP               | Définit la version du protocole MCP                                                                                          |
 | `Tool`                                                  | Méthode                   | Marque une méthode comme outil MCP dans un service compatible MCP                                                            |
 | `Toolset(FromMCP(...))`                                 | Niveau supérieur                | Déclare un ensemble d'outils dérivés de MCP soutenu par Goa                                                                          |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Niveau supérieur                | Déclare un jeu d'outils MCP externe avec des schémas en ligne                                                               |
@@ -1661,7 +1660,7 @@ Goa-AI fournit des fonctions DSL pour déclarer les serveurs Model Context Proto
 
 ### MCP
 
-`MCP(name, version, opts...)` active la prise en charge de MCP pour le service actuel. Il configure le service pour exposer des outils, des ressources et des invites via le protocole MCP.
+`MCP(name, version)` active la prise en charge de MCP pour le service actuel. Il configure le service pour exposer des outils, des ressources et des invites via le protocole MCP.
 
 **Contexte** : À l'intérieur de `Service`
 
@@ -1691,19 +1690,7 @@ Service("calculator", func() {
 
 ### Version du protocole
 
-`ProtocolVersion(version)` configure la version du protocole MCP prise en charge par le serveur. Il renvoie une fonction de configuration à utiliser avec `MCP`.
-
-**Contexte** : argument d'option pour `MCP`
-
-```go
-Service("calculator", func() {
-    // Use the default protocol supported by Goa-AI.
-    MCP("calc", "1.0.0")
-    JSONRPC(func() {
-        POST("/mcp")
-    })
-})
-```
+Goa-AI implémente une seule révision du protocole. `MCP(name, version)` utilise la valeur par défaut du framework ; `version` identifie votre serveur. L’option DSL `ProtocolVersion` a été supprimée. Régénérez les clients et les serveurs ensemble lors de la mise à niveau.
 
 ### Outil (dans le contexte de la méthode)
 
@@ -1720,7 +1707,6 @@ Method("search", func() {
     })
     Result(func() {
         Attribute("results", ArrayOf(String), "Search results")
-        Required("results")
     })
     Tool("search", "Search documents by query")
 })
@@ -1778,6 +1764,16 @@ Method("readme", func() {
 })
 ```
 
+### ResourceTemplate, Prompt, ResourceCompletion, PromptCompletion, ToolContent
+
+`ResourceTemplate` lie un URI paramétré à une méthode de lecture typée. `Prompt` lie une méthode retournant des messages. `ResourceCompletion` et `PromptCompletion` lient des suggestions d’arguments typées. `ToolContent` sélectionne un champ de contenu enrichi à côté du résultat structuré. Ces contrats suivent le même processus de conception et de génération Goa que les méthodes ordinaires.
+
+### ResourceSubscription
+
+Un service MCP HTTP avec des ressources peut marquer une méthode de streaming serveur avec `ResourceSubscription()`. L’entrée facultative `resources` contient des URI. L’union obligatoire `change` contient `acknowledged` avec un tableau facultatif `resources`, ou `updated` avec un `uri` obligatoire. Déclarez `Format(FormatURI)` pour chaque URI. La source autorise et confirme un sous-ensemble, puis envoie les changements jusqu’à son retour ou l’annulation.
+
+Seule une source de ressources liée annonce les souscriptions. La source possède l’autorisation, la détection des changements et la sélection des sous-ressources associées. Le générateur conserve l’endpoint Goa configuré, avec ses identifiants d’authentification, scopes, intercepteurs et middleware. Le transport partagé possède l’ordre et les identifiants de requête. Les catalogues fixes n’émettent pas de changements de catalogue.
+
 ### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` ajoute un modèle d'invite statique.
@@ -1792,7 +1788,7 @@ Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 })
 ```
@@ -1809,7 +1805,7 @@ var _ = Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
     
     Method("search", func() {
@@ -1820,7 +1816,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })

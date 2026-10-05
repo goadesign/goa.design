@@ -9,7 +9,7 @@ aliases:
 
 Goa-AI permette sia di **creare server MCP** sia di **usare tool MCP esterni**. Aggiungi dichiarazioni MCP a un servizio Goa per esporre metodi come tool, pubblicare risorse e fornire template di prompt. Il generatore produce gestione del protocollo JSON-RPC e adapter dei servizi. Ospitare un server MCP non richiede l’esecuzione di un agente Goa-AI.
 
-I caller HTTP e stdio degli agenti consumano tool: inizializzano una sessione, verificano la capacità tools del server e invocano `tools/call`. La loro interfaccia non espone operazioni su risorse o prompt. Il server MCP generato supporta tool, risorse e prompt dichiarati nel design.
+I caller HTTP e stdio inviano richieste autonome con i metadati del protocollo. Non esistono handshake di inizializzazione o sessioni del protocollo. L’interfaccia `Caller` invoca i tool; `Listen` riceve notifiche di modifica. I client JSON-RPC generati da Goa espongono anche le operazioni su risorse, prompt, scoperta e completamento dichiarate dal servizio.
 
 ## Panoramica
 
@@ -60,7 +60,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })
@@ -111,11 +110,12 @@ In fase di esecuzione, istanziare un chiamante MCP e registrare il set di strume
 ```go
 import (
     mcpruntime "goa.design/goa-ai/runtime/mcp"
-    mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
+    genchat "example.com/assistant/gen/orchestrator/agents/chat"
+    genmcpexec "example.com/assistant/gen/orchestrator/agents/chat/assistant_mcp"
 )
 
 // Create an HTTP MCP caller.
-caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
+caller, err := mcpruntime.NewHTTPCaller(mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
     ClientInfo: mcpruntime.ClientInfo{
         Name:    "my-agent",
@@ -127,7 +127,9 @@ if err != nil {
 }
 
 // Register the MCP toolset
-if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); err != nil {
+if err := genchat.RegisterUsedToolsets(ctx, rt,
+    genchat.WithAssistantMcpExecutor(genmcpexec.NewMCPExecutor(caller)),
+); err != nil {
     log.Fatal(err)
 }
 ```
@@ -143,17 +145,9 @@ chiamanti implementano l'interfaccia `Caller`:
 type Caller interface {
     CallTool(ctx context.Context, req CallRequest) (CallResponse, error)
 }
-
-type CallRequest struct {
-    Tool    string
-    Payload json.RawMessage
-}
-
-type CallResponse struct {
-    Content           []ContentBlock
-    StructuredContent json.RawMessage
-}
 ```
+
+`CallRequest` contiene nome del tool, argomenti JSON e una continuazione facoltativa di proprietà dell’host. `CallResponse.Content` usa `content.Blocks` di `runtime/content`: valori ordinati di testo, immagine, audio, collegamento a risorsa o risorsa incorporata. Il JSON strutturato rimane separato in `StructuredContent`. `InputRequired` lascia incompleta l’operazione; l’host fornisce l’input richiesto prima di continuare.
 
 ### Chiamante HTTP
 
@@ -162,21 +156,17 @@ Per i server MCP accessibili tramite HTTP JSON-RPC:
 ```go
 import mcpruntime "goa.design/goa-ai/runtime/mcp"
 
-caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
+caller, err := mcpruntime.NewHTTPCaller(mcpruntime.HTTPOptions{
     Endpoint: "https://assistant.example.com/mcp",
-    Client:   customHTTPClient, // Facoltativo; il client predefinito ha un timeout di 30 secondi.
+    Client:   customHTTPClient,
     ClientInfo: mcpruntime.ClientInfo{
         Name:    "my-agent",
         Version: "1.0.0",
     },
-    InitTimeout: 10 * time.Second, // Timeout di inizializzazione facoltativo.
 })
 ```
 
-Il chiamante HTTP esegue l'handshake di inizializzazione MCP alla creazione.
-Invia ogni messaggio JSON-RPC 2.0 con una richiesta HTTP `POST` all'endpoint
-configurato. Accetta risposte JSON o flussi di eventi HTTP; non è necessario un
-chiamante SSE separato.
+Il costruttore verifica endpoint e identità dell’applicazione senza richieste di rete. Ogni operazione invia JSON-RPC tramite HTTP `POST` e accetta JSON o un flusso di eventi. Senza `Client`, usa `http.DefaultClient`; l’applicazione definisce le scadenze tramite il contesto e il client HTTP.
 
 ### Chiamante Stdio
 
@@ -194,12 +184,18 @@ caller, err := mcpruntime.NewStdioCaller(ctx, mcpruntime.StdioOptions{
         Name:    "my-agent",
         Version: "1.0.0",
     },
-    InitTimeout: 10 * time.Second, // Timeout di inizializzazione facoltativo.
 })
-defer caller.Close() // Clean up subprocess
+if err != nil {
+    return err
+}
+defer func() {
+    if err := caller.Close(shutdownContext); err != nil {
+        log.Print(err)
+    }
+}()
 ```
 
-Il chiamante stdio lancia il comando come sottoprocesso, esegue l'handshake di inizializzazione MCP e mantiene la sessione tra le invocazioni dello strumento. Chiamare `Close()` per terminare il sottoprocesso una volta terminato.
+Il caller stdio avvia un sottoprocesso e correla operazioni concorrenti tramite gli ID delle richieste. Ogni richiesta contiene i propri metadati. Chiudere il caller con un contesto di arresto definito dall’applicazione e gestire l’errore restituito.
 
 ### Adattatore CallerFunc
 
@@ -226,11 +222,48 @@ caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallReq
 Per i client MCP generati da Goa che avvolgono i metodi del servizio:
 
 ```go
-caller, err := mcpassistant.NewCaller(ctx, client, mcpruntime.ClientInfo{
-    Name:    "my-agent",
-    Version: "1.0.0",
-})
+import genmcpclient "example.com/assistant/gen/jsonrpc/mcp_assistant/client"
+
+caller, err := genmcpclient.NewCaller(client, mcpruntime.ClientInfo{
+    Name: "my-agent", Version: "1.0.0",
+}, mcpruntime.InputSupport{}, mcpruntime.HTTPRetryPolicy{})
+if err != nil {
+    return err
+}
 ```
+
+## Avanzamento e modifiche delle risorse
+
+Usare `WithProgress(ctx, handler)` per ricevere l’avanzamento prima del risultato finale. Il servizio chiama `ReportProgress`; il trasporto fornisce gli identificatori di correlazione. Un errore del callback interrompe l’operazione e deve essere gestito.
+
+```go
+err := caller.Listen(ctx, mcpruntime.SubscriptionFilter{
+    ResourceSubscriptions: []string{"file:///docs/README.md"},
+}, func(ctx context.Context, event mcpruntime.SubscriptionEvent) error {
+    return handleResourceChange(ctx, event)
+})
+if err != nil {
+    return err
+}
+```
+
+Usare `Listen` per ricevere una conferma seguita dalle modifiche accettate. Verificare il filtro confermato: i tipi non supportati possono essere omessi. L’applicazione implementa `handleResourceChange`, ricarica i dati interessati e rispetta l’annullamento. La perdita della connessione restituisce un errore; il caller non si riconnette automaticamente.
+
+Per un client JSON-RPC generato, usare `WithSubscriptionEvents(ctx, handler)` e chiamare l’endpoint tipizzato `SubscriptionsListen`. L’endpoint restituisce il risultato finale e l’handler riceve eventi validati. Senza handler, la chiamata fallisce prima dell’invio.
+
+### Dichiarare una fonte di sottoscrizioni alle risorse
+
+Un servizio MCP HTTP con risorse può marcare un metodo di streaming server con `ResourceSubscription()`. L’input facoltativo `resources` contiene URI. L’unione obbligatoria `change` contiene `acknowledged` con un array facoltativo `resources`, oppure `updated` con un `uri` obbligatorio. Dichiarare `Format(FormatURI)` per ogni URI. La fonte autorizza e conferma un sottoinsieme, poi invia modifiche fino al ritorno o all’annullamento.
+
+Solo una fonte di risorse collegata pubblicizza le sottoscrizioni. La fonte possiede autorizzazione, rilevamento delle modifiche e selezione delle sottorisorse correlate. Il generatore conserva l’endpoint Goa configurato, incluse credenziali, scope, interceptor e middleware. Il trasporto condiviso possiede ordine e identificatori. I cataloghi fissi non emettono notifiche di modifica del catalogo.
+
+### Risorse, prompt e contenuti multimediali
+
+`ResourceTemplate` collega un URI parametrizzato a un metodo di lettura tipizzato. `Prompt` collega un metodo che restituisce messaggi. `ResourceCompletion` e `PromptCompletion` collegano suggerimenti di argomenti tipizzati. `ToolContent` seleziona un campo di contenuti multimediali accanto al risultato strutturato. Questi contratti seguono lo stesso processo di progettazione e generazione Goa dei metodi ordinari.
+
+### Ripetere una risposta di tool interrotta
+
+HTTP esegue un tentativo per impostazione predefinita. L’host può configurare `HTTPRetryPolicy` per un endpoint affidabile. Una risposta interrotta viene ripetuta solo se il tool dichiara comportamento di sola lettura o idempotente e la politica si fida delle dichiarazioni. Il nuovo tentativo usa un altro ID e può eseguire nuovamente il tool. Errori, risposte non valide, errori dei callback e interruzioni delle sottoscrizioni non autorizzano nuovi tentativi.
 
 ---
 
@@ -291,7 +324,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })
@@ -313,49 +345,35 @@ var _ = Service("orchestrator", func() {
 
 ### Tempo di esecuzione
 
+Passare l’esecutore generato a `RegisterUsedToolsets` prima di registrare l’agente. L’esempio riceve un runtime già costruito e il proprio planner.
+
 ```go
 package main
 
 import (
     "context"
-    "log"
-    
-    mcpruntime "goa.design/goa-ai/runtime/mcp"
-    chat "example.com/assistant/gen/orchestrator/agents/chat"
-    mcpassistant "example.com/assistant/gen/assistant/mcp_assistant"
+
+    genchat "example.com/assistant/gen/orchestrator/agents/chat"
+    genmcpexec "example.com/assistant/gen/orchestrator/agents/chat/assistant_mcp"
+    "goa.design/goa-ai/runtime/agent/planner"
     "goa.design/goa-ai/runtime/agent/runtime"
-    storageinmem "goa.design/goa-ai/runtime/agent/storage/inmem"
+    mcpruntime "goa.design/goa-ai/runtime/mcp"
 )
 
-func main() {
-    rt := runtime.New(storageinmem.New())
-    ctx := context.Background()
-    
-    // Wire MCP caller
-    caller, err := mcpruntime.NewHTTPCaller(ctx, mcpruntime.HTTPOptions{
+func registerChat(ctx context.Context, rt *runtime.Runtime, p planner.Planner) error {
+    caller, err := mcpruntime.NewHTTPCaller(mcpruntime.HTTPOptions{
         Endpoint: "https://assistant.example.com/mcp",
-        ClientInfo: mcpruntime.ClientInfo{
-            Name:    "my-agent",
-            Version: "1.0.0",
-        },
+        ClientInfo: mcpruntime.ClientInfo{Name: "my-agent", Version: "1.0.0"},
     })
     if err != nil {
-        log.Fatal(err)
+        return err
     }
-    if err := mcpassistant.RegisterAssistantAssistantMcpToolset(ctx, rt, caller); err != nil {
-        log.Fatal(err)
+    if err := genchat.RegisterUsedToolsets(ctx, rt,
+        genchat.WithAssistantMcpExecutor(genmcpexec.NewMCPExecutor(caller)),
+    ); err != nil {
+        return err
     }
-    
-    // Register agent
-    if err := chat.RegisterChatAgent(ctx, rt, chat.ChatAgentConfig{
-        Planner: &MyPlanner{},
-    }); err != nil {
-        log.Fatal(err)
-    }
-    
-    // Run agent
-    client := chat.NewClient(rt)
-    // ... use client ...
+    return genchat.RegisterChatAgent(ctx, rt, genchat.ChatAgentConfig{Planner: p})
 }
 ```
 
@@ -366,22 +384,17 @@ Il pianificatore può fare riferimento agli strumenti MCP come ai set di strumen
 ```go
 func (p *MyPlanner) PlanStart(ctx context.Context, in *planner.PlanInput) (*planner.PlanResult, error) {
     call, err := planner.NewToolRequest(
-        mcpspecs.SearchTool(),
-        &mcpspecs.SearchPayload{Query: "golang tutorials"},
+        genmcpspecs.SearchTool(),
+        &genmcpspecs.SearchPayload{Query: "golang tutorials"},
     )
     if err != nil {
         return nil, err
     }
-    return &planner.PlanResult{
-        ToolCalls: []planner.ToolRequest{call},
-    }, nil
+    return &planner.PlanResult{ToolCalls: []planner.ToolRequest{call}}, nil
 }
 ```
 
-Qui `mcpspecs` è il package `specs` generato per il toolset MCP. Per inoltrare
-invece una chiamata validata emessa dal modello, usare
-`planner.ToolRequestFromModelCall`, così il relativo ID di correlazione del
-provider viene conservato.
+`genmcpspecs` importa `example.com/assistant/gen/assistant/toolsets/assistant_mcp`. Usare `planner.ToolRequestFromModelCall` per mantenere l’ID di correlazione del provider quando si inoltra una chiamata validata del modello.
 
 ---
 

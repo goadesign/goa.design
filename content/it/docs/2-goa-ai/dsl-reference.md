@@ -73,7 +73,6 @@ Questo documento fornisce un riferimento completo per le funzioni DSL di Goa-AI.
 | `OnMissingFields` | EseguiPolitica | Comportamento di convalida |
 | **Funzioni MCP** |                          |                                                                                                                    |
 | `MCP` | Servizio | Abilita il supporto MCP |
-| `ProtocolVersion` | Opzione MCP | Imposta la versione del protocollo MCP |
 | `Tool` | Metodo | Contrassegna un metodo come strumento MCP in un servizio abilitato per MCP |
 | `Toolset(FromMCP(...))` | Livello superiore | Dichiara un set di strumenti derivati ​​da MCP supportati da Goa |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Livello superiore | Dichiara un set di strumenti MCP esterno con schemi in linea |
@@ -1652,7 +1651,7 @@ Goa-AI fornisce funzioni DSL per dichiarare i server MCP (Model Context Protocol
 
 ###MCP
 
-`MCP(name, version, opts...)` abilita il supporto MCP per il servizio corrente. Configura il servizio per esporre strumenti, risorse e prompt tramite il protocollo MCP.
+`MCP(name, version)` abilita il supporto MCP per il servizio corrente. Configura il servizio per esporre strumenti, risorse e prompt tramite il protocollo MCP.
 
 **Contesto**: All'interno di `Service`
 
@@ -1682,19 +1681,7 @@ Service("calculator", func() {
 
 ###Versioneprotocollo
 
-`ProtocolVersion(version)` configura la versione del protocollo MCP supportata dal server. Restituisce una funzione di configurazione da utilizzare con `MCP`.
-
-**Contesto**: argomento opzionale per `MCP`
-
-```go
-Service("calculator", func() {
-    // Use the default protocol supported by Goa-AI.
-    MCP("calc", "1.0.0")
-    JSONRPC(func() {
-        POST("/mcp")
-    })
-})
-```
+Goa-AI implementa una sola revisione del protocollo. `MCP(name, version)` usa il valore predefinito del framework; `version` identifica il server. L’opzione DSL `ProtocolVersion` è stata rimossa. Rigenerare client e server insieme durante l’aggiornamento.
 
 ### Strumento (nel contesto del metodo)
 
@@ -1711,7 +1698,6 @@ Method("search", func() {
     })
     Result(func() {
         Attribute("results", ArrayOf(String), "Search results")
-        Required("results")
     })
     Tool("search", "Search documents by query")
 })
@@ -1769,6 +1755,16 @@ Method("readme", func() {
 })
 ```
 
+### ResourceTemplate, Prompt, ResourceCompletion, PromptCompletion, ToolContent
+
+`ResourceTemplate` collega un URI parametrizzato a un metodo di lettura tipizzato. `Prompt` collega un metodo che restituisce messaggi. `ResourceCompletion` e `PromptCompletion` collegano suggerimenti di argomenti tipizzati. `ToolContent` seleziona un campo di contenuti multimediali accanto al risultato strutturato. Questi contratti seguono lo stesso processo di progettazione e generazione Goa dei metodi ordinari.
+
+### ResourceSubscription
+
+Un servizio MCP HTTP con risorse può marcare un metodo di streaming server con `ResourceSubscription()`. L’input facoltativo `resources` contiene URI. L’unione obbligatoria `change` contiene `acknowledged` con un array facoltativo `resources`, oppure `updated` con un `uri` obbligatorio. Dichiarare `Format(FormatURI)` per ogni URI. La fonte autorizza e conferma un sottoinsieme, poi invia modifiche fino al ritorno o all’annullamento.
+
+Solo una fonte di risorse collegata pubblicizza le sottoscrizioni. La fonte possiede autorizzazione, rilevamento delle modifiche e selezione delle sottorisorse correlate. Il generatore conserva l’endpoint Goa configurato, incluse credenziali, scope, interceptor e middleware. Il trasporto condiviso possiede ordine e identificatori. I cataloghi fissi non emettono notifiche di modifica del catalogo.
+
 ### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` aggiunge un modello di prompt statico.
@@ -1783,7 +1779,7 @@ Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 })
 ```
@@ -1800,7 +1796,7 @@ var _ = Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
     
     Method("search", func() {
@@ -1811,7 +1807,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })
