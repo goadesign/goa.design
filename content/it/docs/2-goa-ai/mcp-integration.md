@@ -126,6 +126,8 @@ Passare gli endpoint Goa originali già configurati a `NewMCPAdapter`, poi costr
 
 Usare `Server.Use` per installare il middleware HTTP prima delle richieste. `Mount(mux)` e le chiamate dirette a `ServeHTTP` condividono i controlli di origini, metodi HTTP, header MCP e metadati prima del middleware o del servizio. La lista delle origini viene copiata durante la costruzione. Sostituire `MountWithOrigins` con gli argomenti del costruttore e usare `ServeHTTP` al posto del campo interno `Handler`, che viene rimosso. Rigenerare i server e aggiornare insieme i loro chiamanti.
 
+Se un plugin del generatore dichiara dipendenze obbligatorie del server nel piano di costruzione di Goa, passare i loro valori tipizzati prima degli argomenti finali delle origini. L’avvio dell’esempio nativo chiama le corrispondenti funzioni di costruzione dell’applicazione. Configurare queste funzioni prima di avviare il server di esempio.
+
 Per le route con parametri URL, registrare `ServeHTTP` nello stesso mux passato a `New`, oppure usare `Mount(mux)`. Il mux fornisce i valori del percorso ai decoder generati.
 
 ---
