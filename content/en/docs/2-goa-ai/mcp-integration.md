@@ -301,6 +301,10 @@ HTTP calls make one attempt by default. A host can opt into `HTTPRetryPolicy` fo
 
 Local request preparation failures do not imply that the tool ran. Cancellation observed before dispatch sends no request. Once an attempt reaches the HTTP client, losing its response leaves the outcome unknown. Local client errors and unknown tool outcomes both stop agent recovery.
 
+### Client-secret authorization
+
+`NewClientCredentialsHTTPTransport` obtains preregistered client-secret grants for one exact HTTPS resource and issuer before sending MCP requests. Pass this transport to a generated HTTP client or `HTTPOptions.Client`; both use the same authorization path. Secrets stay in the token POST form, and only the opaque bearer token reaches the MCP authorization header. The issuer must advertise `client_credentials`, `client_secret_post` and `client_secret_basic`. This first profile rejects redirects and does not repeat 401/403 responses. Challenge URLs, consent, PKCE, scope changes and server token verification remain unfinished; this is not complete OAuth support.
+
 ---
 
 ## Tool Execution Flow

@@ -299,6 +299,10 @@ HTTP effectue un seul essai par défaut. L’hôte peut configurer `HTTPRetryPol
 
 Un échec lors de la préparation locale ne signifie pas que l’outil a été exécuté. Une annulation constatée avant l’envoi empêche la requête. Dès qu’une tentative atteint le client HTTP, la perte de sa réponse laisse le résultat inconnu. Les erreurs locales du client et les résultats inconnus arrêtent tous deux la récupération de l’agent.
 
+### Autorisation par secret client
+
+`NewClientCredentialsHTTPTransport` obtient, avant toute requête MCP, un jeton avec un identifiant client et un secret préenregistrés pour une ressource HTTPS et un émetteur précis. Passez ce transport au client HTTP généré ou à `HTTPOptions.Client` ; les deux utilisent le même traitement d’autorisation. Le secret reste dans le formulaire POST envoyé au serveur de jetons ; seul le jeton Bearer opaque atteint l’en-tête d’autorisation MCP. L’émetteur doit annoncer `client_credentials`, `client_secret_post` et `client_secret_basic`. Ce premier profil refuse les redirections et ne répète pas les réponses 401/403. Les URL de challenge, le consentement, PKCE, les changements de permissions et la vérification des jetons côté serveur restent à implémenter ; la prise en charge OAuth n’est pas complète.
+
 ---
 
 ## Flux d'exécution des outils

@@ -301,6 +301,10 @@ HTTP realiza un intento por defecto. El host puede configurar `HTTPRetryPolicy` 
 
 Un fallo al preparar la solicitud localmente no implica que la herramienta se haya ejecutado. Una cancelación detectada antes del envío impide la solicitud. Cuando un intento llega al cliente HTTP, perder su respuesta deja el resultado desconocido. Tanto los errores locales del cliente como los resultados desconocidos detienen la recuperación del agente.
 
+### Autorización con secreto de cliente
+
+`NewClientCredentialsHTTPTransport` obtiene un token con un identificador de cliente y un secreto previamente registrados para un recurso HTTPS y un emisor exactos, antes de enviar solicitudes MCP. Pasa este transporte al cliente HTTP generado o a `HTTPOptions.Client`; ambos usan el mismo proceso de autorización. El secreto permanece en el formulario POST del endpoint de tokens, y solo el token Bearer opaco llega a la cabecera de autorización MCP. El emisor debe anunciar `client_credentials`, `client_secret_post` y `client_secret_basic`. Este primer perfil rechaza redirecciones y no repite respuestas 401/403. Las URL de los desafíos, el consentimiento, PKCE, los cambios de permisos y la verificación de tokens en el servidor siguen pendientes; el soporte OAuth aún no está completo.
+
 ---
 
 ## Flujo de ejecución de herramientas

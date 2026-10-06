@@ -296,6 +296,10 @@ HTTP esegue un tentativo per impostazione predefinita. L’host può configurare
 
 Un errore nella preparazione locale della richiesta non implica che il tool sia stato eseguito. Un annullamento rilevato prima dell’invio impedisce la richiesta. Dopo che un tentativo raggiunge il client HTTP, perdere la risposta lascia l’esito sconosciuto. Sia gli errori locali del client sia gli esiti sconosciuti interrompono il recupero dell’agente.
 
+### Autorizzazione con segreto client
+
+`NewClientCredentialsHTTPTransport` ottiene un token tramite identificativo client e segreto preregistrati per una risorsa HTTPS e un emittente precisi, prima di inviare richieste MCP. Passa questo trasporto al client HTTP generato o a `HTTPOptions.Client`: entrambi usano lo stesso percorso di autorizzazione. Il segreto resta nel modulo POST inviato all’endpoint dei token; solo il token Bearer opaco raggiunge l’header di autorizzazione MCP. L’emittente deve dichiarare `client_credentials`, `client_secret_post` e `client_secret_basic`. Questo primo profilo rifiuta i reindirizzamenti e non ripete le risposte 401/403. URL delle challenge, consenso, PKCE, modifiche delle autorizzazioni e verifica dei token sul server restano da implementare: il supporto OAuth non è completo.
+
 ---
 
 ## Flusso di esecuzione dello strumento
