@@ -299,6 +299,8 @@ Solo una fuente de recursos vinculada anuncia soporte de suscripciones. La fuent
 
 HTTP realiza un intento por defecto. El host puede configurar `HTTPRetryPolicy` para un endpoint de confianza. Solo se reintenta una respuesta interrumpida si la herramienta declara comportamiento de solo lectura o idempotente y la política confía en esas declaraciones. El nuevo intento usa otro ID y puede ejecutar la herramienta otra vez. Los errores, respuestas inválidas, fallos de callbacks e interrupciones de suscripciones no autorizan reintentos.
 
+Un fallo al preparar la solicitud localmente no implica que la herramienta se haya ejecutado. Una cancelación detectada antes del envío impide la solicitud. Cuando un intento llega al cliente HTTP, perder su respuesta deja el resultado desconocido. Tanto los errores locales del cliente como los resultados desconocidos detienen la recuperación del agente.
+
 ---
 
 ## Flujo de ejecución de herramientas

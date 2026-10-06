@@ -299,6 +299,8 @@ Only a bound resource source advertises resource subscription support. The sourc
 
 HTTP calls make one attempt by default. A host can opt into `HTTPRetryPolicy` for a trusted endpoint. An interrupted response is retried only when the selected tool declares read-only or idempotent behavior and the policy trusts those declarations. The retry sends a new request ID and may execute the tool again. Errors, malformed responses, callback failures, and subscription interruptions do not authorize retries.
 
+Local request preparation failures do not imply that the tool ran. Cancellation observed before dispatch sends no request. Once an attempt reaches the HTTP client, losing its response leaves the outcome unknown. Local client errors and unknown tool outcomes both stop agent recovery.
+
 ---
 
 ## Tool Execution Flow

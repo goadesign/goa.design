@@ -297,6 +297,8 @@ Seule une source de ressources liée annonce les souscriptions. La source possè
 
 HTTP effectue un seul essai par défaut. L’hôte peut configurer `HTTPRetryPolicy` pour un endpoint de confiance. Une réponse interrompue est répétée uniquement si l’outil déclare un comportement en lecture seule ou idempotent et que la politique fait confiance à ces déclarations. Le nouvel essai possède un autre identifiant et peut exécuter l’outil à nouveau. Les erreurs, réponses invalides, erreurs de callback et interruptions de souscriptions n’autorisent pas de nouvel essai.
 
+Un échec lors de la préparation locale ne signifie pas que l’outil a été exécuté. Une annulation constatée avant l’envoi empêche la requête. Dès qu’une tentative atteint le client HTTP, la perte de sa réponse laisse le résultat inconnu. Les erreurs locales du client et les résultats inconnus arrêtent tous deux la récupération de l’agent.
+
 ---
 
 ## Flux d'exécution des outils

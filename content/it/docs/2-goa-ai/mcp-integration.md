@@ -294,6 +294,8 @@ Solo una fonte di risorse collegata pubblicizza le sottoscrizioni. La fonte poss
 
 HTTP esegue un tentativo per impostazione predefinita. L’host può configurare `HTTPRetryPolicy` per un endpoint affidabile. Una risposta interrotta viene ripetuta solo se il tool dichiara comportamento di sola lettura o idempotente e la politica si fida delle dichiarazioni. Il nuovo tentativo usa un altro ID e può eseguire nuovamente il tool. Errori, risposte non valide, errori dei callback e interruzioni delle sottoscrizioni non autorizzano nuovi tentativi.
 
+Un errore nella preparazione locale della richiesta non implica che il tool sia stato eseguito. Un annullamento rilevato prima dell’invio impedisce la richiesta. Dopo che un tentativo raggiunge il client HTTP, perdere la risposta lascia l’esito sconosciuto. Sia gli errori locali del client sia gli esiti sconosciuti interrompono il recupero dell’agente.
+
 ---
 
 ## Flusso di esecuzione dello strumento
