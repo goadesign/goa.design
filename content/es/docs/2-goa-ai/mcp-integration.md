@@ -125,6 +125,14 @@ Los clientes de protocolo generados transportan estos valores fuera de los pará
 
 ---
 
+## Alojar el servidor generado
+
+Pase los endpoints Goa originales ya configurados a `NewMCPAdapter` y construya el servidor HTTP generado. Pase los orígenes de navegador permitidos como argumentos de cadena finales de su constructor `New`, por ejemplo `"https://app.example.com"`. Sin orígenes, se aceptan solicitudes sin la cabecera `Origin` y se rechazan las que la incluyen.
+
+Use `Server.Use` para instalar middleware HTTP antes de recibir solicitudes. `Mount(mux)` y las llamadas directas a `ServeHTTP` comparten las comprobaciones de origen, método HTTP, cabeceras MCP y metadatos antes del middleware o del trabajo del servicio. La lista de orígenes se copia durante la construcción. Sustituya `MountWithOrigins` por argumentos del constructor y use `ServeHTTP` en lugar del campo interno `Handler`, que se elimina. Regenere los servidores y actualice sus llamadores juntos.
+
+---
+
 ## Cableado en tiempo de ejecución
 
 En tiempo de ejecución, instancie un caller MCP y registre el conjunto de herramientas:
