@@ -180,6 +180,56 @@ var _ = Service("users", func() {
 
 ---
 
+## URLエンコードされたフォームリクエスト {#form-requests}
+
+OAuthトークンエンドポイントやブラウザーのフォームなど、エンドポイントが `application/x-www-form-urlencoded` を受け取る場合は、メソッドの `HTTP` 式内に `FormRequest()` を追加します。Goaが型付きのクライアントエンコーダーとサーバーデコーダーを生成するため、独自のコーデック関数は不要です。レスポンスのエンコードは変わりません。
+
+次のメソッドは、パスからアカウントID、ヘッダーからリクエストID、ボディから2つのフォームフィールドを受け取ります。
+
+```go
+Method("update_labels", func() {
+    Payload(func() {
+        Field(1, "accountId", String, "ラベルを更新するアカウント")
+        Field(2, "requestId", String, "リクエストを関連付ける識別子")
+        Field(3, "label", String, "アカウントの表示ラベル")
+        Field(4, "tags", ArrayOf(String), "アカウントに割り当てるタグ", func() {
+            MinLength(1)
+        })
+        Required("accountId", "requestId", "label", "tags")
+    })
+    HTTP(func() {
+        POST("/accounts/{account_id}/labels")
+        Param("accountId:account_id")
+        Header("requestId:X-Request-ID")
+        FormRequest()
+        Body(func() {
+            Attribute("label:display_name", String)
+            Attribute("tags:tag", ArrayOf(String))
+            Required("label", "tags")
+        })
+        Response(StatusNoContent)
+    })
+})
+```
+
+`Param("accountId:account_id")` と `Header("requestId:X-Request-ID")` は、これらの属性をボディから除外します。`Body` のマッピングはペイロード名 `label` と `tags` を保持し、フォームのキーには `display_name` と `tag` を使用します。例えば、ボディは次のようになります。
+
+```text
+display_name=Hello+Goa&tag=go&tag=api
+```
+
+明示的な `Body` 式でフィールド名を変更する場合は、ボディの型と必須フィールドを明示的に宣言してください。型の暗黙的な継承には属性名の完全一致が必要です。
+
+- 最終的なボディは、プリミティブのフィールドまたはプリミティブの配列を含む空でないオブジェクトである必要があります。この形状を持つ名前付き型も使用できます。ネストしたオブジェクト、マップ、`Any`、独自のGoフィールド型は設計の評価時に拒否されます。
+- 配列には `tag=go&tag=api` のように同じキーを繰り返します。必須の配列には少なくとも1つの送信値が必要です。フォームでは、存在するが要素が0個の配列を表せません。バイト列には標準のbase64を使用します。
+- スカラーのキーは1回だけ指定できます。空文字列は値が存在する状態であり、フィールドの省略とは異なります。設計で指定したデフォルト値と検証は引き続き適用されます。
+- サーバーはボディのフィールドをボディからのみ読み取ります。クエリパラメーターで不足するフォーム値を補うことはできません。不正なコンテンツタイプ、形式が不正な値、重複したスカラーのキー、検証エラーはサービスを呼び出す前に拒否されます。未知のフォームフィールドは許可されます。
+- `FormRequest()` は通常のHTTPエンドポイントで使用します。JSON-RPC、`MultipartRequest()`、`SkipRequestBodyEncodeDecode()` とは組み合わせられません。
+
+`FormRequest()` を追加したら、このDSLを含むGoaバージョンでコードを再生成します。既存のエンドポイントをJSONからフォームに変更すると通信契約が変わるため、クライアントとサーバーを一緒に更新してデプロイしてください。生成されるOpenAPIにはフォームのメディアタイプとマッピングしたフィールド名が記載されます。リクエストのサイズ制限は引き続きアプリケーションのミドルウェアが担当します。
+
+---
+
 ## コンテンツ交渉
 
 ### 内蔵エンコーダ

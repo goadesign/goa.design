@@ -653,6 +653,12 @@ Body(func() {
 })
 ```
 
+### URLエンコードされたフォームリクエスト {#form-requests}
+
+メソッドの `HTTP` 式に `FormRequest()` を追加すると、`application/x-www-form-urlencoded` のリクエストコーデックを生成できます。残りのボディはプリミティブのフィールドまたはプリミティブの配列を含む空でないオブジェクトである必要があります。既存の `Param`、`Header`、`Body` のマッピングは引き続き適用されます。例えば `Attribute("label:display_name", String)` でフォームのキーを変更できます。レスポンスのエンコードは変わりません。
+
+[完全な例、エンコード規則、デプロイ時の注意点はHTTPガイドを参照してください。](http-guide/#form-requests)
+
 ---
 
 ## gRPCトランスポートマッピング

@@ -958,6 +958,12 @@ Body(func() {
 })
 ```
 
+### Solicitudes de formulario codificadas en URL {#form-requests}
+
+Añada `FormRequest()` a la expresión `HTTP` de un método para generar codecs de solicitud `application/x-www-form-urlencoded`. El cuerpo restante debe ser un objeto no vacío de campos primitivos o arrays de primitivas. Se mantienen las asignaciones `Param`, `Header` y `Body`, incluida `Attribute("label:display_name", String)` para seleccionar otra clave de formulario. Las respuestas conservan su codificación.
+
+[Consulte el ejemplo completo, las reglas de codificación y las indicaciones de despliegue en la guía HTTP.](http-guide/#form-requests)
+
 ---
 
 ## Mapeo de transporte gRPC
