@@ -958,6 +958,12 @@ Body(func() {
 })
 ```
 
+### Requêtes de formulaire URL-encodées {#form-requests}
+
+Ajoutez `FormRequest()` dans l’expression `HTTP` d’une méthode pour générer les codecs de requête `application/x-www-form-urlencoded`. Le corps restant doit être un objet non vide de champs primitifs ou de tableaux de primitives. Les correspondances `Param`, `Header` et `Body` existantes continuent de s’appliquer, notamment `Attribute("label:display_name", String)` pour choisir une autre clé de formulaire. L’encodage des réponses reste inchangé.
+
+[Consultez le guide HTTP pour un exemple complet, les règles d’encodage et les conseils de déploiement.](http-guide/#form-requests)
+
 ---
 
 ## Mappage du transport gRPC

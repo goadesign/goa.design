@@ -180,6 +180,56 @@ var _ = Service("users", func() {
 
 ---
 
+## URL-Encoded Form Requests {#form-requests}
+
+Use `FormRequest()` inside a method’s `HTTP` expression when an endpoint expects `application/x-www-form-urlencoded`, such as an OAuth token endpoint or a browser form. Goa generates the typed client encoder and server decoder; you do not need custom codec functions. Responses keep their existing encoding.
+
+This method accepts an account ID in the path, a request ID in a header, and two form fields in the body:
+
+```go
+Method("update_labels", func() {
+    Payload(func() {
+        Field(1, "accountId", String, "Account whose labels are updated")
+        Field(2, "requestId", String, "Identifier used to correlate the request")
+        Field(3, "label", String, "Display label for the account")
+        Field(4, "tags", ArrayOf(String), "Tags assigned to the account", func() {
+            MinLength(1)
+        })
+        Required("accountId", "requestId", "label", "tags")
+    })
+    HTTP(func() {
+        POST("/accounts/{account_id}/labels")
+        Param("accountId:account_id")
+        Header("requestId:X-Request-ID")
+        FormRequest()
+        Body(func() {
+            Attribute("label:display_name", String)
+            Attribute("tags:tag", ArrayOf(String))
+            Required("label", "tags")
+        })
+        Response(StatusNoContent)
+    })
+})
+```
+
+`Param("accountId:account_id")` and `Header("requestId:X-Request-ID")` remove those attributes from the body. The `Body` mappings retain the payload names `label` and `tags` while selecting the form keys `display_name` and `tag`. A request body can therefore be:
+
+```text
+display_name=Hello+Goa&tag=go&tag=api
+```
+
+For renamed fields in an explicit `Body` expression, declare the body types and required fields explicitly; implicit type inheritance uses exact attribute names.
+
+- The final body must be a nonempty object of primitive fields or arrays of primitives. Named types using those shapes are supported. Nested objects, maps, `Any`, and custom Go field types fail design evaluation.
+- Arrays use repeated keys, as shown by `tag=go&tag=api`. Required arrays need at least one transmitted value; a form cannot express a present array with zero values. Bytes use standard base64.
+- Scalar keys may appear only once. An empty string is a present value, distinct from an omitted field. Authored defaults and validation still apply.
+- The server reads body fields only from the body; query parameters cannot supply missing form values. Incorrect content types, malformed values, repeated scalar keys, and validation failures are rejected before service invocation. Unknown form fields are allowed.
+- `FormRequest()` is for ordinary HTTP endpoints. It cannot be combined with JSON-RPC, `MultipartRequest()`, or `SkipRequestBodyEncodeDecode()`.
+
+Regenerate after adding `FormRequest()` with a Goa version that includes this DSL. Switching an existing endpoint from JSON to forms changes its wire contract: update and deploy its clients and server together. Generated OpenAPI describes the form media type and mapped field names. Application middleware remains responsible for request size limits.
+
+---
+
 ## Content Negotiation
 
 ### Built-in Encoders

@@ -956,6 +956,12 @@ Body(func() {
 })
 ```
 
+### URL-Encoded Form Requests {#form-requests}
+
+Add `FormRequest()` in a method’s `HTTP` expression to generate `application/x-www-form-urlencoded` request codecs. The remaining body must be a nonempty object of primitive fields or primitive arrays. Existing `Param`, `Header`, and `Body` mappings still apply, including `Attribute("label:display_name", String)` for a different form key. Responses keep their existing encoding.
+
+[See the HTTP guide for a complete example, encoding rules, and deployment guidance.](http-guide/#form-requests)
+
 ---
 
 ## gRPC Transport Mapping
