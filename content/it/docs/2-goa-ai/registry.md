@@ -236,9 +236,15 @@ import (
 // The caller owns the clients, service implementation, and deployment identifiers.
 func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
 	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	if err := registrywire.ValidateAdmissionRevision(admissionRevision); err != nil {
+		return err
+	}
 	const toolsetID = "catalog.search"
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -264,8 +270,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	handler := gensearch.NewProvider(serviceImpl)
 	return provider.Serve(ctx, pulseClient, toolsetID, handler,
 		provider.Registration{
-			AdmissionRevision: admissionRevision,
-			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+			Register: func(ctx context.Context, toolset, providerID, incarnationID string) (provider.RegistrationLease, error) {
 				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
 				if err != nil {
 					return provider.RegistrationLease{}, err
@@ -316,12 +321,12 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					ExpectedRegistrationToken: expectedToken,
 				})
 			},
-			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) (bool, error) {
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					return err
+					return false, err
 				}
-				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+				submitted, err := registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
 					Toolset:                   toolset,
 					ProviderID:                providerID,
 					ProviderIncarnationID:     incarnationID,
@@ -331,6 +336,10 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RequestEventID:            requestEventID,
 					ProviderRegistrationToken: providerToken,
 				})
+				if err != nil {
+					return false, err
+				}
+				return submitted.Accepted, nil
 			},
 			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
 				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
@@ -513,6 +522,9 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 ) {
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -549,12 +561,21 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 
 ## API gRPC
 
+Gli strumenti di servizio possono essere dichiarati prima dell’avvio di un provider. `DeclareServiceToolset` restituisce la dichiarazione salvata e il token; una dichiarazione identica restituisce il risultato originale. `AttachProvider` collega un provider a quel registro esatto senza modificarlo.
+
+Per pubblicare un nuovo contratto, interrompi prima l’acquisizione di nuove chiamate da parte dei vecchi provider, lascia terminare il lavoro accettato e rilascia tutti i loro lease. `ReplaceServiceToolset` riceve la dichiarazione completa, `expected_registration_token` e un UUID `replacement_id`. Un vecchio lease ancora valido, anche durante l’arresto graduale, restituisce `admission_blocked` senza accettare l’aggiornamento; un token superato o un registro di Agente nativo restituisce `admission_conflict`. Dopo una risposta persa, ripeti lo stesso ID e contenuto: il registro restituisce il risultato salvato finché quella sostituzione rimane quella corrente.
+
+La sostituzione ritira definitivamente il vecchio token e non crea lease o conferme di salute. Collega i nuovi provider al token ricevuto; la disponibilità richiede una nuova conferma di salute. Ripristinare una versione precedente o riattivare un registro richiede un’altra sostituzione esplicita con un nuovo ID, anche con uno schema precedente. Le chiamate pubblicate non passano mai al nuovo provider. L’applicazione controlla l’accesso. Non cambia lo storage né la versione del protocollo; aggiorna i server prima di usare il metodo e aggiungi il suo endpoint ai costruttori posizionali rigenerati.
+
 Il registro espone i seguenti metodi gRPC:
 
 ### Operazioni del provider
 
 | Metodo | Descrizione |
 |--------|-------------|
+| `DeclareServiceToolset` | Salva una dichiarazione completa senza collegare provider; una ripetizione identica restituisce il risultato salvato. |
+| `ReplaceServiceToolset` | Sostituisce il registro corrente esatto dopo la fine di tutti i vecchi lease; ripetere lo stesso ID restituisce il risultato finché rimane corrente. |
+| `AttachProvider` | Collega un provider a un registro di servizio esatto senza modificarne la dichiarazione. |
 | `Register` | Ammette un provider all’avvio con le definizioni generate. Un contratto diverso attende la fine dei lease precedenti. |
 | `RenewProvider` | Estende il lease esatto non scaduto senza inviare definizioni. Conserva il drenaggio e ogni scadenza di completamento più lunga; la perdita del lease restituisce `provider_lease_lost`. |
 | `DrainProvider` | Rende il lease di un provider indisponibile per nuove chiamate, conservandone l'autorità di terminare quelle che già possiede. |
