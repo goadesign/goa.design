@@ -347,6 +347,8 @@ The bounded contract helps:
 
 ### Campi iniettati
 
+Le funzioni generate `Inject<Tool>` e `Decode<Tool>` accettano `tools.ToolCallMeta` dal package `goa.design/goa-ai/runtime/agent/tools`. Questo tipo condiviso non importa il motore degli agenti né gli adattatori dei modelli, quindi un servizio può fornire strumenti con `Inject` senza compilare questi componenti. `runtime.ToolCallMeta` rimane un alias per gli executor esistenti. Aggiorna Goa-AI e rigenera per rimuovere l’importazione del motore dai file del provider e di iniezione esistenti; i campi dei metadati, la codifica JSON, la validazione e i messaggi del registro non cambiano.
+
 La funzione DSL `Inject` marca campi specifici del payload come "iniettati": valori di infrastruttura lato server che sono nascosti al LLM e che il codice generato popola prima dell'esecuzione dello strumento. Utile per ID di sessione, ambito per tenant/famiglia (household) e altri valori forniti a runtime o dal chiamante.
 
 #### Come funziona Inject

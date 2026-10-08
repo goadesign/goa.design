@@ -365,6 +365,8 @@ The bounded contract helps:
 
 ### Injected Fields
 
+Generated `Inject<Tool>` and `Decode<Tool>` functions accept `tools.ToolCallMeta` from `goa.design/goa-ai/runtime/agent/tools`. This shared type does not import the agent engine or model adapters, so a service can serve tools with `Inject` without building those components. `runtime.ToolCallMeta` remains an alias for existing executors. Upgrade Goa-AI and regenerate to remove the engine import from existing provider and injection files; metadata fields, JSON encoding, validation, and registry messages do not change.
+
 The `Inject` DSL function marks specific payload fields as "injected"—server-side infrastructure values that are hidden from the LLM but populated by generated code before the tool executes. This is useful for session IDs, tenant/household scoping, and other runtime- or caller-provided values.
 
 #### How Inject Works

@@ -347,6 +347,8 @@ Le contrat limité permet :
 
 ### Champs injectés
 
+Les fonctions générées `Inject<Tool>` et `Decode<Tool>` acceptent `tools.ToolCallMeta` du package `goa.design/goa-ai/runtime/agent/tools`. Ce type partagé n’importe ni le moteur d’agents ni les adaptateurs de modèles : un service peut donc fournir des outils utilisant `Inject` sans compiler ces composants. `runtime.ToolCallMeta` reste un alias pour les exécuteurs existants. Mettez Goa-AI à jour et régénérez pour supprimer l’import du moteur des fichiers de fournisseur et d’injection existants ; les champs de métadonnées, l’encodage JSON, la validation et les messages du registre restent inchangés.
+
 La fonction `Inject` DSL marque des champs de charge utile spécifiques comme « injectés » : des valeurs d'infrastructure côté serveur qui sont masquées pour le LLM et que le code généré renseigne avant l'exécution de l'outil. Ceci est utile pour les ID de session, le cloisonnement par tenant/foyer et d'autres valeurs fournies par l'exécution ou par l'appelant.
 
 #### Comment fonctionne l'injection
