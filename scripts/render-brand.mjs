@@ -30,14 +30,14 @@ for (const [prefix, copy] of [
   ['goa-ai', {
     TITLE: 'Goa-AI',
     NAME: '<strong class="framework-name">Goa-AI</strong>',
-    HEADLINE: 'Build agents.<br><span>Keep tools in sync.</span>',
-    SUBLINE: 'Generated contracts. Built-in call correction.',
+    HEADLINE: 'One design.<br><span>Agents. MCP. APIs.</span>',
+    SUBLINE: 'Typed contracts for humans and coding agents.',
     MOBILE_LABEL: 'Build with Goa-AI',
     MOBILE_ITEMS: '<li>AI agents</li><li>MCP</li><li>Tool registries</li>',
-    DIAGRAM_LABEL: 'One Go design generates model schemas, Go types, and configured API specifications',
-    CONTRACT: 'One Go design',
-    OUTPUT_ITEMS: '<li>Model<br>schemas</li><li>Go<br>types</li><li>API<br>specs</li>',
-    FOOTER: 'Contracts that stay in sync',
+    DIAGRAM_LABEL: 'One Goa design generates agent tools, MCP clients and servers, HTTP and gRPC APIs, typed Go, schemas, and validation',
+    CONTRACT: 'Goa DSL',
+    OUTPUT_ITEMS: '<li>Agent<br>tools</li><li>MCP clients<br>+ servers</li><li>HTTP +<br>gRPC</li>',
+    FOOTER: 'Typed Go · Schemas · Validation',
   }],
 ]) {
   const banner = bannerTemplate.replace(/\{\{([A-Z_]+)\}\}/g, (_, key) => {
