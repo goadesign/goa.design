@@ -266,10 +266,10 @@ components:
     rounded: "{rounded.panel}"
     padding: "1.1rem .5rem"
   brand-mark-header:
-    textColor: "#000000"
-    backgroundColor: "#ffffff"
-    width: "52px"
-    height: "52px"
+    textColor: "{colors.color-text-heading}"
+    backgroundColor: "transparent"
+    width: "auto"
+    height: "44px"
   brand-mark-footer:
     textColor: "#000000"
     backgroundColor: "#ffffff"
@@ -295,8 +295,8 @@ components:
 Readable contracts, their generated outputs, and the behavior developers own
 give Goa its visual identity. The presentation is professional and precise:
 generous landing-page spacing leads into a quiet, denser documentation
-environment. Real source code is the focal artifact; the original round Goa
-badge anchors both surfaces in black and white.
+environment. Real source code is the focal artifact; the original flat Goa
+wordmark anchors the header on both surfaces.
 
 Goa and Goa-AI share one identity and equally prominent service and AI-agent
 entry points. Developers using coding agents and developers building agents
@@ -315,10 +315,11 @@ that distinction and the product claims.
 Source of truth: `assets/scss/_variables_project.scss`, `_dark_theme.scss`,
 `_styles_project.scss`, `_custom.scss`, `_syntax_light.scss`, and
 `_syntax_dark.scss`; `layouts/index.html`, `layouts/docs/baseof.html`, and
-`layouts/_partials/guru-widget.html`. The canonical mark is
-`static/img/goa-logo.png`; `scripts/render-brand.mjs` derives browser and social
-assets from it. The letter paths in `assets/icons/logo.svg` supply the monochrome
-Safari pinned-tab mask. Copy and extraction behavior live in `i18n/en.yaml`,
+`layouts/_partials/guru-widget.html`. The header wordmark is
+`assets/icons/logo.svg`; its letter paths also supply the monochrome Safari
+pinned-tab mask. The round badge in `static/img/goa-logo.png` supplies the footer;
+`scripts/render-brand.mjs` derives browser and social images from that badge.
+Copy and extraction behavior live in `i18n/en.yaml`,
 `static/js/skill-install.js`, `layouts/home.markdown.md`, `layouts/home.llms.txt`,
 and `layouts/partials/hooks/head-end.html`. The frontmatter records implemented
 values. `.impeccable/design.json` adds component previews and metadata; its
@@ -457,13 +458,17 @@ scrolling. The landing presentation has no looping decorative motion.
 
 ## Shapes
 
-The canonical Goa badge is the original (540 × 540) PNG restored unchanged
-from commit `247fee7`. It retains the dark Goa lettering, play symbol, pale
-circular backing, and subtle rim. Both themes use the same artwork, shown at
-(52 × 52px) in the header and (40 × 40px) in the footer. The header uses the
-badge alone, without repeating the Goa name beside it.
-The brand renderer reads this image to derive favicons, avatars, and social
-images; it never replaces the source artwork.
+The header uses the original flat Goa letter shapes introduced in commit
+`7205a7b`, preserved in `assets/icons/logo.svg`. The (82 × 50) viewBox includes
+the play symbol inside the “o” and the full “g” descender. The wordmark renders
+at (44px) high with its natural width, a transparent background, and the theme’s
+heading color. Its home link has a (52px) high click area and an accessible
+“Goa” name, without repeating the name beside the artwork.
+
+The footer retains the original (540 × 540) round PNG badge restored unchanged
+from commit `247fee7`, displayed at (40 × 40px). The brand renderer reads that
+badge to derive favicons, avatars, and social images; it never replaces the
+source artwork.
 
 Small, gently rounded corners distinguish inline code and badges, navigation,
 controls, reading panels, and the larger contract demonstration. Their actual
@@ -519,8 +524,8 @@ Hover changes the tile border to the action color; keyboard focus remains visibl
 
 ### Navigation
 
-The original Goa badge leads the header and repeats in the footer; services and agents
-are peer links.
+The flat Goa wordmark leads the header; the round badge appears in the footer.
+Services and agents are peer links.
 Sidebar groups distinguish quickstarts, guides, and references. Active links
 combine a tinted background, blue text, a two-pixel leading border, and increased
 weight. The border preserves the existing text alignment. Mobile uses
@@ -625,7 +630,8 @@ chat UI; these local overrides do not define a new site-wide component palette.
 
 ### Do:
 
-- **Do** use the original round black-and-white Goa badge and shared service/agent identity.
+- **Do** use the original flat Goa wordmark in the header and the round badge in
+  the footer, with a shared service/agent identity.
 - **Do** give both entry points the same filled action treatment.
 - **Do** show real, selectable source code with its generated outputs.
 - **Do** preserve native keyboard behavior, visible focus, and local overflow.

@@ -58,7 +58,8 @@ the agent framework. The maintainer requested a clean, professional redesign.
 Use plain, technically specific language with a shared identity and equal
 entry points. The current maintainer-directed refinement emphasizes the work a
 coding agent can avoid, one-command service-designer skill installation, and the
-original round black-and-white Goa badge recovered from the repository history.
+original flat Goa wordmark in the header, recovered from repository history.
+The round black-and-white badge remains in the footer and social images.
 Make both GitHub repositories immediately accessible from the hero. Public MCP
 examples use the framework default without naming a protocol version.
 
