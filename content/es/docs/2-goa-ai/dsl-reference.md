@@ -874,6 +874,8 @@ Goa-AI provee:
 
 `CallHintTemplate(template)` y `ResultHintTemplate(template)` configuran plantillas de visualización para las invocaciones y resultados de las herramientas. Las plantillas son cadenas de Go text/template renderizadas con valores Go tipados para producir pistas concisas mostradas durante y tras la ejecución.
 
+Para una unión generada, selecciona la rama con `Kind` y lee su valor tipado con `Value`: `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`. Una selección no válida detiene la plantilla. `Value` conserva las cadenas vacías, cero y false; usa `Kind` para determinar qué rama está presente. Los métodos tipados `AsX` devuelven `(value, bool)` al código Go y no pueden llamarse desde plantillas Go.
+
 **Contexto**: Dentro de `Tool`
 
 **Puntos clave:**

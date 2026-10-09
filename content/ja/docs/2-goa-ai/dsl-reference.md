@@ -844,6 +844,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 `CallHintTemplate(template)` と `ResultHintTemplate(template)` は、ツール呼び出し/結果の表示テンプレート（ヒント）を設定します。テンプレートは Go の `text/template` 文字列で、ツールの型付き payload/result 構造体に対して評価され、実行中および実行後に表示される簡潔なヒントを生成します。
 
+生成されたユニオンでは、`Kind` で分岐を選択し、`Value` で型付きの値を読み取ります: `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`。無効な選択はテンプレートの実行を停止します。`Value` は空文字列、ゼロ、false を保持するため、選択された分岐の判定には `Kind` を使います。型付きの `AsX` メソッドは Go コードに `(value, bool)` を返すので、Go テンプレートからは呼び出せません。
+
 **コンテキスト**: `Tool` の内部
 
 **ポイント:**

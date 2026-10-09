@@ -920,6 +920,8 @@ Goa-AI provides:
 
 `CallHintTemplate(template)` and `ResultHintTemplate(template)` configure display templates for tool invocations and results. Templates are Go text/template strings rendered with typed Go values to produce concise hints shown during and after execution.
 
+For a generated union, select the branch with `Kind` and read its typed value with `Value`: `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`. Invalid selections stop template execution. `Value` preserves empty strings, zero, and false; use `Kind` to determine which branch is present. The typed `AsX` methods return `(value, bool)` for Go callers and cannot be called from Go templates.
+
 **Context**: Inside `Tool`
 
 **Key Points:**

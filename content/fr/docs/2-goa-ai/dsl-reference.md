@@ -876,6 +876,8 @@ Goa-AI fournit :
 
 `CallHintTemplate(template)` et `ResultHintTemplate(template)` configurent des modèles d'affichage pour les appels d'outils et les résultats. Les modèles sont des chaînes de texte/modèle Go rendues avec des valeurs Go saisies pour produire des conseils concis affichés pendant et après l'exécution.
 
+Pour une union générée, choisissez la branche avec `Kind` et lisez sa valeur typée avec `Value` : `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`. Une sélection invalide arrête le rendu du modèle. `Value` conserve les chaînes vides, zéro et false ; utilisez `Kind` pour déterminer la branche présente. Les méthodes typées `AsX` renvoient `(value, bool)` au code Go et ne peuvent pas être appelées depuis les modèles Go.
+
 **Contexte** : À l'intérieur de `Tool`
 
 **Points clés :**
