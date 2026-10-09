@@ -18,6 +18,8 @@ edit that contract and application code; `goa gen` keeps the derived interfaces
 in agreement. Generated MCP servers use HTTP. Subprocess clients remain
 available; generated stdio servers are deferred.
 
+Use the [Quickstart module setup](../quickstart/) to install the verified development snapshot and its matching Goa dependency before generating this server.
+
 | What you need | Declare or compose |
 |---|---|
 | Tools, resources, prompts and suggestions | `Tool`, `Resource`, `ResourceReader`, `Prompt`, `PromptCompletion`, `ResourceCompletion` |

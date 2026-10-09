@@ -13,6 +13,8 @@ Les callers HTTP et stdio envoient des requêtes autonomes avec les métadonnée
 
 Un seul design définit les schémas des outils, le décodage typé, la validation, les adaptateurs serveur et les clients. Les endpoints Goa configurés conservent authentification, autorisation, middleware et comportement applicatif. Développeurs et agents de programmation modifient ce contrat et le code applicatif ; `goa gen` maintient les interfaces dérivées cohérentes. Les serveurs MCP générés utilisent HTTP. Les clients pour sous-processus restent disponibles ; les serveurs stdio générés sont reportés.
 
+Avant de générer ce serveur, installez la version de développement vérifiée et la dépendance Goa correspondante en suivant la [configuration du module du démarrage rapide](../quickstart/).
+
 | Besoin | Déclaration ou composition |
 |---|---|
 | Outils, ressources, prompts et suggestions | `Tool`, `Resource`, `ResourceReader`, `Prompt`, `PromptCompletion`, `ResourceCompletion` |
