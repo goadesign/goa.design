@@ -9,6 +9,18 @@ for (const width of [390, 1440]) {
         if (!localStorage.getItem('goa-theme')) localStorage.setItem('goa-theme', value);
       }, theme);
       await page.goto('/');
+      const brand = page.locator('.td-navbar .navbar-brand');
+      await expect(brand).toHaveAccessibleName('Goa');
+      await expect(brand).toHaveAttribute('href', '/');
+      await expect(brand.locator('svg')).toBeVisible();
+      await expect(brand.locator('svg')).toHaveAttribute('viewBox', '0 0 82 50');
+      const logo = await brand.locator('svg').boundingBox();
+      expect(logo!.width / logo!.height).toBeCloseTo(82 / 50);
+      expect(await brand.locator('g').first().evaluate(element => getComputedStyle(element).fill))
+        .toBe(await brand.evaluate(element => getComputedStyle(element).color));
+      const brandBox = await brand.boundingBox();
+      expect(brandBox!.height).toBeGreaterThanOrEqual(44);
+      await page.locator('.td-navbar').screenshot({ path: `.impeccable/review/header-${width}-${theme}.png` });
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Let agents reason. Let Goa generate.');
       await expect(page.getByRole('link', { name: 'Build a service', exact: true })).toHaveAttribute('href', '/docs/1-goa/quickstart/');
       await expect(page.getByRole('link', { name: 'Build an AI agent', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/quickstart/');
@@ -75,6 +87,8 @@ test('localized homes, documentation, and machine-readable outputs remain reacha
     for (const width of [390, 1280]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(`/${lang}`);
+      await expect(page.locator('.td-navbar .navbar-brand')).toHaveAttribute('href', `/${lang}`);
+      await expect(page.locator('.td-navbar .navbar-brand svg')).toBeVisible();
       await expect(page.locator('h1')).not.toBeEmpty();
       await expect(page.locator('.hero-actions a').first()).toHaveAttribute('href', `/${lang}docs/1-goa/quickstart/`);
       await expect(page.locator('#mcp .mcp-results dt')).toHaveCount(4);
