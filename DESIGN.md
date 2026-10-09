@@ -566,9 +566,16 @@ The hint reserves (2.6em) minimum height and leaves the command available.
 
 ### MCP and registry
 
-Two connection rows pair explanatory copy with real source and a simple
-provider-to-registry-to-application topology. MCP remains selectable code on
-an alternate surface. The topology uses three monospace provider labels,
+A dedicated MCP band pairs selectable Goa source on the left with generated
+server, client, schema and validation outputs on the right. A thin arrow labeled
+`goa gen` explains their relationship. On mobile, the source precedes the outputs
+and the arrow turns downward. The diagram uses the existing elevated surface,
+subtle borders and eight-pixel panel corners. Two open benefit columns explain
+contract review for developers and edit boundaries for coding agents. One primary
+action opens the MCP guide. Translated text also appears in homepage Markdown.
+
+The following registry row retains a simple provider-to-registry-to-application
+topology. It uses three monospace provider labels,
 thin SVG connectors, and an action-bordered highlighted registry node. Its
 accessible label states the relationship; connectors are decorative.
 

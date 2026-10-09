@@ -121,22 +121,45 @@
     </div>
   </section>
 
+  <section class="mcp-section" id="mcp" aria-labelledby="mcp-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="mcp-title">{{ T "home_mcp_heading" }}</h2><p>{{ T "home_mcp_text" }}</p></div>
+      <figure class="mcp-generation" aria-labelledby="mcp-generation-caption">
+        <div class="mcp-design">
+          <div class="mcp-stage-title"><strong>{{ T "home_mcp_design" }}</strong><span>design/catalog.go</span></div>
+          {{ highlight `Service("catalog", func() {
+    MCP("catalog", "1.0.0")
+    JSONRPC(func() { POST("/mcp") })
+
+    Method("lookup", func() {
+        Payload(LookupPayload)
+        Result(Product)
+        Tool("lookup",
+            "Find a product by SKU")
+    })
+})` "go" "" }}
+        </div>
+        <div class="mcp-generate"><code>goa gen</code><svg viewBox="0 0 72 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M0 10h68M60 2l8 8-8 8"/></svg></div>
+        <div class="mcp-results">
+          <div class="mcp-stage-title"><strong>{{ T "home_mcp_generated" }}</strong><span>{{ T "home_mcp_contract" }}</span></div>
+          <dl>
+            {{ range slice "server" "client" "schemas" "validation" }}
+            <div><dt>{{ T (printf "home_mcp_result_%s" .) }}</dt><dd>{{ T (printf "home_mcp_result_%s_text" .) }}</dd></div>
+            {{ end }}
+          </dl>
+        </div>
+        <figcaption id="mcp-generation-caption">{{ T "home_mcp_caption" }}</figcaption>
+      </figure>
+      <dl class="mcp-benefits">
+        <div><dt>{{ T "home_mcp_humans" }}</dt><dd>{{ T "home_mcp_humans_text" }}</dd></div>
+        <div><dt>{{ T "home_mcp_llms" }}</dt><dd>{{ T "home_mcp_llms_text" }}</dd></div>
+      </dl>
+      <div class="mcp-next"><a class="goa-button" href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}">{{ T "home_mcp_cta" }}</a><p>{{ T "home_mcp_capabilities" }}</p></div>
+    </div>
+  </section>
+
   <section class="connect-section site-width" aria-labelledby="connect-title">
     <div class="section-intro"><h2 id="connect-title">{{ T "home_connect_heading" }}</h2><p>{{ T "home_connect_intro" }}</p></div>
-    <article class="connect-row">
-      <div><h3>{{ T "home_mcp_heading" }}</h3><p>{{ T "home_mcp_text" }}</p><a href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}">{{ T "home_mcp_cta" }}</a></div>
-      <div class="mcp-example">
-        {{ highlight `MCP("catalog", "1.0.0")
-JSONRPC(func() { POST("/mcp") })
-
-Method("lookup", func() {
-    Payload(LookupPayload)
-    Result(Product)
-    Tool("lookup", "Find a product by SKU")
-})` "go" "" }}
-        <p>{{ T "home_mcp_caption" }}</p>
-      </div>
-    </article>
     <article class="connect-row">
       <div><h3>{{ T "home_registry_heading" }}</h3><p>{{ T "home_registry_text" }}</p><a href="{{ relref . "/docs/2-goa-ai/registry/" }}">{{ T "home_registry_cta" }}</a></div>
       <div class="registry-flow" aria-label="{{ T "home_registry_flow" }}">

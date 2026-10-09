@@ -1703,11 +1703,29 @@ Method("readme", func() {
 
 `ResourceTemplate` は URI テンプレートを型付き読み取りメソッドに対応付けます。`Prompt` はメッセージを返すメソッドに対応付けます。`ResourceCompletion` と `PromptCompletion` は型付き引数候補を提供します。`ToolContent` は構造化結果と別に返すリッチコンテンツのフィールドを指定します。いずれも通常のサービスメソッドと同じ Goa 設計・生成の手順を使います。
 
-### ResourceSubscription
+### SubscriptionSource と動的カタログ {#resourcesubscription}
 
-リソースを持つ HTTP MCP サービスでは、サーバーストリーミングメソッドを一つ `ResourceSubscription()` で指定できます。任意の入力 `resources` は URI の配列です。必須の共用体 `change` は任意の `resources` 配列を持つ `acknowledged`、または必須の `uri` を持つ `updated` です。各 URI に `Format(FormatURI)` を指定します。購読元は許可した部分集合を最初に通知し、メソッドが戻るかキャンセルされるまで変更を送ります。
+`SubscriptionSource()` は認可されたリソース、Task、カタログの変更を送るサーバーストリーミングメソッドを選びます。受け付けた選択を確認してから、終了まで変更を送ります。認証情報、scope、マップされた URL フィールド、ミドルウェアは通常の Goa の動作を保持します。生成コードは設定した監視メソッドからジョブを取得し、共有トランスポートが順序と対応を管理します。`ResourceSubscription()` を置き換え、互換エイリアスはありません。
 
-購読元が指定されたサービスだけがリソース購読機能を公開します。認可、変更検出、関連するサブリソースの選択は購読元が管理します。生成コードは認証情報、スコープ、インターセプター、ミドルウェアを含む Goa エンドポイントを使います。共有トランスポートは通知の順序とリクエスト ID を管理します。固定カタログはカタログ変更通知を送りません。
+`ToolCatalog()` と `PromptCatalog()` は宣言された名前の認可済みページ、`ResourceCatalog()` と `ResourceTemplateCatalog()` は型付き記述子を返します。任意のカーソルでページングします。共通通知元は一覧変更を配信できますが固定カタログには通知を追加しません。`ResourceReader()` は一覧とは独立して正確な URI を読みます。
+
+### InputExchange
+
+`InputExchange(continuationField, outcomeField)` は任意の継続情報と必須の完了／入力要求ユニオンを結びます。Goa はフォームと回答デコーダーを生成し、完了分岐のみをツール結果にします。サービスは各ラウンドで整合性と認可を確認します。状態と回答はモデル引数に含めません。`BindTo` とレジストリでも利用できます。[追加入力](../mcp-integration/#additional-input-and-asynchronous-tasks)と[完全な宣言](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#additional-input-from-mcp-methods)を参照してください。
+
+### TaskExchange
+
+`TaskExchange(read, answer, cancel)` は既存メソッドを永続ジョブのライフサイクルに結びます。作成は ID を返す前に処理を引き受け、取得は状態を示し、回答とキャンセルは意図を受理します。効果は後続の取得で確認します。生成器はメタデータと型変換を提供し、サービスと設定済みエンジンが完了を担当します。完了結果のみ履歴に追加します。[非同期 Task](../mcp-integration/#additional-input-and-asynchronous-tasks)と[ネイティブジョブ](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools)を参照してください。
+
+### ToolUI、ToolVisibility、ToolMetadata
+
+`ToolUI(uri)` は同じサーバーの `ui://` HTML リソースを指定し、メディア型は `text/html;profile=mcp-app` です。`ToolVisibility("model")`、`ToolVisibility("app")`、または両方で caller を選び、省略時は両方を許可します。app 専用ツールはモデルのカタログに含めません。`ToolMetadata(field)` は完了結果の型付きホストデータをモデル出力から分離します。フレームワークがサーバー識別情報を付け、それを置き換えるフィールドを拒否します。ホストが権限と隔離を担当します。[Apps](../mcp-integration/#mcp-apps)を参照してください。
+
+### SkillCatalog、SkillLookup、ResourceDirectory
+
+`SkillCatalog()` と `SkillLookup()` は完全なページと正確な URI 検索を通常メソッドに結び、`ResourceReader()` が必要です。エントリーは URI、全 JSON frontmatter、安定マニフェストまたは文字列 `dynamic` のネイティブなタグなしユニオンを持ちます。安定ファイルは URI、SHA-256、生バイト数を宣言します。アダプターはファイルを取得せず公開前に検証します。
+
+任意の `ResourceDirectory()` は URI とカーソルで直下の子を列挙します。宣言された場合のみ機能を公開し、一覧はホストが保持するマニフェストを拡張しません。不明な URI は `invalid_params` を使います。ホストは出所とエントリーをコンテキストとともに保存し、`mcp.VerifySkillFile` で取得済み・キャッシュ済みファイルを検証し、有効化と実行の同意を管理します。検出はツール権限を与えません。[Skills](../mcp-integration/#mcp-skills)と[完全な契約](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md)を参照してください。
 
 ### StaticPrompt
 

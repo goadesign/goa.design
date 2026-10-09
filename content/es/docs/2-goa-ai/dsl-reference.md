@@ -1751,11 +1751,29 @@ Method("readme", func() {
 
 `ResourceTemplate` vincula un URI parametrizado a un método de lectura tipado. `Prompt` vincula un método que devuelve mensajes. `ResourceCompletion` y `PromptCompletion` vinculan sugerencias de argumentos tipadas. `ToolContent` selecciona un campo de contenido enriquecido junto al resultado estructurado. Estos contratos siguen el mismo flujo de diseño y generación Goa que los métodos ordinarios.
 
-### ResourceSubscription
+### SubscriptionSource y catálogos dinámicos {#resourcesubscription}
 
-Un servicio MCP HTTP con recursos puede marcar un método de streaming del servidor con `ResourceSubscription()`. La entrada opcional `resources` contiene URI. La unión obligatoria `change` contiene `acknowledged` con un array opcional `resources`, o `updated` con un `uri` obligatorio. Declare `Format(FormatURI)` para cada URI. La fuente autoriza y confirma un subconjunto antes de enviar cambios hasta terminar o cancelar la solicitud.
+`SubscriptionSource()` selecciona un método de streaming de servidor para cambios autorizados de recursos, Tasks y catálogos. Primero confirma la selección aceptada, después envía cambios hasta cerrar. Credenciales, scopes, campos URL mapeados y middleware conservan el comportamiento Goa. El generador lee trabajos mediante métodos de observación configurados; el transporte ordena y correlaciona eventos. Sustituye `ResourceSubscription()` sin alias.
 
-Solo una fuente de recursos vinculada anuncia soporte de suscripciones. La fuente controla la autorización, la detección de cambios y la selección de subrecursos relacionados. El generador conserva el endpoint Goa configurado, incluidas credenciales, ámbitos, interceptores y middleware. El transporte compartido controla el orden y los identificadores. Los catálogos fijos no emiten cambios de catálogo.
+`ToolCatalog()` y `PromptCatalog()` devuelven páginas autorizadas de nombres declarados; `ResourceCatalog()` y `ResourceTemplateCatalog()` devuelven descriptores tipados. Cursores opcionales permiten paginación. La fuente común notifica cambios; los catálogos fijos no tienen notificaciones. `ResourceReader()` lee una URI exacta independientemente del catálogo.
+
+### InputExchange
+
+`InputExchange(continuationField, outcomeField)` vincula continuación opcional y unión obligatoria completo/entrada requerida. Goa aporta formularios y decodificadores de respuestas. Solo la rama completa es resultado de la herramienta. El servicio verifica integridad y autorización en cada ronda; estado y respuestas quedan fuera de argumentos del modelo. También funciona con `BindTo` y proveedores del registro. Consulta [entrada adicional](../mcp-integration/#additional-input-and-asynchronous-tasks) y [declaración completa](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#additional-input-from-mcp-methods).
+
+### TaskExchange
+
+`TaskExchange(read, answer, cancel)` vincula métodos existentes al ciclo de un trabajo duradero. La creación asume trabajo antes de devolver su ID; lectura expone estado, respuesta y cancelación confirman intenciones. Las lecturas posteriores establecen efectos. El generador aporta metadatos y conversiones; servicio y motor configurado controlan finalización. Solo la salida completa entra en el historial. Consulta [Tasks](../mcp-integration/#additional-input-and-asynchronous-tasks) y [trabajos nativos](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools).
+
+### ToolUI, ToolVisibility y ToolMetadata
+
+`ToolUI(uri)` selecciona un recurso HTML `ui://` del mismo servidor, de tipo `text/html;profile=mcp-app`. `ToolVisibility("model")`, `ToolVisibility("app")` o ambos seleccionan callers; omitirlo permite ambos. Las herramientas exclusivas de app no están en el catálogo del modelo. `ToolMetadata(field)` selecciona datos tipados del host en el resultado completo, separados del modelo. El framework aporta identidad del servidor y rechaza campos que la sustituyen. El host controla permisos y aislamiento. Consulta [Apps](../mcp-integration/#mcp-apps).
+
+### SkillCatalog, SkillLookup y ResourceDirectory
+
+`SkillCatalog()` y `SkillLookup()` vinculan páginas completas y búsquedas exactas por URI a métodos ordinarios y requieren `ResourceReader()`. Las entradas tienen URI, frontmatter JSON completo y unión nativa sin etiqueta de manifiesto estable o cadena `dynamic`. Cada archivo estable declara URI, SHA-256 y bytes. Los adaptadores validan antes de publicar sin leer archivos.
+
+`ResourceDirectory()` opcional enumera hijos inmediatos con URI y cursor. Solo una declaración explícita anuncia la capacidad; el listado no amplía el manifiesto retenido. Las URI desconocidas usan `invalid_params`. El host conserva origen y entradas con el contexto, verifica lecturas y caché con `mcp.VerifySkillFile` y controla consentimiento de activación y ejecución. Descubrimiento no concede herramientas. Consulta [Skills](../mcp-integration/#mcp-skills) y [contrato completo](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md).
 
 ### StaticPrompt
 

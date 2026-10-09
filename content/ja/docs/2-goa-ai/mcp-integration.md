@@ -2,7 +2,7 @@
 nav_group: guides
 title: MCP 統合
 weight: 50
-description: "ツール、リソース、プロンプトを公開するMCPサーバーを構築し、外部MCPツールを利用します。"
+description: "Goa の設計から型付き MCP サーバーとクライアントを生成し、認可、ユーザー入力、永続ジョブ、Apps、Skills を組み合わせます。"
 llm_optimized: true
 aliases:
 ---
@@ -10,6 +10,19 @@ aliases:
 Goa-AIは、**MCPサーバーの構築**と**外部MCPツールの利用**の両方に対応します。GoaサービスにMCP宣言を追加して、メソッドをツールとして公開し、リソースやプロンプトテンプレートを提供できます。JSON-RPCのプロトコル処理とサービスアダプターは生成されます。MCPサーバーの提供にGoa-AIエージェントの実行は不要です。
 
 HTTP・stdio caller はプロトコルのメタデータを含む独立したリクエストを送ります。初期化ハンドシェイクやプロトコルセッションはありません。`Caller` はツールを呼び出し、`Listen` は変更通知を受け取ります。Goa が生成する JSON-RPC クライアントは、サービス設計に宣言されたリソース、プロンプト、検出、補完の操作も公開します。
+
+一つの設計がツールのスキーマ、型付きデコード、検証、サーバーのアダプター、クライアントを定義します。設定済み Goa エンドポイントは認証、認可、ミドルウェア、アプリケーションの処理を担当します。開発者とコーディングエージェントは契約とアプリケーションコードを編集し、`goa gen` が生成インターフェースを整合させます。生成 MCP サーバーは HTTP を使います。サブプロセス用クライアントは利用できますが、stdio サーバーの生成は延期しています。
+
+| 必要な機能 | 宣言または組み合わせ |
+|---|---|
+| ツール、リソース、プロンプト、候補 | `Tool`、`Resource`、`ResourceReader`、`Prompt`、`PromptCompletion`、`ResourceCompletion` |
+| 認可されたカタログと変更通知 | `ToolCatalog`、`PromptCatalog`、`ResourceCatalog`、`ResourceTemplateCatalog`、`SubscriptionSource` |
+| フォーム入力、URL を開く同意 | 既存の Goa メソッドの `InputExchange` |
+| 非同期ジョブと後続のホスト回答 | 作成、取得、回答、キャンセルのメソッドを結ぶ `TaskExchange` |
+| MCP ホスト内のブラウザー UI | `ToolUI`、`ToolVisibility`、`ToolMetadata` と通常のリソース |
+| 指示と補助ファイル | `SkillCatalog`、`SkillLookup`、任意の `ResourceDirectory`、ホストによる読み込み |
+
+以下のサーバーから始め、アプリケーションに必要な機能を加えてください。
 
 ## 概要
 
@@ -173,6 +186,9 @@ Goa-AI は `runtime/mcp` パッケージを通じて HTTP と stdio をサポー
 ```go
 type Caller interface {
     CallTool(ctx context.Context, req CallRequest) (CallResponse, error)
+    GetTask(ctx context.Context, taskID string) (Task, error)
+    UpdateTask(ctx context.Context, taskID string, responses map[string]json.RawMessage) error
+    CancelTask(ctx context.Context, taskID string) error
 }
 ```
 
@@ -226,25 +242,9 @@ defer func() {
 
 stdio caller はサブプロセスを起動し、リクエスト ID で並行操作を対応付けます。各リクエストは自身のメタデータを持ちます。終了時はアプリケーションが用意した終了用コンテキストで caller を閉じ、戻り値のエラーを処理してください。
 
-### CallerFunc アダプター
+### 独自の Caller {#callerfunc-アダプター}
 
-独自 caller 実装やテスト用です:
-
-```go
-import mcpruntime "goa.design/goa-ai/runtime/mcp"
-
-// Adapt a function to the Caller interface
-caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallRequest) (mcpruntime.CallResponse, error) {
-    content, structured, err := myCustomMCPCall(ctx, req.Tool, req.Payload)
-    if err != nil {
-        return mcpruntime.CallResponse{}, err
-    }
-    return mcpruntime.CallResponse{
-        Content:           content,
-        StructuredContent: structured,
-    }, nil
-})
-```
+独自の caller はインターフェースの四つのメソッドをすべて実装します。`CallerFunc` は削除されました。一つの呼び出し関数では Task の取得、回答、キャンセルを表せないためです。未完了の状態はモデルの結果履歴に追加しません。
 
 ### Goa 生成 JSON-RPC Caller
 
@@ -280,11 +280,11 @@ if err != nil {
 
 生成された JSON-RPC クライアントでは `WithSubscriptionEvents(ctx, handler)` を使い、型付き `SubscriptionsListen` エンドポイントを呼びます。エンドポイントは最終結果を返し、ハンドラーは検証済みイベントを受け取ります。ハンドラーがなければ通信前に失敗します。
 
-### リソース購読元の宣言
+### 変更通知元の宣言
 
-リソースを持つ HTTP MCP サービスでは、サーバーストリーミングメソッドを一つ `ResourceSubscription()` で指定できます。任意の入力 `resources` は URI の配列です。必須の共用体 `change` は任意の `resources` 配列を持つ `acknowledged`、または必須の `uri` を持つ `updated` です。各 URI に `Format(FormatURI)` を指定します。購読元は許可した部分集合を最初に通知し、メソッドが戻るかキャンセルされるまで変更を送ります。
+`SubscriptionSource()` は、認可されたリソース、Task、カタログの変更を配信するサーバーストリーミングメソッドを選びます。`resources` 入力は URI を、任意の `tasks` フィールドは作成メソッド名ごとにジョブ ID を指定します。必須の `change` ユニオンは `acknowledged` で受け付けた選択を返し、その後に変更を通知します。URI には `Format(FormatURI)` を宣言します。
 
-購読元が指定されたサービスだけがリソース購読機能を公開します。認可、変更検出、関連するサブリソースの選択は購読元が管理します。生成コードは認証情報、スコープ、インターセプター、ミドルウェアを含む Goa エンドポイントを使います。共有トランスポートは通知の順序とリクエスト ID を管理します。固定カタログはカタログ変更通知を送りません。
+元のメソッドが認可と変更検出を担当します。生成コードは設定された監視エンドポイントから変更したジョブを取得し、完全な状態を送ります。共有トランスポートがイベントの順序とリクエストの対応を管理します。`ToolCatalog`、`PromptCatalog`、`ResourceCatalog`、`ResourceTemplateCatalog` は認可されたページを通常のメソッドに結びます。同じ通知元から一覧変更を配信できますが、固定カタログには変更通知を追加しません。`ResourceSubscription()` を `SubscriptionSource()` に置き換えて再生成してください。互換エイリアスはありません。
 
 ### リソース、プロンプト、リッチコンテンツ
 
@@ -296,9 +296,43 @@ HTTP の既定は一回の試行です。信頼するエンドポイントには
 
 ローカルでのリクエスト準備の失敗は、ツールが実行されたことを意味しません。送信前にキャンセルが確認された場合、リクエストは送信されません。試行が HTTP クライアントに渡された後で応答が失われると、ツールの実行結果は不明になります。ローカルのクライアントエラーと実行結果が不明な呼び出しは、どちらもエージェントの回復処理を終了します。
 
-### クライアントシークレットによる認可
+## OAuth 認可 {#クライアントシークレットによる認可}
 
-`NewClientCredentialsHTTPTransport` は MCP リクエストの送信前に、事前登録されたクライアント ID とシークレットを使い、正確に指定した HTTPS リソースと発行者のトークンを取得します。このトランスポートを生成 HTTP クライアントまたは `HTTPOptions.Client` に渡すと、どちらも同じ認可処理を使います。シークレットはトークンエンドポイントへの POST フォームにのみ含まれ、MCP の認可ヘッダーには不透明な Bearer トークンだけが渡ります。発行者は `client_credentials`、`client_secret_post`、`client_secret_basic` を明示する必要があります。この最初のプロファイルはリダイレクトを拒否し、401/403 応答を再試行しません。チャレンジの URL、同意、PKCE、権限変更、サーバー側のトークン検証は未実装であり、OAuth の完全なサポートではありません。
+MCP メソッドは Goa の通常のセキュリティで保護します。署名付きアクセストークンには `NewJWTResourceServer`、不透明なトークンには `NewIntrospectionResourceServer` で必須の検証器を構築し、生成サーバーのコンストラクターに渡します。信頼する発行者、対象リソース、鍵、認証情報はアプリケーション設定が提供します。認証情報の欠落や不正は 401、scope 不足は 403、検証器の停止は 503 です。呼び出し後のアプリケーションエラーを認可 challenge に変換しません。
+
+クライアントは通常の HTTP トランスポートを共有します。`NewAuthorizationCodeHTTPTransport` はブラウザーの同意、state、発行者検証、S256 PKCE を処理します。`NewClientCredentialsHTTPTransport` は機密クライアントの権限を取得し、`NewEnterpriseHTTPTransport` はホストが検証したシングルサインオン認証情報を交換します。登録では公開クライアント、HTTP Basic、POST の secret、署名付き assertion のいずれかを明示します。事前登録と HTTPS メタデータ文書には明示的なコンストラクターがあり、廃止された動的登録は削除されています。
+
+ホストがサインイン、信頼する発行者、ユーザーまたはアプリケーションごとの `AuthorizationStore` を管理します。永続化には暗号化ストレージとインスタンス間の直列化が必要です。メモリストアは一つのプロセス内のみ有効です。検出と challenge は認証情報を正確な発行者と対象に結びます。内部の送信 URL は対象と異なる場合があります。最初の認証情報なしのリクエストで同意前に scope を取得します。新しく広告された scope だけで同意を再要求しません。ブラウザーと enterprise クライアントは実行前の明示的な認可拒否から一度回復できます。機械用権限の拒否は終了扱いです。結果が不明なツールの再実行は認めません。[認可ガイド](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#mcp-resource-servers)を参照してください。
+
+## 追加入力と非同期 Task {#additional-input-and-asynchronous-tasks}
+
+`InputExchange(continuationField, outcomeField)` は既存メソッドの任意の continuation と、完了または入力要求を表す必須ユニオンを結びます。型付き要求はフォームまたは URL を開く同意を記述し、Goa の式からスキーマと回答デコーダーを生成します。広告するツール結果になるのは完了分岐のみです。各ラウンドで通常の認証と検証を適用し、状態とホストの回答はモデル引数に含めません。URL への同意だけでは外部処理の完了を証明しません。アプリケーションが確認します。
+
+同じ宣言を MCP、ローカル `BindTo`、レジストリプロバイダーで利用できます。エージェントは待機中に停止し、型付き回答を受け取ると同じ未完了呼び出しを再開します。機密データはモデルに見えるフォームではなく外部 URL の処理に置きます。
+
+`TaskExchange(read, answer, cancel)` は既存の永続ジョブメソッドを結びます。作成側は ID を返す前に受け付けた処理を永続的に引き受けます。取得結果は実行中、入力要求、完了、失敗、キャンセルです。回答とキャンセルは意図の受理を示し、その効果は後続の取得で確認します。サービスが保存と完了を担当し、アダプターはプロトコルメタデータと型変換を提供します。別のジョブストアは追加しません。
+
+直接利用するクライアントは `CallResponse.Task` を保存して監視できる場合のみ `WithTaskSupport(ctx)` を使います。同じ caller で `GetTask`、`UpdateTask`、`CancelTask` を呼びます。生成されたエージェント処理は ID を保持し、取得や通知を通じて監視し、設定済みエンジンで入力待ちとキャンセルを処理します。本番の永続性には Temporal とアプリケーションストレージが必要です。メモリエンジンはプロセス内のみ有効です。[ネイティブ入力とジョブ](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools)、[Task クライアント](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#mcp-task-clients)を参照してください。
+
+## MCP Apps {#mcp-apps}
+
+通常のリソースメソッドで `text/html;profile=mcp-app` の HTML を配信します。ツール内の `ToolUI("ui://...")` は同じサーバーのリソースを結果に結びます。`ToolVisibility("model")`、`ToolVisibility("app")`、または両方で呼び出し側を選び、省略時は両方を許可します。app 専用ツールはモデルのカタログに含めません。`ToolMetadata` はモデル向けコンテンツや構造化結果とは別に型付きホストデータを選びます。ブラウザーのないホストにも意味のある通常の結果を返します。
+
+ホストがブラウザーの隔離と権限を管理します。[維持されている例](https://github.com/goadesign/goa-ai/tree/main/integration_tests/apps)は生成 Goa エンドポイント、公式ブラウザー SDK、別オリジンのフレーム、明示的な権限を組み合わせます。現在のツール公開範囲を確認し、非公開のホスト結果をモデルメッセージに含めません。
+
+## MCP Skills {#mcp-skills}
+
+`SkillCatalog()` と `SkillLookup()` を通常のメソッドに宣言し、`ResourceReader()` を併用します。一覧と正確な URI 検索は URI、全 frontmatter フィールド、安定ファイルのマニフェストまたは `dynamic` 宣言を返します。安定ファイルには正確な URI、生バイト数、SHA-256 が必要です。任意の `ResourceDirectory()` は直下の子を一覧表示しますが、指示を有効化したり保存済みマニフェストを拡張したりしません。
+
+ホストはサーバーの識別情報を付け、完全なエントリーをモデルのコンテキストとともに保持します。利用前に `mcp.VerifySkillFile(ctx, retainedEntryJSON, uri, bytes)` で所属、サイズ、digest を検証します。キャッシュにも同じ検証が必要です。エントリー自身の `SKILL.md` は将来のフィールドや正確な数値を含む全 YAML フィールドを検出結果と比較します。動的エントリーはこの安定マニフェスト検証を通りません。
+
+Skills は信頼できない指示であり、システムメッセージやツール権限ではありません。入れ子の `SKILL.md` を補助資料として読むだけでは有効化しません。有効化には独立した検出と同意が必要です。ローカル実行には発信サーバー、正確な Skill、完全なマニフェストに対する明示的な同意が必要で、マニフェスト変更は同意を失効させます。[参照ホスト](https://github.com/goadesign/goa-ai/tree/main/codegen/mcp/testdata/skills_host)は遅延読み込みとネイティブのツール確認を組み合わせます。コンテキストと承認は一つのプロセス内のみ有効です。保存するアプリケーションはエントリーと承認の寿命を管理します。[完全な契約](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md)を参照してください。
+
+## 互換性のない更新 {#breaking-upgrade}
+
+サーバー、クライアント、executor、レジストリプロバイダーを同時に再生成します。初期化、セッション、プロトコル選択、JSON テキスト結果のデコーダーを削除します。独自 caller は四つのメソッドを実装します。設定済み Goa エンドポイントからアダプターを、検証器から保護サーバーを構築します。`ResourceSubscription` を `SubscriptionSource` に置き換え、生成ユニオンメソッドで分岐を選びます。
+
+新旧の peer は同じエンドポイントを共有できません。互換性のない受理済み処理と保存済み run を完了または解決してから、worker、レジストリ、永続化を変更します。依存関係を戻すだけでは新しい保存データとの互換性は復元しません。[更新ガイド](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#preview-upgrade-guide)に従ってください。
 
 ---
 

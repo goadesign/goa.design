@@ -1851,11 +1851,88 @@ Method("readme", func() {
 
 `ResourceTemplate` binds a parameterized URI to a typed read method. `Prompt` binds a method that returns prompt messages. `ResourceCompletion` and `PromptCompletion` bind typed argument suggestions. `ToolContent` selects a typed rich-content field beside the tool’s structured result. These contracts use the same Goa design and generation workflow as ordinary service methods.
 
-### ResourceSubscription
+### SubscriptionSource and dynamic catalogs {#resourcesubscription}
 
-An HTTP MCP service with resources can mark one server-streaming method with `ResourceSubscription()`. Its optional `resources` input contains URI strings. Its required `change` union contains `acknowledged` with an optional `resources` array, or `updated` with one required `uri`. Declare `Format(FormatURI)` for each URI. The source first authorizes and acknowledges a subset, then sends updates until it returns or the request is canceled.
+`SubscriptionSource()` selects one server-streaming method for an MCP service's
+authorized resource, Task and catalog changes. The source first acknowledges
+the accepted selection, then identifies changes until cancellation or closure.
+Native credentials, scopes, mapped URL fields and endpoint middleware retain
+their ordinary Goa behavior. Generated code reads changed jobs through configured
+observation methods and sends complete snapshots. Shared transport owns ordering
+and request correlation. Replace the removed `ResourceSubscription()` declaration
+and regenerate; its old name has no compatibility alias.
 
-Only a bound resource source advertises resource subscription support. The source owns authorization, change detection, and related sub-resource selection. The generator preserves the configured Goa endpoint, including credentials, scopes, interceptors, and middleware. The shared transport owns event ordering and request identifiers. Fixed catalogs do not emit catalog-change notifications.
+`ToolCatalog()` and `PromptCatalog()` bind ordinary unary methods that return
+authenticated pages of declared names. `ResourceCatalog()` and
+`ResourceTemplateCatalog()` bind pages of typed descriptors. Their optional
+cursor and next-cursor fields provide pagination. The common subscription source
+can advertise and emit their list changes; fixed catalogs do not gain change
+notifications. `ResourceReader()` selects one exact-URI read method independently
+of whether resources appear in a catalog.
+
+### InputExchange
+
+`InputExchange(continuationField, outcomeField)` binds an existing method's
+optional continuation object to a required complete/input-required result union.
+Typed pending requests describe forms or consent to open URLs. Goa expressions
+supply field names, descriptions, constraints and generated answer decoding.
+Only the completed branch enters the advertised tool result. The service owns
+continuation integrity and authorization on every round; state and host answers
+remain outside model arguments.
+
+This same declaration works for MCP calls, native agent `BindTo` execution and
+registry providers. The runtime suspends the exact unfinished call and resumes
+after a typed host response. See [additional input](../mcp-integration/#additional-input-and-asynchronous-tasks)
+and the [complete declaration](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#additional-input-from-mcp-methods).
+
+### TaskExchange
+
+`TaskExchange(read, answer, cancel)` selects three existing methods for a creator's
+durable job lifecycle. The creator owns accepted work before returning its
+identifier. Read exposes working, input-required, complete, failed or cancelled
+state; answer and cancel acknowledge intent. Subsequent reads establish effects.
+The generator emits protocol metadata and typed conversions; service persistence
+and the configured workflow engine own completion. Ordinary `InputExchange`
+may request host input before job creation.
+
+Only completed domain output enters tool history. A subscription source can send
+full Task updates through the same observation method. See [asynchronous Tasks](../mcp-integration/#additional-input-and-asynchronous-tasks)
+and [native job declarations](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools).
+
+### ToolUI, ToolVisibility and ToolMetadata
+
+Inside an MCP tool declaration, `ToolUI(uri)` names an existing same-server
+`ui://` HTML resource with media type `text/html;profile=mcp-app`. Ordinary
+resource methods serve its contents. `ToolVisibility("model")`,
+`ToolVisibility("app")`, or both select callers; omission permits both. App-only
+tools stay outside generated model catalogs. `ToolMetadata(field)` selects a
+typed completed-result object for host data, separately from model content and
+structured output. The framework supplies server identity and rejects authored
+fields that would replace it.
+
+The application host owns app permissions and browser isolation. See
+[MCP Apps](../mcp-integration/#mcp-apps) and the
+[maintained browser host](https://github.com/goadesign/goa-ai/tree/main/integration_tests/apps).
+
+### SkillCatalog, SkillLookup and ResourceDirectory
+
+`SkillCatalog()` and `SkillLookup()` bind complete Skill pages and exact entry
+lookup to ordinary unary methods. Both require `ResourceReader()`. Entries contain
+required URI, complete open JSON frontmatter, and a native untagged union of a
+stable manifest or the string `dynamic`. Stable manifest entries require exact
+URI, SHA-256 digest and raw byte size. Generated adapters validate entries and
+directory membership before publication without fetching files.
+
+Optional `ResourceDirectory()` binds immediate-child directory pages with URI
+and cursor inputs. Only a declared directory method advertises that capability.
+Directory pages cannot expand a host's retained Skill manifest. Unknown Skill,
+file or directory requests use declared `invalid_params` errors.
+
+The consuming host retains origin and complete entries with its model context,
+verifies fetched and cached bytes using `mcp.VerifySkillFile`, and owns activation
+and local execution consent. Discovery does not grant tools. See
+[MCP Skills](../mcp-integration/#mcp-skills) and the
+[complete server and host contract](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md).
 
 ### StaticPrompt
 

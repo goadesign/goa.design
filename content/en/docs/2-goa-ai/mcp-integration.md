@@ -2,7 +2,7 @@
 nav_group: guides
 title: MCP Integration
 weight: 50
-description: "Create MCP servers with tools, resources, and prompts, and consume external MCP tools."
+description: "Build typed MCP servers and clients from Goa designs, with authorization, user input, durable jobs, Apps, and Skills."
 llm_optimized: true
 aliases:
 ---
@@ -10,6 +10,24 @@ aliases:
 Goa-AI supports both **creating MCP servers** and **consuming external MCP tools**. Add MCP declarations to a Goa service to expose methods as tools, publish resources, and provide prompt templates. The generator produces JSON-RPC protocol handling and service adapters. Hosting an MCP server does not require running a Goa-AI agent.
 
 The HTTP and stdio callers send self-contained requests with protocol metadata. There is no initialization handshake or protocol session. Their `Caller` interface invokes tools; their `Listen` methods receive change notifications. Generated Goa JSON-RPC clients also expose the resource, prompt, discovery, and completion operations declared by the service.
+
+One design supplies the tool schema, typed decoding, validation, server adapters
+and client bindings. Your configured Goa endpoints keep authentication,
+authorization, middleware and application behavior. Developers and coding agents
+edit that contract and application code; `goa gen` keeps the derived interfaces
+in agreement. Generated MCP servers use HTTP. Subprocess clients remain
+available; generated stdio servers are deferred.
+
+| What you need | Declare or compose |
+|---|---|
+| Tools, resources, prompts and suggestions | `Tool`, `Resource`, `ResourceReader`, `Prompt`, `PromptCompletion`, `ResourceCompletion` |
+| Authenticated catalogs and change notifications | `ToolCatalog`, `PromptCatalog`, `ResourceCatalog`, `ResourceTemplateCatalog`, `SubscriptionSource` |
+| User forms or consent to open a URL | `InputExchange` on an existing Goa method |
+| Asynchronous jobs and later host answers | `TaskExchange` with existing create, read, answer and cancel methods |
+| Browser interfaces inside an MCP host | `ToolUI`, `ToolVisibility` and `ToolMetadata` with ordinary resources |
+| Instructions and supporting files | `SkillCatalog`, `SkillLookup`, optional `ResourceDirectory`, and host-owned loading |
+
+Start with the server below, then add the capabilities your application needs.
 
 ## Overview
 
@@ -178,6 +196,9 @@ implement the `Caller` interface:
 ```go
 type Caller interface {
     CallTool(ctx context.Context, req CallRequest) (CallResponse, error)
+    GetTask(ctx context.Context, taskID string) (Task, error)
+    UpdateTask(ctx context.Context, taskID string, responses map[string]json.RawMessage) error
+    CancelTask(ctx context.Context, taskID string) error
 }
 ```
 
@@ -231,25 +252,11 @@ defer func() {
 
 The stdio caller starts one subprocess and correlates concurrent operations by request ID. Requests carry their own metadata. Close the caller with an application-owned shutdown context and handle the returned error.
 
-### CallerFunc Adapter
+### Custom callers {#callerfunc-adapter}
 
-For custom caller implementations or testing:
-
-```go
-import mcpruntime "goa.design/goa-ai/runtime/mcp"
-
-// Adapt a function to the Caller interface
-caller := mcpruntime.CallerFunc(func(ctx context.Context, req mcpruntime.CallRequest) (mcpruntime.CallResponse, error) {
-    content, structured, err := myCustomMCPCall(ctx, req.Tool, req.Payload)
-    if err != nil {
-        return mcpruntime.CallResponse{}, err
-    }
-    return mcpruntime.CallResponse{
-        Content:           content,
-        StructuredContent: structured,
-    }, nil
-})
-```
+Implement all four `Caller` methods when supplying a custom transport or test
+double. The tool-only `CallerFunc` adapter is removed. Task support uses the same
+typed contract as ordinary calls rather than an optional interface assertion.
 
 ### Goa-Generated JSON-RPC Caller
 
@@ -287,9 +294,20 @@ For a generated JSON-RPC client, use `WithSubscriptionEvents(ctx, handler)` and 
 
 ### Declaring a resource subscription source
 
-An HTTP MCP service with resources can mark one server-streaming method with `ResourceSubscription()`. Its optional `resources` input contains URI strings. Its required `change` union contains `acknowledged` with an optional `resources` array, or `updated` with one required `uri`. Declare `Format(FormatURI)` for each URI. The source first authorizes and acknowledges a subset, then sends updates until it returns or the request is canceled.
+Mark one server-streaming Goa method with `SubscriptionSource()`. Its optional
+`resources` input selects URI strings; optional `tasks` fields select native job
+identifiers under their creator method names. The required `change` union starts
+with `acknowledged`, containing the accepted selection, then identifies resource,
+job or catalog changes. Declare `Format(FormatURI)` for resource URIs.
 
-Only a bound resource source advertises resource subscription support. The source owns authorization, change detection, and related sub-resource selection. The generator preserves the configured Goa endpoint, including credentials, scopes, interceptors, and middleware. The shared transport owns event ordering and request identifiers. Fixed catalogs do not emit catalog-change notifications.
+The original method owns authorization and change detection. Generated code
+reads changed jobs through their configured observation endpoints and sends full
+Task snapshots. The shared transport owns event ordering and request identifiers.
+`ToolCatalog`, `PromptCatalog`, `ResourceCatalog` and `ResourceTemplateCatalog`
+bind authenticated pages to ordinary Goa methods. The same stream can acknowledge
+and emit their list changes. Fixed catalogs do not gain change notifications.
+Replace `ResourceSubscription()` with `SubscriptionSource()` and regenerate;
+there is no legacy alias.
 
 ### Resources, prompts, and rich content
 
@@ -301,9 +319,138 @@ HTTP calls make one attempt by default. A host can opt into `HTTPRetryPolicy` fo
 
 Local request preparation failures do not imply that the tool ran. Cancellation observed before dispatch sends no request. Once an attempt reaches the HTTP client, losing its response leaves the outcome unknown. Local client errors and unknown tool outcomes both stop agent recovery.
 
-### Client-secret authorization
+## OAuth authorization {#client-secret-authorization}
 
-`NewClientCredentialsHTTPTransport` obtains preregistered client-secret grants for one exact HTTPS resource and issuer before sending MCP requests. Pass this transport to a generated HTTP client or `HTTPOptions.Client`; both use the same authorization path. Secrets stay in the token POST form, and only the opaque bearer token reaches the MCP authorization header. The issuer must advertise `client_credentials`, `client_secret_post` and `client_secret_basic`. This first profile rejects redirects and does not repeat 401/403 responses. Challenge URLs, consent, PKCE, scope changes and server token verification remain unfinished; this is not complete OAuth support.
+Protect MCP methods with native Goa security. Construct a required resource
+verifier with `NewJWTResourceServer` for signed access tokens or
+`NewIntrospectionResourceServer` for opaque tokens, then pass it to the generated
+server constructor. Trusted issuer, audience, keys and introspection credentials
+come from application configuration. Missing or invalid credentials receive
+401; insufficient scopes receive 403. A verifier outage receives 503. Application
+errors after dispatch do not become authorization challenges.
+
+Clients share the ordinary HTTP transport and generated contracts:
+
+- `NewAuthorizationCodeHTTPTransport` runs browser consent with state, issuer
+  checks and S256 proof of possession, commonly called PKCE.
+- `NewClientCredentialsHTTPTransport` obtains machine grants for a configured
+  confidential registration.
+- `NewEnterpriseHTTPTransport` exchanges host-validated single sign-on
+  credentials through an identity provider and the resource authorization server.
+
+Registration explicitly selects a public client, HTTP Basic, a POST client
+secret, or signed client assertions. Preregistered clients and HTTPS client
+metadata documents have explicit constructors. Deprecated dynamic registration
+is removed. The host owns sign-in, trusted issuer configuration and an
+`AuthorizationStore` for each authenticated user or application. Supply encrypted
+persistence and cross-instance serialization for durable authorization; the
+memory store lasts one process.
+
+Resource discovery and challenges bind credentials to the exact issuer and
+audience. The internal delivery URL may differ from that audience. An initial
+credential-free discovery request obtains scope guidance before consent. Saved
+grants retain established permissions; newly advertised scopes alone do not
+trigger another consent flow. A browser or enterprise client can recover once
+from an explicit pre-execution authorization rejection. Machine-grant rejection
+is terminal. This recovery does not permit replay after an uncertain tool result.
+
+See the framework's [authorization guide](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#mcp-resource-servers)
+for configuration, trust and credential-store contracts.
+
+## Additional input and asynchronous Tasks
+
+`InputExchange(continuationField, outcomeField)` binds an existing method's
+optional continuation to its required complete/input-required result union.
+The pending branch declares typed form or URL requests; the complete branch
+alone supplies the advertised tool result. Generation derives form schemas and
+typed answer decoders from Goa expressions. Native authentication and method
+validation run on every round. State and host answers stay outside model
+arguments. URL acceptance records consent; the application checks whether the
+external interaction actually finished.
+
+The same method works through MCP, local `BindTo` execution and a registry
+provider. The agent suspends while awaiting host input and resumes the exact
+unfinished call after a typed response. Sensitive data belongs in an external
+URL interaction, rather than a model-visible form.
+
+`TaskExchange(read, answer, cancel)` binds existing durable job methods. Creation
+must own accepted work durably before returning a job identifier. Read returns
+working, input-required, complete, failed or cancelled state. Answer and cancel
+acknowledge accepted intent; subsequent reads establish the effect. The MCP
+adapter supplies protocol metadata and typed conversions, while your service
+owns job persistence and completion. It does not create another job store.
+
+A direct client advertises support with `WithTaskSupport(ctx)` only when it can
+retain and observe the returned `CallResponse.Task`. `GetTask`, `UpdateTask` and
+`CancelTask` use the same caller. Generated agent execution retains job identity,
+polls or consumes notifications, suspends for user input and settles cancellation
+through the configured workflow engine. Production durability requires the
+Temporal engine and an application storage implementation; the in-memory engine
+provides process-lifetime execution.
+
+See [native input and jobs](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools)
+for exact declarations and [Task clients](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#mcp-task-clients)
+for their state and cancellation contract.
+
+## MCP Apps
+
+Serve an HTML resource with media type `text/html;profile=mcp-app` through the
+ordinary resource methods. Inside a tool declaration, `ToolUI("ui://...")`
+associates that same-server resource with its result. `ToolVisibility("model")`,
+`ToolVisibility("app")`, or both declare who may call the tool; omission permits
+both. App-only helpers stay outside generated model catalogs. `ToolMetadata`
+selects typed host data separately from model-visible content and structured
+results. Hosts without a browser still receive meaningful ordinary tool output.
+
+The host owns browser isolation and app permissions. The maintained
+[Apps example](https://github.com/goadesign/goa-ai/tree/main/integration_tests/apps)
+composes generated Goa endpoints with the official browser SDK, a separate-origin
+frame and explicit permissions. It checks current tool visibility before calls
+and keeps private host results outside model messages.
+
+## MCP Skills
+
+Declare `SkillCatalog()` and `SkillLookup()` on ordinary unary methods, together
+with `ResourceReader()`. Catalog pages and direct URI lookups return complete
+entries: the entry URI, every frontmatter field and either a stable file manifest
+or a dynamic declaration. Each stable file declares its exact URI, raw byte size
+and SHA-256 digest. Optional `ResourceDirectory()` pages list immediate children;
+listing never activates instructions or expands a retained manifest.
+
+The generated protocol client supplies discovery and file reads. The consuming
+host assigns server identity and retains the complete entry with its model
+context. Call `mcp.VerifySkillFile(ctx, retainedEntryJSON, uri, bytes)` before use
+to check exact manifest membership, byte size and digest. Loading the entry's own
+`SKILL.md` also compares every YAML field with discovery, including future fields
+and exact numbers. Cached content needs the same check. Dynamic entries cannot
+pass stable-manifest verification.
+
+Skills are untrusted instructions, not system messages or tool permissions.
+Reading a nested `SKILL.md` supplies supporting content; activating it needs its
+own discovery and consent. Local execution requires explicit consent for the
+originating server, exact Skill and complete manifest. A changed manifest revokes
+that consent. The [reference host](https://github.com/goadesign/goa-ai/tree/main/codegen/mcp/testdata/skills_host)
+composes lazy reads and native tool confirmation. Its context and approvals last
+one process; applications that persist context must retain its entries and own
+the approval lifetime.
+
+See [serve and load Skills](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md)
+for the full manifest, directory and host contracts.
+
+## Breaking upgrade
+
+Regenerate servers, clients, executors and registry providers together. Remove
+initialization and session calls, protocol-selection options and JSON-text result
+decoders. Custom callers implement all four task-aware methods. Construct MCP
+adapters from configured Goa endpoints and protected servers from a resource
+verifier. Replace `ResourceSubscription` with `SubscriptionSource`; select
+completed or input-required branches through generated union methods.
+
+Old and new peers cannot share an endpoint. Drain incompatible accepted work and
+saved runs before changing workers, registry peers and application persistence.
+Reverting one dependency does not restore compatibility with newer saved data.
+Follow the [framework upgrade guide](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#preview-upgrade-guide)
+for storage and coordinated cutover requirements.
 
 ---
 

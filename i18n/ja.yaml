@@ -288,11 +288,11 @@ home_connect_intro: "Goa-AIは、ツールを自社エージェントや他のAI
 
 home_mcp_heading: "サービスからMCPサーバーを構築。"
 
-home_mcp_text: "サービスのメソッドをMCPツールとして公開し、リソースやプロンプトテンプレートも提供。Goa-AIがプロトコル処理とアダプターを生成するため、MCPをアプリケーションの新たなインターフェースにできます。外部MCPツールの利用にも対応します。"
+home_mcp_text: "MCPをGoサービスの新たなインターフェースに。Goa-AIは一つの設計からプロトコル処理、クライアント、ツールスキーマ、検証を生成します。アプリケーションの動作はサービスが担います。"
 
 home_mcp_cta: "MCPサーバーを構築する"
 
-home_mcp_caption: "Goaサービス内の記述例。ResourceとStaticPromptでMCPの公開機能を拡張できます。"
+home_mcp_caption: "選択・コピーできる設計例。LookupPayloadとProductはアプリケーションで定義する型です。"
 
 home_registry_heading: "ツールレジストリを、自分で運用。"
 
@@ -327,3 +327,20 @@ home_faq_mcp_q: "MCPサーバーの構築だけにGoa-AIを使えますか？"
 home_faq_mcp_a: "はい。GoaサービスにMCP宣言を追加すると、ツール、リソース、プロンプトテンプレートを公開するサーバーを生成できます。生成されたアダプターの先にサービスメソッドを実装します。MCPを提供するためにGoa-AIエージェントを実行する必要はありません。"
 
 ui_search: "検索"
+
+home_mcp_design: "Goaで書く設計"
+home_mcp_generated: "生成されるMCPインターフェース"
+home_mcp_contract: "共通の型付き契約"
+home_mcp_result_server: "HTTPサーバー"
+home_mcp_result_server_text: "Goaのエンドポイントに接続するプロトコル処理。"
+home_mcp_result_client: "型付きクライアント"
+home_mcp_result_client_text: "生成されたメソッドでツールを呼び出し、リソースを読み取ります。"
+home_mcp_result_schemas: "ツールのスキーマ"
+home_mcp_result_schemas_text: "同じ設計から引数と結果のスキーマを生成。"
+home_mcp_result_validation: "検証とコーデック"
+home_mcp_result_validation_text: "アプリケーションコードの実行前に外部入力を検証。"
+home_mcp_humans: "レビューする契約は一つ"
+home_mcp_humans_text: "型、検証、セキュリティをGoaで定義し、業務ロジックをGoで実装します。設計を変更したらサーバーとクライアントを再生成します。"
+home_mcp_llms: "コーディングエージェントにも明確な作業範囲"
+home_mcp_llms_text: "設計とサービスのインターフェースをエージェントに渡します。編集対象は少量の手書きコードに絞られ、生成された型とコンパイルエラーが契約の不整合を示します。"
+home_mcp_capabilities: "同じ設計とランタイムでOAuth、ユーザー入力、永続的なTasks、Apps、Skillsを追加できます。"

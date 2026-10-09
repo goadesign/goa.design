@@ -22,6 +22,21 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx skills add goadesign/goa --skill goa-service-designer');
       await expect(page.getByRole('link', { name: 'Build an MCP server', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/mcp-integration/');
+      const mcp = page.locator('#mcp');
+      await expect(mcp.locator('pre')).toContainText(/Tool\("lookup",\s*"Find a product by SKU"\)/);
+      await expect(mcp.locator('.mcp-results dt')).toHaveText(['HTTP server', 'Typed clients', 'Tool schemas', 'Validation and codecs']);
+      await expect(mcp.locator('.mcp-benefits')).toContainText('coding agent');
+      const design = await mcp.locator('.mcp-design').boundingBox();
+      const outputs = await mcp.locator('.mcp-results').boundingBox();
+      expect(design).not.toBeNull();
+      expect(outputs).not.toBeNull();
+      if (width < 801) {
+        expect(outputs!.y).toBeGreaterThan(design!.y + design!.height);
+      } else {
+        expect(outputs!.x).toBeGreaterThan(design!.x + design!.width);
+      }
+      await mcp.locator('h2').click();
+      await mcp.screenshot({ path: `.impeccable/review/mcp-${width}-${theme}.png` });
       await expect(page.getByRole('link', { name: 'Host a tool registry', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/registry/');
       await page.locator('.support-section').scrollIntoViewIfNeeded();
       await expect.poll(() => page.locator('.support-section img').evaluateAll(
@@ -62,9 +77,21 @@ test('localized homes, documentation, and machine-readable outputs remain reacha
       await page.goto(`/${lang}`);
       await expect(page.locator('h1')).not.toBeEmpty();
       await expect(page.locator('.hero-actions a').first()).toHaveAttribute('href', `/${lang}docs/1-goa/quickstart/`);
+      await expect(page.locator('#mcp .mcp-results dt')).toHaveCount(4);
+      await expect(page.locator('#mcp .goa-button')).toHaveAttribute('href', `/${lang}docs/2-goa-ai/mcp-integration/`);
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);
+        await page.locator('#mcp h2').click();
+        await page.locator('#mcp').screenshot({ path: `.impeccable/review/mcp-${lang.replace('/', '') || 'en'}-${width}-${theme}.png` });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${lang} at ${width}px ${theme}`).toBe(true);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${lang} at ${width}px`).toBe(true);
     }
-    for (const path of ['index.md', 'docs/', 'docs/ai-development/', 'docs/2-goa-ai/', 'docs/contributing/', 'llms.txt', 'docs/ai-development/index.md']) {
+    await page.goto(`/${lang}docs/2-goa-ai/mcp-integration/`);
+    for (const section of ['additional-input-and-asynchronous-tasks', 'mcp-apps', 'mcp-skills']) {
+      await expect(page.locator(`[id="${section}"]`)).toHaveCount(1);
+    }
+    for (const path of ['index.md', 'docs/', 'docs/ai-development/', 'docs/2-goa-ai/', 'docs/contributing/', 'llms.txt', 'docs/ai-development/index.md', 'docs/2-goa-ai/mcp-integration/index.md']) {
       const response = await request.get(`/${lang}${path}`);
       expect(response.status(), `${lang}${path}`).toBe(200);
       if (path === 'docs/ai-development/index.md') {
@@ -72,6 +99,13 @@ test('localized homes, documentation, and machine-readable outputs remain reacha
       }
       if (path === 'llms.txt') {
         expect(await response.text()).toContain(`/${lang}docs/ai-development/index.md`);
+      }
+      if (path === 'docs/2-goa-ai/mcp-integration/index.md') {
+        const content = await response.text();
+        for (const capability of ['NewJWTResourceServer', 'InputExchange', 'TaskExchange', 'ToolUI', 'SkillCatalog', 'mcp.VerifySkillFile']) {
+          expect(content).toContain(capability);
+        }
+        expect(content).not.toContain('mcpruntime.CallerFunc(');
       }
     }
   }
@@ -119,6 +153,8 @@ test('source HTML and Markdown expose the ecosystem and skill without client ren
   const markdown = await (await request.get('/index.md')).text();
   expect(markdown).toContain('Create MCP servers');
   expect(markdown).toContain('Host a registry');
+  expect(markdown).toContain('Typed clients');
+  expect(markdown).toContain('coding agent');
   expect(markdown).toContain('less code to write');
   const manifest = await (await request.get('/favicons/manifest.json')).json();
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true);
