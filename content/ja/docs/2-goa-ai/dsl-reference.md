@@ -87,7 +87,6 @@ completion 名はコントラクトの一部であり、1-64 文字の ASCII、
 | `OnMissingFields` | RunPolicy | 必須フィールド欠落時の扱い |
 | **MCP Functions** | | |
 | `MCP` | Service | MCP を有効化する |
-| `ProtocolVersion` | MCP option | MCP プロトコルバージョンを設定する |
 | `Tool` | Method | MCP が有効なサービス内でメソッドを MCP ツールとして扱う |
 | `Toolset(FromMCP(...))` | Top-level | Goa バックエンドの MCP 由来ツールセットを宣言する |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level | インラインスキーマ付きの外部 MCP ツールセットを宣言する |
@@ -845,6 +844,8 @@ Tool("dangerous_write", "Write a stateful change", func() {
 
 `CallHintTemplate(template)` と `ResultHintTemplate(template)` は、ツール呼び出し/結果の表示テンプレート（ヒント）を設定します。テンプレートは Go の `text/template` 文字列で、ツールの型付き payload/result 構造体に対して評価され、実行中および実行後に表示される簡潔なヒントを生成します。
 
+生成されたユニオンでは、`Kind` で分岐を選択し、`Value` で型付きの値を読み取ります: `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`。無効な選択はテンプレートの実行を停止します。`Value` は空文字列、ゼロ、false を保持するため、選択された分岐の判定には `Kind` を使います。型付きの `AsX` メソッドは Go コードに `(value, bool)` を返すので、Go テンプレートからは呼び出せません。
+
 **コンテキスト**: `Tool` の内部
 
 **ポイント:**
@@ -1596,7 +1597,7 @@ Goa-AI は、Goa サービス内で Model Context Protocol（MCP）サーバを�
 
 ### MCP
 
-`MCP(name, version, opts...)` は現在のサービスで MCP を有効化します。MCP プロトコルを通じてツール、リソース、プロンプトを公開するようサービスを構成します。
+`MCP(name, version)` は現在のサービスで MCP を有効化します。MCP プロトコルを通じてツール、リソース、プロンプトを公開するようサービスを構成します。
 
 
 **コンテキスト**: `Service` の内部
@@ -1626,21 +1627,11 @@ Service("calculator", func() {
 })
 ```
 
+URL 値には Goa 標準の `Param("payload_field:url_name")` マッピングを使います。ツールやプロンプトの引数に含めず、各メソッドの型と検証を維持します。[URL 値と属性のマッピング](../mcp-integration/#url-値と属性のマッピング)を参照してください。
+
 ### ProtocolVersion
 
-`ProtocolVersion(version)` は、サーバがサポートする MCP プロトコルバージョンを設定します。`MCP` に渡す設定関数を返します。
-
-**コンテキスト**: `MCP` へのオプション引数
-
-```go
-Service("calculator", func() {
-    // Use the default protocol supported by Goa-AI.
-    MCP("calc", "1.0.0")
-    JSONRPC(func() {
-        POST("/mcp")
-    })
-})
-```
+Goa-AI は一つのプロトコル改訂を実装します。`MCP(name, version)` はフレームワークの既定値を使い、`version` はサービス自身のバージョンを表します。DSL の `ProtocolVersion` オプションは削除されました。更新時はクライアントとサーバーを合わせて再生成してください。
 
 ### Tool (in Method Context)
 
@@ -1657,7 +1648,6 @@ Method("search", func() {
     })
     Result(func() {
         Attribute("results", ArrayOf(String), "Search results")
-        Required("results")
     })
     Tool("search", "Search documents by query")
 })
@@ -1711,6 +1701,34 @@ Method("readme", func() {
 })
 ```
 
+### ResourceTemplate, Prompt, ResourceCompletion, PromptCompletion, ToolContent
+
+`ResourceTemplate` は URI テンプレートを型付き読み取りメソッドに対応付けます。`Prompt` はメッセージを返すメソッドに対応付けます。`ResourceCompletion` と `PromptCompletion` は型付き引数候補を提供します。`ToolContent` は構造化結果と別に返すリッチコンテンツのフィールドを指定します。いずれも通常のサービスメソッドと同じ Goa 設計・生成の手順を使います。
+
+### SubscriptionSource と動的カタログ {#resourcesubscription}
+
+`SubscriptionSource()` は認可されたリソース、Task、カタログの変更を送るサーバーストリーミングメソッドを選びます。受け付けた選択を確認してから、終了まで変更を送ります。認証情報、scope、マップされた URL フィールド、ミドルウェアは通常の Goa の動作を保持します。生成コードは設定した監視メソッドからジョブを取得し、共有トランスポートが順序と対応を管理します。`ResourceSubscription()` を置き換え、互換エイリアスはありません。
+
+`ToolCatalog()` と `PromptCatalog()` は宣言された名前の認可済みページ、`ResourceCatalog()` と `ResourceTemplateCatalog()` は型付き記述子を返します。任意のカーソルでページングします。共通通知元は一覧変更を配信できますが固定カタログには通知を追加しません。`ResourceReader()` は一覧とは独立して正確な URI を読みます。
+
+### InputExchange
+
+`InputExchange(continuationField, outcomeField)` は任意の継続情報と必須の完了／入力要求ユニオンを結びます。Goa はフォームと回答デコーダーを生成し、完了分岐のみをツール結果にします。サービスは各ラウンドで整合性と認可を確認します。状態と回答はモデル引数に含めません。`BindTo` とレジストリでも利用できます。[追加入力](../mcp-integration/#additional-input-and-asynchronous-tasks)と[完全な宣言](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#additional-input-from-mcp-methods)を参照してください。
+
+### TaskExchange
+
+`TaskExchange(read, answer, cancel)` は既存メソッドを永続ジョブのライフサイクルに結びます。作成は ID を返す前に処理を引き受け、取得は状態を示し、回答とキャンセルは意図を受理します。効果は後続の取得で確認します。生成器はメタデータと型変換を提供し、サービスと設定済みエンジンが完了を担当します。完了結果のみ履歴に追加します。[非同期 Task](../mcp-integration/#additional-input-and-asynchronous-tasks)と[ネイティブジョブ](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools)を参照してください。
+
+### ToolUI、ToolVisibility、ToolMetadata
+
+`ToolUI(uri)` は同じサーバーの `ui://` HTML リソースを指定し、メディア型は `text/html;profile=mcp-app` です。`ToolVisibility("model")`、`ToolVisibility("app")`、または両方で caller を選び、省略時は両方を許可します。app 専用ツールはモデルのカタログに含めません。`ToolMetadata(field)` は完了結果の型付きホストデータをモデル出力から分離します。フレームワークがサーバー識別情報を付け、それを置き換えるフィールドを拒否します。ホストが権限と隔離を担当します。[Apps](../mcp-integration/#mcp-apps)を参照してください。
+
+### SkillCatalog、SkillLookup、ResourceDirectory
+
+`SkillCatalog()` と `SkillLookup()` は完全なページと正確な URI 検索を通常メソッドに結び、`ResourceReader()` が必要です。エントリーは URI、全 JSON frontmatter、安定マニフェストまたは文字列 `dynamic` のネイティブなタグなしユニオンを持ちます。安定ファイルは URI、SHA-256、生バイト数を宣言します。アダプターはファイルを取得せず公開前に検証します。
+
+任意の `ResourceDirectory()` は URI とカーソルで直下の子を列挙します。宣言された場合のみ機能を公開し、一覧はホストが保持するマニフェストを拡張しません。不明な URI は `invalid_params` を使います。ホストは出所とエントリーをコンテキストとともに保存し、`mcp.VerifySkillFile` で取得済み・キャッシュ済みファイルを検証し、有効化と実行の同意を管理します。検出はツール権限を与えません。[Skills](../mcp-integration/#mcp-skills)と[完全な契約](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md)を参照してください。
+
 ### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` は静的プロンプトテンプレートを追加します。
@@ -1725,7 +1743,7 @@ Service("assistant", func() {
     })
 
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 })
 ```
@@ -1742,7 +1760,7 @@ var _ = Service("assistant", func() {
     })
 
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 
     Method("search", func() {
@@ -1753,7 +1771,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })

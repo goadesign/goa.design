@@ -290,11 +290,11 @@ home_connect_intro: "Goa-AI fournit aussi l’infrastructure qui rend vos outils
 
 home_mcp_heading: "Créez des serveurs MCP à partir de vos services."
 
-home_mcp_text: "Exposez vos méthodes comme outils MCP. Publiez des ressources et des modèles de prompts. Goa-AI génère le protocole et les adaptateurs : MCP devient une interface de votre application. Les agents peuvent aussi utiliser des outils MCP externes."
+home_mcp_text: "Faites de MCP une autre interface de vos services Go. Goa-AI génère protocole, clients, schémas des outils et validation à partir d’un design commun. Le service conserve la logique applicative."
 
 home_mcp_cta: "Créer un serveur MCP"
 
-home_mcp_caption: "Dans un service Goa. Ajoutez Resource et StaticPrompt pour exposer d’autres capacités MCP."
+home_mcp_caption: "Extrait de design sélectionnable. LookupPayload et Product sont les types de votre application."
 
 home_registry_heading: "Hébergez votre registre d’outils."
 
@@ -329,3 +329,20 @@ home_faq_mcp_q: "Puis-je utiliser Goa-AI uniquement pour créer un serveur MCP ?
 home_faq_mcp_a: "Oui. Ajoutez des déclarations MCP à un service Goa pour générer un serveur exposant outils, ressources et modèles de prompts. Implémentez les méthodes derrière les adaptateurs générés. Aucun agent Goa-AI n’est nécessaire pour servir MCP."
 
 ui_search: "Rechercher"
+
+home_mcp_design: "Votre design Goa"
+home_mcp_generated: "Interface MCP générée"
+home_mcp_contract: "Un contrat typé commun"
+home_mcp_result_server: "Serveur HTTP"
+home_mcp_result_server_text: "Gestion du protocole reliée à vos endpoints Goa."
+home_mcp_result_client: "Clients typés"
+home_mcp_result_client_text: "Appelez des outils et lisez des ressources avec les méthodes générées."
+home_mcp_result_schemas: "Schémas des outils"
+home_mcp_result_schemas_text: "Arguments et résultats dérivés du même design."
+home_mcp_result_validation: "Validation et codecs"
+home_mcp_result_validation_text: "Vérifiez les entrées externes avant le code applicatif."
+home_mcp_humans: "Un contrat à examiner"
+home_mcp_humans_text: "Définissez types, validation et sécurité dans Goa. Implémentez la logique en Go ; régénérez serveur et clients quand le design change."
+home_mcp_llms: "Un travail clair pour les agents de programmation"
+home_mcp_llms_text: "Donnez à votre agent le design et les interfaces des services. Il modifie une petite surface de code écrit à la main ; les types générés et les erreurs du compilateur rendent les écarts du contrat visibles."
+home_mcp_capabilities: "Ajoutez OAuth, la saisie humaine, les Tasks durables, Apps et Skills avec le même design et runtime."

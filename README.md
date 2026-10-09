@@ -59,6 +59,10 @@ localized routes, skill installation copying, server-rendered positioning, struc
 and Markdown outputs. Screenshots are written to the ignored
 `.impeccable/review/` directory.
 
+The MCP homepage section shows a selectable Goa design beside its generated
+server, client, schema and validation contracts. Browser checks verify that
+relationship on desktop and mobile and the capability guide in all five languages.
+
 The bundled Manrope font is self-hosted; its license is in `static/fonts/`.
 No font service is required to render the site.
 

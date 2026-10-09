@@ -36,6 +36,17 @@ HTTP, gRPC, JSON-RPC. {{ T "home_service_transports" }}
 
 {{ T "home_mcp_text" }}
 
+{{ T "home_mcp_design" }} → `goa gen` → {{ T "home_mcp_generated" }}.
+{{ range slice "server" "client" "schemas" "validation" }}
+- **{{ T (printf "home_mcp_result_%s" .) }}**: {{ T (printf "home_mcp_result_%s_text" .) }}
+{{ end }}
+
+**{{ T "home_mcp_humans" }}**: {{ T "home_mcp_humans_text" }}
+
+**{{ T "home_mcp_llms" }}**: {{ T "home_mcp_llms_text" }}
+
+{{ T "home_mcp_capabilities" }}
+
 [{{ T "home_mcp_cta" }}]({{ absLangURL "docs/2-goa-ai/mcp-integration/" }})
 
 ## {{ T "home_registry_heading" }}

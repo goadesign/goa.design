@@ -73,7 +73,6 @@ This document provides a complete reference for Goa-AI's DSL functions. Use it a
 | `OnMissingFields`                                       | RunPolicy                | Validation behavior                                                                                                |
 | **MCP Functions**                                       |                          |                                                                                                                    |
 | `MCP`                                                   | Service                  | Enables MCP support                                                                                                |
-| `ProtocolVersion`                                       | MCP option               | Sets MCP protocol version                                                                                          |
 | `Tool`                                                  | Method                   | Marks a method as an MCP tool in an MCP-enabled service                                                            |
 | `Toolset(FromMCP(...))`                                 | Top-level                | Declares a Goa-backed MCP-derived toolset                                                                          |
 | `Toolset("name", FromExternalMCP(...), func() { ... })` | Top-level                | Declares an external MCP toolset with inline schemas                                                               |
@@ -921,6 +920,8 @@ Goa-AI provides:
 
 `CallHintTemplate(template)` and `ResultHintTemplate(template)` configure display templates for tool invocations and results. Templates are Go text/template strings rendered with typed Go values to produce concise hints shown during and after execution.
 
+For a generated union, select the branch with `Kind` and read its typed value with `Value`: `{{if eq .Choice.Kind "complete"}}{{with .Choice.Value}}{{.Reference}}{{end}}{{end}}`. Invalid selections stop template execution. `Value` preserves empty strings, zero, and false; use `Kind` to determine which branch is present. The typed `AsX` methods return `(value, bool)` for Go callers and cannot be called from Go templates.
+
 **Context**: Inside `Tool`
 
 **Key Points:**
@@ -1742,7 +1743,7 @@ Goa-AI provides DSL functions for declaring Model Context Protocol (MCP) servers
 
 ### MCP
 
-`MCP(name, version, opts...)` enables MCP support for the current service. It configures the service to expose tools, resources, and prompts via the MCP protocol.
+`MCP(name, version)` enables MCP support for the current service. It configures the service to expose tools, resources, and prompts via the MCP protocol.
 
 **Context**: Inside `Service`
 
@@ -1770,21 +1771,11 @@ Service("calculator", func() {
 })
 ```
 
+URL values use Goa’s native `Param("payload_field:url_name")` mapping. They remain outside tool and prompt arguments while retaining each method’s types and validation. See [URL values and mapped attributes](../mcp-integration/#url-values-and-mapped-attributes).
+
 ### ProtocolVersion
 
-`ProtocolVersion(version)` configures the MCP protocol version supported by the server. It returns a configuration function for use with `MCP`.
-
-**Context**: Option argument to `MCP`
-
-```go
-Service("calculator", func() {
-    // Use the default protocol supported by Goa-AI.
-    MCP("calc", "1.0.0")
-    JSONRPC(func() {
-        POST("/mcp")
-    })
-})
-```
+Goa-AI implements one protocol revision. `MCP(name, version)` uses the framework default; `version` identifies your server. The `ProtocolVersion` DSL option has been removed. Regenerate clients and servers together when upgrading.
 
 ### Tool (in Method Context)
 
@@ -1801,7 +1792,6 @@ Method("search", func() {
     })
     Result(func() {
         Attribute("results", ArrayOf(String), "Search results")
-        Required("results")
     })
     Tool("search", "Search documents by query")
 })
@@ -1859,6 +1849,93 @@ Method("readme", func() {
 })
 ```
 
+### ResourceTemplate, Prompt, ResourceCompletion, PromptCompletion, ToolContent
+
+`ResourceTemplate` binds a parameterized URI to a typed read method. `Prompt` binds a method that returns prompt messages. `ResourceCompletion` and `PromptCompletion` bind typed argument suggestions. `ToolContent` selects a typed rich-content field beside the tool’s structured result. These contracts use the same Goa design and generation workflow as ordinary service methods.
+
+### SubscriptionSource and dynamic catalogs {#resourcesubscription}
+
+`SubscriptionSource()` selects one server-streaming method for an MCP service's
+authorized resource, Task and catalog changes. The source first acknowledges
+the accepted selection, then identifies changes until cancellation or closure.
+Native credentials, scopes, mapped URL fields and endpoint middleware retain
+their ordinary Goa behavior. Generated code reads changed jobs through configured
+observation methods and sends complete snapshots. Shared transport owns ordering
+and request correlation. Replace the removed `ResourceSubscription()` declaration
+and regenerate; its old name has no compatibility alias.
+
+`ToolCatalog()` and `PromptCatalog()` bind ordinary unary methods that return
+authenticated pages of declared names. `ResourceCatalog()` and
+`ResourceTemplateCatalog()` bind pages of typed descriptors. Their optional
+cursor and next-cursor fields provide pagination. The common subscription source
+can advertise and emit their list changes; fixed catalogs do not gain change
+notifications. `ResourceReader()` selects one exact-URI read method independently
+of whether resources appear in a catalog.
+
+### InputExchange
+
+`InputExchange(continuationField, outcomeField)` binds an existing method's
+optional continuation object to a required complete/input-required result union.
+Typed pending requests describe forms or consent to open URLs. Goa expressions
+supply field names, descriptions, constraints and generated answer decoding.
+Only the completed branch enters the advertised tool result. The service owns
+continuation integrity and authorization on every round; state and host answers
+remain outside model arguments.
+
+This same declaration works for MCP calls, native agent `BindTo` execution and
+registry providers. The runtime suspends the exact unfinished call and resumes
+after a typed host response. See [additional input](../mcp-integration/#additional-input-and-asynchronous-tasks)
+and the [complete declaration](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#additional-input-from-mcp-methods).
+
+### TaskExchange
+
+`TaskExchange(read, answer, cancel)` selects three existing methods for a creator's
+durable job lifecycle. The creator owns accepted work before returning its
+identifier. Read exposes working, input-required, complete, failed or cancelled
+state; answer and cancel acknowledge intent. Subsequent reads establish effects.
+The generator emits protocol metadata and typed conversions; service persistence
+and the configured workflow engine own completion. Ordinary `InputExchange`
+may request host input before job creation.
+
+Only completed domain output enters tool history. A subscription source can send
+full Task updates through the same observation method. See [asynchronous Tasks](../mcp-integration/#additional-input-and-asynchronous-tasks)
+and [native job declarations](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#native-job-tools).
+
+### ToolUI, ToolVisibility and ToolMetadata
+
+Inside an MCP tool declaration, `ToolUI(uri)` names an existing same-server
+`ui://` HTML resource with media type `text/html;profile=mcp-app`. Ordinary
+resource methods serve its contents. `ToolVisibility("model")`,
+`ToolVisibility("app")`, or both select callers; omission permits both. App-only
+tools stay outside generated model catalogs. `ToolMetadata(field)` selects a
+typed completed-result object for host data, separately from model content and
+structured output. The framework supplies server identity and rejects authored
+fields that would replace it.
+
+The application host owns app permissions and browser isolation. See
+[MCP Apps](../mcp-integration/#mcp-apps) and the
+[maintained browser host](https://github.com/goadesign/goa-ai/tree/main/integration_tests/apps).
+
+### SkillCatalog, SkillLookup and ResourceDirectory
+
+`SkillCatalog()` and `SkillLookup()` bind complete Skill pages and exact entry
+lookup to ordinary unary methods. Both require `ResourceReader()`. Entries contain
+required URI, complete open JSON frontmatter, and a native untagged union of a
+stable manifest or the string `dynamic`. Stable manifest entries require exact
+URI, SHA-256 digest and raw byte size. Generated adapters validate entries and
+directory membership before publication without fetching files.
+
+Optional `ResourceDirectory()` binds immediate-child directory pages with URI
+and cursor inputs. Only a declared directory method advertises that capability.
+Directory pages cannot expand a host's retained Skill manifest. Unknown Skill,
+file or directory requests use declared `invalid_params` errors.
+
+The consuming host retains origin and complete entries with its model context,
+verifies fetched and cached bytes using `mcp.VerifySkillFile`, and owns activation
+and local execution consent. Discovery does not grant tools. See
+[MCP Skills](../mcp-integration/#mcp-skills) and the
+[complete server and host contract](https://github.com/goadesign/goa-ai/blob/main/docs/mcp_skills.md).
+
 ### StaticPrompt
 
 `StaticPrompt(name, description, messages...)` adds a static prompt template.
@@ -1873,7 +1950,7 @@ Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
 })
 ```
@@ -1890,7 +1967,7 @@ var _ = Service("assistant", func() {
     })
     
     StaticPrompt("greeting", "Friendly greeting",
-        "system", "You are a helpful assistant",
+        "user", "You are a helpful assistant",
         "user", "Hello!")
     
     Method("search", func() {
@@ -1901,7 +1978,6 @@ var _ = Service("assistant", func() {
         })
         Result(func() {
             Attribute("results", ArrayOf(String), "Search results")
-            Required("results")
         })
         Tool("search", "Search documents by query")
     })

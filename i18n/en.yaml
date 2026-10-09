@@ -289,11 +289,11 @@ home_connect_intro: "Goa-AI also builds the infrastructure that makes tools avai
 
 home_mcp_heading: "Create MCP servers from your services."
 
-home_mcp_text: "Expose service methods as MCP tools. Publish resources and prompt templates. Goa-AI generates the protocol handling and adapters, so MCP becomes another interface to your application. Agents can also consume external MCP tools."
+home_mcp_text: "Make MCP another interface to your Go services. Goa-AI generates protocol handling, clients, tool schemas and validation from one design. Your service owns application behavior."
 
 home_mcp_cta: "Build an MCP server"
 
-home_mcp_caption: "Inside a Goa service. Add Resource and StaticPrompt to expose more MCP capabilities."
+home_mcp_caption: "Selectable design excerpt. LookupPayload and Product are your application types."
 
 home_registry_heading: "Host a registry for your tools."
 
@@ -328,3 +328,20 @@ home_faq_mcp_q: "Can I use Goa-AI just to build an MCP server?"
 home_faq_mcp_a: "Yes. Add MCP declarations to a Goa service to generate a server exposing tools, resources, and prompt templates. Implement the service methods behind the generated adapters. You do not need to run a Goa-AI agent to serve MCP."
 
 ui_search: "Search"
+
+home_mcp_design: "Your Goa design"
+home_mcp_generated: "Generated MCP interface"
+home_mcp_contract: "One typed contract"
+home_mcp_result_server: "HTTP server"
+home_mcp_result_server_text: "Protocol handling wired to your Goa endpoints."
+home_mcp_result_client: "Typed clients"
+home_mcp_result_client_text: "Call tools and read resources through generated methods."
+home_mcp_result_schemas: "Tool schemas"
+home_mcp_result_schemas_text: "Arguments and results derived from the same design."
+home_mcp_result_validation: "Validation and codecs"
+home_mcp_result_validation_text: "Check external input before application code runs."
+home_mcp_humans: "One contract to review"
+home_mcp_humans_text: "Define types, validation and security in Goa. Implement business logic in Go; regenerate the server and clients when the design changes."
+home_mcp_llms: "Clear work for coding agents"
+home_mcp_llms_text: "Give your coding agent the design and service interfaces. It edits a small authored surface; generated types and compiler errors make contract drift visible."
+home_mcp_capabilities: "Add OAuth, human input, durable Tasks, Apps and Skills through the same design and runtime."
