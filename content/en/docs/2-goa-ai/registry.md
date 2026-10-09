@@ -229,9 +229,15 @@ import (
 // The caller owns the clients, service implementation, and deployment identifiers.
 func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
 	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	if err := registrywire.ValidateAdmissionRevision(admissionRevision); err != nil {
+		return err
+	}
 	const toolsetID = "catalog.search"
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -257,8 +263,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	handler := gensearch.NewProvider(serviceImpl)
 	return provider.Serve(ctx, pulseClient, toolsetID, handler,
 		provider.Registration{
-			AdmissionRevision: admissionRevision,
-			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+			Register: func(ctx context.Context, toolset, providerID, incarnationID string) (provider.RegistrationLease, error) {
 				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
 				if err != nil {
 					return provider.RegistrationLease{}, err
@@ -309,12 +314,12 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					ExpectedRegistrationToken: expectedToken,
 				})
 			},
-			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) (bool, error) {
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					return err
+					return false, err
 				}
-				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+				submitted, err := registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
 					Toolset:                   toolset,
 					ProviderID:                providerID,
 					ProviderIncarnationID:     incarnationID,
@@ -324,6 +329,10 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RequestEventID:            requestEventID,
 					ProviderRegistrationToken: providerToken,
 				})
+				if err != nil {
+					return false, err
+				}
+				return submitted.Accepted, nil
 			},
 			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
 				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
@@ -500,6 +509,9 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 ) {
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -536,12 +548,21 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 
 ## gRPC API
 
+Service declarations can be published before a provider starts. `DeclareServiceToolset` returns the saved declaration and registration token; an identical declaration returns the original result. `AttachProvider` joins that exact registration without changing it.
+
+To publish a new service contract, first stop old providers from taking new calls, let accepted work finish, and release every old lease. `ReplaceServiceToolset` takes the complete replacement, `expected_registration_token`, and a UUID `replacement_id`. A live old lease, including a draining lease, returns `admission_blocked` without accepting an update; a stale token or native Agent registration returns `admission_conflict`. Reuse the same replacement ID and content after a lost response: the registry returns the saved result while that replacement remains current.
+
+Replacement permanently retires the old service token and creates no provider lease or health pong. Attach new providers to the returned token; availability requires fresh health confirmation. A rollback or reactivation is another explicit replacement with a new ID, even when restoring an old schema. Published calls never move to the new provider. These operations require application-owned access control. No storage conversion or wire-version change is needed; upgrade registry servers before using the new method. Regenerated positional client constructors must include its endpoint.
+
 The registry exposes the following gRPC methods:
 
 ### Provider Operations
 
 | Method | Description |
 |--------|-------------|
+| `DeclareServiceToolset` | Save a complete service declaration without attaching a provider; identical repetition returns the saved result. |
+| `ReplaceServiceToolset` | Replace the exact current service declaration after every old lease ends. Repeating the same replacement ID returns its saved result while current. |
+| `AttachProvider` | Attach a provider to one exact existing service registration without changing its declaration. |
 | `Register` | Admit a provider at startup with its generated tool definitions. A different contract waits until old leases end. |
 | `RenewProvider` | Extend the exact unexpired lease without sending definitions. Preserve draining and any longer settlement deadline; lost authority returns `provider_lease_lost`. |
 | `DrainProvider` | Make one provider lease unavailable for new calls while preserving its authority to finish calls it already owns. |

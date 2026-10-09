@@ -349,6 +349,8 @@ El contrato acotado ayuda a que:
 
 ### Campos inyectados
 
+Las funciones generadas `Inject<Tool>` y `Decode<Tool>` aceptan `tools.ToolCallMeta` de `goa.design/goa-ai/runtime/agent/tools`. Este tipo compartido no importa el motor de agentes ni los adaptadores de modelos, por lo que un servicio puede ofrecer herramientas con `Inject` sin compilar esos componentes. `runtime.ToolCallMeta` sigue siendo un alias para los ejecutores existentes. Actualiza Goa-AI y regenera para eliminar la importación del motor de los archivos de proveedor e inyección existentes; los campos de metadatos, la codificación JSON, la validación y los mensajes del registro no cambian.
+
 La función DSL `Inject` marca campos específicos de la carga como "inyectados": valores de infraestructura del lado del servidor que se ocultan al LLM y que el código generado rellena antes de ejecutar la herramienta. Esto es útil para IDs de sesión, alcance por tenant/household y otros valores proporcionados en tiempo de ejecución o por el llamador.
 
 #### Cómo funciona Inject

@@ -180,6 +180,56 @@ var _ = Service("users", func() {
 
 ---
 
+## Requêtes de formulaire URL-encodées {#form-requests}
+
+Utilisez `FormRequest()` dans l’expression `HTTP` d’une méthode lorsque le point de terminaison attend `application/x-www-form-urlencoded`, par exemple pour un point de terminaison de jetons OAuth ou un formulaire de navigateur. Goa génère l’encodeur client et le décodeur serveur typés, sans fonctions de codec personnalisées. L’encodage des réponses reste inchangé.
+
+Cette méthode reçoit un identifiant de compte dans le chemin, un identifiant de requête dans un en-tête et deux champs de formulaire dans le corps :
+
+```go
+Method("update_labels", func() {
+    Payload(func() {
+        Field(1, "accountId", String, "Compte dont les libellés sont modifiés")
+        Field(2, "requestId", String, "Identifiant permettant de corréler la requête")
+        Field(3, "label", String, "Libellé affiché pour le compte")
+        Field(4, "tags", ArrayOf(String), "Étiquettes attribuées au compte", func() {
+            MinLength(1)
+        })
+        Required("accountId", "requestId", "label", "tags")
+    })
+    HTTP(func() {
+        POST("/accounts/{account_id}/labels")
+        Param("accountId:account_id")
+        Header("requestId:X-Request-ID")
+        FormRequest()
+        Body(func() {
+            Attribute("label:display_name", String)
+            Attribute("tags:tag", ArrayOf(String))
+            Required("label", "tags")
+        })
+        Response(StatusNoContent)
+    })
+})
+```
+
+`Param("accountId:account_id")` et `Header("requestId:X-Request-ID")` retirent ces attributs du corps. Les correspondances `Body` conservent les noms de charge utile `label` et `tags`, mais choisissent les clés de formulaire `display_name` et `tag`. Le corps peut donc être :
+
+```text
+display_name=Hello+Goa&tag=go&tag=api
+```
+
+Pour les champs renommés dans une expression `Body` explicite, déclarez explicitement les types et les champs obligatoires du corps ; l’héritage implicite des types utilise les noms exacts des attributs.
+
+- Le corps final doit être un objet non vide contenant des champs primitifs ou des tableaux de primitives. Les types nommés de ces formes sont pris en charge. Les objets imbriqués, les maps, `Any` et les types de champs Go personnalisés sont rejetés lors de l’évaluation de la conception.
+- Les tableaux utilisent des clés répétées, comme `tag=go&tag=api`. Un tableau obligatoire doit transmettre au moins une valeur : un formulaire ne peut pas représenter un tableau présent sans valeurs. Les octets utilisent le base64 standard.
+- Une clé scalaire ne peut apparaître qu’une fois. Une chaîne vide est une valeur présente, distincte d’un champ omis. Les valeurs par défaut et validations déclarées continuent de s’appliquer.
+- Le serveur lit les champs du corps uniquement dans le corps ; les paramètres de requête ne peuvent pas fournir les valeurs de formulaire manquantes. Les types de contenu incorrects, les valeurs mal formées, les clés scalaires répétées et les échecs de validation sont rejetés avant l’appel du service. Les champs de formulaire inconnus sont autorisés.
+- `FormRequest()` concerne les points de terminaison HTTP ordinaires. Il ne peut pas être combiné avec JSON-RPC, `MultipartRequest()` ou `SkipRequestBodyEncodeDecode()`.
+
+Régénérez après avoir ajouté `FormRequest()`, avec une version de Goa contenant ce DSL. Passer un point de terminaison existant de JSON aux formulaires modifie son contrat réseau : mettez à jour et déployez ses clients et son serveur ensemble. L’OpenAPI généré décrit le type de média et les noms des champs. Le middleware de l’application reste responsable des limites de taille des requêtes.
+
+---
+
 ## Négociation du contenu
 
 ### Encodeurs intégrés

@@ -183,9 +183,15 @@ import (
 // The caller owns the clients, service implementation, and deployment identifiers.
 func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.ClientConn,
 	serviceImpl gencatalog.Service, providerID, admissionRevision string) error {
+	if err := registrywire.ValidateAdmissionRevision(admissionRevision); err != nil {
+		return err
+	}
 	const toolsetID = "catalog.search"
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	registryClient := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -211,8 +217,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 	handler := gensearch.NewProvider(serviceImpl)
 	return provider.Serve(ctx, pulseClient, toolsetID, handler,
 		provider.Registration{
-			AdmissionRevision: admissionRevision,
-			Register: func(ctx context.Context, toolset, providerID, incarnationID, admissionRevision string) (provider.RegistrationLease, error) {
+			Register: func(ctx context.Context, toolset, providerID, incarnationID string) (provider.RegistrationLease, error) {
 				schemaFingerprint, err := gensearch.SchemaFingerprint(toolset)
 				if err != nil {
 					return provider.RegistrationLease{}, err
@@ -263,12 +268,12 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					ExpectedRegistrationToken: expectedToken,
 				})
 			},
-			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) error {
+			Complete: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, requestEventID string, result registrywire.ToolResultMessage) (bool, error) {
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					return err
+					return false, err
 				}
-				return registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
+				submitted, err := registryClient.CompleteToolCall(ctx, &genregistry.CompleteToolCallPayload{
 					Toolset:                   toolset,
 					ProviderID:                providerID,
 					ProviderIncarnationID:     incarnationID,
@@ -278,6 +283,10 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 					RequestEventID:            requestEventID,
 					ProviderRegistrationToken: providerToken,
 				})
+				if err != nil {
+					return false, err
+				}
+				return submitted.Accepted, nil
 			},
 			PublishOutputDelta: func(ctx context.Context, toolset, providerID, incarnationID, providerToken, callToken, toolUseID, requestEventID, stream, delta string) error {
 				return registryClient.PublishToolOutputDelta(ctx, &genregistry.PublishToolOutputDeltaPayload{
@@ -404,6 +413,9 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 ) {
 	transport := genregistrygrpc.NewClient(conn, grpc.WaitForReady(true))
 	generated := genregistry.NewClient(
+		transport.DeclareServiceToolset(),
+		transport.ReplaceServiceToolset(),
+		transport.AttachProvider(),
 		transport.Register(),
 		transport.RenewProvider(),
 		transport.ReleaseProvider(),
@@ -440,12 +452,21 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 
 ## gRPC API
 
+サービスツールはプロバイダーの起動前に宣言できます。`DeclareServiceToolset` は保存された宣言と登録トークンを返し、同じ宣言の再送には元の結果を返します。`AttachProvider` は宣言を変更せず、その登録にプロバイダーを接続します。
+
+新しい契約を公開するには、古いプロバイダーによる新規呼び出しの取得を止め、受け付け済みの処理を完了し、すべての古いリースを解放します。`ReplaceServiceToolset` には完全な宣言、`expected_registration_token`、UUID の `replacement_id` を渡します。終了処理中を含め、古いリースが有効なら、更新を受理せず `admission_blocked` を返します。古いトークンやネイティブ Agent 登録には `admission_conflict` を返します。応答を失った場合は同じ ID と内容を再送してください。その置き換えが現在の登録である間は、保存済みの結果を返します。
+
+置き換えは古いサービストークンを永久に廃止し、リースや正常性確認を作成しません。返されたトークンに新しいプロバイダーを接続し、新しい正常性確認が完了すると利用可能になります。以前のスキーマへのロールバックや再有効化も、新しい ID による明示的な置き換えです。公開済みの呼び出しは新しいプロバイダーに移動しません。アクセス制御はアプリケーションが担当します。ストレージ変換やプロトコルバージョン変更は不要です。新しいメソッドを使う前にレジストリサーバーを更新し、再生成した位置引数形式のクライアントコンストラクターに新しいエンドポイントを追加してください。
+
 registry は次の gRPC method を公開します:
 
 ### Provider Operations
 
 | Method | 説明 |
 |--------|-------------|
+| `DeclareServiceToolset` | プロバイダーを接続せず完全なサービス宣言を保存します。同じ宣言の再送には保存済みの結果を返します。 |
+| `ReplaceServiceToolset` | すべての古いリースが終了した後、指定した現在の登録を置き換えます。同じ ID の再送には、その登録が現在である間は保存済みの結果を返します。 |
+| `AttachProvider` | 宣言を変更せず、既存の正確なサービス登録にプロバイダーを接続します。 |
 | `Register` | 起動時に生成済み定義を送信して provider を登録します。別の contract は古い lease の終了を待ちます。 |
 | `RenewProvider` | 期限内の正確な lease だけを、定義を送らずに延長します。draining と長い完了期限を維持し、権限を失った場合は `provider_lease_lost` を返します。 |
 | `DrainProvider` | 1 つの provider lease を新規 call に使えなくし、すでに所有する call を完了する権限は保ちます。 |

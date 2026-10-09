@@ -180,6 +180,56 @@ var _ = Service("users", func() {
 
 ---
 
+## Solicitudes de formulario codificadas en URL {#form-requests}
+
+Use `FormRequest()` dentro de la expresión `HTTP` de un método cuando el endpoint espere `application/x-www-form-urlencoded`, como un endpoint de tokens OAuth o un formulario del navegador. Goa genera el codificador del cliente y el decodificador del servidor con tipos; no necesita funciones de codec personalizadas. Las respuestas conservan su codificación.
+
+Este método recibe un identificador de cuenta en la ruta, un identificador de solicitud en una cabecera y dos campos de formulario en el cuerpo:
+
+```go
+Method("update_labels", func() {
+    Payload(func() {
+        Field(1, "accountId", String, "Cuenta cuyas etiquetas se actualizan")
+        Field(2, "requestId", String, "Identificador para correlacionar la solicitud")
+        Field(3, "label", String, "Etiqueta visible de la cuenta")
+        Field(4, "tags", ArrayOf(String), "Etiquetas asignadas a la cuenta", func() {
+            MinLength(1)
+        })
+        Required("accountId", "requestId", "label", "tags")
+    })
+    HTTP(func() {
+        POST("/accounts/{account_id}/labels")
+        Param("accountId:account_id")
+        Header("requestId:X-Request-ID")
+        FormRequest()
+        Body(func() {
+            Attribute("label:display_name", String)
+            Attribute("tags:tag", ArrayOf(String))
+            Required("label", "tags")
+        })
+        Response(StatusNoContent)
+    })
+})
+```
+
+`Param("accountId:account_id")` y `Header("requestId:X-Request-ID")` excluyen esos atributos del cuerpo. Las asignaciones `Body` conservan los nombres de carga útil `label` y `tags`, pero seleccionan las claves de formulario `display_name` y `tag`. Por tanto, el cuerpo puede ser:
+
+```text
+display_name=Hello+Goa&tag=go&tag=api
+```
+
+Para campos renombrados en una expresión `Body` explícita, declare los tipos y los campos obligatorios del cuerpo explícitamente; la herencia implícita de tipos usa los nombres exactos de los atributos.
+
+- El cuerpo final debe ser un objeto no vacío de campos primitivos o arrays de primitivas. Se admiten tipos con nombre que usen esas formas. Los objetos anidados, mapas, `Any` y tipos de campo Go personalizados se rechazan al evaluar el diseño.
+- Los arrays usan claves repetidas, como `tag=go&tag=api`. Los arrays obligatorios necesitan al menos un valor transmitido: un formulario no puede representar un array presente sin valores. Los bytes usan base64 estándar.
+- Cada clave escalar puede aparecer una sola vez. Una cadena vacía es un valor presente, distinto de un campo omitido. Siguen aplicándose los valores predeterminados y las validaciones declaradas.
+- El servidor lee los campos del cuerpo únicamente del cuerpo; los parámetros de consulta no pueden aportar valores de formulario ausentes. Los tipos de contenido incorrectos, los valores mal formados, las claves escalares repetidas y los fallos de validación se rechazan antes de invocar el servicio. Se permiten campos de formulario desconocidos.
+- `FormRequest()` se usa en endpoints HTTP ordinarios. No puede combinarse con JSON-RPC, `MultipartRequest()` ni `SkipRequestBodyEncodeDecode()`.
+
+Regenere después de añadir `FormRequest()`, con una versión de Goa que incluya este DSL. Cambiar un endpoint existente de JSON a formularios modifica su contrato de transporte: actualice y despliegue sus clientes y servidor juntos. El OpenAPI generado describe el tipo de medio y los nombres de campo asignados. El middleware de la aplicación sigue siendo responsable de los límites de tamaño de las solicitudes.
+
+---
+
 ## Negociación de contenidos
 
 ### Codificadores incorporados

@@ -959,6 +959,12 @@ Body(func() {
 })
 ```
 
+### Richieste di moduli con codifica URL {#form-requests}
+
+Aggiungi `FormRequest()` nell’espressione `HTTP` di un metodo per generare codec di richiesta `application/x-www-form-urlencoded`. Il corpo restante deve essere un oggetto non vuoto di campi primitivi o array di primitivi. Le mappature `Param`, `Header` e `Body` continuano ad applicarsi, inclusa `Attribute("label:display_name", String)` per scegliere una chiave di modulo diversa. Le risposte mantengono la codifica esistente.
+
+[Consulta la guida HTTP per l’esempio completo, le regole di codifica e le indicazioni di distribuzione.](http-guide/#form-requests)
+
 ---
 
 ## Mappatura del trasporto gRPC

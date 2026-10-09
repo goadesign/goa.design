@@ -180,6 +180,56 @@ var _ = Service("users", func() {
 
 ---
 
+## Richieste di moduli con codifica URL {#form-requests}
+
+Usa `FormRequest()` nell’espressione `HTTP` di un metodo quando l’endpoint richiede `application/x-www-form-urlencoded`, per esempio un endpoint di token OAuth o un modulo del browser. Goa genera il codificatore client e il decodificatore server tipizzati; non servono funzioni di codec personalizzate. Le risposte mantengono la codifica esistente.
+
+Questo metodo riceve un identificatore di account nel percorso, un identificatore di richiesta in un header e due campi di modulo nel corpo:
+
+```go
+Method("update_labels", func() {
+    Payload(func() {
+        Field(1, "accountId", String, "Account di cui aggiornare le etichette")
+        Field(2, "requestId", String, "Identificatore per correlare la richiesta")
+        Field(3, "label", String, "Etichetta visualizzata per l’account")
+        Field(4, "tags", ArrayOf(String), "Tag assegnati all’account", func() {
+            MinLength(1)
+        })
+        Required("accountId", "requestId", "label", "tags")
+    })
+    HTTP(func() {
+        POST("/accounts/{account_id}/labels")
+        Param("accountId:account_id")
+        Header("requestId:X-Request-ID")
+        FormRequest()
+        Body(func() {
+            Attribute("label:display_name", String)
+            Attribute("tags:tag", ArrayOf(String))
+            Required("label", "tags")
+        })
+        Response(StatusNoContent)
+    })
+})
+```
+
+`Param("accountId:account_id")` e `Header("requestId:X-Request-ID")` escludono questi attributi dal corpo. Le mappature `Body` mantengono i nomi del payload `label` e `tags`, scegliendo però le chiavi di modulo `display_name` e `tag`. Il corpo può quindi essere:
+
+```text
+display_name=Hello+Goa&tag=go&tag=api
+```
+
+Per i campi rinominati in un’espressione `Body` esplicita, dichiara esplicitamente i tipi e i campi obbligatori del corpo; l’ereditarietà implicita dei tipi usa i nomi esatti degli attributi.
+
+- Il corpo finale deve essere un oggetto non vuoto con campi primitivi o array di primitivi. Sono supportati i tipi con nome che usano queste forme. Oggetti annidati, mappe, `Any` e tipi di campo Go personalizzati vengono rifiutati durante la valutazione del design.
+- Gli array usano chiavi ripetute, come `tag=go&tag=api`. Gli array obbligatori richiedono almeno un valore trasmesso: un modulo non può rappresentare un array presente senza valori. I byte usano base64 standard.
+- Ogni chiave scalare può comparire una sola volta. Una stringa vuota è un valore presente, diverso da un campo omesso. Continuano ad applicarsi valori predefiniti e validazioni dichiarati.
+- Il server legge i campi del corpo soltanto dal corpo; i parametri di query non possono fornire valori di modulo mancanti. Tipi di contenuto errati, valori non validi, chiavi scalari ripetute ed errori di validazione vengono rifiutati prima dell’invocazione del servizio. Sono consentiti campi di modulo sconosciuti.
+- `FormRequest()` si usa negli endpoint HTTP ordinari. Non può essere combinato con JSON-RPC, `MultipartRequest()` o `SkipRequestBodyEncodeDecode()`.
+
+Rigenera dopo aver aggiunto `FormRequest()`, usando una versione di Goa che includa questo DSL. Passare un endpoint esistente da JSON ai moduli cambia il contratto di trasporto: aggiorna e distribuisci client e server insieme. L’OpenAPI generato descrive il tipo di contenuto e i nomi dei campi mappati. Il middleware dell’applicazione resta responsabile dei limiti di dimensione delle richieste.
+
+---
+
 ## Negoziazione del contenuto
 
 ### Codificatori integrati
