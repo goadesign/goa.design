@@ -11,6 +11,8 @@ Goa-AI supports both **creating MCP servers** and **consuming external MCP tools
 
 The HTTP and stdio callers send self-contained requests with protocol metadata. There is no initialization handshake or protocol session. Their `Caller` interface invokes tools; their `Listen` methods receive change notifications. Generated Goa JSON-RPC clients also expose the resource, prompt, discovery, and completion operations declared by the service.
 
+Generated HTTP servers also accept basic MCP `2025-11-25` clients on the same POST URL. Regenerate the server; no service interface or constructor changes are needed. `initialize` replies with `2025-11-25`, then calls carry `MCP-Protocol-Version: 2025-11-25` without a session ID. Tools, resources, prompts and argument completion keep the same authentication, authorization, middleware and typed validation. Object results keep their shape; scalar, array and untagged-union results use `{"value": ...}` and a matching object schema. Structured results are also included as text content. This older path does not offer Tasks, change subscriptions or requests for additional client input. Built-in callers continue to use `2026-07-28`.
+
 One design supplies the tool schema, typed decoding, validation, server adapters
 and client bindings. Your configured Goa endpoints keep authentication,
 authorization, middleware and application behavior. Developers and coding agents
