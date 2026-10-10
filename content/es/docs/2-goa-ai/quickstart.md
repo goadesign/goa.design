@@ -27,7 +27,7 @@ Vas a construir:
 ```bash
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa-ai@v0.87.2-0.20261009163728-e155e2ccf099
+go get goa.design/goa-ai@v0.88.1-0.20261010192622-b66f1c06a1ba
 mkdir design
 ```
 
