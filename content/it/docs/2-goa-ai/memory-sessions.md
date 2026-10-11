@@ -260,16 +260,66 @@ record di annullamento. Uno storage persistente deve conservarle esattamente.
 
 ### Avvio di una continuazione
 
-Una continuazione richiede un'esecuzione precedente esistente con stato
-`suspended`. Il successore deve usare la stessa sessione, lo stesso agente e la
-stessa esecuzione padre. Lo storage verifica questi quattro dati nella stessa
-transazione che creerebbe il successore. Se un dato non coincide, rifiuta
-l'operazione prima di scrivere l'avvio del successore o un collegamento al
-padre.
+Una nuova continuazione richiede un'esecuzione precedente esistente con stato
+`suspended` e `SuspensionResolution` irrisolta. Il successore deve usare la
+stessa sessione, lo stesso agente e la stessa esecuzione padre. Lo storage
+verifica questi requisiti nella stessa transazione che creerebbe il
+successore. Se un dato non coincide, rifiuta l'operazione prima di scrivere
+l'avvio del successore o un collegamento al padre.
 
-Il record `RunStarted` del successore conserva `PredecessorRunID`. `RunMeta` non
-duplica questa relazione. I reader ricostruiscono la cronologia delle
-continuazioni dai record che l'hanno stabilita.
+### Risolvere le sospensioni salvate {#suspension-resolution}
+
+`RunMeta.SuspensionResolution` salva una decisione permanente separata dal
+risultato sospeso originale:
+
+- `nil`: la sospensione resta irrisolta.
+- `session.ContinuedSuspension{RunID}`: un successore reale è stato ammesso a
+  ereditare il lavoro. `StartRootRun` o `StartChildRun` salva questa decisione
+  atomicamente con il successore e i suoi primi record.
+- `session.RelinquishedSuspension{Reason, ResolvedAt}`: la continuazione di
+  un'esecuzione radice è stata chiusa definitivamente. Lo storage assegna l'ora.
+
+Nessuna variante modifica lo stato sospeso, il risultato, i byte del checkpoint
+o i record storici del predecessore. Il `RunStarted` del successore conserva
+`PredecessorRunID` per ricostruire la cronologia.
+
+`Runtime.CancelRun` può chiudere direttamente una radice irrisolta solo dopo
+aver decodificato il suo checkpoint attuale esatto e verificato che non conservi
+Task, figli sospesi o operazioni remote. Una domanda che aspetta solo la
+risposta dell'utente può quindi chiudersi senza un nuovo workflow. I checkpoint
+non supportati o corrotti vengono rifiutati prima della chiusura. Il lavoro
+conservato continua a usare il processo durevole di annullamento; ogni padre
+resta responsabile dei suoi figli.
+
+`Store.RelinquishRunSuspension` verifica l'ID della sospensione e sceglie tra
+chiusura e continuazione atomicamente con gli avvii. Se vince una risposta,
+restituisce il successore ammesso anche se il predecessore ha un vecchio motivo
+di annullamento. Il runtime segue quel successore, che possiede il lavoro e il
+suo motivo di annullamento attuale. Se vince la chiusura, un avvio successivo
+restituisce `session.ErrRunConflict` prima di scrivere un'esecuzione o un
+collegamento al padre. L'intento di annullamento irrisolto e la chiusura diretta
+nello storage rifiutano un altro motivo; i retry esatti conservano motivo e ora.
+I conflitti di contratto sono errori permanenti di activity, non guasti
+transitori da ritentare.
+
+`CancelRun` su una radice già chiusa riesce senza decodificare o preparare di
+nuovo l'esecuzione, anche durante una successiva eliminazione della Session
+con un altro motivo. Leggere metadati storici risolti non autorizza a eseguire
+il lavoro. Terminare una Session non permette `PurgeSession` finché esistono
+esecuzioni attive o sospensioni irrisolte.
+
+### Aggiornare lo storage delle sospensioni {#upgrading-suspension-storage}
+
+Questo cambio rompe l'interfaccia Go e modifica i metadati persistiti.
+Aggiornare insieme tutti gli `storage.Store` personalizzati, i loro client
+generati e i consumer del runtime: implementare `RelinquishRunSuspension` e
+sostituire `SuccessorRunID` con `SuspensionResolution`. Convertire ogni ID di
+successore reale in `session.ContinuedSuspension`, preservare tutti i byte
+storici e lasciare irrisolte le sospensioni che lo sono già. Il framework non
+fornisce migrazione automatica né decoder precedente. Writer vecchi e nuovi
+non devono coesistere. Un rollback deve preservare ogni chiusura permanente e
+impedire a un vecchio writer di ammettere un successore dopo di essa. Non si
+aggiungono strumenti del modello né passaggi di retry per il client.
 
 ### Ordine di avvio
 

@@ -239,14 +239,60 @@ run metadata とキャンセル record の組み合わせとして有効なの�
 
 ### Continuation の開始
 
-continuation には、存在し、status が `suspended` の predecessor run が必要です。
+新しい continuation には、存在し、status が `suspended` で
+`SuspensionResolution` が未解決の predecessor run が必要です。
 successor は predecessor と同じ session、agent、parent run identity を使う必要が
-あります。store は successor を作成する transaction の中でこの四つを検証します。
+あります。store は successor を作成する transaction の中でこれらの条件を検証します。
 一致しない場合、successor の開始や親リンクを一切書く前に操作を拒否します。
 
-successor の `RunStarted` record が `PredecessorRunID` を保存します。`RunMeta` は
-この関係を重複して持ちません。reader は関係を確定した record から continuation
-history を復元します。
+### 保存済み suspension の解決 {#suspension-resolution}
+
+`RunMeta.SuspensionResolution` は、元の suspended result とは別に、変更できない
+決定を保存します。
+
+- `nil`: suspension は未解決です。
+- `session.ContinuedSuspension{RunID}`: 保存された作業を引き継ぐ実際の successor
+  が受理されました。`StartRootRun` または `StartChildRun` は successor と最初の
+  records とともに、この決定を原子的に保存します。
+- `session.RelinquishedSuspension{Reason, ResolvedAt}`: root run の continuation
+  が永久に閉じられました。解決時刻は store が設定します。
+
+どちらの解決結果も、predecessor の suspended status、result、checkpoint の bytes、
+過去の records を変更しません。successor の `RunStarted` record は引き続き
+`PredecessorRunID` を保存し、continuation history の読み取りに使われます。
+
+`Runtime.CancelRun` は、未解決 root の現在の checkpoint を正確に decode し、
+Task、suspended child、remote operation が残っていないと確認した場合だけ、直接
+continuation を閉じます。ユーザーの回答だけを待つ質問なら、新しい workflow を
+開始せずに閉じられます。未対応または破損した checkpoint は閉じる前に拒否します。
+作業が残る suspension は従来の永続的な cancellation job を使い、child の処理は
+引き続き parent が所有します。
+
+`Store.RelinquishRunSuspension` は保存済み suspension ID を検証し、開始と同じ
+原子的な決定で closure または continuation を選びます。回答が先に受理された場合、
+predecessor の古い cancellation reason に関係なく、受理済み successor を返します。
+runtime はその successor をたどります。残りの作業と現在の cancellation reason は
+その実行が所有します。closure が先なら、その後の開始は run や parent link を
+書く前に `session.ErrRunConflict` を返します。未解決の cancellation intent と
+store への直接の closure は別の reason を拒否し、完全に同じ retry は最初の reason
+と時刻を維持します。contract conflict は再試行する一時的な障害ではなく、activity
+の恒久的なエラーです。
+
+すでに閉じた root の `CancelRun` は、decode や実行準備を繰り返さずに成功します。
+後で別の reason で Session を削除する場合も同じです。解決済みの過去の metadata を
+読めても、その run を実行する権限は証明されません。Session を終了しても、running
+run または未解決 suspension があれば `PurgeSession` は拒否されます。
+
+### suspension storage のアップグレード {#upgrading-suspension-storage}
+
+Go interface と永続 metadata の互換性を破る変更です。すべての custom
+`storage.Store`、generated clients、runtime consumers を同時に更新し、
+`RelinquishRunSuspension` を実装して `SuccessorRunID` を `SuspensionResolution`
+に置き換えてください。実際の successor ID は `session.ContinuedSuspension` に
+変換し、過去の bytes はすべて維持し、未解決 suspension は未解決のまま残します。
+framework は自動 migration や旧 decoder を提供しません。新旧 writer を同時に動かしては
+いけません。rollback でも永久 closure を維持し、旧 writer が閉じた後に successor を
+受理することを防ぐ必要があります。model tool や client の retry 手順は追加しません。
 
 ### 開始順序
 

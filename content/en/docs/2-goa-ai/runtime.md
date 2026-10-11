@@ -942,7 +942,9 @@ applies the same retry policy as Temporal.
   `StartOneShotChildRun` each store the parent link and child start together.
   An exact retry of an accepted start remains valid after the parent stops,
   while a changed retry or a new child is rejected
-- Cancellation reasons are write-once. An exact retry succeeds; a different reason for the same run is a conflict
+- Stored cancellation intent and suspension closure keep their first reason.
+  See [saved suspension resolution](../memory-sessions/#suspension-resolution)
+  for conflicts, already closed roots, and admitted successors.
 - Suspension and terminal changes store the new status with the matching record,
   which cannot later be changed
 - Durable `RunStarted`, `RunSuspended`, `RunCompleted`, and `ChildRunLinked`
@@ -993,6 +995,12 @@ durable lifecycle records must match the strict typed JSON shapes documented in
 ---
 
 ## External Input and Workflow Continuations
+
+Saved suspensions have one permanent resolution. `CancelRun` can close a root
+that retains no unfinished work without starting another workflow; saved Tasks,
+children, and remote operations still use durable cleanup. See
+[Memory & Sessions](../memory-sessions/#suspension-resolution) for race handling,
+cancellation reasons, and the coordinated storage upgrade.
 
 Each accepted user input starts one top-level workflow for that turn. The
 workflow ends with either that turn's final result or an external-input

@@ -282,15 +282,68 @@ exactement.
 
 ### Démarrage d'une continuation
 
-Une continuation exige une exécution précédente existante dont le statut est
-`suspended`. Le successeur doit reprendre la même session, le même agent et la
-même exécution parente. Le stockage vérifie ces quatre faits dans la transaction
-qui créerait le successeur. Toute différence est rejetée avant d'écrire le
-démarrage du successeur ou un lien vers le parent.
+Une nouvelle continuation exige une exécution précédente existante dont le
+statut est `suspended` et dont la `SuspensionResolution` reste non résolue. Le
+successeur doit reprendre la même session, le même agent et la même exécution
+parente. Le stockage vérifie ces exigences dans la transaction qui créerait le
+successeur. Toute différence est rejetée avant d'écrire le démarrage du
+successeur ou un lien vers le parent.
 
-L'enregistrement `RunStarted` du successeur conserve `PredecessorRunID`.
-`RunMeta` ne duplique pas cette relation. Les lecteurs reconstruisent
-l'historique des continuations à partir des enregistrements qui l'ont établi.
+### Résoudre les suspensions enregistrées {#suspension-resolution}
+
+`RunMeta.SuspensionResolution` conserve une décision permanente séparée du
+résultat suspendu d'origine :
+
+- `nil` : la suspension reste non résolue.
+- `session.ContinuedSuspension{RunID}` : un véritable successeur a été admis
+  pour reprendre le travail. `StartRootRun` ou `StartChildRun` enregistre cette
+  décision atomiquement avec le successeur et ses premiers enregistrements.
+- `session.RelinquishedSuspension{Reason, ResolvedAt}` : la continuation d'une
+  exécution racine a été fermée définitivement. Le stockage fixe l'heure.
+
+Aucune variante ne modifie le statut suspendu, le résultat, les octets du point
+de reprise ou les enregistrements historiques du prédécesseur. Le `RunStarted`
+du successeur conserve `PredecessorRunID` pour reconstruire l'historique.
+
+`Runtime.CancelRun` peut fermer directement une racine non résolue seulement
+après avoir décodé son point de reprise actuel exact et vérifié qu'elle ne
+conserve ni Task, ni enfant suspendu, ni opération distante. Une question qui
+attend uniquement la réponse de l'utilisateur peut ainsi être fermée sans
+nouveau workflow. Un point de reprise incompatible ou corrompu est rejeté
+avant la fermeture. Le travail conservé utilise toujours le traitement durable
+d'annulation ; chaque parent reste responsable de ses enfants.
+
+`Store.RelinquishRunSuspension` vérifie l'identifiant de suspension et choisit
+atomiquement entre fermeture et continuation, avec les démarrages. Si une
+réponse gagne, il retourne le successeur admis même si le prédécesseur possède
+un ancien motif d'annulation. Le runtime suit ce successeur, qui possède le
+travail et son motif d'annulation actuel. Si la fermeture gagne, un démarrage
+ultérieur retourne `session.ErrRunConflict` avant toute écriture d'exécution ou
+de lien parent. Une demande d'annulation non résolue et une fermeture directe
+dans le stockage rejettent un autre motif ; les répétitions exactes conservent
+le motif et l'heure. Les conflits de contrat sont des erreurs permanentes
+d'activité, pas des pannes temporaires à réessayer.
+
+`CancelRun` réussit pour une racine déjà fermée sans décoder ni préparer de
+nouveau l'exécution, même lors d'une suppression ultérieure de Session avec
+un autre motif. Lire des métadonnées historiques résolues n'autorise pas à
+exécuter le travail. Terminer une Session ne permet pas `PurgeSession` tant
+qu'une exécution est active ou qu'une suspension reste non résolue.
+
+### Mettre à niveau le stockage des suspensions {#upgrading-suspension-storage}
+
+Ce changement rompt l'interface Go et modifie les métadonnées persistées.
+Mettez à niveau ensemble les `storage.Store` personnalisés, leurs clients
+générés et les consommateurs du runtime : implémentez
+`RelinquishRunSuspension` et remplacez `SuccessorRunID` par
+`SuspensionResolution`. Convertissez chaque véritable identifiant de successeur
+en `session.ContinuedSuspension`, préservez tous les octets historiques et
+laissez les suspensions non résolues dans cet état. Le framework ne fournit
+ni migration automatique ni ancien décodeur. Les anciens et nouveaux processus
+d'écriture ne doivent pas coexister. Un retour en arrière doit préserver toute
+fermeture permanente et empêcher un ancien processus d'admettre un successeur
+après celle-ci. Aucun outil du modèle ni étape de nouvelle tentative du client
+n'est ajouté.
 
 ### Ordre de démarrage
 

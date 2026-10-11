@@ -296,7 +296,7 @@ and other lifecycle fields match.
 
 A repeat that changes any value fixed by the first write is a conflict. The
 store must not guess which value is newer or overwrite the first value.
-Cancellation follows the same rule: the first reason is permanent, an exact
+Stored cancellation intent follows the same rule: the first reason is permanent, an exact
 repeat succeeds, and a different reason fails.
 
 ### Durable event JSON
@@ -333,15 +333,62 @@ records. A durable store must preserve each pairing exactly.
 
 ### Continuation starts
 
-A continuation start requires an existing predecessor run in `suspended`
-status. The successor must repeat the predecessor's session, agent, and parent
-run identity. The store checks all four facts inside the same transaction that
-would create the successor. A mismatch is rejected before the successor start
-or any parent link is written.
+A new continuation requires an existing predecessor in `suspended` status with
+unresolved `SuspensionResolution`. The successor must repeat the predecessor's
+session, agent, and parent run identity. The store checks these requirements
+inside the same transaction that would create the successor. A mismatch is
+rejected before the successor start or any parent link is written.
 
-The successor's `RunStarted` record stores `PredecessorRunID`. `RunMeta` does
-not duplicate that relationship. Readers reconstruct continuation history from
-the records that established it.
+### Resolving saved suspensions {#suspension-resolution}
+
+`RunMeta.SuspensionResolution` records one permanent decision separately from
+the original suspended result:
+
+- `nil`: the saved suspension remains unresolved.
+- `session.ContinuedSuspension{RunID}`: a real successor was admitted to inherit
+  its work. `StartRootRun` or `StartChildRun` stores this decision atomically
+  with the successor and its first records.
+- `session.RelinquishedSuspension{Reason, ResolvedAt}`: continuation of a root
+  run was permanently closed. The store supplies the resolution time.
+
+Neither resolved value changes the predecessor's suspended status, result,
+checkpoint bytes, or historical records. The successor's `RunStarted` record
+still stores `PredecessorRunID` for reading continuation history.
+
+`Runtime.CancelRun` can close an unresolved root directly only after decoding
+its exact current checkpoint and proving that it retains no Task, suspended
+child, or remote operation. A question waiting only for a user's answer can
+therefore close without starting another workflow. Unsupported or corrupt
+checkpoints are rejected before closure. Suspensions that retain work still use
+the existing durable cancellation job; children remain owned by their parent.
+
+`Store.RelinquishRunSuspension` checks the saved suspension ID and chooses
+closure or continuation in the same atomic decision used by starts. If an
+answer wins, it returns the admitted successor even when the predecessor has
+an older cancellation reason. The runtime follows that successor; its work and
+current cancellation reason belong to that execution. If closure wins, a later
+start returns `session.ErrRunConflict` before writing a run or parent link.
+Unresolved cancellation intent and direct storage closure reject a different
+reason; exact closure retries retain the first reason and time. Contract
+conflicts are permanent activity errors, not temporary failures to retry.
+
+Calling `CancelRun` on an already relinquished root succeeds without decoding
+or preparing execution again, including a later cancellation for Session
+deletion with another reason. Reading resolved historical metadata does not
+prove that a run is authorized to execute. Ending a Session still leaves
+running runs and unresolved suspensions blocking `PurgeSession`.
+
+### Upgrading suspension storage {#upgrading-suspension-storage}
+
+This is a breaking Go interface and persisted metadata change. Upgrade every
+custom `storage.Store`, its generated clients, and runtime consumers together:
+implement `RelinquishRunSuspension` and replace `SuccessorRunID` with
+`SuspensionResolution`. Convert each existing real successor ID to
+`session.ContinuedSuspension`, preserve all historical bytes, and leave existing
+unresolved suspensions unresolved. The framework supplies no automatic
+migration or legacy decoder. Old and new writers must not overlap. Rollback
+must preserve permanent closure and must never let an old writer admit a
+successor after relinquishment. This adds no model tool or client retry step.
 
 ### Start ordering
 
