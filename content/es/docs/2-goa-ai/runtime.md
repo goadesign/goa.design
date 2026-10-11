@@ -213,7 +213,9 @@ Usa `StartOneShot` y `OneShotRun` cuando quieras trabajo duradero que no esté a
 - La aplicación host crea las sesiones antes de enviar trabajo; los runtimes de agentes no crean, terminan ni eliminan sesiones.
 - El motor acepta un workflow raíz antes de que su primera activity registre la ejecución. No se crea un estado `pending` antes de la admisión.
 - Los inicios raíz, hijo y one-shot usan operaciones distintas. El inicio hijo guarda el vínculo con el padre; one-shot guarda metadatos completos sin sesión.
-- Los motivos de cancelación se escriben una sola vez. Un reintento idéntico tiene éxito; un motivo diferente produce un conflicto.
+- La intención de cancelación guardada y el cierre de una suspensión conservan
+  el primer motivo. Véase la [resolución de suspensiones](../memory-sessions/#suspension-resolution)
+  para los conflictos, raíces ya cerradas y sucesores admitidos.
 - La suspensión y la finalización guardan el nuevo estado junto con su registro inmutable.
 - `StartOneShot` devuelve inmediatamente un `engine.WorkflowHandle`. `OneShotRun` es el wrapper bloqueante que llama a `handle.Wait(ctx)` por ti.
 
