@@ -212,7 +212,9 @@ out, err := client.Run(ctx, "s1", msgs)
 - host が sessionful work の前に session を作成します。agent runtime は session を作成、終了、削除しません。
 - engine は root workflow を受理してから、最初の activity が run を記録します。受理前の `pending` row はありません。
 - root、child、one-shot は別の start operation です。child start は parent link を保存し、one-shot は session なしで完全な metadata を保存します。
-- cancellation reason は write-once です。同一の retry は成功し、異なる reason は conflict になります。
+- 保存済み cancellation intent と suspension closure は最初の reason を維持します。
+  競合、閉じた root、受理済み successor は
+  [suspension の解決](../memory-sessions/#suspension-resolution) を参照してください。
 - suspension と terminal change は新しい status と対応する変更不可 record をまとめて保存します。
 - `StartOneShot` は `engine.WorkflowHandle` を即座に返します。`OneShotRun` は内部で `handle.Wait(ctx)` を呼ぶ blocking な convenience wrapper です。
 
@@ -832,7 +834,9 @@ retry policy を使います。
 - root、child、one-shot の開始には別々の storage operation を使います。child start は親 link と child start をまとめて保存し、one-shot start は session なしで完全な metadata を保存します。
 - 親 workflow が先に終了すると、Temporal は child workflow を終了します。
 - 新しい child には running の parent が必要です。`StartChildRun` と `StartOneShotChildRun` は、親 link と child start をそれぞれまとめて保存します。受理済みの完全に同じ retry は parent の停止後も有効ですが、内容を変えた retry や新しい child は拒否します。
-- 最初の cancellation reason は変更できません。完全に同じ再試行は成功し、同じ run に別の reason を指定すると conflict になります。
+- 保存済み cancellation intent と suspension closure は最初の reason を維持します。
+  競合、閉じた root、受理済み successor は
+  [suspension の解決](../memory-sessions/#suspension-resolution) を参照してください。
 - suspension と終了は、新しい status と対応する変更不可の record をまとめて保存します。
 - 永続化された `RunStarted`、`RunSuspended`、`RunCompleted`、`ChildRunLinked` の payload は、対応する型の JSON 値を正確に一つだけ含む必要があります。未知の field や末尾の追加 JSON 値は拒否します。
 - エージェントは最初の run の前に登録されなければなりません。ランタイムは、エンジンワーカーの決定性を保つため、最初の run 送信後の登録を `ErrRegistrationClosed` で拒否します。
@@ -881,6 +885,12 @@ lifecycle record は [Memory & Sessions](../memory-sessions/#durable-event-json)
 ---
 
 ## 外部入力と workflow continuation
+
+保存済み suspension には変更できない解決結果が一つだけあります。`CancelRun` は、
+未完了作業を持たない root を新しい workflow なしで閉じられます。保存済み Task、
+child、remote operation は引き続き永続的な cleanup を使います。競合、キャンセル理由、
+storage の同時更新については [Memory & Sessions](../memory-sessions/#suspension-resolution)
+を参照してください。
 
 受理された各 user input は、その turn の top-level workflow を 1 つ開始します。workflow は、その turn の final result または external-input suspension のどちらかで終了します。nested agent は引き続き linked child workflow として動きます。
 

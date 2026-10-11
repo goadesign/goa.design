@@ -211,7 +211,9 @@ Usa `StartOneShot` e `OneShotRun` quando vuoi lavoro durevole che non sia associ
 - L’applicazione host crea le sessioni prima del lavoro; i runtime degli agenti non creano, terminano o eliminano sessioni.
 - Il motore accetta un workflow radice prima che la prima activity registri l’esecuzione. Nessuno stato `pending` viene creato prima dell’ammissione.
 - Gli avvii radice, figlio e one-shot sono operazioni distinte. L’avvio figlio salva il collegamento al padre; one-shot salva metadati completi senza sessione.
-- Il motivo di annullamento è write-once. Una ripetizione identica riesce; un motivo diverso produce un conflitto.
+- L’intento di annullamento salvato e la chiusura di una sospensione conservano
+  il primo motivo. Vedere la [risoluzione delle sospensioni](../memory-sessions/#suspension-resolution)
+  per conflitti, radici già chiuse e successori ammessi.
 - Sospensione e termine salvano il nuovo stato insieme al record immutabile corrispondente.
 - `StartOneShot` restituisce subito un `engine.WorkflowHandle`. `OneShotRun` è il wrapper bloccante che chiama `handle.Wait(ctx)` per te.
 
@@ -831,7 +833,9 @@ stessa politica di retry di Temporal.
 - Gli avvii radice, figlio e one-shot usano operazioni distinte. Gli avvii dei figli salvano insieme il collegamento al padre e l'avvio del figlio; gli avvii one-shot salvano metadati completi senza sessione
 - Temporal termina un workflow figlio se il workflow padre si chiude per primo
 - Un nuovo figlio richiede un padre attivo. `StartChildRun` e `StartOneShotChildRun` salvano ciascuno il collegamento al padre e l'avvio del figlio insieme. Un retry identico già accettato resta valido dopo l'arresto del padre; un retry modificato o un nuovo figlio vengono rifiutati
-- Il primo motivo di annullamento non cambia. Un retry esatto riesce e un motivo diverso per la stessa esecuzione produce un conflitto
+- L’intento di annullamento salvato e la chiusura di una sospensione conservano
+  il primo motivo. Vedere la [risoluzione delle sospensioni](../memory-sessions/#suspension-resolution)
+  per conflitti, radici già chiuse e successori ammessi.
 - La sospensione e il completamento salvano il nuovo stato insieme al record corrispondente, che non può più essere modificato
 - I payload persistenti di `RunStarted`, `RunSuspended`, `RunCompleted` e `ChildRunLinked` devono contenere esattamente un valore JSON del tipo corrispondente. I campi sconosciuti e gli ulteriori valori JSON vengono rifiutati
 - Gli agenti devono essere registrati prima della prima esecuzione. Il runtime rifiuta la registrazione dopo l'invio della prima esecuzione con `ErrRegistrationClosed` per mantenere i lavoratori del motore deterministici
@@ -884,6 +888,12 @@ tipizzate e rigorose descritte in [Memoria e sessioni](../memory-sessions/#durab
 ---
 
 ## Input esterno e continuazioni dei workflow
+
+Ogni sospensione salvata ha una sola risoluzione permanente. `CancelRun` può
+chiudere una radice senza lavoro incompleto senza avviare un nuovo workflow;
+Tasks, figli e operazioni remote conservati usano ancora la pulizia durevole.
+Vedere [Memoria e sessioni](../memory-sessions/#suspension-resolution) per le
+concorrenze, i motivi di annullamento e l'aggiornamento coordinato dello storage.
 
 Ogni input utente accettato avvia un solo workflow principale per quel turno.
 Il workflow termina con il risultato finale del turno oppure con una

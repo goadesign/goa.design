@@ -216,7 +216,9 @@ Utilisez `StartOneShot` et `OneShotRun` lorsque vous souhaitez un travail durabl
 - L’application hôte crée les sessions avant le travail ; les runtimes d’agents ne créent, ne terminent et ne suppriment pas les sessions.
 - Le moteur accepte un workflow racine avant que sa première activity enregistre l’exécution. Aucun état `pending` n’est créé avant l’admission.
 - Les démarrages racine, enfant et ponctuel sont des opérations distinctes. Le démarrage enfant enregistre le lien parent ; le démarrage ponctuel enregistre toutes les métadonnées sans session.
-- Le motif d’annulation est écrit une seule fois. Une répétition identique réussit ; un motif différent produit un conflit.
+- La demande d’annulation enregistrée et la fermeture d’une suspension gardent
+  leur premier motif. Voir la [résolution des suspensions](../memory-sessions/#suspension-resolution)
+  pour les conflits, les racines déjà fermées et les successeurs admis.
 - La suspension et la fin enregistrent le nouvel état avec l’enregistrement immuable correspondant.
 - `StartOneShot` renvoie immédiatement un `engine.WorkflowHandle`. `OneShotRun` est le wrapper pratique de blocage qui appelle `handle.Wait(ctx)` pour vous.
 
@@ -939,7 +941,9 @@ applique la même politique de nouvelle tentative que Temporal.
 - Les démarrages racine, enfant et ponctuel utilisent des opérations distinctes. Les démarrages d'enfants enregistrent ensemble le lien parent et le démarrage de l'enfant ; les démarrages ponctuels enregistrent les métadonnées complètes sans session
 - Temporal termine un workflow enfant si son workflow parent se ferme en premier
 - Tout nouvel enfant exige un parent actif. `StartChildRun` et `StartOneShotChildRun` enregistrent chacun le lien parent et le démarrage de l'enfant ensemble. Une nouvelle tentative identique déjà acceptée reste valide après l'arrêt du parent ; une tentative modifiée ou un nouvel enfant est rejeté
-- Le premier motif d’annulation ne change pas. Une répétition exacte réussit et un autre motif pour la même exécution produit un conflit
+- La demande d’annulation enregistrée et la fermeture d’une suspension gardent
+  leur premier motif. Voir la [résolution des suspensions](../memory-sessions/#suspension-resolution)
+  pour les conflits, les racines déjà fermées et les successeurs admis.
 - La suspension et la fin enregistrent le nouvel état avec l’enregistrement correspondant, qui ne peut plus être modifié
 - Les payloads durables `RunStarted`, `RunSuspended`, `RunCompleted` et `ChildRunLinked` doivent contenir exactement une valeur JSON du type correspondant. Les champs inconnus et les valeurs JSON supplémentaires sont rejetés
 - Les agents doivent être enregistrés avant la première exécution. Le moteur d'exécution rejette l'enregistrement après la première soumission d'exécution avec `ErrRegistrationClosed` pour que les opérateurs du moteur restent déterministes.
@@ -999,6 +1003,12 @@ existants doivent respecter les formes JSON typées et strictes décrites dans
 ---
 
 ## Entrées externes et continuations de workflow
+
+Chaque suspension enregistrée possède une résolution permanente unique.
+`CancelRun` peut fermer une racine sans travail restant sans nouveau workflow ;
+les Tasks, enfants et opérations distantes conservés utilisent le nettoyage
+durable. Voir [Mémoire et sessions](../memory-sessions/#suspension-resolution)
+pour les courses, motifs d'annulation et la mise à niveau coordonnée du stockage.
 
 Chaque entrée utilisateur acceptée démarre un workflow de premier niveau pour
 ce tour. Le workflow se termine soit avec le résultat final de ce tour, soit

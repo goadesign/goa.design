@@ -921,7 +921,9 @@ reintentos que Temporal.
 - Los inicios raíz, hijo y one-shot usan operaciones de almacenamiento distintas. Los inicios de hijos guardan juntos el vínculo con el padre y el inicio del hijo; los inicios one-shot guardan metadatos completos sin sesión
 - Temporal termina un workflow hijo si su workflow padre se cierra primero
 - Un hijo nuevo requiere un padre activo. Tanto `StartChildRun` como `StartOneShotChildRun` guardan juntos el vínculo con el padre y el inicio del hijo. Un reintento exacto ya aceptado sigue siendo válido después de que el padre se detenga; un reintento modificado o un hijo nuevo se rechazan
-- El primer motivo de cancelación no cambia. Un reintento exacto tiene éxito y otro motivo para la misma ejecución produce un conflicto
+- La intención de cancelación guardada y el cierre de una suspensión conservan
+  el primer motivo. Véase la [resolución de suspensiones](../memory-sessions/#suspension-resolution)
+  para los conflictos, raíces ya cerradas y sucesores admitidos.
 - La suspensión y la finalización guardan el nuevo estado junto con el registro correspondiente, que no puede modificarse después
 - Los payloads duraderos de `RunStarted`, `RunSuspended`, `RunCompleted` y `ChildRunLinked` deben contener exactamente un valor JSON del tipo correspondiente. Se rechazan los campos desconocidos y los valores JSON adicionales
 - Los agentes deben registrarse antes de la primera ejecución. El runtime rechaza el registro después del envío de la primera ejecución con `ErrRegistrationClosed` para mantener deterministas a los workers del motor
@@ -974,6 +976,12 @@ JSON tipadas y estrictas descritas en [Memoria y sesiones](../memory-sessions/#d
 ---
 
 ## Entrada externa y continuaciones de workflow
+
+Cada suspensión guardada tiene una única resolución permanente. `CancelRun`
+puede cerrar una raíz sin trabajo pendiente sin iniciar otro workflow; Tasks,
+hijos y operaciones remotas retenidas siguen usando la limpieza duradera. Véase
+[Memoria y sesiones](../memory-sessions/#suspension-resolution) para las carreras,
+los motivos de cancelación y la actualización coordinada del almacenamiento.
 
 Cada entrada aceptada inicia un workflow de nivel superior. El workflow termina
 con un resultado final o con un `api.RunSuspension` que contiene las solicitudes

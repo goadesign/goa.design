@@ -249,15 +249,66 @@ cambios.
 
 ### Inicio de una continuación
 
-Una continuación requiere una ejecución predecesora existente con estado
-`suspended`. El sucesor debe repetir la misma sesión, el mismo agente y la misma
-ejecución padre. El almacén comprueba estos cuatro datos dentro de la misma
-transacción que crearía el sucesor. Si alguno no coincide, rechaza la operación
-antes de escribir el inicio del sucesor o un vínculo con el padre.
+Una nueva continuación requiere una ejecución predecesora existente con estado
+`suspended` y `SuspensionResolution` sin resolver. El sucesor debe repetir la
+misma sesión, el mismo agente y la misma ejecución padre. El almacén comprueba
+estos requisitos dentro de la misma transacción que crearía el sucesor. Si
+alguno no coincide, rechaza la operación antes de escribir el inicio del
+sucesor o un vínculo con el padre.
 
-El registro `RunStarted` del sucesor guarda `PredecessorRunID`. `RunMeta` no
-duplica esa relación. Los lectores reconstruyen el historial de continuaciones
-a partir de los registros que lo establecieron.
+### Resolver suspensiones guardadas {#suspension-resolution}
+
+`RunMeta.SuspensionResolution` guarda una decisión permanente separada del
+resultado suspendido original:
+
+- `nil`: la suspensión sigue sin resolver.
+- `session.ContinuedSuspension{RunID}`: un sucesor real fue admitido para heredar
+  el trabajo. `StartRootRun` o `StartChildRun` guarda esta decisión junto con el
+  sucesor y sus primeros registros en una operación atómica.
+- `session.RelinquishedSuspension{Reason, ResolvedAt}`: la continuación de una
+  ejecución raíz se cerró permanentemente. El almacén fija la hora.
+
+Ninguna variante cambia el estado suspendido, el resultado, los bytes del
+checkpoint ni los registros históricos del predecesor. El `RunStarted` del
+sucesor sigue guardando `PredecessorRunID` para reconstruir el historial.
+
+`Runtime.CancelRun` puede cerrar directamente una raíz sin resolver solo tras
+decodificar su checkpoint actual exacto y comprobar que no conserva una Task,
+un hijo suspendido ni una operación remota. Una pregunta que solo espera la
+respuesta del usuario puede cerrarse sin iniciar otro workflow. Los checkpoints
+no compatibles o corruptos se rechazan antes del cierre. El trabajo retenido
+sigue usando el proceso duradero de cancelación; cada padre conserva la
+responsabilidad de sus hijos.
+
+`Store.RelinquishRunSuspension` comprueba el ID de la suspensión y decide entre
+cierre y continuación atómicamente con los inicios. Si gana una respuesta,
+devuelve el sucesor admitido incluso si el predecesor tiene un motivo de
+cancelación anterior. El runtime sigue ese sucesor, que posee el trabajo y su
+motivo de cancelación actual. Si gana el cierre, un inicio posterior devuelve
+`session.ErrRunConflict` antes de escribir una ejecución o vínculo padre.
+La intención de cancelación sin resolver y el cierre directo en el almacén
+rechazan otro motivo; los reintentos exactos conservan el motivo y la hora.
+Los conflictos de contrato son errores permanentes de activity, no fallos
+transitorios que se deban reintentar.
+
+`CancelRun` sobre una raíz ya cerrada tiene éxito sin volver a decodificar ni
+preparar la ejecución, incluso si se solicita después eliminar la Session con
+otro motivo. Leer metadatos históricos resueltos no autoriza ejecutar el trabajo.
+Terminar una Session no permite `PurgeSession` mientras existan ejecuciones
+activas o suspensiones sin resolver.
+
+### Actualizar el almacenamiento de suspensiones {#upgrading-suspension-storage}
+
+Este cambio rompe la interfaz Go y cambia los metadatos persistidos. Actualice
+juntos todos los `storage.Store` personalizados, sus clientes generados y los
+consumidores del runtime: implemente `RelinquishRunSuspension` y sustituya
+`SuccessorRunID` por `SuspensionResolution`. Convierta cada ID de sucesor real
+a `session.ContinuedSuspension`, conserve todos los bytes históricos y deje
+sin resolver las suspensiones existentes que aún lo estén. El framework no
+incluye migración automática ni decodificador antiguo. Los escritores antiguos
+y nuevos no pueden coexistir. Una reversión debe conservar cada cierre
+permanente e impedir que un escritor antiguo admita después un sucesor.
+No se añade ninguna herramienta del modelo ni un paso de reintento del cliente.
 
 ### Orden de inicio
 
