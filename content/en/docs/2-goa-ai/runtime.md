@@ -1348,6 +1348,14 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 - `RemoveReminder(id string)` - clear reminders when preconditions no longer hold
 - `Memory()` - access conversation history
 
+### Context-window recovery {#context-window-recovery}
+
+A selected response with `model_context_window_exceeded` cannot finish planning or execute its tool calls, even when inference returned successfully. The workflow keeps reported usage and text already streamed to the user, then spends an existing `MaxRecoveryTurns` turn on a replacement request. The designated planner model client reports this before custom planner code interprets the response; raw runtime clients retain the response until the planner selects it. Direct model clients outside the runtime still expose partial output.
+
+The replacement uses the registered history policy. `Compress` summarizes older history even when an estimate was below the usual trigger, while preserving every System instruction and the newest complete turn. The summary must replace additional original messages and produce a strictly smaller destination input count than the request using its prior summary. It can reuse already covered evidence. Estimates remain estimates. Missing summary support, failed counting, an incomplete summary, or no further compaction stops explicitly without another inference. Existing tool and time budgets remain unchanged. A `max_tokens` stop alone and ordinary HTTP 400 validation errors retain their existing behavior.
+
+This adds a runtime-owned activity recovery variant, without changing stored transcripts or model selection. Deploy matching workflow and activity workers together and retain old worker versions until their executions drain. Rollback must retain workers for executions already using the new variant.
+
 ### Preparing conversation messages {#preparing-conversation-messages}
 
 Both planner inputs provide `PrepareMessages func() ([]*model.Message, error)`
