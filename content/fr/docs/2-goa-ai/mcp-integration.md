@@ -106,9 +106,13 @@ L’application gère le catalogue complet, la pagination, la sélection des out
 
 Ne combinez pas `DynamicTools` avec `Tool` ou `ToolCatalog` dans le même service. Les outils statiques gardent leur comportement. Sans outils statiques ni `DynamicTools`, le serveur n’annonce ni ne génère d’opérations d’outils. Les modifications du catalogue apparaissent à la prochaine demande de liste ; les abonnements aux changements de cette liste nécessitent `ToolCatalog` et ne sont pas disponibles avec `DynamicTools`.
 
-Les clients modernes reçoivent les résultats structurés scalaires sans modification. Pour les anciens clients de base, fournissez des schémas d’entrée et de sortie de type objet et des résultats structurés de type objet. La conversion automatique des scalaires ou tableaux en objets ne concerne que les outils statiques dont les schémas sont connus lors de la génération.
+Les clients modernes reçoivent le résultat structuré et le schéma de sortie d’origine. Pour les anciens clients de base, le transport généré enveloppe chaque résultat structuré dynamique présent dans `{"value": ...}` et annonce un schéma de sortie objet correspondant. Cela inclut les objets, tableaux, scalaires et JSON null ; les résultats structurés ou schémas de sortie absents restent absents. Les arguments d’entrée doivent toujours être des objets.
 
-Consultez le contrat complet dans la [référence de conception MCP du framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition).
+Cette adaptation des schémas de sortie prend en charge JSON Schema 2020-12, par défaut ou déclaré explicitement avec `$schema`. Les autres dialectes déclarés produisent une erreur de protocole lors de la liste des outils, sans en invoquer. Les références locales conservent leur sens d’origine ; aucun schéma externe n’est récupéré.
+
+Régénérez les serveurs pour appliquer ce comportement. Les anciens clients devront ensuite lire `structuredContent.value`, y compris pour les résultats objets. Les applications qui servent ces clients doivent fournir des schémas de sortie 2020-12. Les clients modernes et les outils statiques conservent leurs formes de résultat.
+
+Consultez le contrat complet dans la [référence de conception MCP du framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#runtime-defined-tools).
 
 ### Dans la conception d'agents
 
