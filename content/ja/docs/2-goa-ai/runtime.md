@@ -918,17 +918,8 @@ continuation の準備時に application が渡すのは、完了した run ID �
 場合があります。信頼できる access-controlled な application storage にだけ保存し、
 信頼できない client には決して送信しないでください。
 
-受理される形式は `goa-ai.run-suspension.v8` だけです。version eight は、受理済みの
-recovery plan が input を待つとき、その turn で提示した tool 名を保存します。
-失敗した tool 名だけから、ほかに提示した選択肢を復元することはできません。
-continuation はその選択肢を保持しますが、現在の agent definition と実行 policy の
-検証も引き続き行います。
-
-Goa-AI は以前の checkpoint version をすべて拒否します。upgrade 前に、古い形式の
-保存済み work は、それを所有する runtime で完了させてください。未完了のまま残す
-必要がある場合、host が保存方法と再開可能性を明示的に判断します。この runtime では
-再開できません。framework は変換 command を提供せず、保存済み work の削除、
-キャンセル、書き換えを自動で行うこともありません。
+受理される中断形式は `goa-ai.run-suspension.v14`
+です。保存履歴を参照し、実行中のツールと復旧状態を保持します。以前の形式は拒否されます。ワーカーを切り替える前に[更新とロールバック要件](../provider-operations/#upgrade)に従ってください。
 
 回答が以前の workflow で model が作成した tool call を完了させる場合、新しい
 `tool_end` event には二つの run identity が含まれます。
@@ -1625,6 +1616,8 @@ bedrock: assistant message with tool_use must start with thinking
 この検証は provider call 前に実行されます。stream validation は別の境界です。不完全な content block、署名のない reasoning、stop reason の欠落は、planner code が受理済み response を得る前に output-contract error となります。
 
 ---
+
+共通記録にはエージェントまたはサービスの `Subject` が必須です。継続、キャンセル、更新は[プロバイダーが実行する操作](../provider-operations/)を参照してください。
 
 ## 次のステップ
 

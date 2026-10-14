@@ -11,7 +11,7 @@ The **Internal Tool Registry** is a clustered gateway service that enables tools
 
 The catalog also stores [native Agent tool declarations](../agent-composition/#dynamic-agent-tools). These name an existing worker and an immutable application configuration. The consuming runtime starts a child workflow; provider leases, health pings, and Pulse invocation apply only to service tools.
 
-The dynamic Agent APIs described here require Goa-AI v0.84.0 or later.
+Before adopting these Agent declarations, follow the [provider operations upgrade](../provider-operations/#upgrade).
 
 ## Overview
 
@@ -619,6 +619,9 @@ The registry exposes the following gRPC methods:
 - **Add nodes** to handle more gRPC connections—each node can serve any request
 - **Nodes coordinate health checks** with expiring Redis leases for each toolset
 - **No sticky sessions** required—result streams use Redis for cross-node delivery, so a tool call can be initiated on one node and completed on another
+
+See [Provider-Owned Operations](../provider-operations/) for direct and registered
+starts, provider setup, typed results, and the required upgrade.
 
 ## Next Steps
 

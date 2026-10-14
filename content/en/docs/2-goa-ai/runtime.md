@@ -1076,17 +1076,10 @@ never send them to an untrusted client. Goa-AI validates the checkpoint's
 version and pending request, restores saved payloads through the current
 generated codecs, and resumes planning.
 
-The accepted checkpoint format is exactly `goa-ai.run-suspension.v8`. Version
-eight saves the advertised tool names when an accepted recovery plan waits for
-input: failed tool names alone cannot reconstruct the other choices offered
-on that turn. Continuation preserves those choices while still checking the
-current agent definition and execution policy.
-
-Goa-AI rejects every earlier checkpoint version. Before upgrading, finish
-old-format saved work under its owning runtime. If any must remain unfinished,
-the host must explicitly decide how to preserve it and whether it will remain
-resumable; this runtime cannot resume it. The framework supplies no conversion
-command and never automatically deletes, cancels, or rewrites saved work.
+The accepted suspension format is `goa-ai.run-suspension.v14`. It references saved
+history while retaining active tool and recovery state. Earlier versions are rejected.
+Follow the coordinated [upgrade and rollback
+requirements](../provider-operations/#upgrade) before switching workers.
 
 When an answer completes a model-authored tool call from the earlier workflow,
 the new `tool_end` event has two distinct run identities:
@@ -2002,6 +1995,10 @@ stop reasons fail as output-contract errors before planner code receives an
 accepted response.
 
 ---
+
+Common run records require an Agent or service-tool `Subject`. See [Provider-Owned
+Operations](../provider-operations/) for accepted operations, input continuation,
+cancellation, and upgrades.
 
 ## Next Steps
 

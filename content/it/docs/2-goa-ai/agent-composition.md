@@ -144,8 +144,6 @@ stesso modo. Una singola esecuzione può scegliere un'altra coda con
 
 ## Agenti configurati dinamicamente {#dynamic-agent-tools}
 
-Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
-
 Una configurazione salvata di un agente può diventare uno strumento senza
 registrare un nuovo worker per ogni configurazione. Il registro conserva il
 contratto dello strumento, l'ID di un esecutore esistente e un riferimento
@@ -160,6 +158,8 @@ contratto completo di input e risultato e un `AgentToolTarget`:
 ```go
 &genregistry.AgentToolTarget{
     Executor:      "generic.agent",
+    Workflow:      "generic.workflow",
+    Queue:         "generic.queue",
     Configuration: "support/revisions/7",
 }
 ```
@@ -197,61 +197,33 @@ sovrascriversi a vicenda.
 
 ### Preparare il figlio su un worker consentito
 
-La definizione di un agente consente il proprio worker e i worker figli generati.
-Per consentire un altro esecutore:
+Registra `AgentToolResolver` sul worker del provider prima di sigillare il runtime o
+inviare lavoro. La firma è `func(context.Context, genregistry.ExecutionInvocation,
+string, *runtime.ToolCall) (*runtime.AgentToolConfiguration, error)`. Riceve invocazione
+originale, riferimento immutabile e chiamata convalidata. Restituisce `History`
+obbligatorio, etichette, policy e metadati e riferimenti ai prompt facoltativi.
 
 ```go
-executor := genspecialist.Definition()
-consumer := genassistant.Definition().WithAgentExecutors(&executor)
-if err := rt.RegisterAgentToolResolver(executor.Route().ID, prepareConfiguration); err != nil {
-    return err
+configuration := &runtime.AgentToolConfiguration{
+    History: runtime.LiteralAgentHistory(messages),
+    Labels: labels,
+    Policy: policy,
 }
 ```
 
-`WithAgentExecutors` accetta puntatori, copia le definizioni ricevute e ne
-restituisce una nuova. Usa `consumer` sia in `AgentRegistration.Definition` sul
-worker consumatore sia in `rt.ClientFor(consumer)`. Gli helper generati per
-registrazione e client continuano a usare la definizione originale. `Executor`
-nella dichiarazione deve corrispondere all'ID di un worker consentito; altri
-esecutori vengono rifiutati durante la scoperta, prima della chiamata al modello.
-
-`prepareConfiguration` è codice applicativo con firma
-`func(context.Context, string, *runtime.ToolCall) (*runtime.AgentToolConfiguration, error)`.
-Registralo sul runtime consumatore prima di chiudere la registrazione o avviare
-esecuzioni. Riceve il riferimento selezionato e una copia della chiamata validata.
-Restituisce `Messages`, `Labels`, `Policy` e gli eventuali `RenderedPrompts`.
-Le etichette estendono o sostituiscono quelle ereditate dal padre; autorizzazione
-e ambito appartengono all'applicazione. Il runtime gestisce gli ID di sessione ed
-esecuzione e i collegamenti al padre.
-
-La preparazione avviene in un'activity il cui risultato registrato viene
-riutilizzato durante il replay del workflow. Dopo una richiesta di input umano,
-la continuazione ripristina messaggi, etichette, policy e contratto del padre dal
-checkpoint del figlio, senza caricare di nuovo la configurazione.
+Vedi [Operazioni eseguite dal provider](../provider-operations/) per avvii, configurazione, risultati tipizzati e aggiornamento.
 
 ### Restituire il risultato selezionato
 
-`planner.PlanInput.ParentTool` e `planner.PlanResumeInput.ParentTool` espongono
-il contratto accettato dal padre. Un planner generico può usare `ParentTool.Result`
-con `model.StructuredOutput` nella richiesta finale al modello e restituire
-`planner.FinalToolResult`. Output strutturato e chiamate a strumenti usano
-richieste al modello separate. Un figlio nativo che restituisce solo testo viene
-rifiutato. Le esecuzioni principali non hanno `ParentTool`; gli strumenti basati
-su agenti compilati mantengono il comportamento esistente.
-
-Un'activity di pianificazione successiva scopre le nuove registrazioni. Sostituire
-una dichiarazione non cambia configurazione, schema del risultato o approvazione
-in attesa di una chiamata già accettata. Il risultato mantiene il collegamento
-all'esecuzione figlia.
+`planner.PlanInput.ParentTool` e `planner.PlanResumeInput.ParentTool` contengono il
+contratto del risultato selezionato per delega e operazioni dirette. Il pianificatore
+restituisce `planner.FinalToolResult` conforme al contratto; solo testo viene rifiutato.
+Usa `FinalToolResult` per il risultato tipizzato e `Final` per il testo. Leggi eventi
+paginati solo per la cronologia diagnostica.
 
 ### Aggiornare prima di pubblicare
 
-Aggiorna registro, worker esecutori e tutti i consumatori che possono scoprire le
-dichiarazioni native prima di pubblicarle. I consumatori precedenti le rifiutano.
-Le impronte dei servizi, i messaggi dei provider e i record di servizio salvati
-non cambiano. I registri precedenti non leggono record nativi, neppure quelli
-ritirati; i worker precedenti non ripristinano checkpoint di figli nativi. Prima
-di un rollback, rimuovi quei record e termina le relative esecuzioni.
+Vedi [Operazioni eseguite dal provider](../provider-operations/) per avvii, configurazione, risultati tipizzati e aggiornamento.
 
 ---
 

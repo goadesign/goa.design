@@ -11,7 +11,7 @@ El **Registro interno de herramientas** es un servicio de pasarela en clúster q
 
 El catálogo también guarda [declaraciones nativas de herramientas de agentes](../agent-composition/#dynamic-agent-tools), que identifican un worker existente y una configuración inmutable de la aplicación. El runtime consumidor inicia un workflow hijo; las concesiones, las comprobaciones de salud y las invocaciones Pulse solo se aplican a herramientas de servicio.
 
-Las API de agentes dinámicos descritas aquí requieren Goa-AI v0.84.0 o posterior.
+Antes de adoptar estas declaraciones, sigue la [actualización de operaciones del proveedor](../provider-operations/#upgrade).
 
 ## Descripción general
 
@@ -633,6 +633,8 @@ El registro expone los siguientes métodos gRPC:
 - **Añade nodos** para manejar más conexiones gRPC: cada nodo puede servir cualquier petición.
 - **Los nodos coordinan las comprobaciones de salud** mediante concesiones Redis que caducan para cada toolset.
 - **No se requieren sesiones con afinidad**: los streams de resultados utilizan Redis para la entrega entre nodos, por lo que una llamada a una herramienta puede iniciarse en un nodo y completarse en otro.
+
+Consulta [Operaciones a cargo del proveedor](../provider-operations/) para inicios, configuración, resultados tipados y actualización.
 
 ## Próximos pasos
 

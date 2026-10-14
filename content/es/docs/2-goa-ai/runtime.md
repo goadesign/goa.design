@@ -1044,19 +1044,10 @@ pueden contener una copia de ese checkpoint y la transcripción completa.
 Guárdalos únicamente en almacenamiento de aplicación confiable y con acceso
 controlado; nunca los envíes a un cliente no confiable.
 
-El único formato aceptado es `goa-ai.run-suspension.v8`. La versión ocho guarda
-los nombres de las herramientas anunciadas cuando un plan de recuperación
-aceptado espera una entrada: los nombres de las herramientas fallidas no bastan
-para reconstruir las otras opciones ofrecidas en ese turno. La continuación
-conserva esas opciones y sigue comprobando la definición actual del agente y la
-política de ejecución.
-
-Goa-AI rechaza todas las versiones anteriores del checkpoint. Antes de
-actualizar, termina el trabajo guardado con el formato anterior en el runtime
-que lo posee. Si debe quedar trabajo sin terminar, el host debe decidir
-explícitamente cómo conservarlo y si seguirá siendo reanudable; este runtime
-no puede reanudarlo. El framework no proporciona un comando de conversión ni
-elimina, cancela o reescribe automáticamente el trabajo guardado.
+El formato aceptado es `goa-ai.run-suspension.v14`. Referencia el historial guardado y
+conserva el estado activo de herramientas y recuperación. Se rechazan versiones
+anteriores. Sigue los requisitos de [actualización y
+reversión](../provider-operations/#upgrade) antes de cambiar workers.
 
 - Los llamadores proporcionan exactamente uno de estos valores: `Success`, con
   el **JSON de resultado canónico en bruto** y `Bounds` opcional, o `Failure`,
@@ -1742,6 +1733,10 @@ bedrock: assistant message with tool_use must start with thinking
 Esta validación garantiza que la reconstrucción del ledger de transcripción produce secuencias de mensajes conformes con el proveedor.
 
 ---
+
+Los registros comunes requieren `Subject` de agente o servicio. Consulta [Operaciones a
+cargo del proveedor](../provider-operations/) para continuación, cancelación y
+actualización.
 
 ## Próximos pasos
 
