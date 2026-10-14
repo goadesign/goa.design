@@ -11,7 +11,7 @@ Goa-AI permite **crear servidores MCP** y **consumir herramientas MCP externas**
 
 Los callers HTTP y stdio envían solicitudes independientes con metadatos del protocolo. No hay negociación de inicialización ni sesión del protocolo. La interfaz `Caller` invoca herramientas; `Listen` recibe notificaciones de cambios. Los clientes JSON-RPC generados por Goa también exponen las operaciones de recursos, prompts, descubrimiento y completado declaradas por el servicio.
 
-Los servidores HTTP generados también aceptan clientes MCP básicos `2025-11-25` en la misma URL POST. Regenera el servidor; no cambian las interfaces de servicio ni los constructores. `initialize` responde con `2025-11-25`; después las llamadas incluyen `MCP-Protocol-Version: 2025-11-25` sin identificador de sesión. Herramientas, recursos, prompts y sugerencias de argumentos conservan autenticación, autorización, middleware y validación tipada. Los resultados objeto mantienen su forma; los escalares, arrays y uniones sin etiqueta usan `{"value": ...}` y un esquema objeto correspondiente. Los resultados estructurados también se incluyen como contenido de texto. Esta vía anterior no ofrece Tasks, suscripciones a cambios ni solicitudes de entrada adicional del cliente. Los callers incluidos siguen usando `2026-07-28`.
+Los servidores HTTP generados también aceptan clientes MCP básicos `2025-11-25` en la misma URL POST. Regenera el servidor; no cambian las interfaces de servicio ni los constructores. `initialize` responde con `2025-11-25`; después las llamadas incluyen `MCP-Protocol-Version: 2025-11-25` sin identificador de sesión. Herramientas, recursos, prompts y sugerencias de argumentos conservan autenticación, autorización, middleware y validación tipada. Para herramientas declaradas estáticamente, los resultados objeto mantienen su forma; los escalares, arrays y uniones sin etiqueta usan `{"value": ...}` y un esquema objeto correspondiente. Los resultados estructurados también se incluyen como contenido de texto. Esta vía anterior no ofrece Tasks, suscripciones a cambios ni solicitudes de entrada adicional del cliente. Los callers incluidos siguen usando `2026-07-28`.
 
 Un solo diseño define esquemas de herramientas, decodificación tipada, validación, adaptadores del servidor y clientes. Los endpoints Goa configurados conservan autenticación, autorización, middleware y comportamiento de la aplicación. Desarrolladores y agentes de programación editan ese contrato y el código de la aplicación; `goa gen` mantiene coherentes las interfaces derivadas. Los servidores MCP generados usan HTTP. Los clientes de subprocesos siguen disponibles; la generación de servidores stdio queda aplazada.
 
@@ -20,6 +20,7 @@ Antes de generar este servidor, instala la versión de desarrollo verificada y s
 | Necesidad | Declaración o composición |
 |---|---|
 | Herramientas, recursos, prompts y sugerencias | `Tool`, `Resource`, `ResourceReader`, `Prompt`, `PromptCompletion`, `ResourceCompletion` |
+| Herramientas definidas en tiempo de ejecución | `DynamicTools` dentro de `MCP`; implementa `ToolsList` y `ToolsCall` generados |
 | Catálogos autorizados y notificaciones | `ToolCatalog`, `PromptCatalog`, `ResourceCatalog`, `ResourceTemplateCatalog`, `SubscriptionSource` |
 | Formularios o consentimiento para abrir una URL | `InputExchange` en un método Goa existente |
 | Trabajos asíncronos y respuestas posteriores del host | `TaskExchange` con creación, lectura, respuesta y cancelación |
@@ -87,6 +88,29 @@ var _ = Service("assistant", func() {
     })
 })
 ```
+
+### Herramientas definidas en tiempo de ejecución {#dynamic-tools}
+
+Usa `DynamicTools()` dentro de `MCP` cuando los datos disponibles en tiempo de ejecución definen las herramientas en lugar de métodos Goa declarados:
+
+```go
+var _ = Service("catalog", func() {
+    MCP("catalog", "1.0.0", func() {
+        DynamicTools()
+    })
+    JSONRPC(func() { POST("/mcp") })
+})
+```
+
+La generación añade `ToolsList` y `ToolsCall` a la interfaz del servicio MCP, con entradas y resultados tipados, transporte HTTP, clientes, soporte de caller, descubrimiento y validación de contenido enriquecido. Implementa ambos métodos con los tipos generados. Incluye el `MCPAdapter` generado para conservar el descubrimiento y otros recursos o prompts declarados; pasa tu implementación completa al constructor `NewEndpoints` generado. Si no hay métodos declarados, `NewMCPAdapter(nil, nil)` proporciona solo descubrimiento.
+
+La aplicación controla el catálogo completo, la paginación, la selección de herramientas, la validación de argumentos, los esquemas de resultados y la autorización por herramienta. La seguridad declarada dentro de `MCP` protege cada solicitud y proporciona la identidad verificada en su contexto. Publicar una herramienta en la lista no autoriza su invocación. Devuelve el error de protocolo generado `invalid_params` para una herramienta desconocida o un cursor inválido; para fallos de argumentos o ejecución de una herramienta reconocida, devuelve un resultado completado con `isError`.
+
+No combines `DynamicTools` con `Tool` o `ToolCatalog` en el mismo servicio. Las herramientas estáticas conservan su comportamiento. Sin herramientas estáticas ni `DynamicTools`, el servidor no anuncia ni genera operaciones de herramientas. Los cambios del catálogo aparecen en la siguiente solicitud de lista; las suscripciones a cambios de esa lista requieren `ToolCatalog` y no están disponibles con `DynamicTools`.
+
+Los clientes modernos reciben resultados estructurados escalares sin cambios. Para clientes básicos antiguos, proporciona esquemas de entrada y salida de tipo objeto y resultados estructurados de tipo objeto. La conversión automática de escalares o arrays en objetos solo se aplica a herramientas estáticas cuyos esquemas se conocen durante la generación.
+
+Consulta el contrato completo en la [referencia de diseño MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition).
 
 ### En el diseño del agente
 

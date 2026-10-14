@@ -11,7 +11,7 @@ Goa-AI supports both **creating MCP servers** and **consuming external MCP tools
 
 The HTTP and stdio callers send self-contained requests with protocol metadata. There is no initialization handshake or protocol session. Their `Caller` interface invokes tools; their `Listen` methods receive change notifications. Generated Goa JSON-RPC clients also expose the resource, prompt, discovery, and completion operations declared by the service.
 
-Generated HTTP servers also accept basic MCP `2025-11-25` clients on the same POST URL. Regenerate the server; no service interface or constructor changes are needed. `initialize` replies with `2025-11-25`, then calls carry `MCP-Protocol-Version: 2025-11-25` without a session ID. Tools, resources, prompts and argument completion keep the same authentication, authorization, middleware and typed validation. Object results keep their shape; scalar, array and untagged-union results use `{"value": ...}` and a matching object schema. Structured results are also included as text content. This older path does not offer Tasks, change subscriptions or requests for additional client input. Built-in callers continue to use `2026-07-28`.
+Generated HTTP servers also accept basic MCP `2025-11-25` clients on the same POST URL. Regenerate the server; no service interface or constructor changes are needed. `initialize` replies with `2025-11-25`, then calls carry `MCP-Protocol-Version: 2025-11-25` without a session ID. Tools, resources, prompts and argument completion keep the same authentication, authorization, middleware and typed validation. For statically declared tools, object results keep their shape; scalar, array and untagged-union results use `{"value": ...}` and a matching object schema. Structured results are also included as text content. This older path does not offer Tasks, change subscriptions or requests for additional client input. Built-in callers continue to use `2026-07-28`.
 
 One design supplies the tool schema, typed decoding, validation, server adapters
 and client bindings. Your configured Goa endpoints keep authentication,
@@ -25,6 +25,7 @@ Use the [Quickstart module setup](../quickstart/) to install the verified develo
 | What you need | Declare or compose |
 |---|---|
 | Tools, resources, prompts and suggestions | `Tool`, `Resource`, `ResourceReader`, `Prompt`, `PromptCompletion`, `ResourceCompletion` |
+| Tools defined at runtime | `DynamicTools` inside `MCP`; implement generated `ToolsList` and `ToolsCall` |
 | Authenticated catalogs and change notifications | `ToolCatalog`, `PromptCatalog`, `ResourceCatalog`, `ResourceTemplateCatalog`, `SubscriptionSource` |
 | User forms or consent to open a URL | `InputExchange` on an existing Goa method |
 | Asynchronous jobs and later host answers | `TaskExchange` with existing create, read, answer and cancel methods |
@@ -92,6 +93,29 @@ var _ = Service("assistant", func() {
     })
 })
 ```
+
+### Tools defined at runtime {#dynamic-tools}
+
+Use `DynamicTools()` inside `MCP` when runtime data supplies tool definitions instead of authored Goa methods:
+
+```go
+var _ = Service("catalog", func() {
+    MCP("catalog", "1.0.0", func() {
+        DynamicTools()
+    })
+    JSONRPC(func() { POST("/mcp") })
+})
+```
+
+Generation supplies `ToolsList` and `ToolsCall` on the MCP service interface, with typed payloads and results, HTTP transport, clients, caller support, discovery and rich-content validation. Implement both methods using the generated types. Embed the generated `MCPAdapter` to retain discovery and other declared resources or prompts, then pass your complete implementation to the generated `NewEndpoints` constructor. For a service with no authored methods, `NewMCPAdapter(nil, nil)` supplies discovery alone.
+
+Your application owns the complete catalog, pagination, tool selection, argument validation, result schemas and per-tool authorization. Security declared inside `MCP` still protects every request and supplies the verified principal in its context. Listing a tool does not authorize its invocation. Return the generated protocol's `invalid_params` error for an unknown tool or invalid cursor; return a completed tool result with `isError` for a recognized tool's argument or execution failure.
+
+`DynamicTools` cannot be combined with `Tool` or `ToolCatalog` in the same service. Static tools keep their existing behavior. Without static tools or `DynamicTools`, the server does not advertise or generate tool operations. Catalog changes appear on the next list request; tool-list change subscriptions require `ToolCatalog` and are unavailable with `DynamicTools`.
+
+Modern clients receive scalar structured results unchanged. For basic older clients, supply object input schemas, object output schemas and object structured results. Automatic scalar or array wrapping applies only to static tools whose schemas are known during generation.
+
+See the [framework MCP design reference](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition) for the complete contract.
 
 ### In Agent Design
 
