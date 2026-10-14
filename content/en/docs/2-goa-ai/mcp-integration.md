@@ -113,9 +113,13 @@ Your application owns the complete catalog, pagination, tool selection, argument
 
 `DynamicTools` cannot be combined with `Tool` or `ToolCatalog` in the same service. Static tools keep their existing behavior. Without static tools or `DynamicTools`, the server does not advertise or generate tool operations. Catalog changes appear on the next list request; tool-list change subscriptions require `ToolCatalog` and are unavailable with `DynamicTools`.
 
-Modern clients receive scalar structured results unchanged. For basic older clients, supply object input schemas, object output schemas and object structured results. Automatic scalar or array wrapping applies only to static tools whose schemas are known during generation.
+Modern clients receive the original structured result and output schema. For basic older clients, the generated transport wraps every present dynamic structured result in `{"value": ...}` and advertises a matching object output schema. This includes objects, arrays, scalars and JSON null; absent structured results or output schemas remain absent. Input arguments must still be objects.
 
-See the [framework MCP design reference](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition) for the complete contract.
+Older-client output-schema wrapping supports JSON Schema 2020-12, either by default or explicitly declared with `$schema`. Other declared dialects produce a protocol error during tool listing, without invoking a tool. Local schema references keep their original meaning; external schemas are not retrieved.
+
+Regenerate servers to apply this behavior. Older clients must then read `structuredContent.value`, including for object results. Applications serving those clients must supply 2020-12 output schemas. Modern clients and static tools keep their existing result shapes.
+
+See the [framework MCP design reference](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#runtime-defined-tools) for the complete contract.
 
 ### In Agent Design
 

@@ -108,9 +108,13 @@ La aplicación controla el catálogo completo, la paginación, la selección de 
 
 No combines `DynamicTools` con `Tool` o `ToolCatalog` en el mismo servicio. Las herramientas estáticas conservan su comportamiento. Sin herramientas estáticas ni `DynamicTools`, el servidor no anuncia ni genera operaciones de herramientas. Los cambios del catálogo aparecen en la siguiente solicitud de lista; las suscripciones a cambios de esa lista requieren `ToolCatalog` y no están disponibles con `DynamicTools`.
 
-Los clientes modernos reciben resultados estructurados escalares sin cambios. Para clientes básicos antiguos, proporciona esquemas de entrada y salida de tipo objeto y resultados estructurados de tipo objeto. La conversión automática de escalares o arrays en objetos solo se aplica a herramientas estáticas cuyos esquemas se conocen durante la generación.
+Los clientes modernos reciben el resultado estructurado y el esquema de salida originales. Para los clientes básicos antiguos, el transporte generado envuelve cada resultado estructurado dinámico presente en `{"value": ...}` y anuncia un esquema de salida de tipo objeto correspondiente. Esto incluye objetos, arrays, escalares y JSON null; los resultados estructurados o esquemas de salida ausentes siguen ausentes. Los argumentos de entrada deben seguir siendo objetos.
 
-Consulta el contrato completo en la [referencia de diseño MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition).
+Esta adaptación de esquemas de salida admite JSON Schema 2020-12, por defecto o declarado explícitamente con `$schema`. Otros dialectos declarados producen un error de protocolo al listar herramientas, sin invocar ninguna. Las referencias locales conservan su significado original; no se recuperan esquemas externos.
+
+Regenera los servidores para aplicar este comportamiento. Los clientes antiguos deberán leer `structuredContent.value`, también para resultados de tipo objeto. Las aplicaciones que atienden a esos clientes deben proporcionar esquemas de salida 2020-12. Los clientes modernos y las herramientas estáticas conservan sus formas de resultado.
+
+Consulta el contrato completo en la [referencia de diseño MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#runtime-defined-tools).
 
 ### En el diseño del agente
 
