@@ -945,18 +945,10 @@ con i codec generati correnti e riprende la pianificazione. I byte di
 completa. Salvali solo in uno storage applicativo affidabile e con accesso
 controllato; non inviarli mai a un client non attendibile.
 
-L'unico formato accettato è `goa-ai.run-suspension.v8`. La versione otto salva i
-nomi degli strumenti annunciati quando un piano di recupero accettato attende
-un input: i nomi degli strumenti falliti non bastano a ricostruire le altre
-scelte offerte in quel turno. La continuazione conserva queste scelte e
-verifica comunque la definizione attuale dell'agente e la policy di esecuzione.
-
-Goa-AI rifiuta tutte le versioni precedenti del checkpoint. Prima dell'upgrade,
-completare il lavoro salvato nel vecchio formato con il runtime che lo possiede.
-Se deve restare lavoro incompiuto, l'host deve decidere esplicitamente come
-conservarlo e se resterà riprendibile; questo runtime non può riprenderlo.
-Il framework non fornisce comandi di conversione e non elimina, annulla o
-riscrive automaticamente il lavoro salvato.
+Il formato accettato è `goa-ai.run-suspension.v14`. Referenzia la cronologia salvata e
+conserva lo stato attivo di strumenti e recupero. Le versioni precedenti sono rifiutate.
+Segui i requisiti di [aggiornamento e ripristino](../provider-operations/#upgrade) prima
+di cambiare worker.
 
 Quando una risposta completa una chiamata a un tool creata dal modello nel
 workflow precedente, il nuovo evento `tool_end` contiene due identità:
@@ -1695,6 +1687,9 @@ bedrock: assistant message with tool_use must start with thinking
 Questa convalida assicura che la ricostruzione del libro mastro trascritto produca sequenze di messaggi conformi al fornitore.
 
 ---
+
+I record comuni richiedono un `Subject` agente o servizio. Vedi [Operazioni eseguite dal
+provider](../provider-operations/) per continuazione, annullamento e aggiornamento.
 
 ## Passi successivi
 

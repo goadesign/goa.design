@@ -11,7 +11,7 @@ Il **Registro degli strumenti interni** è un servizio di gateway in cluster che
 
 Il catalogo conserva anche [dichiarazioni native di strumenti basati su agenti](../agent-composition/#dynamic-agent-tools), con un worker esistente e una configurazione applicativa immutabile. Il runtime consumatore avvia un workflow figlio; lease dei provider, ping di salute e invocazioni Pulse riguardano solo gli strumenti di servizio.
 
-Le API per agenti dinamici descritte qui richiedono Goa-AI v0.84.0 o successiva.
+Prima di adottare queste dichiarazioni, segui l’[aggiornamento delle operazioni del provider](../provider-operations/#upgrade).
 
 ## Panoramica
 
@@ -632,6 +632,8 @@ Il registro espone i seguenti metodi gRPC:
 - **Aggiungere nodi** per gestire un maggior numero di connessioni gRPC: ogni nodo può servire qualsiasi richiesta
 - **I nodi coordinano i controlli di salute** con lease Redis a scadenza per ciascun toolset
 - **Non sono necessarie sessioni appiccicose**: i flussi di risultati utilizzano Redis per la distribuzione tra i nodi, in modo che una chiamata allo strumento possa essere avviata su un nodo e completata su un altro
+
+Vedi [Operazioni eseguite dal provider](../provider-operations/) per avvii, configurazione, risultati tipizzati e aggiornamento.
 
 ## Prossimi passi
 

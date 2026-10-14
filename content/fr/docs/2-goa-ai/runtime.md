@@ -1062,18 +1062,10 @@ octets de `PreparedRun` peuvent contenir une copie de ce point de reprise et la
 transcription complète. Conservez-les uniquement dans un stockage applicatif
 fiable avec un accès contrôlé ; ne les envoyez jamais à un client non fiable.
 
-Le seul format accepté est `goa-ai.run-suspension.v8`. La version huit conserve
-les noms des outils annoncés lorsqu'un plan de récupération accepté attend une
-entrée : les noms des outils en échec ne suffisent pas à reconstruire les autres
-choix proposés pendant ce tour. La continuation conserve ces choix tout en
-vérifiant la définition actuelle de l'agent et la politique d'exécution.
-
-Goa-AI rejette toutes les versions précédentes du point de reprise. Avant la
-mise à niveau, terminez le travail enregistré dans l'ancien format avec le
-runtime qui le possède. Si du travail doit rester inachevé, l'hôte doit décider
-explicitement comment le conserver et s'il restera reprenable ; ce runtime ne
-peut pas le reprendre. Le framework ne fournit aucune commande de conversion
-et ne supprime, n'annule ni ne réécrit automatiquement le travail enregistré.
+Le format accepté est `goa-ai.run-suspension.v14`. Il référence l’historique conservé et
+retient l’état actif des outils et de récupération. Les versions antérieures sont
+refusées. Suivez les exigences de [mise à niveau et retour
+arrière](../provider-operations/#upgrade) avant de changer les workers.
 
 Lorsqu’une réponse termine un appel d’outil créé par le modèle dans le workflow
 précédent, le nouvel événement `tool_end` porte deux identités :
@@ -1861,6 +1853,10 @@ bedrock: assistant message with tool_use must start with thinking
 Cette validation garantit que la reconstruction du grand livre de transcription produit des séquences de messages conformes au fournisseur.
 
 ---
+
+Les enregistrements communs exigent un `Subject` agent ou service. Consultez [Opérations
+exécutées par le fournisseur](../provider-operations/) pour continuation, annulation et
+mise à niveau.
 
 ## Prochaines étapes
 

@@ -11,7 +11,7 @@ Le **Internal Tool Registry** est un service de passerelle en cluster qui permet
 
 Le catalogue conserve aussi les [déclarations natives d'outils d'agents](../agent-composition/#dynamic-agent-tools), qui désignent un worker existant et une configuration applicative immuable. Le runtime consommateur lance un workflow enfant ; les baux des fournisseurs, les pings de santé et les appels Pulse concernent uniquement les outils de service.
 
-Les API d'agents dynamiques décrites ici nécessitent Goa-AI v0.84.0 ou une version ultérieure.
+Avant d’adopter ces déclarations, suivez la [mise à niveau des opérations du fournisseur](../provider-operations/#upgrade).
 
 ## Aperçu
 
@@ -637,6 +637,8 @@ Le registre expose les méthodes gRPC suivantes :
 - **Ajoutez des nœuds** pour gérer davantage de connexions gRPC : chaque nœud peut répondre à n'importe quelle requête.
 - **Les nœuds coordonnent les contrôles de santé** avec des baux Redis à expiration pour chaque ensemble d'outils
 - **Aucune session persistante** n'est requise : les flux de résultats utilisent Redis pour la livraison entre nœuds, de sorte qu'un appel d'outil peut être lancé sur un nœud et terminé sur un autre.
+
+Consultez [Opérations exécutées par le fournisseur](../provider-operations/) pour les démarrages, la configuration, les résultats typés et la mise à niveau.
 
 ## Prochaines étapes
 

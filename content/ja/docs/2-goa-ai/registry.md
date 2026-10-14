@@ -11,7 +11,7 @@ llm_optimized: true
 
 カタログは [native Agent ツール宣言](../agent-composition/#dynamic-agent-tools) も保存し、既存の worker と不変のアプリケーション設定を指定します。利用側 runtime が子 workflow を開始します。provider lease、health ping、Pulse 経由の呼び出しはサービスツールだけに適用されます。
 
-ここで説明する動的 Agent API には Goa-AI v0.84.0 以降が必要です。
+これらの宣言を採用する前に[プロバイダー操作の更新要件](../provider-operations/#upgrade)に従ってください。
 
 ## 概要
 
@@ -523,6 +523,8 @@ registry は次の gRPC method を公開します:
 - **node を追加する**: gRPC connection を増やしても、各 node は任意の request を処理できます
 - **node は health check を協調する**: toolset ごとの有効期限付き Redis lease を使います
 - **sticky session は不要**: result stream は Redis により cross-node delivery されるため、ある node で開始した tool call が別 node で完了できます
+
+開始方法、プロバイダー設定、型付き結果、更新要件は[プロバイダーが実行する操作](../provider-operations/)を参照してください。
 
 ## 次のステップ
 
