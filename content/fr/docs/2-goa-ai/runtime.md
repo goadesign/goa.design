@@ -1326,6 +1326,14 @@ Les planificateurs reçoivent également un `PlannerContext` via `input.Agent` q
 - `RemoveReminder(id string)` - effacer les rappels lorsque les conditions préalables ne sont plus valables
 - `Memory()` - accéder à l'historique des conversations
 
+### Récupération après une limite de contexte {#context-window-recovery}
+
+Une réponse sélectionnée avec `model_context_window_exceeded` ne peut ni terminer la planification ni exécuter ses appels d’outils, même si l’inférence a renvoyé une réponse avec succès. Le workflow conserve l’usage des tokens signalé et le texte déjà diffusé à l’utilisateur, puis consomme un tour du budget existant `MaxRecoveryTurns` pour demander une nouvelle réponse. Le client de modèle désigné pour la planification signale cette situation avant que le planificateur interprète la réponse ; les autres clients du runtime la conservent jusqu’à sa sélection par le planificateur. Les clients de modèle utilisés directement hors du runtime continuent d’exposer les réponses partielles.
+
+La nouvelle requête utilise la politique d’historique enregistrée. `Compress` résume l’historique antérieur même si l’estimation était inférieure au seuil habituel, tout en conservant chaque instruction System et le tour complet le plus récent. Le résumé doit remplacer davantage de messages originaux et produire un nombre de tokens d’entrée strictement inférieur pour le modèle destinataire, par rapport à la requête utilisant le résumé précédent. Il peut réutiliser les éléments déjà résumés. Les estimations restent des estimations. L’absence de prise en charge des résumés, un échec du comptage, un résumé incomplet ou l’impossibilité de compacter davantage arrête explicitement le traitement sans nouvelle inférence. Les budgets d’outils et de temps ne changent pas. Un arrêt `max_tokens` seul et les erreurs ordinaires de validation HTTP 400 conservent leur comportement antérieur.
+
+Cette modification ajoute une variante de récupération d’activité gérée par le runtime, sans changer les transcriptions enregistrées ni la sélection du modèle. Déployez ensemble des workers de workflow et d’activité compatibles, et conservez les anciennes versions jusqu’à la fin de leurs exécutions. Un retour arrière doit conserver les workers des exécutions qui utilisent déjà la nouvelle variante.
+
 ### Préparer les messages de conversation {#preparing-conversation-messages}
 
 `PlanInput` et `PlanResumeInput` fournissent la fonction obligatoire

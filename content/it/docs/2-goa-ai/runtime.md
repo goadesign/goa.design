@@ -1210,6 +1210,14 @@ I pianificatori ricevono anche un `PlannerContext` tramite `input.Agent` che esp
 - `RemoveReminder(id string)` - cancellare i promemoria quando le precondizioni non sono più valide
 - `Memory()` - accedere alla cronologia delle conversazioni
 
+### Recupero dopo il limite di contesto {#context-window-recovery}
+
+Una risposta selezionata con `model_context_window_exceeded` non può completare la pianificazione né eseguire le proprie chiamate agli strumenti, anche se l’inferenza ha restituito una risposta correttamente. Il workflow conserva l’utilizzo dei token riportato e il testo già trasmesso all’utente, quindi utilizza un turno del budget esistente `MaxRecoveryTurns` per richiedere una nuova risposta. Il client del modello designato per la pianificazione segnala questa condizione prima che il pianificatore interpreti la risposta; gli altri client del runtime la conservano fino alla selezione da parte del pianificatore. I client del modello usati direttamente fuori dal runtime continuano a esporre le risposte parziali.
+
+La nuova richiesta utilizza la politica di cronologia registrata. `Compress` riassume la cronologia precedente anche quando la stima era inferiore alla soglia abituale, preservando ogni istruzione System e il turno completo più recente. Il riepilogo deve sostituire ulteriori messaggi originali e produrre un conteggio di input strettamente inferiore per il modello di destinazione rispetto alla richiesta con il riepilogo precedente. Può riutilizzare le informazioni già riassunte. Le stime rimangono stime. L’assenza del supporto ai riepiloghi, un errore nel conteggio, un riepilogo incompleto o l’impossibilità di compattare ulteriormente interrompe esplicitamente l’elaborazione senza un’altra inferenza. I budget degli strumenti e del tempo non cambiano. Un arresto `max_tokens` isolato e i normali errori di validazione HTTP 400 mantengono il comportamento precedente.
+
+La modifica aggiunge una variante di recupero dell’attività gestita dal runtime, senza cambiare le trascrizioni archiviate o la selezione del modello. Distribuisci insieme worker di workflow e di attività compatibili e conserva le versioni precedenti fino al completamento delle loro esecuzioni. Un rollback deve mantenere i worker delle esecuzioni che utilizzano già la nuova variante.
+
 ### Preparare i messaggi della conversazione {#preparing-conversation-messages}
 
 `PlanInput` e `PlanResumeInput` forniscono la funzione obbligatoria
