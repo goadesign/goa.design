@@ -623,6 +623,59 @@ herramienta usan otro contrato: `ToolFailure.Recovery.Action` selecciona correcc
 replanificación o finalización, y el runtime impone el catálogo resultante en
 el siguiente turno.
 
+### Ejecución de solo texto
+
+Usa `runtime.WithTextOnly(true)` cuando el cliente pueda recibir mensajes
+normales del asistente y datos de dominio, pero no una interfaz interactiva.
+Las llamadas normales a `Start` y `Run` admiten esta opción. Un host también
+puede invocar una operación Agent autorizada y seleccionada sin crear una
+conversación:
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+Aquí `operation` es la declaración completa generada de la operación Agent y
+`arguments` es JSON que cumple su esquema generado de argumentos del modelo de
+solo texto, sin controles de renderizado. El último `nil` es el mapa de memo
+obligatorio del motor.
+
+`StartOperation` usa una sesión existente propiedad del host;
+`StartOneShotOperation` no crea una sesión. Las herramientas registradas de
+Agent o de servicio usan `StartToolOperation` o `StartOneShotToolOperation` con
+los valores seleccionados de `ResolvedToolset` y `RegisteredInvocation`. Estos
+cuatro métodos admiten argumentos `RunOption` opcionales después de `memo`, pero
+**solo admiten `WithTextOnly`**. Cualquier otra opción se rechaza antes del envío,
+sin modificar la identidad, el historial, la política del proveedor ni el
+enrutamiento. Los métodos correspondientes `EnsureOperationCompletion`,
+`EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` y
+`EnsureOneShotToolOperationCompletion` admiten la misma opción y exigen la
+restricción usada al iniciar.
+
+El contrato generado de solo texto omite los controles de renderizado opcionales
+y las instrucciones de interfaz; la ejecución recibe controles desactivados.
+Los resultados de dominio en JSON estructurado y las consultas de estado de
+tareas del proveedor siguen disponibles. Se rechazan las herramientas que
+requieren interfaz o confirmación, las salidas de interfaz y las solicitudes de
+entrada al host. La restricción se aplica si la activa el cliente o la
+configuración del proveedor; ninguno puede desactivar la del otro. El trabajo
+guardado y las ejecuciones hijas la conservan, mientras el proveedor mantiene
+el control de las reglas de etiquetas y los presupuestos de ejecución. Sin la
+opción, el cliente no añade restricciones; la configuración del proveedor sigue
+aplicándose.
+
+Actualiza los procesos que envían solicitudes y los workers de las operaciones
+seleccionadas antes de activar esta opción; los workers antiguos rechazan la
+nueva política del cliente. No hace falta regenerar esquemas ni migrar datos
+guardados.
+
 ---
 
 ## Ejecución de herramientas
