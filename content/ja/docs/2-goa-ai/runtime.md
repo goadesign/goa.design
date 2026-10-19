@@ -577,6 +577,52 @@ out, err := client.Run(ctx, "session-1", messages,
 
 これは run 全体に適用する caller policy です。tool failure は別の contract を使います。`ToolFailure.Recovery.Action` が correction、failed tool を除いた replanning、finish のどれかを選択し、runtime は次の planner turn に適用する tool catalog を強制します。
 
+### テキストのみの実行
+
+呼び出し元が通常のアシスタントメッセージと業務データを扱えても、対話型 UI を
+扱えない場合は `runtime.WithTextOnly(true)` を使います。通常の `Start` と `Run`
+呼び出しはこのオプションを受け取ります。ホストは、選択済みでアクセスを許可された
+Agent 操作を、会話を作らずに実行することもできます。
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+`operation` は生成された Agent 操作の完全な宣言です。`arguments` は、その操作の
+生成されたテキスト専用モデル引数スキーマに従う JSON で、描画コントロールを
+含めません。最後の `nil` は必須のエンジン memo マップです。
+
+`StartOperation` はホストが所有する既存セッションを使い、`StartOneShotOperation`
+はセッションを作りません。登録済みの Agent またはサービスのツールには
+`StartToolOperation` または `StartOneShotToolOperation` を使い、選択した
+`ResolvedToolset` と `RegisteredInvocation` を渡します。4 つのメソッドはすべて
+`memo` の後に任意の `RunOption` 引数を受け取りますが、**使用できるのは
+`WithTextOnly` だけです**。他のオプションは送信前に拒否され、識別情報、履歴、
+プロバイダーのポリシー、ルーティングを変更しません。対応する
+`EnsureOperationCompletion`、`EnsureOneShotOperationCompletion`、
+`EnsureToolOperationCompletion`、`EnsureOneShotToolOperationCompletion` も同じ
+オプションを受け取り、開始時と同じ制限を渡す必要があります。
+
+生成されたテキスト専用契約は、任意の描画コントロールと UI 向けの指示を省き、
+描画コントロールを無効にして実行します。構造化 JSON の業務結果と、プロバイダーの
+タスク状態の問い合わせは引き続き使用できます。UI や確認を必須とするツール、
+UI 出力、ホストへの入力要求は拒否されます。呼び出し元かプロバイダーの設定の
+どちらかが有効にすれば制限が適用され、どちらも相手の制限を解除できません。
+保存した処理と子実行でも制限を維持し、タグの規則と実行予算は引き続き
+プロバイダーが管理します。オプションを省略した場合、呼び出し元は制限を追加しませんが、
+プロバイダーの設定は引き続き適用されます。
+
+このオプションを有効にする前に、送信側と選択した操作のワーカーを更新してください。
+古いワーカーは新しい呼び出し元ポリシーを拒否します。スキーマの再生成や保存データの
+移行は不要です。
+
 ---
 
 ## ツール実行
