@@ -1355,6 +1355,14 @@ Los planificadores también reciben un `PlannerContext` a través de `input.Agen
 - `RemoveReminder(id string)` - limpia recordatorios cuando las precondiciones dejan de cumplirse
 - `Memory()` - accede al historial de conversación
 
+### Recuperación del límite de contexto {#context-window-recovery}
+
+Una respuesta seleccionada con `model_context_window_exceeded` no puede terminar la planificación ni ejecutar sus llamadas a herramientas, aunque la inferencia haya devuelto un resultado correctamente. El flujo de trabajo conserva el uso de tokens informado y el texto ya transmitido al usuario, y consume un turno del presupuesto existente `MaxRecoveryTurns` para solicitar una respuesta nueva. El cliente de modelo designado para la planificación informa de esta condición antes de que el planificador interprete la respuesta; los clientes sin esta designación la conservan hasta que el planificador la selecciona. Los clientes de modelo utilizados fuera del runtime siguen exponiendo las respuestas parciales.
+
+La nueva solicitud utiliza la política de historial registrada. `Compress` resume el historial anterior incluso si la estimación estaba por debajo del umbral habitual, conservando todas las instrucciones System y el turno completo más reciente. El resumen debe sustituir más mensajes originales y reducir estrictamente el recuento de entrada del modelo de destino respecto a la solicitud con el resumen anterior. Puede reutilizar la evidencia ya resumida. Las estimaciones siguen siendo estimaciones. Si no se pueden generar resúmenes, falla el recuento, el resumen está incompleto o no es posible compactar más, el proceso se detiene explícitamente sin otra inferencia. Los presupuestos de herramientas y tiempo no cambian. Un `max_tokens` aislado y los errores ordinarios de validación HTTP 400 mantienen su comportamiento anterior.
+
+Se añade una variante de recuperación de actividad controlada por el runtime, sin cambiar las transcripciones almacenadas ni la selección del modelo. Despliega conjuntamente workers de flujo de trabajo y de actividad compatibles, y conserva las versiones anteriores hasta que terminen sus ejecuciones. Una reversión debe mantener los workers de las ejecuciones que ya utilizan la nueva variante.
+
 ### Preparar los mensajes de conversación {#preparing-conversation-messages}
 
 `PlanInput` y `PlanResumeInput` requieren
