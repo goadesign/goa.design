@@ -579,6 +579,52 @@ out, err := client.Run(ctx, "session-1", messages,
 
 これは run 全体に適用する caller policy です。tool failure は別の contract を使います。`ToolFailure.Recovery.Action` が correction、failed tool を除いた replanning、finish のどれかを選択し、runtime は次の planner turn に適用する tool catalog を強制します。
 
+### テキストのみの実行
+
+呼び出し元が通常のアシスタントメッセージと業務データを扱えても、対話型 UI を
+扱えない場合は `runtime.WithTextOnly(true)` を使います。通常の `Start` と `Run`
+呼び出しはこのオプションを受け取ります。ホストは、選択済みでアクセスを許可された
+Agent 操作を、会話を作らずに実行することもできます。
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+`operation` は生成された Agent 操作の完全な宣言です。`arguments` は、その操作の
+生成されたテキスト専用モデル引数スキーマに従う JSON で、描画コントロールを
+含めません。最後の `nil` は必須のエンジン memo マップです。
+
+`StartOperation` はホストが所有する既存セッションを使い、`StartOneShotOperation`
+はセッションを作りません。登録済みの Agent またはサービスのツールには
+`StartToolOperation` または `StartOneShotToolOperation` を使い、選択した
+`ResolvedToolset` と `RegisteredInvocation` を渡します。4 つのメソッドはすべて
+`memo` の後に任意の `RunOption` 引数を受け取りますが、**使用できるのは
+`WithTextOnly` だけです**。他のオプションは送信前に拒否され、識別情報、履歴、
+プロバイダーのポリシー、ルーティングを変更しません。対応する
+`EnsureOperationCompletion`、`EnsureOneShotOperationCompletion`、
+`EnsureToolOperationCompletion`、`EnsureOneShotToolOperationCompletion` も同じ
+オプションを受け取り、開始時と同じ制限を渡す必要があります。
+
+生成されたテキスト専用契約は、任意の描画コントロールと UI 向けの指示を省き、
+描画コントロールを無効にして実行します。構造化 JSON の業務結果と、プロバイダーの
+タスク状態の問い合わせは引き続き使用できます。UI や確認を必須とするツール、
+UI 出力、ホストへの入力要求は拒否されます。呼び出し元かプロバイダーの設定の
+どちらかが有効にすれば制限が適用され、どちらも相手の制限を解除できません。
+保存した処理と子実行でも制限を維持し、タグの規則と実行予算は引き続き
+プロバイダーが管理します。オプションを省略した場合、呼び出し元は制限を追加しませんが、
+プロバイダーの設定は引き続き適用されます。
+
+このオプションを有効にする前に、送信側と選択した操作のワーカーを更新してください。
+古いワーカーは新しい呼び出し元ポリシーを拒否します。スキーマの再生成や保存データの
+移行は不要です。
+
 ---
 
 ## ツール実行
@@ -1382,6 +1428,7 @@ Gemini 3 世代のモデルは、ツール呼び出しの背後にある推論�
 | OpenAI | structured output は strict schema projection を使い、tool と併用できない。重複する `oneOf` branch は広げず拒否する。strict schema は property 5,000 個、enum value 1,000 個、object 10 level、name／enum 合計 120,000 文字までで、fine-tuned model は追加の非対応 keyword を拒否する。thinking request は temperature を拒否する。 |
 | Anthropic | 対応する現行 Claude model は native structured output を使う。adaptive thinking は tool と通常の forced choice を許すが、旧 manual thinking は forced `any`／named-tool choice を拒否する。現行世代は deprecated sampling parameter を省略する。stream は全 content block を閉じ、stop reason を報告しなければならない。 |
 | Bedrock | Claude 4.5／4.6 は native `OutputConfig` を使い、それ以外の Claude model は private forced tool 1 つを使って同じ契約で result を検証する。event-stream exception は provider error kind を保持する。Runtime `CountTokens` は別 Mantle endpoint が必要な model と structured-output request を拒否する。 |
+| Bedrock 上の OpenAI Responses | 非ストリーミングの `Complete` は、対応モデルで native `StructuredOutput` を使い、strict schema projection と元の schema による検証を行う。tool とは併用できない。`Stream` は HTTP 前に structured output を拒否する。`CountTokens` は schema を含むローカル推定を行い、`Exact=false` を返す。詳細は [framework reference](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#openai-responses-on-amazon-bedrock) を参照。 |
 | Vertex Gemini | Gemini 3 は thinking level を使い、数値 thinking budget と明示的な thinking disable を拒否し、API-valid temperature を転送する。tool-call thought signature は runtime が保持・replay する。stream は candidate が正確に 1 つで finish reason が必要。 |
 
 Claude Opus 4.7+、Sonnet 5+、Haiku 5+、Fable、Mythos では、Anthropic／Bedrock adapter は model が拒否する `temperature`、`top_p`、`top_k` を省略します。旧 Claude 世代には構成済み sampling value を引き続き渡します。

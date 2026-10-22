@@ -610,6 +610,52 @@ This is a run-wide caller policy. Tool failures use a separate contract:
 `ToolFailure.Recovery.Action` selects correction, replanning, or finishing and the
 runtime enforces the resulting tool catalog on the next planner turn.
 
+### Text-only execution
+
+Use `runtime.WithTextOnly(true)` when a caller can receive ordinary assistant
+messages and domain data but cannot handle interactive UI. Normal `Start` and
+`Run` calls accept this option. A host can also invoke an authorized, selected
+Agent operation without creating a conversation:
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+Here `operation` is the complete generated Agent operation declaration and
+`arguments` is JSON matching its generated text-only model argument schema,
+without rendering controls. The final `nil` is the required engine memo map.
+
+`StartOperation` uses an existing host-owned session; `StartOneShotOperation`
+creates no session. Registered Agent or service tools use `StartToolOperation`
+or `StartOneShotToolOperation` with the selected `ResolvedToolset` and
+`RegisteredInvocation`. These four methods accept optional `RunOption` arguments
+after `memo`, but **only `WithTextOnly` is supported**. Every other option is
+rejected before submission, without changing identity, history, provider policy,
+or routing. The matching `EnsureOperationCompletion`,
+`EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion`, and
+`EnsureOneShotToolOperationCompletion` methods accept the same option and require
+the restriction used at start.
+
+The generated text-only contract omits optional rendering controls and UI
+guidance; execution receives disabled controls. Structured JSON domain results
+and provider task polling remain supported. Tools requiring UI or confirmation,
+UI output, and requests for host input are rejected. The restriction applies if
+either the caller or provider configuration enables it; neither can disable the
+other's restriction. Saved work and child runs retain it, while the provider
+keeps ownership of tag rules and execution budgets. Without the option, the
+caller adds no restriction; provider configuration still applies.
+
+Upgrade submitters and selected operation workers before enabling this option;
+older workers reject the new caller policy. No schema regeneration or
+stored-data migration is required.
+
 ---
 
 ## Tool Execution
@@ -1623,6 +1669,7 @@ their APIs cannot preserve:
 | OpenAI | Structured output uses strict schema projection. Tools and structured output cannot be combined. Overlapping `oneOf` branches are rejected rather than widened. Strict schemas are bounded to 5,000 properties, 1,000 enum values, 10 object levels, and 120,000 aggregate name/enum characters; fine-tuned models reject additional unsupported keywords. Thinking requests reject temperature. |
 | Anthropic | Current Claude models use native structured output where supported. Adaptive thinking permits tools and normal forced choice, while older manual thinking rejects forced `any` or named-tool choice. Current-generation Claude models omit deprecated sampling parameters. Streams must close every content block and report a stop reason. |
 | Bedrock | Claude 4.5 and 4.6 use native `OutputConfig`; other Claude models use one private forced tool and validate its result against the same contract. Event-stream exceptions retain their provider error kind. Runtime `CountTokens` rejects models that require the separate Mantle endpoint and cannot count structured-output requests. |
+| OpenAI Responses on Bedrock | Unary `Complete` supports native `StructuredOutput` on compatible models, using strict schema projection and validation against the original schema. It cannot be combined with tools. `Stream` rejects structured output before HTTP; `CountTokens` includes the schema in its local estimate and returns `Exact=false`. See the [framework reference](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#openai-responses-on-amazon-bedrock). |
 | Vertex Gemini | Gemini 3 uses thinking levels, rejects numeric thinking budgets and explicit thinking disablement, and forwards API-valid temperatures. Tool-call thought signatures are retained and replayed by the runtime. Streams require exactly one candidate and a finish reason. |
 
 For Claude Opus 4.7+, Sonnet 5+, Haiku 5+, Fable, and Mythos, the Anthropic and

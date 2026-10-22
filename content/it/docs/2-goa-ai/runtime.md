@@ -588,6 +588,55 @@ strumenti usano un contratto distinto: `ToolFailure.Recovery.Action` sceglie la
 correzione, una nuova pianificazione o la conclusione, e il runtime impone il
 catalogo risultante nel turno successivo.
 
+### Esecuzione di solo testo
+
+Usa `runtime.WithTextOnly(true)` quando il chiamante supporta messaggi ordinari
+dell'assistente e dati di dominio, ma non un'interfaccia interattiva. Le normali
+chiamate `Start` e `Run` accettano questa opzione. Un host può anche invocare
+un'operazione Agent autorizzata e selezionata senza creare una conversazione:
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+Qui `operation` è la dichiarazione completa generata dell'operazione Agent e
+`arguments` è JSON conforme al suo schema generato degli argomenti del modello
+di solo testo, senza controlli di rendering. L'ultimo `nil` è la mappa memo
+obbligatoria del motore.
+
+`StartOperation` usa una sessione esistente di proprietà dell'host;
+`StartOneShotOperation` non crea sessioni. Gli strumenti registrati di Agent o
+di servizio usano `StartToolOperation` o `StartOneShotToolOperation` con
+`ResolvedToolset` e `RegisteredInvocation` selezionati. Questi quattro metodi
+accettano argomenti `RunOption` facoltativi dopo `memo`, ma **supportano solo
+`WithTextOnly`**. Ogni altra opzione viene rifiutata prima dell'invio, senza
+modificare identità, cronologia, policy del provider o routing. I metodi
+corrispondenti `EnsureOperationCompletion`, `EnsureOneShotOperationCompletion`,
+`EnsureToolOperationCompletion` e `EnsureOneShotToolOperationCompletion`
+accettano la stessa opzione e richiedono la restrizione usata all'avvio.
+
+Il contratto generato di solo testo omette i controlli di rendering facoltativi
+e le istruzioni per l'interfaccia; l'esecuzione riceve controlli disattivati.
+Restano supportati i risultati di dominio in JSON strutturato e i controlli di
+stato delle attività del provider. Vengono rifiutati strumenti che richiedono
+interfaccia o conferma, output di interfaccia e richieste di input all'host. La
+restrizione si applica se la abilita il chiamante o la configurazione del
+provider; nessuno può disabilitare quella dell'altro. Il lavoro salvato e le
+esecuzioni figlie la conservano, mentre il provider mantiene il controllo delle
+regole dei tag e dei budget di esecuzione. Senza l'opzione, il chiamante non
+aggiunge restrizioni; la configurazione del provider continua ad applicarsi.
+
+Aggiorna i processi che inviano le richieste e i worker delle operazioni scelte
+prima di abilitare questa opzione; i vecchi worker rifiutano la nuova policy del
+chiamante. Non occorre rigenerare schemi o migrare i dati salvati.
+
 ---
 
 ## Esecuzione dello strumento

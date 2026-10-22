@@ -103,9 +103,13 @@ L’applicazione gestisce il catalogo completo, la paginazione, la selezione deg
 
 Non combinare `DynamicTools` con `Tool` o `ToolCatalog` nello stesso servizio. Gli strumenti statici mantengono il comportamento esistente. Senza strumenti statici né `DynamicTools`, il server non annuncia né genera operazioni sugli strumenti. Le modifiche del catalogo appaiono alla successiva richiesta di elenco; gli abbonamenti alle modifiche dell’elenco richiedono `ToolCatalog` e non sono disponibili con `DynamicTools`.
 
-I client moderni ricevono risultati strutturati senza modifiche. Per i client di base `2025-11-25`, fornisci schemi di input di tipo oggetto; il trasporto generato avvolge automaticamente ogni risultato strutturato dinamico presente in `{"value": ...}` (inclusi oggetti, array, scalari e `null` JSON) e adatta gli schemi di output 2020-12 corrispondenti preservando `$id` e riscrivendo i puntatori `$ref` locali all'interno di `value`.
+I client moderni ricevono il risultato strutturato e lo schema di output originali. Per i client di base più vecchi, il trasporto generato racchiude ogni risultato strutturato dinamico presente in `{"value": ...}` e pubblica uno schema di output oggetto corrispondente. Sono inclusi oggetti, array, scalari e JSON null; risultati strutturati o schemi di output assenti rimangono assenti. Gli argomenti di input devono continuare a essere oggetti.
 
-Consulta il contratto completo nel [riferimento di progettazione MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition).
+Questa trasformazione degli schemi di output supporta JSON Schema 2020-12, per impostazione predefinita o dichiarato esplicitamente con `$schema`. Gli altri dialetti dichiarati producono un errore di protocollo durante l’elenco degli strumenti, senza invocarne alcuno. I riferimenti locali mantengono il significato originale; non vengono recuperati schemi esterni.
+
+Rigenera i server per applicare questo comportamento. I client più vecchi dovranno leggere `structuredContent.value`, anche per i risultati oggetto. Le applicazioni che servono questi client devono fornire schemi di output 2020-12. I client moderni e gli strumenti statici mantengono le forme dei risultati esistenti.
+
+Consulta il contratto completo nel [riferimento di progettazione MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#runtime-defined-tools).
 
 ### Nella progettazione dell'agente
 

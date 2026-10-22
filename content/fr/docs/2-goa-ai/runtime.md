@@ -632,6 +632,59 @@ Cette stratégie s'applique à toute l'exécution demandée par l'appelant. Les
 choisit la correction, une nouvelle planification ou la fin, puis le runtime
 impose le catalogue d'outils correspondant au tour suivant.
 
+### Exécution en texte seul
+
+Utilisez `runtime.WithTextOnly(true)` lorsque l'appelant accepte les messages
+ordinaires de l'assistant et les données métier, mais pas une interface
+interactive. Les appels normaux à `Start` et `Run` acceptent cette option.
+Un hôte peut aussi invoquer une opération Agent autorisée et sélectionnée sans
+créer de conversation :
+
+```go
+handle, err := rt.StartOneShotOperation(
+    ctx, "inspect-active-records", operation, arguments, nil, nil,
+    runtime.WithTextOnly(true),
+)
+if err != nil {
+    return err
+}
+output, err := handle.Wait(ctx)
+```
+
+Ici, `operation` est la déclaration complète générée de l'opération Agent et
+`arguments` est du JSON conforme à son schéma généré d'arguments du modèle en
+texte seul, sans contrôles de rendu. Le dernier `nil` est la map memo obligatoire
+du moteur.
+
+`StartOperation` utilise une session existante appartenant à l'hôte ;
+`StartOneShotOperation` ne crée aucune session. Les outils enregistrés d'Agent
+ou de service utilisent `StartToolOperation` ou `StartOneShotToolOperation` avec
+les valeurs sélectionnées de `ResolvedToolset` et `RegisteredInvocation`. Ces
+quatre méthodes acceptent des arguments `RunOption` facultatifs après `memo`,
+mais **seul `WithTextOnly` est pris en charge**. Toute autre option est rejetée
+avant l'envoi, sans modifier l'identité, l'historique, la politique du fournisseur
+ni le routage. Les méthodes correspondantes `EnsureOperationCompletion`,
+`EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` et
+`EnsureOneShotToolOperationCompletion` acceptent la même option et exigent la
+restriction utilisée au lancement.
+
+Le contrat généré pour le texte seul omet les contrôles de rendu facultatifs et
+les consignes d'interface ; l'exécution reçoit des contrôles désactivés. Les
+résultats métier en JSON structuré et les consultations d'état des tâches du
+fournisseur restent possibles. Les outils exigeant une interface ou une
+confirmation, les sorties d'interface et les demandes de saisie à l'hôte sont
+rejetés. La restriction s'applique si l'appelant ou la configuration du
+fournisseur l'active ; aucun ne peut désactiver celle de l'autre. Le travail
+enregistré et les exécutions enfants la conservent, tandis que le fournisseur
+reste responsable des règles d'étiquettes et des budgets d'exécution. Sans
+l'option, l'appelant n'ajoute aucune restriction ; la configuration du fournisseur
+reste applicable.
+
+Mettez à niveau les processus d'envoi et les workers des opérations sélectionnées
+avant d'activer cette option ; les anciens workers rejettent la nouvelle
+politique de l'appelant. Aucune régénération de schéma ni migration des données
+enregistrées n'est nécessaire.
+
 ---
 
 ## Exécution des outils
@@ -1614,6 +1667,7 @@ combinaisons que son API ne peut pas préserver :
 | OpenAI | La sortie structurée utilise une projection stricte. Elle ne peut pas être combinée aux outils. Les branches `oneOf` qui se chevauchent sont refusées. Les schémas stricts ont des limites documentées sur les propriétés, les enums, la profondeur et les caractères agrégés. Une requête avec raisonnement refuse la température. |
 | Anthropic | Les modèles Claude actuels utilisent la sortie structurée native lorsqu'elle est disponible. Le raisonnement adaptatif permet les outils et le choix forcé normal ; l'ancien raisonnement manuel refuse le choix forcé `any` ou d'un outil nommé. Un flux doit fermer chaque bloc et fournir une raison d'arrêt. |
 | Bedrock | Claude 4.5 et 4.6 utilisent `OutputConfig`; les autres modèles Claude utilisent un outil privé forcé et valident son résultat avec le même contrat. `CountTokens` refuse les modèles qui exigent Mantle et les requêtes avec sortie structurée. |
+| OpenAI Responses sur Bedrock | L'appel non diffusé `Complete` prend en charge `StructuredOutput` natif sur les modèles compatibles, avec projection stricte du schéma et validation selon le schéma d'origine. Il ne peut pas être combiné aux outils. `Stream` refuse la sortie structurée avant HTTP ; `CountTokens` inclut le schéma dans son estimation locale et renvoie `Exact=false`. Voir la [référence du framework](https://github.com/goadesign/goa-ai/blob/main/docs/runtime.md#openai-responses-on-amazon-bedrock). |
 | Vertex Gemini | Gemini 3 utilise des niveaux de raisonnement, refuse les budgets numériques et la désactivation explicite, et conserve les thought signatures des appels d'outils. Les flux exigent exactement un candidat et une raison de fin. |
 
 Pour Claude Opus 4.7+, Sonnet 5+, Haiku 5+, Fable et Mythos, les adaptateurs
