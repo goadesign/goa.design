@@ -218,6 +218,11 @@ Key types:
 - **`memory.Snapshot`** – immutable view of a run's stored history (`AgentID`, `RunID`, `Events []memory.Event`)
 - **`memory.Event`** – single persisted entry with `Type` (`user_message`, `assistant_message`, `tool_call`, `tool_result`, `planner_note`, `thinking`), `Timestamp`, `Data`, and `Labels`
 
+Completed tool results, accepted arguments, media, rendered previews, and closed
+pagination chains remain readable in session history even if a tool's result
+schema later changes or the tool is removed from the active catalog. Failed tool
+calls remain in the transcript without restoring prior pagination state.
+
 ### Runtime Store (`storage.Store`)
 
 The host provides one `storage.Store` implementation to the runtime. That one

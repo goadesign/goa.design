@@ -15,7 +15,7 @@ I server HTTP generati accettano anche client MCP di base `2025-11-25` sullo ste
 
 Un solo design definisce schemi dei tool, decodifica tipizzata, validazione, adapter del server e client. Gli endpoint Goa configurati conservano autenticazione, autorizzazione, middleware e comportamento applicativo. Sviluppatori e agenti di programmazione modificano il contratto e il codice applicativo; `goa gen` mantiene coerenti le interfacce derivate. I server MCP generati usano HTTP. I client per sottoprocessi restano disponibili; la generazione di server stdio è rimandata.
 
-Prima di generare questo server, installa la versione di sviluppo verificata e la dipendenza Goa corrispondente seguendo la [configurazione del modulo nella guida rapida](../quickstart/).
+Prima di generare questo server, installa la versione `v0.89.0` di Goa-AI e la dipendenza Goa corrispondente seguendo la [configurazione del modulo nella guida rapida](../quickstart/).
 
 | Esigenza | Dichiarazione o composizione |
 |---|---|
@@ -103,7 +103,7 @@ L’applicazione gestisce il catalogo completo, la paginazione, la selezione deg
 
 Non combinare `DynamicTools` con `Tool` o `ToolCatalog` nello stesso servizio. Gli strumenti statici mantengono il comportamento esistente. Senza strumenti statici né `DynamicTools`, il server non annuncia né genera operazioni sugli strumenti. Le modifiche del catalogo appaiono alla successiva richiesta di elenco; gli abbonamenti alle modifiche dell’elenco richiedono `ToolCatalog` e non sono disponibili con `DynamicTools`.
 
-I client moderni ricevono risultati strutturati scalari senza modifiche. Per i client di base più vecchi, fornisci schemi di input e output di tipo oggetto e risultati strutturati di tipo oggetto. La conversione automatica di scalari o array in oggetti si applica solo agli strumenti statici i cui schemi sono noti durante la generazione.
+I client moderni ricevono risultati strutturati senza modifiche. Per i client di base `2025-11-25`, fornisci schemi di input di tipo oggetto; il trasporto generato avvolge automaticamente ogni risultato strutturato dinamico presente in `{"value": ...}` (inclusi oggetti, array, scalari e `null` JSON) e adatta gli schemi di output 2020-12 corrispondenti preservando `$id` e riscrivendo i puntatori `$ref` locali all'interno di `value`.
 
 Consulta il contratto completo nel [riferimento di progettazione MCP del framework](https://github.com/goadesign/goa-ai/blob/main/docs/dsl.md#mcp-server-definition).
 
@@ -305,6 +305,8 @@ if err != nil {
 ```
 
 Usare `Listen` per ricevere una conferma seguita dalle modifiche accettate. Verificare il filtro confermato: i tipi non supportati possono essere omessi. L’applicazione implementa `handleResourceChange`, ricarica i dati interessati e rispetta l’annullamento. La perdita della connessione restituisce un errore; il caller non si riconnette automaticamente.
+
+Quando una richiesta HTTP accetta `text/event-stream` (`tools/call`, `prompts/get`, `resources/read` o `notifications/subscribe`), il server HTTP MCP generato invia frame di commento di keepalive SSE (`: keepalive\n\n`) con flush ogni 15 secondi dopo che il middleware ha accettato la richiesta, evitando che reverse proxy e bilanciatori di carico vadano in timeout su operazioni di lunga durata. Rigenerare i server MCP generati quando si aggiorna a `v0.89.0` in modo che gli handler del server corrispondano alla firma di runtime di streaming.
 
 Per un client JSON-RPC generato, usare `WithSubscriptionEvents(ctx, handler)` e chiamare l’endpoint tipizzato `SubscriptionsListen`. L’endpoint restituisce il risultato finale e l’handler riceve eventi validati. Senza handler, la chiamata fallisce prima dell’invio.
 

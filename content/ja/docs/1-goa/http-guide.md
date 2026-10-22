@@ -80,6 +80,8 @@ Method("get_user", func() {
 })
 ```
 
+生成された HTTP クライアントは、単一セグメントのパスパラメータ内の `/` をパーセントエスケープするため、スラッシュを含む値も1つのセグメント内に留まります（`%2F`）。一方、ワイルドカード（`{*path}`）パラメータはパス区切り文字をそのまま保持します。サーバー側では、ルーターはリテラルのパーセントシーケンス（`literal%2Fpercent` など）を保持し、生成された配列パスデコーダーはカンマで分割した後に要素ごとに1回だけパーセントデコードを実行します。アップグレード時は、必ず HTTP サーバーコードを Goa ランタイムと一緒に再生成してデプロイしてください。
+
 ### クエリパラメータ
 
 `Param` 関数でクエリパラメータを定義する。
@@ -227,6 +229,37 @@ display_name=Hello+Goa&tag=go&tag=api
 - `FormRequest()` は通常のHTTPエンドポイントで使用します。JSON-RPC、`MultipartRequest()`、`SkipRequestBodyEncodeDecode()` とは組み合わせられません。
 
 `FormRequest()` を追加したら、このDSLを含むGoaバージョンでコードを再生成します。既存のエンドポイントをJSONからフォームに変更すると通信契約が変わるため、クライアントとサーバーを一緒に更新してデプロイしてください。生成されるOpenAPIにはフォームのメディアタイプとマッピングしたフィールド名が記載されます。リクエストのサイズ制限は引き続きアプリケーションのミドルウェアが担当します。
+
+### サービス固有のボディフィールド名 (`BodyFieldName`)
+
+複数の HTTP サービスがペイロード、結果、エラー、配列、マップ、ユニオンで共有の名前付きオブジェクト型（`Type` または `ResultType`）を再利用する場合、共有型を複製することなく、サービスの `HTTP` ブロック内で `BodyFieldName` を宣言して属性名をサービス固有のワイヤーフィールド名にマッピングできます：
+
+```go
+var Address = Type("Address", func() {
+    Attribute("postal_code", String, "Postal or ZIP code")
+    Attribute("country_code", String, "ISO country code")
+    Required("postal_code", "country_code")
+})
+
+var _ = Service("checkout", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+
+    Method("estimate_shipping", func() {
+        Payload(func() {
+            Attribute("destination", Address)
+            Required("destination")
+        })
+        Result(Empty)
+        HTTP(func() {
+            POST("/shipping/estimate")
+        })
+    })
+})
+```
+
+そのサービス用に生成される HTTP リクエスト/レスポンスボディおよび OpenAPI スキーマはマッピングされたワイヤー名（`postalCode`、`countryCode`）を使用し、共有の Go サービス構造体は正規のフィールド名（`PostalCode`、`CountryCode`）を維持します。
 
 ---
 

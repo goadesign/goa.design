@@ -169,8 +169,7 @@ I nomi delle completion sono validati al confine DSL: 1-64 caratteri ASCII,
 solo lettere, cifre, `_` e `-`, con inizio alfanumerico. Gli helper rifiutano
 richieste con strumenti o `StructuredOutput` fornito dal chiamante. Il wrapper
 espone `Value()` solo dopo fine stream pulita e validazione completa. I
-provider senza structured output restituiscono
-`model.ErrStructuredOutputUnsupported`.
+provider senza structured output restituiscono `model.ErrStructuredOutputUnsupported`. Gli adapter OpenAI, Anthropic e AWS Bedrock Responses (`text.format` `json_schema` unario) supportano l'output strutturato.
 
 ---
 
@@ -260,6 +259,11 @@ if err := rt.Seal(ctx); err != nil {
 }
 ```
 
+Quando un processo condivide il proprio motore worker Temporal con workflow o
+attività nativi dell'applicazione, registrarli sul worker prima di `rt.Seal(ctx)`
+usando `eng.RegisterNativeWorkflow`, `eng.RegisterNativeActivity` e ispezionare
+le code registrate con `eng.RegisteredTaskQueues()`.
+
 ---
 
 ## Ciclo Pianifica → Esegui → Riprendi
@@ -273,7 +277,7 @@ if err := rt.Seal(ctx); err != nil {
 3. Il runtime chiama `PlanStart` con `PrepareMessages` e un `run.Context` contenente
    `RunID`, `SessionID`, `TurnID`, etichette e limiti di policy.
    Il pianificatore chiama la funzione se gli serve la cronologia.
-4. Pianifica le chiamate agli strumenti usando i codec generati.
+4. Pianifica le chiamate agli strumenti restituite dal pianificatore (il pianificatore passa payload JSON canonici; il runtime gestisce la codifica/decodifica utilizzando i codec generati). Un singolo `PlanResult` può combinare chiamate a strumenti del modello selezionate dal provider con chiamate a strumenti deterministiche create dal pianificatore nello stesso batch.
 5. Chiama `PlanResume` con gli output che restano visibili al planner. Gli
    strumenti con budget sono visibili per impostazione predefinita. Un errore
    di uno strumento di bookkeeping pianifica un altro turno secondo

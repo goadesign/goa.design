@@ -86,6 +86,15 @@ provider は既存の schema fingerprint と登録ライフサイクルを使っ
 
 アプリケーションに応じて参照先を選ぶには `runtime.RegistryTools` を実装し、`WithRegistryTools` で設定します。`Resolve` 内の `catalog.RunLabels()` は現在の run のラベルのコピーを返します。`IncludeToolset` や `IncludeRegistry` で参照先を選び、`Allows` で保存済み呼び出しが引き続き利用できる参照先を決めます。run policy による制限も適用されます。カタログは planning activity ごとに独立し、同時に動く session が互いのツールを変更することはありません。名前空間と認可はアプリケーションが管理します。
 
+### 生成されたツールを選択された登録へバインドする
+
+アプリケーションが動的登録を既存の生成済み toolset に解決する場合（たとえば、生成された型付きペイロード/結果コーデックやヒントを維持しながら、特定のテナントや環境の登録を選択する場合など）、`Resolve` 内で `runtime/toolregistry/catalog` を使用して生成済み toolset をバインドします：
+
+- **サービスバックの toolset (`catalog.BindStaticService`)**: 生成された `specs.Toolset()` 宣言と解決された `*genregistry.Toolset` を渡して `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` を呼び出し、次に `executor.NewResolved(client, executor.WithCaller(caller))` で生成された executor を構築します。実行中にツールハンドラーが選択された入場トークンまたは操作メタデータを必要とする場合は、`runtime.ToolCallMeta` から `catalog.SelectedOperation()` を読み取ります。
+- **ネイティブエージェントの toolset (`catalog.BindStaticAgent`)**: `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` を呼び出して、解決されたネイティブエージェントの登録を生成されたコンシューマー契約にバインドし、コンパイルされた宣言（およびオプションの以前の契約）に対して登録を検証します。
+
+互換性のあるロールアウトをまたいでセッション内の保存済み呼び出しが以前のリビジョンを引き続き使用できる場合は、`verifyPrevious: true` を渡します。ポータブルな制限付き結果コーデックは、未加工のプロバイダーセマンティック JSON（`planner.ToolResult.Bounds` を個別に指定）と、正規の制限フィールドがすでに含まれている最終 JSON 結果の両方を受け入れます。
+
 ## 検索を実行するのは誰か
 
 - **OpenAI Responses（直接または Bedrock）:** モデルはクライアント実行のネイティブ検索を要求します。アダプターは、許可された名前・タイトル・説明を単語ベースの関連度アルゴリズム BM25 で順位付けし、該当する定義を返します。初回リクエストにはクエリだけを受け取る検索ツールが入り、名前や説明の一覧は入りません。遅延カタログはアプリケーション内に保持します。

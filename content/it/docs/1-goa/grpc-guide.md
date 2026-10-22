@@ -37,6 +37,7 @@ Il supporto gRPC di Goa include:
 | Bytes | bytes |
 | ArrayOf | ripetuto |
 | MapOf | map | map |
+| OneOf | oneof (inclusi i rami `ArrayOf` e `MapOf` racchiusi in messaggi generati) |
 
 ---
 
@@ -438,6 +439,11 @@ func (s *users) CreateUser(ctx context.Context, p *users.CreateUserPayload) (*us
     return user, nil
 }
 ```
+
+Quando un metodo di servizio restituisce un errore non gestito che contiene già uno
+stato gRPC (ad esempio, un errore upstream `codes.DeadlineExceeded` o
+`codes.Unavailable`), il server gRPC generato preserva tale codice di stato e i
+relativi dettagli ordinati invece di sovrascriverli con un errore generico `Unknown`.
 
 ---
 

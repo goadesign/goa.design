@@ -101,7 +101,24 @@ var Lifecycle = Type("Lifecycle", func() {
 required `OneOf` は、branch 未選択、value が nil の typed wrapper、nil の message、
 byte slice、`Any` を拒否します。nil ではない empty message は有効です。生成された
 constructor、setter、accessor、`Kind` method は branch storage を非公開にし、選択を
-一つに保ちます。
+一つに保ちます。生成された union は Go テンプレート向けに `Value() (any, error)` も公開します
+(`{{if eq .State.Kind "active"}}{{with .State.Value}}{{.Name}}{{end}}{{end}}`)。
+空文字列、`0`、`false` を保持しつつ、無効な branch が読み取られた場合はテンプレート実行をエラーにします。
+
+HTTP および JSON-RPC の JSON エンコーディングでは、`OneOf` はデフォルトで `{type, value}`
+エンベロープを使用します。`OneOf` 内で JSON のワイヤー表現をカスタマイズできます：
+
+- **フラットなオブジェクトユニオン (`Meta("oneof:json:flatten")`)**: すべての branch が
+  オブジェクト型の場合、`Meta("oneof:json:flatten")` は選択された branch のフィールドを
+  識別子フィールドのすぐ隣に配置し (`{"type":"active","id":"123"}`)、任意の
+  `Meta("oneof:type:field", "kind")` で識別子キーの名前を変更できます。
+- **タグなし JSON ユニオン (`Meta("oneof:json:untagged")`)**: branch がそれぞれ異なる
+  JSON 種別 (string, number, boolean, array, object) を持つ場合、
+  `Meta("oneof:json:untagged")` は識別子のラッパーなしで選択された値を直接エンコードします。
+
+`OneOf` の branch が `View("...")` を指定した `ResultType` を参照する場合、生成される
+HTTP、gRPC、JSON-RPC のコーデックおよび OpenAPI スキーマはその view を尊重します。gRPC
+サービスでは、`OneOf` branch は `ArrayOf` や `MapOf` コレクションも使用できます。
 
 #### マップ
 
@@ -650,6 +667,17 @@ Header("version:X-Api-Version")  // version attribute from X-Api-Version header
 Body(func() {
     Attribute("name:n")  // name attribute from "n" field in JSON
     Attribute("age:a")   // age attribute from "a" field in JSON
+})
+```
+
+特定の HTTP サービス向けに、共有の名前付きオブジェクト型（ペイロード、結果、エラー、配列、マップ、ユニオン内のネストされたフィールドを含む）のワイヤーフィールド名をマッピングするには、サービスの `HTTP` ブロック内で `BodyFieldName` を宣言します：
+
+```go
+var _ = Service("billing", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+    // methods using Address in payloads, results, or errors...
 })
 ```
 

@@ -231,7 +231,9 @@ tool が `BoundedResult()` でマークされると:
   `NextCursor("nextCursor")` のような lower-camel Goa attribute を指定しても、
   codegen は `NextCursorField: "next_cursor"` を出力し、schema、runtime
   projection、result codec は同じ spelling を使います。
-- `ContinueWith` は cursor を runtime 内に保持し、継続可能な live chain head が一つだけ存在する場合に限って引数なしの continuation action を公開します。正確な cursor lineage によって連続 page を進めます。source call は並列実行できますが、複数の live head がある間は引数なしの continuation action を公開しません。direct `Cursor` contract は opaque cursor を `next_cursor` に公開します
+- `ContinueWith` は cursor を runtime 内に保持し、継続可能な live chain head が一つだけ存在する場合に限って引数なしの continuation action を公開します。正確な cursor lineage によって連続 page を進めます。source call は並列実行できますが、複数の live head がある間は引数なしの continuation action を公開しません。エクスポートされたエージェントツール（`Export`）の場合、`ContinueWith` は初期クエリと後続ページの両方を処理する1つの合成された操作を公開します。直接の呼び出し元は宣言されたページ引数を渡し、消費側エージェントは正確なクエリに紐づく一時的な引数なしの継続アクションを受け取ります（呼び出し/結果ヒントテンプレートは `.Args` を介してクエリまたはページの分岐を選択します）。
+- `Cursor` で直接宣言されたツールは `next_cursor` を公開し、次のモデル作成の呼び出しでそれを受け入れます。
+- 完了したツールの結果、受け入れられた引数、メディア、レンダリングされたプレビュー、およびクローズされたページネーションチェーンは、結果スキーマの変更やツールの削除をまたいでも読み取り可能なまま残ります。失敗した呼び出しは、古いページング状態を復元することなくトランスクリプトに残ります。
 - semantic Go result type は domain-specific のままで、それらの field を重複させる必要はありません
 
 method-backed `BindTo` tool では、生成 executor が runtime projection 前に `planner.ToolResult.Bounds` を構築できるよう、bound service method result は正規 bounded field を保持する必要があります。

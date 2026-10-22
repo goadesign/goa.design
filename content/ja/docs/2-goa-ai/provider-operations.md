@@ -33,6 +33,10 @@ if err != nil {
 ソースと生成クライアントを設定してください。ネイティブエージェントは宣言されたワークフローとキューを使います。サービスは `WithToolWorkflowQueue` と
 `RegisterToolWorkflow` を呼ぶワーカーを使い、エージェント、プランナー、モデル、会話を必要としません。登録やラベルはアクセス権を与えません。
 
+呼び出し元が、中断された起動プロセスから回復するべき冪等な起動・待機ヘルパーを必要とする場合は、`EnsureOperationCompletion`、`EnsureOneShotOperationCompletion`、`EnsureToolOperationCompletion`、または `EnsureOneShotToolOperationCompletion` を使用します。ワンショットまたはセッション操作がツールを呼び出さずにアシスタントの直接のテキスト返答を返す必要がある場合は `runtime.WithTextOnly(true)` を渡し、特定の固定されたワーカーキューで操作を実行する必要がある場合は `runtime.WithRootExecutionTarget(target)`（固定ワーカー上の `rt.CurrentWorkflowTarget(ctx, queue)` を使用）を渡します。
+
+プロバイダーワーカーが互換性のあるリビジョン変更をまたいで操作契約を提供する必要がある場合は、ランタイムをシールする前に、リビジョンが所有する契約を `rt.RegisterAgentOperationProvider` で登録します。
+
 ## 履歴を明示的に選ぶ
 
 作業の送信またはランタイムの封印前に、プロバイダーのワーカーで `AgentToolResolver` を登録します。署名は `func(context.Context,
@@ -63,9 +67,7 @@ configuration := &runtime.AgentToolConfiguration{
 は委譲と直接操作の結果契約を持ちます。プランナーは契約に合う `planner.FinalToolResult` を返し、会話テキストだけの結果は拒否されます。型付き結果には
 `FinalToolResult`、回答テキストには `Final` を使います。診断履歴が必要な場合だけページ単位の実行記録を読みます。
 
-入力後の継続は元の操作を復元し、後続実行を一つだけ受理します。サービスではホストが先行実行、新しい実行 ID、型付き回答を永続化し、ワーカーが
-`StartToolContinuation` と `EnsureToolContinuationCompletion`
-を呼びます。親のキャンセルは受理済み子の関係をたどり、未完了の後処理を保持します。完了をクライアントの再試行に依存させないでください。
+入力が必要な場合、継続処理は元の操作を復元し、受け入れられた呼び出し元メタデータ（`Metadata`）を保持して、1つの後続を受け入れます。サービスツールの場合、ホストは前身、後続の実行 ID、型付きの回答を永続的に保存し、そのワーカーが `StartToolContinuation` と `EnsureToolContinuationCompletion` を呼び出します（任意のワークフロー `memo map[string]any` を最後の引数として渡します）。親のキャンセルは受け入れられた子の関係に従い、未完了のクリーンアップを保持します。完了がクライアントの再試行に依存してはなりません。
 
 ## 生成される入力契約
 
@@ -82,8 +84,7 @@ base64 を使います。
 
 コード、通信形式、保存データをまとめて更新します。利用側とプロバイダーを再生成してビルドし、resolver の `Messages` を必須の `History`
 に置き換え、登録をプロバイダーへ移します。空の履歴は `runtime.LiteralAgentHistory(nil)` と明示し、未選択の `AgentHistory`
-は拒否されます。ネイティブの対象には `Executor`、`Configuration`、`Workflow`、`Queue`
-が必須です。非公開化した項目も含め、保存した宣言グループをすべて検証してください。
+は拒否されます。ネイティブの対象には `Executor`、`Configuration`、`Workflow`、`Queue` が必須です。`SeedDeclaration` は `Origin` を重複して保持しなくなり、`RunSeed.Origin` は `BeginRunPreparationOperation` パラメータから直接取得されます。廃止されたエントリも含め、保持されたすべての宣言グループを有効化前に検証してください。
 
 現在の中断形式は `goa-ai.run-suspension.v14`、最上位の結果は `json/goa-ai-run-output-v3`
 です。以前の形式は拒否されます。必須の `Subject` に合わせて

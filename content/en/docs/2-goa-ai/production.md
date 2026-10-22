@@ -549,7 +549,7 @@ workflow when it requests human or external input and stores a private
 checkpoint under the completed run ID. The accepted answer starts a new
 workflow on the current worker version. The new version must therefore accept
 the saved checkpoint format, generated result codecs, and required tool names.
-The current runtime accepts only `goa-ai.run-suspension.v8`; earlier checkpoint
+The current runtime accepts only `goa-ai.run-suspension.v14`; earlier checkpoint
 versions are rejected. Follow [Generated contract changes](#generated-contract-changes)
 for an incompatible upgrade rather than this overlapping-worker procedure.
 Worker versioning cannot translate incompatible stored values.

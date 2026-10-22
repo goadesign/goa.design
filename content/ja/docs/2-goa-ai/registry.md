@@ -159,7 +159,7 @@ service-owned で method-backed な toolset (`BindTo(...)` で宣言された to
 
 次の例は module `example.com/registry-provider`、service `catalog`、その method-backed toolset `search` を使い、`catalog.search` として登録します。アプリケーションの 2 つの import path と toolset 名を、自分のプロジェクトで生成された値に置き換えてください。`NewProvider`、`ToolSchemas`、`SchemaFingerprint` は生成 toolset package の関数です。生成 schema はそのまま使用します。登録 callback は、module root に生成される `AGENTS_QUICKSTART.md` の **Service-Side Tool Providers** の例に沿っています ([クイックスタート](../quickstart/))。
 
-service の実装、`pulse.New(pulse.Options{Redis: rdb})` で作成した Pulse client、deployment の認証情報を指定して `grpc.NewClient` で作成した registry への gRPC connection を渡します。この process と toolset に対して安定し、稼働中の replica 間で一意な `providerID` と、同じ登録の replica が共有する deployment 指定の必須値 `admissionRevision` を渡してください。`Serve` が incarnation ID を作成し、callback へ渡します。bound service method は context cancellation に従う必要があります。`serveTools` を service のライフサイクル内で実行し、両 client を開いたまま終了を待ってください。shutdown 時には新しい処理の受け付けを止め、実行権を取得済みの call、result、受信確認を `Options.ShutdownTimeout` 内で完了させます。この処理が成功した場合だけ、別の時間枠 `Registration.ReleaseTimeout` で正確な lease を解放します。完了処理に失敗した場合は lease の期限切れによって実行権が終了します。戻り値の error が `context.Canceled` にも一致する場合でも、完了処理や lease 解放の error を保持して報告してください。以下では必要な登録 callback をすべて設定しています:
+service の実装、`pulse.New(pulse.Options{Redis: rdb})` で作成した Pulse client、deployment の認証情報を指定して `grpc.NewClient` で作成した registry への gRPC connection を渡します。この process と toolset に対して安定し、稼働中の replica 間で一意な `providerID` と、同じ登録の replica が共有する deployment 指定の必須値 `admissionRevision` を渡してください。`Serve` が incarnation ID を作成し、callback へ渡します。bound service method は context cancellation に従う必要があります。`serveTools` を service のライフサイクル内で実行し、両 client を開いたまま終了を待ってください。`Options.OperationTimeout` は、全体の `Options.ShutdownTimeout` ドレインウィンドウとは独立して、個々のクレーム、完了、および確認応答操作の上限時間を設定します。shutdown 時には新しい処理の受け付けを止め、実行権を取得済みの call、result、受信確認を `Options.ShutdownTimeout` 内で完了させます。この処理が成功した場合だけ、別の時間枠 `Registration.ReleaseTimeout` で正確な lease を解放します。完了処理に失敗した場合は lease の期限切れによって実行権が終了します。戻り値の error が `context.Canceled` にも一致する場合でも、完了処理や lease 解放の error を保持して報告してください。以下では必要な登録 callback をすべて設定しています:
 
 ```go
 package providers
@@ -202,6 +202,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -426,6 +427,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -491,9 +493,12 @@ registry は次の gRPC method を公開します:
 |--------|-------------|
 | `ListToolsets` | 登録済み toolset を一覧します (任意で tag filtering)。metadata のみを返し、full schema は返しません。 |
 | `GetToolset` | 指定 toolset の full schema を取得します。すべての tool input/output schema を含みます。 |
+| `GetToolsetSchemas` | 複数の指定された toolset の完全なスキーマを1回のバッチ呼び出しで取得します。 |
 | `ResolveToolset` | 有効な定義と正確な登録 token を一緒に読み取ります。provider の健全性は別に確認します。 |
 | `CheckAdmission` | 正確なサービス登録について、期限内で draining ではない provider lease と最近の health 応答を確認します。 |
 | `Search` | name、description、tags に対する keyword match で toolset を検索します。 |
+
+内部サービスや診断コマンドが、完全な Registry gRPC サーバーやヘルスチェックコーディネーターを実行せずに Redis ベースのカタログへの読み取り専用アクセスのみを必要とする場合は、`registry.NewCatalogReader(redisClient, registryName)` を構築します。
 
 ### Invocation Operations
 

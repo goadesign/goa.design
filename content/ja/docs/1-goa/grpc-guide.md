@@ -37,6 +37,7 @@ Goa の gRPC サポートには以下が含まれます：
 | Bytes     | bytes              |
 | ArrayOf   | repeated           |
 | MapOf     | map                |
+| OneOf     | oneof（生成されたメッセージでラップされた `ArrayOf` および `MapOf` ブランチを含む） |
 
 ---
 
@@ -434,6 +435,11 @@ func (s *users) CreateUser(ctx context.Context, p *users.CreateUserPayload) (*us
     return user, nil
 }
 ```
+
+サービスメソッドがすでに gRPC ステータスを持つ未処理のエラー（例えば、上流の
+`codes.DeadlineExceeded` や `codes.Unavailable` エラーなど）を返した場合、
+生成された gRPC サーバーはそのステータスコードと順序付けられたステータス詳細を保持し、
+汎用的な `Unknown` フォールトで上書きすることはありません。
 
 ---
 

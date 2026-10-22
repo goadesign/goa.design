@@ -19,19 +19,22 @@ la logique métier.
 ### Installation
 
 ```bash
-go get goa.design/goa/v3@v3.31.1
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go get goa.design/goa/v3@v3.35.0
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 ```
 
-{{< alert title="Passer à v3.31.1" color="info" >}}
-La version préliminaire du générateur est désormais stable. Le passage de
-v3.30.x à v3.31.1 comporte des changements incompatibles intentionnels ; consultez
-le [guide de mise à niveau](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+{{< alert title="Passer à v3.35.0" color="info" >}}
+v3.35.0 nécessite Go 1.27.3 ou ultérieur (correctifs `CVE-2026-111943` dans `crypto/x509` et correctifs HTTP/2, TLS et de la chaîne d'outils de la bibliothèque standard) ; consultez
+le [guide de mise à niveau](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 avant de régénérer une application existante. Fixez le module et la commande Goa
 à la même version, régénérez tout le répertoire `gen/`, puis compilez et testez
-l'application. Coordonnez les mises à jour des clients et serveurs pour les
-formats de messages modifiés indiqués dans le guide. Pour revenir en arrière,
-restaurez ensemble les dépendances, le code généré et le code de l'application.
+l'application. Régénérez et déployez les serveurs HTTP conjointement avec le
+runtime afin que les paramètres de chemin de type tableau ne subissent qu'une seule
+passe de décodage par pourcent, et coordonnez les déploiements client et serveur lors
+de l'adoption de `Meta("oneof:json:flatten")`, `Meta("oneof:json:untagged")`,
+`BodyFieldName` ou de vues (`View`) de résultat non définies par défaut dans les branches
+`OneOf`. Pour revenir en arrière, restaurez ensemble les dépendances, le code généré
+et le code de l'application.
 {{< /alert >}}
 
 ### Commandes
@@ -548,7 +551,7 @@ Les décodeurs de transport générés par Goa valident les requêtes entrantes 
 Les types de service représentent des valeurs déjà validées. Les types de
 transport décodés doivent aussi conserver l'absence d'un champ entrant.
 
-Ce tableau décrit les champs scalaires et objets courants de Goa v3.31.1. Bytes, `Any` et les unions ont leurs propres représentations ; consultez leurs types générés.
+Ce tableau décrit les champs scalaires et objets courants de Goa v3.35.0. Bytes, `Any` et les unions ont leurs propres représentations ; consultez leurs types générés.
 
 | Champ | Type de service | Corps HTTP/JSON-RPC | Requête ou réponse protobuf |
 |---|---|---|---|
@@ -651,9 +654,9 @@ Les fonctions de rappel publiées restent adaptées aux plugins qui modifient de
 valeurs ou des fichiers générés. Un plugin qui déclare un nom au niveau d'un
 paquet doit utiliser la phase de planification de la fabrique afin que Goa
 puisse réserver ce nom avec toutes les autres déclarations avant le rendu.
-Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)
+Consultez [l'architecture de la génération de code](https://github.com/goadesign/goa/blob/v3.35.0/codegen/ARCHITECTURE.md)
 et le
-[guide de mise à niveau](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+[guide de mise à niveau](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 pour le contrat détaillé des plugins et les étapes de migration.
 
 ---

@@ -205,7 +205,7 @@ le déploiement et partagée par les réplicas du même enregistrement. `Serve`
 crée l'identifiant d'incarnation et le transmet aux callbacks. Les méthodes
 de service liées doivent respecter l'annulation du contexte. Exécutez
 `serveTools` dans le cycle de vie du service et attendez son retour avant de
-fermer l'un des clients. À l'arrêt, le fournisseur cesse d'accepter du travail
+fermer l'un des clients. `Options.OperationTimeout` limite les opérations individuelles de réclamation, de finalisation et d'accusé de réception indépendamment de la fenêtre globale de drainage de `Options.ShutdownTimeout`. À l'arrêt, le fournisseur cesse d'accepter du travail
 et finalise les appels dont il détient l'exécution, leurs résultats et les
 accusés de réception dans la limite de `Options.ShutdownTimeout`. Seule une
 finalisation réussie permet de libérer le bail exact, avec le délai distinct
@@ -256,6 +256,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -540,6 +541,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -605,9 +607,12 @@ Le registre expose les méthodes gRPC suivantes :
 |--------|-------------|
 | `ListToolsets` | Répertoriez tous les ensembles d’outils enregistrés (avec filtrage de balises facultatif). Renvoie uniquement les métadonnées, pas les schémas complets. |
 | `GetToolset` | Obtenez le schéma complet pour un ensemble d'outils spécifique, y compris tous les schémas d'entrée/sortie des outils. |
+| `GetToolsetSchemas` | Récupère les schémas complets pour plusieurs ensembles d'outils nommés en un seul appel par lot. |
 | `ResolveToolset` | Lit ensemble une définition active et son jeton exact ; la santé du fournisseur fait l'objet d'un contrôle distinct. |
 | `CheckAdmission` | Vérifie qu'un enregistrement de service exact possède un bail non expiré, hors drainage, et une réponse de santé récente. |
 | `Search` | Recherchez des ensembles d’outils par mot-clé correspondant au nom, à la description ou aux balises. |
+
+Lorsqu'un service interne ou une commande de diagnostic n'a besoin que d'un accès en lecture seule au catalogue adossé à Redis sans exécuter un serveur gRPC Registry complet ni un coordinateur de vérification de santé, construisez `registry.NewCatalogReader(redisClient, registryName)`.
 
 ### Opérations d'appel
 

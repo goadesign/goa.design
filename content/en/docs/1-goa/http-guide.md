@@ -80,6 +80,14 @@ Method("get_user", func() {
 })
 ```
 
+Generated HTTP clients percent-escape `/` inside single-segment path parameters
+so a value containing a slash stays within one segment (`%2F`), while wildcard
+(`{*path}`) parameters preserve path separators. On the server, the router
+preserves literal percent sequences (such as `literal%2Fpercent`) and generated
+array path decoders split on commas before running a single percent-decoding
+pass per element. Always regenerate and deploy HTTP server code together with
+the Goa runtime when upgrading.
+
 ### Query Parameters
 
 Define query parameters with the `Param` function:
@@ -227,6 +235,42 @@ For renamed fields in an explicit `Body` expression, declare the body types and 
 - `FormRequest()` is for ordinary HTTP endpoints. It cannot be combined with JSON-RPC, `MultipartRequest()`, or `SkipRequestBodyEncodeDecode()`.
 
 Regenerate after adding `FormRequest()` with a Goa version that includes this DSL. Switching an existing endpoint from JSON to forms changes its wire contract: update and deploy its clients and server together. Generated OpenAPI describes the form media type and mapped field names. Application middleware remains responsible for request size limits.
+
+### Service-Specific Body Field Names (`BodyFieldName`)
+
+When multiple HTTP services reuse a shared named object type (`Type` or
+`ResultType`) in payloads, results, errors, arrays, maps, or unions, declare
+`BodyFieldName` inside a service's `HTTP` block to map attribute names to
+service-specific wire field names without duplicating the shared type:
+
+```go
+var Address = Type("Address", func() {
+    Attribute("postal_code", String, "Postal or ZIP code")
+    Attribute("country_code", String, "ISO country code")
+    Required("postal_code", "country_code")
+})
+
+var _ = Service("checkout", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+
+    Method("estimate_shipping", func() {
+        Payload(func() {
+            Attribute("destination", Address)
+            Required("destination")
+        })
+        Result(Empty)
+        HTTP(func() {
+            POST("/shipping/estimate")
+        })
+    })
+})
+```
+
+Generated HTTP request/response bodies and OpenAPI schemas for that service use
+the mapped wire names (`postalCode`, `countryCode`), while the shared Go
+service struct keeps its canonical field names (`PostalCode`, `CountryCode`).
 
 ---
 

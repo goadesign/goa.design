@@ -111,12 +111,12 @@ This catalog exposes the same operation over **HTTP, gRPC, and JSON-RPC**, and g
 
 Create a module and install the versions used for this example:
 
-This guide uses a pinned Goa-AI development snapshot, not a stable release. Its Go module selects the matching Goa dependency. Run the generator through `go run` so it uses that selected version. Use the Go version declared by the module or newer.
+This guide uses the `v0.89.0` Goa-AI release (requiring Go 1.27.3 or later). Its Go module selects the matching Goa dependency (`v3.35.0`). Run the generator through `go run` so it uses that selected version.
 
 ```bash
 mkdir catalog && cd catalog
 go mod init example.com/catalog
-go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
+go get goa.design/goa-ai@v0.89.0
 mkdir design
 ```
 

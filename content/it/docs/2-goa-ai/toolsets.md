@@ -239,8 +239,18 @@ When a tool is marked with `BoundedResult()`:
   argomenti solo quando una singola testa di catena attiva può continuare.
   La corrispondenza esatta del cursor fa avanzare le pagine sequenziali;
   le chiamate sorgente parallele restano valide, ma più teste attive rendono
-  indisponibile la continuazione senza argomenti. Un contratto `Cursor` diretto espone il cursor opaco in
-  `next_cursor`.
+  indisponibile la continuazione senza argomenti. Per gli strumenti di agenti esportati (`Export`),
+  `ContinueWith` pubblica un'operazione composta che gestisce sia la query iniziale
+  sia le pagine successive: i chiamanti diretti forniscono gli argomenti di pagina dichiarati,
+  mentre gli agenti consumatori ricevono azioni di continuazione temporanee senza argomenti
+  legate alla query esatta (e i template di hint di chiamata/risultato selezionano il ramo
+  query o pagina tramite `.Args`).
+- Uno strumento dichiarato direttamente con `Cursor` espone `next_cursor` e lo accetta
+  nella successiva chiamata creata dal modello.
+- I risultati completati degli strumenti, gli argomenti accettati, i contenuti multimediali,
+  le anteprime renderizzate e le catene di paginazione chiuse rimangono leggibili attraverso
+  modifiche dello schema dei risultati o la rimozione dello strumento; le chiamate non riuscite
+  rimangono nella trascrizione senza ripristinare il precedente stato di paginazione.
 - The semantic Go result type stays domain-specific; it does not need to
   duplicate those fields
 

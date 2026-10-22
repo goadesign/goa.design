@@ -143,7 +143,7 @@ test('documentation exempts versioned commands from email obfuscation', async ({
     expect(html).toContain('<!--/email_off-->');
     const content = html.split('<!--email_off-->')[1]?.split('<!--/email_off-->')[0];
     expect(content).toBeTruthy();
-    expect(content).toContain('goa.design/goa/v3/cmd/goa@v3.31.1');
+    expect(content).toContain('goa.design/goa/v3/cmd/goa@v3.35.0');
     expect(content).toContain('goa.design/clue@v1.2.6');
     expect(html.indexOf('<!--/email_off-->')).toBeLessThan(html.indexOf('<footer'));
   }

@@ -203,7 +203,7 @@ despliegue y compartido por las réplicas del mismo registro. `Serve` crea el
 identificador de instancia y lo pasa a los callbacks. Los métodos de servicio
 enlazados deben respetar la cancelación del contexto. Ejecuta `serveTools`
 dentro del ciclo de vida del servicio y espera a que termine antes de cerrar
-cualquiera de los clientes. Al apagarse, el proveedor deja de aceptar trabajo
+cualquiera de los clientes. `Options.OperationTimeout` limita las operaciones individuales de reclamación, finalización y acuse de recibo independientemente de la ventana general de drenaje de `Options.ShutdownTimeout`. Al apagarse, el proveedor deja de aceptar trabajo
 y finaliza las llamadas cuya ejecución posee, sus resultados y los acuses de
 recibo dentro de `Options.ShutdownTimeout`. Solo una finalización correcta
 permite liberar la concesión exacta, con el plazo independiente
@@ -253,6 +253,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -536,6 +537,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -601,9 +603,12 @@ El registro expone los siguientes métodos gRPC:
 |--------|-------------|
 | `ListToolsets` | Lista todos los toolsets registrados (con filtrado opcional por etiquetas). Devuelve solo metadatos, no los esquemas completos. |
 | `GetToolset` | Obtiene el esquema completo de un toolset concreto, incluidos todos los esquemas de entrada/salida de sus herramientas. |
+| `GetToolsetSchemas` | Obtiene los esquemas completos de varios toolsets indicados en una sola llamada por lotes. |
 | `ResolveToolset` | Lee juntos una definición activa y su token exacto; la salud del proveedor se comprueba por separado. |
 | `CheckAdmission` | Comprueba que un registro de servicio exacto tenga una concesión vigente, sin drenaje, y una respuesta de salud reciente. |
 | `Search` | Busca toolsets por palabras clave que coincidan con el nombre, la descripción o las etiquetas. |
+
+Cuando un servicio interno o comando de diagnóstico solo necesita acceso de solo lectura al catálogo respaldado por Redis sin ejecutar un servidor gRPC de Registry completo ni un coordinador de comprobación de salud, construya `registry.NewCatalogReader(redisClient, registryName)`.
 
 ### Operaciones de invocación
 

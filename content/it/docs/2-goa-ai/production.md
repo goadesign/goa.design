@@ -502,6 +502,16 @@ la compatibilità delle API restano responsabilità dell'applicazione: il
 versionamento dei worker protegge il replay, non un servizio a valle assente o
 incompatibile.
 
+Ogni input utente accettato avvia un workflow Goa-AI di primo livello. Goa-AI termina
+il workflow quando richiede un input umano o esterno e salva un checkpoint privato
+sotto l'ID dell'esecuzione completata. La risposta accettata avvia un nuovo
+workflow sulla versione corrente del worker. La nuova versione deve quindi accettare
+il formato del checkpoint salvato, i codec dei risultati generati e i nomi degli strumenti richiesti.
+Il runtime attuale accetta solo `goa-ai.run-suspension.v14`; le versioni precedenti dei checkpoint
+vengono rifiutate. Seguire [Modifiche ai contratti generati](#modifiche-ai-contratti-generati)
+per un aggiornamento incompatibile anziché questa procedura con worker sovrapposti.
+Il versionamento dei worker non può convertire valori memorizzati incompatibili.
+
 #### Modifiche ai contratti generati
 
 Quando agenti generati, package di completion o payload runtime persistiti

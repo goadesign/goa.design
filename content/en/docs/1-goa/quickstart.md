@@ -13,7 +13,7 @@ This guide walks you through installing Goa and creating your first service. By 
 
 Before you begin, ensure your environment meets these requirements:
 
-- **Go 1.25 or later** - Goa leverages modern Go features
+- **Go 1.27.3 or later** - Goa leverages modern Go features and requires Go 1.27.3+ for standard-library X.509 certificate chain verification (`CVE-2026-111943`), HTTP/2, TLS, and toolchain security fixes
 - **Go Modules enabled** - This is the default in Go 1.16+, but verify with `GO111MODULE=on` if needed
 - **curl or any HTTP client** - For testing your service
 
@@ -23,7 +23,7 @@ Install the Goa packages and CLI tool:
 
 ```bash
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 
 # Verify the installation
 goa version
@@ -48,7 +48,7 @@ Create a new directory and initialize a Go module:
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
-go get goa.design/goa/v3@v3.31.1
+go get goa.design/goa/v3@v3.35.0
 ```
 
 > **Note:** We're using a simple module name `hello` for this guide. In real projects, you'd typically use a domain name like `github.com/yourusername/hello-goa`. The concepts work exactly the same way.
@@ -160,7 +160,7 @@ go get goa.design/clue@v1.2.6
 go mod tidy
 ```
 
-This Clue version keeps the generated starter compatible with Go 1.25.
+This Clue version keeps the generated starter compatible with Go 1.27.3.
 
 Start the server:
 

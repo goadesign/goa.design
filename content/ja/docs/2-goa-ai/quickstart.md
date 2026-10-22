@@ -25,11 +25,11 @@ aliases:
 ```bash
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa-ai@v0.88.1-0.20261010192622-b66f1c06a1ba
+go get goa.design/goa-ai@v0.89.0
 mkdir design
 ```
 
-このガイドは安定版リリースではなく、固定したGoa-AIの開発スナップショットを使用します。Goモジュールが対応するGoaの依存バージョンを選択します。ジェネレーターは`go run`で実行し、そのバージョンを使ってください。Goはモジュールで宣言されたバージョン以降を使用します。
+このガイドは `v0.89.0` Goa-AI リリース（Go 1.27.3 以降が必要）を使用します。その Go モジュールは対応する Goa の依存関係（`v3.35.0`）を選択します。ジェネレーターは選択されたバージョンを使用するよう `go run` 経由で実行してください。
 
 ---
 

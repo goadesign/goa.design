@@ -13,7 +13,7 @@ Esta guía te guía a través de la instalación de Goa y la creación de tu pri
 
 Antes de comenzar, asegúrate de que tu entorno cumple estos requisitos:
 
-- **Go 1.25 o posterior** - Goa aprovecha las características modernas de Go
+- **Go 1.27.3 o posterior** - Goa aprovecha las características modernas de Go y requiere Go 1.27.3+ para correcciones de seguridad de verificación de cadenas de certificados X.509 de la biblioteca estándar (`CVE-2026-111943`), HTTP/2, TLS y la cadena de herramientas
 - **Go Modules activado** - Esto es lo predeterminado en Go 1.16+, pero verifícalo con `GO111MODULE=on` si es necesario
 - **curl o cualquier cliente HTTP** - Para probar su servicio
 
@@ -23,7 +23,7 @@ Instale los paquetes Goa y la herramienta CLI:
 
 ```bash
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 
 # Verify the installation
 goa version
@@ -48,7 +48,7 @@ Crea un nuevo directorio e inicializa un módulo Go:
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
-go get goa.design/goa/v3@v3.31.1
+go get goa.design/goa/v3@v3.35.0
 ```
 
 > **Nota:** Estamos usando un nombre de módulo simple `hello` para esta guía. En proyectos reales, normalmente usarías un nombre de dominio como `github.com/yourusername/hello-goa`. Los conceptos funcionan exactamente de la misma manera.
@@ -160,7 +160,7 @@ go get goa.design/clue@v1.2.6
 go mod tidy
 ```
 
-Esta versión de Clue mantiene el código inicial generado compatible con Go 1.25.
+Esta versión de Clue mantiene el código inicial generado compatible con Go 1.27.3.
 
 Inicie el servidor:
 

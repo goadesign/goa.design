@@ -326,10 +326,12 @@ original déjà enregistré, au lieu d’accepter cette identité depuis l’act
 Le replay utilise donc le texte d’origine et ne lit jamais une version plus
 récente du prompt dans le stockage.
 
-Les IDs des workflows enfants Temporal contiennent l'ID exact de l'appel
-d'outil attribué par le runtime. Les appels parallèles au même agent imbriqué
-restent ainsi distincts ; une version qui modifie cette dérivation n'est pas
-compatible avec les workflows enfants déjà en cours.
+Les identifiants des workflows enfants Temporal sont dérivés de manière déterministe à partir
+de l'identifiant d'exécution parent et de l'identifiant exact d'appel d'outil du runtime
+(`NestedRunIDForToolCall`) sous la forme d'une empreinte SHA-256 hexadécimale de longueur fixe
+de 64 caractères. Cela permet de distinguer les appels parallèles au même agent imbriqué tout en
+limitant la longueur de l'identifiant de workflow le long de chaînes d'agents profondément imbriquées ;
+une version qui modifie cette dérivation n'est pas compatible avec les workflows enfants déjà en cours.
 
 ---
 

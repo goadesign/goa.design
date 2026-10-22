@@ -174,8 +174,7 @@ lettres/chiffres/`_`/`-` uniquement et doit commencer par une lettre ou un chiff
 - Les fournisseurs de streaming émettent des fragments d'aperçu
   `completion_delta` et une réponse terminale canonique cohérente, ou refusent
   explicitement la demande.
-- Les fournisseurs qui n’implémentent pas la sortie structurée renvoient
-  `model.ErrStructuredOutputUnsupported`.
+- Les fournisseurs qui n'implémentent pas la sortie structurée signalent `model.ErrStructuredOutputUnsupported`. Les adaptateurs OpenAI, Anthropic et AWS Bedrock Responses (`text.format` `json_schema` unaire) prennent en charge la sortie structurée.
 - Les schémas générés sont canoniques et indépendants du fournisseur ; les adaptateurs de fournisseur peuvent les normaliser sur un sous-ensemble pris en charge, mais doivent échouer explicitement lorsqu'ils ne peuvent pas préserver le contrat déclaré.
 
 ---
@@ -271,6 +270,11 @@ if err := rt.Seal(ctx); err != nil {
 }
 ```
 
+Lorsqu'un processus partage son moteur de worker Temporal avec des workflows
+ou des activités d'application natifs, enregistrez-les sur le worker avant
+`rt.Seal(ctx)` en utilisant `eng.RegisterNativeWorkflow`, `eng.RegisterNativeActivity`,
+et inspectez les files d'attente enregistrées avec `eng.RegisteredTaskQueues()`.
+
 ---
 
 ## Boucle Planifier → Exécuter → Reprendre
@@ -285,7 +289,7 @@ if err := rt.Seal(ctx); err != nil {
 3. Le runtime appelle `PlanStart` avec `PrepareMessages` et un `run.Context`
    contenant `RunID`, `SessionID`, `TurnID`, les libellés et les limites.
    Le planificateur appelle la fonction s'il a besoin de l'historique.
-4. Il planifie les appels d'outils avec les codecs générés.
+4. Il planifie les appels d'outils renvoyés par le planificateur (le planificateur transmet des charges utiles JSON canoniques ; le runtime gère l'encodage/décodage à l'aide des codecs générés). Un seul `PlanResult` peut combiner des appels d'outils de modèle sélectionnés par le fournisseur avec des appels d'outils déterministes créés par le planificateur dans le même lot.
 5. Il appelle `PlanResume` avec les résultats d'outils survivants visibles par
    le planificateur. Les outils budgétisés sont visibles par défaut ; les outils
    comptables ne sont rejoués qu'après un échec dont

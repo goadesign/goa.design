@@ -239,8 +239,18 @@ Lorsqu'un outil est marqué de `BoundedResult()` :
   sans argument que lorsqu'une seule tête de chaîne active peut continuer.
   La correspondance exacte du curseur fait avancer les pages séquentielles ;
   les appels source parallèles restent valides, mais plusieurs têtes actives
-  rendent la continuation sans argument indisponible. Un contrat `Cursor` direct expose le curseur opaque dans
-  `next_cursor`.
+  rendent la continuation sans argument indisponible. Pour les outils d'agents exportés (`Export`),
+  `ContinueWith` publie une opération composée qui gère à la fois la requête initiale
+  et les pages suivantes : les appelants directs fournissent les arguments de page déclarés,
+  tandis que les agents consommateurs reçoivent des actions de continuation temporaires sans argument
+  liées à la requête exacte (et les modèles d'indices d'appel/résultat sélectionnent la branche
+  de requête ou de page via `.Args`).
+- Un outil déclaré directement avec `Cursor` expose `next_cursor` et l'accepte
+  lors du prochain appel créé par le modèle.
+- Les résultats d'outils terminés, les arguments acceptés, les médias, les aperçus
+  rendus et les chaînes de pagination closes restent lisibles lors de modifications du schéma
+  de résultat ou du retrait de l'outil ; les appels ayant échoué restent dans la transcription
+  sans restaurer l'état de pagination antérieur.
 - Le type de résultat sémantique Go reste spécifique au domaine ; il n'est pas nécessaire de dupliquer ces champs
 
 Pour les outils `BindTo` basés sur une méthode, le résultat de la méthode de service lié doit toujours

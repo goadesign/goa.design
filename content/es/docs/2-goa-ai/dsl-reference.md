@@ -748,7 +748,7 @@ Campos canónicos visibles para el modelo:
 - las ejecuciones acotadas exitosas deben establecer `planner.ToolResult.Bounds`
 - el runtime proyecta bounds propiedad del proveedor en el JSON `tool_result` codificado, los datos de plantilla de result-hint,
 los hooks y los eventos de stream
-- `ContinueWith` mantiene el cursor fuera del contrato del modelo y ofrece una acción sin argumentos solo mientras una única cabeza activa de la cadena pueda continuar; la correspondencia exacta del cursor avanza las páginas secuenciales. Las llamadas fuente en paralelo siguen siendo válidas, pero varias cabezas activas hacen que la continuación sin argumentos no esté disponible
+- `ContinueWith` mantiene el cursor fuera del contrato del modelo y ofrece una acción sin argumentos solo mientras una única cabeza activa de la cadena pueda continuar; la correspondencia exacta del cursor avanza las páginas secuenciales. Las llamadas fuente en paralelo siguen siendo válidas, pero varias cabezas activas hacen que la continuación sin argumentos no esté disponible. Para herramientas de agentes exportadas, `ContinueWith` publica una única operación compuesta tanto para la consulta inicial como para las páginas siguientes (los callers directos proporcionan los argumentos de página declarados, mientras que los agentes reciben acciones temporales sin argumentos vinculadas a la consulta exacta, y las plantillas de pistas de llamada/resultado seleccionan la rama de consulta o de página mediante `.Args`)
 - `Cursor` directo expone el cursor opaco del proveedor en `next_cursor`
 
 ```go

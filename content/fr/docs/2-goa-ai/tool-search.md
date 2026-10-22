@@ -86,6 +86,15 @@ Utilisez `contract.Fingerprint(toolset)` pour une déclaration dynamique ou un `
 
 Pour choisir les sources selon l'application, implémentez `runtime.RegistryTools` et attachez-le avec `WithRegistryTools`. Dans `Resolve`, `catalog.RunLabels()` renvoie une copie des labels de l'exécution courante. Utilisez-les avec `IncludeToolset` ou `IncludeRegistry` ; `Allows` détermine les sources que les appels sauvegardés peuvent continuer à utiliser. La politique d'exécution filtre toujours les outils. Chaque activité de planification possède son catalogue : les sessions concurrentes ne modifient pas les outils des autres. Espaces de noms et autorisation restent des responsabilités applicatives.
 
+### Liaison des outils générés aux enregistrements sélectionnés
+
+Lorsqu'une application résout un enregistrement dynamique dans un ensemble d'outils généré existant (par exemple, en sélectionnant l'enregistrement d'un locataire ou d'un environnement spécifique tout en conservant les codecs de payload/résultat et les indices typés générés), liez l'ensemble d'outils généré au sein de `Resolve` à l'aide de `runtime/toolregistry/catalog` :
+
+- **Ensembles d'outils adossés à des services (`catalog.BindStaticService`)** : Appelez `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` avec la déclaration `specs.Toolset()` générée et le `*genregistry.Toolset` résolu, puis construisez l'exécuteur généré avec `executor.NewResolved(client, executor.WithCaller(caller))`. Lorsqu'un gestionnaire d'outil a besoin du jeton d'admission sélectionné ou des métadonnées d'opération pendant l'exécution, lisez `catalog.SelectedOperation()` depuis `runtime.ToolCallMeta`.
+- **Ensembles d'outils d'agents natifs (`catalog.BindStaticAgent`)** : Appelez `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` pour lier un enregistrement d'agent natif résolu au contrat de consommateur généré tout en vérifiant l'enregistrement par rapport à la déclaration compilée (et au contrat précédent facultatif).
+
+Passez `verifyPrevious: true` lorsque les appels enregistrés dans la session peuvent continuer à utiliser la révision précédente lors d'un déploiement compatible. Les codecs de résultats délimités portables acceptent à la fois le JSON sémantique brut du fournisseur (avec `planner.ToolResult.Bounds` fourni séparément) et les résultats JSON finalisés qui incluent déjà les champs délimités canoniques.
+
 ## Qui effectue la recherche ?
 
 - **OpenAI Responses, direct ou Bedrock :** le modèle émet des recherches natives exécutées côté client. L’adaptateur classe les noms, titres et descriptions autorisés avec BM25, un algorithme de pertinence fondé sur les mots, puis retourne les définitions correspondantes. La première requête contient seulement un outil de recherche par requête, sans répertoire de noms ou descriptions. Le catalogue différé reste dans l’application.

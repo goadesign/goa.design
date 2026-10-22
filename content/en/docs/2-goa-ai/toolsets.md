@@ -243,9 +243,18 @@ When a tool is marked with `BoundedResult()`:
   result does not expose `next_cursor`, and the continuation's model-facing
   payload is an empty object. Independent source invocations may run in
   parallel; the continuation is available only when one invocation can be
-  selected without another argument.
+  selected without another argument. For exported agent tools (`Export`),
+  `ContinueWith` publishes one composed operation that handles both the initial
+  query and subsequent pages: direct callers supply the declared page arguments,
+  while consuming agents receive temporary no-argument continuation actions tied
+  to the exact query (and call/result hint templates select the query or page
+  branch via `.Args`).
 - A tool declared directly with `Cursor` exposes `next_cursor` and accepts it
   on the next model-authored call.
+- Completed tool results, accepted arguments, media, rendered previews, and
+  closed pagination chains remain readable across result schema changes or tool
+  removal; failed calls stay in the transcript without restoring old paging
+  state.
 - The semantic Go result type stays domain-specific; it does not need to duplicate those fields
 
 For method-backed `BindTo` tools, the bound service method result still needs to

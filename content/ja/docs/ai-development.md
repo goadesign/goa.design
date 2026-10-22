@@ -71,12 +71,12 @@ go test ./...
 
 モジュールを作り、この例で使うバージョンを導入します。
 
-このガイドは安定版リリースではなく、固定したGoa-AIの開発スナップショットを使用します。Goモジュールが対応するGoaの依存バージョンを選択します。ジェネレーターは`go run`で実行し、そのバージョンを使ってください。Goはモジュールで宣言されたバージョン以降を使用します。
+このガイドは `v0.89.0` Goa-AI リリース（Go 1.27.3 以降が必要）を使用します。その Go モジュールは対応する Goa の依存関係（`v3.35.0`）を選択します。ジェネレーターは選択されたバージョンを使用するよう `go run` 経由で実行してください。
 
 ```bash
 mkdir catalog && cd catalog
 go mod init example.com/catalog
-go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
+go get goa.design/goa-ai@v0.89.0
 mkdir design
 ```
 
