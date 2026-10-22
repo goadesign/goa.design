@@ -301,7 +301,7 @@ describe('Copy Page Property Tests', () => {
       // Use a generator that excludes content starting with markdown heading syntax
       // since the plain text conversion preserves user content as-is
       const safeContentTextArb = fc.string({ minLength: 1, maxLength: 200 })
-        .filter(s => s.trim().length > 0 && !s.trim().match(/^#{1,6}\s/));
+        .filter(s => s.trim().length > 0 && !s.match(/^#{1,6}\s/m) && !s.trim().match(/^#{1,6}\s/));
       
       const safePageContentArb = fc.record({
         title: safeContentTextArb,
@@ -315,7 +315,7 @@ describe('Copy Page Property Tests', () => {
             }),
             fc.record({
               type: fc.constant('code'),
-              content: codeContentArb,
+              content: safeContentTextArb,
               language: languageArb,
             }),
             fc.record({

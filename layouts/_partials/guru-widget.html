@@ -6,7 +6,7 @@
     var widget = document.getElementById('gurubase-chat-widget-container');
     if (!widget) return;
     var style = document.createElement('style');
-    style.textContent = '.chat-widget { position: static !important; background: transparent !important; } .chat-button { position: static !important; padding: 8px 12px !important; border-radius: 6px !important; font-size: 14px !important; box-shadow: none !important; }';
+    style.textContent = '.chat-widget { position: static !important; background: transparent !important; } .chat-button { position: static !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 12.5px !important; font-weight: 600 !important; background: var(--color-bg-alt, #f3f6fa) !important; color: var(--color-text-heading, #172b45) !important; border: 1px solid var(--color-border-subtle, #dce3ec) !important; box-shadow: none !important; } .chat-button * { color: var(--color-text-heading, #172b45) !important; }';
     widget.shadowRoot.appendChild(style);
     host.replaceChildren(widget);
     observer.disconnect();

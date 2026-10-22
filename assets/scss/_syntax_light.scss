@@ -2,12 +2,12 @@
 
 // Light theme code block background
 .chroma {
-  color: #2d3748;
-  background-color: #f8f9fa;
+  color: #172b45;
+  background-color: var(--color-bg-code);
 }
 
 .bg {
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-code);
 }
 
 // Line handling
@@ -41,12 +41,12 @@
 .chroma .na { color: #0e7490; }                    // name attribute (cyan)
 .chroma .nc { color: #b45309; font-weight: 600; }  // name class (amber)
 .chroma .no { color: #075985; }                    // name constant
-.chroma .nd { color: #7c3aed; font-weight: 600; }  // name decorator (purple)
+.chroma .nd { color: #2255c5; font-weight: 600; }  // name decorator (cobalt)
 .chroma .ni { color: #b45309; }                    // name entity
 .chroma .ne { color: #dc2626; font-weight: 600; }  // name exception (red)
 .chroma .nl { color: #0e7490; }                    // name label
-.chroma .nn { color: #2d3748; }                    // name namespace
-.chroma .nx { color: #2d3748; }                    // name other
+.chroma .nn { color: #172b45; }                    // name namespace
+.chroma .nx { color: #172b45; }                    // name other
 .chroma .py { color: #0e7490; }                    // name property
 .chroma .nt { color: #075985; font-weight: 600; }  // name tag
 .chroma .nb { color: #0e7490; }                    // name builtin
@@ -56,8 +56,8 @@
 .chroma .vg { color: #b45309; }                    // name variable global
 .chroma .vi { color: #b45309; }                    // name variable instance
 .chroma .vm { color: #b45309; }                    // name variable magic
-.chroma .nf { color: #7c3aed; font-weight: 500; }  // name function (purple)
-.chroma .fm { color: #7c3aed; font-weight: 500; }  // name function magic
+.chroma .nf { color: #2255c5; font-weight: 600; }  // name function (cobalt)
+.chroma .fm { color: #2255c5; font-weight: 600; }  // name function magic
 
 // Literals
 .chroma .l { color: #2d3748; }
@@ -114,7 +114,7 @@
 .chroma .go { color: #526278; }                                             // output
 .chroma .gp { color: #526278; font-weight: 600; }                          // prompt
 .chroma .gs { font-weight: 700; }                                           // strong
-.chroma .gu { color: #7c3aed; font-weight: 600; }                          // subheading
+.chroma .gu { color: #2255c5; font-weight: 600; }                          // subheading
 .chroma .gt { color: #dc2626; }                                             // traceback
 .chroma .gl { text-decoration: underline; }                                 // underline
 .chroma .w { color: #f8f9fa; }                                              // whitespace
