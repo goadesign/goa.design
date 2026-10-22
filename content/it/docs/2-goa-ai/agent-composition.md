@@ -325,9 +325,11 @@ originale già registrata, invece di accettarla dall’activity. Il replay usa
 quindi il testo originale e non legge mai dallo storage una versione più
 recente del prompt.
 
-Gli ID dei workflow figli Temporal includono l'ID esatto della chiamata allo
-strumento assegnato dal runtime. Le chiamate parallele allo stesso agente
-annidato restano così distinte; una release che cambia questa derivazione non è
+Gli ID dei workflow figli Temporal sono derivati in modo deterministico dall'ID di esecuzione padre
+e dall'ID esatto della chiamata allo strumento del runtime (`NestedRunIDForToolCall`) come digest
+SHA-256 esadecimale a lunghezza fissa di 64 caratteri. Ciò mantiene distinte le chiamate parallele
+allo stesso agente annidato limitando al contempo la lunghezza dell'ID del workflow attraverso
+catene di agenti profondamente annidate; una release che modifica questa derivazione non è
 compatibile con i workflow figli già in esecuzione.
 
 ---

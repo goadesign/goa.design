@@ -18,19 +18,21 @@ runnable starter wiring, while your application supplies the business logic.
 ### Installation
 
 ```bash
-go get goa.design/goa/v3@v3.31.1
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go get goa.design/goa/v3@v3.35.0
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 ```
 
-{{< alert title="Upgrading to v3.31.1" color="info" >}}
-The generation preview is now stable. v3.31.1 includes intentional breaking
-changes when upgrading from v3.30.x; read the
-[upgrade guide](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+{{< alert title="Upgrading to v3.35.0" color="info" >}}
+v3.35.0 requires Go 1.27.3 or later (`CVE-2026-111943` in `crypto/x509` and standard-library HTTP/2, TLS, and toolchain fixes); read the
+[upgrade guide](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 before regenerating an existing application. Pin the Goa module and command
 to the same version, regenerate the complete `gen/` directory, and compile and
-test the application. Coordinate client and server updates for the changed
-message formats identified in the guide. For rollback, restore the previous
-dependencies, generated output, and application code together.
+test the application. Regenerate and deploy HTTP servers together with the
+runtime so array path parameters undergo a single percent-decoding pass, and
+coordinate client and server rollouts when adopting `Meta("oneof:json:flatten")`,
+`Meta("oneof:json:untagged")`, `BodyFieldName`, or non-default result `View`s
+inside `OneOf` branches. For rollback, restore the previous dependencies,
+generated output, and application code together.
 {{< /alert >}}
 
 ### Commands
@@ -546,7 +548,7 @@ represents a value after validation. A decoded transport type must also record
 whether an incoming field was absent so generated validation can reject a
 missing required value without rejecting an explicit zero value.
 
-This table describes ordinary scalar and object fields in Goa v3.31.1. Bytes, `Any`, and unions have distinct representations; inspect their generated types.
+This table describes ordinary scalar and object fields in Goa v3.35.0. Bytes, `Any`, and unions have distinct representations; inspect their generated types.
 
 | Field | Service type | HTTP/JSON-RPC body | Protobuf request or response |
 |---|---|---|---|
@@ -650,9 +652,9 @@ Released callbacks remain appropriate for plugins that edit generated values or
 files. A plugin that declares a package-level name must use the factory planning
 phase so Goa can reserve that name with every other declaration before
 rendering. See the
-[Code Generation Architecture](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)
+[Code Generation Architecture](https://github.com/goadesign/goa/blob/v3.35.0/codegen/ARCHITECTURE.md)
 and the
-[upgrade guide](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+[upgrade guide](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 for the detailed plugin contract and migration steps.
 
 ---

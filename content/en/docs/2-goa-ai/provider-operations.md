@@ -36,6 +36,19 @@ operations use `WithToolWorkflowQueue` and a worker calling `RegisterToolWorkflo
 need no Agent, planner, model, or conversation. A registration or label is not an access
 credential.
 
+When the caller also needs an idempotent start-and-wait helper that recovers from
+interrupted starter processes, use `EnsureOperationCompletion`,
+`EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion`, or
+`EnsureOneShotToolOperationCompletion`. Pass `runtime.WithTextOnly(true)` when a
+one-shot or session operation must return a direct assistant text reply without
+calling tools, or `runtime.WithRootExecutionTarget(target)` (using
+`rt.CurrentWorkflowTarget(ctx, queue)` on the sticky worker) when an operation
+must execute on a specific pinned worker queue.
+
+When a provider worker needs to serve an operation contract across compatible
+revision changes, register the revision-owned contract with
+`rt.RegisterAgentOperationProvider` before sealing the runtime.
+
 ## Select history explicitly
 
 Register `AgentToolResolver` on the provider worker before sealing or submitting work.
@@ -78,10 +91,11 @@ selected result contract for delegation and direct Agent operations. A planner r
 Use `FinalToolResult` for the successful typed result and `Final` for assistant text.
 Load paged run events only when diagnostic history is needed.
 
-When input is required, continuation restores the original operation and admits one
-successor. For service tools, the host durably saves the predecessor, successor run ID,
-and typed answer; its worker calls `StartToolContinuation` and
-`EnsureToolContinuationCompletion`. Parent cancellation follows accepted child
+When input is required, continuation restores the original operation, preserves the
+accepted caller metadata (`Metadata`), and admits one successor. For service tools, the
+host durably saves the predecessor, successor run ID, and typed answer; its worker calls
+`StartToolContinuation` and `EnsureToolContinuationCompletion` (passing any workflow
+`memo map[string]any` as the final argument). Parent cancellation follows accepted child
 relationships and retains unfinished cleanup. Completion must not depend on a client
 retry.
 
@@ -106,8 +120,10 @@ This is a coordinated source, wire, and saved-data upgrade. Regenerate and rebui
 providers and consumers; replace resolver `Messages` with required `History` and move
 resolver registration to provider workers. An intentionally empty history is
 `runtime.LiteralAgentHistory(nil)`; a zero `AgentHistory` is rejected. Native targets
-require `Executor`, `Configuration`, `Workflow`, and `Queue`. Validate every retained
-declaration group, including retired entries, before activation.
+require `Executor`, `Configuration`, `Workflow`, and `Queue`. `SeedDeclaration` no
+longer duplicates `Origin`; `RunSeed.Origin` is taken directly from the
+`BeginRunPreparationOperation` parameter. Validate every retained declaration group,
+including retired entries, before activation.
 
 Current suspensions use `goa-ai.run-suspension.v14`; top-level results use
 `json/goa-ai-run-output-v3`. Earlier formats are rejected. Update custom Stores, engine

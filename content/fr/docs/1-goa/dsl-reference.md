@@ -103,7 +103,27 @@ var Lifecycle = Type("Lifecycle", func() {
 Un `OneOf` requis refuse l'absence de branche, un wrapper typé dont la valeur
 est nil et un message, une slice d'octets ou une valeur `Any` nil. Un message
 vide non nil reste valide. Les constructeurs, setters, accessors et méthodes
-`Kind` générés gardent la branche privée et imposent une seule sélection.
+`Kind` générés gardent la branche privée et imposent une seule sélection. Les unions
+générées exposent également `Value() (any, error)` pour les templates Go
+(`{{if eq .State.Kind "active"}}{{with .State.Value}}{{.Name}}{{end}}{{end}}`),
+en préservant les chaînes vides, `0` et `false`, tout en faisant échouer l'exécution
+du template lorsqu'une branche non valide est lue.
+
+Dans les encodages JSON de HTTP et JSON-RPC, `OneOf` utilise par défaut l'enveloppe
+`{type, value}`. Vous pouvez personnaliser la représentation filaire JSON au sein de `OneOf` :
+
+- **Unions d'objets plates (`Meta("oneof:json:flatten")`)** : Lorsque chaque branche est un
+  type objet, `Meta("oneof:json:flatten")` écrit les champs de la branche sélectionnée
+  directement aux côtés du champ discriminateur (`{"type":"active","id":"123"}`), et
+  l'optionnel `Meta("oneof:type:field", "kind")` renomme la clé du discriminateur.
+- **Unions JSON non étiquetées (`Meta("oneof:json:untagged")`)** : Lorsque les branches ont des
+  genres JSON distincts (string, number, boolean, array, object),
+  `Meta("oneof:json:untagged")` encode la valeur sélectionnée directement sans enveloppe
+  de discriminateur.
+
+Lorsqu'une branche `OneOf` référence un `ResultType` avec `View("...")`, les codecs
+HTTP, gRPC et JSON-RPC générés ainsi que les schémas OpenAPI respectent cette vue. Dans les services
+gRPC, les branches `OneOf` peuvent également utiliser des collections `ArrayOf` et `MapOf`.
 
 #### Cartes
 
@@ -955,6 +975,19 @@ Header("version:X-Api-Version")  // version attribute from X-Api-Version header
 Body(func() {
     Attribute("name:n")  // name attribute from "n" field in JSON
     Attribute("age:a")   // age attribute from "a" field in JSON
+})
+```
+
+Pour mapper les noms de champs filaires sur un type objet nommé partagé pour un
+service HTTP spécifique—y compris les champs imbriqués dans les payloads, résultats,
+erreurs, tableaux, maps et unions—déclarez `BodyFieldName` dans le bloc `HTTP` du service :
+
+```go
+var _ = Service("billing", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+    // methods using Address in payloads, results, or errors...
 })
 ```
 

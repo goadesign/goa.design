@@ -491,7 +491,7 @@ worker version は次の順序で release します。
 
 受理された各 user input は top-level Goa-AI workflow を 1 つ開始します。Goa-AI は human または external input を要求すると workflow を終了し、completed run ID の下に非公開 checkpoint を保存します。受理された answer は current worker version で新しい workflow を開始します。そのため透過的 release では、新 version が保存済み checkpoint version、生成 result codec、必要な tool 名との互換性を保つ必要があります。Worker Versioning は互換性のない保存値を変換できません。
 
-現在の runtime が受理するのは `goa-ai.run-suspension.v8` だけで、それ以前の形式は
+現在の runtime が受理するのは `goa-ai.run-suspension.v14` だけで、それ以前の形式は
 拒否します。互換性のない upgrade では、worker を重ねて動かすこの手順ではなく、
 以下の「生成 contract の変更」に従ってください。
 

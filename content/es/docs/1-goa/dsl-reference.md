@@ -103,7 +103,27 @@ var Lifecycle = Type("Lifecycle", func() {
 Un `OneOf` requerido rechaza una selección ausente, un wrapper tipado con valor
 nil y un mensaje, slice de bytes o `Any` nil. Un mensaje vacío no nil sigue
 siendo válido. Los constructores, setters, accessors y `Kind` generados
-mantienen privada la rama y garantizan una sola selección.
+mantienen privada la rama y garantizan una sola selección. Las uniones generadas
+también exponen `Value() (any, error)` para plantillas de Go
+(`{{if eq .State.Kind "active"}}{{with .State.Value}}{{.Name}}{{end}}{{end}}`),
+preservando cadenas vacías, `0` y `false`, al tiempo que fallan la ejecución de la
+plantilla cuando se lee una rama no válida.
+
+En las codificaciones JSON de HTTP y JSON-RPC, `OneOf` utiliza por defecto la
+envolvente `{type, value}`. Puede personalizar la representación wire de JSON dentro de `OneOf`:
+
+- **Uniones planas de objetos (`Meta("oneof:json:flatten")`)**: Cuando cada rama es un
+  tipo de objeto, `Meta("oneof:json:flatten")` escribe los campos de la rama seleccionada
+  directamente junto al campo discriminador (`{"type":"active","id":"123"}`), y la opción
+  `Meta("oneof:type:field", "kind")` renombra la clave del discriminador.
+- **Uniones JSON sin etiquetar (`Meta("oneof:json:untagged")`)**: Cuando las ramas tienen
+  tipos JSON distintos (string, number, boolean, array, object),
+  `Meta("oneof:json:untagged")` codifica el valor seleccionado directamente sin una
+  envolvente de discriminador.
+
+Cuando una rama `OneOf` hace referencia a un `ResultType` con `View("...")`, los codecs
+generados para HTTP, gRPC y JSON-RPC y los esquemas OpenAPI respetan esa vista. En servicios
+gRPC, las ramas `OneOf` también pueden utilizar colecciones `ArrayOf` y `MapOf`.
 
 #### Mapas
 
@@ -955,6 +975,19 @@ Header("version:X-Api-Version")  // version attribute from X-Api-Version header
 Body(func() {
     Attribute("name:n")  // name attribute from "n" field in JSON
     Attribute("age:a")   // age attribute from "a" field in JSON
+})
+```
+
+Para mapear nombres de campo wire en un tipo de objeto con nombre compartido para un
+servicio HTTP específico—incluyendo campos anidados dentro de payloads, resultados,
+errores, arrays, mapas y uniones—declare `BodyFieldName` dentro del bloque `HTTP` del servicio:
+
+```go
+var _ = Service("billing", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+    // methods using Address in payloads, results, or errors...
 })
 ```
 

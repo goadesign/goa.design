@@ -175,7 +175,7 @@ Typed completion helpers are intentionally strict:
   validation. There is no public decoder that accepts an unchecked chunk.
 - Completion streams use their generated typed wrapper directly; planner
   streaming helpers are for assistant transcript text and tool calls.
-- Providers that do not implement structured output surface `model.ErrStructuredOutputUnsupported`.
+- Providers that do not implement structured output surface `model.ErrStructuredOutputUnsupported`. The OpenAI, Anthropic, and AWS Bedrock Responses (unary `text.format` `json_schema`) adapters support structured output.
 - Generated schemas are canonical and provider-neutral; provider adapters may normalize them to a supported subset, but must fail explicitly when they cannot preserve the declared contract.
 
 ---
@@ -262,6 +262,11 @@ if err := rt.Seal(ctx); err != nil {
 }
 ```
 
+When a process shares its Temporal worker engine with native application
+workflows or activities, register them on the worker before `rt.Seal(ctx)`
+using `eng.RegisterNativeWorkflow`, `eng.RegisterNativeActivity`, and inspect
+registered queues with `eng.RegisteredTaskQueues()`.
+
 ---
 
 ## Plan → Execute → Resume Loop
@@ -278,7 +283,7 @@ if err := rt.Seal(ctx); err != nil {
 3. The runtime calls your planner's `PlanStart` with `PrepareMessages` and a
    `run.Context` containing `RunID`, `SessionID`, `TurnID`, labels, and policy
    caps.
-4. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs).
+4. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs). A single `PlanResult` may combine provider-selected model tool calls with deterministic planner-authored tool calls in the same batch.
 5. It calls `PlanResume` with the surviving planner-visible tool results.
    Budgeted tools are visible by default. A failed bookkeeping tool schedules
    another planner turn according to `ToolFailure.Recovery.Action`: correction,

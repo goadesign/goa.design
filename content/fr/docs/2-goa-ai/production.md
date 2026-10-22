@@ -538,7 +538,7 @@ courante. Cette version doit donc rester compatible avec la version du point
 de reprise, les codecs générés et les noms d'outils requis. Le versionnement
 des workers ne traduit pas des valeurs enregistrées incompatibles.
 
-Le runtime actuel accepte uniquement `goa-ai.run-suspension.v8` et rejette les
+Le runtime actuel accepte uniquement `goa-ai.run-suspension.v14` et rejette les
 versions précédentes. Pour une mise à niveau incompatible, suivez la section
 « Changements de contrats générés » ci-dessous plutôt que cette procédure de
 chevauchement des workers.

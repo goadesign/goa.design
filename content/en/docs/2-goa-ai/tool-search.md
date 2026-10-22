@@ -86,6 +86,15 @@ Use `contract.Fingerprint(toolset)` for a runtime-authored declaration or a comp
 
 For application-specific source selection, implement `runtime.RegistryTools` and attach it with `WithRegistryTools`. Inside `Resolve`, `catalog.RunLabels()` returns a copy of the current run's labels. Use them to choose sources with `IncludeToolset` or `IncludeRegistry`; `Allows` determines which sources saved calls may continue using. Run policy still filters tools. Catalogs belong to individual planning activities, so concurrent sessions do not change one another's tools. Application namespaces and authorization remain application responsibilities.
 
+### Binding generated tools to selected registrations
+
+When an application resolves a dynamic registration into an existing generated toolset (for example, selecting a specific tenant or environment registration while keeping generated typed payload/result codecs and hints), bind the generated toolset inside `Resolve` using `runtime/toolregistry/catalog`:
+
+- **Service-backed toolsets (`catalog.BindStaticService`)**: Call `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` with the generated `specs.Toolset()` declaration and the resolved `*genregistry.Toolset`, then construct the generated executor with `executor.NewResolved(client, executor.WithCaller(caller))`. When a tool handler needs the selected admission token or operation metadata during execution, read `catalog.SelectedOperation()` from `runtime.ToolCallMeta`.
+- **Native Agent toolsets (`catalog.BindStaticAgent`)**: Call `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` to bind a resolved native-agent registration to the generated consumer contract while verifying the registration against the compiled declaration (and optional previous contract).
+
+Pass `verifyPrevious: true` when saved calls in the session may continue using the previous revision across a compatible rollout. Portable bounded-result codecs accept both raw provider semantic JSON (with `planner.ToolResult.Bounds` supplied separately) and finalized JSON results that already include the canonical bounded fields.
+
 ## Who performs search?
 
 - **OpenAI Responses, direct or Bedrock:** the model emits native client search calls. The adapter ranks permitted tool names, titles, and descriptions using BM25, a word-based relevance algorithm, and returns matching definitions. The first request contains a query-only search tool, with no directory of names or descriptions. The deferred catalog stays in the application.

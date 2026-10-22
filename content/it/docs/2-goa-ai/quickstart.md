@@ -26,11 +26,11 @@ Costruirai:
 ```bash
 mkdir quickstart && cd quickstart
 go mod init example.com/quickstart
-go get goa.design/goa-ai@v0.88.1-0.20261010192622-b66f1c06a1ba
+go get goa.design/goa-ai@v0.89.0
 mkdir design
 ```
 
-Questa guida usa uno snapshot di sviluppo Goa-AI fissato, non una release stabile. Il modulo Go seleziona la dipendenza Goa compatibile. Esegui il generatore con `go run` per usare quella versione. Usa la versione Go dichiarata dal modulo o una successiva.
+Questa guida usa la versione `v0.89.0` di Goa-AI (che richiede Go 1.27.3 o successivo). Il suo modulo Go seleziona la dipendenza corrispondente di Goa (`v3.35.0`). Esegui il generatore tramite `go run` per fargli usare quella versione selezionata.
 
 ---
 

@@ -20,7 +20,7 @@ edit that contract and application code; `goa gen` keeps the derived interfaces
 in agreement. Generated MCP servers use HTTP. Subprocess clients remain
 available; generated stdio servers are deferred.
 
-Use the [Quickstart module setup](../quickstart/) to install the verified development snapshot and its matching Goa dependency before generating this server.
+Use the [Quickstart module setup](../quickstart/) to install the `v0.89.0` Goa-AI release and its matching Goa dependency before generating this server.
 
 | What you need | Declare or compose |
 |---|---|
@@ -321,6 +321,8 @@ if err != nil {
 ```
 
 Use `Listen` to receive an acknowledgment followed by accepted catalog or resource changes. Check the acknowledged filter: unsupported kinds can be omitted. The application implements `handleResourceChange`, reloads the relevant data, and honors cancellation. A connection loss is an error; the caller does not automatically reconnect.
+
+When an HTTP request accepts `text/event-stream` (`tools/call`, `prompts/get`, `resources/read`, or `notifications/subscribe`), the generated MCP HTTP server streams flushed SSE keepalive comment frames (`: keepalive\n\n`) every 15 seconds after middleware accepts the request so reverse proxies and load balancers do not time out long-running operations. Regenerate generated MCP servers when upgrading to `v0.89.0` so server handlers match the streaming runtime signature.
 
 For a generated JSON-RPC client, use `WithSubscriptionEvents(ctx, handler)` and call its typed `SubscriptionsListen` endpoint. The endpoint returns the final result while the handler receives validated events. A missing handler fails before network dispatch.
 

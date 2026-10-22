@@ -13,7 +13,7 @@ aliases:
 
 始める前に、あなたの環境が以下の要件を満たしていることを確認してください：
 
-- **Go 1.25 以降** - Goa は最新の Go 機能を利用しています。
+- **Go 1.27.3 以降** - Goa は最新の Go 機能を利用し、標準ライブラリの X.509 証明書チェーン検証（`CVE-2026-111943`）、HTTP/2、TLS、ツールチェーンのセキュリティ修正のために Go 1.27.3+ を必要とします
 - **Go Modules enabled** - Go 1.16+ ではデフォルトですが、必要に応じて `GO111MODULE=on` で確認してください。
 - **curl または任意の HTTP クライアント** - サービスのテスト用
 
@@ -23,7 +23,7 @@ GoaパッケージとCLIツールをインストールします：
 
 ```bash
 # Install the Goa CLI
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 
 # Verify the installation
 goa version
@@ -50,7 +50,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ```bash
 mkdir hello-goa && cd hello-goa  
 go mod init hello
-go get goa.design/goa/v3@v3.31.1
+go get goa.design/goa/v3@v3.35.0
 ```
 
 > このガイドでは、シンプルなモジュール名 `hello` を使います。実際のプロジェクトでは、通常`github.com/yourusername/hello-goa`のようなドメイン名を使います。コンセプトは全く同じように機能します。
@@ -162,7 +162,7 @@ go get goa.design/clue@v1.2.6
 go mod tidy
 ```
 
-この Clue バージョンを使うことで、生成された初期コードを Go 1.25 で実行できます。
+この Clue バージョンを使うことで、生成された初期コードを Go 1.27.3 で実行できます。
 
 サーバーを起動します：
 

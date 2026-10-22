@@ -165,6 +165,12 @@ Conserva el historial de eventos de cada ejecución:
 
 Estos eventos se convierten de nuevo en un `model.Transcript` y en los mensajes que recibe el proveedor. El producto es propietario de esta información visible para el modelo.
 
+Los resultados completados de las herramientas, los argumentos aceptados, el contenido
+multimedia, las vistas previas renderizadas y las cadenas de paginación cerradas permanecen
+legibles en el historial de la sesión incluso si el esquema de resultado de una herramienta
+cambia posteriormente o si la herramienta se elimina del catálogo activo. Las llamadas a
+herramientas fallidas permanecen en la transcripción sin restaurar el estado de paginación anterior.
+
 ### Almacén del runtime (`storage.Store`)
 
 El host proporciona una implementación de `storage.Store`. Esa única implementación es propietaria de todas las escrituras de runtime:

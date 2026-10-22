@@ -191,6 +191,12 @@ Il conserve l’historique de chaque exécution :
 
 Ces événements permettent de reconstruire un `model.Transcript` et les messages envoyés au fournisseur. Le produit possède ces données visibles par le modèle.
 
+Les résultats d'outils terminés, les arguments acceptés, les médias, les aperçus rendus
+et les chaînes de pagination closes restent lisibles dans l'historique de la session même
+si le schéma de résultat d'un outil est modifié ultérieurement ou si l'outil est retiré du
+catalogue actif. Les appels d'outils ayant échoué restent dans la transcription sans restaurer
+l'état de pagination antérieur.
+
 ### Stockage du runtime (`storage.Store`)
 
 L’hôte fournit une implémentation de `storage.Store`. Cette implémentation unique possède toutes les écritures du runtime :

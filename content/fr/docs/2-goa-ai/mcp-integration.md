@@ -15,7 +15,7 @@ Les serveurs HTTP générés acceptent aussi les clients MCP basiques `2025-11-2
 
 Un seul design définit les schémas des outils, le décodage typé, la validation, les adaptateurs serveur et les clients. Les endpoints Goa configurés conservent authentification, autorisation, middleware et comportement applicatif. Développeurs et agents de programmation modifient ce contrat et le code applicatif ; `goa gen` maintient les interfaces dérivées cohérentes. Les serveurs MCP générés utilisent HTTP. Les clients pour sous-processus restent disponibles ; les serveurs stdio générés sont reportés.
 
-Avant de générer ce serveur, installez la version de développement vérifiée et la dépendance Goa correspondante en suivant la [configuration du module du démarrage rapide](../quickstart/).
+Avant de générer ce serveur, installez la version `v0.89.0` de Goa-AI et la dépendance Goa correspondante en suivant la [configuration du module du démarrage rapide](../quickstart/).
 
 | Besoin | Déclaration ou composition |
 |---|---|
@@ -312,6 +312,8 @@ if err != nil {
 ```
 
 Utilisez `Listen` pour recevoir une confirmation puis les changements acceptés. Vérifiez le filtre confirmé : les catégories non prises en charge peuvent être omises. L’application implémente `handleResourceChange`, recharge les données concernées et respecte l’annulation. Une perte de connexion produit une erreur ; le caller ne se reconnecte pas automatiquement.
+
+Lorsqu'une requête HTTP accepte `text/event-stream` (`tools/call`, `prompts/get`, `resources/read` ou `notifications/subscribe`), le serveur HTTP MCP généré diffuse des trames de commentaires de keepalive SSE purgées (`: keepalive\n\n`) toutes les 15 secondes après l'acceptation de la requête par le middleware, afin que les proxys inverses et les équilibreurs de charge n'interrompent pas les opérations de longue durée par expiration de délai. Régénérez les serveurs MCP générés lors de la mise à niveau vers `v0.89.0` afin que les gestionnaires de serveur correspondent à la signature d'exécution en streaming.
 
 Pour un client JSON-RPC généré, utilisez `WithSubscriptionEvents(ctx, handler)` puis son endpoint typé `SubscriptionsListen`. L’endpoint retourne le résultat final et le gestionnaire reçoit les événements validés. Sans handler, l’appel échoue avant toute requête réseau.
 

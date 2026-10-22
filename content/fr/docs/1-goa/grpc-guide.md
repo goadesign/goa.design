@@ -37,6 +37,7 @@ int64 | int64 | UInt | uint32 | UInt32 | uint32 | uint32 | UInt32 | uint32
 | Octets | Octets | Octets | Octets | Octets
 | Tableau de données - répété - répété
 | MapOf | map
+| OneOf | oneof (y compris les branches `ArrayOf` et `MapOf` enveloppées dans des messages générés)
 
 ---
 
@@ -438,6 +439,11 @@ func (s *users) CreateUser(ctx context.Context, p *users.CreateUserPayload) (*us
     return user, nil
 }
 ```
+
+Lorsqu'une méthode de service renvoie une erreur non gérée portant déjà un
+statut gRPC (par exemple, une erreur amont `codes.DeadlineExceeded` ou
+`codes.Unavailable`), le serveur gRPC généré conserve ce code d'état et ses
+détails ordonnés au lieu de les remplacer par un défaut générique `Unknown`.
 
 ---
 

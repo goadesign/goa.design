@@ -241,8 +241,18 @@ Cuando una herramienta está marcada con `BoundedResult()`:
   de continuación sin argumentos solo cuando hay una única cabeza activa de la
   cadena. La correspondencia exacta del cursor avanza las páginas secuenciales;
   las llamadas fuente en paralelo siguen siendo válidas, pero varias cabezas
-  activas hacen que la continuación sin argumentos no esté disponible. Un contrato `Cursor` directo expone el cursor opaco en
-  `next_cursor`.
+  activas hacen que la continuación sin argumentos no esté disponible. Para herramientas de agentes exportadas (`Export`),
+  `ContinueWith` publica una operación compuesta que maneja tanto la consulta inicial como
+  las páginas posteriores: los callers directos proporcionan los argumentos de página declarados,
+  mientras que los agentes consumidores reciben acciones de continuación temporales sin argumentos
+  vinculadas a la consulta exacta (y las plantillas de pistas de llamada/resultado seleccionan
+  la rama de consulta o de página mediante `.Args`).
+- Una herramienta declarada directamente con `Cursor` expone `next_cursor` y lo acepta
+  en la siguiente llamada creada por el modelo.
+- Los resultados completados de las herramientas, los argumentos aceptados, el contenido
+  multimedia, las vistas previas renderizadas y las cadenas de paginación cerradas permanecen
+  legibles a través de cambios en el esquema de resultado o de la eliminación de la herramienta;
+  las llamadas fallidas permanecen en la transcripción sin restaurar el estado de paginación anterior.
 - El tipo de resultado Go semántico sigue siendo específico del dominio; no necesita duplicar esos campos
 
 Para herramientas `BindTo` respaldadas por métodos, el resultado del método de servicio enlazado todavía debe

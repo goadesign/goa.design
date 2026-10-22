@@ -16,19 +16,21 @@ Goa のコード生成は、設計を本番環境向けのサービス契約、�
 ### インストール
 
 ```bash
-go get goa.design/goa/v3@v3.31.1
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go get goa.design/goa/v3@v3.35.0
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 ```
 
-{{< alert title="v3.31.1 へのアップグレード" color="info" >}}
-コード生成プレビューは安定版になりました。v3.30.x から v3.31.1 への
-アップグレードには意図的な非互換変更が含まれます。既存のアプリケーションを
-再生成する前に、[アップグレードガイド](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+{{< alert title="v3.35.0 へのアップグレード" color="info" >}}
+v3.35.0 には Go 1.27.3 以降が必要です（`crypto/x509` の `CVE-2026-111943` および標準ライブラリの HTTP/2、TLS、ツールチェーンの修正）。既存のアプリケーションを再生成する前に、
+[アップグレードガイド](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 を確認してください。Goa モジュールとコマンドを同じバージョンに固定し、
 `gen/` ディレクトリ全体を再生成して、アプリケーションをコンパイル・テストします。
-ガイドに記載されたメッセージ形式の変更については、クライアントとサーバーの
-更新を合わせて行ってください。元に戻す場合は、依存関係、生成コード、
-アプリケーションコードをまとめて復元します。
+配列パスパラメータのパーセントデコードが1回だけ実行されるよう、HTTP サーバーは
+ランタイムと一緒に再生成・デプロイしてください。また、`OneOf` ブランチ内で
+`Meta("oneof:json:flatten")`、`Meta("oneof:json:untagged")`、`BodyFieldName`、または
+デフォルト以外の結果 `View` を採用する場合は、クライアントとサーバーのロールアウトを
+合わせて行ってください。元に戻す場合は、依存関係、生成コード、アプリケーションコードを
+まとめて復元します。
 {{< /alert >}}
 
 ### コマンド
@@ -532,7 +534,7 @@ Goa が生成するトランスポートのデコーダーは、サーバー側�
 service type は validation 済みの value を表します。decode 済み transport type は、
 受信 field が欠けていたかどうかも保持します。
 
-この表は、Goa v3.31.1 の一般的なスカラーとオブジェクトのフィールドを示します。Bytes、`Any`、union には固有の表現があるため、生成された型を確認してください。
+この表は、Goa v3.35.0 の一般的なスカラーとオブジェクトのフィールドを示します。Bytes、`Any`、union には固有の表現があるため、生成された型を確認してください。
 
 | Field | Service type | HTTP／JSON-RPC body | Protobuf request または response |
 |---|---|---|---|
@@ -629,4 +631,4 @@ var _ = Service("calc", func() {
 - 横断的な関心事（ロギング、メトリクス）
 - 設定ファイルの生成
 
-生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)と[アップグレードガイド](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)を参照してください。
+生成済みの値やファイルを変更するプラグインでは、公開済みのコールバックを引き続き使用できます。パッケージレベルの名前を宣言するプラグインは、ファクトリの計画フェーズを使用する必要があります。これにより Goa は、レンダリング前にほかのすべての宣言と合わせてその名前を予約できます。プラグインの詳しい契約と移行手順については、[コード生成アーキテクチャ](https://github.com/goadesign/goa/blob/v3.35.0/codegen/ARCHITECTURE.md)と[アップグレードガイド](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)を参照してください。

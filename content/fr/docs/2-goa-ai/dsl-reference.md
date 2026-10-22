@@ -751,7 +751,7 @@ Champs visibles dans le modèle canonique :
 - les exécutions limitées réussies doivent définir `planner.ToolResult.Bounds`
 - le runtime projette les limites détenues par le fournisseur dans le JSON `tool_result` codé, les données de modèle d'indice de résultat,
 hooks et événements de flux
-- `ContinueWith` maintient le curseur hors du contrat du modèle et propose une action sans argument tant qu'une seule tête de chaîne active peut continuer ; la correspondance exacte du curseur fait avancer les pages séquentielles. Les appels source parallèles restent valides, mais plusieurs têtes actives rendent la continuation sans argument indisponible
+- `ContinueWith` maintient le curseur hors du contrat du modèle et propose une action sans argument tant qu'une seule tête de chaîne active peut continuer ; la correspondance exacte du curseur fait avancer les pages séquentielles. Les appels source parallèles restent valides, mais plusieurs têtes actives rendent la continuation sans argument indisponible. Pour les outils d'agents exportés, `ContinueWith` publie une opération composée unique à la fois pour la requête initiale et les pages suivantes (les appelants directs fournissent les arguments de page déclarés, tandis que les agents reçoivent des actions temporaires sans argument liées à la requête exacte, et les modèles d'indices d'appel/résultat sélectionnent la branche de requête ou de page via `.Args`)
 - `Cursor` direct expose le curseur opaque du fournisseur dans `next_cursor`
 
 ```go

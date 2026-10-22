@@ -734,7 +734,7 @@ func handleToolResult(result *planner.ToolResult) {
 - codegen は生成 JSON result schema へ正規 bounded field を project します
 - successful bounded execution は `planner.ToolResult.Bounds` を設定する必要があります
 - runtime は provider-owned bounds を encoded `tool_result` JSON、result-hint template data、hook、stream event へ project します
-- `ContinueWith` は cursor を model contract から除外し、一意な live chain head が続行可能な間だけ引数なし action を公開します。正確な cursor lineage によって連続 page を進めます。source call は並列実行できますが、複数の live head がある間は引数なし action を公開しません
+- `ContinueWith` は cursor を model contract から除外し、一意な live chain head が続行可能な間だけ引数なし action を公開します。正確な cursor lineage によって連続 page を進めます。source call は並列実行できますが、複数の live head がある間は引数なし action を公開しません。エクスポートされたエージェントツールの場合は、`ContinueWith` は初期クエリと後続ページの両方を処理する1つの合成された操作を公開します（直接の呼び出し元は宣言されたページ引数を渡し、エージェント側は正確なクエリに紐づく一時的な引数なしアクションを受け取ります。また、呼び出し/結果ヒントテンプレートは `.Args` を介してクエリまたはページの分岐を選択します）
 - direct `Cursor` は provider の opaque cursor を `next_cursor` に公開します
 
 ```go

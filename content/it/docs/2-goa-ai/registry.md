@@ -203,7 +203,7 @@ valore obbligatorio `admissionRevision`, fornito dal deployment e condiviso
 dalle repliche della stessa registrazione. `Serve` crea l'identificatore
 dell'istanza e lo passa ai callback. I metodi di servizio collegati devono
 rispettare l'annullamento del contesto. Esegui `serveTools` nel ciclo di vita
-del servizio e attendine il ritorno prima di chiudere uno dei client.
+del servizio e attendine il ritorno prima di chiudere uno dei client. `Options.OperationTimeout` limita le singole operazioni di claim, completamento e acknowledgement indipendentemente dalla finestra di drain complessiva di `Options.ShutdownTimeout`.
 All'arresto, il provider smette di accettare lavoro e finalizza le chiamate di
 cui possiede l'esecuzione, i risultati e le conferme di ricezione entro
 `Options.ShutdownTimeout`. Solo una finalizzazione riuscita consente di
@@ -255,6 +255,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -535,6 +536,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -600,9 +602,12 @@ Il registro espone i seguenti metodi gRPC:
 |--------|-------------|
 | `ListToolsets` | Elenca tutti i set di strumenti registrati (con un filtro opzionale sui tag). Restituisce solo i metadati, non gli schemi completi. |
 | `GetToolset` | Ottenere lo schema completo per uno specifico set di strumenti, compresi tutti gli schemi di input/output degli strumenti. |
+| `GetToolsetSchemas` | Recupera gli schemi completi per più set di strumenti specificati in una singola chiamata batch. |
 | `ResolveToolset` | Legge insieme la definizione attiva e il suo token esatto; la salute del provider si controlla separatamente. |
 | `CheckAdmission` | Verifica che una registrazione di servizio esatta abbia un lease non scaduto e non in drenaggio e una risposta di salute recente. |
 | `Search` | Cerca i set di strumenti per parola chiave corrispondente al nome, alla descrizione o ai tag. |
+
+Quando un servizio interno o un comando di diagnostica necessita solo dell'accesso in sola lettura al catalogo basato su Redis senza eseguire un server gRPC Registry completo o un coordinatore del controllo di integrità, costruire `registry.NewCatalogReader(redisClient, registryName)`.
 
 ### Operazioni di invocazione
 

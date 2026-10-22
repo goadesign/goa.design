@@ -172,7 +172,7 @@ Los helpers de completion tipados son intencionadamente estrictos:
 - Los streams de completion usan directamente su wrapper tipado generado; los
   helpers de streaming del planificador son para texto de transcripción del
   asistente y llamadas a herramientas.
-- Los proveedores que no implementan salida estructurada exponen `model.ErrStructuredOutputUnsupported`.
+- Los proveedores que no implementan salida estructurada exponen `model.ErrStructuredOutputUnsupported`. Los adaptadores de OpenAI, Anthropic y AWS Bedrock Responses (`text.format` `json_schema` unario) admiten salida estructurada.
 - Los esquemas generados son canónicos y neutrales frente al proveedor; los adaptadores de proveedor pueden normalizarlos a un subconjunto soportado, pero deben fallar explícitamente cuando no puedan preservar el contrato declarado.
 
 ---
@@ -268,6 +268,11 @@ if err := rt.Seal(ctx); err != nil {
 }
 ```
 
+Cuando un proceso comparte su motor de worker de Temporal con workflows o
+actividades nativos de la aplicación, regístrelos en el worker antes de
+`rt.Seal(ctx)` utilizando `eng.RegisterNativeWorkflow`, `eng.RegisterNativeActivity`
+e inspeccione las colas registradas con `eng.RegisteredTaskQueues()`.
+
 ---
 
 ## Bucle Plan → Ejecutar → Reanudar
@@ -281,8 +286,7 @@ if err := rt.Seal(ctx); err != nil {
    cancelación.
 3. El runtime llama a `PlanStart` con `PrepareMessages` y un `run.Context` que
    contiene `RunID`, `SessionID`, `TurnID`, etiquetas y límites de política.
-4. Programa las llamadas a herramientas devueltas por el planificador usando
-   los codecs generados.
+4. Programa las llamadas a herramientas devueltas por el planificador (el planificador pasa cargas útiles JSON canónicas; el runtime se encarga de la codificación/decodificación mediante codecs generados). Un único `PlanResult` puede combinar llamadas a herramientas de modelo seleccionadas por el proveedor con llamadas deterministas creadas por el planificador en el mismo lote.
 5. Llama a `PlanResume` con las salidas que siguen visibles para el
    planificador. Las herramientas con presupuesto son visibles por defecto. Un
    fallo de bookkeeping programa otro turno según `ToolFailure.Recovery.Action`:

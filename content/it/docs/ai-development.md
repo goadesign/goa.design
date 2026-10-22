@@ -71,12 +71,12 @@ Questo catalogo espone la stessa operazione via **HTTP, gRPC e JSON-RPC** e offr
 
 Crea il modulo e installa le versioni dell’esempio:
 
-Questa guida usa uno snapshot di sviluppo Goa-AI fissato, non una release stabile. Il modulo Go seleziona la dipendenza Goa compatibile. Esegui il generatore con `go run` per usare quella versione. Usa la versione Go dichiarata dal modulo o una successiva.
+Questa guida usa la versione `v0.89.0` di Goa-AI (che richiede Go 1.27.3 o successivo). Il suo modulo Go seleziona la dipendenza corrispondente di Goa (`v3.35.0`). Esegui il generatore tramite `go run` per fargli usare quella versione selezionata.
 
 ```bash
 mkdir catalog && cd catalog
 go mod init example.com/catalog
-go get goa.design/goa-ai@v0.78.8-0.20260915025548-ae0c418b7e77
+go get goa.design/goa-ai@v0.89.0
 mkdir design
 ```
 

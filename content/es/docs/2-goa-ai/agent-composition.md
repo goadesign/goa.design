@@ -324,10 +324,12 @@ herramienta y etiquetas de la llamada original ya registrada, en lugar de
 aceptar esa identidad de la activity. El replay usa así el texto original y
 nunca lee del almacenamiento una versión posterior del prompt.
 
-Los IDs de los workflows hijos de Temporal incluyen el ID exacto de la llamada
-a herramienta asignado por el runtime. Así, las llamadas paralelas al mismo
-agente anidado siguen siendo distintas; una versión que cambie esta derivación
-no es compatible con los workflows hijos que ya están en curso.
+Los IDs de los workflows hijos de Temporal se derivan de forma determinista a partir
+del ID de ejecución padre y del ID exacto de llamada a herramienta del runtime
+(`NestedRunIDForToolCall`) como un resumen SHA-256 hexadecimal de longitud fija de 64 caracteres.
+Esto mantiene distintas las llamadas paralelas al mismo agente anidado al tiempo que limita la
+longitud del ID de workflow en cadenas de agentes profundamente anidadas; una versión que
+cambie esta derivación no es compatible con los workflows hijos que ya están en curso.
 
 ---
 

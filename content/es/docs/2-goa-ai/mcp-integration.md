@@ -15,7 +15,7 @@ Los servidores HTTP generados también aceptan clientes MCP básicos `2025-11-25
 
 Un solo diseño define esquemas de herramientas, decodificación tipada, validación, adaptadores del servidor y clientes. Los endpoints Goa configurados conservan autenticación, autorización, middleware y comportamiento de la aplicación. Desarrolladores y agentes de programación editan ese contrato y el código de la aplicación; `goa gen` mantiene coherentes las interfaces derivadas. Los servidores MCP generados usan HTTP. Los clientes de subprocesos siguen disponibles; la generación de servidores stdio queda aplazada.
 
-Antes de generar este servidor, instala la versión de desarrollo verificada y su dependencia Goa correspondiente siguiendo la [configuración del módulo en el inicio rápido](../quickstart/).
+Antes de generar este servidor, instala la versión `v0.89.0` de Goa-AI y su dependencia Goa correspondiente siguiendo la [configuración del módulo en el inicio rápido](../quickstart/).
 
 | Necesidad | Declaración o composición |
 |---|---|
@@ -314,6 +314,8 @@ if err != nil {
 ```
 
 Use `Listen` para recibir una confirmación seguida de los cambios aceptados. Compruebe el filtro confirmado: puede omitir tipos no compatibles. La aplicación implementa `handleResourceChange`, vuelve a cargar los datos correspondientes y respeta la cancelación. Perder la conexión produce un error; el caller no se reconecta automáticamente.
+
+Cuando una solicitud HTTP acepta `text/event-stream` (`tools/call`, `prompts/get`, `resources/read` o `notifications/subscribe`), el servidor HTTP MCP generado transmite tramas de comentarios de keepalive SSE (`: keepalive\n\n`) vaciadas cada 15 segundos después de que el middleware acepte la solicitud, para que los proxies inversos y los balanceadores de carga no agoten el tiempo de espera en operaciones de larga duración. Regenere los servidores MCP generados al actualizar a `v0.89.0` para que los handlers del servidor coincidan con la firma de runtime de streaming.
 
 Para un cliente JSON-RPC generado, use `WithSubscriptionEvents(ctx, handler)` e invoque su endpoint tipado `SubscriptionsListen`. El endpoint devuelve el resultado final y el handler recibe eventos validados. Sin handler, falla antes de enviar la solicitud.
 

@@ -86,6 +86,15 @@ Usa `contract.Fingerprint(toolset)` para una declaración dinámica o un valor `
 
 Para seleccionar fuentes según la aplicación, implementa `runtime.RegistryTools` y adjúntalo con `WithRegistryTools`. En `Resolve`, `catalog.RunLabels()` devuelve una copia de las etiquetas de la ejecución actual. Úsalas con `IncludeToolset` o `IncludeRegistry`; `Allows` determina qué fuentes pueden seguir usando las llamadas guardadas. La política de ejecución sigue filtrando las herramientas. Cada actividad de planificación posee su catálogo, por lo que las sesiones concurrentes no modifican las herramientas de las demás. Los namespaces y la autorización siguen siendo responsabilidad de la aplicación.
 
+### Vinculación de herramientas generadas a registros seleccionados
+
+Cuando una aplicación resuelve un registro dinámico en un toolset generado existente (por ejemplo, seleccionando el registro de un tenant o entorno específico mientras conserva los codecs y pistas tipados generados para payloads/resultados), vincule el toolset generado dentro de `Resolve` utilizando `runtime/toolregistry/catalog`:
+
+- **Toolsets respaldados por servicios (`catalog.BindStaticService`)**: Llame a `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` con la declaración `specs.Toolset()` generada y el `*genregistry.Toolset` resuelto, y luego construya el ejecutor generado con `executor.NewResolved(client, executor.WithCaller(caller))`. Cuando un manejador de herramientas necesite el token de admisión seleccionado o metadatos de operación durante la ejecución, lea `catalog.SelectedOperation()` desde `runtime.ToolCallMeta`.
+- **Toolsets de agentes nativos (`catalog.BindStaticAgent`)**: Llame a `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` para vincular un registro de agente nativo resuelto al contrato del consumidor generado mientras se verifica el registro frente a la declaración compilada (y el contrato previo opcional).
+
+Pase `verifyPrevious: true` cuando las llamadas guardadas en la sesión puedan seguir usando la revisión anterior a través de un despliegue compatible. Los codecs portátiles de resultados acotados aceptan tanto JSON semántico del proveedor en bruto (con `planner.ToolResult.Bounds` suministrado por separado) como resultados JSON finalizados que ya incluyan los campos acotados canónicos.
+
 ## ¿Quién realiza la búsqueda?
 
 - **OpenAI Responses, directo o Bedrock:** el modelo emite búsquedas nativas del cliente. El adaptador ordena nombres, títulos y descripciones permitidos con BM25, un algoritmo de relevancia por palabras, y devuelve las definiciones coincidentes. La primera solicitud contiene solo una herramienta de consulta, sin directorio de nombres o descripciones. El catálogo diferido permanece en la aplicación.

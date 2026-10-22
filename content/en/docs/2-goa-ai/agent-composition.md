@@ -326,9 +326,12 @@ original recorded tool call instead of accepting identity from the activity.
 Replay therefore uses the original rendered text and never reads a possibly
 newer prompt from storage.
 
-Temporal child workflow IDs include the exact runtime tool-call ID. This keeps
-parallel calls to the same nested agent distinct; a release that changes this
-derivation is not compatible with already-running child workflows.
+Temporal child workflow IDs are derived deterministically from the parent run ID
+and the exact runtime tool-call ID (`NestedRunIDForToolCall`) as a fixed-length
+64-hex SHA-256 digest. This keeps parallel calls to the same nested agent
+distinct while bounding workflow ID length across deeply nested agent chains; a
+release that changes this derivation is not compatible with already-running
+child workflows.
 
 ---
 

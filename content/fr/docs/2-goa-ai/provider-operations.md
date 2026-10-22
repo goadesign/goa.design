@@ -36,6 +36,19 @@ utilisent `WithToolWorkflowQueue` et un worker appelant `RegisterToolWorkflow`, 
 agent, planificateur, modèle ou conversation. Un enregistrement ou une étiquette ne
 donne pas accès.
 
+Lorsque l'appelant a également besoin d'un assistant de démarrage et d'attente idempotent qui
+récupère des processus de démarrage interrompus, utilisez `EnsureOperationCompletion`,
+`EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` ou
+`EnsureOneShotToolOperationCompletion`. Passez `runtime.WithTextOnly(true)` lorsqu'une
+opération ponctuelle ou de session doit renvoyer une réponse textuelle directe de l'assistant
+sans appeler d'outils, ou `runtime.WithRootExecutionTarget(target)` (en utilisant
+`rt.CurrentWorkflowTarget(ctx, queue)` sur le worker épinglé) lorsqu'une opération doit
+s'exécuter sur une file d'attente de worker épinglée spécifique.
+
+Lorsqu'un worker de fournisseur doit servir un contrat d'opération à travers des
+modifications de révision compatibles, enregistrez le contrat propre à la révision avec
+`rt.RegisterAgentOperationProvider` avant de sceller le runtime.
+
 ## Choisir explicitement l’historique
 
 Enregistrez `AgentToolResolver` sur le worker fournisseur avant de sceller le runtime ou
@@ -79,11 +92,13 @@ planificateur renvoie `planner.FinalToolResult` conforme au contrat ; du texte s
 refusé. Utilisez `FinalToolResult` pour le résultat typé et `Final` pour le texte.
 Consultez les événements paginés seulement pour l’historique de diagnostic.
 
-La continuation restaure l’opération originale et admet un seul successeur. Pour un
-service, l’hôte conserve durablement le prédécesseur, le nouvel ID et la réponse typée ;
-son worker appelle `StartToolContinuation` et `EnsureToolContinuationCompletion`.
-L’annulation du parent suit les relations acceptées et conserve le nettoyage inachevé.
-La finalisation ne dépend pas d’une nouvelle tentative du client.
+Lorsqu’une entrée est requise, la continuation rétablit l’opération d’origine, préserve les
+métadonnées de l'appelant acceptées (`Metadata`) et admet un successeur. Pour les outils de service,
+l’hôte enregistre durablement le prédécesseur, l’ID de l’exécution successeur et la réponse typée ;
+son worker appelle `StartToolContinuation` et `EnsureToolContinuationCompletion` (en passant tout mémo
+de workflow `memo map[string]any` comme argument final). L’annulation du parent suit les relations
+enfants acceptées et préserve le nettoyage inachevé. L’achèvement ne doit pas dépendre d’un nouvel
+essai du client.
 
 ## Contrats d’entrée générés
 
@@ -107,7 +122,9 @@ Régénérez et reconstruisez fournisseurs et consommateurs ; remplacez `Message
 `History` obligatoire et enregistrez le resolver chez le fournisseur. Un historique
 explicitement vide est `runtime.LiteralAgentHistory(nil)` ; un `AgentHistory` sans
 sélection est refusé. Les cibles natives exigent `Executor`, `Configuration`, `Workflow`
-et `Queue`. Validez tous les groupes conservés, même retirés.
+et `Queue`. `SeedDeclaration` ne duplique plus `Origin` ; `RunSeed.Origin` est extrait
+directement du paramètre `BeginRunPreparationOperation`. Validez chaque groupe de
+déclarations conservé, y compris les entrées retirées, avant l'activation.
 
 Les suspensions utilisent `goa-ai.run-suspension.v14` et les résultats principaux
 `json/goa-ai-run-output-v3`. Les anciens formats sont refusés. Adaptez Stores, moteurs,

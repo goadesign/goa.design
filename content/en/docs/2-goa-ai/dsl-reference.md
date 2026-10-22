@@ -766,7 +766,11 @@ hooks, and stream events
   exposes a no-argument continuation action only while a single live chain
   head can continue; exact cursor lineage advances sequential pages and
   parallel source invocations remain valid. Multiple live heads make the
-  no-argument continuation unavailable
+  no-argument continuation unavailable. For exported agent tools, `ContinueWith`
+  publishes one composed operation for both the initial query and subsequent
+  pages (direct callers supply the declared page arguments, while agents receive
+  temporary no-argument actions tied to the exact query, and call/result hint
+  templates select the query or page branch via `.Args`)
 - direct `Cursor` exposes the opaque provider cursor in `next_cursor`
 
 ```go

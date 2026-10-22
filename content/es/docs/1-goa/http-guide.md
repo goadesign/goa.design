@@ -80,6 +80,15 @@ Method("get_user", func() {
 })
 ```
 
+Los clientes HTTP generados escapan con porcentaje `/` dentro de parámetros de ruta
+de un solo segmento para que un valor que contenga una barra permanezca dentro de un
+segmento (`%2F`), mientras que los parámetros comodín (`{*path}`) conservan los
+separadores de ruta. En el servidor, el enrutador conserva las secuencias literales de
+porcentaje (como `literal%2Fpercent`) y los decodificadores de rutas de tipo array
+generados dividen por comas antes de ejecutar una única pasada de decodificación
+porcentual por elemento. Regenere y despliegue siempre el código del servidor HTTP junto
+con el runtime de Goa al actualizar.
+
 ### Parámetros de consulta
 
 Define parámetros de consulta con la función `Param`:
@@ -227,6 +236,42 @@ Para campos renombrados en una expresión `Body` explícita, declare los tipos y
 - `FormRequest()` se usa en endpoints HTTP ordinarios. No puede combinarse con JSON-RPC, `MultipartRequest()` ni `SkipRequestBodyEncodeDecode()`.
 
 Regenere después de añadir `FormRequest()`, con una versión de Goa que incluya este DSL. Cambiar un endpoint existente de JSON a formularios modifica su contrato de transporte: actualice y despliegue sus clientes y servidor juntos. El OpenAPI generado describe el tipo de medio y los nombres de campo asignados. El middleware de la aplicación sigue siendo responsable de los límites de tamaño de las solicitudes.
+
+### Nombres de campo del cuerpo específicos del servicio (`BodyFieldName`)
+
+Cuando varios servicios HTTP reutilizan un tipo de objeto con nombre compartido (`Type` o
+`ResultType`) en payloads, resultados, errores, arrays, mapas o uniones, declare
+`BodyFieldName` dentro del bloque `HTTP` de un servicio para asignar nombres de atributos a
+nombres de campo wire específicos del servicio sin duplicar el tipo compartido:
+
+```go
+var Address = Type("Address", func() {
+    Attribute("postal_code", String, "Postal or ZIP code")
+    Attribute("country_code", String, "ISO country code")
+    Required("postal_code", "country_code")
+})
+
+var _ = Service("checkout", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+
+    Method("estimate_shipping", func() {
+        Payload(func() {
+            Attribute("destination", Address)
+            Required("destination")
+        })
+        Result(Empty)
+        HTTP(func() {
+            POST("/shipping/estimate")
+        })
+    })
+})
+```
+
+Los cuerpos de solicitud/respuesta HTTP generados y los esquemas OpenAPI para ese servicio
+utilizan los nombres wire asignados (`postalCode`, `countryCode`), mientras que la struct Go
+compartida del servicio conserva sus nombres de campo canónicos (`PostalCode`, `CountryCode`).
 
 ---
 

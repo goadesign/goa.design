@@ -183,6 +183,12 @@ Per esempio, un servizio chat conserva conversazione, valutazioni e campi di ric
 
 Conserva messaggi, chiamate e risultati degli strumenti, note e ragionamento del pianificatore. Da questi eventi si ricostruiscono `model.Transcript` e messaggi del provider. Il prodotto possiede questi dati visibili al modello.
 
+I risultati completati degli strumenti, gli argomenti accettati, i contenuti multimediali,
+le anteprime renderizzate e le catene di paginazione chiuse rimangono leggibili nella cronologia
+della sessione anche se lo schema dei risultati di uno strumento viene successivamente modificato
+o se lo strumento viene rimosso dal catalogo attivo. Le chiamate agli strumenti non riuscite
+rimangono nella trascrizione senza ripristinare il precedente stato di paginazione.
+
 ### Archivio del runtime (`storage.Store`)
 
 L’host fornisce una sola implementazione di `storage.Store`, proprietaria di tutte le scritture per:

@@ -86,6 +86,15 @@ Usa `contract.Fingerprint(toolset)` per una dichiarazione dinamica o un valore `
 
 Per selezionare fonti in base all'applicazione, implementa `runtime.RegistryTools` e collegalo con `WithRegistryTools`. In `Resolve`, `catalog.RunLabels()` restituisce una copia delle etichette dell'esecuzione corrente. Usale con `IncludeToolset` o `IncludeRegistry`; `Allows` determina le fonti che le chiamate salvate possono continuare a usare. La policy dell'esecuzione filtra comunque gli strumenti. Ogni activity di pianificazione possiede il proprio catalogo: sessioni simultanee non cambiano gli strumenti delle altre. Namespace e autorizzazione restano responsabilità applicative.
 
+### Associazione di strumenti generati a registrazioni selezionate
+
+Quando un'applicazione risolve una registrazione dinamica in un set di strumenti generato esistente (ad esempio, selezionando una specifica registrazione di tenant o ambiente mantenendo i codec tipizzati di payload/risultato e gli hint generati), associare il set di strumenti generato all'interno di `Resolve` usando `runtime/toolregistry/catalog`:
+
+- **Set di strumenti supportati da servizi (`catalog.BindStaticService`)**: Chiamare `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` con la dichiarazione generata `specs.Toolset()` e il `*genregistry.Toolset` risolto, quindi costruire l'esecutore generato con `executor.NewResolved(client, executor.WithCaller(caller))`. Quando un gestore dello strumento ha bisogno del token di ammissione selezionato o dei metadati dell'operazione durante l'esecuzione, leggere `catalog.SelectedOperation()` da `runtime.ToolCallMeta`.
+- **Set di strumenti di agenti nativi (`catalog.BindStaticAgent`)**: Chiamare `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` per associare una registrazione di agente nativo risolta al contratto di consumer generato verificando al contempo la registrazione rispetto alla dichiarazione compilata (e all'eventuale contratto precedente).
+
+Passare `verifyPrevious: true` quando le chiamate salvate nella sessione possono continuare a utilizzare la revisione precedente attraverso un rilascio compatibile. I codec portabili di risultati limitati accettano sia JSON semantico non elaborato del provider (con `planner.ToolResult.Bounds` fornito separatamente) sia risultati JSON finalizzati che includono già i campi limitati canonici.
+
 ## Chi esegue la ricerca?
 
 - **OpenAI Responses, diretto o Bedrock:** il modello emette ricerche native lato client. L’adattatore ordina nomi, titoli e descrizioni consentiti con BM25, un algoritmo di rilevanza basato sulle parole, e restituisce le definizioni corrispondenti. La prima richiesta contiene solo uno strumento di query, senza directory di nomi o descrizioni. Il catalogo differito rimane nell’applicazione.

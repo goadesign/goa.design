@@ -19,18 +19,20 @@ negocio.
 ### Instalación
 
 ```bash
-go get goa.design/goa/v3@v3.31.1
-go install goa.design/goa/v3/cmd/goa@v3.31.1
+go get goa.design/goa/v3@v3.35.0
+go install goa.design/goa/v3/cmd/goa@v3.35.0
 ```
 
-{{< alert title="Actualizar a v3.31.1" color="info" >}}
-La versión preliminar del generador ya es estable. Al actualizar desde v3.30.x,
-v3.31.1 incluye cambios incompatibles intencionados; consulte la
-[guía de actualización](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+{{< alert title="Actualizar a v3.35.0" color="info" >}}
+v3.35.0 requiere Go 1.27.3 o posterior (correcciones de `CVE-2026-111943` en `crypto/x509` y de HTTP/2, TLS y la cadena de herramientas de la biblioteca estándar); consulte la
+[guía de actualización](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 antes de regenerar una aplicación existente. Fije el módulo y el comando de Goa
 a la misma versión, regenere todo el directorio `gen/`, y compile y pruebe la
-aplicación. Coordine las actualizaciones de cliente y servidor para los formatos
-de mensajes modificados que indica la guía. Para volver a la versión anterior,
+aplicación. Regenere e implemente los servidores HTTP junto con el runtime para
+que los parámetros de ruta de tipo array se sometan a una única pasada de decodificación
+porcentual, y coordine los despliegues de cliente y servidor al adoptar
+`Meta("oneof:json:flatten")`, `Meta("oneof:json:untagged")`, `BodyFieldName` o vistas (`View`)
+de resultado no predeterminadas dentro de ramas `OneOf`. Para volver a la versión anterior,
 restaure juntos las dependencias, el código generado y el código de la aplicación.
 {{< /alert >}}
 
@@ -548,7 +550,7 @@ Los decodificadores de transporte generados por Goa validan las peticiones entra
 Los tipos de servicio representan valores ya validados. Los tipos de transporte
 decodificados también deben conservar si un campo entrante estaba ausente.
 
-Esta tabla describe campos escalares y objetos habituales en Goa v3.31.1. Bytes, `Any` y las uniones tienen representaciones propias; consulta sus tipos generados.
+Esta tabla describe campos escalares y objetos habituales en Goa v3.35.0. Bytes, `Any` y las uniones tienen representaciones propias; consulta sus tipos generados.
 
 | Campo | Tipo de servicio | Cuerpo HTTP/JSON-RPC | Solicitud o respuesta protobuf |
 |---|---|---|---|
@@ -652,9 +654,9 @@ que editan valores o archivos generados. Un plugin que declara un nombre a
 nivel de paquete debe usar la fase de planificación de la factoría para que Goa
 pueda reservar ese nombre junto con todas las demás declaraciones antes de
 renderizar. Consulte la
-[arquitectura de generación de código](https://github.com/goadesign/goa/blob/v3.31.1/codegen/ARCHITECTURE.md)
+[arquitectura de generación de código](https://github.com/goadesign/goa/blob/v3.35.0/codegen/ARCHITECTURE.md)
 y la
-[guía de actualización](https://github.com/goadesign/goa/blob/v3.31.1/UPGRADING.md)
+[guía de actualización](https://github.com/goadesign/goa/blob/v3.35.0/UPGRADING.md)
 para conocer el contrato detallado de los plugins y los pasos de migración.
 
 ---

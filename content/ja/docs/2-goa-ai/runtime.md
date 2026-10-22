@@ -172,7 +172,7 @@ fmt.Println(value.Name)
 - streaming provider は `completion_delta*` preview と正確に 1 つの final `completion` を emit するか、request を明示的に拒否します。
 - 型付き wrapper は clean end-of-stream と完全な validation の後だけ `Value()` を公開します。未検証 chunk を受け付ける公開 decoder はありません。
 - completion stream は生成された型付き wrapper を直接使います。planner streaming helper は assistant transcript text と tool call 用です。
-- structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` を表面化します。
+- structured output を実装しない provider は `model.ErrStructuredOutputUnsupported` を表面化します。OpenAI、Anthropic、および AWS Bedrock Responses（unary `text.format` `json_schema`）アダプターは structured output をサポートします。
 - 生成 schema は正規かつ provider-neutral です。provider adapter は対応 subset へ normalize できますが、宣言された contract を保てない場合は明示的に失敗しなければなりません。
 
 ---
@@ -266,6 +266,8 @@ if err := rt.Seal(ctx); err != nil {
 }
 ```
 
+プロセスが Temporal ワーカーエンジンをネイティブアプリケーションのワークフローやアクティビティと共有する場合、`rt.Seal(ctx)` の前に `eng.RegisterNativeWorkflow`、`eng.RegisterNativeActivity` を使用してワーカーに登録し、`eng.RegisteredTaskQueues()` で登録済みキューを確認します。
+
 ---
 
 ## Plan → Execute → Resume ループ
@@ -278,7 +280,7 @@ if err := rt.Seal(ctx); err != nil {
    [メモリとセッション](../memory-sessions/#cancellation-provenance)で定義します。
 3. runtime が `PrepareMessages` と、`RunID`、`SessionID`、`TurnID`、labels、policy caps
    を持つ `run.Context` を `PlanStart` に渡します。
-4. planner が返した tool calls を generated codecs で実行します。
+4. プランナーから返されたツール呼び出しをスケジュールします（プランナーは正規の JSON ペイロードを渡し、ランタイムは生成されたコーデックを使用してエンコード/デコードを処理します）。単一の `PlanResult` は、プロバイダーが選択したモデルツール呼び出しと、決定論的なプランナー作成のツール呼び出しを同じバッチ内で組み合わせることができます。
 5. プランナーから見えるまま残った tool output を添えて `PlanResume` を呼び出します。予算対象 tool は既定で可視です。失敗した bookkeeping tool は `ToolFailure.Recovery.Action` に従い、call の修正、その tool を除いた replanning、finalization のいずれかとして次の planner turn を schedule します。planner が final response、final tool result を返すか、成功した `TerminalRun` tool が run を完了するまで loop します。cap や deadline が finalization を強制した場合、planner は prose ではなく terminal bookkeeping tool で閉じられます。進行に応じて run は `run.Phase`（`prompted` / `planning` / `executing_tools` / `synthesizing` / terminal phase）を遷移します。
 6. フックとストリームサブスクライバは、イベント（プランナー思考、ツール start/update/end、await、usage、workflow、agent-run links）を発行し、設定に応じてトランスクリプトや run メタデータを永続化します。
 

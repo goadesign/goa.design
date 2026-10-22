@@ -199,7 +199,9 @@ the required deployment-issued `admissionRevision` shared by replicas of the
 same registration. `Serve` creates the incarnation ID and supplies it to the
 callbacks. Bound service methods must honor context cancellation. Run
 `serveTools` as part of your service lifecycle and wait for it to return before
-closing either client. On shutdown, the provider stops intake and settles
+closing either client. `Options.OperationTimeout` bounds individual claim,
+completion, and acknowledgement operations independently of the overall
+`Options.ShutdownTimeout` drain window. On shutdown, the provider stops intake and settles
 claimed calls, results, and acknowledgements within `Options.ShutdownTimeout`.
 Only successful settlement permits release of the exact lease, using the
 separate `Registration.ReleaseTimeout` budget. Failed settlement leaves
@@ -248,6 +250,7 @@ func serveTools(ctx context.Context, pulseClient pulse.Client, conn *grpc.Client
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -522,6 +525,7 @@ func discoverTools(ctx context.Context, conn *grpc.ClientConn, toolsetName strin
 		transport.ReplaceAgentToolset(),
 		transport.ListToolsets(),
 		transport.GetToolset(),
+		transport.GetToolsetSchemas(),
 		transport.ResolveToolset(),
 		transport.CheckAdmission(),
 		transport.Search(),
@@ -587,9 +591,14 @@ The registry exposes the following gRPC methods:
 |--------|-------------|
 | `ListToolsets` | List all registered toolsets (with optional tag filtering). Returns metadata only, not full schemas. |
 | `GetToolset` | Get full schema for a specific toolset, including all tool input/output schemas. |
+| `GetToolsetSchemas` | Fetch full schemas for multiple named toolsets in one batch call. |
 | `ResolveToolset` | Read an active definition and its exact registration token together; provider health is a separate check. |
 | `CheckAdmission` | Check whether an exact service registration has an unexpired, non-draining provider lease and a fresh health response. |
 | `Search` | Search toolsets by keyword matching name, description, or tags. |
+
+When an internal service or diagnostic command only needs read-only access to the
+Redis-backed catalog without running a full Registry gRPC server or health-check
+coordinator, construct `registry.NewCatalogReader(redisClient, registryName)`.
 
 ### Invocation Operations
 

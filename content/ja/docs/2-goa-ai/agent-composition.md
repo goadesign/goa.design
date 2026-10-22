@@ -308,7 +308,7 @@ message と prompt render event だけが含まれます。workflow は activity
 の identity を導出します。そのため replay は元の描画済み text を使い、storage
 から新しい prompt version を読みません。
 
-Temporal の子 workflow ID には、ランタイムが割り当てた正確な tool-call ID が含まれます。これにより、同じネスト先エージェントを並列に呼び出しても区別できます。この導出方法を変更するリリースは、すでに実行中の子 workflow と互換性がありません。
+Temporal の子 workflow ID は、親の run ID と正確なランタイム tool-call ID（`NestedRunIDForToolCall`）から、固定長 64 文字の 16 進数 SHA-256 ダイジェストとして決定論的に導出されます。これにより、深くネストされたエージェントチェーン全体で workflow ID の長さを制限しつつ、同じネスト先エージェントへの並列呼び出しを区別できます。この導出方法を変更するリリースは、すでに実行中の子 workflow と互換性がありません。
 
 ---
 

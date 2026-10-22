@@ -103,7 +103,26 @@ A required `OneOf` rejects no selected branch, a typed branch wrapper whose
 value is nil, and a selected nil message, byte slice, or `Any` value. A selected
 nonnil empty message remains valid. Generated constructors, setters, accessors,
 and `Kind` methods keep the branch storage private and enforce one selected
-branch.
+branch. Generated unions also expose `Value() (any, error)` for Go templates
+(`{{if eq .State.Kind "active"}}{{with .State.Value}}{{.Name}}{{end}}{{end}}`),
+preserving empty strings, `0`, and `false` while failing template execution when
+an invalid branch is read.
+
+In HTTP and JSON-RPC JSON encodings, `OneOf` defaults to the `{type, value}`
+envelope. You can customize the JSON wire representation inside `OneOf`:
+
+- **Flat object unions (`Meta("oneof:json:flatten")`)**: When every branch is an
+  object type, `Meta("oneof:json:flatten")` writes the selected branch's fields
+  directly beside the discriminator field (`{"type":"active","id":"123"}`), and
+  optional `Meta("oneof:type:field", "kind")` renames the discriminator key.
+- **Untagged JSON unions (`Meta("oneof:json:untagged")`)**: When branches have
+  distinct JSON kinds (string, number, boolean, array, object),
+  `Meta("oneof:json:untagged")` encodes the selected value directly without a
+  discriminator wrapper.
+
+When a `OneOf` branch references a `ResultType` with `View("...")`, generated
+HTTP, gRPC, and JSON-RPC codecs and OpenAPI schemas honor that view. In gRPC
+services, `OneOf` branches may also use `ArrayOf` and `MapOf` collections.
 
 #### Maps
 
@@ -953,6 +972,19 @@ Header("version:X-Api-Version")  // version attribute from X-Api-Version header
 Body(func() {
     Attribute("name:n")  // name attribute from "n" field in JSON
     Attribute("age:a")   // age attribute from "a" field in JSON
+})
+```
+
+To map wire field names on a shared named object type for a specific HTTP
+service—including nested fields inside payloads, results, errors, arrays, maps,
+and unions—declare `BodyFieldName` inside the service's `HTTP` block:
+
+```go
+var _ = Service("billing", func() {
+    HTTP(func() {
+        BodyFieldName(Address, "postal_code:postalCode", "country_code:countryCode")
+    })
+    // methods using Address in payloads, results, or errors...
 })
 ```
 
