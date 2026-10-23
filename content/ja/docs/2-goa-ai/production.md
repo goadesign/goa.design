@@ -489,7 +489,9 @@ worker version は次の順序で release します。
 4. worker process が API も提供する場合、通常の API traffic は current ready build だけへ route する。古い pod は Temporal 用に生かすが、新規 API request は送らない。API deployment を分ける設計も有効だが必須ではない。
 5. Temporal が drained と報告した後だけ古い version を削除する。pod が停止したことは、その code を必要とする workflow がない証明にはならない。
 
-受理された各 user input は top-level Goa-AI workflow を 1 つ開始します。Goa-AI は human または external input を要求すると workflow を終了し、completed run ID の下に非公開 checkpoint を保存します。受理された answer は current worker version で新しい workflow を開始します。そのため透過的 release では、新 version が保存済み checkpoint version、生成 result codec、必要な tool 名との互換性を保つ必要があります。Worker Versioning は互換性のない保存値を変換できません。
+受理されたユーザー入力は、それぞれ最上位の Goa-AI ワークフローを開始します。人間や外部からの入力が必要になると、Goa-AI は非公開のチェックポイントを保存して、そのワークフローを終了します。新しい回答や通常のクリーンアップのワークフローは、ワーカーのバージョンを明示的に指定しません。Temporal はワーカーへのディスパッチ時に current を選び、継続処理の準備時点では特定のバージョンを約束しません。その後の実行はワーカーに設定されたバージョニング動作に従います。上記の pinned 設定では、最初のワークフロータスク以降、実際の処理は割り当てられたバージョンに固定されます。復旧では、以前の明示的な実行先も含め、公開済みのリクエストと設定をそのまま再利用し、再試行で実行先を選び直しません。
+
+完了済みツールの入力と結果は、元のシリアライズされた形式のまま履歴の証拠として保持されます。その読み取りに現在の結果コーデックや完了済みツールの存続は必要ありません。一方、保留中の操作と保存済みチェックポイントでは、入力、結果、意味の契約に互換性が必要です。保留中の書き込みを別の意味で解釈したり、履歴を再構築するために完了済みの処理を繰り返したりしてはいけません。
 
 現在の runtime が受理するのは `goa-ai.run-suspension.v14` だけで、それ以前の形式は
 拒否します。互換性のない upgrade では、worker を重ねて動かすこの手順ではなく、

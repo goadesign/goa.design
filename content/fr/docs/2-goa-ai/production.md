@@ -531,12 +531,22 @@ Publiez une version de worker dans cet ordre :
    code.
 
 Chaque entrée utilisateur acceptée démarre un workflow Goa-AI de premier
-niveau. Lorsqu'une entrée humaine ou externe est requise, Goa-AI termine ce
-workflow et enregistre un point de reprise privé sous l'ID de l'exécution
-achevée. La réponse acceptée démarre un nouveau workflow sur la version
-courante. Cette version doit donc rester compatible avec la version du point
-de reprise, les codecs générés et les noms d'outils requis. Le versionnement
-des workers ne traduit pas des valeurs enregistrées incompatibles.
+niveau. Lorsqu'une entrée humaine ou externe est requise, Goa-AI enregistre un
+point de reprise privé et termine ce workflow. Un nouveau workflow de réponse ou
+de nettoyage ordinaire ne fixe pas explicitement de version de worker. Temporal
+choisit la version courante lors de son affectation, sans promettre de version
+pendant la préparation de la continuation. La suite respecte le comportement de
+versionnement configuré du worker ; la configuration épinglée ci-dessus conserve
+le travail sur la version affectée après sa première tâche de workflow. La reprise
+réutilise la requête publiée et ses paramètres exacts, y compris une ancienne
+cible explicite, sans sélectionner une nouvelle cible lors d'un nouvel essai.
+
+Les entrées et résultats des outils terminés restent des preuves historiques
+dans leur forme sérialisée d'origine. Leur lecture n'exige ni le codec de résultat
+actuel ni la présence de l'outil terminé. Les opérations en attente et le point de
+reprise enregistré exigent toujours des contrats compatibles pour les entrées,
+les résultats et leur sens. Ne réinterprétez pas une écriture en attente et ne
+répétez pas des effets terminés pour reconstruire l'historique.
 
 Le runtime actuel accepte uniquement `goa-ai.run-suspension.v14` et rejette les
 versions précédentes. Pour une mise à niveau incompatible, suivez la section

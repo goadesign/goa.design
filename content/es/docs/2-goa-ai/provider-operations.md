@@ -36,14 +36,19 @@ servicios usan `WithToolWorkflowQueue` y un worker que llama a `RegisterToolWork
 no necesitan agente, planificador, modelo ni conversación. Un registro o una etiqueta no
 concede acceso.
 
-Cuando el llamador también necesita un helper de inicio y espera idempotente que se
-recupere de procesos de inicio interrumpidos, use `EnsureOperationCompletion`,
+Para iniciar y esperar una operación de forma idempotente tras la interrupción
+del proceso de inicio, usa `EnsureOperationCompletion`,
 `EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` o
-`EnsureOneShotToolOperationCompletion`. Pase `runtime.WithTextOnly(true)` cuando una
-operación de un solo disparo o de sesión deba devolver una respuesta de texto directa
-del asistente sin invocar herramientas, o `runtime.WithRootExecutionTarget(target)`
-(usando `rt.CurrentWorkflowTarget(ctx, queue)` en el worker fijado) cuando una operación
-deba ejecutarse en una cola de worker específica fijada.
+`EnsureOneShotToolOperationCompletion`. Pasa `runtime.WithTextOnly(true)` cuando
+la operación deba devolver texto directo del asistente sin llamar a herramientas.
+
+Usa `runtime.WithRootExecutionTarget(target)` cuando el trabajo inicial deba nombrar
+una versión exacta de worker. El motor concreto `temporal.Engine` posee el método
+de consulta `temporalEngine.CurrentWorkflowTarget(ctx, queue)`. Los nuevos workflows
+de respuesta y de limpieza ordinaria omiten el destino explícito: Temporal elige
+la versión actual al despacharlos y el comportamiento de versiones configurado del
+worker controla la ejecución posterior. La recuperación conserva los ajustes
+publicados exactos, incluidos los destinos explícitos anteriores.
 
 Cuando un worker de proveedor necesita prestar servicio a un contrato de operación
 a través de cambios de revisión compatibles, registre el contrato propiedad de la revisión con
@@ -98,6 +103,11 @@ su worker llama a `StartToolContinuation` y `EnsureToolContinuationCompletion` (
 de workflow `memo map[string]any` como argumento final). La cancelación del padre sigue las
 relaciones hijas aceptadas y conserva la limpieza no finalizada. La finalización no debe depender del
 reintento del cliente.
+
+Los workflows que observan la cancelación usan `AutoUpgrade` para ejecuciones
+activas y suspendidas. Observan la limpieza mientras el trabajo de dominio
+conserva su ejecución asignada. La recuperación mantiene el destino explícito y
+la huella de la solicitud de un observador ya aceptado.
 
 ## Contratos de entrada generados
 

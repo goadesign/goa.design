@@ -544,11 +544,22 @@ Release a worker version in this order:
 5. Remove an old version only after Temporal reports it drained. A stopped pod
    is not proof that no workflow still needs that code.
 
-Each accepted user input starts one top-level Goa-AI workflow. Goa-AI ends that
-workflow when it requests human or external input and stores a private
-checkpoint under the completed run ID. The accepted answer starts a new
-workflow on the current worker version. The new version must therefore accept
-the saved checkpoint format, generated result codecs, and required tool names.
+Each accepted user input starts one top-level Goa-AI workflow. When it requests
+human or external input, Goa-AI saves a private checkpoint and ends that workflow.
+A new answer or ordinary cleanup workflow omits an explicit worker-version
+override. Temporal selects current when dispatching it, rather than promising a
+version when the continuation is prepared. Subsequent execution follows the
+worker's configured versioning behavior; the pinned configuration above keeps
+actual work on its assigned version after its first workflow task. Recovery
+reuses the exact published request and settings, including an older explicit
+target, rather than selecting a new target on retry.
+
+Completed tool inputs and results remain historical evidence in their original
+serialized form. Reading that evidence requires neither today's result codec nor
+the continued availability of a completed tool. Pending operations and the saved
+checkpoint still require compatible input, result and meaning contracts. Do not
+reinterpret a pending write or repeat completed effects to rebuild history.
+
 The current runtime accepts only `goa-ai.run-suspension.v14`; earlier checkpoint
 versions are rejected. Follow [Generated contract changes](#generated-contract-changes)
 for an incompatible upgrade rather than this overlapping-worker procedure.
