@@ -36,14 +36,19 @@ utilisent `WithToolWorkflowQueue` et un worker appelant `RegisterToolWorkflow`, 
 agent, planificateur, modèle ou conversation. Un enregistrement ou une étiquette ne
 donne pas accès.
 
-Lorsque l'appelant a également besoin d'un assistant de démarrage et d'attente idempotent qui
-récupère des processus de démarrage interrompus, utilisez `EnsureOperationCompletion`,
+Pour démarrer et attendre une opération de manière idempotente après
+l'interruption du processus de démarrage, utilisez `EnsureOperationCompletion`,
 `EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` ou
-`EnsureOneShotToolOperationCompletion`. Passez `runtime.WithTextOnly(true)` lorsqu'une
-opération ponctuelle ou de session doit renvoyer une réponse textuelle directe de l'assistant
-sans appeler d'outils, ou `runtime.WithRootExecutionTarget(target)` (en utilisant
-`rt.CurrentWorkflowTarget(ctx, queue)` sur le worker épinglé) lorsqu'une opération doit
-s'exécuter sur une file d'attente de worker épinglée spécifique.
+`EnsureOneShotToolOperationCompletion`. Passez `runtime.WithTextOnly(true)` si
+l'opération doit renvoyer directement le texte de l'assistant sans appeler d'outils.
+
+Utilisez `runtime.WithRootExecutionTarget(target)` lorsque le travail initial doit
+nommer une version exacte de worker. Le moteur concret `temporal.Engine` possède
+la méthode de recherche `temporalEngine.CurrentWorkflowTarget(ctx, queue)`. Les
+nouveaux workflows de réponse et de nettoyage ordinaire omettent la cible explicite :
+Temporal choisit la version courante lors de l'affectation, puis le comportement de
+versionnement configuré du worker régit l'exécution. La reprise préserve les
+paramètres publiés exacts, y compris les anciennes cibles explicites.
 
 Lorsqu'un worker de fournisseur doit servir un contrat d'opération à travers des
 modifications de révision compatibles, enregistrez le contrat propre à la révision avec
@@ -99,6 +104,11 @@ son worker appelle `StartToolContinuation` et `EnsureToolContinuationCompletion`
 de workflow `memo map[string]any` comme argument final). L’annulation du parent suit les relations
 enfants acceptées et préserve le nettoyage inachevé. L’achèvement ne doit pas dépendre d’un nouvel
 essai du client.
+
+Les workflows d'observation des annulations utilisent `AutoUpgrade` pour les
+exécutions actives et suspendues. Ils observent le nettoyage sans modifier
+l'exécution affectée au travail métier. La reprise conserve la cible explicite et
+l'empreinte de requête d'un observateur déjà accepté.
 
 ## Contrats d’entrée générés
 

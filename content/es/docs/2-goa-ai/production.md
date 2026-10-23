@@ -490,11 +490,24 @@ canónicos por `ToolCallID` en lugar de repetir efectos laterales irreversibles.
 
 Los workers sondean colas de tareas y ejecutan workflows/actividades. Los workers se inician automáticamente para cada agente registrado —en la mayoría de los casos no se necesita configuración manual de workers—.
 
-Cada entrada de usuario aceptada inicia un workflow de Goa-AI de nivel superior. Goa-AI finaliza
-el workflow cuando solicita una entrada humana o externa y guarda un checkpoint privado
-bajo el ID de ejecución completada. La respuesta aceptada inicia un nuevo
-workflow en la versión actual del worker. Por lo tanto, la nueva versión debe aceptar
-el formato del checkpoint guardado, los codecs de resultados generados y los nombres de herramientas requeridos.
+Cada entrada de usuario aceptada inicia un workflow de Goa-AI de nivel superior.
+Cuando solicita una entrada humana o externa, Goa-AI guarda un checkpoint privado
+y finaliza ese workflow. Un nuevo workflow de respuesta o de limpieza ordinaria
+no fija explícitamente una versión de worker. Temporal selecciona la versión
+actual al despacharlo, sin prometer una versión al preparar la continuación. La
+ejecución posterior sigue el comportamiento de versiones configurado del worker;
+la configuración fijada anterior conserva el trabajo en la versión asignada tras
+su primera tarea de workflow. La recuperación reutiliza la solicitud publicada y
+sus ajustes exactos, incluido un destino explícito anterior, sin seleccionar otro
+destino al reintentar.
+
+Las entradas y los resultados de herramientas completadas siguen siendo evidencia
+histórica en su forma serializada original. Leerla no requiere el codec de
+resultados actual ni que la herramienta completada siga disponible. Las
+operaciones pendientes y el checkpoint guardado siguen necesitando contratos
+compatibles para entradas, resultados y significado. No reinterpretes una
+escritura pendiente ni repitas efectos completados para reconstruir el historial.
+
 El runtime actual solo acepta `goa-ai.run-suspension.v14`; las versiones anteriores de checkpoint
 son rechazadas. Siga [Cambios del contrato generado](#cambios-del-contrato-generado)
 para una actualización incompatible en lugar de este procedimiento de superposición de workers.

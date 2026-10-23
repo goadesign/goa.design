@@ -36,14 +36,19 @@ client generato. Gli agenti nativi usano workflow e coda dichiarati. I servizi u
 pianificatore, modello o conversazione. Registrazioni ed etichette non concedono
 accesso.
 
-Quando il chiamante necessita anche di un helper di avvio e attesa idempotente che si
-ripristini da processi di avvio interrotti, utilizzare `EnsureOperationCompletion`,
+Per avviare e attendere un'operazione in modo idempotente dopo l'interruzione del
+processo di avvio, usa `EnsureOperationCompletion`,
 `EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion` o
-`EnsureOneShotToolOperationCompletion`. Passare `runtime.WithTextOnly(true)` quando
-un'operazione one-shot o di sessione deve restituire una risposta di testo diretta dell'assistente
-senza chiamare strumenti, oppure `runtime.WithRootExecutionTarget(target)` (usando
-`rt.CurrentWorkflowTarget(ctx, queue)` sul worker associato) quando un'operazione
-deve essere eseguita su una coda di worker specifica associata.
+`EnsureOneShotToolOperationCompletion`. Passa `runtime.WithTextOnly(true)` quando
+l'operazione deve restituire il testo diretto dell'assistente senza chiamare strumenti.
+
+Usa `runtime.WithRootExecutionTarget(target)` quando il lavoro iniziale deve indicare
+una versione esatta del worker. Il motore concreto `temporal.Engine` possiede il
+metodo di ricerca `temporalEngine.CurrentWorkflowTarget(ctx, queue)`. I nuovi workflow
+di risposta e di pulizia ordinaria omettono la destinazione esplicita: Temporal
+sceglie la versione corrente all'assegnazione e il comportamento di versionamento
+configurato del worker controlla l'esecuzione successiva. Il ripristino mantiene
+le impostazioni pubblicate esatte, comprese le precedenti destinazioni esplicite.
 
 Quando un worker provider deve servire un contratto di operazione attraverso modifiche
 di revisione compatibili, registrare il contratto di proprietà della revisione con
@@ -98,6 +103,11 @@ worker chiama `StartToolContinuation` e `EnsureToolContinuationCompletion` (pass
 di workflow `memo map[string]any` come argomento finale). L'annullamento del padre segue le relazioni
 figlie accettate e mantiene la pulizia non completata. Il completamento non deve dipendere da un nuovo
 tentativo del client.
+
+I workflow che osservano l'annullamento usano `AutoUpgrade` per le esecuzioni
+attive e sospese. Osservano la pulizia mentre il lavoro di dominio mantiene la
+propria esecuzione assegnata. Il ripristino conserva la destinazione esplicita e
+l'impronta della richiesta di un osservatore già accettato.
 
 ## Contratti di input generati
 

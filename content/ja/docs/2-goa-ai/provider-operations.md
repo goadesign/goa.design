@@ -33,7 +33,9 @@ if err != nil {
 ソースと生成クライアントを設定してください。ネイティブエージェントは宣言されたワークフローとキューを使います。サービスは `WithToolWorkflowQueue` と
 `RegisterToolWorkflow` を呼ぶワーカーを使い、エージェント、プランナー、モデル、会話を必要としません。登録やラベルはアクセス権を与えません。
 
-呼び出し元が、中断された起動プロセスから回復するべき冪等な起動・待機ヘルパーを必要とする場合は、`EnsureOperationCompletion`、`EnsureOneShotOperationCompletion`、`EnsureToolOperationCompletion`、または `EnsureOneShotToolOperationCompletion` を使用します。ワンショットまたはセッション操作がツールを呼び出さずにアシスタントの直接のテキスト返答を返す必要がある場合は `runtime.WithTextOnly(true)` を渡し、特定の固定されたワーカーキューで操作を実行する必要がある場合は `runtime.WithRootExecutionTarget(target)`（固定ワーカー上の `rt.CurrentWorkflowTarget(ctx, queue)` を使用）を渡します。
+起動プロセスの中断から復旧できる冪等な起動・待機ヘルパーには、`EnsureOperationCompletion`、`EnsureOneShotOperationCompletion`、`EnsureToolOperationCompletion`、`EnsureOneShotToolOperationCompletion` を使います。ツールを呼び出さずにアシスタントのテキストを直接返す必要がある場合は、`runtime.WithTextOnly(true)` を渡します。
+
+最初の処理でワーカーの正確なバージョンを指定する必要がある場合は、`runtime.WithRootExecutionTarget(target)` を使います。検索メソッド `temporalEngine.CurrentWorkflowTarget(ctx, queue)` を持つのは、具象の `temporal.Engine` です。新しい回答や通常のクリーンアップのワークフローは明示的な実行先を省略します。Temporal がディスパッチ時に current を選び、その後の実行はワーカーに設定されたバージョニング動作に従います。復旧では、以前の明示的な実行先も含め、公開済みの設定をそのまま保持します。
 
 プロバイダーワーカーが互換性のあるリビジョン変更をまたいで操作契約を提供する必要がある場合は、ランタイムをシールする前に、リビジョンが所有する契約を `rt.RegisterAgentOperationProvider` で登録します。
 
@@ -68,6 +70,8 @@ configuration := &runtime.AgentToolConfiguration{
 `FinalToolResult`、回答テキストには `Final` を使います。診断履歴が必要な場合だけページ単位の実行記録を読みます。
 
 入力が必要な場合、継続処理は元の操作を復元し、受け入れられた呼び出し元メタデータ（`Metadata`）を保持して、1つの後続を受け入れます。サービスツールの場合、ホストは前身、後続の実行 ID、型付きの回答を永続的に保存し、そのワーカーが `StartToolContinuation` と `EnsureToolContinuationCompletion` を呼び出します（任意のワークフロー `memo map[string]any` を最後の引数として渡します）。親のキャンセルは受け入れられた子の関係に従い、未完了のクリーンアップを保持します。完了がクライアントの再試行に依存してはなりません。
+
+キャンセルを観測するワークフローは、実行中と中断中のどちらにも `AutoUpgrade` を使います。クリーンアップを観測する間も、実際の処理は割り当てられた実行を保ちます。復旧では、受理済みの観測ワークフローの明示的な実行先とリクエストのダイジェストを保持します。
 
 ## 生成される入力契約
 

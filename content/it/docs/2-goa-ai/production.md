@@ -502,11 +502,24 @@ la compatibilità delle API restano responsabilità dell'applicazione: il
 versionamento dei worker protegge il replay, non un servizio a valle assente o
 incompatibile.
 
-Ogni input utente accettato avvia un workflow Goa-AI di primo livello. Goa-AI termina
-il workflow quando richiede un input umano o esterno e salva un checkpoint privato
-sotto l'ID dell'esecuzione completata. La risposta accettata avvia un nuovo
-workflow sulla versione corrente del worker. La nuova versione deve quindi accettare
-il formato del checkpoint salvato, i codec dei risultati generati e i nomi degli strumenti richiesti.
+Ogni input utente accettato avvia un workflow Goa-AI di primo livello. Quando
+richiede un input umano o esterno, Goa-AI salva un checkpoint privato e termina
+quel workflow. Un nuovo workflow di risposta o di pulizia ordinaria non imposta
+esplicitamente una versione del worker. Temporal sceglie la versione corrente al
+momento dell'assegnazione, senza promettere una versione durante la preparazione
+della continuazione. L'esecuzione successiva segue il comportamento di
+versionamento configurato del worker; la configurazione vincolata sopra mantiene
+il lavoro sulla versione assegnata dopo il primo task del workflow. Il ripristino
+riutilizza la richiesta pubblicata e le sue impostazioni esatte, compresa una
+precedente destinazione esplicita, senza sceglierne una nuova al nuovo tentativo.
+
+Gli input e i risultati degli strumenti completati restano prove storiche nella
+loro forma serializzata originale. Leggerli non richiede né il codec dei risultati
+attuale né che lo strumento completato sia ancora disponibile. Le operazioni in
+attesa e il checkpoint salvato richiedono comunque contratti compatibili per
+input, risultati e significato. Non reinterpretare una scrittura in attesa e non
+ripetere effetti completati per ricostruire la cronologia.
+
 Il runtime attuale accetta solo `goa-ai.run-suspension.v14`; le versioni precedenti dei checkpoint
 vengono rifiutate. Seguire [Modifiche ai contratti generati](#modifiche-ai-contratti-generati)
 per un aggiornamento incompatibile anziché questa procedura con worker sovrapposti.

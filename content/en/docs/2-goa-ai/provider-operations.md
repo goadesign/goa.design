@@ -41,9 +41,14 @@ interrupted starter processes, use `EnsureOperationCompletion`,
 `EnsureOneShotOperationCompletion`, `EnsureToolOperationCompletion`, or
 `EnsureOneShotToolOperationCompletion`. Pass `runtime.WithTextOnly(true)` when a
 one-shot or session operation must return a direct assistant text reply without
-calling tools, or `runtime.WithRootExecutionTarget(target)` (using
-`rt.CurrentWorkflowTarget(ctx, queue)` on the sticky worker) when an operation
-must execute on a specific pinned worker queue.
+calling tools.
+
+Use `runtime.WithRootExecutionTarget(target)` when initial work must name an
+exact worker version. The concrete `temporal.Engine` owns the lookup method,
+`temporalEngine.CurrentWorkflowTarget(ctx, queue)`. New answer and ordinary
+cleanup workflows omit an explicit target: Temporal selects current at dispatch,
+and the configured worker versioning behavior controls subsequent execution.
+Recovery preserves the exact published settings, including older explicit targets.
 
 When a provider worker needs to serve an operation contract across compatible
 revision changes, register the revision-owned contract with
@@ -98,6 +103,10 @@ host durably saves the predecessor, successor run ID, and typed answer; its work
 `memo map[string]any` as the final argument). Parent cancellation follows accepted child
 relationships and retains unfinished cleanup. Completion must not depend on a client
 retry.
+
+Cancellation observation workflows use `AutoUpgrade` for active and suspended
+runs. They observe cleanup while domain work keeps its assigned execution.
+Recovery preserves an already accepted observer's explicit target and request digest.
 
 ## Generated input contracts
 
