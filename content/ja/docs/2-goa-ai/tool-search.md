@@ -88,12 +88,22 @@ provider は既存の schema fingerprint と登録ライフサイクルを使っ
 
 ### 生成されたツールを選択された登録へバインドする
 
-アプリケーションが動的登録を既存の生成済み toolset に解決する場合（たとえば、生成された型付きペイロード/結果コーデックやヒントを維持しながら、特定のテナントや環境の登録を選択する場合など）、`Resolve` 内で `runtime/toolregistry/catalog` を使用して生成済み toolset をバインドします：
+アプリケーションが Agent にコンパイル済みのツールに対して登録を選ぶ場合は、`RegistryTools.Resolve` 内で、そのアクティビティの `*runtime.RegistryCatalog` を使って関連付けます。
 
-- **サービスバックの toolset (`catalog.BindStaticService`)**: 生成された `specs.Toolset()` 宣言と解決された `*genregistry.Toolset` を渡して `catalog.BindStaticService(registry, expected, selected, verifyPrevious, names...)` を呼び出し、次に `executor.NewResolved(client, executor.WithCaller(caller))` で生成された executor を構築します。実行中にツールハンドラーが選択された入場トークンまたは操作メタデータを必要とする場合は、`runtime.ToolCallMeta` から `catalog.SelectedOperation()` を読み取ります。
-- **ネイティブエージェントの toolset (`catalog.BindStaticAgent`)**: `catalog.BindStaticAgent(registry, expected, selected, verifyPrevious, names...)` を呼び出して、解決されたネイティブエージェントの登録を生成されたコンシューマー契約にバインドし、コンパイルされた宣言（およびオプションの以前の契約）に対して登録を検証します。
+- **サービスのツール:** `catalog.BindStaticService(registry, expected, selected, readPrevious, names...)` に、完全な生成済み `specs.Toolset()` を `expected` として、所有者の `*genregistry.ResolvedToolset` を `selected` として渡し、元のツール名を明示します。必須のサービス用読み取り関数は、コンテキスト、保存された toolset のルート、正確な登録トークンを受け取ります。所有者の API を使って以前の登録が同じリソースに属することを確認し、その正確な `ResolvedToolset` を返す必要があります。[サービスの関連付け契約](https://github.com/goadesign/goa-ai/blob/main/docs/tool_search.md#bind-generated-service-tools)を参照してください。
+- **ネイティブ Agent のツール:** `catalog.BindStaticAgent(registry, expected, selected, readPrevious, names...)` に、関連付け前の生成済み操作宣言の全体、所有者の `*genregistry.ResolvedToolset`、元のエクスポート名すべてを渡します。必須の読み取り関数は、保存された `*genregistry.AgentToolTarget` も受け取ります。そのターゲットの設定参照と所有者の API を使い、同じ所有者とリソースであることを確認して、以前の正確な登録を返してください。このコールバックのシグネチャはサービス用の読み取り関数とは異なります。[ネイティブ Agent の関連付け契約](https://github.com/goadesign/goa-ai/blob/main/docs/tool_search.md#bind-generated-native-agent-tools)を参照してください。
 
-互換性のあるロールアウトをまたいでセッション内の保存済み呼び出しが以前のリビジョンを引き続き使用できる場合は、`verifyPrevious: true` を渡します。ポータブルな制限付き結果コーデックは、未加工のプロバイダーセマンティック JSON（`planner.ToolResult.Bounds` を個別に指定）と、正規の制限フィールドがすでに含まれている最終 JSON 結果の両方を受け入れます。
+サービスの実行には `runtime/toolregistry/executor.NewResolved(registry, client, pulse, specs, options...)` を構築し、返されたエラーを処理します。`specs` は生成済み仕様を検索する値です。呼び出しは保存されたルートとトークンを保持します。ネイティブ Agent は既存の永続的な子ワークフローを使います。`RegistryTools.Resolve` 内の `catalog.SelectedOperation()` は、現在の実行に保存されたネイティブ操作の独立したコピーを返します。これはアクティビティのカタログのメソッドであり、`ToolCallMeta` のフィールドではありません。
+
+以前の結果から新しいページを計画する前に、ランタイムは対応する読み取り関数を呼び出し、返された宣言と保存済みの操作を照合します。読み取りが失敗すると計画を停止します。新しいページは、現在の入力とページング規則を検証した後、現在選択されている登録を使います。受け付け済みの呼び出しとその再試行は保存された選択情報を保持し、この読み取り関数を呼び出しません。ポータブルな制限付き結果コーデックは、元のプロバイダーのセマンティック JSON（`planner.ToolResult.Bounds` は別に渡す）と、正規の制限フィールドをすでに含む最終 JSON 結果の両方を受け入れます。
+
+### 検証済みのサービス宣言を再利用する
+
+期待するサービス宣言と選択したサービス宣言の全体が変わらない場合は、`runtime.CompileStaticService(expected, selected)` を一度呼び出します。`BindStaticService` と同じ生成コードによる完全な検証と比較を、選択しない操作も含めて実行します。返される非公開フィールドを持つ `*runtime.CompiledStaticService` は、操作とそのページング用の操作のコンパクトな選択情報を独立して保持します。その後で元の入力を変更しても、この値は変わりません。
+
+各計画アクティビティは、自分の以前の登録を読む関数を渡して `catalog.BindCompiledStaticService(registry, compiled, readPrevious, names...)` を呼び出します。独立した選択情報を設定する前に、そのアクティビティの現在の参照先ポリシー、生成された宣言、ローカルのツール仕様を検証します。コンパイル済みの値は、カタログ全体、コールバック、実行者、権限、プロバイダーの稼働状況を保持しません。
+
+この値の寿命はアプリケーションが管理します。別の宣言や登録を選ぶ場合は再度コンパイルしてください。古い値が古いプロバイダーを現在のものにしたり、実行権限を与えたりすることはありません。受け付け済みの呼び出しは保存された選択情報を使います。変更可能な宣言には `BindStaticService` を使い続けてください。呼び出しごとに両方の入力全体を検証します。並行するアクティビティはコンパイル済みの値を共有できますが、コンパイル中に元の入力を変更してはいけません。この値にシリアライズ形式や永続化形式はありません。
 
 ## 検索を実行するのは誰か
 
