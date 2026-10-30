@@ -1,0 +1,97 @@
+<svg id="graph" width="1803.4579467773438" height="948.0000152587891" viewBox="0 0 1803.4579467773438 948.0000152587891" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
+  "name": "ChorusArchitecture",
+  "description": "Chorus multi-agent coordination over MCP and Pulse",
+  "version": "1.0.0",
+  "elements": [
+    {
+      "id": "17lwoy0",
+      "tags": "Element,Container,queue",
+      "technology": "Pulse streaming"
+    },
+    {
+      "id": "1ca6gcd",
+      "tags": "Element,Container,store",
+      "technology": "Pulse rmap"
+    },
+    {
+      "id": "1qt01kv",
+      "tags": "Element,Container,store",
+      "technology": "Pulse semaphore"
+    },
+    {
+      "id": "5ogm8f",
+      "tags": "Element,Container,goa",
+      "technology": "Goa-AI & Pulse"
+    },
+    {
+      "id": "ddtbhi",
+      "tags": "Element,Container,goa",
+      "technology": "MCP Clients"
+    }
+  ],
+  "layout": {
+    "17lwoy0": {
+      "x": 1493.4579315185547,
+      "y": 452
+    },
+    "1ca6gcd": {
+      "x": 1465.765625,
+      "y": 215
+    },
+    "1qt01kv": {
+      "x": 1465.765625,
+      "y": 688
+    },
+    "5ogm8f": {
+      "x": 853.71875,
+      "y": 452
+    },
+    "ddtbhi": {
+      "x": 292,
+      "y": 452
+    },
+    "e-16gkurd": [
+      {
+        "x": 1023.71875,
+        "y": 497,
+        "auto": true
+      },
+      {
+        "x": 1023.71875,
+        "y": 688,
+        "auto": true
+      }
+    ],
+    "e-1bvjqrk": [
+      {
+        "x": 1023.71875,
+        "y": 407,
+        "auto": true
+      },
+      {
+        "x": 1023.71875,
+        "y": 215,
+        "auto": true
+      }
+    ]
+  }
+}]]></script>
+<defs>
+	<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="strokeWidth">
+		<path fill="context-stroke" stroke="none" d="M0,0 L10,5 L0,10 Z" class="arrowHead"></path>
+	</marker>
+	<g id="icon-circle" transform="translate(0,-12)" class="icon">
+		<circle cx="7" cy="7" r="7"></circle>
+	</g>
+	<g id="icon-cube" transform="translate(0, -14)" class="icon">
+		<path d="M 5 0 h 10 v 10 l -5 5 h -10 v -10 l 5 -5 M 0 5 h 10 v 10 M 15 0 l -5 5"></path>
+	</g>
+	<filter id="shadow">
+		<feDropShadow dx="3" dy="3" stdDeviation="5" flood-color="#00000030" flood-opacity="1"></feDropShadow>
+	</filter>
+</defs><g class="zoom" transform="scale(1) translate(50, 50)"><g class="groups"><g class="group"><rect x="40" y="40" rx="0" ry="0" width="1623.4579467773438" height="768.0000152587891" style="fill: rgba(0, 0, 0, 0.02); stroke: rgb(102, 102, 102); stroke-width: 3; stroke-dasharray: 4;"></rect><text x="45" y="45" dominant-baseline="hanging" style="font-family: Arial, sans-serif; fill: rgb(102, 102, 102); font-size: 22px; font-weight: bold; cursor: default;">Chorus</text></g></g><g class="edges"><g class="edge" id="16gkurd" data-from="5ogm8f" data-to="1qt01kv"><rect x="1053.71875" y="701" rx="0" ry="0" width="216.046875" height="61" style="fill: none; stroke: none;"></rect><text x="0" y="701" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">Linearizes sequence</tspan><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">numbers</tspan></text><path marker-end="url(#arrow)" d="M993.71875,497 L1023.71875,497 L1023.71875,688 L1325.765625,688" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-16gkurd-a-t3pp0n" cx="1023.71875" cy="497" r="7" fill="none" class="v-dot auto"></circle><circle id="v-16gkurd-a-i0jmzp" cx="1023.71875" cy="688" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1bvjqrk" data-from="5ogm8f" data-to="1ca6gcd"><rect x="1069.890625" y="228" rx="0" ry="0" width="183.703125" height="85" style="fill: none; stroke: none;"></rect><text x="0" y="228" text-anchor="middle" stroke="none" font-size="22" fill="var(--mdl-rel-default-color, #757575)" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">Presence, topics,</tspan><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">watermarks,</tspan><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">wakeups</tspan></text><path marker-end="url(#arrow)" d="M993.71875,407 L1023.71875,407 L1023.71875,215 L1325.765625,215" class="edge" fill="none" stroke="var(--mdl-rel-default-color, #757575)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-1bvjqrk-a-kjrn33" cx="1023.71875" cy="407" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1bvjqrk-a-1a71yiu" cx="1023.71875" cy="215" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="2sfbma" data-from="5ogm8f" data-to="17lwoy0"><rect x="1061.3046875" y="465" rx="0" ry="0" width="200.875" height="61" style="fill: none; stroke: none;"></rect><text x="0" y="465" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">Channel and direct</tspan><tspan x="1161.7421875" dy="24px" font-size="22px" font-weight="normal">message deltas</tspan></text><path marker-end="url(#arrow)" d="M993.71875,452 L1325.765625,452" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path></g><g class="edge" id="tu1d5y" data-from="ddtbhi" data-to="5ogm8f"><rect x="488" y="465" rx="0" ry="0" width="169.71875" height="61" style="fill: none; stroke: none;"></rect><text x="0" y="465" text-anchor="middle" stroke="none" font-size="22" fill="#999" data-field="label" style="font-family: Arial, sans-serif; stroke: none;"><tspan x="572.859375" dy="24px" font-size="22px" font-weight="normal">who, join, leave,</tspan><tspan x="572.859375" dy="24px" font-size="22px" font-weight="normal">send, read</tspan></text><path marker-end="url(#arrow)" d="M432,452 L713.71875,452" class="edge" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round" stroke-dasharray="8"></path></g></g><g class="nodes"><g class="node" id="17lwoy0" transform="translate(1493.4579315185547,452)"><path d="M-13.846153846153847,0
+		a13.846153846153847,90 0,0,1 0,180
+		a13.846153846153847,90 0,0,1 0,-180
+		l280,0
+		a13.846153846153847,90 0,0,1 0,180
+		l-280,0" transform="translate(-140,-90)" class="nodeBorder" fill="var(--mdl-queue-bg, #00cec9)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></path><g transform="translate(0,0)"><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-25.25" font-size="22px" font-weight="bold">Message Streams</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-0.75" font-size="16.5px" font-weight="normal">[queue: Pulse streaming]</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="27.25" font-size="16px" font-weight="normal">Bounded append-only #channel</tspan><tspan x="0" y="45.25" font-size="16px" font-weight="normal">and @agent logs</tspan></text></g></g><g class="node" id="1ca6gcd" transform="translate(1465.765625,215)" label-offset-y="29.473684210526315"><path d="M 0,14.736842105263158 a140,14.736842105263158 0,0,0 280 0 a 140,14.736842105263158 0,0,0 -280 0 l 0,150.5263157894737 a 140,14.736842105263158 0,0,0 280 0 l 0,-150.5263157894737" transform="translate(-140,-90)" class="nodeBorder" fill="var(--mdl-store-bg, #9d89e8)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></path><g transform="translate(0,14.736842105263158)"><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-16.25" font-size="22px" font-weight="bold">Swarm Control Plane</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="8.25" font-size="16.5px" font-weight="normal">[store: Pulse rmap]</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="36.25" font-size="16px" font-weight="normal">Replicated in-memory state</tspan></text></g></g><g class="node" id="1qt01kv" transform="translate(1465.765625,688)" label-offset-y="29.473684210526315"><path d="M 0,14.736842105263158 a140,14.736842105263158 0,0,0 280 0 a 140,14.736842105263158 0,0,0 -280 0 l 0,150.5263157894737 a 140,14.736842105263158 0,0,0 280 0 l 0,-150.5263157894737" transform="translate(-140,-90)" class="nodeBorder" fill="var(--mdl-store-bg, #9d89e8)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></path><g transform="translate(0,14.736842105263158)"><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-16.25" font-size="22px" font-weight="bold">Publication Lock</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="8.25" font-size="16.5px" font-weight="normal">[store: Pulse semaphore]</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="36.25" font-size="16px" font-weight="normal">1-slot leased lock per target</tspan></text></g></g><g class="node" id="5ogm8f" transform="translate(853.71875,452)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,0)"><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-25.25" font-size="22px" font-weight="bold">Chorus Server</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-0.75" font-size="16.5px" font-weight="normal">[goa: Goa-AI &amp; Pulse]</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="27.25" font-size="16px" font-weight="normal">Stateless HTTP MCP server at</tspan><tspan x="0" y="45.25" font-size="16px" font-weight="normal">POST /mcp</tspan></text></g></g><g class="node" id="ddtbhi" transform="translate(292,452)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" fill="var(--mdl-goa-bg, #5bc0eb)" stroke="#999" stroke-width="3" opacity="0.9" style="filter: url(&quot;#shadow&quot;);"></rect><g transform="translate(0,0)"><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="name" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-25.25" font-size="22px" font-weight="bold">Coding Agents</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="-0.75" font-size="16.5px" font-weight="normal">[goa: MCP Clients]</tspan></text><text text-anchor="middle" fill="var(--mdl-store-color, #ffffff)" data-field="description" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; stroke: none;"><tspan x="0" y="27.25" font-size="16px" font-weight="normal">Claude, ChatGPT, and Gemini</tspan><tspan x="0" y="45.25" font-size="16px" font-weight="normal">sessions (arch, api, qa)</tspan></text></g></g></g></g></svg>

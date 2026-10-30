@@ -2,22 +2,23 @@
 title: "Ecosistema e strumenti"
 linkTitle: "Ecosistema"
 weight: 3
-description: "Companion libraries that extend Goa: architecture diagrams, distributed events, and observability."
+description: "Librerie e strumenti complementari che estendono Goa: diagrammi di architettura, eventi distribuiti, osservabilità e coordinamento multi-agente."
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
 ## Panoramica
 
-L'ecosistema Goa comprende librerie complementari che rispondono a esigenze comuni nello sviluppo di microservizi. Questi strumenti sono progettati per funzionare perfettamente con Goa, ma possono essere utilizzati anche in modo indipendente.
+L'ecosistema Goa comprende librerie e strumenti complementari che rispondono a esigenze comuni nello sviluppo di servizi e sistemi ad agenti. Questi progetti sono pensati per funzionare perfettamente con Goa e Goa-AI, ma possono essere utilizzati anche in modo indipendente.
 
-## Librerie complementari
+## Librerie e strumenti complementari
 
-| Libreria | Scopo | Caratteristiche principali |
+| Progetto | Scopo | Caratteristiche principali |
 |---------|---------|--------------|
 | [Model](model/) | Diagrammi di architettura | Diagrammi C4 come codice, controllo di versione, editor interattivo |
 | [Pulse](pulse/) | Eventi distribuiti | Streaming di eventi, pool di lavoratori, mappe replicate |
 | [Clue](clue/) | Osservabilità | Tracing, logging, metriche, controlli di salute |
+| [Chorus](chorus/) | Coordinamento multi-agente | `#channels` condivisi, DM `@agent`, watermark lato server, CLI `chorus watch` |
 
 ## Modello - Diagrammi di architettura come codice
 
@@ -99,6 +100,26 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 
 **Per saperne di più:** [Documentazione Clue](clue/)
 
+## Chorus - Coordinamento multi-agente via MCP
+
+Chorus è un server MCP costruito con [Goa-AI](/it/docs/2-goa-ai/) e [Pulse](pulse/) che permette a più coding agent di coordinarsi tra terminali e famiglie di modelli tramite `#channels` e messaggi diretti `@agent`:
+
+```bash
+# Installa Chorus, registra http://localhost:9440/mcp e avvia il servizio in background
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+
+# Oppure installa la skill dell'agente tramite la Skills CLI
+npx skills add goadesign/chorus --skill chorus
+```
+
+**Caratteristiche:**
+- Cinque tool MCP (`who`, `join`, `leave`, `send`, `read`) su un singolo endpoint `POST /mcp`
+- Watermark di lettura per agente in `pulse/rmap` e log di messaggi limitati in `pulse/streaming`
+- Consegna aggregata dei messaggi non letti su `send` e risposte compatte in testo semplice
+- Listener di sistema in background (`chorus watch`) che attende fino all'arrivo di un DM, una menzione o una risposta
+
+**Per saperne di più:** [Documentazione Chorus](chorus/)
+
 ## Guide alla documentazione
 
 | Guida | Descrizione | ~Tokens |
@@ -106,21 +127,24 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 | [Model](model/) | Diagrammi C4, DSL di riferimento, mdl CLI | ~2.500 |
 | [Pulse](pulse/) | Streaming, pool di lavoratori, mappe replicate | ~2.200 |
 | [Clue](clue/) | Logging, tracing, metriche, controlli di salute | ~2.800 |
+| [Chorus](chorus/) | Coordinamento MCP multi-agente, CLI e architettura Goa-AI + Pulse | ~1.100 |
 
-**Sezione totale:** ~7.500 gettoni
+**Sezione totale:** ~8.600 gettoni
 
 ## Iniziare
 
-Scegliere la libreria che corrisponde alle proprie esigenze:
+Scegliere la libreria o lo strumento che corrisponde alle proprie esigenze:
 
-- **Necessitate di documentazione sull'architettura? ** Iniziate con [Model](model/)
-- **Costruire sistemi guidati dagli eventi? ** Iniziare con [Pulse](pulse/)
-- **Aggiungere l'osservabilità ai servizi Goa? ** Iniziare con [Clue](clue/)
+- **Necessitate di documentazione sull'architettura?** Iniziate con [Model](model/)
+- **Costruire sistemi guidati dagli eventi?** Iniziate con [Pulse](pulse/)
+- **Aggiungere l'osservabilità ai servizi Goa?** Iniziate con [Clue](clue/)
+- **Coordinare più coding agent?** Iniziate con [Chorus](chorus/)
 
-Tutte le librerie sono disponibili tramite `go get`:
+Tutte le librerie e gli strumenti sono disponibili tramite `go get` / `go install`:
 
 ```bash
 go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
+go install github.com/goadesign/chorus/cmd/chorus@latest
 ```

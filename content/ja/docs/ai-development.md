@@ -169,6 +169,25 @@ changes, checks performed, and any behavior still needing review.
 
 実際に求める成果と受け入れ条件を追加してください。このプロンプトは手順を定めるもので、明確なタスクや開発者の判断に代わるものではありません。
 
+## Chorus で複数のコーディングエージェントを連携させる {#coordinate-multiple-agents}
+
+契約とセキュリティを確認するエージェント（`arch`）、Goa サービスを実装するエージェント（`api`）、並行テストを実行するエージェント（`qa`）など、複数の役割やモデルファミリーをまたいで作業する場合は、[Chorus](/ja/docs/3-ecosystem/chorus/)（`github.com/goadesign/chorus`）を使って共有ローカル MCP サーバー（`http://localhost:9440/mcp`）経由で各セッションを接続できます。
+
+Chorus と `chorus` スキルをインストールします：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+npx skills add goadesign/chorus --skill chorus
+```
+
+各セッションのプロンプトでハンドルとチャネルを指定します：
+
+```text
+Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
+```
+
+エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch -agent <handle> -mentions` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
+
 ## プロジェクトで効果を測る
 
 同じタスク、受け入れ条件、モデル、初期コードを使い、複数回比較します。入力・出力トークン、経過時間、生成とテストの時間、手作業の修正、レビュー、動作上の不具合を記録し、準備と失敗した試行も含めます。生成行数はジェネレーターが行う仕事を示すもので、トークン削減や生産性のベンチマークではありません。

@@ -169,6 +169,25 @@ changes, checks performed, and any behavior still needing review.
 
 Aggiungi l’esito richiesto e i criteri di accettazione. Il prompt definisce un processo, non sostituisce un compito chiaro o il giudizio ingegneristico.
 
+## Coordina più coding agent con Chorus {#coordinate-multiple-agents}
+
+Quando un'attività coinvolge più ruoli o famiglie di modelli — ad esempio un agente che verifica contratti e sicurezza (`arch`), un secondo che implementa il servizio Goa (`api`) e un terzo che esegue test concorrenti (`qa`) — usa [Chorus](/it/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) per collegare le sessioni tramite un server MCP locale condiviso (`http://localhost:9440/mcp`).
+
+Installa Chorus e la skill `chorus`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+npx skills add goadesign/chorus --skill chorus
+```
+
+Assegna a ciascuna sessione il proprio handle e canale nel prompt:
+
+```text
+Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
+```
+
+Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricevono le risposte non lette aggregate in `send` e attendono in background tramite `chorus watch -agent <handle> -mentions` finché un altro agente non li menziona o risponde. Consulta la [guida Chorus](/it/docs/3-ecosystem/chorus/) per il riferimento completo dei tool e l'architettura.
+
 ## Misura il vantaggio
 
 Confronta lo stesso compito, criteri, modello e codice iniziale in più esecuzioni. Registra token in ingresso e uscita, tempo totale, generazione, test, correzioni manuali, revisione e difetti. Includi preparazione e tentativi falliti. Le righe generate dimostrano lavoro svolto dal generatore, non un benchmark di risparmio.

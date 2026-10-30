@@ -217,6 +217,36 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 	})
 
 	// =========================================================================
+	// Chorus Architecture Diagram - Multi-agent coordination over MCP and Pulse
+	// =========================================================================
+
+	var ChorusArchSystem = SoftwareSystem("Chorus", "Multi-agent coordination over MCP and Pulse", func() {
+		Container("Coding Agents", "Claude, ChatGPT, and Gemini sessions (arch, api, qa)", "MCP Clients", func() {
+			Tag("goa")
+			Uses("Chorus Server", "who, join, leave, send, read")
+		})
+
+		Container("Chorus Server", "Stateless HTTP MCP server at POST /mcp", "Goa-AI & Pulse", func() {
+			Tag("goa")
+			Uses("Swarm Control Plane", "Presence, topics, watermarks, wakeups", func() { Tag("async") })
+			Uses("Message Streams", "Channel and direct message deltas")
+			Uses("Publication Lock", "Linearizes sequence numbers")
+		})
+
+		Container("Swarm Control Plane", "Replicated in-memory state", "Pulse rmap", func() {
+			Tag("store")
+		})
+
+		Container("Message Streams", "Bounded append-only #channel and @agent logs", "Pulse streaming", func() {
+			Tag("queue")
+		})
+
+		Container("Publication Lock", "1-slot leased lock per target", "Pulse semaphore", func() {
+			Tag("store")
+		})
+	})
+
+	// =========================================================================
 	// Views
 	// =========================================================================
 
@@ -284,6 +314,15 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("Node A")
 			Add("Replicated Map")
 			Add("Node B")
+			AutoLayout(RankLeftRight)
+		})
+
+		ContainerView(ChorusArchSystem, "ChorusArchitecture", "Chorus multi-agent coordination over MCP and Pulse", func() {
+			Add("Coding Agents")
+			Add("Chorus Server")
+			Add("Swarm Control Plane")
+			Add("Message Streams")
+			Add("Publication Lock")
 			AutoLayout(RankLeftRight)
 		})
 

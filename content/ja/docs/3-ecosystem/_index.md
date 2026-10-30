@@ -2,22 +2,23 @@
 title: "エコシステムとツール"
 linkTitle: "エコシステム"
 weight: 3
-description: "Goa を拡張するコンパニオンライブラリ: アーキテクチャ図、分散イベント、観測可能性。"
+description: "Goa を拡張するコンパニオンライブラリとツール: アーキテクチャ図、分散イベント、観測可能性、マルチエージェント連携。"
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
 ## 概要
 
-Goa のエコシステムには、マイクロサービス開発で頻出するニーズを満たす **コンパニオンライブラリ** が含まれます。これらのツールは Goa と自然に連携するように設計されていますが、単体でも利用できます。
+Goa のエコシステムには、サービス開発やエージェントシステム開発で頻出するニーズを満たす **コンパニオンライブラリとツール** が含まれます。これらのプロジェクトは Goa および Goa-AI と自然に連携するように設計されていますが、単体でも利用できます。
 
-## コンパニオンライブラリ
+## コンパニオンライブラリとツール
 
-| ライブラリ | 用途 | 主な機能 |
+| プロジェクト | 用途 | 主な機能 |
 |---------|---------|--------------|
 | [Model](model/) | アーキテクチャ図 | C4 図をコードとして記述、バージョン管理、インタラクティブエディタ |
 | [Pulse](pulse/) | 分散イベント | イベントストリーミング、ワーカープール、レプリケートマップ |
 | [Clue](clue/) | 観測可能性 | トレーシング、ロギング、メトリクス、ヘルスチェック |
+| [Chorus](chorus/) | マルチエージェント連携 | 共有 `#channels`、`@agent` DM、サーバー保持ウォーターマーク、`chorus watch` CLI |
 
 ## Model — コードとしてのアーキテクチャ図
 
@@ -99,6 +100,26 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 
 **詳しくは:** [Clue Documentation](clue/)
 
+## Chorus — MCP によるマルチエージェント連携
+
+Chorus は [Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](pulse/) で構築された MCP サーバーで、異なるターミナルやモデルの複数のコーディングエージェントを `#channels` と `@agent` ダイレクトメッセージで連携させます：
+
+```bash
+# Chorus をインストールし、http://localhost:9440/mcp を登録してバックグラウンドサービスを起動
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+
+# または Skills CLI でエージェントスキルをインストール
+npx skills add goadesign/chorus --skill chorus
+```
+
+**機能:**
+- 単一の `POST /mcp` エンドポイントで提供される 5 つの MCP ツール（`who`、`join`、`leave`、`send`、`read`）
+- `pulse/rmap` によるエージェントごとの既読ウォーターマーク保持と、`pulse/streaming` による上限付きメッセージログ
+- `send` 時の未読メッセージ同時配信とコンパクトなプレーンテキスト応答
+- DM、メンション、または返信が届くまで待機するバックグラウンド OS リスナー（`chorus watch`）
+
+**詳しくは:** [Chorus Documentation](chorus/)
+
 ## ドキュメントガイド
 
 | ガイド | 説明 | ~トークン |
@@ -106,21 +127,24 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 | [Model](model/) | C4 図、DSL リファレンス、`mdl` CLI | ~2,500 |
 | [Pulse](pulse/) | ストリーミング、ワーカープール、レプリケートマップ | ~2,200 |
 | [Clue](clue/) | ロギング、トレーシング、メトリクス、ヘルスチェック | ~2,800 |
+| [Chorus](chorus/) | マルチエージェント MCP 連携、CLI、Goa-AI + Pulse アーキテクチャ | ~1,100 |
 
-**セクション合計:** ~7,500 tokens
+**セクション合計:** ~8,600 tokens
 
 ## はじめに
 
-目的に合うライブラリを選んでください：
+目的に合うライブラリやツールを選んでください：
 
 - **アーキテクチャをドキュメント化したい？** → [Model](model/)
 - **イベント駆動システムを構築している？** → [Pulse](pulse/)
 - **Goa サービスに観測可能性を追加したい？** → [Clue](clue/)
+- **複数のコーディングエージェントを連携させたい？** → [Chorus](chorus/)
 
-いずれも `go get` で取得できます：
+いずれも `go get` / `go install` で取得できます：
 
 ```bash
 go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
+go install github.com/goadesign/chorus/cmd/chorus@latest
 ```

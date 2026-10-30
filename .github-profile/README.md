@@ -64,7 +64,7 @@ var _ = Agent("assistant", func() {
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 ### 📐 [Model](https://github.com/goadesign/model)
 
@@ -75,7 +75,7 @@ C4 model diagrams written in Go. Interactive editor, SVG export, always in sync 
 ![Stars](https://img.shields.io/github/stars/goadesign/model?style=flat&color=9d89e8&labelColor=0d1117)
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 ### 🔍 [Clue](https://github.com/goadesign/clue)
 
@@ -86,7 +86,7 @@ Structured logging, metrics, and distributed tracing. OpenTelemetry compatible. 
 ![Stars](https://img.shields.io/github/stars/goadesign/clue?style=flat&color=58a6ff&labelColor=0d1117)
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 ### ⚡ [Pulse](https://github.com/goadesign/pulse)
 
@@ -95,6 +95,17 @@ Structured logging, metrics, and distributed tracing. OpenTelemetry compatible. 
 In-memory shared maps, adaptive streams, and worker pools. Build event-driven architectures that scale.
 
 ![Stars](https://img.shields.io/github/stars/goadesign/pulse?style=flat&color=faff00&labelColor=0d1117)
+
+</td>
+<td width="25%" valign="top">
+
+### 🎶 [Chorus](https://github.com/goadesign/chorus)
+
+**Multi-agent MCP coordination**
+
+Coordinate coding agents across terminals and models in shared `#channels` and `@agent` DMs, built on Goa-AI and Pulse.
+
+![Stars](https://img.shields.io/github/stars/goadesign/chorus?style=flat&color=38bdf8&labelColor=0d1117)
 
 </td>
 </tr>
