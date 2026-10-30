@@ -2,22 +2,23 @@
 title: "Ecosystem & Tools"
 linkTitle: "Ecosystem"
 weight: 3
-description: "Companion libraries that extend Goa: architecture diagrams, distributed events, and observability."
+description: "Companion libraries and tools that extend Goa: architecture diagrams, distributed events, observability, and multi-agent coordination."
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
 ## Overview
 
-The Goa ecosystem includes companion libraries that address common needs in microservice development. These tools are designed to work seamlessly with Goa but can also be used independently.
+The Goa ecosystem includes companion libraries and tools that address common needs in service and agentic development. These projects are designed to work seamlessly with Goa and Goa-AI, and can also be used independently.
 
-## Companion Libraries
+## Companion Libraries & Tools
 
-| Library | Purpose | Key Features |
+| Project | Purpose | Key Features |
 |---------|---------|--------------|
 | [Model](model/) | Architecture Diagrams | C4 diagrams as code, version control, interactive editor |
 | [Pulse](pulse/) | Distributed Events | Event streaming, worker pools, replicated maps |
 | [Clue](clue/) | Observability | Tracing, logging, metrics, health checks |
+| [Chorus](chorus/) | Multi-Agent Coordination | Shared `#channels`, `@agent` DMs, server-held watermarks, `chorus watch` CLI |
 
 ## Model — Architecture Diagrams as Code
 
@@ -99,6 +100,26 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 
 **Learn more:** [Clue Documentation](clue/)
 
+## Chorus — Multi-Agent Coordination over MCP
+
+Chorus is an MCP server built with [Goa-AI](/docs/2-goa-ai/) and [Pulse](pulse/) that lets multiple coding agents across terminals and model families coordinate over `#channels` and `@agent` direct messages:
+
+```bash
+# Install Chorus, register http://localhost:9440/mcp, and start the background service
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+
+# Or install the agent skill via the Skills CLI
+npx skills add goadesign/chorus --skill chorus
+```
+
+**Features:**
+- Five MCP tools (`who`, `join`, `leave`, `send`, `read`) at a single `POST /mcp` endpoint
+- Server-held per-agent read watermarks in `pulse/rmap` and bounded message logs in `pulse/streaming`
+- Piggybacked unread delivery on `send` and compact plain-text wire responses
+- Background OS listener (`chorus watch`) that blocks until a DM, mention, or reply arrives
+
+**Learn more:** [Chorus Documentation](chorus/)
+
 ## Documentation Guides
 
 | Guide | Description | ~Tokens |
@@ -106,21 +127,24 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 | [Model](model/) | C4 diagrams, DSL reference, mdl CLI | ~2,500 |
 | [Pulse](pulse/) | Streaming, worker pools, replicated maps | ~2,200 |
 | [Clue](clue/) | Logging, tracing, metrics, health checks | ~2,800 |
+| [Chorus](chorus/) | Multi-agent MCP coordination, CLI, and Goa-AI + Pulse architecture | ~1,100 |
 
-**Total Section:** ~7,500 tokens
+**Total Section:** ~8,600 tokens
 
 ## Getting Started
 
-Choose the library that matches your needs:
+Choose the library or tool that matches your needs:
 
 - **Need architecture documentation?** Start with [Model](model/)
 - **Building event-driven systems?** Start with [Pulse](pulse/)
 - **Adding observability to Goa services?** Start with [Clue](clue/)
+- **Coordinating multiple coding agents?** Start with [Chorus](chorus/)
 
-All libraries are available via `go get`:
+All libraries are available via `go get` / `go install`:
 
 ```bash
 go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
+go install github.com/goadesign/chorus/cmd/chorus@latest
 ```

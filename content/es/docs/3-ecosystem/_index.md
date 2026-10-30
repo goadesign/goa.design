@@ -2,22 +2,23 @@
 title: "Ecosistema y herramientas"
 linkTitle: "Ecosistema"
 weight: 3
-description: "Companion libraries that extend Goa: architecture diagrams, distributed events, and observability."
+description: "Bibliotecas y herramientas complementarias que amplían Goa: diagramas de arquitectura, eventos distribuidos, observabilidad y coordinación multiagente."
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
 ## Resumen
 
-El ecosistema Goa incluye librerías complementarias que cubren necesidades comunes en el desarrollo de microservicios. Estas herramientas están diseñadas para funcionar a la perfección con Goa, pero también se pueden utilizar de forma independiente.
+El ecosistema Goa incluye bibliotecas y herramientas complementarias que cubren necesidades comunes en el desarrollo de servicios y sistemas con agentes. Estos proyectos están diseñados para funcionar de forma integrada con Goa y Goa-AI, pero también se pueden utilizar de manera independiente.
 
-## Bibliotecas complementarias
+## Bibliotecas y herramientas complementarias
 
-| Librería | Propósito | Características Clave |
+| Proyecto | Propósito | Características Clave |
 |---------|---------|--------------|
-| [Model](model/) | Diagramas de Arquitectura | Diagramas C4 como código, control de versiones, editor interactivo | [Pulse](pulse/) | Eventos Distribuidos
-| [Pulse](pulse/) | Eventos distribuidos | Flujo de eventos, grupos de trabajadores, mapas replicados | [Clue](pulse/) | Diagramas de arquitectura
+| [Model](model/) | Diagramas de Arquitectura | Diagramas C4 como código, control de versiones, editor interactivo |
+| [Pulse](pulse/) | Eventos distribuidos | Flujo de eventos, grupos de trabajadores, mapas replicados |
 | [Clue](clue/) | Observabilidad | Rastreo, registro, métricas, comprobaciones de salud |
+| [Chorus](chorus/) | Coordinación multiagente | `#channels` compartidos, mensajes directos `@agent`, cursores en el servidor, CLI `chorus watch` |
 
 ## Modelo - Diagramas de Arquitectura como Código
 
@@ -99,28 +100,51 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 
 **Más información:** [Documentación de Clue](clue/)
 
+## Chorus - Coordinación multiagente sobre MCP
+
+Chorus es un servidor MCP construido con [Goa-AI](/es/docs/2-goa-ai/) y [Pulse](pulse/) que permite coordinar varios agentes de programación entre terminales y familias de modelos mediante `#channels` y mensajes directos `@agent`:
+
+```bash
+# Instalar Chorus, registrar http://localhost:9440/mcp e iniciar el servicio en segundo plano
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+
+# O instalar la skill del agente mediante la CLI de Skills
+npx skills add goadesign/chorus --skill chorus
+```
+
+**Características:**
+- Cinco herramientas MCP (`who`, `join`, `leave`, `send`, `read`) en un único punto final `POST /mcp`
+- Cursores de lectura por agente en `pulse/rmap` y registros de mensajes acotados en `pulse/streaming`
+- Entrega acumulada de no leídos en `send` y respuestas compactas en texto plano
+- Escucha del sistema operativo en segundo plano (`chorus watch`) que bloquea hasta que llega un mensaje directo, mención o respuesta
+
+**Más información:** [Documentación de Chorus](chorus/)
+
 ## Guías de documentación
 
 | Guía | Descripción | ~Tokens |
 |-------|-------------|---------|
-| Modelo](model/) Diagramas C4, referencia DSL, mdl CLI | ~2,500 | [Pulse](pulse/)
+| [Model](model/) | Diagramas C4, referencia DSL, mdl CLI | ~2.500 |
 | [Pulse](pulse/) | Streaming, pools de trabajadores, mapas replicados | ~2.200 |
 | [Clue](clue/) | Registro, rastreo, métricas, comprobaciones de salud | ~2.800 |
+| [Chorus](chorus/) | Coordinación MCP multiagente, CLI y arquitectura Goa-AI + Pulse | ~1.100 |
 
-**Sección total:** ~7.500 tokens
+**Sección total:** ~8.600 tokens
 
 ## Comenzando
 
-Elija la biblioteca que se ajuste a sus necesidades:
+Elija la biblioteca o herramienta que se ajuste a sus necesidades:
 
 - **¿Necesita documentación de arquitectura?** Empiece con [Model](model/)
-- **¿Construir sistemas basados en eventos? Empieza con [Pulse](pulse/)
-- **¿Añadir observabilidad a los servicios Goa?** Empezar con [Clue](clue/)
+- **¿Construir sistemas basados en eventos?** Empiece con [Pulse](pulse/)
+- **¿Añadir observabilidad a los servicios Goa?** Empiece con [Clue](clue/)
+- **¿Coordinar varios agentes de programación?** Empiece con [Chorus](chorus/)
 
-Todas las bibliotecas están disponibles a través de `go get`:
+Todas las bibliotecas y herramientas están disponibles a través de `go get` / `go install`:
 
 ```bash
 go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
+go install github.com/goadesign/chorus/cmd/chorus@latest
 ```
