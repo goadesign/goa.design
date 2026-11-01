@@ -74,9 +74,9 @@ request and complete response before planner code can observe them.
 
 ### History Compression
 
-On the first `PrepareMessages` call in each planner activity, an agent's
-`History(...)` policy may summarize older turns while keeping a
-bounded exact tail. `CompressAt...` values decide when summarization starts;
+When a planner calls `Complete` or `Stream` through a runtime model client, an
+agent's `History(...)` policy may summarize older turns in that request while
+keeping a bounded exact tail. The saved transcript is not rewritten. `CompressAt...` values decide when summarization starts;
 `KeepMax...` values decide which newest whole turns remain unchanged. The
 runtime never truncates a turn.
 
@@ -96,7 +96,7 @@ History](../dsl-reference/#history) for the complete contract.
 
 ### How This Simplifies Planners and UIs
 
-- **Planners**: Call `PrepareMessages` on `planner.PlanInput` or `planner.PlanResumeInput` and handle its error before reading the policy-prepared transcript. They can decide from those messages without maintaining parallel history. See [Preparing conversation messages](../runtime/#preparing-conversation-messages).
+- **Planners**: Read the saved conversation from `Messages` on `planner.PlanInput` or `planner.PlanResumeInput`, and treat it as read-only. The history policy applies to each model request the planner makes, so planners decide from those messages without maintaining parallel history. See [Preparing conversation messages](../runtime/#preparing-conversation-messages).
 - **UIs**: Can render chat history, tool ribbons, and agent cards from the same underlying transcript they persist for the model. No separate "tool log" structures needed.
 - **Provider adapters**: Never guess which tools were called or which results belong where; they simply map transcript parts → provider blocks.
 
@@ -538,7 +538,7 @@ above.
 
 - **Use strong, descriptive schemas**: Rich `Args` / `Return` types, descriptions, and examples in your Goa design produce clearer tool payloads/results in the transcript
 
-- **Let the runtime own state**: Avoid maintaining parallel "tool history" arrays or "previous messages" slices in your planner. Read the messages returned by `PrepareMessages` after checking its error, and rely on the runtime to append new parts to the stored transcript
+- **Let the runtime own state**: Avoid maintaining parallel "tool history" arrays or "previous messages" slices in your planner. Read `Messages` from the planner input, and rely on the runtime to append new parts to the stored transcript
 
 - **Persist product transcripts once**: Keep one product-owned transcript for
   model calls, chat UI, debug UI, and offline analysis. Do not copy it into a
