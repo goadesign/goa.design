@@ -762,10 +762,6 @@ La gestion des invites est native du runtime et versionnée :
 - Le contenu rendu liste dans `content.Refs` chaque version de prompt utilisée, y compris les prompts composés avec `{{ render "<prompt-id>" . }}`. Placez cette liste sur la `model.Request` qui utilise le texte.
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -773,9 +769,12 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    RunID:      input.RunContext.RunID,
-    Messages:   messages,
+    Messages:   append([]*model.Message{system}, input.Messages...),
     PromptRefs: content.Refs,
 })
 ```

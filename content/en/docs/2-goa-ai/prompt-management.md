@@ -20,8 +20,9 @@ your design:
   function that renders it.
 - At runtime you can replace a prompt's text for one customer, one session, or
   everyone, without rebuilding or redeploying.
-- Every model request records the exact prompt versions used to build it, so a
-  trace shows which text produced which answer.
+- Rendering returns the exact prompt versions it used. Attach them to the model
+  request that sends the text, and the request's trace shows which text produced
+  which answer.
 
 ## Concepts
 
@@ -113,8 +114,12 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    Messages:   append(systemMessage(content.Text), messages...),
+    Messages:   append([]*model.Message{system}, input.Messages...),
     PromptRefs: content.Refs,
 })
 ```
@@ -122,10 +127,11 @@ resp, err := modelClient.Complete(ctx, &model.Request{
 Use `content.Refs`, not `[]prompt.PromptRef{content.Ref}`. `content.Ref` names
 only the top-level prompt and drops the prompts it composed.
 
-Each model request carries its own list. If a planner renders a classification
-prompt and a separate answer prompt for two model calls in the same turn, each
-request records only the prompts that built it. The model call's trace span
-lists those prompt IDs and versions.
+The runtime does not attach prompt versions for you: each request carries the
+list its caller put on it. If a planner renders a classification prompt and a
+separate answer prompt for two model calls in the same turn, give each request
+the `Refs` from its own render. The model call's trace span lists the prompt IDs
+and versions on that request.
 
 <!-- PENDING(signatures): exact span attribute names. -->
 

@@ -745,10 +745,6 @@ La gestión de prompts es nativa del runtime y versionada:
 - El contenido renderizado enumera en `content.Refs` cada versión de prompt que usó, incluidos los prompts compuestos con `{{ render "<prompt-id>" . }}`. Pon esa lista en el `model.Request` que usa el texto.
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -756,9 +752,12 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    RunID:      input.RunContext.RunID,
-    Messages:   messages,
+    Messages:   append([]*model.Message{system}, input.Messages...),
     PromptRefs: content.Refs,
 })
 ```

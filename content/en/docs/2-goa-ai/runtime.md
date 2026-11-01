@@ -748,10 +748,6 @@ Prompt management is runtime-native and versioned:
   with `{{ render "<prompt-id>" . }}`. Put that list on the `model.Request` that uses the text.
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -759,8 +755,12 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    Messages:   messages,
+    Messages:   append([]*model.Message{system}, input.Messages...),
     PromptRefs: content.Refs,
 })
 ```

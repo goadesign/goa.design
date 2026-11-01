@@ -680,10 +680,6 @@ Prompt 管理はランタイムネイティブで、バージョン管理され�
 - 描画済み内容は、`{{ render "<prompt-id>" . }}` で合成した prompt を含め、使用したすべての prompt バージョンを `content.Refs` に列挙する。そのリストを、テキストを使う `model.Request` に設定する
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -691,9 +687,12 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    RunID:      input.RunContext.RunID,
-    Messages:   messages,
+    Messages:   append([]*model.Message{system}, input.Messages...),
     PromptRefs: content.Refs,
 })
 ```
