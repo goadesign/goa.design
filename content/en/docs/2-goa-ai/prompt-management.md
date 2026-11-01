@@ -69,10 +69,33 @@ from the generated Go struct, so templates use exact generated Go field names. -
 
 ## Register prompts
 
-<!-- PENDING(signatures): agent prompts register as part of agent registration
-(RegisterAgent); service-owned prompts register through the generated
-service registration function. Constructors stay free of registration side
-effects. Manually registered PromptSpecs keep working. -->
+The runtime must know a prompt's baseline before anything can render it.
+
+**Agent prompts** register with their agent. `AgentRegistration.PromptSpecs`
+lists the prompts an agent owns, and `Runtime.RegisterAgent` handles them:
+
+1. It checks every listed prompt first, before it registers anything. A
+   template that does not parse, a duplicate ID, or an ID that is already
+   registered fails the whole call. So does a template that uses a field its
+   prompt does not declare, when the prompt declares its fields.
+2. It registers the agent with the workflow engine.
+3. Only when that succeeds, it adds the prompts to `Runtime.PromptRegistry`.
+
+So a failed `RegisterAgent` leaves no prompts behind, and building a
+registration value has no side effects: nothing is registered until you call
+`RegisterAgent`.
+
+**Service-owned prompts** belong to a service rather than one agent, so several
+agents and non-agent code can share them. Their `PromptSpec.AgentID` is empty,
+and you register them directly with `Runtime.PromptRegistry.Register`.
+
+<!-- PENDING(signatures): the generated agent registration that fills
+PromptSpecs and the generated service registration function. -->
+
+**Prompts you register by hand** keep working. Build a `prompt.PromptSpec` and
+pass it to `Runtime.PromptRegistry.Register`, as before. A spec without
+`Fields` declares no fields, so its template is checked for syntax but not for
+field names.
 
 ## Render a prompt and record what was used
 
@@ -109,9 +132,12 @@ lists those prompt IDs and versions.
 ## Change a prompt at runtime
 
 Saving an override replaces a prompt's text for one scope. The runtime checks
-the new template against the prompt's declared fields before it saves anything,
-so a template that uses an unknown field is rejected at save time instead of
-failing later on every render.
+the new template before it saves anything. For a prompt that declares its
+fields, a template that uses an unknown field is rejected at save time instead
+of failing later on every render.
+
+<!-- PENDING(signatures): state how generated prompts, including prompts with
+no arguments, declare their fields. -->
 
 <!-- PENDING(signatures): SetOverride / ValidateOverride signatures and return
 values. -->
