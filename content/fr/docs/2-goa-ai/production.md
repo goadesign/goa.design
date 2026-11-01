@@ -259,20 +259,31 @@ rt := runtime.New(
 
 ### Remplacer la résolution et le déploiement
 
-La priorité de remplacement est déterministe :
+Un remplacement s’applique à une requête lorsque son ID de session, s’il en a un,
+est égal à celui de la requête, et que chacun de ses libellés figure dans la
+requête avec la même valeur. Lorsque plusieurs s’appliquent, le runtime en
+choisit un de façon déterministe :
 
-1. Portée `session`
-2. Portée `facility`
-3. Portée `org`
-4. portée mondiale
-5. spécification de base (quand aucun remplacement n'existe)
+1. un remplacement avec un ID de session l’emporte sur un remplacement sans session ;
+2. sinon, le remplacement qui a le plus de libellés l’emporte ;
+3. sinon, le remplacement le plus récent l’emporte.
+
+Si aucun remplacement ne s’applique, le runtime rend la spécification de base.
+Voir [Gestion des prompts](../prompt-management/#concepts) pour un exemple
+complet.
 
 Stratégie de déploiement recommandée :
 
 - Enregistrez d’abord les nouvelles spécifications de base.
-- Déployez les remplacements à grande échelle (`org`), puis limitez-les à `facility`/`session` pour les Canaries.
-- Suivez les versions efficaces via les événements `prompt_rendered` et `model.Request.PromptRefs`.
-- Revenez en arrière en écrivant un remplacement plus récent dans la même portée (ou en supprimant les remplacements spécifiques à la portée pour revenir en arrière).
+- Déployez un remplacement sur une portée large, par exemple un seul libellé
+  `account=acme`, puis ajoutez des portées plus étroites, comme
+  `account=acme, region=eu` ou une session, pour les canaries.
+- Suivez les versions effectives via les événements `prompt_rendered` et
+  `model.Request.PromptRefs`.
+- Revenez en arrière en enregistrant un remplacement plus récent sur la même
+  portée, ou en réinitialisant cette portée exacte pour qu’un remplacement plus
+  large ou la spécification de base s’applique de nouveau. La réinitialisation
+  supprime définitivement les remplacements de cette portée.
 
 ---
 

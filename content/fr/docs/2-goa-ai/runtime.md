@@ -757,10 +757,9 @@ séparément.
 La gestion des invites est native du runtime et versionnée :
 
 - `runtime.PromptRegistry` stocke les enregistrements `prompt.PromptSpec` de base immuables.
-- `runtime.WithPromptStore(prompt.Store)` permet une résolution de remplacement étendue (`session` -> `facility` -> `org` -> global).
+- `runtime.WithPromptStore(prompt.Store)` active les remplacements par portée. Un remplacement s’applique lorsque son ID de session (s’il en a un) et chacun de ses libellés correspondent à la requête. Un remplacement avec session l’emporte sur un remplacement sans session, puis plus de libellés l’emportent sur moins, puis le plus récent l’emporte. Voir [Gestion des prompts](../prompt-management/#concepts).
 - Les planificateurs appellent `PlannerContext.RenderPrompt(ctx, id, data)` pour résoudre et afficher le contenu des invites.
-- Le contenu rendu inclut les métadonnées `prompt.PromptRef` pour la provenance ; les planificateurs peuvent les joindre à
-`model.Request.PromptRefs`.
+- Le contenu rendu liste dans `content.Refs` chaque version de prompt utilisée, y compris les prompts composés avec `{{ render "<prompt-id>" . }}`. Placez cette liste sur la `model.Request` qui utilise le texte.
 
 ```go
 messages, err := input.PrepareMessages()
@@ -777,7 +776,7 @@ if err != nil {
 resp, err := modelClient.Complete(ctx, &model.Request{
     RunID:      input.RunContext.RunID,
     Messages:   messages,
-    PromptRefs: []prompt.PromptRef{content.Ref},
+    PromptRefs: content.Refs,
 })
 ```
 
