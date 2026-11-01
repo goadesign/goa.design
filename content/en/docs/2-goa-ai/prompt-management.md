@@ -85,9 +85,9 @@ lists the prompts an agent owns, and `Runtime.RegisterAgent` handles them:
 2. It registers the agent with the workflow engine.
 3. Only when that succeeds, it adds the prompts to `Runtime.PromptRegistry`.
 
-So a failed `RegisterAgent` leaves no prompts behind, and building a
-registration value has no side effects: nothing is registered until you call
-`RegisterAgent`.
+A prompt that fails the checks stops `RegisterAgent` before the agent reaches
+the workflow engine. Building a registration value has no side effects: nothing
+is registered until you call `RegisterAgent`.
 
 **Service-owned prompts** belong to a service rather than one agent, so several
 agents and non-agent code can share them. Their `PromptSpec.AgentID` is empty,

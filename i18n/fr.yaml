@@ -135,6 +135,7 @@ home_output_codecs: "Codecs de données typées"
 home_output_bindings: "Liaisons aux services"
 
 home_full_example: "Voir l’exemple complet"
+home_prompt_guide: "Lire le guide de gestion des prompts"
 
 home_workflow_heading: "Concevez l’intention. Générez la répétition."
 

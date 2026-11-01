@@ -133,6 +133,7 @@ home_output_codecs: "型付きペイロードのコーデック"
 home_output_bindings: "サービスとの接続"
 
 home_full_example: "完全な例を見る"
+home_prompt_guide: "プロンプト管理ガイドを読む"
 
 home_workflow_heading: "意図を設計し、繰り返すコードは生成する。"
 

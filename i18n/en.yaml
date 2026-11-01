@@ -134,6 +134,7 @@ home_output_codecs: "Typed payload codecs"
 home_output_bindings: "Service bindings"
 
 home_full_example: "Read the complete example"
+home_prompt_guide: "Read the prompt management guide"
 
 home_workflow_heading: "Design the intent. Generate the repetition."
 

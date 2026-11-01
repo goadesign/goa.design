@@ -153,6 +153,7 @@ home_output_codecs: "Codec dei payload tipizzati"
 home_output_bindings: "Collegamenti ai servizi"
 
 home_full_example: "Leggi l’esempio completo"
+home_prompt_guide: "Leggi la guida alla gestione dei prompt"
 
 home_workflow_heading: "Progetta l’intento. Genera la ripetizione."
 
