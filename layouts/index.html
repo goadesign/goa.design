@@ -72,7 +72,8 @@
       <div class="demo-prompt demo-panel">
         <div class="demo-filename"><span>design/support.go</span><span>{{ T "home_excerpt" }}</span></div>
         {{ highlight `Agent("support", "Answer refund questions", func() {
-    SystemPrompt("Refund policy", func() {
+    SystemPrompt(func() {
+        Description("Refund policy")
         Args(func() {
             Attribute("account_name", String)
             Attribute("refund_limit", Int)
