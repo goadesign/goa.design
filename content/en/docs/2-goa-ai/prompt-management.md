@@ -24,7 +24,7 @@ your design:
   request that sends the text, and the request's trace shows which text produced
   which answer.
 
-## Concepts
+## Concepts {#concepts}
 
 **Baseline prompt.** The prompt as declared in the design: its ID (for example
 `support.system`), its role (`system`, `user`, `tool`, or `synthesis`), its
@@ -50,6 +50,9 @@ An override with no session and no labels applies everywhere.
 1. An override with a session ID beats one without.
 2. Otherwise, the override with more labels beats the one with fewer.
 3. Otherwise, the newer override wins.
+
+The choice is deterministic: overrides saved at the same instant still resolve
+to the same one every time.
 
 If no override applies, the runtime renders the baseline.
 

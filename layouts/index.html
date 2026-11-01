@@ -72,11 +72,11 @@
       <div class="demo-prompt demo-panel">
         <div class="demo-filename"><span>design/support.go</span><span>{{ T "home_excerpt" }}</span></div>
         {{ highlight `Agent("support", "Answer refund questions", func() {
-    Prompt("system", "Refund policy", func() {
+    SystemPrompt("Refund policy", func() {
         Args(func() {
-            Attribute("AccountName", String)
-            Attribute("RefundLimit", Int)
-            Required("AccountName", "RefundLimit")
+            Attribute("account_name", String)
+            Attribute("refund_limit", Int)
+            Required("account_name", "refund_limit")
         })
         Template("You help {{ .AccountName }} customers. " +
             "Approve refunds up to ${{ .RefundLimit }}.")
