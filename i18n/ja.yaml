@@ -241,6 +241,11 @@ home_output_cli: "CLIクライアント"
 home_output_descriptors: "型付きツール記述子"
 
 home_output_registration: "ランタイム登録"
+home_prompts: "プロンプト"
+home_output_prompt_checks: "goa gen でテンプレートを検証"
+home_output_prompt_render: "型付きレンダリング関数"
+home_output_prompt_registration: "プロンプト登録"
+home_output_prompt_overrides: "スコープ別の実行時差し替え"
 
 home_skill_cta: "コーディングエージェントにGoaスキルを追加"
 

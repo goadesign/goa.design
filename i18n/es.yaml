@@ -241,6 +241,11 @@ home_output_cli: "Clientes de línea de comandos"
 home_output_descriptors: "Descriptores de herramientas tipados"
 
 home_output_registration: "Registros del runtime"
+home_prompts: "Prompts"
+home_output_prompt_checks: "Plantillas verificadas en goa gen"
+home_output_prompt_render: "Funciones de renderizado tipadas"
+home_output_prompt_registration: "Registros de prompts"
+home_output_prompt_overrides: "Cambios por ámbito en tiempo de ejecución"
 
 home_skill_cta: "Añade la skill Goa a tu agente"
 

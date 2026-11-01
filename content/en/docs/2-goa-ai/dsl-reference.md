@@ -122,15 +122,24 @@ passing the Anthropic fields through `additionalModelRequestFields` when the bet
 contract requires it. Generated or synthesized examples are never promoted to
 top-level provider examples.
 
-## Prompt Management (v1 Integration Path)
+## Prompts
 
-Goa-AI v1 does **not** require a dedicated prompt DSL (`Prompt(...)`, `Prompts(...)`).
-Prompt management is currently runtime-driven:
+Declare prompts in the design so `goa gen` checks each template against its
+arguments and generates typed render functions. See
+[Prompt management](../prompt-management/) for how overrides, scopes, reset,
+and per-request prompt records work at runtime.
+
+<!-- PENDING(signatures): reference entries for Prompt, SystemPrompt, Args and
+the template/role functions, their allowed parents (Agent, Service, and the
+existing MCP Method form Prompt(name, description)), and the generated names. -->
+
+Prompts registered by hand in `runtime.PromptRegistry` keep working:
 
 - Register baseline prompt specs in `runtime.PromptRegistry`.
 - Configure scoped overrides with `runtime.WithPromptStore(...)`.
 - Render prompts from planners using `PlannerContext.RenderPrompt(...)`.
-- Attach rendered prompt provenance to model calls with `model.Request.PromptRefs`.
+- Put every prompt version a render used, `content.Refs`, on the
+  `model.Request` that uses the text.
 
 For agent-as-tool flows, map tool IDs to prompt IDs using runtime options such as
 `runtime.WithPromptSpec(...)` on agent-tool registrations.

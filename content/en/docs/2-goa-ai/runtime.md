@@ -739,10 +739,13 @@ separately.
 Prompt management is runtime-native and versioned:
 
 - `runtime.PromptRegistry` stores immutable baseline `prompt.PromptSpec` registrations.
-- `runtime.WithPromptStore(prompt.Store)` enables scoped override resolution (`session` -> `facility` -> `org` -> global).
+- `runtime.WithPromptStore(prompt.Store)` enables scoped overrides. An override applies when its session
+  ID (if set) and every one of its labels match the request. A session override beats one without a
+  session, then more labels beat fewer, then the newer override wins. See
+  [Prompt management](../prompt-management/#concepts).
 - Planners call `PlannerContext.RenderPrompt(ctx, id, data)` to resolve and render prompt content.
-- Rendered content includes `prompt.PromptRef` metadata for provenance; planners can attach these to
-  `model.Request.PromptRefs`.
+- Rendered content lists every prompt version it used in `content.Refs`, including prompts composed
+  with `{{ render "<prompt-id>" . }}`. Put that list on the `model.Request` that uses the text.
 
 ```go
 messages, err := input.PrepareMessages()
@@ -758,7 +761,7 @@ if err != nil {
 
 resp, err := modelClient.Complete(ctx, &model.Request{
     Messages:   messages,
-    PromptRefs: []prompt.PromptRef{content.Ref},
+    PromptRefs: content.Refs,
 })
 ```
 
