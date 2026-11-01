@@ -53,9 +53,6 @@ sceglie uno:
 2. Altrimenti, l'override con più etichette prevale su quello con meno.
 3. Altrimenti, prevale l'override più recente.
 
-La scelta è deterministica: anche gli override salvati nello stesso istante si
-risolvono ogni volta nello stesso override.
-
 Se non si applica alcun override, il runtime rende la baseline.
 
 Per esempio, con questi override salvati per `support.system`:

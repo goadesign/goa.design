@@ -53,9 +53,6 @@ Un override sin sesión y sin etiquetas se aplica en todas partes.
 2. Si no, el override con más etiquetas gana al que tiene menos.
 3. Si no, gana el override más reciente.
 
-La elección es determinista: los overrides guardados en el mismo instante se
-resuelven siempre en el mismo.
-
 Si no se aplica ningún override, el runtime renderiza el prompt base.
 
 Por ejemplo, con estos overrides guardados para `support.system`:

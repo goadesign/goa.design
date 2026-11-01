@@ -276,7 +276,7 @@ rt := runtime.New(
 
 An override applies to a request when its session ID, if it has one, equals the
 request's, and every label on the override is on the request with the same
-value. When several apply, the runtime picks one deterministically:
+value. When several apply, the runtime picks one in this order:
 
 1. an override with a session ID beats one without;
 2. otherwise, the override with more labels wins;

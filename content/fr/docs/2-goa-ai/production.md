@@ -262,7 +262,7 @@ rt := runtime.New(
 Un remplacement s’applique à une requête lorsque son ID de session, s’il en a un,
 est égal à celui de la requête, et que chacun de ses libellés figure dans la
 requête avec la même valeur. Lorsque plusieurs s’appliquent, le runtime en
-choisit un de façon déterministe :
+choisit un dans cet ordre :
 
 1. un remplacement avec un ID de session l’emporte sur un remplacement sans session ;
 2. sinon, le remplacement qui a le plus de libellés l’emporte ;

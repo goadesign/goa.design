@@ -262,7 +262,7 @@ rt := runtime.New(
 Un override si applica a una richiesta quando il suo ID di sessione, se presente,
 è uguale a quello della richiesta e ogni sua etichetta è presente nella
 richiesta con lo stesso valore. Quando se ne applicano diversi, il runtime ne
-sceglie uno in modo deterministico:
+sceglie uno in questo ordine:
 
 1. un override con ID di sessione prevale su uno senza sessione;
 2. altrimenti prevale l’override con più etichette;

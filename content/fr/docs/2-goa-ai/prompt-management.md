@@ -56,9 +56,6 @@ runtime en choisit un :
    moins.
 3. Sinon, le remplacement le plus récent l’emporte.
 
-Le choix est déterministe : des remplacements enregistrés au même instant se
-résolvent toujours vers le même remplacement.
-
 Si aucun remplacement ne s’applique, le runtime rend le prompt de base.
 
 Par exemple, avec ces remplacements enregistrés pour `support.system` :

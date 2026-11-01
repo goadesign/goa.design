@@ -51,9 +51,6 @@ An override with no session and no labels applies everywhere.
 2. Otherwise, the override with more labels beats the one with fewer.
 3. Otherwise, the newer override wins.
 
-The choice is deterministic: overrides saved at the same instant still resolve
-to the same one every time.
-
 If no override applies, the runtime renders the baseline.
 
 For example, with these overrides saved for `support.system`:
