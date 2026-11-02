@@ -124,15 +124,31 @@ projection sans exemple racine ; Bedrock transmet les champs Anthropic via
 générés ou synthétisés ne sont jamais promus en exemples fournisseur de niveau
 supérieur.
 
-## Gestion des invites (chemin d'intégration v1)
+## Prompts {#gestion-des-invites-chemin-dintégration-v1}
 
-Goa-AI v1 ne nécessite **pas** d'invite dédiée DSL (`Prompt(...)`, `Prompts(...)`).
-La gestion des invites est actuellement basée sur l'exécution :
+Déclarez les prompts dans le design pour que `goa gen` vérifie chaque template
+par rapport à ses arguments et génère des fonctions de rendu typées. Voir
+[Gestion des prompts](../prompt-management/) pour le fonctionnement des
+remplacements, des portées, de la réinitialisation et du suivi par requête à
+l'exécution.
+
+| Fonction | Contexte | Objectif |
+| --- | --- | --- |
+| `SystemPrompt(args ...any)` | Dans `Agent` | Déclare le prompt système de base de l'agent (`<service>.<agent>.system`, rôle `"system"`) sous forme de chaîne statique, de template avec fermeture DSL ou de fermeture DSL |
+| `Prompt(name, args ...any)` | Dans `Agent` ou `Service` | Déclare un prompt composable (`<service>.<agent>.<name>` ou `<service>.<name>`) ; dans une `Method` MCP, `Prompt(name, description)` expose une capacité MCP `prompts/get` |
+| `Template(source)` | Dans `Prompt` ou `SystemPrompt` | Définit la source Go `text/template` validée par rapport à `Args` à la génération et à l'exécution (y compris `{{ render "<prompt-id>" . }}`) |
+| `Role(role)` | Dans `Prompt` | Définit le rôle du prompt (`"system"`, `"user"`, `"tool"` ou `"synthesis"` ; `"user"` par défaut) |
+| `Args(dsl)` | Dans `Prompt` ou `SystemPrompt` | Déclare les arguments d'entrée structurés (`Attribute`, `Field`, `Required`) utilisés pour valider les champs du template et générer `<Name>PromptArgs` |
+
+Pour chaque agent déclarant des prompts, `goa gen` génère `gen/<service>/agents/<agent>/prompts.go` avec `SystemPromptID` / `Prompt<Name>ID`, `SystemPromptArgs` / `<Name>PromptArgs`, `PromptSpecSystem()` / `PromptSpec<Name>()`, `PromptSpecs()`, `RegisterPrompts(reg)`, `RenderSystemPrompt` / `Render<Name>Prompt` et `RenderSystemPromptWithRegistry` / `Render<Name>PromptWithRegistry`. Pour les prompts de service, `goa gen` génère les mêmes fonctions dans `gen/<service>/prompts/prompts.go`.
+
+Les prompts enregistrés à la main dans `runtime.PromptRegistry` continuent de fonctionner :
 
 - Enregistrez les spécifications d'invite de base dans `runtime.PromptRegistry`.
 - Configurez les remplacements de portée avec `runtime.WithPromptStore(...)`.
 - Affichez les invites des planificateurs à l'aide de `PlannerContext.RenderPrompt(...)`.
-- Attachez la provenance de l'invite rendue aux appels de modèle avec `model.Request.PromptRefs`.
+- Placez chaque version de prompt utilisée par le rendu, `content.Refs`, sur la
+  `model.Request` qui utilise le texte.
 
 Pour les flux d'agent en tant qu'outil, mappez les ID d'outil aux ID d'invite à l'aide d'options d'exécution telles que
 `runtime.WithPromptSpec(...)` sur les enregistrements d'outils d'agent.

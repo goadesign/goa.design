@@ -7,10 +7,6 @@ description: "Declare prompts in the design, render them with typed arguments, c
 llm_optimized: true
 ---
 
-<!-- PENDING(signatures): this draft describes contracts already settled in
-review. Every block marked PENDING(signatures) waits for the reviewed goa-ai
-prompt API; do not publish while any marker remains. -->
-
 A prompt is the text your agent sends to a model, such as a system prompt that
 tells a support assistant how to handle refunds. Goa-AI treats prompts as part of
 your design:
@@ -27,8 +23,8 @@ your design:
 ## Concepts {#concepts}
 
 **Baseline prompt.** The prompt as declared in the design: its ID (for example
-`support.system`), its role (`system`, `user`, `tool`, or `synthesis`), its
-template text, and the fields the template may use. The runtime registers each
+`support.assistant.system`), its role (`system`, `user`, `tool`, or `synthesis`),
+its template text, and the fields the template may use. The runtime registers each
 baseline once, and a registered baseline never changes. Its version is derived
 from the template text, so changing the text in the design produces a new
 version.
@@ -53,7 +49,7 @@ An override with no session and no labels applies everywhere.
 
 If no override applies, the runtime renders the baseline.
 
-For example, with these overrides saved for `support.system`:
+For example, with these overrides saved for `support.assistant.system`:
 
 | Override scope | Applies to a request in session `s-42` for `account=acme`, `region=eu`? |
 | --- | --- |
@@ -64,9 +60,46 @@ For example, with these overrides saved for `support.system`:
 
 ## Declare prompts in the design
 
-<!-- PENDING(signatures): Prompt / SystemPrompt / Args DSL, agent-level and
-service-level placement, and the exact generated names. Arguments are rendered
-from the generated Go struct, so templates use exact generated Go field names. -->
+Use `SystemPrompt` inside `Agent` for the agent's baseline system prompt
+(`<service>.<agent>.system`, role `system`), `Prompt` inside `Agent` for
+agent-owned prompts (`<service>.<agent>.<name>`, default role `user`), and
+`Prompt` inside `Service` for prompts shared across agents or non-agent callers
+(`<service>.<name>`):
+
+```go
+var _ = Service("support", func() {
+    Prompt("shared_safety", func() {
+        Description("Shared safety rules")
+        Role("system")
+        Template("Never disclose internal credentials or personal data.")
+    })
+
+    Agent("assistant", "Answer refund questions", func() {
+        SystemPrompt(func() {
+            Description("Refund policy")
+            Args(func() {
+                Attribute("account_name", String)
+                Attribute("refund_limit", Int)
+                Required("account_name", "refund_limit")
+            })
+            Template("You help {{ .AccountName }} customers. " +
+                "Approve refunds up to ${{ .RefundLimit }}. " +
+                `{{ render "support.shared_safety" }}`)
+        })
+    })
+})
+```
+
+Templates render against the generated Go argument struct
+(`SystemPromptArgs` or `<Name>PromptArgs`), so template expressions use the
+generated Go field names (`{{ .AccountName }}`, `{{ .RefundLimit }}`).
+`goa gen` emits agent prompt helpers in
+`gen/<service>/agents/<agent>/prompts.go` (`SystemPromptID`,
+`Prompt<Name>ID`, `SystemPromptArgs`, `<Name>PromptArgs`,
+`PromptSpecSystem()`, `PromptSpec<Name>()`, `PromptSpecs()`,
+`RegisterPrompts`, `RenderSystemPrompt`, `Render<Name>Prompt`,
+`RenderSystemPromptWithRegistry`, and `Render<Name>PromptWithRegistry`) and
+service prompt helpers in `gen/<service>/prompts/prompts.go`.
 
 ## Register prompts
 
@@ -78,7 +111,7 @@ lists the prompts an agent owns, and `Runtime.RegisterAgent` handles them:
 1. It checks every listed prompt first, before it registers anything. A
    template that does not parse, a duplicate ID, or an ID that is already
    registered fails the whole call. So does a template that uses a field its
-   prompt does not declare, when the prompt declares its fields.
+   `ArgsType` does not declare, when the prompt declares `ArgsType`.
 2. It registers the agent with the workflow engine.
 3. Only when that succeeds, it adds the prompts to `Runtime.PromptRegistry`.
 
@@ -88,15 +121,28 @@ is registered until you call `RegisterAgent`.
 
 **Service-owned prompts** belong to a service rather than one agent, so several
 agents and non-agent code can share them. Their `PromptSpec.AgentID` is empty,
-and you register them directly with `Runtime.PromptRegistry.Register`.
+and you register them on `Runtime.PromptRegistry` with the generated service
+package's `RegisterPrompts` helper (or `Runtime.PromptRegistry.Register`):
 
-<!-- PENDING(signatures): the generated agent registration that fills
-PromptSpecs and the generated service registration function. -->
+```go
+if err := supportprompts.RegisterPrompts(rt.PromptRegistry); err != nil {
+    return err
+}
+if err := assistant.RegisterAssistantAgent(ctx, rt, assistant.AssistantAgentConfig{
+    Planner: myPlanner,
+}); err != nil {
+    return err
+}
+```
+
+`NewAssistantRegistration(rt, cfg)` populates `AgentRegistration.PromptSpecs`
+from the generated `PromptSpecs()` slice without mutating the registry, and
+`RegisterAssistantAgent` calls `rt.RegisterAgent(ctx, reg)`.
 
 **Prompts you register by hand** keep working. Build a `prompt.PromptSpec` and
-pass it to `Runtime.PromptRegistry.Register`, as before. A spec without
-`Fields` declares no fields, so its template is checked for syntax but not for
-field names.
+pass it to `Runtime.PromptRegistry.Register`, as before. A spec with a nil
+`ArgsType` accepts untyped data, so its template is checked for syntax and
+declared `Funcs` rather than struct field names.
 
 ## Render a prompt and record what was used
 
@@ -105,11 +151,11 @@ it. That list includes prompts pulled in with `{{ render "<prompt-id>" . }}`, in
 the order they were rendered. Put that list on the model request that uses the
 text:
 
-<!-- PENDING(signatures): replace with the generated typed render helper once
-its signature is final. -->
-
 ```go
-content, err := input.Agent.RenderPrompt(ctx, "support.system", args)
+content, err := assistant.RenderSystemPrompt(ctx, input.Agent, assistant.SystemPromptArgs{
+    AccountName: "Acme",
+    RefundLimit: 100,
+})
 if err != nil {
     return nil, err
 }
@@ -130,23 +176,32 @@ only the top-level prompt and drops the prompts it composed.
 The runtime does not attach prompt versions for you: each request carries the
 list its caller put on it. If a planner renders a classification prompt and a
 separate answer prompt for two model calls in the same turn, give each request
-the `Refs` from its own render. The model call's trace span lists the prompt IDs
-and versions on that request.
-
-<!-- PENDING(signatures): exact span attribute names. -->
+the `Refs` from its own render. The `gen_ai.chat` client span records
+`gen_ai.prompt.ids`, `gen_ai.prompt.versions`, and `goa_ai.prompt.refs`
+(`"<id>@<version>"`) from that request.
 
 ## Change a prompt at runtime
 
 Saving an override replaces a prompt's text for one scope. The runtime checks
-the new template before it saves anything. For a prompt that declares its
-fields, a template that uses an unknown field is rejected at save time instead
-of failing later on every render.
+the new template before it saves anything. Generated prompts set
+`PromptSpec.ArgsType` to `reflect.TypeFor[<Name>PromptArgs]()` when `Args` is
+declared, or `reflect.TypeFor[struct{}]()` when the prompt takes no arguments,
+so a template that uses an unknown field is rejected at save time instead of
+failing later on every render:
 
-<!-- PENDING(signatures): state how generated prompts, including prompts with
-no arguments, declare their fields. -->
-
-<!-- PENDING(signatures): SetOverride / ValidateOverride signatures and return
-values. -->
+```go
+scope := prompt.Scope{
+    Labels: map[string]string{"account": "acme"},
+}
+if err := rt.PromptRegistry.ValidateOverride(assistant.SystemPromptID, newTemplate); err != nil {
+    return err
+}
+if err := rt.PromptRegistry.SetOverride(ctx, assistant.SystemPromptID, scope, newTemplate, map[string]string{
+    "author": "ops@acme.com",
+}); err != nil {
+    return err
+}
+```
 
 ## Reset an override
 
@@ -163,13 +218,19 @@ Reset is destructive:
   keep an audit trail of what it deleted. If you need one, record it before you
   reset.
 
-For example, resetting `support.system` at scope `account=acme` deletes the
-overrides saved at exactly `account=acme`. An override at
+For example, resetting `support.assistant.system` at scope `account=acme` deletes
+the overrides saved at exactly `account=acme`. An override at
 `account=acme, region=eu` remains, and so does one with no labels. A request
 for `account=acme, region=eu` keeps using the narrower override. A request for
 `account=acme` alone now uses the override with no labels.
 
-<!-- PENDING(signatures): Registry.ResetOverride / Store.Reset call. -->
+```go
+if err := rt.PromptRegistry.ResetOverride(ctx, assistant.SystemPromptID, prompt.Scope{
+    Labels: map[string]string{"account": "acme"},
+}); err != nil {
+    return err
+}
+```
 
 ## Store overrides
 
@@ -183,9 +244,21 @@ Without a prompt store, every render uses the baseline.
 
 ### Custom stores
 
-A custom `prompt.Store` now also implements `Reset`, with the exact-scope,
-destructive behavior described above. Treat label keys and values as plain data:
-a key may contain dots, and a value may start with `$`.
+A custom `prompt.Store` implements `Reset` with the exact-scope, destructive
+behavior described above. Treat label keys and values as plain data: a key may
+contain dots, and a value may start with `$`.
 
-<!-- PENDING(signatures): final Store interface listing and migration note for
-external implementers. -->
+```go
+type Store interface {
+    Resolve(ctx context.Context, promptID Ident, scope Scope) (*Override, error)
+    Set(ctx context.Context, promptID Ident, scope Scope, template string, metadata map[string]string) error
+    Reset(ctx context.Context, promptID Ident, scope Scope) error
+    History(ctx context.Context, promptID Ident) ([]*Override, error)
+    List(ctx context.Context) ([]*Override, error)
+}
+```
+
+If your application implements a custom `prompt.Store`, add
+`Reset(ctx, promptID, scope)` so it permanently deletes overrides whose
+`PromptID`, `Scope.SessionID`, and `Scope.Labels` match `scope` (and returns
+`nil` when no override exists at that exact scope).

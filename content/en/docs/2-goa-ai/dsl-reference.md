@@ -122,16 +122,22 @@ passing the Anthropic fields through `additionalModelRequestFields` when the bet
 contract requires it. Generated or synthesized examples are never promoted to
 top-level provider examples.
 
-## Prompts
+## Prompts {#prompt-management-v1-integration-path}
 
 Declare prompts in the design so `goa gen` checks each template against its
 arguments and generates typed render functions. See
 [Prompt management](../prompt-management/) for how overrides, scopes, reset,
 and per-request prompt records work at runtime.
 
-<!-- PENDING(signatures): reference entries for Prompt, SystemPrompt, Args and
-the template/role functions, their allowed parents (Agent, Service, and the
-existing MCP Method form Prompt(name, description)), and the generated names. -->
+| Function | Context | Purpose |
+| --- | --- | --- |
+| `SystemPrompt(args ...any)` | Inside `Agent` | Declares the agent's baseline system prompt (`<service>.<agent>.system`, role `"system"`) as a static string, a template string with a DSL closure, or a DSL closure |
+| `Prompt(name, args ...any)` | Inside `Agent` or `Service` | Declares a composable prompt (`<service>.<agent>.<name>` or `<service>.<name>`); inside an MCP-enabled `Method`, `Prompt(name, description)` exposes an MCP `prompts/get` capability |
+| `Template(source)` | Inside `Prompt` or `SystemPrompt` | Sets the Go `text/template` source validated against declared `Args` at compile time and runtime (including `{{ render "<prompt-id>" . }}`) |
+| `Role(role)` | Inside `Prompt` | Sets the prompt role (`"system"`, `"user"`, `"tool"`, or `"synthesis"`; defaults to `"user"`) |
+| `Args(dsl)` | Inside `Prompt` or `SystemPrompt` | Declares the structured input arguments (`Attribute`, `Field`, `Required`) used to validate template fields and generate `<Name>PromptArgs` |
+
+For each agent declaring prompts, `goa gen` emits `gen/<service>/agents/<agent>/prompts.go` with `SystemPromptID` / `Prompt<Name>ID`, `SystemPromptArgs` / `<Name>PromptArgs`, `PromptSpecSystem()` / `PromptSpec<Name>()`, `PromptSpecs()`, `RegisterPrompts(reg)`, `RenderSystemPrompt` / `Render<Name>Prompt`, and `RenderSystemPromptWithRegistry` / `Render<Name>PromptWithRegistry`. For service-level prompts, `goa gen` emits the same helpers in `gen/<service>/prompts/prompts.go`.
 
 Prompts registered by hand in `runtime.PromptRegistry` keep working:
 

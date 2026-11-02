@@ -134,15 +134,31 @@ generati o sintetizzati non vengono mai promossi a esempi di provider di livello
 superiore.
 
 
-## Gestione dei prompt (percorso di integrazione v1)
+## Prompt {#gestione-dei-prompt-percorso-di-integrazione-v1}
 
-Goa-AI v1 **non** richiede un prompt DSL dedicato (`Prompt(...)`, `Prompts(...)`).
-La gestione dei prompt è attualmente guidata dal runtime:
+Dichiara i prompt nel design in modo che `goa gen` verifichi ogni template
+rispetto ai suoi argomenti e generi funzioni di rendering tipizzate. Vedi
+[Gestione dei prompt](../prompt-management/) per come funzionano a runtime
+gli override, gli scope, la reimpostazione e le registrazioni dei prompt per
+richiesta.
+
+| Funzione | Contesto | Scopo |
+| --- | --- | --- |
+| `SystemPrompt(args ...any)` | Dentro `Agent` | Dichiara il system prompt baseline dell'agente (`<service>.<agent>.system`, ruolo `"system"`) come stringa statica, stringa template con closure DSL o closure DSL |
+| `Prompt(name, args ...any)` | Dentro `Agent` o `Service` | Dichiara un prompt componibile (`<service>.<agent>.<name>` o `<service>.<name>`); dentro un `Method` con MCP abilitato, `Prompt(name, description)` espone una capacità MCP `prompts/get` |
+| `Template(source)` | Dentro `Prompt` o `SystemPrompt` | Imposta la sorgente Go `text/template` validata rispetto ad `Args` a tempo di compilazione e a runtime (incluso `{{ render "<prompt-id>" . }}`) |
+| `Role(role)` | Dentro `Prompt` | Imposta il ruolo del prompt (`"system"`, `"user"`, `"tool"` o `"synthesis"`; predefinito `"user"`) |
+| `Args(dsl)` | Dentro `Prompt` o `SystemPrompt` | Dichiara gli argomenti di input strutturati (`Attribute`, `Field`, `Required`) usati per validare i campi del template e generare `<Name>PromptArgs` |
+
+Per ogni agente che dichiara prompt, `goa gen` emette `gen/<service>/agents/<agent>/prompts.go` con `SystemPromptID` / `Prompt<Name>ID`, `SystemPromptArgs` / `<Name>PromptArgs`, `PromptSpecSystem()` / `PromptSpec<Name>()`, `PromptSpecs()`, `RegisterPrompts(reg)`, `RenderSystemPrompt` / `Render<Name>Prompt` e `RenderSystemPromptWithRegistry` / `Render<Name>PromptWithRegistry`. Per i prompt a livello di servizio, `goa gen` emette gli stessi helper in `gen/<service>/prompts/prompts.go`.
+
+I prompt registrati a mano in `runtime.PromptRegistry` continuano a funzionare:
 
 - Registrare le specifiche del prompt di base in `runtime.PromptRegistry`.
 - Configurare le sostituzioni con ambito con `runtime.WithPromptStore(...)`.
 - Visualizzare le richieste dei pianificatori utilizzando `PlannerContext.RenderPrompt(...)`.
-- Allegare la provenienza immediata resa alle chiamate del modello con `model.Request.PromptRefs`.
+- Inserire ogni versione di prompt usata dal rendering, `content.Refs`, sulla
+  `model.Request` che usa il testo.
 
 Per i flussi agente come strumento, associa gli ID strumento agli ID richiesta utilizzando opzioni di runtime come
 `runtime.WithPromptSpec(...)` sulle registrazioni dello strumento agente.
