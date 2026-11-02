@@ -280,8 +280,8 @@ registered queues with `eng.RegisteredTaskQueues()`.
    workflow does no planner or tool work.
    [Memory & Sessions](../memory-sessions/#cancellation-provenance) defines the
    three valid ways cancellation reasons and intent records are stored.
-3. The runtime calls your planner's `PlanStart` with `PrepareMessages` and a
-   `run.Context` containing `RunID`, `SessionID`, `TurnID`, labels, and policy
+3. The runtime calls your planner's `PlanStart` with the saved conversation in
+   `Messages` and a `run.Context` containing `RunID`, `SessionID`, `TurnID`, labels, and policy
    caps.
 4. It schedules tool calls returned by the planner (planner passes canonical JSON payloads; the runtime handles encoding/decoding using generated codecs). A single `PlanResult` may combine provider-selected model tool calls with deterministic planner-authored tool calls in the same batch.
 5. It calls `PlanResume` with the surviving planner-visible tool results.
@@ -1394,43 +1394,52 @@ Planners also receive a `PlannerContext` via `input.Agent` that exposes runtime 
 
 ### Preparing conversation messages {#preparing-conversation-messages}
 
-Both planner inputs provide `PrepareMessages func() ([]*model.Message, error)`
-instead of a `Messages` field. Call it before inspecting or transforming the
-conversation, including prompt construction and message-dependent checks:
+`PlanInput.Messages` and `PlanResumeInput.Messages` contain the saved
+conversation history. Treat them as read-only. Planners may inspect them and
+build prompts directly. Reading history, getting a model client, and choosing
+actions without calling a model do no history token counting or summarization.
+Runtime-owned automatic steps also avoid that work.
+
+When a planner calls `Complete` or `Stream` through a runtime model client, the
+runtime applies the registered history policy to that actual request. Cache
+defaults and request validation run first; final request validation and
+observers run after preparation. The policy receives the destination client's
+token counter, separately from any client configured to write summaries:
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
+type HistoryPolicy func(context.Context, *model.Request, model.TokenCounter, *HistorySummary) (HistoryResult, error)
+
+type HistoryResult struct {
+    Messages []*model.Message
+    Summary  *HistorySummary
 }
 ```
 
-The first call applies the registered history policy to this activity's
-messages and advertised tools, using the activity context and deadline.
-Repeated or concurrent calls return the same prepared slice, message pointers,
-and error without rerunning the policy. Callers must coordinate mutations as
-with any shared slice. Complete all calls before the planner returns, and do
-not retain the function for another invocation. Each new activity attempt gets
-its own preparation; completed-activity replay does not prepare history again.
+Each candidate count replaces only the request's messages. The selected model,
+tools, thinking, cache, output settings, and other request fields stay as the
+planner chose them. Calls with different prompts or options are prepared
+independently; there is no activity-wide cached request or token count. Saved
+transcripts and the caller's original messages are not rewritten.
 
-A decision based only on run context and typed tool outputs need not call it,
-so unused history causes no token counting or summarization. A code-only
-decision that reads earlier messages must still prepare them. The runtime
-always supplies the callback, including when no history policy is configured;
-there is no raw-history alternative or nil-as-bypass mode.
-
-Preparation failure fails the activity even if planner code ignores the error.
-The original history error and its retry classification take precedence over
-later planner or model-output errors; they do not become model-output recovery.
-Cancellation reaches token counting and summarization through the activity
-context. Repeated access does not retry a failed preparation. History limits,
-retention rules, native tool/result pairing, and stored transcripts are
-unchanged.
+Preparation uses the model call's context and cancellation. When a candidate
+count returns `model.ErrRequestByteCapacity` or `model.ErrImageSourceCapacity`,
+compression can start or drop optional older whole turns until a shorter
+candidate fits; if the required newest turn (or summary plus newest turn) still
+cannot fit, or if any other counting or summary error occurs, preparation stops
+that call before the destination model runs and keeps its full cause, with no
+alternate counter, second summary, or implicit retry. Replaying a completed
+activity uses its recorded result instead of making fresh model calls.
 
 **Upgrade custom planners and direct test fixtures** when upgrading goa-ai:
-replace reads of the removed input fields with the checked call above and
-supply the callback in fixtures whose planners read history. This is a Go
-source change, not a new wire format or stored-history migration.
+replace the removed `PrepareMessages()` callback with `Messages`, including in
+direct planner tests and input conversions, and remove the callback-only error
+handling; handle errors from the model call instead. Custom history policies
+now receive the actual `*model.Request`, the destination `model.TokenCounter`,
+and an eligible prior `*HistorySummary`, and return
+`HistoryResult{Messages: preparedMessages}`. The former `WithTokenCounter`
+compression option is removed: counting belongs to the model destination. This
+is a Go source change; stored transcripts and public run inputs are unchanged,
+and no stored-data migration is required.
 
 ---
 
@@ -1734,13 +1743,8 @@ func (p *MyPlanner) PlanStart(ctx context.Context, input *planner.PlanInput) (*p
     if !ok {
         return nil, errors.New("model not configured")
     }
-    messages, err := input.PrepareMessages()
-    if err != nil {
-        return nil, err
-    }
-
     req := &model.Request{
-        Messages: messages,
+        Messages: input.Messages,
         Tools:    input.Agent.AdvertisedToolDefinitions(),
         Stream:   true,
     }
@@ -1780,12 +1784,8 @@ mc, ok := input.Agent.ModelClient("anthropic.claude-3-5-sonnet-20241022-v2:0")
 if !ok {
     return nil, errors.New("model not configured")
 }
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 req := &model.Request{
-    Messages: messages,
+    Messages: input.Messages,
     Tools:    input.Agent.AdvertisedToolDefinitions(),
     Stream:   true,
 }
@@ -1859,8 +1859,8 @@ token counting. `NewRemoteClient` deliberately returns
 
 ### History Policies
 
-History policies run on the first `PrepareMessages` call in each planner
-activity, not before every planner invocation. See
+History policies run on each `Complete` or `Stream` request a planner makes
+through a runtime model client, against that actual request. See
 [Preparing conversation messages](#preparing-conversation-messages) for the
 caller contract and the decisions that need no history work.
 
@@ -1870,15 +1870,20 @@ amount of exact recent history retained:
 - `CompressAtTurns` and `CompressAtMaxInputTokens` are ORed triggers.
 - `KeepMaxTurns` and `KeepMaxInputTokens` both bound which newest complete
   turns are eligible to remain exact; the runtime never cuts a turn in half.
-- Token policies require a `HistoryModel` whose client's `CountTokens` operation
-  returns an exact count. The count includes preserved system messages,
-  candidate turns, and currently advertised tools.
+- Token counts come from the destination model's counter, while `HistoryModel`
+  only writes summaries. Counts must be exact unless
+  `HistoryCompressionConfig.AllowEstimatedTokens` explicitly permits that
+  destination counter's declared estimates (an estimate does not guarantee
+  provider context-window fit or billing accuracy). Each count evaluates a
+  complete candidate request, replacing only `Messages` while preserving the
+  planner's selected model, tools, thinking, cache, structured output, and
+  output options.
 - `CompressAtMaxInputTokens` is exclusive: a request exactly at the threshold
   fits; only a larger request triggers compression.
 
-Bedrock Runtime cannot count structured-output requests. Claude Opus 4.7,
-Sonnet 5, and Mythos 5 require AWS's separate Mantle count endpoint, so the
-Bedrock adapter returns `model.ErrTokenCountingUnsupported` for those models.
+Bedrock uses Runtime `CountTokens` when the resolved model supports it. Claude
+Opus 4.7, Opus 4.8, Opus 5, Sonnet 5, and Mythos 5 require
+`bedrock.Options.MantleTokenCounter` for AWS's separate Mantle count endpoint.
 The generated agent config exposes `HistoryCompression` for deployment-specific
 overrides without changing the design defaults.
 
@@ -1887,20 +1892,22 @@ overrides without changing the design defaults.
 `KeepMaxTurns` and `KeepMaxInputTokens` establish the eligible complete turns
 before summarization. The newest complete turn is mandatory. The older-turn
 token allowance measures each candidate request minus the request containing
-only newest; both counts include preserved system messages and the current tool
-catalog. Equality fits. The summary is not charged against this older-turn
-allowance: it counts against the separate `CompressAtMaxInputTokens` total limit.
+only newest; both counts evaluate the complete candidate request (including
+preserved system messages, the current tool catalog, thinking, cache, structured
+output, and output options). Equality fits. The summary is not charged against
+this older-turn allowance: it counts against the separate
+`CompressAtMaxInputTokens` total limit.
 
 When that total limit is positive, one summary receives **every turn older than
 newest**, including optional turns eligible to remain exact, even when the turn
-trigger fires first. The runtime counts
-the preserved system messages, actual rendered summary, eligible exact turns,
-and unchanged tool catalog together. If too large, it removes the oldest
-optional whole turn and counts the next candidate. It returns the longest
-fitting suffix permitted by the initial eligibility calculation, without
-assuming that counts are additive or monotonic. Equality with the limit fits.
-The count covers this history-policy request, not thinking or structured output
-a planner may choose afterward; the limit is not a summary-model context maximum.
+trigger fires first. The runtime counts the complete candidate request with the
+preserved system messages, actual rendered summary, and eligible exact turns
+together. If too large, it removes the oldest optional whole turn and counts the
+next candidate. It returns the longest fitting suffix permitted by the initial
+eligibility calculation, without assuming that counts are additive or monotonic.
+Equality with the limit fits. Each candidate count preserves the planner's
+selected model, tools, thinking, cache, structured output, and output options;
+the limit bounds the destination request, not the summary model's context window.
 
 For example, if three turns are eligible, it tests the summary plus all three,
 then plus the newest two, then plus newest alone, stopping at the first fit.
@@ -1910,23 +1917,28 @@ history; their tools are not executed again. However, the answering model still
 has to interpret repeated or conflicting facts correctly. Complete evidence
 delivery and a fitting count do not prove that interpretation.
 
-If the summary plus newest cannot fit, compression returns the original history
-with an explicit error to the runtime. `PrepareMessages` returns that
-preparation error without exposing the original history as a fallback.
-Counting or summary errors stop immediately rather than
-trying another candidate, dropping evidence, or generating another summary.
-There is no automatic restart. For `K` eligible turns, final selection makes at
-most `K` exact count calls, stopping on fit or error. The unchanged trigger and
-eligibility checks may also count; these bounds describe logical calls, not
-provider HTTP attempts or billing. Broader summary input and extra counts may
-increase cost and latency. The existing model, thresholds, single summary
-completion, deadlines, and request limits remain in effect.
+When a candidate count returns `model.ErrRequestByteCapacity` or
+`model.ErrImageSourceCapacity`, the initial trigger check starts compression,
+eligibility selection stops adding older optional whole turns, and summary fit
+removes the oldest optional whole turn and counts the next shorter candidate.
+If the required newest turn (or the summary plus newest turn) still cannot fit,
+compression fails with an explicit error, and that model call returns it without
+sending the original history as a fallback. Any other counting or summary error
+stops immediately rather than trying another candidate, dropping evidence, or
+generating another summary. There is no automatic restart. For `K` eligible
+turns, final selection makes at most `K` calls to the destination counter (exact
+unless `AllowEstimatedTokens` is set), stopping on the first fit or
+non-capacity error. The unchanged trigger and eligibility checks may also count;
+these bounds describe logical calls, not provider HTTP attempts or billing.
+Broader summary input and extra counts may increase cost and latency. The
+existing model, thresholds, single summary completion, deadlines, and request
+limits remain in effect.
 
 With no total limit, only the excluded older prefix enters the summary and the
 eligible exact suffix stays unchanged. There is no added overlap or final
 counting, even when an older-turn token allowance is configured. Empty,
 system-only, non-triggered, and nothing-to-summarize returns remain unchanged.
-Each invocation recomputes fit from its own messages and tools.
+Each invocation recomputes fit from the actual request.
 
 **Custom prompt upgrade:** with a positive total limit, `WithSummaryPrompt` now
 receives all turns older than newest, not only discarded history. Change wording
