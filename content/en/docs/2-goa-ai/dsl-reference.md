@@ -1594,13 +1594,14 @@ Compression summarizes older turns using a model while keeping a bounded exact t
 - `CompressAtTurns(n)` and `CompressAtMaxInputTokens(n)` decide when summarization runs. If both are set, either trigger may start compression.
 - `KeepMaxTurns(n)` and `KeepMaxInputTokens(n)` decide which newest complete turns remain exact after summarization. If both are set, both retention caps apply.
 
-Token budgets are counted at runtime through the configured history model
-because tokenization is model-specific. One count includes preserved system
-messages, candidate complete turns, and the currently advertised tools.
-`CompressAtMaxInputTokens` is exclusive: a request exactly at the threshold
-fits; a larger request triggers compression. `KeepMaxInputTokens` never
-truncates a turn; the runtime walks backward from the newest turn and keeps only
-complete turns that fit.
+Token budgets are counted at runtime through the destination model's counter
+because tokenization is model-specific; `HistoryModel` only writes summaries.
+Each count evaluates a complete candidate request, replacing only `Messages`
+while preserving the planner's selected model, tools, thinking, cache,
+structured output, and output options. `CompressAtMaxInputTokens` is exclusive:
+a request exactly at the threshold fits; a larger request triggers compression.
+`KeepMaxInputTokens` never truncates a turn; the runtime walks backward from the
+newest turn and keeps only complete turns that fit.
 
 ```go
 RunPolicy(func() {
@@ -1627,13 +1628,16 @@ At least one `CompressAt...` trigger and at least one `KeepMax...` retention bud
 **HistoryModel Requirement:**
 
 When using compression, you must supply a `model.Client` via the generated
-`HistoryModel` field on the agent config. The runtime uses this client with
-`ModelClassSmall` to summarize older turns and, when a token budget is
-configured, to count the provider-visible request. Token-budget compression
-requires exact `model.TokenCounter` support. Bedrock uses Runtime `CountTokens`
-where available, but returns `model.ErrTokenCountingUnsupported` for
-structured-output requests and for Claude Opus 4.7, Sonnet 5, and Mythos 5,
-which require AWS's separate Mantle endpoint.
+`HistoryModel` field on the agent config. The runtime uses `HistoryModel` (with
+`ModelClassSmall` by default, or `WithModelClass`) only to summarize older
+turns. When a token budget is configured, the destination model client's
+`model.TokenCounter` counts the actual request. Counts must be exact unless
+`HistoryCompressionConfig.AllowEstimatedTokens` explicitly permits that
+destination counter's declared estimates; an estimate does not guarantee
+provider context-window fit or billing accuracy. Bedrock uses Runtime
+`CountTokens` where available, and requires `bedrock.Options.MantleTokenCounter`
+for Claude Opus 4.7, Opus 4.8, Opus 5, Sonnet 5, and Mythos 5, which use AWS's
+separate Mantle count endpoint.
 
 ```go
 // Generated agent config includes HistoryModel when compression is configured.

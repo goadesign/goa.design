@@ -87,12 +87,14 @@ one workflow when its evidence and historical instructions are unchanged. See
 [summary reuse](../runtime/#reusing-a-summary-within-one-workflow) for the
 authoritative input and saved-state rules.
 
-Compression requires a configured `HistoryModel`. Token-based triggers and
-retention also require exact token counting from that model client. Bedrock
-Runtime cannot count structured-output requests, and some current Claude
-models require AWS's separate Mantle endpoint. See [Runtime → History
-Policies](../runtime/#history-policies) and [DSL Reference →
-History](../dsl-reference/#history) for the complete contract.
+Compression requires a configured `HistoryModel` to write summaries. Token-based
+triggers and retention count the actual request through the destination model's
+counter, not `HistoryModel`. Counts must be exact unless
+`HistoryCompressionConfig.AllowEstimatedTokens` explicitly permits that
+destination counter's declared estimates. Bedrock uses Runtime `CountTokens`
+where available, and some current Claude models require AWS's separate Mantle
+endpoint. See [Runtime → History Policies](../runtime/#history-policies) and
+[DSL Reference → History](../dsl-reference/#history) for the complete contract.
 
 ### How This Simplifies Planners and UIs
 

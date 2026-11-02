@@ -1421,11 +1421,14 @@ planner chose them. Calls with different prompts or options are prepared
 independently; there is no activity-wide cached request or token count. Saved
 transcripts and the caller's original messages are not rewritten.
 
-Preparation uses the model call's context and cancellation. A counting or
-summary error stops that call before the destination model runs and keeps its
-full cause; there is no alternate counter, second summary, or implicit retry.
-Replaying a completed activity uses its recorded result instead of making fresh
-model calls.
+Preparation uses the model call's context and cancellation. When a candidate
+count returns `model.ErrRequestByteCapacity` or `model.ErrImageSourceCapacity`,
+compression can start or drop optional older whole turns until a shorter
+candidate fits; if the required newest turn (or summary plus newest turn) still
+cannot fit, or if any other counting or summary error occurs, preparation stops
+that call before the destination model runs and keeps its full cause, with no
+alternate counter, second summary, or implicit retry. Replaying a completed
+activity uses its recorded result instead of making fresh model calls.
 
 **Upgrade custom planners and direct test fixtures** when upgrading goa-ai:
 replace the removed `PrepareMessages()` callback with `Messages`, including in
@@ -1867,15 +1870,20 @@ amount of exact recent history retained:
 - `CompressAtTurns` and `CompressAtMaxInputTokens` are ORed triggers.
 - `KeepMaxTurns` and `KeepMaxInputTokens` both bound which newest complete
   turns are eligible to remain exact; the runtime never cuts a turn in half.
-- Token policies require a `HistoryModel` whose client's `CountTokens` operation
-  returns an exact count. The count includes preserved system messages,
-  candidate turns, and currently advertised tools.
+- Token counts come from the destination model's counter, while `HistoryModel`
+  only writes summaries. Counts must be exact unless
+  `HistoryCompressionConfig.AllowEstimatedTokens` explicitly permits that
+  destination counter's declared estimates (an estimate does not guarantee
+  provider context-window fit or billing accuracy). Each count evaluates a
+  complete candidate request, replacing only `Messages` while preserving the
+  planner's selected model, tools, thinking, cache, structured output, and
+  output options.
 - `CompressAtMaxInputTokens` is exclusive: a request exactly at the threshold
   fits; only a larger request triggers compression.
 
-Bedrock Runtime cannot count structured-output requests. Claude Opus 4.7,
-Sonnet 5, and Mythos 5 require AWS's separate Mantle count endpoint, so the
-Bedrock adapter returns `model.ErrTokenCountingUnsupported` for those models.
+Bedrock uses Runtime `CountTokens` when the resolved model supports it. Claude
+Opus 4.7, Opus 4.8, Opus 5, Sonnet 5, and Mythos 5 require
+`bedrock.Options.MantleTokenCounter` for AWS's separate Mantle count endpoint.
 The generated agent config exposes `HistoryCompression` for deployment-specific
 overrides without changing the design defaults.
 
@@ -1884,20 +1892,22 @@ overrides without changing the design defaults.
 `KeepMaxTurns` and `KeepMaxInputTokens` establish the eligible complete turns
 before summarization. The newest complete turn is mandatory. The older-turn
 token allowance measures each candidate request minus the request containing
-only newest; both counts include preserved system messages and the current tool
-catalog. Equality fits. The summary is not charged against this older-turn
-allowance: it counts against the separate `CompressAtMaxInputTokens` total limit.
+only newest; both counts evaluate the complete candidate request (including
+preserved system messages, the current tool catalog, thinking, cache, structured
+output, and output options). Equality fits. The summary is not charged against
+this older-turn allowance: it counts against the separate
+`CompressAtMaxInputTokens` total limit.
 
 When that total limit is positive, one summary receives **every turn older than
 newest**, including optional turns eligible to remain exact, even when the turn
-trigger fires first. The runtime counts
-the preserved system messages, actual rendered summary, eligible exact turns,
-and unchanged tool catalog together. If too large, it removes the oldest
-optional whole turn and counts the next candidate. It returns the longest
-fitting suffix permitted by the initial eligibility calculation, without
-assuming that counts are additive or monotonic. Equality with the limit fits.
-The count covers this history-policy request, not thinking or structured output
-a planner may choose afterward; the limit is not a summary-model context maximum.
+trigger fires first. The runtime counts the complete candidate request with the
+preserved system messages, actual rendered summary, and eligible exact turns
+together. If too large, it removes the oldest optional whole turn and counts the
+next candidate. It returns the longest fitting suffix permitted by the initial
+eligibility calculation, without assuming that counts are additive or monotonic.
+Equality with the limit fits. Each candidate count preserves the planner's
+selected model, tools, thinking, cache, structured output, and output options;
+the limit bounds the destination request, not the summary model's context window.
 
 For example, if three turns are eligible, it tests the summary plus all three,
 then plus the newest two, then plus newest alone, stopping at the first fit.
@@ -1907,23 +1917,28 @@ history; their tools are not executed again. However, the answering model still
 has to interpret repeated or conflicting facts correctly. Complete evidence
 delivery and a fitting count do not prove that interpretation.
 
-If the summary plus newest cannot fit, compression fails with an explicit
-error, and that model call returns it without sending the original history as a
-fallback.
-Counting or summary errors stop immediately rather than
-trying another candidate, dropping evidence, or generating another summary.
-There is no automatic restart. For `K` eligible turns, final selection makes at
-most `K` exact count calls, stopping on fit or error. The unchanged trigger and
-eligibility checks may also count; these bounds describe logical calls, not
-provider HTTP attempts or billing. Broader summary input and extra counts may
-increase cost and latency. The existing model, thresholds, single summary
-completion, deadlines, and request limits remain in effect.
+When a candidate count returns `model.ErrRequestByteCapacity` or
+`model.ErrImageSourceCapacity`, the initial trigger check starts compression,
+eligibility selection stops adding older optional whole turns, and summary fit
+removes the oldest optional whole turn and counts the next shorter candidate.
+If the required newest turn (or the summary plus newest turn) still cannot fit,
+compression fails with an explicit error, and that model call returns it without
+sending the original history as a fallback. Any other counting or summary error
+stops immediately rather than trying another candidate, dropping evidence, or
+generating another summary. There is no automatic restart. For `K` eligible
+turns, final selection makes at most `K` calls to the destination counter (exact
+unless `AllowEstimatedTokens` is set), stopping on the first fit or
+non-capacity error. The unchanged trigger and eligibility checks may also count;
+these bounds describe logical calls, not provider HTTP attempts or billing.
+Broader summary input and extra counts may increase cost and latency. The
+existing model, thresholds, single summary completion, deadlines, and request
+limits remain in effect.
 
 With no total limit, only the excluded older prefix enters the summary and the
 eligible exact suffix stays unchanged. There is no added overlap or final
 counting, even when an older-turn token allowance is configured. Empty,
 system-only, non-triggered, and nothing-to-summarize returns remain unchanged.
-Each invocation recomputes fit from its own messages and tools.
+Each invocation recomputes fit from the actual request.
 
 **Custom prompt upgrade:** with a positive total limit, `WithSummaryPrompt` now
 receives all turns older than newest, not only discarded history. Change wording
