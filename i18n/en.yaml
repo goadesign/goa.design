@@ -134,6 +134,7 @@ home_output_codecs: "Typed payload codecs"
 home_output_bindings: "Service bindings"
 
 home_full_example: "Read the complete example"
+home_prompt_guide: "Read the prompt management guide"
 
 home_workflow_heading: "Design the intent. Generate the repetition."
 
@@ -242,6 +243,11 @@ home_output_cli: "Command-line clients"
 home_output_descriptors: "Typed tool descriptors"
 
 home_output_registration: "Runtime registrations"
+home_prompts: "Prompts"
+home_output_prompt_checks: "Template checks at goa gen"
+home_output_prompt_render: "Typed render functions"
+home_output_prompt_registration: "Prompt registrations"
+home_output_prompt_overrides: "Scoped runtime overrides"
 
 home_skill_cta: "Give your coding agent the Goa skill"
 

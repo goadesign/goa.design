@@ -122,15 +122,31 @@ passing the Anthropic fields through `additionalModelRequestFields` when the bet
 contract requires it. Generated or synthesized examples are never promoted to
 top-level provider examples.
 
-## Prompt Management (v1 Integration Path)
+## Prompts {#prompt-management-v1-integration-path}
 
-Goa-AI v1 does **not** require a dedicated prompt DSL (`Prompt(...)`, `Prompts(...)`).
-Prompt management is currently runtime-driven:
+Declare prompts in the design so `goa gen` checks each template against its
+arguments and generates typed render functions. See
+[Prompt management](../prompt-management/) (and its
+[version prerequisite](../prompt-management/#version-prerequisite)) for how
+overrides, scopes, reset, and per-request prompt records work at runtime.
+
+| Function | Context | Purpose |
+| --- | --- | --- |
+| `SystemPrompt(args ...any)` | Inside `Agent` | Declares the agent's baseline system prompt (`<service>.<agent>.system`, role `"system"`) as a static string, a template string with a DSL closure, or a DSL closure |
+| `Prompt(name, args ...any)` | Inside `Agent` or `Service` | Declares a composable prompt (`<service>.<agent>.<name>` or `<service>.<name>`); inside an MCP-enabled `Method`, `Prompt(name, description)` exposes an MCP `prompts/get` capability |
+| `Template(source)` | Inside `Prompt` or `SystemPrompt` | Sets the Go `text/template` source validated against declared `Args` at compile time and runtime (including `{{ render "<prompt-id>" . }}`) |
+| `Role(role)` | Inside `Prompt` | Sets the prompt role (`"system"`, `"user"`, `"tool"`, or `"synthesis"`; defaults to `"user"`) |
+| `Args(dsl)` | Inside `Prompt` or `SystemPrompt` | Declares the structured input arguments (`Attribute`, `Field`, `Required`) used to validate template fields and generate `<Name>PromptArgs` |
+
+For each agent declaring prompts, `goa gen` emits `gen/<service>/agents/<agent>/prompts.go` with `SystemPromptID` / `Prompt<Name>ID`, `SystemPromptArgs` / `<Name>PromptArgs`, `PromptSpecSystem()` / `PromptSpec<Name>()`, `PromptSpecs()`, `RegisterPrompts(reg)`, `RenderSystemPrompt` / `Render<Name>Prompt`, and `RenderSystemPromptWithRegistry` / `Render<Name>PromptWithRegistry`. For service-level prompts, `goa gen` emits the same helpers in `gen/<service>/prompts/prompts.go`.
+
+Prompts registered by hand in `runtime.PromptRegistry` keep working:
 
 - Register baseline prompt specs in `runtime.PromptRegistry`.
 - Configure scoped overrides with `runtime.WithPromptStore(...)`.
 - Render prompts from planners using `PlannerContext.RenderPrompt(...)`.
-- Attach rendered prompt provenance to model calls with `model.Request.PromptRefs`.
+- Put every prompt version a render used, `content.Refs`, on the
+  `model.Request` that uses the text.
 
 For agent-as-tool flows, map tool IDs to prompt IDs using runtime options such as
 `runtime.WithPromptSpec(...)` on agent-tool registrations.

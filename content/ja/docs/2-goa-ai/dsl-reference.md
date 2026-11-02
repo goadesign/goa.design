@@ -135,15 +135,26 @@ Bedrock Claude は schema-without-root-example projection と native
 Anthropic field を `additionalModelRequestFields` 経由で渡します。生成または
 合成された example は top-level provider example には昇格しません。
 
-## Prompt 管理（v1 統合パス）
+## プロンプト {#prompt-管理v1-統合パス}
 
-Goa-AI v1 では、専用の Prompt DSL（`Prompt(...)`, `Prompts(...)`）は **不要** です。
-現在の Prompt 管理はランタイム主導で行います。
+設計で prompt を宣言すると、`goa gen` が各テンプレートを引数と照合し、型付き描画関数を生成します。ランタイムでの override、スコープ、リセット、リクエストごとの prompt 記録の仕組みと[バージョン要件](../prompt-management/#version-prerequisite)は[プロンプト管理](../prompt-management/)を参照してください。
+
+| 関数 | コンテキスト | 用途 |
+| --- | --- | --- |
+| `SystemPrompt(args ...any)` | `Agent` 内 | エージェントのベースライン system prompt（`<service>.<agent>.system`、ロール `"system"`）を静的文字列、テンプレート文字列＋DSL クロージャ、または DSL クロージャで宣言する |
+| `Prompt(name, args ...any)` | `Agent` または `Service` 内 | 合成可能な prompt（`<service>.<agent>.<name>` または `<service>.<name>`）を宣言する。MCP 有効な `Method` 内では、`Prompt(name, description)` が MCP `prompts/get` 機能を公開する |
+| `Template(source)` | `Prompt` または `SystemPrompt` 内 | 宣言された `Args` に対してコンパイル時とランタイムに検証される Go `text/template` ソースを設定する（`{{ render "<prompt-id>" . }}` を含む） |
+| `Role(role)` | `Prompt` 内 | prompt のロール（`"system"`、`"user"`、`"tool"`、`"synthesis"`。デフォルトは `"user"`）を設定する |
+| `Args(dsl)` | `Prompt` または `SystemPrompt` 内 | テンプレートフィールドの検証と `<Name>PromptArgs` の生成に使われる構造化入力引数（`Attribute`、`Field`、`Required`）を宣言する |
+
+prompt を宣言する各エージェントには、`goa gen` が `gen/<service>/agents/<agent>/prompts.go` に `SystemPromptID` / `Prompt<Name>ID`、`SystemPromptArgs` / `<Name>PromptArgs`、`PromptSpecSystem()` / `PromptSpec<Name>()`、`PromptSpecs()`、`RegisterPrompts(reg)`、`RenderSystemPrompt` / `Render<Name>Prompt`、`RenderSystemPromptWithRegistry` / `Render<Name>PromptWithRegistry` を出力します。サービスレベルの prompt には、`gen/<service>/prompts/prompts.go` に同じヘルパーが出力されます。
+
+`runtime.PromptRegistry` に手動で登録する prompt も引き続き動作します。
 
 - ベースラインの prompt spec を `runtime.PromptRegistry` に登録する
 - スコープ付き override を `runtime.WithPromptStore(...)` で有効化する
 - プランナーから `PlannerContext.RenderPrompt(...)` で prompt を解決・描画する
-- 描画した prompt の provenance を `model.Request.PromptRefs` に付与する
+- 描画で使われたすべての prompt バージョン `content.Refs` を、そのテキストを送る `model.Request` に設定する
 
 agent-as-tool フローでは、agent-tool 登録時に `runtime.WithPromptSpec(...)` などの
 ランタイムオプションを使い、tool ID と prompt ID を対応付けます。

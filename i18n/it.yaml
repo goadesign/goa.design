@@ -153,6 +153,7 @@ home_output_codecs: "Codec dei payload tipizzati"
 home_output_bindings: "Collegamenti ai servizi"
 
 home_full_example: "Leggi l’esempio completo"
+home_prompt_guide: "Leggi la guida alla gestione dei prompt"
 
 home_workflow_heading: "Progetta l’intento. Genera la ripetizione."
 
@@ -261,6 +262,11 @@ home_output_cli: "Client da riga di comando"
 home_output_descriptors: "Descrittori tipizzati dei tool"
 
 home_output_registration: "Registrazioni del runtime"
+home_prompts: "Prompt"
+home_output_prompt_checks: "Template verificati da goa gen"
+home_output_prompt_render: "Funzioni di rendering tipizzate"
+home_output_prompt_registration: "Registrazioni dei prompt"
+home_output_prompt_overrides: "Sostituzioni per ambito a runtime"
 
 home_skill_cta: "Installa la skill Goa per il tuo agente"
 

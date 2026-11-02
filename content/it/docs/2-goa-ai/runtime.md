@@ -666,15 +666,11 @@ un'altra sessione o un altro strumento.
 La gestione dei prompt e nativa del runtime e versionata:
 
 - `runtime.PromptRegistry` conserva registrazioni immutabili delle prompt spec baseline (`prompt.PromptSpec`).
-- `runtime.WithPromptStore(prompt.Store)` abilita la risoluzione degli override con scope (`session` -> `facility` -> `org` -> global).
+- `runtime.WithPromptStore(prompt.Store)` abilita gli override per scope. Un override si applica quando il suo ID di sessione (se presente) e ogni sua etichetta corrispondono alla richiesta. Un override con sessione prevale su uno senza sessione, poi più etichette prevalgono su meno, poi prevale il più recente. Vedi [Gestione dei prompt](../prompt-management/#concepts) e il relativo [prerequisito di versione](../prompt-management/#version-prerequisite).
 - I planner chiamano `PlannerContext.RenderPrompt(ctx, id, data)` per risolvere e rendere il contenuto.
-- Il contenuto renderizzato include metadati `prompt.PromptRef` per provenance; i planner possono allegarli a `model.Request.PromptRefs`.
+- Il contenuto renderizzato elenca in `content.Refs` ogni versione di prompt usata, inclusi i prompt composti con `{{ render "<prompt-id>" . }}`. Metti quell’elenco sulla `model.Request` che usa il testo.
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -682,10 +678,13 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    RunID:      input.RunContext.RunID,
-    Messages:   messages,
-    PromptRefs: []prompt.PromptRef{content.Ref},
+    Messages:   append([]*model.Message{system}, input.Messages...),
+    PromptRefs: content.Refs,
 })
 ```
 

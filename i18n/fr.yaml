@@ -135,6 +135,7 @@ home_output_codecs: "Codecs de données typées"
 home_output_bindings: "Liaisons aux services"
 
 home_full_example: "Voir l’exemple complet"
+home_prompt_guide: "Lire le guide de gestion des prompts"
 
 home_workflow_heading: "Concevez l’intention. Générez la répétition."
 
@@ -243,6 +244,11 @@ home_output_cli: "Clients en ligne de commande"
 home_output_descriptors: "Descripteurs d’outils typés"
 
 home_output_registration: "Enregistrements du runtime"
+home_prompts: "Prompts"
+home_output_prompt_checks: "Modèles vérifiés par goa gen"
+home_output_prompt_render: "Fonctions de rendu typées"
+home_output_prompt_registration: "Enregistrements des prompts"
+home_output_prompt_overrides: "Remplacements par portée à l’exécution"
 
 home_skill_cta: "Équipez votre agent de la skill Goa"
 

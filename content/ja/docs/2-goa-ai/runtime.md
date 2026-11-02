@@ -675,15 +675,11 @@ service boundary が `ExecuteToolActivity` の外で正規 result JSON を assem
 Prompt 管理はランタイムネイティブで、バージョン管理されます。
 
 - `runtime.PromptRegistry` は不変なベースライン `prompt.PromptSpec` 登録を保持する
-- `runtime.WithPromptStore(prompt.Store)` はスコープ付き override 解決（`session` -> `facility` -> `org` -> global）を有効化する
+- `runtime.WithPromptStore(prompt.Store)` はスコープ付き override を有効化する。override は、セッション ID（設定されている場合）とすべてのラベルがリクエストと一致するときに適用される。セッション付きの override がセッションなしより優先され、次にラベルの多いものが、次に新しいものが優先される。詳しくは [プロンプト管理](../prompt-management/#concepts) と[バージョン要件](../prompt-management/#version-prerequisite)を参照
 - プランナーは `PlannerContext.RenderPrompt(ctx, id, data)` を呼び、prompt 内容を解決・描画する
-- 描画済み内容には provenance 用の `prompt.PromptRef` が含まれ、プランナーは `model.Request.PromptRefs` に付与できる
+- 描画済み内容は、`{{ render "<prompt-id>" . }}` で合成した prompt を含め、使用したすべての prompt バージョンを `content.Refs` に列挙する。そのリストを、テキストを使う `model.Request` に設定する
 
 ```go
-messages, err := input.PrepareMessages()
-if err != nil {
-    return nil, err
-}
 content, err := input.Agent.RenderPrompt(ctx, "assistant.system", map[string]any{
     "AssistantName": "Ops Assistant",
 })
@@ -691,10 +687,13 @@ if err != nil {
     return nil, err
 }
 
+system := &model.Message{
+    Role:  model.ConversationRoleSystem,
+    Parts: []model.Part{model.TextPart{Text: content.Text}},
+}
 resp, err := modelClient.Complete(ctx, &model.Request{
-    RunID:      input.RunContext.RunID,
-    Messages:   messages,
-    PromptRefs: []prompt.PromptRef{content.Ref},
+    Messages:   append([]*model.Message{system}, input.Messages...),
+    PromptRefs: content.Refs,
 })
 ```
 

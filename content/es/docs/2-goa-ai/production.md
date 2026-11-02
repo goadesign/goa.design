@@ -259,20 +259,31 @@ rt := runtime.New(
 
 ### Resolución de overrides y despliegue progresivo
 
-La precedencia de overrides es determinista:
+Un override se aplica a una solicitud cuando su ID de sesión, si lo tiene, es
+igual al de la solicitud y cada una de sus etiquetas está en la solicitud con el
+mismo valor. Cuando se aplican varios, el runtime elige uno en este orden:
 
-1. scope `session`
-2. scope `facility`
-3. scope `org`
-4. scope global
-5. prompt spec base (cuando no existe override)
+1. un override con ID de sesión gana a uno sin sesión;
+2. si no, gana el override con más etiquetas;
+3. si no, gana el override más reciente.
+
+Si no se aplica ningún override, el runtime renderiza la prompt spec base. Consulta
+[Gestión de prompts](../prompt-management/#concepts) para ver un ejemplo completo y
+[Requisito de versión](../prompt-management/#version-prerequisite) para la versión
+requerida de `goa.design/goa-ai`.
 
 Estrategia de rollout recomendada:
 
 - Registra primero las nuevas prompt specs base.
-- Despliega los overrides primero con un scope amplio (`org`) y luego restríngelos a `facility`/`session` para canarios.
-- Rastrea las versiones efectivas mediante los eventos `prompt_rendered` y `model.Request.PromptRefs`.
-- Haz rollback escribiendo un override más reciente en el mismo scope (o eliminando overrides específicos de scope para volver al valor por defecto).
+- Despliega un override con un scope amplio, como una sola etiqueta
+  `account=acme`, y luego añade scopes más estrechos, como
+  `account=acme, region=eu` o una sesión, para canarios.
+- Rastrea las versiones efectivas mediante los eventos `prompt_rendered` y
+  `model.Request.PromptRefs`.
+- Haz rollback guardando un override más reciente en el mismo scope, o
+  restableciendo ese scope exacto para que vuelva a aplicarse un override más
+  amplio o la base. El restablecimiento elimina de forma permanente los
+  overrides de ese scope.
 
 ---
 

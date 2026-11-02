@@ -28,6 +28,8 @@
         <label for="demo-service">Goa <span>{{ T "home_services" }}</span></label>
         <input type="radio" name="contract-example" id="demo-agent">
         <label for="demo-agent">Goa-AI <span>{{ T "home_agents" }}</span></label>
+        <input type="radio" name="contract-example" id="demo-prompt">
+        <label for="demo-prompt">Goa-AI <span>{{ T "home_prompts" }}</span></label>
       </fieldset>
       <div class="demo-service demo-panel">
         <div class="demo-filename"><span>design/catalog.go</span><span>{{ T "home_excerpt" }}</span></div>
@@ -66,7 +68,28 @@
           <li>{{ T "home_output_registration" }}</li><li>AGENTS_QUICKSTART.md</li>
         </ul></div>
       </div>
-      <a class="demo-source" href="{{ relref . "/docs/ai-development/" }}#one-design-two-entry-points">{{ T "home_full_example" }}</a>
+      <div class="demo-prompt demo-panel">
+        <div class="demo-filename"><span>design/support.go</span><span>{{ T "home_excerpt" }}</span></div>
+        {{ highlight `Agent("support", "Answer refund questions", func() {
+    SystemPrompt(func() {
+        Description("Refund policy")
+        Args(func() {
+            Attribute("account_name", String)
+            Attribute("refund_limit", Int)
+            Required("account_name", "refund_limit")
+        })
+        Template("You help {{ .AccountName }} customers. " +
+            "Approve refunds up to ${{ .RefundLimit }}.")
+    })
+})` "go" "" }}
+        <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/support/design</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+          <li>{{ T "home_output_prompt_checks" }}</li><li>{{ T "home_output_prompt_render" }}</li>
+          <li>{{ T "home_output_prompt_registration" }}</li><li>{{ T "home_output_prompt_overrides" }}</li>
+        </ul></div>
+      </div>
+      <a class="demo-source demo-source-contract" href="{{ relref . "/docs/ai-development/" }}#one-design-two-entry-points">{{ T "home_full_example" }}</a>
+      <a class="demo-source demo-source-prompt" href="{{ relref . "/docs/2-goa-ai/prompt-management/" }}">{{ T "home_prompt_guide" }}</a>
     </div>
   </section>
 

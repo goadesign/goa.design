@@ -259,20 +259,32 @@ rt := runtime.New(
 
 ### Risoluzione degli override e rollout
 
-La precedenza degli override e deterministica:
+Un override si applica a una richiesta quando il suo ID di sessione, se presente,
+è uguale a quello della richiesta e ogni sua etichetta è presente nella
+richiesta con lo stesso valore. Quando se ne applicano diversi, il runtime ne
+sceglie uno in questo ordine:
 
-1. scope `session`
-2. scope `facility`
-3. scope `org`
-4. scope globale
-5. prompt spec baseline (quando non esiste override)
+1. un override con ID di sessione prevale su uno senza sessione;
+2. altrimenti prevale l’override con più etichette;
+3. altrimenti prevale l’override più recente.
+
+Se non si applica alcun override, il runtime rende la prompt spec baseline.
+Vedi [Gestione dei prompt](../prompt-management/#concepts) per un esempio
+completo e [Prerequisito di versione](../prompt-management/#version-prerequisite)
+per la versione richiesta di `goa.design/goa-ai`.
 
 Strategia di rollout consigliata:
 
 - Registra prima le nuove prompt spec baseline.
-- Esegui gli override prima su scope ampio (`org`), poi restringi a `facility`/`session` per i canary.
-- Traccia le versioni effettive tramite eventi `prompt_rendered` e `model.Request.PromptRefs`.
-- Esegui rollback scrivendo un override piu recente nello stesso scope (o rimuovendo override specifici per tornare al fallback).
+- Distribuisci un override su uno scope ampio, come una sola etichetta
+  `account=acme`, poi aggiungi scope più ristretti, come
+  `account=acme, region=eu` o una sessione, per i canary.
+- Traccia le versioni effettive tramite eventi `prompt_rendered` e
+  `model.Request.PromptRefs`.
+- Esegui il rollback salvando un override più recente nello stesso scope, oppure
+  reimpostando quello scope esatto così che torni ad applicarsi un override più
+  ampio o la baseline. Il reset elimina definitivamente gli override di quello
+  scope.
 
 ---
 

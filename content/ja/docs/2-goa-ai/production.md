@@ -252,20 +252,27 @@ rt := runtime.New(
 
 ### Override 解決順序とロールアウト
 
-override の優先順位は決定的です。
+override は、セッション ID が設定されている場合はリクエストのセッション ID と一致し、
+かつ override のすべてのラベルが同じ値でリクエストに含まれるときに適用されます。
+複数の override が適用される場合、ランタイムは次の順で 1 つを選びます。
 
-1. `session` スコープ
-2. `facility` スコープ
-3. `org` スコープ
-4. グローバルスコープ
-5. ベースライン spec（override が存在しない場合）
+1. セッション ID を持つ override が、セッションなしの override より優先される
+2. それ以外では、ラベルの多い override が優先される
+3. それ以外では、新しい override が優先される
+
+適用される override がない場合、ランタイムはベースライン spec を描画します。
+具体例は [プロンプト管理](../prompt-management/#concepts) を、必要な
+`goa.design/goa-ai` の固定バージョンは[バージョン要件](../prompt-management/#version-prerequisite)を参照してください。
 
 推奨ロールアウト手順:
 
 - まず新しいベースライン prompt spec を登録する
-- override は広いスコープ（`org`）から開始し、`facility`/`session` へ絞ってカナリア展開する
+- 次に `account=acme` のような 1 つのラベルだけの広いスコープで override を展開し、
+  カナリアとして `account=acme, region=eu` や特定セッションなどの狭いスコープを追加する
 - `prompt_rendered` イベントと `model.Request.PromptRefs` で実効バージョンを追跡する
-- 同一スコープにより新しい override を書く（またはスコープ固有 override を削除する）ことでロールバックする
+- 同じスコープにより新しい override を保存するか、そのスコープをちょうどリセットして、
+  より広い override またはベースラインが再び適用されるようにしてロールバックする。
+  リセットはそのスコープの override を完全に削除する
 
 ---
 

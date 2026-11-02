@@ -133,6 +133,7 @@ home_output_codecs: "型付きペイロードのコーデック"
 home_output_bindings: "サービスとの接続"
 
 home_full_example: "完全な例を見る"
+home_prompt_guide: "プロンプト管理ガイドを読む"
 
 home_workflow_heading: "意図を設計し、繰り返すコードは生成する。"
 
@@ -241,6 +242,11 @@ home_output_cli: "CLIクライアント"
 home_output_descriptors: "型付きツール記述子"
 
 home_output_registration: "ランタイム登録"
+home_prompts: "プロンプト"
+home_output_prompt_checks: "goa gen でテンプレートを検証"
+home_output_prompt_render: "型付きレンダリング関数"
+home_output_prompt_registration: "プロンプト登録"
+home_output_prompt_overrides: "スコープ別の実行時差し替え"
 
 home_skill_cta: "コーディングエージェントにGoaスキルを追加"
 

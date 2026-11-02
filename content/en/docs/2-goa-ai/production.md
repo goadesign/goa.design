@@ -274,20 +274,30 @@ rt := runtime.New(
 
 ### Override Resolution and Rollout
 
-Override precedence is deterministic:
+An override applies to a request when its session ID, if it has one, equals the
+request's, and every label on the override is on the request with the same
+value. When several apply, the runtime picks one in this order:
 
-1. `session` scope
-2. `facility` scope
-3. `org` scope
-4. global scope
-5. baseline spec (when no override exists)
+1. an override with a session ID beats one without;
+2. otherwise, the override with more labels wins;
+3. otherwise, the newer override wins.
+
+When no override applies, the runtime renders the baseline spec. See
+[Prompt management](../prompt-management/#concepts) for a worked example and
+[Version prerequisite](../prompt-management/#version-prerequisite) for the
+required `goa.design/goa-ai` pin.
 
 Recommended rollout strategy:
 
 - Register new baseline specs first.
-- Roll out overrides at broad scope (`org`), then narrow to `facility`/`session` for canaries.
-- Track effective versions through `prompt_rendered` events and `model.Request.PromptRefs`.
-- Roll back by writing a newer override at the same scope (or removing scope-specific overrides to fall back).
+- Roll out an override at a broad scope, such as one label `account=acme`, then
+  add narrower scopes, such as `account=acme, region=eu` or one session, for
+  canaries.
+- Track effective versions through `prompt_rendered` events and
+  `model.Request.PromptRefs`.
+- Roll back by saving a newer override at the same scope, or by resetting that
+  exact scope so a broader override or the baseline applies again. Reset
+  permanently deletes the overrides at that scope.
 
 ---
 
