@@ -20,6 +20,19 @@ prompt come parte del tuo design:
   alla richiesta al modello che invia il testo, e la traccia della richiesta
   mostra quale testo ha prodotto quale risposta.
 
+## Prerequisito di versione {#version-prerequisite}
+
+I prompt dichiarati nel design (`SystemPrompt`, `Prompt`, `Template`, `Role`,
+`Args`), i pacchetti di prompt generati e la validazione tipizzata degli
+override sono stati introdotti in `goa.design/goa-ai` dopo `v0.90.0`. Fino al
+prossimo rilascio con tag, fissa `goa.design/goa-ai` al commit
+`fb00df97927e61cfa444423e77584b950d753bda` (il requisito di modulo di `goa-ai`
+seleziona automaticamente una versione compatibile di `goa.design/goa/v3`):
+
+```bash
+go get goa.design/goa-ai@fb00df97927e61cfa444423e77584b950d753bda
+```
+
 ## Concetti {#concepts}
 
 **Prompt baseline.** Il prompt così come è dichiarato nel design: il suo ID (per

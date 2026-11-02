@@ -740,7 +740,7 @@ Cuando una frontera de servicio debe ensamblar el JSON de resultado canónico fu
 La gestión de prompts es nativa del runtime y versionada:
 
 - `runtime.PromptRegistry` almacena registros inmutables de `prompt.PromptSpec` base.
-- `runtime.WithPromptStore(prompt.Store)` habilita overrides por scope. Un override se aplica cuando su ID de sesión (si existe) y cada una de sus etiquetas coinciden con la solicitud. Un override con sesión gana a uno sin sesión, después más etiquetas ganan a menos, y después gana el más reciente. Consulta [Gestión de prompts](../prompt-management/#concepts).
+- `runtime.WithPromptStore(prompt.Store)` habilita overrides por scope. Un override se aplica cuando su ID de sesión (si existe) y cada una de sus etiquetas coinciden con la solicitud. Un override con sesión gana a uno sin sesión, después más etiquetas ganan a menos, y después gana el más reciente. Consulta [Gestión de prompts](../prompt-management/#concepts) y su [requisito de versión](../prompt-management/#version-prerequisite).
 - Los planificadores llaman a `PlannerContext.RenderPrompt(ctx, id, data)` para resolver y renderizar contenido de prompt.
 - El contenido renderizado enumera en `content.Refs` cada versión de prompt que usó, incluidos los prompts compuestos con `{{ render "<prompt-id>" . }}`. Pon esa lista en el `model.Request` que usa el texto.
 

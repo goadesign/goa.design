@@ -20,6 +20,19 @@ los prompts como parte de tu diseño:
   la solicitud al modelo que envía el texto, y la traza de la solicitud muestra
   qué texto produjo qué respuesta.
 
+## Requisito de versión {#version-prerequisite}
+
+Los prompts declarados en el diseño (`SystemPrompt`, `Prompt`, `Template`,
+`Role`, `Args`), los paquetes de prompts generados y la validación tipada de
+overrides se incorporaron en `goa.design/goa-ai` después de `v0.90.0`. Hasta la
+próxima versión etiquetada, fija `goa.design/goa-ai` al commit
+`fb00df97927e61cfa444423e77584b950d753bda` (el requisito de módulo de `goa-ai`
+selecciona automáticamente una versión compatible de `goa.design/goa/v3`):
+
+```bash
+go get goa.design/goa-ai@fb00df97927e61cfa444423e77584b950d753bda
+```
+
 ## Conceptos {#concepts}
 
 **Prompt base.** El prompt tal como se declara en el diseño: su ID (por ejemplo

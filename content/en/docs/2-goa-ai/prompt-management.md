@@ -20,6 +20,18 @@ your design:
   request that sends the text, and the request's trace shows which text produced
   which answer.
 
+## Version prerequisite {#version-prerequisite}
+
+Design-declared prompts (`SystemPrompt`, `Prompt`, `Template`, `Role`, `Args`),
+generated prompt packages, and typed override validation landed in
+`goa.design/goa-ai` after `v0.90.0`. Until the next tagged release, pin
+`goa.design/goa-ai` to commit `fb00df97927e61cfa444423e77584b950d753bda`
+(`goa-ai`'s module requirement automatically selects a compatible `goa.design/goa/v3`):
+
+```bash
+go get goa.design/goa-ai@fb00df97927e61cfa444423e77584b950d753bda
+```
+
 ## Concepts {#concepts}
 
 **Baseline prompt.** The prompt as declared in the design: its ID (for example

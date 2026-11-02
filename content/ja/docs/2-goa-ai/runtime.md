@@ -675,7 +675,7 @@ service boundary が `ExecuteToolActivity` の外で正規 result JSON を assem
 Prompt 管理はランタイムネイティブで、バージョン管理されます。
 
 - `runtime.PromptRegistry` は不変なベースライン `prompt.PromptSpec` 登録を保持する
-- `runtime.WithPromptStore(prompt.Store)` はスコープ付き override を有効化する。override は、セッション ID（設定されている場合）とすべてのラベルがリクエストと一致するときに適用される。セッション付きの override がセッションなしより優先され、次にラベルの多いものが、次に新しいものが優先される。詳しくは [プロンプト管理](../prompt-management/#concepts) を参照
+- `runtime.WithPromptStore(prompt.Store)` はスコープ付き override を有効化する。override は、セッション ID（設定されている場合）とすべてのラベルがリクエストと一致するときに適用される。セッション付きの override がセッションなしより優先され、次にラベルの多いものが、次に新しいものが優先される。詳しくは [プロンプト管理](../prompt-management/#concepts) と[バージョン要件](../prompt-management/#version-prerequisite)を参照
 - プランナーは `PlannerContext.RenderPrompt(ctx, id, data)` を呼び、prompt 内容を解決・描画する
 - 描画済み内容は、`{{ render "<prompt-id>" . }}` で合成した prompt を含め、使用したすべての prompt バージョンを `content.Refs` に列挙する。そのリストを、テキストを使う `model.Request` に設定する
 

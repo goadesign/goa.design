@@ -261,7 +261,8 @@ override は、セッション ID が設定されている場合はリクエス�
 3. それ以外では、新しい override が優先される
 
 適用される override がない場合、ランタイムはベースライン spec を描画します。
-具体例は [プロンプト管理](../prompt-management/#concepts) を参照してください。
+具体例は [プロンプト管理](../prompt-management/#concepts) を、必要な
+`goa.design/goa-ai` の固定バージョンは[バージョン要件](../prompt-management/#version-prerequisite)を参照してください。
 
 推奨ロールアウト手順:
 

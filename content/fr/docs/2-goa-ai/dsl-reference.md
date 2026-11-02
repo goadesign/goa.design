@@ -128,9 +128,10 @@ supérieur.
 
 Déclarez les prompts dans le design pour que `goa gen` vérifie chaque template
 par rapport à ses arguments et génère des fonctions de rendu typées. Voir
-[Gestion des prompts](../prompt-management/) pour le fonctionnement des
-remplacements, des portées, de la réinitialisation et du suivi par requête à
-l'exécution.
+[Gestion des prompts](../prompt-management/) (et son
+[prérequis de version](../prompt-management/#version-prerequisite)) pour le
+fonctionnement des remplacements, des portées, de la réinitialisation et du
+suivi par requête à l'exécution.
 
 | Fonction | Contexte | Objectif |
 | --- | --- | --- |

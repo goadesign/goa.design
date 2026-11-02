@@ -126,8 +126,9 @@ top-level provider examples.
 
 Declare prompts in the design so `goa gen` checks each template against its
 arguments and generates typed render functions. See
-[Prompt management](../prompt-management/) for how overrides, scopes, reset,
-and per-request prompt records work at runtime.
+[Prompt management](../prompt-management/) (and its
+[version prerequisite](../prompt-management/#version-prerequisite)) for how
+overrides, scopes, reset, and per-request prompt records work at runtime.
 
 | Function | Context | Purpose |
 | --- | --- | --- |

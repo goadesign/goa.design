@@ -137,7 +137,7 @@ Anthropic field を `additionalModelRequestFields` 経由で渡します。生�
 
 ## プロンプト {#prompt-管理v1-統合パス}
 
-設計で prompt を宣言すると、`goa gen` が各テンプレートを引数と照合し、型付き描画関数を生成します。ランタイムでの override、スコープ、リセット、リクエストごとの prompt 記録の仕組みは[プロンプト管理](../prompt-management/)を参照してください。
+設計で prompt を宣言すると、`goa gen` が各テンプレートを引数と照合し、型付き描画関数を生成します。ランタイムでの override、スコープ、リセット、リクエストごとの prompt 記録の仕組みと[バージョン要件](../prompt-management/#version-prerequisite)は[プロンプト管理](../prompt-management/)を参照してください。
 
 | 関数 | コンテキスト | 用途 |
 | --- | --- | --- |

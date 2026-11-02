@@ -283,7 +283,9 @@ value. When several apply, the runtime picks one in this order:
 3. otherwise, the newer override wins.
 
 When no override applies, the runtime renders the baseline spec. See
-[Prompt management](../prompt-management/#concepts) for a worked example.
+[Prompt management](../prompt-management/#concepts) for a worked example and
+[Version prerequisite](../prompt-management/#version-prerequisite) for the
+required `goa.design/goa-ai` pin.
 
 Recommended rollout strategy:
 

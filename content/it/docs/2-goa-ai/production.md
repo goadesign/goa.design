@@ -270,7 +270,8 @@ sceglie uno in questo ordine:
 
 Se non si applica alcun override, il runtime rende la prompt spec baseline.
 Vedi [Gestione dei prompt](../prompt-management/#concepts) per un esempio
-completo.
+completo e [Prerequisito di versione](../prompt-management/#version-prerequisite)
+per la versione richiesta di `goa.design/goa-ai`.
 
 Strategia di rollout consigliata:
 

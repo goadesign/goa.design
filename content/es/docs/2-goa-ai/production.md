@@ -268,7 +268,9 @@ mismo valor. Cuando se aplican varios, el runtime elige uno en este orden:
 3. si no, gana el override más reciente.
 
 Si no se aplica ningún override, el runtime renderiza la prompt spec base. Consulta
-[Gestión de prompts](../prompt-management/#concepts) para ver un ejemplo completo.
+[Gestión de prompts](../prompt-management/#concepts) para ver un ejemplo completo y
+[Requisito de versión](../prompt-management/#version-prerequisite) para la versión
+requerida de `goa.design/goa-ai`.
 
 Estrategia de rollout recomendada:
 

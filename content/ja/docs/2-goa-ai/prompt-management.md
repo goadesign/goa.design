@@ -20,6 +20,19 @@ Goa-AI は prompt を設計の一部として扱います。
   モデルリクエストに付けると、リクエストのトレースでどのテキストがどの回答を
   生んだかがわかります。
 
+## バージョン要件 {#version-prerequisite}
+
+設計で宣言する prompt（`SystemPrompt`、`Prompt`、`Template`、`Role`、`Args`）、
+生成される prompt パッケージ、および override の型付き検証は `v0.90.0` より後の
+`goa.design/goa-ai` で導入されました。次のタグ付きリリースまでは、
+`goa.design/goa-ai` をコミット `fb00df97927e61cfa444423e77584b950d753bda` に
+固定してください（`goa-ai` のモジュール要件により、互換性のある
+`goa.design/goa/v3` が自動的に選択されます）。
+
+```bash
+go get goa.design/goa-ai@fb00df97927e61cfa444423e77584b950d753bda
+```
+
 ## 概念 {#concepts}
 
 **ベースライン prompt。** 設計で宣言されたとおりの prompt です。ID（例:

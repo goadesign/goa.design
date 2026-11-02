@@ -138,9 +138,10 @@ superiore.
 
 Dichiara i prompt nel design in modo che `goa gen` verifichi ogni template
 rispetto ai suoi argomenti e generi funzioni di rendering tipizzate. Vedi
-[Gestione dei prompt](../prompt-management/) per come funzionano a runtime
-gli override, gli scope, la reimpostazione e le registrazioni dei prompt per
-richiesta.
+[Gestione dei prompt](../prompt-management/) (e il relativo
+[prerequisito di versione](../prompt-management/#version-prerequisite)) per
+come funzionano a runtime gli override, gli scope, la reimpostazione e le
+registrazioni dei prompt per richiesta.
 
 | Funzione | Contesto | Scopo |
 | --- | --- | --- |

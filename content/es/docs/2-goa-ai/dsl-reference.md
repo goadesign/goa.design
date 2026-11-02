@@ -128,9 +128,10 @@ superior.
 
 Declara los prompts en el diseño para que `goa gen` compruebe cada plantilla con
 sus argumentos y genere funciones de renderizado tipadas. Consulta
-[Gestión de prompts](../prompt-management/) para ver cómo funcionan los
-overrides, los scopes, el restablecimiento y los registros de prompt por
-solicitud en runtime.
+[Gestión de prompts](../prompt-management/) (y su
+[requisito de versión](../prompt-management/#version-prerequisite)) para ver
+cómo funcionan los overrides, los scopes, el restablecimiento y los registros de
+prompt por solicitud en runtime.
 
 | Función | Contexto | Propósito |
 | --- | --- | --- |

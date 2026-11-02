@@ -742,7 +742,8 @@ Prompt management is runtime-native and versioned:
 - `runtime.WithPromptStore(prompt.Store)` enables scoped overrides. An override applies when its session
   ID (if set) and every one of its labels match the request. A session override beats one without a
   session, then more labels beat fewer, then the newer override wins. See
-  [Prompt management](../prompt-management/#concepts).
+  [Prompt management](../prompt-management/#concepts) and its
+  [version prerequisite](../prompt-management/#version-prerequisite).
 - Planners call `PlannerContext.RenderPrompt(ctx, id, data)` to resolve and render prompt content.
 - Rendered content lists every prompt version it used in `content.Refs`, including prompts composed
   with `{{ render "<prompt-id>" . }}`. Put that list on the `model.Request` that uses the text.

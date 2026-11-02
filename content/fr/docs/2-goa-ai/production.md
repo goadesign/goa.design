@@ -270,7 +270,8 @@ choisit un dans cet ordre :
 
 Si aucun remplacement ne s’applique, le runtime rend la spécification de base.
 Voir [Gestion des prompts](../prompt-management/#concepts) pour un exemple
-complet.
+complet et [Prérequis de version](../prompt-management/#version-prerequisite)
+pour la version requise de `goa.design/goa-ai`.
 
 Stratégie de déploiement recommandée :
 
