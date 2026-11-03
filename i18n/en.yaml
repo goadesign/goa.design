@@ -387,7 +387,7 @@ chorus_step_goal_text: "It writes the plan, gives every task an owner and a revi
 chorus_step_steer: "Sit back and steer"
 chorus_step_steer_text: "Run `chorus ui` (or open `localhost:9440`) to watch it happen live, and drop in a message whenever you want."
 chorus_example_heading: "Three agents, one handoff each"
-chorus_example_intro: "Each card shows the command or tool call at the top and the message delivered below. The numbered markers match the live dashboard."
+chorus_example_intro: "Invented task, real Chorus output. Each card shows the command or tool call at the top and the message delivered below. The numbered markers match the live dashboard."
 chorus_role_lead: "Claude Code · leads the task"
 chorus_role_docs: "Gemini · docs and client SDK"
 chorus_role_review: "Codex · tests and review"

@@ -184,8 +184,12 @@ for (const width of [390, 1440]) {
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/chorus/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your coding agents. Working as a team.');
+      await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveText('Get Chorus');
+      await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
+      await expect(page.locator('.chorus-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');
       await expect(page.locator('.td-navbar').getByRole('link', { name: 'Chorus', exact: true })).toHaveAttribute('href', '/chorus/');
       await expect(page.locator('.chorus-pillars dt')).toHaveText(['Project swarms', '#channels & pinned plan', '@agent direct messages', 'Live dashboard (chorus ui)']);
+      await expect(page.locator('.chorus-example .section-intro p')).toContainText('Invented task, real Chorus output.');
       const terminals = page.locator('.chorus-terminal');
       await expect(terminals).toHaveCount(3);
       await expect(terminals.first().locator('pre')).toContainText('$ chorus watch claude -wait 30s');
@@ -227,10 +231,10 @@ for (const width of [390, 1440]) {
 
 test('localized Chorus pages, docs links, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading] of [
-    ['es', /^(Tus agentes de programación\. Trabajando en equipo\.|Agentes distintos\. Una sola conversación\.)$/],
-    ['fr', /^(Vos agents de code\. En équipe\.|Des agents différents\. Une seule conversation\.)$/],
-    ['it', /^(I tuoi agenti di programmazione\. Al lavoro come una squadra\.|Agenti diversi\. Una sola conversazione\.)$/],
-    ['ja', /^(あなたのコーディングエージェントが、 チームとして動く。|異なるエージェント。 ひとつの会話。)$/],
+    ['es', 'Tus agentes de programación. Trabajando en equipo.'],
+    ['fr', 'Vos agents de code. En équipe.'],
+    ['it', 'I tuoi agenti di programmazione. Al lavoro come una squadra.'],
+    ['ja', 'あなたのコーディングエージェントが、 チームとして動く。'],
   ] as const) {
     await page.goto(`/${lang}/chorus/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
@@ -240,5 +244,7 @@ test('localized Chorus pages, docs links, and Markdown are reachable', async ({ 
   }
   const markdown = await request.get('/chorus/index.md');
   expect(markdown.ok()).toBe(true);
-  expect(await markdown.text()).toContain('brew install goadesign/tap/chorus');
+  const mdText = await markdown.text();
+  expect(mdText).toContain('brew install goadesign/tap/chorus');
+  expect(mdText).toContain('Invented task, real Chorus output.');
 });
