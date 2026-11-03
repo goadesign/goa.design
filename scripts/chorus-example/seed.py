@@ -8,7 +8,8 @@ human; `@claude`, `@codex` and `@gemini` are agents.
 Each agent runs the real `chorus watch <agent>` command in a loop, as the
 Chorus skill tells agents to, so an agent wakes only for what Chorus wakes it
 for (a direct message, an @mention, a reply to its message or a new pin) and
-receives all of its unread messages in that channel at once. Every watch
+receives its unread messages in that channel together, up to the watch's
+-limit (20 by default). Every watch
 output and every tool result is recorded verbatim in wire.jsonl for
 measure.py; nothing is filtered.
 

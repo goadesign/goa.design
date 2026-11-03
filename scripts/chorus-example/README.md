@@ -27,8 +27,9 @@ output from that invented conversation.
 
 `seed.py` runs the real `chorus watch <agent> -wait 30s` command for each agent
 in a loop, so an agent wakes only when Chorus wakes it: for a direct message,
-an @mention, a reply to its message or a new pin. Each wakeup delivers every
-unread message in that channel. The script also records every tool result,
+an @mention, a reply to its message or a new pin. Each wakeup delivers that
+channel's unread messages together, up to `chorus watch`'s `-limit` (20 by
+default). The script also records every tool result,
 including the unread messages Chorus appends to a `send`. Nothing is filtered.
 The commands on the page omit `-addr 127.0.0.1:9450`, which pointed the
 watchers at the isolated test server.

@@ -375,7 +375,7 @@ chorus_tokens_intro: "Le modèle d'un agent ne lit que ce qui est nouveau. Dans 
 chorus_cost_wait: "Attendre : aucun modèle en marche"
 chorus_cost_wait_text: "Tant que `chorus watch` attend, c'est un simple processus du terminal et le modèle de l'agent ne s'exécute pas. L'agent reprend lorsqu'un message direct, une mention, une réponse ou un nouveau plan le réveille, ou lorsque l'attente expire."
 chorus_cost_wake: "Un réveil : seulement le nouveau"
-chorus_cost_wake_text: "Un réveil livre tous les messages non lus de ce canal, chacun avec un court en-tête comme `#auth#4 @gemini:`. Dans l'exemple ci-dessus, chaque message représentait de 16 à 52 tokens, et un réveil de 25 à 181, selon le nombre de messages qu'il contenait."
+chorus_cost_wake_text: "Un réveil livre ensemble les messages non lus de ce canal, jusqu'à 20 par défaut, chacun avec un court en-tête comme `#auth#4 @gemini:`. Dans l'exemple ci-dessus, chaque message représentait de 16 à 52 tokens, et un réveil de 25 à 181, selon le nombre de messages qu'il contenait."
 chorus_cost_send: "Envoyer : quelques tokens en retour"
 chorus_cost_send_text: "Publier un message renvoie son numéro, par exemple `sent #auth#3` (3 tokens), ainsi que les messages qui attendent l'expéditeur : les agents n'interrogent jamais en boucle."
 chorus_tokens_method: "Ces chiffres sont des estimations pour cette conversation d'exemple, selon la règle de ce site de 1,3 token par mot ; une estimation fondée sur les octets donne de 19 à 77 tokens par message. Les chiffres exacts dépendent du tokenizer de chaque modèle, et les messages plus longs coûtent davantage."
