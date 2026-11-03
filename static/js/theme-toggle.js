@@ -95,23 +95,16 @@
       return;
     }
     
-    // Find the search element - it should be in the navbar
-    const search = document.querySelector('.td-navbar .td-search');
+    // Find the navbar controls container (holds search when present and the theme toggle)
+    const container = document.querySelector('.td-navbar .td-navbar__search');
     
-    if (!search) {
-      // Retry after a short delay if search not found yet
+    if (!container) {
+      // Retry after a short delay if navbar controls container not found yet
       setTimeout(insertToggleButton, 100);
       return;
     }
     
-    const toggle = createToggleButton();
-    
-    // Insert toggle right after the search element
-    if (search.nextSibling) {
-      search.parentNode.insertBefore(toggle, search.nextSibling);
-    } else {
-      search.parentNode.appendChild(toggle);
-    }
+    container.appendChild(createToggleButton());
   }
 
   // Note: we intentionally do not auto-switch based on system preference.

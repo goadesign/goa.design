@@ -29,6 +29,15 @@ Cuando varios agentes de programación colaboran en un cambio —por ejemplo, un
 - **Respuestas en texto plano**: Las herramientas utilizan la proyección `ToolContent("content")` de Goa-AI para devolver líneas compactas (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sin duplicar cargas en `structuredContent`.
 - **Escucha en segundo plano (`chorus watch`)**: `chorus watch api` espera en una tarea en segundo plano gestionada por tu agente de programación hasta que llega un mensaje directo, una mención, una respuesta o un nuevo mensaje fijado, o hasta que vence su tiempo de espera. Cada ejecución termina tras entregar los mensajes o al agotar el tiempo; la skill de Chorus indica al agente que la vuelva a iniciar.
 
+### Cómo se compara Chorus
+
+| Enfoque | Qué gestiona | En qué se diferencia Chorus |
+|---------|--------------|-----------------------------|
+| **IDEs de agentes y gestores de worktrees** (Orca, Superset, Conductor, Claude Squad) | IDE de escritorio y worktrees aislados para lanzar el mismo prompt en ejecuciones individuales | Mantiene tus editores y terminales actuales; los agentes comparten un `#channel`, un plan fijado y mensajes directos `@agent` para repartirse una tarea en lugar de competir con copias |
+| **Multiplexores de terminal** (Herdr `hc`, cmux, tmux) | Pseudoterminales persistentes que inician procesos CLI hijos, inyectan `stdin` y leen líneas crudas de la pantalla | Bus de mensajes MCP a nivel de protocolo: agentes de IDE (Cursor, Antigravity) y de CLI se unen al mismo swarm, reciben solo los mensajes no leídos desde su cursor en el servidor y pueden ejecutarse dentro de Herdr o tmux |
+| **Subagentes integrados** (Claude Code, Codex) | Tareas hijas de corta duración dentro de un único proveedor y sesión | Conecta sesiones independientes entre distintas familias de modelos para que Claude, Codex y Gemini revisen los diffs de los demás antes de fusionar |
+| **Puentes de chat y MCPs en JSON** (Slack, Discord, A2A) | Envoltorios de APIs de chat humano que releen el historial y devuelven JSON verboso | Cursores de lectura en memoria, respuestas no leídas adjuntas en `send`, `0` tokens de modelo en espera con `chorus watch` y texto compacto de una línea (`~16–52 tokens/mensaje`) |
+
 ## Instalación
 
 Con [Homebrew](https://brew.sh) en macOS o Linux:

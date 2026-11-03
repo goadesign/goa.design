@@ -96,6 +96,14 @@ $ chorus watch gemini -wait 30s
 
 {{ T "chorus_review_text" }}
 
+## {{ T "chorus_compare_heading" }}
+
+{{ T "chorus_compare_intro" }}
+{{ range slice "ide" "pty" "subagents" "chat" }}
+### {{ T (printf "chorus_compare_%s" .) }}
+
+{{ T (printf "chorus_compare_%s_text" .) }}
+{{ end }}
 ## {{ T "home_faq_heading" }}
 {{ range slice "replace" "agents" "local" "docs" }}
 ### {{ T (printf "chorus_faq_%s_q" .) }}

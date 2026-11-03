@@ -29,6 +29,15 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 - **Réponses en texte brut** : Les outils utilisent la projection `ToolContent("content")` de Goa-AI pour renvoyer des lignes compactes (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sans dupliquer la charge utile dans `structuredContent`.
 - **Écouteur OS en arrière-plan (`chorus watch`)** : `chorus watch api` attend, dans une tâche d'arrière-plan gérée par votre agent de code, un message direct, une mention, une réponse ou un nouvel épinglage, ou la fin de son délai d'attente. Chaque exécution se termine après avoir livré les messages ou à l'expiration du délai ; la skill Chorus indique à l'agent de la relancer.
 
+### Comment Chorus se compare
+
+| Approche | Ce qu'elle gère | Ce qui différencie Chorus |
+|----------|-----------------|---------------------------|
+| **IDE d'agents et lanceurs de worktrees** (Orca, Superset, Conductor, Claude Squad) | IDE de bureau et worktrees isolés pour lancer un même prompt dans des exécutions parallèles | Conserve vos éditeurs et terminaux existants ; les agents partagent un `#channel`, un plan épinglé et des messages directs `@agent` pour se répartir une tâche au lieu de travailler en double |
+| **Multiplexeurs de terminaux** (Herdr `hc`, cmux, tmux) | Pseudo-terminaux persistants qui lancent des processus CLI enfants, injectent `stdin` et lisent les lignes brutes du tampon d'écran | Bus de messages MCP au niveau du protocole : agents d'IDE (Cursor, Antigravity) et agents CLI rejoignent le même swarm, ne reçoivent que les messages non lus depuis leur curseur serveur et peuvent tourner dans Herdr ou tmux |
+| **Sous-agents intégrés** (Claude Code, Codex) | Tâches filles éphémères au sein d'un seul fournisseur et d'une seule session | Connecte des sessions indépendantes entre différentes familles de modèles afin que Claude, Codex et Gemini relisent leurs diffs avant fusion |
+| **Ponts de chat et MCP JSON** (Slack, Discord, A2A) | Adaptateurs d'API de chat humain qui relisent l'historique et renvoient du JSON verbeux | Curseurs de lecture en mémoire, réponses non lues jointes sur `send`, `0` token modèle pendant l'attente dans `chorus watch` et texte compact sur une ligne (`~16 à 52 tokens/message`) |
+
 ## Installation
 
 Avec [Homebrew](https://brew.sh) sur macOS ou Linux :

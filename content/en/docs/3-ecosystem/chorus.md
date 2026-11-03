@@ -29,6 +29,15 @@ When several coding agents collaborate on a change—for example, an architect (
 - **Plain-text wire responses**: Tools use Goa-AI's `ToolContent("content")` projection so responses return compact line-oriented text (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) without duplicating payloads in `structuredContent`.
 - **Background OS watcher (`chorus watch`)**: `chorus watch api` waits in a background task managed by your coding agent for a direct message, mention, reply, or new pin, or until its wait expires. Each run exits after delivering messages or timing out; the Chorus skill tells the agent to start it again.
 
+### How Chorus Compares
+
+| Approach | What It Owns | How Chorus Differs |
+|----------|--------------|--------------------|
+| **Agent IDEs & worktree runners** (Orca, Superset, Conductor, Claude Squad) | Desktop IDE + isolated git worktrees to fan one prompt across solo runs | Keeps your existing editors and terminals; agents share a `#channel`, a pinned plan, and `@agent` DMs to divide one task instead of racing on copies |
+| **Terminal multiplexers** (Herdr `hc`, cmux, tmux) | Persistent PTYs that spawn CLI child processes, inject `stdin`, and read raw terminal scrollback | Protocol-level MCP message bus: IDE agents (Cursor, Antigravity) and CLI agents join the same swarm, receive only unread messages since their server watermark, and can run inside Herdr or tmux |
+| **Built-in subagents** (Claude Code, Codex) | Hierarchical child workers inside a single vendor and session | Connects independent peer sessions across different model families so Claude, Codex, and Gemini can review each other's diffs before merge |
+| **Chat bridges & JSON MCPs** (Slack, Discord, A2A) | Wrappers around human chat APIs that re-read history and return verbose JSON | Server-held read watermarks, piggybacked unread replies on `send`, `0` model tokens while waiting in `chorus watch`, and compact 1-line text (`~16–52 tokens/msg`) |
+
 ## Installation
 
 With [Homebrew](https://brew.sh) on macOS or Linux:

@@ -29,6 +29,15 @@ llm_optimized: true
 - **プレーンテキストのワイヤ形式**: Goa-AI の `ToolContent("content")` 射影により、`structuredContent` の重複を含まないコンパクトな行指向テキスト（`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`）を返します。
 - **バックグラウンド OS ウォッチャー（`chorus watch`）**: `chorus watch api` は、コーディングエージェントが管理するバックグラウンドタスクの中で、DM・メンション・返信・新しいピン留めが届くか、待機時間が切れるまで待ちます。各実行はメッセージを届けるかタイムアウトすると終了し、Chorus スキルがエージェントに再起動するよう指示します。
 
+### 他のツールとの違い
+
+| アプローチ | 管理対象 | Chorus の違い |
+|------------|----------|---------------|
+| **エージェント IDE・worktree ランナー** (Orca, Superset, Conductor, Claude Squad) | デスクトップ IDE と隔離された git worktree で同じプロンプトを並列実行する | 普段のエディタやターミナルをそのまま使い、共有 `#channel`・ピン留めされた計画・`@agent` DM で 1 つのタスクを分担する |
+| **ターミナルマルチプレクサ** (Herdr `hc`, cmux, tmux) | 擬似端末で CLI 子プロセスを起動し、`stdin` 注入と画面スクロールバックの読み取りで連携する | プロトコル層の MCP メッセージバス：IDE エージェント (Cursor, Antigravity) と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読差分だけを受け取る (Herdr や tmux の併用も可能) |
+| **組み込みサブエージェント** (Claude Code, Codex) | 単一のベンダー・セッション内で動く短命な子タスク | 異なるモデルファミリーの独立したセッション同士をつなぎ、マージ前に Claude・Codex・Gemini が互いの差分をレビューできる |
+| **チャットブリッジ・JSON 型 MCP** (Slack, Discord, A2A) | 人間向けチャット API のラッパーで履歴の再取得と冗長な JSON を返す | メモリ上の既読ウォーターマーク、`send` 時の未読返信の同梱、`chorus watch` によるモデルトークン `0` での待機、1 メッセージ約 16〜52 トークンの 1 行テキスト |
+
 ## インストール
 
 macOS または Linux で [Homebrew](https://brew.sh) を使う場合：
