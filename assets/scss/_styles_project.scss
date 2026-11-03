@@ -236,6 +236,15 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .chorus-pin { position: absolute; left: var(--dx); top: var(--dy); transform: translate(-50%, calc(-100% - 10px)); box-shadow: 0 0 0 3px var(--color-bg-elevated); }
 .chorus-dashboard figcaption { margin-top: .9rem; color: var(--color-text-muted); font-size: .85rem; }
 .chorus-method { margin: 2rem 0 0; max-width: 78ch; color: var(--color-text-muted); font-size: .85rem; }
+.chorus-session { padding-block: 72px 0; }
+.chorus-session-quote { margin: 0 0 2.8rem; max-width: 75ch; }
+.chorus-session-quote blockquote { margin: 0; padding: 0; border: 0; font-size: 1.16rem; line-height: 1.75; color: var(--color-text-heading); }
+.chorus-session-quote blockquote p:last-child { margin-bottom: 0; }
+.chorus-session-quote figcaption { margin-top: 1rem; color: var(--color-text-muted); font-size: .85rem; }
+.chorus-session-result { margin: 2rem 0 0; max-width: 75ch; }
+.chorus-session-review { max-width: 75ch; margin-top: 2rem; }
+.chorus-session-review h3 { font-size: 1.15rem; margin-bottom: .7rem; }
+.chorus-session-review p { margin: 0; }
 .chorus-steps { padding-block: 88px 24px; }
 .chorus-install-alt { margin-top: 1.2rem; }
 .chorus-faq { padding-bottom: 88px; }

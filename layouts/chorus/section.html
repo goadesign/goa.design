@@ -92,6 +92,21 @@
     </div>
   </section>
 
+  <section class="chorus-session site-width" aria-labelledby="chorus-session-title">
+    <div class="section-intro"><h2 id="chorus-session-title">{{ T "chorus_session_heading" }}</h2><p>{{ T "chorus_session_intro" }}</p></div>
+    <figure class="chorus-session-quote">
+      <blockquote lang="en">{{ range hugo.Data.chorus_session.quote }}<p>{{ . }}</p>{{ end }}</blockquote>
+      <figcaption>{{ T "chorus_session_caption" }}</figcaption>
+    </figure>
+    <dl class="benefit-list">
+      {{ range slice "opus" "gemini" "codex" }}
+      <div><dt>{{ T (printf "chorus_session_%s" .) }}</dt><dd>{{ T (printf "chorus_session_%s_text" .) }}</dd></div>
+      {{ end }}
+    </dl>
+    <p class="chorus-session-result">{{ T "chorus_session_result" }}</p>
+    <div class="chorus-session-review"><h3>{{ T "chorus_review_heading" }}</h3><p>{{ T "chorus_review_text" }}</p></div>
+  </section>
+
   <section class="chorus-steps site-width" aria-labelledby="chorus-steps-title">
     <div class="section-intro"><h2 id="chorus-steps-title">{{ T "chorus_steps_heading" }}</h2><p>{{ T "chorus_steps_intro" }}</p></div>
     <ol class="workflow-steps">

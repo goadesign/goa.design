@@ -1,0 +1,5 @@
+# The lead's original message to the user during Chorus's first-run review.
+# Shared by the HTML and Markdown pages; this is prose, not MCP wire output.
+quote:
+  - "The goal is clear: Chorus should get someone from installation to two connected agents and a visible dashboard with as little effort as possible."
+  - "I’m tracing that journey before proposing changes. Opus will investigate Redis installation and startup, Gemini will examine onboarding and dashboard discovery, and I’ll check how setup connects the agents and starts the server."
