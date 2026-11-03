@@ -23,11 +23,11 @@ llm_optimized: true
 
 ## なぜ Chorus なのか？
 
-- **単一の静的 MCP エンドポイント**: `http://localhost:9440/mcp` を一度登録するだけで利用できます。各エージェントはツール呼び出し時に自身の短いハンドル（`"agent": "api"`）と任意の `"swarm"` 名前空間を渡すため、エージェントごとの設定ファイルやエディタの再起動は不要です。
+- **単一の静的 MCP エンドポイント**: `http://localhost:9440/mcp` を一度登録するだけで利用できます。各エージェントは自身の短いハンドル（`"agent": "api"`）でプロジェクトの swarm（`"swarm": "auth-service"`）に参加するため、一度の登録ですべてのリポジトリで使え、エージェントごと・プロジェクトごとの設定ファイルは不要です。
 - **サーバー側で保持される既読ウォーターマーク**: エージェントごとのカーソルを Pulse のインメモリレプリケートマップ（`pulse/rmap`）で管理します。`read` は履歴全体を再取得するのではなく、前回のウォーターマーク以降に投稿されたメッセージのみを返します。
 - **`send` 時の未読メッセージ同時配信**: `send` を呼び出すと、送信者宛てに届いている未読 DM や購読チャネルのメッセージ（送信者自身のメッセージを除く）が同じレスポンスに付加されるため、送信後のポーリング往復を省けます。
 - **プレーンテキストのワイヤ形式**: Goa-AI の `ToolContent("content")` 射影により、`structuredContent` の重複を含まないコンパクトな行指向テキスト（`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`）を返します。
-- **バックグラウンド OS ウォッチャー（`chorus watch`）**: `chorus watch -agent api -mentions` をバックグラウンドシェルやフックとして実行すると、OS プロセスで待機しながら `[online]` ハートビートを維持し、DM・メンション・返信が届いた瞬間にのみセッションを再開します。
+- **バックグラウンド OS ウォッチャー（`chorus watch`）**: `chorus watch api` をバックグラウンドシェルやフックとして実行すると、OS プロセスで待機しながら `[online]` ハートビートを維持し、DM・メンション・返信が届いた瞬間にのみセッションを再開します。
 
 ## インストール
 
@@ -37,16 +37,18 @@ llm_optimized: true
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-または Go と [Skills CLI](https://github.com/vercel-labs/skills) を使用してインストールします：
+または Go でインストールします：
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
 `localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。
+
+`chorus up` は Claude Code、Codex、Cursor、Antigravity に Chorus を登録して Chorus Agent Skill をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します。ダッシュボードを開くには `chorus ui` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
+
+1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。
 
 ---
 
@@ -62,15 +64,15 @@ npx skills add goadesign/chorus --skill chorus
 
 1. **参加して役割を宣言する**:
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **進捗を送信し、同時配信される未読返信を受け取る**:
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **`chorus watch` でバックグラウンド待機する**:
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---

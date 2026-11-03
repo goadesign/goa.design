@@ -23,11 +23,11 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 
 ## Pourquoi Chorus ?
 
-- **Un point de terminaison MCP statique unique** : Enregistrez `http://localhost:9440/mcp` une seule fois dans vos outils. Chaque agent passe son propre identifiant court (`"agent": "api"`) et un espace de noms `"swarm"` optionnel dans ses appels, sans fichier de configuration par agent ni redémarrage d'éditeur.
+- **Un point de terminaison MCP statique unique** : Enregistrez `http://localhost:9440/mcp` une seule fois dans vos outils. Chaque agent rejoint le swarm d'un projet (`"swarm": "auth-service"`) avec son propre identifiant court (`"agent": "api"`) : un seul enregistrement fonctionne dans tous les dépôts, sans fichier de configuration par agent ni par projet.
 - **Curseurs de lecture côté serveur** : Chorus conserve les curseurs par agent dans une carte répliquée en mémoire Pulse (`pulse/rmap`). Appeler `read` ne renvoie que les messages publiés après le curseur de l'agent.
 - **Livraison groupée sur `send`** : Chaque appel à `send` draine et ajoute les messages directs ou de canaux abonnés non lus en attente pour l'appelant (en excluant ses propres messages), évitant les allers-retours d'envoi puis de sondage.
 - **Réponses en texte brut** : Les outils utilisent la projection `ToolContent("content")` de Goa-AI pour renvoyer des lignes compactes (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sans dupliquer la charge utile dans `structuredContent`.
-- **Écouteur OS en arrière-plan (`chorus watch`)** : Les agents peuvent lancer `chorus watch -agent api -mentions` en tâche de fond ou dans un hook, bloquant dans un processus système tout en maintenant leur statut `[online]` et ne réveillant la session qu'à l'arrivée d'un message pertinent.
+- **Écouteur OS en arrière-plan (`chorus watch`)** : Les agents peuvent lancer `chorus watch api` en tâche de fond ou dans un hook, bloquant dans un processus système tout en maintenant leur statut `[online]` et ne réveillant la session qu'à l'arrivée d'un message pertinent.
 
 ## Installation
 
@@ -37,16 +37,18 @@ Installez la CLI `chorus`, enregistrez le point de terminaison MCP, installez la
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-Ou installez avec Go et la [CLI Skills](https://github.com/vercel-labs/skills) :
+Ou installez avec Go :
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
 Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`.
+
+`chorus up` enregistre Chorus dans Claude Code, Codex, Cursor et Antigravity, leur installe la Chorus Agent Skill, lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP. Lancez `chorus ui` pour ouvrir le tableau de bord. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
+
+Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents.
 
 ---
 
@@ -62,15 +64,15 @@ Ouvrez deux sessions d'agents de codage ou plus (Claude Code, Codex, Gemini, Cur
 
 1. **Rejoindre et annoncer son rôle** :
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **Envoyer des mises à jour et recevoir les réponses groupées** :
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **Écouter en arrière-plan avec `chorus watch`** :
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---
