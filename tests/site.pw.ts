@@ -191,7 +191,14 @@ for (const width of [390, 1440]) {
       await expect(brand).toHaveAccessibleName('Chorus');
       await expect(brand).toHaveAttribute('href', '/chorus/');
       await expect(brand.locator('svg')).toHaveAttribute('viewBox', '0 0 512 512');
-      await expect(page.locator('.td-navbar .navbar-nav').getByRole('link', { name: 'Goa', exact: true })).toHaveAttribute('href', '/');
+      const nav = page.locator('.td-navbar .navbar-nav');
+      await expect(nav.getByRole('link', { name: 'Documentation', exact: true })).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');
+      await expect(nav.getByRole('link', { name: 'GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/goadesign/chorus');
+      await expect(nav.getByRole('link', { name: 'Goa framework', exact: true })).toHaveAttribute('href', '/');
+      await expect(nav.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
+      await expect(nav.getByRole('link', { name: 'AI agents', exact: true })).toHaveCount(0);
+      await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
+      await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
       await expect(page.locator('.chorus-pillars dt')).toHaveText(['Project swarms', '#channels & pinned plan', '@agent direct messages', 'Live dashboard (chorus ui)']);
       await expect(page.locator('.chorus-example .section-intro p')).toContainText('Invented task, real Chorus output.');
       const terminals = page.locator('.chorus-terminal');
@@ -219,6 +226,12 @@ for (const width of [390, 1440]) {
       }
       await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: model off', 'Waking up: just the news', 'Talking: a few tokens']);
       await expect(page.locator('.chorus-quote-speaker')).toHaveText('Codex, lead agent, explains the plan to the maintainer.');
+      await expect(page.locator('.chorus-compare dt')).toHaveText([
+        'Agent IDEs & worktree runners (Orca, Superset, Conductor)',
+        'Terminal multiplexers (Herdr, cmux, tmux)',
+        'Built-in subagents (Claude Code, Codex)',
+        'Chat bridges & JSON MCPs (Slack, Discord, A2A)',
+      ]);
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
@@ -226,7 +239,7 @@ for (const width of [390, 1440]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.evaluate(() => {
         (document.activeElement as HTMLElement | null)?.blur?.();
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
       });
       await page.screenshot({ path: `.impeccable/review/chorus-${width}-${theme}.png`, fullPage: true });
     });
@@ -234,16 +247,18 @@ for (const width of [390, 1440]) {
 }
 
 test('localized Chorus pages, docs links, and Markdown are reachable', async ({ page, request }) => {
-  for (const [lang, heading] of [
-    ['es', 'Tus agentes de programación. Trabajando en equipo.'],
-    ['fr', 'Vos agents de code. En équipe.'],
-    ['it', 'I tuoi agenti di programmazione. Al lavoro come una squadra.'],
-    ['ja', 'あなたのコーディングエージェントが、 チームとして動く。'],
+  for (const [lang, heading, docsLabel, goaLabel] of [
+    ['es', 'Tus agentes de programación. Trabajando en equipo.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Vos agents de code. En équipe.', 'Documentation', 'Framework Goa'],
+    ['it', 'I tuoi agenti di programmazione. Al lavoro come una squadra.', 'Documentazione', 'Framework Goa'],
+    ['ja', 'あなたのコーディングエージェントが、 チームとして動く。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/chorus/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
     await expect(page.locator('.td-navbar .navbar-brand')).toHaveAttribute('href', `/${lang}/chorus/`);
-    await expect(page.locator('.td-navbar .navbar-nav').getByRole('link', { name: 'Goa', exact: true })).toHaveAttribute('href', `/${lang}/`);
+    const nav = page.locator('.td-navbar .navbar-nav');
+    await expect(nav.getByRole('link', { name: docsLabel, exact: true })).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/chorus/`);
+    await expect(nav.getByRole('link', { name: goaLabel, exact: true })).toHaveAttribute('href', `/${lang}/`);
     await expect(page.locator('.chorus-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/chorus/`);
     const docs = await request.get(`/${lang}/docs/3-ecosystem/chorus/`);
     expect(await docs.text()).toContain(`/${lang}/chorus/`);
@@ -253,4 +268,5 @@ test('localized Chorus pages, docs links, and Markdown are reachable', async ({ 
   const mdText = await markdown.text();
   expect(mdText).toContain('brew install goadesign/tap/chorus');
   expect(mdText).toContain('Invented task, real Chorus output.');
+  expect(mdText).toContain('## How Chorus compares');
 });

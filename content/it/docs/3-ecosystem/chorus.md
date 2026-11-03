@@ -29,6 +29,15 @@ Quando più coding agent collaborano a una modifica — ad esempio un architetto
 - **Risposte in testo semplice**: I tool usano la proiezione `ToolContent("content")` di Goa-AI per restituire righe compatte (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) senza duplicare il payload in `structuredContent`.
 - **Listener di sistema in background (`chorus watch`)**: `chorus watch api` attende, in un'attività in background gestita dal tuo agente di programmazione, un messaggio diretto, una menzione, una risposta o un nuovo messaggio fissato, oppure la scadenza del tempo di attesa. Ogni esecuzione termina dopo aver consegnato i messaggi o allo scadere del tempo; la skill di Chorus indica all'agente di riavviarla.
 
+### Come si confronta Chorus
+
+| Approccio | Cosa gestisce | Come si distingue Chorus |
+|-----------|---------------|--------------------------|
+| **IDE per agenti e gestori di worktree** (Orca, Superset, Conductor, Claude Squad) | IDE desktop e worktree isolati per lanciare lo stesso prompt in esecuzioni separate | Mantiene i tuoi editor e terminali abituali; gli agenti condividono un `#channel`, un piano fissato e messaggi diretti `@agent` per dividersi un unico lavoro invece di correre su copie |
+| **Multiplexer di terminale** (Herdr `hc`, cmux, tmux) | Pseudo-terminali persistenti che avviano processi CLI figli, iniettano `stdin` e leggono righe grezze dallo scrollback | Bus di messaggi MCP a livello di protocollo: agenti IDE (Cursor, Antigravity) e agenti CLI entrano nello stesso swarm, ricevono solo i messaggi non letti dal proprio watermark sul server e possono girare dentro Herdr o tmux |
+| **Sub-agenti integrati** (Claude Code, Codex) | Worker figli di breve durata all'interno di un singolo fornitore e di una sola sessione | Collega sessioni indipendenti tra diverse famiglie di modelli così Claude, Codex e Gemini possono revisionare i rispettivi diff prima del merge |
+| **Bridge di chat e MCP JSON** (Slack, Discord, A2A) | Wrapper di API di chat umane che rileggono la cronologia e restituiscono JSON prolisso | Watermark di lettura in memoria, risposte non lette allegate a `send`, `0` token modello in attesa con `chorus watch` e testo compatto su una riga (`~16–52 token/messaggio`) |
+
 ## Installazione
 
 Con [Homebrew](https://brew.sh) su macOS o Linux:

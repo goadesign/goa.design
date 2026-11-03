@@ -2,23 +2,27 @@
   <div class="td-navbar-container container-fluid flex-md-row">
     {{- if eq .Section "chorus" }}
     <a class="navbar-brand" href="{{ relref . "/chorus/" }}"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/chorus-logo.svg").Content | safeHTML }}</span><span>Chorus</span></a>
-    {{- else }}
-    <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Goa"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/logo.svg").Content | safeHTML }}</span></a>
-    {{- end }}
     <div class="td-navbar__main" id="main_navbar">
       <ul class="navbar-nav">
-        {{- if eq .Section "chorus" }}
-        <li class="nav-item"><a class="nav-link" href="{{ .Site.Home.RelPermalink }}">Goa</a></li>
-        {{- end }}
+        <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/3-ecosystem/chorus/" }}">{{ T "docs_overview" }}</a></li>
+        <li class="nav-item"><a class="nav-link" href="https://github.com/goadesign/chorus">GitHub</a></li>
+        <li class="nav-item nav-item--ecosystem"><a class="nav-link" href="{{ .Site.Home.RelPermalink }}">{{ T "chorus_nav_goa" }}</a></li>
+        <li class="nav-item td-navbar__lang-menu">{{ partial "navbar-lang-selector.html" . }}</li>
+      </ul>
+    </div>
+    <div class="td-navbar__search"></div>
+    {{- else }}
+    <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Goa"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/logo.svg").Content | safeHTML }}</span></a>
+    <div class="td-navbar__main" id="main_navbar">
+      <ul class="navbar-nav">
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_services" }}</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/2-goa-ai/" }}">{{ T "home_agents" }}</a></li>
-        {{- if ne .Section "chorus" }}
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/chorus/" }}">Chorus</a></li>
-        {{- end }}
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/" }}">{{ T "docs_overview" }}</a></li>
         <li class="nav-item td-navbar__lang-menu">{{ partial "navbar-lang-selector.html" . }}</li>
       </ul>
     </div>
     <div class="td-navbar__search">{{ partial "search-input.html" . }}</div>
+    {{- end }}
   </div>
 </nav>

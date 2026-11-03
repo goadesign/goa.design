@@ -166,6 +166,17 @@ sent #auth#3
     <div class="chorus-session-review"><h3>{{ T "chorus_review_heading" }}</h3><p>{{ T "chorus_review_text" | markdownify }}</p></div>
   </section>
 
+  <section class="benefits-section chorus-compare" aria-labelledby="chorus-compare-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="chorus-compare-title">{{ T "chorus_compare_heading" }}</h2><p>{{ T "chorus_compare_intro" }}</p></div>
+      <dl class="benefit-list chorus-compare-list">
+        {{ range slice "ide" "pty" "subagents" "chat" }}
+        <div><dt>{{ T (printf "chorus_compare_%s" .) }}</dt><dd>{{ T (printf "chorus_compare_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+    </div>
+  </section>
+
   <section class="faq-section site-width chorus-faq" aria-labelledby="chorus-faq-title">
     <h2 id="chorus-faq-title">{{ T "home_faq_heading" }}</h2>
     <dl>
