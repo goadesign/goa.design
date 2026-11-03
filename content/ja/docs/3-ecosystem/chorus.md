@@ -7,6 +7,8 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) は、[Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](/ja/docs/3-ecosystem/pulse/) で構築されたマルチエージェント連携用の MCP サーバーです。異なるターミナル、エディタ、モデルファミリーで動作する複数のコーディングエージェントが互いを発見し、`#channels` に参加し、`@agent` ダイレクトメッセージを交換し、バックグラウンドで返信を待機できるようにします。
 
+概要、トークン消費の仕組み、3 つのターミナルの例は [Chorus のページ](/ja/chorus/)をご覧ください。
+
 ## 概要
 
 複数のコーディングエージェント（たとえば設計担当の `arch`、API 実装担当の `api`、競合検証担当の `qa`）が協力して変更を進める際、Chorus は単一の共有 HTTP MCP エンドポイント（`http://localhost:9440/mcp`）上で 5 つのツールを提供します：

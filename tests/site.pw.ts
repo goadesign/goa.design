@@ -174,3 +174,60 @@ test('source HTML and Markdown expose the ecosystem and skill without client ren
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true);
   expect((await request.get('/robots.txt')).ok()).toBe(true);
 });
+
+// The Chorus page shows the screenshot matching the reader's theme, keeps the
+// terminal example as selectable text, and copies the exact install command.
+for (const width of [390, 1440]) {
+  for (const theme of ['light', 'dark']) {
+    test(`${width}px ${theme}: Chorus page example, markers, and install`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
+      await page.goto('/chorus/');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Different agents. One conversation.');
+      await expect(page.locator('.td-navbar').getByRole('link', { name: 'Chorus', exact: true })).toHaveAttribute('href', '/chorus/');
+      const terminals = page.locator('.chorus-terminal');
+      await expect(terminals).toHaveCount(3);
+      await expect(terminals.first().locator('pre')).toContainText('$ chorus watch claude -wait 30s');
+      await expect(terminals.first().locator('pre')).toContainText('#auth#1 @dana (human): @claude lead this');
+      // Markers number messages in the order they were sent, so terminal order can differ.
+      expect((await page.locator('.chorus-marker').allTextContents()).sort()).toEqual(['1', '2', '3', '4']);
+      await expect(page.locator('.chorus-pin')).toHaveText(['1', '2', '3', '4']);
+      const shot = page.locator(`.chorus-shot--${theme} img`);
+      const other = page.locator(`.chorus-shot--${theme === 'light' ? 'dark' : 'light'} img`);
+      await shot.scrollIntoViewIfNeeded();
+      await expect(shot).toBeVisible();
+      await expect(other).toBeHidden();
+      await expect.poll(() => shot.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+      expect(await shot.evaluate(image => (image as HTMLImageElement).currentSrc))
+        .toContain(`dashboard-${width < 601 ? 'mobile' : 'desktop'}-${theme}.webp`);
+      // Every marker sits inside the screenshot it annotates.
+      const frame = await page.locator('.chorus-shot').boundingBox();
+      for (const pin of await page.locator('.chorus-pin').all()) {
+        const box = await pin.boundingBox();
+        expect(box!.x).toBeGreaterThanOrEqual(frame!.x);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
+        expect(box!.y).toBeGreaterThanOrEqual(frame!.y);
+      }
+      await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: model off', 'Waking up: just the news', 'Talking: a few tokens']);
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
+      await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('brew install goadesign/tap/chorus && chorus setup -global && chorus up');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.screenshot({ path: `.impeccable/review/chorus-${width}-${theme}.png`, fullPage: true });
+    });
+  }
+}
+
+test('localized Chorus pages, docs links, and Markdown are reachable', async ({ page, request }) => {
+  for (const [lang, heading] of [['es', 'Agentes distintos. Una sola conversación.'], ['fr', 'Des agents différents. Une seule conversation.'], ['it', 'Agenti diversi. Una sola conversazione.'], ['ja', '異なるエージェント。 ひとつの会話。']]) {
+    await page.goto(`/${lang}/chorus/`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
+    await expect(page.locator('.chorus-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/chorus/`);
+    const docs = await request.get(`/${lang}/docs/3-ecosystem/chorus/`);
+    expect(await docs.text()).toContain(`/${lang}/chorus/`);
+  }
+  const markdown = await request.get('/chorus/index.md');
+  expect(markdown.ok()).toBe(true);
+  expect(await markdown.text()).toContain('brew install goadesign/tap/chorus');
+});

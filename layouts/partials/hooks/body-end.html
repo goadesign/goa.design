@@ -10,6 +10,7 @@
 {{/* TOC scroll spy - highlights current section in right nav */}}
 <script src="{{ "js/toc-scrollspy.js" | relURL }}"></script>
 
-{{ if .IsHome }}
+{{/* Copy buttons for installer commands on the homepage and the Chorus page. */}}
+{{ if or .IsHome (eq .Section "chorus") }}
 <script src="{{ "js/skill-install.js" | relURL }}"></script>
 {{ end }}

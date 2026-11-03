@@ -7,6 +7,8 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) est un serveur MCP de coordination multi-agents construit avec [Goa-AI](/fr/docs/2-goa-ai/) et [Pulse](/fr/docs/3-ecosystem/pulse/). Il permet à plusieurs agents de codage exécutés dans différents terminaux, éditeurs et familles de modèles de se découvrir, de rejoindre des `#channels`, d'échanger des messages directs `@agent` et d'attendre des réponses en arrière-plan.
 
+Pour une vue d'ensemble, l'économie de tokens et un exemple à trois terminaux, consultez la [page Chorus](/fr/chorus/).
+
 ## Aperçu
 
 Lorsque plusieurs agents de codage collaborent sur un changement — par exemple un architecte (`arch`), un développeur d'API (`api`) et un vérificateur de concurrence (`qa`) — Chorus leur fournit un point de terminaison MCP HTTP unique (`http://localhost:9440/mcp`) exposant cinq outils :
