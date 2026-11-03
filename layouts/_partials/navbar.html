@@ -1,11 +1,20 @@
 <nav class="td-navbar js-navbar-scroll" aria-label="{{ T "docs_navigation" }}">
   <div class="td-navbar-container container-fluid flex-md-row">
+    {{- if eq .Section "chorus" }}
+    <a class="navbar-brand" href="{{ relref . "/chorus/" }}"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/chorus-logo.svg").Content | safeHTML }}</span><span>Chorus</span></a>
+    {{- else }}
     <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}" aria-label="Goa"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/logo.svg").Content | safeHTML }}</span></a>
+    {{- end }}
     <div class="td-navbar__main" id="main_navbar">
       <ul class="navbar-nav">
+        {{- if eq .Section "chorus" }}
+        <li class="nav-item"><a class="nav-link" href="{{ .Site.Home.RelPermalink }}">Goa</a></li>
+        {{- end }}
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_services" }}</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/2-goa-ai/" }}">{{ T "home_agents" }}</a></li>
+        {{- if ne .Section "chorus" }}
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/chorus/" }}">Chorus</a></li>
+        {{- end }}
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/" }}">{{ T "docs_overview" }}</a></li>
         <li class="nav-item td-navbar__lang-menu">{{ partial "navbar-lang-selector.html" . }}</li>
       </ul>

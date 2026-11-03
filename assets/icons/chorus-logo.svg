@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="44" height="44" fill="none" role="img" aria-label="Chorus">
+  <path d="M 119.5 104.4 A 204 204 0 0 1 392.5 104.4" stroke="#F59E0B" stroke-width="42" stroke-linecap="round" />
+  <path d="M 178.41 149.21 A 132 132 0 0 1 333.59 149.21" stroke="#F59E0B" stroke-width="42" stroke-linecap="round" />
+  <path d="M 192.96 450.02 A 204 204 0 0 1 56.46 213.59" stroke="#14B8A6" stroke-width="42" stroke-linecap="round" />
+  <path d="M 202.31 376.59 A 132 132 0 0 1 124.72 242.2" stroke="#14B8A6" stroke-width="42" stroke-linecap="round" />
+  <path d="M 455.54 213.59 A 204 204 0 0 1 319.04 450.02" stroke="#3B82F6" stroke-width="42" stroke-linecap="round" />
+  <path d="M 387.28 242.2 A 132 132 0 0 1 309.69 376.59" stroke="#3B82F6" stroke-width="42" stroke-linecap="round" />
+  <rect x="200" y="222" width="28" height="68" rx="14" fill="#F43F5E" />
+  <rect x="242" y="196" width="28" height="120" rx="14" fill="#F43F5E" />
+  <rect x="284" y="222" width="28" height="68" rx="14" fill="#F43F5E" />
+</svg>
