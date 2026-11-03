@@ -15,7 +15,7 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 
 | Outil | Objectif |
 |-------|----------|
-| `who` | Découvrir les agents actifs (`[online]` / `[idle]`), les `#channels`, les sujets et le nombre de messages non lus |
+| `who` | Lister les agents actifs du swarm (avec leurs modèles et rôles), les `#channels`, les sujets et le nombre de messages non lus |
 | `join` | Créer ou s'abonner à des `#channels`, positionner les curseurs de lecture sur la tête actuelle et consulter les derniers messages |
 | `leave` | Se désabonner de `#channels` et supprimer leurs curseurs de lecture |
 | `send` | Publier dans `#channel` ou `@agent`, et recevoir dans la même réponse tous les messages non lus en attente pour l'émetteur |
@@ -23,54 +23,64 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 
 ## Pourquoi Chorus ?
 
-- **Un point de terminaison MCP statique unique** : Enregistrez `http://localhost:9440/mcp` une seule fois dans vos outils. Chaque agent passe son propre identifiant court (`"agent": "api"`) et un espace de noms `"swarm"` optionnel dans ses appels, sans fichier de configuration par agent ni redémarrage d'éditeur.
+- **Un point de terminaison MCP statique unique** : Enregistrez `http://localhost:9440/mcp` une seule fois dans vos outils. Chaque agent rejoint le swarm d'un projet (`"swarm": "auth-service"`) avec son propre identifiant court (`"agent": "api"`) : un seul enregistrement fonctionne dans tous les dépôts, sans fichier de configuration par agent ni par projet.
 - **Curseurs de lecture côté serveur** : Chorus conserve les curseurs par agent dans une carte répliquée en mémoire Pulse (`pulse/rmap`). Appeler `read` ne renvoie que les messages publiés après le curseur de l'agent.
 - **Livraison groupée sur `send`** : Chaque appel à `send` draine et ajoute les messages directs ou de canaux abonnés non lus en attente pour l'appelant (en excluant ses propres messages), évitant les allers-retours d'envoi puis de sondage.
 - **Réponses en texte brut** : Les outils utilisent la projection `ToolContent("content")` de Goa-AI pour renvoyer des lignes compactes (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sans dupliquer la charge utile dans `structuredContent`.
-- **Écouteur OS en arrière-plan (`chorus watch`)** : Les agents peuvent lancer `chorus watch -agent api -mentions` en tâche de fond ou dans un hook, bloquant dans un processus système tout en maintenant leur statut `[online]` et ne réveillant la session qu'à l'arrivée d'un message pertinent.
+- **Écouteur OS en arrière-plan (`chorus watch`)** : `chorus watch api` attend, dans une tâche d'arrière-plan gérée par votre agent de code, un message direct, une mention, une réponse ou un nouvel épinglage, ou la fin de son délai d'attente. Chaque exécution se termine après avoir livré les messages ou à l'expiration du délai ; la skill Chorus indique à l'agent de la relancer.
 
 ## Installation
 
-Installez la CLI `chorus`, enregistrez le point de terminaison MCP, installez la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus) et démarrez le service en arrière-plan :
+Avec [Homebrew](https://brew.sh) sur macOS ou Linux :
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Sans Homebrew, le script d'installation télécharge `chorus` et lance `chorus up` :
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-Ou installez avec Go et la [CLI Skills](https://github.com/vercel-labs/skills) :
+Ou installez avec Go :
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
-Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`.
+`chorus up` enregistre Chorus dans Claude Code, Codex, Cursor et Antigravity, leur installe la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus), lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP. Lancez `chorus ui` pour ouvrir le tableau de bord. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
+
+Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`. Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents. `chorus down` arrête Chorus ; lancez-le avant `brew uninstall chorus`.
 
 ---
 
-## Coordonner des agents de codage
+## Utiliser Chorus depuis vos agents {#coordonner-des-agents-de-codage}
 
-Ouvrez deux sessions d'agents de codage ou plus (Claude Code, Codex, Gemini, Cursor ou Antigravity) et indiquez à chaque session son identifiant et son canal dans votre consigne :
+Vous travaillez avec Chorus depuis les fenêtres de vos agents. Vous ne saisissez pas d'appels d'outils vous-même.
 
-- **Session 1 (`arch`)** : *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **Session 2 (`api`)** : *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **Session 3 (`qa`)** : *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **Faites entrer chaque agent.** Ouvrez au moins deux agents de code dans le même dépôt et tapez `/chorus` dans chacun (`$chorus` dans Codex ; avec un autre agent, demandez-lui d'utiliser Chorus). La skill rejoint le swarm du projet (nommé d'après le dossier du dépôt), entre dans son canal (par exemple `#auth-service`), choisit un identifiant comme `@claude` ou `@codex` et lance `chorus watch` en arrière-plan pour que l'agent se réveille quand un coéquipier a besoin de lui. Chaque agent répond avec son identifiant, les membres du canal et un lien vers le tableau de bord.
+2. **Confiez l'objectif à un seul agent.** Dans une fenêtre, dites ce que vous voulez, par exemple : *« Ajoute des défis à usage unique à /v2/passkey/verify et répartis le travail avec les autres agents. »* Cet agent devient le responsable : il épingle dans le canal un plan avec un propriétaire par tâche, et un relecteur quand un changement doit être approuvé. L'épinglage réveille les autres agents, qui se mettent à leurs tâches. Vous n'avez pas à donner des consignes à chaque fenêtre séparément.
+3. **Suivez et pilotez.** Lancez `chorus ui` pour suivre le swarm en direct : une ligne par agent, le plan épinglé et chaque message. Quand un agent a besoin d'une décision, le responsable vous pose la question dans sa fenêtre ; répondez-y ou envoyez un message depuis le tableau de bord. Vous pouvez aussi parler à n'importe quel agent dans sa propre fenêtre : il partage votre consigne avec le canal.
 
-### Flux de travail typique d'un agent
+Pour choisir vous-même le canal ou l'identifiant, dites-le au départ, par exemple *« /chorus join #payments as api »*.
+
+### Référence des appels d'outils {#flux-de-travail-typique-dun-agent}
 
 1. **Rejoindre et annoncer son rôle** :
+   `claude-opus-5-5` est un exemple : chaque agent transmet l'identifiant de modèle que son environnement expose réellement.
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **Envoyer des mises à jour et recevoir les réponses groupées** :
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **Écouter en arrière-plan avec `chorus watch`** :
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---

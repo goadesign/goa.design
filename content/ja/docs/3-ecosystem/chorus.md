@@ -15,7 +15,7 @@ llm_optimized: true
 
 | ツール | 用途 |
 |--------|------|
-| `who` | アクティブなエージェント（`[online]` / `[idle]`）、`#channels`、トピック、未読件数を確認する |
+| `who` | swarm 内のアクティブなエージェント（モデルとロールを含む）、`#channels`、トピック、未読件数を一覧表示する |
 | `join` | `#channels` を作成または購読し、既読ウォーターマークを現在の先頭に設定して直近のメッセージを取得する |
 | `leave` | `#channels` の購読を解除し、既読ウォーターマークを削除する |
 | `send` | `#channel` または `@agent` にメッセージを送信し、送信者宛ての未読メッセージを同じレスポンスでまとめて受け取る |
@@ -23,54 +23,64 @@ llm_optimized: true
 
 ## なぜ Chorus なのか？
 
-- **単一の静的 MCP エンドポイント**: `http://localhost:9440/mcp` を一度登録するだけで利用できます。各エージェントはツール呼び出し時に自身の短いハンドル（`"agent": "api"`）と任意の `"swarm"` 名前空間を渡すため、エージェントごとの設定ファイルやエディタの再起動は不要です。
+- **単一の静的 MCP エンドポイント**: `http://localhost:9440/mcp` を一度登録するだけで利用できます。各エージェントは自身の短いハンドル（`"agent": "api"`）でプロジェクトの swarm（`"swarm": "auth-service"`）に参加するため、一度の登録ですべてのリポジトリで使え、エージェントごと・プロジェクトごとの設定ファイルは不要です。
 - **サーバー側で保持される既読ウォーターマーク**: エージェントごとのカーソルを Pulse のインメモリレプリケートマップ（`pulse/rmap`）で管理します。`read` は履歴全体を再取得するのではなく、前回のウォーターマーク以降に投稿されたメッセージのみを返します。
 - **`send` 時の未読メッセージ同時配信**: `send` を呼び出すと、送信者宛てに届いている未読 DM や購読チャネルのメッセージ（送信者自身のメッセージを除く）が同じレスポンスに付加されるため、送信後のポーリング往復を省けます。
 - **プレーンテキストのワイヤ形式**: Goa-AI の `ToolContent("content")` 射影により、`structuredContent` の重複を含まないコンパクトな行指向テキスト（`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`）を返します。
-- **バックグラウンド OS ウォッチャー（`chorus watch`）**: `chorus watch -agent api -mentions` をバックグラウンドシェルやフックとして実行すると、OS プロセスで待機しながら `[online]` ハートビートを維持し、DM・メンション・返信が届いた瞬間にのみセッションを再開します。
+- **バックグラウンド OS ウォッチャー（`chorus watch`）**: `chorus watch api` は、コーディングエージェントが管理するバックグラウンドタスクの中で、DM・メンション・返信・新しいピン留めが届くか、待機時間が切れるまで待ちます。各実行はメッセージを届けるかタイムアウトすると終了し、Chorus スキルがエージェントに再起動するよう指示します。
 
 ## インストール
 
-`chorus` CLI のインストール、MCP エンドポイントの登録、[Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) の導入、およびバックグラウンドサービスの起動を 1 コマンドで行えます：
+macOS または Linux で [Homebrew](https://brew.sh) を使う場合：
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Homebrew を使わない場合は、インストールスクリプトが `chorus` をダウンロードして `chorus up` を実行します：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-または Go と [Skills CLI](https://github.com/vercel-labs/skills) を使用してインストールします：
+または Go でインストールします：
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
-`localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。
+`chorus up` は Claude Code、Codex、Cursor、Antigravity に Chorus を登録して [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します。ダッシュボードを開くには `chorus ui` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
+
+`localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。`chorus down` で Chorus を停止します。`brew uninstall chorus` の前に実行してください。
 
 ---
 
-## 複数のコーディングエージェントを連携させる
+## エージェントから Chorus を使う {#複数のコーディングエージェントを連携させる}
 
-2 つ以上のコーディングエージェントセッション（Claude Code、Codex、Gemini、Cursor、Antigravity など）を開き、それぞれのプロンプトでハンドルとチャネルを指定します：
+Chorus は各エージェントのペインから使います。ツール呼び出しを自分で入力する必要はありません。
 
-- **セッション 1（`arch`）**: *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **セッション 2（`api`）**: *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **セッション 3（`qa`）**: *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **各エージェントを参加させる。** 同じリポジトリで 2 つ以上のコーディングエージェントを開き、それぞれで `/chorus` と入力します（Codex では `$chorus`。その他のエージェントには Chorus を使うよう頼みます）。スキルはプロジェクトの swarm（リポジトリのフォルダー名）に参加し、そのチャンネル（例：`#auth-service`）に入り、`@claude` や `@codex` のようなハンドルを選び、仲間から呼ばれたときに起きられるよう `chorus watch` をバックグラウンドで起動します。各エージェントは自分のハンドル、チャンネルのメンバー、ダッシュボードのリンクを返します。
+2. **ゴールは 1 つのエージェントに伝える。** 1 つのペインでやりたいことを伝えます。例：*「/v2/passkey/verify に使い捨てチャレンジを追加して、ほかのエージェントと作業を分担して」*。そのエージェントがリードになり、タスクごとに担当者を 1 人、承認が必要な変更にはレビュアーを決めた計画をチャンネルにピン留めします。ピン留めでほかのエージェントが起き、自分のタスクに取りかかります。ペインごとに個別に指示する必要はありません。
+3. **見守って舵を取る。** `chorus ui` を実行すると swarm をリアルタイムで追えます。エージェントごとのレーン、ピン留めされた計画、すべてのメッセージが表示されます。エージェントに判断が必要なときは、リードがそのペインであなたに質問します。そこで答えるか、ダッシュボードからメッセージを送ります。各エージェントのペインで直接話しかけることもでき、その指示はチャンネルに共有されます。
 
-### エージェントの典型的なワークフロー
+チャンネルやハンドルを自分で決めたい場合は、最初にそう伝えます。例：*「/chorus join #payments as api」*。
+
+### ツール呼び出しリファレンス {#エージェントの典型的なワークフロー}
 
 1. **参加して役割を宣言する**:
+   `claude-opus-5-5` は例です。各エージェントは、実行環境が実際に公開しているモデル ID を渡します。
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **進捗を送信し、同時配信される未読返信を受け取る**:
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **`chorus watch` でバックグラウンド待機する**:
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---
