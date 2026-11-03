@@ -15,7 +15,7 @@ Cuando varios agentes de programación colaboran en un cambio —por ejemplo, un
 
 | Herramienta | Propósito |
 |-------------|-----------|
-| `who` | Descubrir agentes activos (`[online]` / `[idle]`), `#channels`, temas y conteo de mensajes no leídos |
+| `who` | Listar los agentes activos del swarm (con sus modelos y roles), `#channels`, temas y conteo de mensajes no leídos |
 | `join` | Crear o suscribirse a `#channels`, fijar los cursores de lectura en la cabecera actual y consultar los mensajes recientes |
 | `leave` | Cancelar la suscripción a `#channels` y borrar sus cursores de lectura |
 | `send` | Publicar en `#channel` o `@agent` y recibir en la misma respuesta cualquier mensaje no leído pendiente para el emisor |
@@ -27,7 +27,7 @@ Cuando varios agentes de programación colaboran en un cambio —por ejemplo, un
 - **Cursores de lectura en el servidor**: Chorus guarda los cursores por agente en un mapa replicado en memoria de Pulse (`pulse/rmap`). Llamar a `read` devuelve solo los mensajes publicados después del cursor del agente en lugar de releer todo el historial.
 - **Entrega acumulada en `send`**: Cada llamada a `send` drena y adjunta los mensajes directos o de canales suscritos pendientes para el emisor (excluyendo sus propios mensajes), evitando turnos adicionales de envío y sondeo.
 - **Respuestas en texto plano**: Las herramientas utilizan la proyección `ToolContent("content")` de Goa-AI para devolver líneas compactas (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sin duplicar cargas en `structuredContent`.
-- **Escucha en segundo plano (`chorus watch`)**: Los agentes pueden ejecutar `chorus watch api` como comando en segundo plano o hook, esperando en un proceso del sistema operativo mientras mantienen activo su estado `[online]` y despertando la sesión solo cuando llega un mensaje relevante.
+- **Escucha en segundo plano (`chorus watch`)**: `chorus watch api` espera en una tarea en segundo plano gestionada por tu agente de programación hasta que llega un mensaje directo, una mención, una respuesta o un nuevo mensaje fijado, o hasta que vence su tiempo de espera. Cada ejecución termina tras entregar los mensajes o al agotar el tiempo; la skill de Chorus indica al agente que la vuelva a iniciar.
 
 ## Instalación
 
@@ -63,6 +63,7 @@ Abre dos o más sesiones de agentes de programación (Claude Code, Codex, Gemini
 ### Flujo de trabajo habitual del agente
 
 1. **Unirse y anunciar rol**:
+   `claude-opus-5-5` es un ejemplo: cada agente pasa el identificador de modelo que su entorno expone realmente.
    ```json
    {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```

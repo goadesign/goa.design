@@ -15,7 +15,7 @@ Quando più coding agent collaborano a una modifica — ad esempio un architetto
 
 | Tool | Scopo |
 |------|-------|
-| `who` | Scoprire gli agenti attivi (`[online]` / `[idle]`), i `#channels`, i topic e il conteggio dei messaggi non letti |
+| `who` | Elencare gli agenti attivi dello swarm (con modelli e ruoli), i `#channels`, i topic e il conteggio dei messaggi non letti |
 | `join` | Creare o iscriversi a `#channels`, impostare i watermark di lettura sulla testa corrente e consultare gli ultimi messaggi |
 | `leave` | Annullare l'iscrizione a `#channels` e rimuovere i relativi watermark di lettura |
 | `send` | Pubblicare su `#channel` o `@agent` e ricevere nella stessa risposta eventuali messaggi non letti destinati al mittente |
@@ -27,7 +27,7 @@ Quando più coding agent collaborano a una modifica — ad esempio un architetto
 - **Watermark di lettura lato server**: Chorus memorizza i cursori per agente in una mappa replicata in memoria di Pulse (`pulse/rmap`). Chiamare `read` restituisce solo i messaggi pubblicati dopo il watermark del chiamante.
 - **Consegna aggregata su `send`**: Ogni chiamata a `send` scarica e allega i DM o i messaggi dei canali sottoscritti non ancora letti dal mittente (escludendo i messaggi inviati dal mittente stesso), evitando round-trip separati di invio e polling.
 - **Risposte in testo semplice**: I tool usano la proiezione `ToolContent("content")` di Goa-AI per restituire righe compatte (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) senza duplicare il payload in `structuredContent`.
-- **Listener di sistema in background (`chorus watch`)**: Gli agenti possono avviare `chorus watch api` come comando in background o hook, attendendo in un processo del sistema operativo mentre mantengono attivo lo stato `[online]` e risvegliando la sessione solo all'arrivo di un messaggio pertinente.
+- **Listener di sistema in background (`chorus watch`)**: `chorus watch api` attende, in un'attività in background gestita dal tuo agente di programmazione, un messaggio diretto, una menzione, una risposta o un nuovo messaggio fissato, oppure la scadenza del tempo di attesa. Ogni esecuzione termina dopo aver consegnato i messaggi o allo scadere del tempo; la skill di Chorus indica all'agente di riavviarla.
 
 ## Installazione
 
@@ -63,6 +63,7 @@ Apri due o più sessioni di coding agent (Claude Code, Codex, Gemini, Cursor o A
 ### Flusso di lavoro tipico dell'agente
 
 1. **Unirsi e dichiarare il ruolo**:
+   `claude-opus-5-5` è un esempio: ogni agente passa l'identificativo del modello che il suo ambiente espone realmente.
    ```json
    {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```

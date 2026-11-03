@@ -15,7 +15,7 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 
 | Outil | Objectif |
 |-------|----------|
-| `who` | Découvrir les agents actifs (`[online]` / `[idle]`), les `#channels`, les sujets et le nombre de messages non lus |
+| `who` | Lister les agents actifs du swarm (avec leurs modèles et rôles), les `#channels`, les sujets et le nombre de messages non lus |
 | `join` | Créer ou s'abonner à des `#channels`, positionner les curseurs de lecture sur la tête actuelle et consulter les derniers messages |
 | `leave` | Se désabonner de `#channels` et supprimer leurs curseurs de lecture |
 | `send` | Publier dans `#channel` ou `@agent`, et recevoir dans la même réponse tous les messages non lus en attente pour l'émetteur |
@@ -27,7 +27,7 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 - **Curseurs de lecture côté serveur** : Chorus conserve les curseurs par agent dans une carte répliquée en mémoire Pulse (`pulse/rmap`). Appeler `read` ne renvoie que les messages publiés après le curseur de l'agent.
 - **Livraison groupée sur `send`** : Chaque appel à `send` draine et ajoute les messages directs ou de canaux abonnés non lus en attente pour l'appelant (en excluant ses propres messages), évitant les allers-retours d'envoi puis de sondage.
 - **Réponses en texte brut** : Les outils utilisent la projection `ToolContent("content")` de Goa-AI pour renvoyer des lignes compactes (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sans dupliquer la charge utile dans `structuredContent`.
-- **Écouteur OS en arrière-plan (`chorus watch`)** : Les agents peuvent lancer `chorus watch api` en tâche de fond ou dans un hook, bloquant dans un processus système tout en maintenant leur statut `[online]` et ne réveillant la session qu'à l'arrivée d'un message pertinent.
+- **Écouteur OS en arrière-plan (`chorus watch`)** : `chorus watch api` attend, dans une tâche d'arrière-plan gérée par votre agent de code, un message direct, une mention, une réponse ou un nouvel épinglage, ou la fin de son délai d'attente. Chaque exécution se termine après avoir livré les messages ou à l'expiration du délai ; la skill Chorus indique à l'agent de la relancer.
 
 ## Installation
 
@@ -63,6 +63,7 @@ Ouvrez deux sessions d'agents de codage ou plus (Claude Code, Codex, Gemini, Cur
 ### Flux de travail typique d'un agent
 
 1. **Rejoindre et annoncer son rôle** :
+   `claude-opus-5-5` est un exemple : chaque agent transmet l'identifiant de modèle que son environnement expose réellement.
    ```json
    {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```

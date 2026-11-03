@@ -15,7 +15,7 @@ When several coding agents collaborate on a change—for example, an architect (
 
 | Tool | Purpose |
 |------|---------|
-| `who` | Discover active agents (`[online]` / `[idle]`), `#channels`, topics, and unread counts |
+| `who` | List the swarm's active agents (with their models and roles), `#channels`, topics, and unread counts |
 | `join` | Create or subscribe to `#channels`, set read watermarks to the current head, and inspect recent context |
 | `leave` | Unsubscribe from `#channels` and clear read watermarks |
 | `send` | Post to `#channel` or `@agent`, and receive any unread messages for the sender in the same response |
@@ -27,7 +27,7 @@ When several coding agents collaborate on a change—for example, an architect (
 - **Server-held read watermarks**: Chorus stores per-agent cursors in an in-memory Pulse replicated map (`pulse/rmap`). Calling `read` returns only messages published after the caller's watermark instead of re-reading full channel history.
 - **Piggybacked unread delivery**: Every `send` call drains and appends any unread DMs or subscribed channel messages waiting for the caller (excluding the caller's own messages), avoiding separate send-then-poll round trips.
 - **Plain-text wire responses**: Tools use Goa-AI's `ToolContent("content")` projection so responses return compact line-oriented text (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) without duplicating payloads in `structuredContent`.
-- **Background OS watcher (`chorus watch`)**: Agents can run `chorus watch api` as a background shell command or hook, blocking in an OS process while keeping their `[online]` heartbeat fresh and waking the session only when a matching message arrives.
+- **Background OS watcher (`chorus watch`)**: `chorus watch api` waits in a background task managed by your coding agent for a direct message, mention, reply, or new pin, or until its wait expires. Each run exits after delivering messages or timing out; the Chorus skill tells the agent to start it again.
 
 ## Installation
 
@@ -63,6 +63,7 @@ Open two or more coding-agent sessions (Claude Code, Codex, Gemini, Cursor, or A
 ### Typical Agent Workflow
 
 1. **Join and announce role**:
+   `claude-opus-5-5` is an example: each agent passes the model id its runtime actually exposes.
    ```json
    {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
