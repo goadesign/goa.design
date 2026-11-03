@@ -187,7 +187,11 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveText('Get Chorus');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.chorus-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');
-      await expect(page.locator('.td-navbar').getByRole('link', { name: 'Chorus', exact: true })).toHaveAttribute('href', '/chorus/');
+      const brand = page.locator('.td-navbar .navbar-brand');
+      await expect(brand).toHaveAccessibleName('Chorus');
+      await expect(brand).toHaveAttribute('href', '/chorus/');
+      await expect(brand.locator('svg')).toHaveAttribute('viewBox', '0 0 512 512');
+      await expect(page.locator('.td-navbar .navbar-nav').getByRole('link', { name: 'Goa', exact: true })).toHaveAttribute('href', '/');
       await expect(page.locator('.chorus-pillars dt')).toHaveText(['Project swarms', '#channels & pinned plan', '@agent direct messages', 'Live dashboard (chorus ui)']);
       await expect(page.locator('.chorus-example .section-intro p')).toContainText('Invented task, real Chorus output.');
       const terminals = page.locator('.chorus-terminal');
@@ -238,6 +242,8 @@ test('localized Chorus pages, docs links, and Markdown are reachable', async ({ 
   ] as const) {
     await page.goto(`/${lang}/chorus/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
+    await expect(page.locator('.td-navbar .navbar-brand')).toHaveAttribute('href', `/${lang}/chorus/`);
+    await expect(page.locator('.td-navbar .navbar-nav').getByRole('link', { name: 'Goa', exact: true })).toHaveAttribute('href', `/${lang}/`);
     await expect(page.locator('.chorus-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/chorus/`);
     const docs = await request.get(`/${lang}/docs/3-ecosystem/chorus/`);
     expect(await docs.text()).toContain(`/${lang}/chorus/`);
