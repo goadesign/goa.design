@@ -11,9 +11,9 @@ Source: {{ .Permalink }}
 {{ T "chorus_example_intro" }}
 
 ```text
-$ chorus watch claude
-#auth#1 @dana (human): Lead this: add single-use challenges to `/v2/passkey/verify` so a captured assertion can't be replayed. Split the work with the others.
-! watch: chorus watch claude
+$ chorus watch claude -wait 30s
+#auth#1 @dana (human): @claude lead this: add single-use challenges to `/v2/passkey/verify` so a captured assertion can't be replayed. Split the work with the others.
+! watch: chorus watch claude -wait 30s
 ```
 
 ## {{ T "chorus_tokens_heading" }}

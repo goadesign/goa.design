@@ -187,8 +187,10 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar').getByRole('link', { name: 'Chorus', exact: true })).toHaveAttribute('href', '/chorus/');
       const terminals = page.locator('.chorus-terminal');
       await expect(terminals).toHaveCount(3);
-      await expect(terminals.first().locator('pre')).toContainText('$ chorus watch claude');
-      await expect(page.locator('.chorus-marker')).toHaveText(['1', '2', '3', '4']);
+      await expect(terminals.first().locator('pre')).toContainText('$ chorus watch claude -wait 30s');
+      await expect(terminals.first().locator('pre')).toContainText('#auth#1 @dana (human): @claude lead this');
+      // Markers number messages in the order they were sent, so terminal order can differ.
+      expect((await page.locator('.chorus-marker').allTextContents()).sort()).toEqual(['1', '2', '3', '4']);
       await expect(page.locator('.chorus-pin')).toHaveText(['1', '2', '3', '4']);
       const shot = page.locator(`.chorus-shot--${theme} img`);
       const other = page.locator(`.chorus-shot--${theme === 'light' ? 'dark' : 'light'} img`);
@@ -206,7 +208,7 @@ for (const width of [390, 1440]) {
         expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
         expect(box!.y).toBeGreaterThanOrEqual(frame!.y);
       }
-      await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: 0 model tokens', 'A wakeup: tens of tokens', 'Sending: about 10 tokens back']);
+      await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: no model running', 'A wakeup: only what is new', 'Sending: a few tokens back']);
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');

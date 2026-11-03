@@ -1,5 +1,6 @@
 """measure.py counts the tokens an agent actually receives from Chorus in the
-recorded example conversation (wire.jsonl, written by seed.py).
+recorded example conversation (wire.jsonl, written by seed.py): every
+`chorus watch` wakeup and every tool result, verbatim.
 
 Each record is one MCP tool result exactly as the agent's model sees it. The
 script reports, per kind of result, the size in bytes and two deterministic
@@ -17,11 +18,12 @@ def site_estimate(text):
     return math.ceil(len(text.split()) * 1.3)
 
 def kind(rec):
-    """kind groups results by what the agent was doing when it received them."""
+    """kind groups results by what the agent was doing when it received them:
+    a `chorus watch` wakeup, a send acknowledgement (with or without unread
+    messages appended), or joining the swarm."""
     tool, out = rec["tool"], rec["result"]
-    if tool == "read":
-        # An agent with nothing new receives the single word "none".
-        return "read-empty" if out.strip() in ("", "none") else "wakeup-read"
+    if tool == "watch":
+        return "wakeup"
     if tool == "send":
         return "send-with-unread" if "--- unread ---" in out else "send-ack"
     return tool
@@ -43,14 +45,14 @@ for line in open(sys.argv[1]):
 # Per delivered message: tokens of each message line (header plus text).
 per_message = []
 for r in rows:
-    if r["kind"] in ("wakeup-read", "send-with-unread"):
+    if r["kind"] in ("wakeup", "send-with-unread"):
         block, cur = [], None
         for l in r["result"].splitlines():
             if l.startswith(("#", "@")) and ": " in l:
                 if cur is not None:
                     block.append(cur)
                 cur = l
-            elif cur is not None and not l.startswith(("---", "!")):
+            elif cur is not None and not l.startswith(("--- unread ---", "! watch:")):
                 cur += "\n" + l
         if cur is not None:
             block.append(cur)
