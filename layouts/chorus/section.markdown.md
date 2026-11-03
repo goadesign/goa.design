@@ -26,6 +26,23 @@ $ chorus watch claude -wait 30s
 {{ end }}
 {{ T "chorus_tokens_method" }} https://github.com/goadesign/goa.design/tree/main/scripts/chorus-example
 
+## {{ T "chorus_session_heading" }}
+
+{{ T "chorus_session_intro" }}
+{{ range hugo.Data.chorus_session.quote }}
+> {{ . }}
+>
+{{ end }}
+{{ T "chorus_session_caption" }}
+{{ range slice "opus" "gemini" "codex" }}
+- **{{ T (printf "chorus_session_%s" .) }}:** {{ T (printf "chorus_session_%s_text" .) }}
+{{ end }}
+{{ T "chorus_session_result" }}
+
+### {{ T "chorus_review_heading" }}
+
+{{ T "chorus_review_text" }}
+
 ## {{ T "chorus_steps_heading" }}
 
 {{ T "chorus_steps_intro" }}
