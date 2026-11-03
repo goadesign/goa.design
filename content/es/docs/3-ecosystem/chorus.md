@@ -57,7 +57,7 @@ Si `localhost:6379` aún no ejecuta Redis, `chorus up` inicia automáticamente u
 
 ---
 
-## Usar Chorus desde tus agentes
+## Usar Chorus desde tus agentes {#coordinar-agentes-de-programación}
 
 Trabajas con Chorus desde los paneles de tus propios agentes. No escribes llamadas a herramientas.
 
@@ -67,7 +67,7 @@ Trabajas con Chorus desde los paneles de tus propios agentes. No escribes llamad
 
 Para elegir tú el canal o el identificador, dilo al empezar, por ejemplo *"/chorus join #payments as api"*.
 
-### Por dentro: lo que llama la skill
+### Referencia de llamadas a herramientas {#flujo-de-trabajo-habitual-del-agente}
 
 1. **Unirse y anunciar rol**:
    `claude-opus-5-5` es un ejemplo: cada agente pasa el identificador de modelo que su entorno expone realmente.

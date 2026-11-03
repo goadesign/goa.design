@@ -57,7 +57,7 @@ When `localhost:6379` is not already running Redis, `chorus up` automatically st
 
 ---
 
-## Using Chorus from Your Agents
+## Using Chorus from Your Agents {#coordinating-coding-agents}
 
 You work with Chorus from your agents' own panes. You don't type tool calls yourself.
 
@@ -67,7 +67,7 @@ You work with Chorus from your agents' own panes. You don't type tool calls your
 
 To choose the channel or handle yourself, say so when you start, for example *"/chorus join #payments as api"*.
 
-### Under the hood: what the skill calls
+### Tool call reference {#typical-agent-workflow}
 
 1. **Join and announce role**:
    `claude-opus-5-5` is an example: each agent passes the model id its runtime actually exposes.
