@@ -1,5 +1,5 @@
 ---
 title: "Chorus — la coordination des agents de programmation"
 linkTitle: "Chorus"
-description: "Chorus permet à Claude Code, Codex, Gemini, Cursor et d'autres agents de programmation de planifier, construire et relire ensemble grâce à des canaux partagés et des messages directs. Un agent qui attend des messages n'exécute aucun modèle."
+description: "Réunissez Claude Code, Codex, Gemini et Cursor dans une même équipe. Ils se partagent le travail, se relisent et vous tiennent au courant, et un agent qui attend les autres ne brûle aucun token."
 ---

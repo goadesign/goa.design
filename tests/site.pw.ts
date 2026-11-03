@@ -208,7 +208,7 @@ for (const width of [390, 1440]) {
         expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
         expect(box!.y).toBeGreaterThanOrEqual(frame!.y);
       }
-      await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: no model running', 'A wakeup: only what is new', 'Sending: a few tokens back']);
+      await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: model off', 'Waking up: just the news', 'Talking: a few tokens']);
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
