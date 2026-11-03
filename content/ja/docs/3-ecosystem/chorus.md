@@ -31,7 +31,14 @@ llm_optimized: true
 
 ## インストール
 
-`chorus` CLI のインストール、MCP エンドポイントの登録、[Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) の導入、およびバックグラウンドサービスの起動を 1 コマンドで行えます：
+macOS または Linux で [Homebrew](https://brew.sh) を使う場合：
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Homebrew を使わない場合は、インストールスクリプトが `chorus` をダウンロードして `chorus up` を実行します：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
@@ -44,23 +51,23 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-`localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。
+`chorus up` は Claude Code、Codex、Cursor、Antigravity に Chorus を登録して [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します。ダッシュボードを開くには `chorus ui` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
 
-`chorus up` は Claude Code、Codex、Cursor、Antigravity に Chorus を登録して Chorus Agent Skill をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します。ダッシュボードを開くには `chorus ui` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
-
-1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。
+`localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。`chorus down` で Chorus を停止します。`brew uninstall chorus` の前に実行してください。
 
 ---
 
-## 複数のコーディングエージェントを連携させる
+## エージェントから Chorus を使う
 
-2 つ以上のコーディングエージェントセッション（Claude Code、Codex、Gemini、Cursor、Antigravity など）を開き、それぞれのプロンプトでハンドルとチャネルを指定します：
+Chorus は各エージェントのペインから使います。ツール呼び出しを自分で入力する必要はありません。
 
-- **セッション 1（`arch`）**: *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **セッション 2（`api`）**: *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **セッション 3（`qa`）**: *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **各エージェントを参加させる。** 同じリポジトリで 2 つ以上のコーディングエージェントを開き、それぞれで `/chorus` と入力します（Codex では `$chorus`。その他のエージェントには Chorus を使うよう頼みます）。スキルはプロジェクトの swarm（リポジトリのフォルダー名）に参加し、そのチャンネル（例：`#auth-service`）に入り、`@claude` や `@codex` のようなハンドルを選び、仲間から呼ばれたときに起きられるよう `chorus watch` をバックグラウンドで起動します。各エージェントは自分のハンドル、チャンネルのメンバー、ダッシュボードのリンクを返します。
+2. **ゴールは 1 つのエージェントに伝える。** 1 つのペインでやりたいことを伝えます。例：*「/v2/passkey/verify に使い捨てチャレンジを追加して、ほかのエージェントと作業を分担して」*。そのエージェントがリードになり、タスクごとに担当者を 1 人、承認が必要な変更にはレビュアーを決めた計画をチャンネルにピン留めします。ピン留めでほかのエージェントが起き、自分のタスクに取りかかります。ペインごとに個別に指示する必要はありません。
+3. **見守って舵を取る。** `chorus ui` を実行すると swarm をリアルタイムで追えます。エージェントごとのレーン、ピン留めされた計画、すべてのメッセージが表示されます。エージェントに判断が必要なときは、リードがそのペインであなたに質問します。そこで答えるか、ダッシュボードからメッセージを送ります。各エージェントのペインで直接話しかけることもでき、その指示はチャンネルに共有されます。
 
-### エージェントの典型的なワークフロー
+チャンネルやハンドルを自分で決めたい場合は、最初にそう伝えます。例：*「/chorus join #payments as api」*。
+
+### 内部の仕組み：スキルが呼び出すツール
 
 1. **参加して役割を宣言する**:
    `claude-opus-5-5` は例です。各エージェントは、実行環境が実際に公開しているモデル ID を渡します。

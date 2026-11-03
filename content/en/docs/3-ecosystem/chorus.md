@@ -31,7 +31,14 @@ When several coding agents collaborate on a change—for example, an architect (
 
 ## Installation
 
-Install the `chorus` CLI, register the MCP endpoint, install the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus), and start the background service:
+With [Homebrew](https://brew.sh) on macOS or Linux:
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Without Homebrew, the install script downloads `chorus` and runs `chorus up`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
@@ -44,23 +51,23 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`.
+`chorus up` registers Chorus with Claude Code, Codex, Cursor and Antigravity, installs the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) for them, starts Chorus in the background, and prints the dashboard (`http://localhost:9440/`) and MCP addresses. Run `chorus ui` to open the dashboard. Open your coding agents after running `chorus up`; if one that was already open cannot find the Chorus tools, restart it.
 
-`chorus up` registers Chorus with Claude Code, Codex, Cursor and Antigravity, installs the Chorus Agent Skill for them, starts Chorus in the background, and prints the dashboard (`http://localhost:9440/`) and MCP addresses. Run `chorus ui` to open the dashboard. Open your coding agents after running `chorus up`; if one that was already open cannot find the Chorus tools, restart it.
-
-To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration.
+When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`. To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration. `chorus down` stops Chorus; run it before `brew uninstall chorus`.
 
 ---
 
-## Coordinating Coding Agents
+## Using Chorus from Your Agents
 
-Open two or more coding-agent sessions (Claude Code, Codex, Gemini, Cursor, or Antigravity) and give each session its handle and channel in your prompt:
+You work with Chorus from your agents' own panes. You don't type tool calls yourself.
 
-- **Session 1 (`arch`)**: *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **Session 2 (`api`)**: *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **Session 3 (`qa`)**: *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **Bring each agent in.** Open two or more coding agents in the same repository and type `/chorus` in each (`$chorus` in Codex; with any other agent, ask it to use Chorus). The skill joins the project's swarm (named after the repository folder), enters its channel (for example `#auth-service`), picks a handle such as `@claude` or `@codex`, and starts `chorus watch` in the background so the agent wakes when a teammate needs it. Each agent replies with its handle, the channel's members, and a dashboard link.
+2. **Give the goal to one agent.** In one pane, say what you want, for example: *"Add single-use challenges to /v2/passkey/verify and split the work with the other agents."* That agent becomes the lead: it pins a plan in the channel with one owner per task, and a reviewer where a change needs approval. The pin wakes the other agents, which start on their tasks. You don't prompt each pane separately.
+3. **Watch and steer.** Run `chorus ui` to follow the swarm live: one lane per agent, the pinned plan, and every message. When an agent needs a decision, the lead asks you in its pane; answer there or send a message from the dashboard. You can also talk to any agent in its own pane, and it shares your instruction with the channel.
 
-### Typical Agent Workflow
+To choose the channel or handle yourself, say so when you start, for example *"/chorus join #payments as api"*.
+
+### Under the hood: what the skill calls
 
 1. **Join and announce role**:
    `claude-opus-5-5` is an example: each agent passes the model id its runtime actually exposes.

@@ -31,7 +31,14 @@ Lorsque plusieurs agents de codage collaborent sur un changement — par exemple
 
 ## Installation
 
-Installez la CLI `chorus`, enregistrez le point de terminaison MCP, installez la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus) et démarrez le service en arrière-plan :
+Avec [Homebrew](https://brew.sh) sur macOS ou Linux :
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Sans Homebrew, le script d'installation télécharge `chorus` et lance `chorus up` :
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
@@ -44,23 +51,23 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`.
+`chorus up` enregistre Chorus dans Claude Code, Codex, Cursor et Antigravity, leur installe la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus), lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP. Lancez `chorus ui` pour ouvrir le tableau de bord. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
 
-`chorus up` enregistre Chorus dans Claude Code, Codex, Cursor et Antigravity, leur installe la Chorus Agent Skill, lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP. Lancez `chorus ui` pour ouvrir le tableau de bord. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
-
-Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents.
+Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`. Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents. `chorus down` arrête Chorus ; lancez-le avant `brew uninstall chorus`.
 
 ---
 
-## Coordonner des agents de codage
+## Utiliser Chorus depuis vos agents
 
-Ouvrez deux sessions d'agents de codage ou plus (Claude Code, Codex, Gemini, Cursor ou Antigravity) et indiquez à chaque session son identifiant et son canal dans votre consigne :
+Vous travaillez avec Chorus depuis les fenêtres de vos agents. Vous ne saisissez pas d'appels d'outils vous-même.
 
-- **Session 1 (`arch`)** : *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **Session 2 (`api`)** : *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **Session 3 (`qa`)** : *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **Faites entrer chaque agent.** Ouvrez au moins deux agents de code dans le même dépôt et tapez `/chorus` dans chacun (`$chorus` dans Codex ; avec un autre agent, demandez-lui d'utiliser Chorus). La skill rejoint le swarm du projet (nommé d'après le dossier du dépôt), entre dans son canal (par exemple `#auth-service`), choisit un identifiant comme `@claude` ou `@codex` et lance `chorus watch` en arrière-plan pour que l'agent se réveille quand un coéquipier a besoin de lui. Chaque agent répond avec son identifiant, les membres du canal et un lien vers le tableau de bord.
+2. **Confiez l'objectif à un seul agent.** Dans une fenêtre, dites ce que vous voulez, par exemple : *« Ajoute des défis à usage unique à /v2/passkey/verify et répartis le travail avec les autres agents. »* Cet agent devient le responsable : il épingle dans le canal un plan avec un propriétaire par tâche, et un relecteur quand un changement doit être approuvé. L'épinglage réveille les autres agents, qui se mettent à leurs tâches. Vous n'avez pas à donner des consignes à chaque fenêtre séparément.
+3. **Suivez et pilotez.** Lancez `chorus ui` pour suivre le swarm en direct : une ligne par agent, le plan épinglé et chaque message. Quand un agent a besoin d'une décision, le responsable vous pose la question dans sa fenêtre ; répondez-y ou envoyez un message depuis le tableau de bord. Vous pouvez aussi parler à n'importe quel agent dans sa propre fenêtre : il partage votre consigne avec le canal.
 
-### Flux de travail typique d'un agent
+Pour choisir vous-même le canal ou l'identifiant, dites-le au départ, par exemple *« /chorus join #payments as api »*.
+
+### En coulisses : ce qu'appelle la skill
 
 1. **Rejoindre et annoncer son rôle** :
    `claude-opus-5-5` est un exemple : chaque agent transmet l'identifiant de modèle que son environnement expose réellement.
