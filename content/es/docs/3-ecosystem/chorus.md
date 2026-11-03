@@ -15,7 +15,7 @@ Cuando varios agentes de programación colaboran en un cambio —por ejemplo, un
 
 | Herramienta | Propósito |
 |-------------|-----------|
-| `who` | Descubrir agentes activos (`[online]` / `[idle]`), `#channels`, temas y conteo de mensajes no leídos |
+| `who` | Listar los agentes activos del swarm (con sus modelos y roles), `#channels`, temas y conteo de mensajes no leídos |
 | `join` | Crear o suscribirse a `#channels`, fijar los cursores de lectura en la cabecera actual y consultar los mensajes recientes |
 | `leave` | Cancelar la suscripción a `#channels` y borrar sus cursores de lectura |
 | `send` | Publicar en `#channel` o `@agent` y recibir en la misma respuesta cualquier mensaje no leído pendiente para el emisor |
@@ -23,54 +23,64 @@ Cuando varios agentes de programación colaboran en un cambio —por ejemplo, un
 
 ## ¿Por qué Chorus?
 
-- **Un único punto final MCP estático**: Registra `http://localhost:9440/mcp` una sola vez en tus herramientas. Cada agente pasa su identificador corto (`"agent": "api"`) y un espacio de nombres opcional `"swarm"` en las llamadas, sin archivos de configuración por agente ni reinicios del editor.
+- **Un único punto final MCP estático**: Registra `http://localhost:9440/mcp` una sola vez en tus herramientas. Cada agente se une al swarm de un proyecto (`"swarm": "auth-service"`) con su propio identificador corto (`"agent": "api"`), así que un solo registro sirve en todos los repositorios, sin archivos de configuración por agente ni por proyecto.
 - **Cursores de lectura en el servidor**: Chorus guarda los cursores por agente en un mapa replicado en memoria de Pulse (`pulse/rmap`). Llamar a `read` devuelve solo los mensajes publicados después del cursor del agente en lugar de releer todo el historial.
 - **Entrega acumulada en `send`**: Cada llamada a `send` drena y adjunta los mensajes directos o de canales suscritos pendientes para el emisor (excluyendo sus propios mensajes), evitando turnos adicionales de envío y sondeo.
 - **Respuestas en texto plano**: Las herramientas utilizan la proyección `ToolContent("content")` de Goa-AI para devolver líneas compactas (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) sin duplicar cargas en `structuredContent`.
-- **Escucha en segundo plano (`chorus watch`)**: Los agentes pueden ejecutar `chorus watch -agent api -mentions` como comando en segundo plano o hook, esperando en un proceso del sistema operativo mientras mantienen activo su estado `[online]` y despertando la sesión solo cuando llega un mensaje relevante.
+- **Escucha en segundo plano (`chorus watch`)**: `chorus watch api` espera en una tarea en segundo plano gestionada por tu agente de programación hasta que llega un mensaje directo, una mención, una respuesta o un nuevo mensaje fijado, o hasta que vence su tiempo de espera. Cada ejecución termina tras entregar los mensajes o al agotar el tiempo; la skill de Chorus indica al agente que la vuelva a iniciar.
 
 ## Instalación
 
-Instala la CLI `chorus`, registra el punto final MCP, instala la [skill de Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus) e inicia el servicio en segundo plano:
+Con [Homebrew](https://brew.sh) en macOS o Linux:
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Sin Homebrew, el script de instalación descarga `chorus` y ejecuta `chorus up`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-O instala con Go y la [CLI de Skills](https://github.com/vercel-labs/skills):
+O instala con Go:
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
-Si `localhost:6379` aún no ejecuta Redis, `chorus up` inicia automáticamente una instancia local persistente de Redis en `~/.chorus/redis`.
+`chorus up` registra Chorus en Claude Code, Codex, Cursor y Antigravity, les instala la [skill de Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus), inicia Chorus en segundo plano y muestra las direcciones del panel (`http://localhost:9440/`) y de MCP. Ejecuta `chorus ui` para abrir el panel. Abre tus agentes de programación después de ejecutar `chorus up`; si uno que ya estaba abierto no encuentra las herramientas de Chorus, reinícialo.
+
+Si `localhost:6379` aún no ejecuta Redis, `chorus up` inicia automáticamente una instancia local persistente de Redis en `~/.chorus/redis`. Para registrar Chorus solo en un repositorio, ejecuta `chorus setup` dentro de él. Define `CHORUS_NO_SETUP=1` para iniciar Chorus sin cambiar la configuración de ningún agente. `chorus down` detiene Chorus; ejecútalo antes de `brew uninstall chorus`.
 
 ---
 
-## Coordinar agentes de programación
+## Usar Chorus desde tus agentes {#coordinar-agentes-de-programación}
 
-Abre dos o más sesiones de agentes de programación (Claude Code, Codex, Gemini, Cursor o Antigravity) e indica a cada sesión su identificador y canal en tu instrucción:
+Trabajas con Chorus desde los paneles de tus propios agentes. No escribes llamadas a herramientas.
 
-- **Sesión 1 (`arch`)**: *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **Sesión 2 (`api`)**: *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **Sesión 3 (`qa`)**: *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **Incorpora a cada agente.** Abre dos o más agentes de programación en el mismo repositorio y escribe `/chorus` en cada uno (`$chorus` en Codex; con cualquier otro agente, pídele que use Chorus). La skill se une al swarm del proyecto (con el nombre de la carpeta del repositorio), entra en su canal (por ejemplo `#auth-service`), elige un identificador como `@claude` o `@codex` e inicia `chorus watch` en segundo plano para que el agente despierte cuando un compañero lo necesite. Cada agente responde con su identificador, los miembros del canal y un enlace al panel.
+2. **Da el objetivo a un solo agente.** En un panel, di lo que quieres, por ejemplo: *"Añade desafíos de un solo uso a /v2/passkey/verify y reparte el trabajo con los otros agentes."* Ese agente pasa a dirigir: fija en el canal un plan con un responsable por tarea, y un revisor cuando un cambio necesita aprobación. El mensaje fijado despierta a los demás agentes, que se ponen con sus tareas. No tienes que dar instrucciones a cada panel por separado.
+3. **Observa y dirige.** Ejecuta `chorus ui` para seguir el swarm en directo: una línea por agente, el plan fijado y cada mensaje. Cuando un agente necesita una decisión, el agente líder te pregunta en su panel; responde ahí o envía un mensaje desde el panel web. También puedes hablar con cualquier agente en su propio panel, y este comparte tu instrucción con el canal.
 
-### Flujo de trabajo habitual del agente
+Para elegir tú el canal o el identificador, dilo al empezar, por ejemplo *"/chorus join #payments as api"*.
+
+### Referencia de llamadas a herramientas {#flujo-de-trabajo-habitual-del-agente}
 
 1. **Unirse y anunciar rol**:
+   `claude-opus-5-5` es un ejemplo: cada agente pasa el identificador de modelo que su entorno expone realmente.
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **Enviar actualizaciones y recibir respuestas acumuladas**:
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **Escuchar en segundo plano con `chorus watch`**:
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---

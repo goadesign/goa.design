@@ -15,7 +15,7 @@ When several coding agents collaborate on a change—for example, an architect (
 
 | Tool | Purpose |
 |------|---------|
-| `who` | Discover active agents (`[online]` / `[idle]`), `#channels`, topics, and unread counts |
+| `who` | List the swarm's active agents (with their models and roles), `#channels`, topics, and unread counts |
 | `join` | Create or subscribe to `#channels`, set read watermarks to the current head, and inspect recent context |
 | `leave` | Unsubscribe from `#channels` and clear read watermarks |
 | `send` | Post to `#channel` or `@agent`, and receive any unread messages for the sender in the same response |
@@ -23,54 +23,64 @@ When several coding agents collaborate on a change—for example, an architect (
 
 ## Why Chorus?
 
-- **One static MCP endpoint**: Register `http://localhost:9440/mcp` once across your tools. Each agent passes its own short handle (`"agent": "api"`) and optional `"swarm"` namespace in tool calls—no per-agent configuration files or editor restarts.
+- **One static MCP endpoint**: Register `http://localhost:9440/mcp` once across your tools. Each agent joins a project swarm (`"swarm": "auth-service"`) with its own short handle (`"agent": "api"`), so one registration works in every repository—no per-agent or per-project configuration files.
 - **Server-held read watermarks**: Chorus stores per-agent cursors in an in-memory Pulse replicated map (`pulse/rmap`). Calling `read` returns only messages published after the caller's watermark instead of re-reading full channel history.
 - **Piggybacked unread delivery**: Every `send` call drains and appends any unread DMs or subscribed channel messages waiting for the caller (excluding the caller's own messages), avoiding separate send-then-poll round trips.
 - **Plain-text wire responses**: Tools use Goa-AI's `ToolContent("content")` projection so responses return compact line-oriented text (`#auth#3↩#2 @qa: expired challenge returns 500 instead of 401`) without duplicating payloads in `structuredContent`.
-- **Background OS watcher (`chorus watch`)**: Agents can run `chorus watch -agent api -mentions` as a background shell command or hook, blocking in an OS process while keeping their `[online]` heartbeat fresh and waking the session only when a matching message arrives.
+- **Background OS watcher (`chorus watch`)**: `chorus watch api` waits in a background task managed by your coding agent for a direct message, mention, reply, or new pin, or until its wait expires. Each run exits after delivering messages or timing out; the Chorus skill tells the agent to start it again.
 
 ## Installation
 
-Install the `chorus` CLI, register the MCP endpoint, install the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus), and start the background service:
+With [Homebrew](https://brew.sh) on macOS or Linux:
+
+```bash
+brew install goadesign/tap/chorus
+chorus up
+```
+
+Without Homebrew, the install script downloads `chorus` and runs `chorus up`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
-Or install with Go and the [Skills CLI](https://github.com/vercel-labs/skills):
+Or install with Go:
 
 ```bash
 go install github.com/goadesign/chorus/cmd/chorus@latest
-chorus setup -global
 chorus up
-npx skills add goadesign/chorus --skill chorus
 ```
 
-When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`.
+`chorus up` registers Chorus with Claude Code, Codex, Cursor and Antigravity, installs the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) for them, starts Chorus in the background, and prints the dashboard (`http://localhost:9440/`) and MCP addresses. Run `chorus ui` to open the dashboard. Open your coding agents after running `chorus up`; if one that was already open cannot find the Chorus tools, restart it.
+
+When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`. To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration. `chorus down` stops Chorus; run it before `brew uninstall chorus`.
 
 ---
 
-## Coordinating Coding Agents
+## Using Chorus from Your Agents {#coordinating-coding-agents}
 
-Open two or more coding-agent sessions (Claude Code, Codex, Gemini, Cursor, or Antigravity) and give each session its handle and channel in your prompt:
+You work with Chorus from your agents' own panes. You don't type tool calls yourself.
 
-- **Session 1 (`arch`)**: *"Use Chorus as `arch` in `#auth` and coordinate passkey replay protection with `api` and `qa`."*
-- **Session 2 (`api`)**: *"Use Chorus as `api` in `#auth`, implement `/v2/passkey/verify`, and coordinate with `arch` and `qa`."*
-- **Session 3 (`qa`)**: *"Use Chorus as `qa` in `#auth`, run concurrent `-race` tests against `api`'s changes, and report any failures."*
+1. **Bring each agent in.** Open two or more coding agents in the same repository and type `/chorus` in each (`$chorus` in Codex; with any other agent, ask it to use Chorus). The skill joins the project's swarm (named after the repository folder), enters its channel (for example `#auth-service`), picks a handle such as `@claude` or `@codex`, and starts `chorus watch` in the background so the agent wakes when a teammate needs it. Each agent replies with its handle, the channel's members, and a dashboard link.
+2. **Give the goal to one agent.** In one pane, say what you want, for example: *"Add single-use challenges to /v2/passkey/verify and split the work with the other agents."* That agent becomes the lead: it pins a plan in the channel with one owner per task, and a reviewer where a change needs approval. The pin wakes the other agents, which start on their tasks. You don't prompt each pane separately.
+3. **Watch and steer.** Run `chorus ui` to follow the swarm live: one lane per agent, the pinned plan, and every message. When an agent needs a decision, the lead asks you in its pane; answer there or send a message from the dashboard. You can also talk to any agent in its own pane, and it shares your instruction with the channel.
 
-### Typical Agent Workflow
+To choose the channel or handle yourself, say so when you start, for example *"/chorus join #payments as api"*.
+
+### Tool call reference {#typical-agent-workflow}
 
 1. **Join and announce role**:
+   `claude-opus-5-5` is an example: each agent passes the model id its runtime actually exposes.
    ```json
-   {"agent": "api", "channels": ["#auth"], "role": "API Engineer"}
+   {"agent": "api", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "API Engineer"}
    ```
 2. **Send updates and receive piggybacked replies**:
    ```json
-   {"agent": "api", "to": "#auth", "reply_to": 1, "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
+   {"agent": "api", "to": "#auth", "text": "Wired ConsumeChallenge into VerifyAssertion. @qa ready for -race tests."}
    ```
 3. **Listen in the background with `chorus watch`**:
    ```bash
-   chorus watch -agent api -mentions -wait 10m
+   chorus watch api -wait 10m
    ```
 
 ---
