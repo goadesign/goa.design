@@ -17,10 +17,10 @@ One design supplies the tool schema, typed decoding, validation, server adapters
 and client bindings. Your configured Goa endpoints keep authentication,
 authorization, middleware and application behavior. Developers and coding agents
 edit that contract and application code; `goa gen` keeps the derived interfaces
-in agreement. Generated MCP servers use HTTP. Subprocess clients remain
-available; generated stdio servers are deferred.
+in agreement. Generated MCP servers run over HTTP (`New` and `Mount`) or `stdio`
+(`ServeStdio`).
 
-Use the [Quickstart module setup](../quickstart/) to install the `v0.89.0` Goa-AI release and its matching Goa dependency before generating this server.
+Use the [Quickstart module setup](../quickstart/) to install the `v0.89.0` Goa-AI release and its matching Goa dependency before generating an HTTP server. Generating a `stdio` server (`ServeStdio`) requires `goa.design/goa-ai` `v0.90.1-0.20261111075239-0114fb9d40d3` (`go get goa.design/goa-ai@0114fb9d40d3d0bf607459a9006a34ff601c83ea`) and running the module-pinned generator (`go run goa.design/goa/v3/cmd/goa gen <design-package>`).
 
 | What you need | Declare or compose |
 |---|---|
@@ -171,7 +171,7 @@ JSONRPC(func() {
 
 The URL supplies `organization_id`. Tool and prompt arguments, schemas, examples, and generated argument codecs exclude that field. An independent domain field named `organization` remains an argument. Each method keeps its declared type, custom Go field name, and validation. Invalid URL values stop before its configured endpoint runs. API and parent service prefixes retain their complete authored paths.
 
-Generated protocol clients carry URL values outside JSON-RPC parameters. Generated `NewCaller` accepts those values in route order after its retry policy; pass `"blue"` last for this route. That caller keeps the same address for every tool call. `NewHTTPCaller` instead receives the complete URL, such as `https://example.com/organizations/blue/mcp`. Regenerate clients, servers, and agent contracts together.
+Generated protocol clients carry URL values outside JSON-RPC parameters. Generated `NewCaller` accepts those values in route order after its retry policy; pass `"blue"` last for this route. That caller keeps the same address for every tool call. `NewHTTPCaller` instead receives the complete URL, such as `https://example.com/organizations/blue/mcp`. Generated `ServeStdio` also accepts those values in route order after `endpoints`, validating them with the same generated decoders. Regenerate clients, servers, and agent contracts together.
 
 ---
 
@@ -184,6 +184,18 @@ Use `Server.Use` to install HTTP middleware before requests begin. `Mount(mux)` 
 If a generator plugin declares required server dependencies through Goa's construction plan, pass their typed values before the final origin arguments. Native example startup calls the matching application factories. Configure those factories before starting the example server.
 
 For routes with URL parameters, register `ServeHTTP` with the same mux passed to `New`, or use `Mount(mux)`. The mux supplies path values to generated decoders.
+
+To host the same MCP endpoints over `os.Stdin` and `os.Stdout`, call the generated `ServeStdio` function with the adapter's endpoints (followed by any URL parameter values in route order):
+
+```go
+adapter := genmcp.NewMCPAdapter(svcEndpoints, nil)
+mcpEndpoints := genmcp.NewEndpoints(adapter)
+if err := genmcpserver.ServeStdio(ctx, os.Stdin, os.Stdout, mcpEndpoints); err != nil {
+    log.Fatal(err)
+}
+```
+
+`ServeStdio` takes required `*os.File` streams (`r` and `w`), reads newline-delimited JSON-RPC messages from `r`, and writes responses to `w`, accepting both stateless `2026-07-28` request metadata and the `2025-11-25` `initialize` handshake. `ServeStdio` takes ownership of `r` and `w`, interrupts blocked reads and writes when `ctx` is canceled or `stdin` reaches EOF, and closes both `*os.File` streams when `ServeStdio` returns.
 
 ---
 

@@ -13,9 +13,9 @@ I caller HTTP e stdio inviano richieste autonome con i metadati del protocollo. 
 
 I server HTTP generati accettano anche client MCP di base `2025-11-25` sullo stesso URL POST. Rigenera il server; interfacce dei servizi e costruttori restano invariati. `initialize` risponde con `2025-11-25`, poi le chiamate inviano `MCP-Protocol-Version: 2025-11-25` senza ID di sessione. Tool, risorse, prompt e completamento degli argomenti mantengono autenticazione, autorizzazione, middleware e validazione tipizzata. Per gli strumenti dichiarati staticamente, i risultati oggetto conservano la loro forma; scalari, array e unioni senza etichetta usano `{"value": ...}` e uno schema oggetto corrispondente. I risultati strutturati sono inclusi anche come contenuto testuale. Questo percorso precedente non offre Tasks, sottoscrizioni alle modifiche o richieste di input aggiuntivo al client. I caller integrati continuano a usare `2026-07-28`.
 
-Un solo design definisce schemi dei tool, decodifica tipizzata, validazione, adapter del server e client. Gli endpoint Goa configurati conservano autenticazione, autorizzazione, middleware e comportamento applicativo. Sviluppatori e agenti di programmazione modificano il contratto e il codice applicativo; `goa gen` mantiene coerenti le interfacce derivate. I server MCP generati usano HTTP. I client per sottoprocessi restano disponibili; la generazione di server stdio è rimandata.
+Un solo design definisce schemi dei tool, decodifica tipizzata, validazione, adapter del server e client. Gli endpoint Goa configurati conservano autenticazione, autorizzazione, middleware e comportamento applicativo. Sviluppatori e agenti di programmazione modificano il contratto e il codice applicativo; `goa gen` mantiene coerenti le interfacce derivate. I server MCP generati funzionano su HTTP (`New` e `Mount`) o `stdio` (`ServeStdio`).
 
-Prima di generare questo server, installa la versione `v0.89.0` di Goa-AI e la dipendenza Goa corrispondente seguendo la [configurazione del modulo nella guida rapida](../quickstart/).
+Prima di generare un server HTTP, installa la versione `v0.89.0` di Goa-AI e la dipendenza Goa corrispondente seguendo la [configurazione del modulo nella guida rapida](../quickstart/). Per generare un server `stdio` (`ServeStdio`), installa `goa.design/goa-ai` `v0.90.1-0.20261111075239-0114fb9d40d3` (`go get goa.design/goa-ai@0114fb9d40d3d0bf607459a9006a34ff601c83ea`) ed esegui il generatore fissato nel modulo (`go run goa.design/goa/v3/cmd/goa gen <design-package>`).
 
 | Esigenza | Dichiarazione o composizione |
 |---|---|
@@ -161,7 +161,7 @@ JSONRPC(func() {
 
 L’URL fornisce `organization_id`. Gli argomenti di strumenti e prompt, gli schemi, gli esempi e i codec generati escludono questo campo. Un campo di dominio indipendente chiamato `organization` rimane un argomento. Ogni metodo conserva il tipo, il nome del campo Go e la validazione dichiarati. I valori URL non validi vengono rifiutati prima di eseguire l’endpoint configurato. I percorsi completi dell’API e del servizio padre vengono conservati.
 
-I client di protocollo generati trasportano questi valori fuori dai parametri JSON-RPC. Il `NewCaller` generato li riceve nell’ordine del percorso dopo la politica di tentativi; per questo percorso, passa `"blue"` come ultimo argomento. Il chiamante conserva lo stesso indirizzo per ogni chiamata. `NewHTTPCaller` riceve l’URL completo, per esempio `https://example.com/organizations/blue/mcp`. Rigenera insieme client, server e contratti degli agenti.
+I client di protocollo generati trasportano questi valori fuori dai parametri JSON-RPC. Il `NewCaller` generato li riceve nell’ordine del percorso dopo la politica di tentativi; per questo percorso, passa `"blue"` come ultimo argomento. Il chiamante conserva lo stesso indirizzo per ogni chiamata. `NewHTTPCaller` riceve l’URL completo, per esempio `https://example.com/organizations/blue/mcp`. Anche il `ServeStdio` generato li riceve nell’ordine del percorso dopo `endpoints`, validandoli con gli stessi decoder generati. Rigenera insieme client, server e contratti degli agenti.
 
 ---
 
@@ -174,6 +174,18 @@ Usare `Server.Use` per installare il middleware HTTP prima delle richieste. `Mou
 Se un plugin del generatore dichiara dipendenze obbligatorie del server nel piano di costruzione di Goa, passare i loro valori tipizzati prima degli argomenti finali delle origini. L’avvio dell’esempio nativo chiama le corrispondenti funzioni di costruzione dell’applicazione. Configurare queste funzioni prima di avviare il server di esempio.
 
 Per le route con parametri URL, registrare `ServeHTTP` nello stesso mux passato a `New`, oppure usare `Mount(mux)`. Il mux fornisce i valori del percorso ai decoder generati.
+
+Per ospitare gli stessi endpoint MCP su `os.Stdin` e `os.Stdout`, chiamare la funzione generata `ServeStdio` con gli endpoint dell’adapter (seguiti da eventuali valori dei parametri URL nell’ordine del percorso):
+
+```go
+adapter := genmcp.NewMCPAdapter(svcEndpoints, nil)
+mcpEndpoints := genmcp.NewEndpoints(adapter)
+if err := genmcpserver.ServeStdio(ctx, os.Stdin, os.Stdout, mcpEndpoints); err != nil {
+    log.Fatal(err)
+}
+```
+
+`ServeStdio` richiede stream `*os.File` (`r` e `w`), legge messaggi JSON-RPC delimitati da newline da `r` e scrive le risposte su `w`, accettando sia i metadati di richiesta stateless `2026-07-28` sia l’handshake `initialize` `2025-11-25`. `ServeStdio` assume la proprietà di `r` e `w`, interrompe letture e scritture bloccate quando `ctx` viene annullato o `stdin` raggiunge EOF, e chiude entrambi gli stream `*os.File` al termine.
 
 ---
 
