@@ -34,7 +34,7 @@ llm_optimized: true
 | アプローチ | 管理対象 | Chorus の違い |
 |------------|----------|---------------|
 | **エージェント IDE・worktree ランナー** (Orca, Superset, Conductor, Claude Squad) | デスクトップ IDE と隔離された git worktree で同じプロンプトを並列実行する | 普段のエディタやターミナルをそのまま使い、共有 `#channel`・ピン留めされた計画・`@agent` DM で 1 つのタスクを分担する |
-| **ターミナルマルチプレクサ** (Herdr `hc`, cmux, tmux) | 擬似端末で CLI 子プロセスを起動し、`stdin` 注入と画面スクロールバックの読み取りで連携する | プロトコル層の MCP メッセージバス：IDE エージェント (Cursor, Antigravity) と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読差分だけを受け取る (Herdr や tmux の併用も可能)。 内蔵の Herdr ランチャー（`chorus-launcher`）は **Chorus · プロジェクト名** タブを開き、各ペインを自動的に参加させます。 |
+| **ターミナルマルチプレクサ** (Herdr `hc`, cmux, tmux) | 擬似端末で CLI 子プロセスを起動し、`stdin` 注入と画面スクロールバックの読み取りで連携する | プロトコル層の MCP メッセージバス：IDE エージェント (Cursor, Antigravity) と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読差分だけを受け取る (Herdr や tmux の併用も可能)。内蔵の Herdr ランチャー（`chorus-launcher`）は **Chorus · プロジェクト名** タブを開き、各ペインを自動的に参加させます。 |
 | **組み込みサブエージェント** (Claude Code, Codex) | 単一のベンダー・セッション内で動く短命な子タスク | 異なるモデルファミリーの独立したセッション同士をつなぎ、マージ前に Claude・Codex・Gemini が互いの差分をレビューできる |
 | **チャットブリッジ・JSON 型 MCP** (Slack, Discord, A2A) | 人間向けチャット API のラッパーで履歴の再取得と冗長な JSON を返す | メモリ上の既読ウォーターマーク、`send` 時の未読返信の同梱、`chorus watch` によるモデルトークン `0` での待機、1 メッセージ約 16〜52 トークンの 1 行テキスト |
 
@@ -66,7 +66,7 @@ chorus up
 
 Herdr の設定ディレクトリ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、`chorus up` と `chorus setup -global` は [Herdr 用 Chorus チームランチャー](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher)も、その中の `mods/chorus-launcher` にインストールします。macOS では、Herdr のキーボード設定ファイルがあり、キーが未使用の場合に **Command–Option–Shift–C** を追加します。既存の割り当ては保持します。設定ファイルがない場合は Herdr を開き、`chorus setup -global` を再実行してください。
 
-`chorus update` でリリースを確認して承認できます。バイナリ、同梱スキル、MCP 登録、Herdr ランチャーを更新し、現在の設定でサーバーを再起動します。更新がある場合、ダッシュボードと Herdr ランチャーにも **Update & restart** が表示されます。エージェントの会話はペインに残ります。v0.9.0 など、更新用エンドポイントがない古いサーバーでは、CLI はバイナリと連携設定を更新してもサーバーを動かしたままにします。表示された再起動コマンドを、元のフラグと `REDIS_PASSWORD` で実行して更新を完了してください。
+`chorus update` でリリースを確認して承認できます。バイナリ、同梱スキル、MCP 登録、Herdr ランチャーを更新し、現在の設定でサーバーを再起動します。更新がある場合、ダッシュボードには **Update & Restart**、Herdr ランチャーには **Update & restart** が表示されます。エージェントの会話はペインに残ります。v0.9.0 など、更新用エンドポイントがない古いサーバーでは、CLI はバイナリと連携設定を更新してもサーバーを動かしたままにします。表示された再起動コマンドを、元のフラグと `REDIS_PASSWORD` で実行して更新を完了してください。
 
 ---
 

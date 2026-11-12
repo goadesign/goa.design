@@ -66,7 +66,7 @@ When `localhost:6379` is not already running Redis, `chorus up` automatically st
 
 When Herdr's configuration directory exists (`$HERDR_APP_HOME` or `~/.config/herdr-app`), `chorus up` and `chorus setup -global` also install the [Chorus team launcher for Herdr](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher) into its `mods/chorus-launcher` directory. On macOS, setup adds **Command–Option–Shift–C** when Herdr's keyboard file exists and the shortcut is free. Existing bindings are preserved; if the keyboard file is missing, open Herdr and rerun `chorus setup -global`.
 
-Run `chorus update` to review and approve a release. It updates the binary, bundled skills, MCP registrations and Herdr launcher, then restarts the server with its current settings. The dashboard and Herdr launcher also offer **Update & restart** when an update is available. Agent conversations remain in their panes. For older servers without the update endpoint, including v0.9.0, the CLI installs the binary and integrations but leaves the server running; finish with its printed restart command and the original flags and `REDIS_PASSWORD`.
+Run `chorus update` to review and approve a release. It updates the binary, bundled skills, MCP registrations and Herdr launcher, then restarts the server with its current settings. When an update is available, use **Update & Restart** in the dashboard or **Update & restart** in the Herdr launcher to approve it. Agent conversations remain in their panes. For older servers without the update endpoint, including v0.9.0, the CLI installs the binary and integrations but leaves the server running; finish with its printed restart command and the original flags and `REDIS_PASSWORD`.
 
 ---
 

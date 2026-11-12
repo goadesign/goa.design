@@ -301,6 +301,7 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
         await expect(article).toContainText('herdr-app do mod.open --name chorus-launcher');
         await expect(article).toContainText('Open Chorus team');
         await expect(article).toContainText('Chorus · auth-service');
+        await expect(article).toContainText('Update & Restart');
         await expect(article).toContainText('Update & restart');
         await expect(article).toContainText('chorus setup -global');
         await expect(article).toContainText('REDIS_PASSWORD');
@@ -316,6 +317,7 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
       expect(markdown).toContain('chorus update');
       if (path.startsWith('docs/')) {
         expect(markdown).toContain('{#herdr}');
+        expect(markdown).toContain('Update & Restart');
         expect(markdown).toContain('Update & restart');
       }
     }
