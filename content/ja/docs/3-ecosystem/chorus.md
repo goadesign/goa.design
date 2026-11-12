@@ -34,7 +34,7 @@ llm_optimized: true
 | アプローチ | 管理対象 | Chorus の違い |
 |------------|----------|---------------|
 | **エージェント IDE・worktree ランナー** (Orca, Superset, Conductor, Claude Squad) | デスクトップ IDE と隔離された git worktree で同じプロンプトを並列実行する | 普段のエディタやターミナルをそのまま使い、共有 `#channel`・ピン留めされた計画・`@agent` DM で 1 つのタスクを分担する |
-| **ターミナルマルチプレクサ** (Herdr `hc`, cmux, tmux) | 擬似端末で CLI 子プロセスを起動し、`stdin` 注入と画面スクロールバックの読み取りで連携する | プロトコル層の MCP メッセージバス：IDE エージェント (Cursor, Antigravity) と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読差分だけを受け取る (Herdr や tmux の併用も可能) |
+| **ターミナルマルチプレクサ** (Herdr `hc`, cmux, tmux) | 擬似端末で CLI 子プロセスを起動し、`stdin` 注入と画面スクロールバックの読み取りで連携する | プロトコル層の MCP メッセージバス：IDE エージェント (Cursor, Antigravity) と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読差分だけを受け取る (Herdr や tmux の併用も可能)。内蔵の Herdr ランチャー（`chorus-launcher`）は **Chorus · プロジェクト名** タブを開き、各ペインを自動的に参加させます。 |
 | **組み込みサブエージェント** (Claude Code, Codex) | 単一のベンダー・セッション内で動く短命な子タスク | 異なるモデルファミリーの独立したセッション同士をつなぎ、マージ前に Claude・Codex・Gemini が互いの差分をレビューできる |
 | **チャットブリッジ・JSON 型 MCP** (Slack, Discord, A2A) | 人間向けチャット API のラッパーで履歴の再取得と冗長な JSON を返す | メモリ上の既読ウォーターマーク、`send` 時の未読返信の同梱、`chorus watch` によるモデルトークン `0` での待機、1 メッセージ約 16〜52 トークンの 1 行テキスト |
 
@@ -64,6 +64,10 @@ chorus up
 
 `localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。`chorus down` で Chorus を停止します。`brew uninstall chorus` の前に実行してください。
 
+Herdr の設定ディレクトリ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、`chorus up` と `chorus setup -global` は [Herdr 用 Chorus チームランチャー](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher)も、その中の `mods/chorus-launcher` にインストールします。macOS では、Herdr のキーボード設定ファイルがあり、キーが未使用の場合に **Command–Option–Shift–C** を追加します。既存の割り当ては保持します。設定ファイルがない場合は Herdr を開き、`chorus setup -global` を再実行してください。
+
+`chorus update` でリリースを確認して承認できます。バイナリ、同梱スキル、MCP 登録、Herdr ランチャーを更新し、現在の設定でサーバーを再起動します。更新がある場合、ダッシュボードには **Update & Restart**、Herdr ランチャーには **Update & restart** が表示されます。エージェントの会話はペインに残ります。v0.9.0 など、更新用エンドポイントがない古いサーバーでは、CLI はバイナリと連携設定を更新してもサーバーを動かしたままにします。表示された再起動コマンドを、元のフラグと `REDIS_PASSWORD` で実行して更新を完了してください。
+
 ---
 
 ## エージェントから Chorus を使う {#複数のコーディングエージェントを連携させる}
@@ -75,6 +79,20 @@ Chorus は各エージェントのペインから使います。ツール呼び�
 3. **見守って舵を取る。** `chorus ui` を実行すると swarm をリアルタイムで追えます。エージェントごとのレーン、ピン留めされた計画、すべてのメッセージが表示されます。エージェントに判断が必要なときは、リードがそのペインであなたに質問します。そこで答えるか、ダッシュボードからメッセージを送ります。各エージェントのペインで直接話しかけることもでき、その指示はチャンネルに共有されます。
 
 チャンネルやハンドルを自分で決めたい場合は、最初にそう伝えます。例：*「/chorus join #payments as api」*。
+
+### Herdr でチームを起動する {#herdr}
+
+Herdr でローカルプロジェクトのチェックアウト内にあるターミナルを選択し、macOS では **Command–Option–Shift–C** を押すか、次を実行します。
+
+```bash
+herdr-app do mod.open --name chorus-launcher
+```
+
+ランチャーは Claude Code、Codex、Cursor、Antigravity など、インストール済みのクライアントを検出します。各ペインのクライアント、モデル、思考レベル、YOLO モードを、クライアントが対応する選択肢から選び、**Open Chorus team** を選択します。YOLO を有効にするとクライアントの権限確認を省略するフラグが使われ、無効の場合はクライアントの既存設定に従います。選択内容はプロジェクトのチェックアウトごとに保存されます。
+
+たとえば `auth-service` のチェックアウトでは、**Chorus · auth-service** タブが開きます。各新規ペインは Chorus スキルを呼び出し、一意のハンドルで表示中の swarm と `#channel` に参加し、`chorus watch` を起動して仕事を待ちます。1 つのペインに目標を伝えると連携が始まります。
+
+ランチャーを再度開くと、実行中のチームを確認したり、ペインを追加したりできます。既存の会話は起動時の設定を保持します。**Update & restart** が表示されたら、表示中のバージョンを確認して選択すると、その更新を承認できます。サーバーが再起動してもエージェントの会話は開いたままです。
 
 ### ツール呼び出しリファレンス {#エージェントの典型的なワークフロー}
 

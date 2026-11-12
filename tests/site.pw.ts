@@ -270,3 +270,56 @@ test('localized Chorus pages, docs links, and Markdown are reachable', async ({ 
   expect(mdText).toContain('Invented task, real Chorus output.');
   expect(mdText).toContain('## How Chorus compares');
 });
+
+// Visitors can find the launcher from each translated landing page, then use
+// the same deep link and commands in the rendered guide and Markdown copy.
+for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
+  test(`${lang || 'en/'}Herdr launch and update instructions work across sizes and themes`, async ({ page, request }) => {
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      for (const theme of ['light', 'dark']) {
+        await page.goto(`/${lang}chorus/`);
+        if (await page.locator('html').getAttribute('data-theme') !== theme) {
+          await page.locator('.theme-toggle').click();
+        }
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await expect(page.locator('.chorus-hero .hero-facts')).toContainText('Herdr');
+        await expect(page.locator('#install .install-hint')).toContainText('⌥⌘⇧C');
+        await expect(page.locator('#install .install-hint code')).toContainText([
+          '/chorus', '$chorus', 'chorus ui', 'herdr-app do mod.open --name chorus-launcher',
+        ]);
+        await expect(page.locator('.chorus-steps')).toContainText('chorus update');
+        await expect(page.locator('.chorus-steps')).toContainText('YOLO');
+        await expect(page.locator('.chorus-compare')).toContainText('chorus-launcher');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} landing ${width}px ${theme}`).toBe(true);
+
+        await page.goto(`/${lang}docs/3-ecosystem/chorus/#herdr`);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await expect(page.locator('#herdr')).toBeVisible();
+        await expect(page.locator('#herdr')).toBeInViewport();
+        const article = page.locator('.td-content');
+        await expect(article).toContainText('herdr-app do mod.open --name chorus-launcher');
+        await expect(article).toContainText('Open Chorus team');
+        await expect(article).toContainText('Chorus · auth-service');
+        await expect(article).toContainText('Update & Restart');
+        await expect(article).toContainText('Update & restart');
+        await expect(article).toContainText('chorus setup -global');
+        await expect(article).toContainText('REDIS_PASSWORD');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} guide ${width}px ${theme}`).toBe(true);
+        await page.screenshot({ path: `.impeccable/review/herdr-${lang.replace('/', '') || 'en'}-${width}-${theme}.png` });
+      }
+    }
+    for (const path of ['chorus/index.md', 'docs/3-ecosystem/chorus/index.md']) {
+      const response = await request.get(`/${lang}${path}`);
+      expect(response.ok()).toBe(true);
+      const markdown = await response.text();
+      expect(markdown).toContain('herdr-app do mod.open --name chorus-launcher');
+      expect(markdown).toContain('chorus update');
+      if (path.startsWith('docs/')) {
+        expect(markdown).toContain('{#herdr}');
+        expect(markdown).toContain('Update & Restart');
+        expect(markdown).toContain('Update & restart');
+      }
+    }
+  });
+}

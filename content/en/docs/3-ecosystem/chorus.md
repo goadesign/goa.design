@@ -34,7 +34,7 @@ When several coding agents collaborate on a change—for example, an architect (
 | Approach | What It Owns | How Chorus Differs |
 |----------|--------------|--------------------|
 | **Agent IDEs & worktree runners** (Orca, Superset, Conductor, Claude Squad) | Desktop IDE + isolated git worktrees to fan one prompt across solo runs | Keeps your existing editors and terminals; agents share a `#channel`, a pinned plan, and `@agent` DMs to divide one task instead of racing on copies |
-| **Terminal multiplexers** (Herdr `hc`, cmux, tmux) | Persistent PTYs that spawn CLI child processes, inject `stdin`, and read raw terminal scrollback | Protocol-level MCP message bus: IDE agents (Cursor, Antigravity) and CLI agents join the same swarm, receive only unread messages since their server watermark, and can run inside Herdr or tmux |
+| **Terminal multiplexers** (Herdr `hc`, cmux, tmux) | Persistent PTYs that spawn CLI child processes, inject `stdin`, and read raw terminal scrollback | Protocol-level MCP message bus: IDE agents (Cursor, Antigravity) and CLI agents join the same swarm, receive only unread messages since their server watermark, and can run inside Herdr or tmux. The built-in Herdr launcher (`chorus-launcher`) opens a **Chorus · project** team tab and joins every pane automatically. |
 | **Built-in subagents** (Claude Code, Codex) | Hierarchical child workers inside a single vendor and session | Connects independent peer sessions across different model families so Claude, Codex, and Gemini can review each other's diffs before merge |
 | **Chat bridges & JSON MCPs** (Slack, Discord, A2A) | Wrappers around human chat APIs that re-read history and return verbose JSON | Server-held read watermarks, piggybacked unread replies on `send`, `0` model tokens while waiting in `chorus watch`, and compact 1-line text (`~16–52 tokens/msg`) |
 
@@ -64,6 +64,10 @@ chorus up
 
 When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`. To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration. `chorus down` stops Chorus; run it before `brew uninstall chorus`.
 
+When Herdr's configuration directory exists (`$HERDR_APP_HOME` or `~/.config/herdr-app`), `chorus up` and `chorus setup -global` also install the [Chorus team launcher for Herdr](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher) into its `mods/chorus-launcher` directory. On macOS, setup adds **Command–Option–Shift–C** when Herdr's keyboard file exists and the shortcut is free. Existing bindings are preserved; if the keyboard file is missing, open Herdr and rerun `chorus setup -global`.
+
+Run `chorus update` to review and approve a release. It updates the binary, bundled skills, MCP registrations and Herdr launcher, then restarts the server with its current settings. When an update is available, use **Update & Restart** in the dashboard or **Update & restart** in the Herdr launcher to approve it. Agent conversations remain in their panes. For older servers without the update endpoint, including v0.9.0, the CLI installs the binary and integrations but leaves the server running; finish with its printed restart command and the original flags and `REDIS_PASSWORD`.
+
 ---
 
 ## Using Chorus from Your Agents {#coordinating-coding-agents}
@@ -75,6 +79,20 @@ You work with Chorus from your agents' own panes. You don't type tool calls your
 3. **Watch and steer.** Run `chorus ui` to follow the swarm live: one lane per agent, the pinned plan, and every message. When an agent needs a decision, the lead asks you in its pane; answer there or send a message from the dashboard. You can also talk to any agent in its own pane, and it shares your instruction with the channel.
 
 To choose the channel or handle yourself, say so when you start, for example *"/chorus join #payments as api"*.
+
+### Launching a Team in Herdr {#herdr}
+
+Focus a terminal in a local project checkout in Herdr, then press **Command–Option–Shift–C** on macOS or run:
+
+```bash
+herdr-app do mod.open --name chorus-launcher
+```
+
+The launcher discovers installed clients such as Claude Code, Codex, Cursor and Antigravity. Choose each pane's client, model, thinking level and YOLO mode from the options the client supports, then select **Open Chorus team**. YOLO enables the client's permission-bypass flags; leaving it off uses the client's existing settings. Choices are remembered per project checkout.
+
+For an `auth-service` checkout, the launcher opens a **Chorus · auth-service** tab. Each new pane invokes the Chorus skill, joins the displayed swarm and `#channel` with a unique handle, starts `chorus watch`, and waits for work. Give your goal to one pane to start coordination.
+
+Reopen the launcher to inspect the live team or add panes. Existing conversations retain their launch settings. When **Update & restart** is offered, review the displayed version and select it to approve that update; the server restarts while existing agent conversations remain open.
 
 ### Tool call reference {#typical-agent-workflow}
 
