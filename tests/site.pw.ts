@@ -323,3 +323,48 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
     }
   });
 }
+
+test('interactive Chorus browser demo works across mobile/desktop, light/dark, SVG export, swarm switch, and reset', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+
+  // Mobile dark-mode check (including repeat visit with stale seenMs): chat sheet stays inert without covering timeline or prefilling reply_to.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem('goa-theme', 'dark');
+    localStorage.setItem('chorus_chat_seen:auth:dana', String(Date.now() - 60000));
+  });
+  await page.goto('/chorus/demo/');
+  await expect(page.locator('#timeline-root svg')).toBeVisible();
+  await expect(page.locator('#chat-sheet')).toHaveAttribute('inert', '');
+  await expect(page.locator('#reply-chip-container')).toBeEmpty();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  // Desktop interaction: copy PR summary, export SVG, switch swarms, send message + simulated reply, and reset.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/chorus/demo/');
+  await expect(page.locator('.demo-banner')).toContainText('Interactive Demo');
+  await expect(page.locator('#active-title')).toHaveText('#auth');
+
+  await page.locator('#btn-copy-pr').click();
+  await expect(page.locator('#share-status')).toContainText('Copied PR summary');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('### Multi-Agent Collaboration');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#btn-export-svg').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('chorus-auth-timeline.svg');
+
+  await page.locator('#swarm-select').selectOption('chorus');
+  await expect(page.locator('#active-title')).toHaveText('#chorus');
+  await page.locator('#swarm-select').selectOption('auth');
+  await expect(page.locator('#active-title')).toHaveText('#auth');
+
+  await page.locator('#send-text').fill('@codex can you verify expiry status code?');
+  await page.locator('#btn-send').click();
+  await expect(page.locator('#chat-sheet')).toContainText('can you verify expiry status code?');
+  await expect(page.locator('#chat-sheet')).toContainText('Acknowledged in', { timeout: 5000 });
+
+  await page.locator('#demo-reset').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#chat-sheet')).toHaveAttribute('inert', '');
+});

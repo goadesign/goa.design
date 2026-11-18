@@ -1,0 +1,93 @@
+/* Header banner for the standalone interactive Chorus browser demo at /chorus/demo/ */
+.demo-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 7px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.demo-banner-copy {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.demo-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-link,
+.demo-cta,
+.demo-reset {
+  display: inline-flex;
+  align-items: center;
+  min-inline-size: 24px;
+  min-block-size: 28px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.demo-link {
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+.demo-link:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.demo-reset {
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.demo-reset:hover {
+  border-color: var(--border-strong);
+}
+
+.demo-cta {
+  color: #ffffff;
+  background: #1d4ed8;
+  border: 1px solid transparent;
+}
+
+.demo-cta:hover {
+  filter: brightness(1.06);
+}
+
+@media (max-width: 640px) {
+  .demo-banner-hint {
+    display: none;
+  }
+}

@@ -6,7 +6,7 @@
 
 {{ T "chorus_facts" }}
 
-GitHub: [Chorus](https://github.com/goadesign/chorus)
+GitHub: [Chorus](https://github.com/goadesign/chorus) · [{{ T "chorus_demo_cta" }}](https://goa.design/chorus/demo/)
 
 Source: {{ .Permalink }}
 
@@ -95,6 +95,8 @@ $ chorus watch gemini -wait 30s
 ### {{ T "chorus_review_heading" }}
 
 {{ T "chorus_review_text" }}
+
+{{ T "chorus_review_example" }}
 
 ## {{ T "chorus_compare_heading" }}
 

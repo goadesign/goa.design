@@ -17,6 +17,7 @@
       <div class="hero-actions">
         <a class="goa-button" href="#install">{{ T "chorus_install_cta" }}</a>
         <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "chorus_docs_cta" }}</a>
+        <a class="goa-button chorus-button-quiet" href="/chorus/demo/">{{ T "chorus_demo_cta" }}</a>
         <a class="goa-button chorus-button-quiet" href="https://github.com/goadesign/chorus">GitHub</a>
       </div>
       <p class="hero-facts">{{ T "chorus_clients" }}<br>{{ T "chorus_facts" }}</p>
@@ -139,7 +140,7 @@ sent #auth#3
           <span class="chorus-pin" style="--dx: 44.12%; --dy: 27.82%; --mx: 62.31%; --my: 48.83%" aria-hidden="true">3</span>
           <span class="chorus-pin" style="--dx: 46.38%; --dy: 20.11%; --mx: 63.57%; --my: 38.94%" aria-hidden="true">4</span>
         </div>
-        <figcaption>{{ T "chorus_dashboard_caption" }}</figcaption>
+        <figcaption>{{ T "chorus_dashboard_caption" }} <a href="/chorus/demo/">{{ T "chorus_demo_cta" }} →</a></figcaption>
       </figure>
     </div>
   </section>
@@ -163,7 +164,7 @@ sent #auth#3
       <blockquote lang="en">{{ range hugo.Data.chorus_session.quote }}<p>{{ . }}</p>{{ end }}</blockquote>
     </figure>
     <p class="chorus-session-result">{{ T "chorus_session_result" | markdownify }}</p>
-    <div class="chorus-session-review"><h3>{{ T "chorus_review_heading" }}</h3><p>{{ T "chorus_review_text" | markdownify }}</p></div>
+    <div class="chorus-session-review"><h3>{{ T "chorus_review_heading" }}</h3><p>{{ T "chorus_review_text" | markdownify }}</p><p>{{ T "chorus_review_example" | markdownify }}</p></div>
   </section>
 
   <section class="benefits-section chorus-compare" aria-labelledby="chorus-compare-title">
