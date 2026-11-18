@@ -14,6 +14,7 @@
   // a GitHub-Flavored Markdown table cell.
   function escapeTableCell(value) {
     return String(value ?? "")
+      .replace(/\\/g, "\\\\")
       .replace(/\r?\n+/g, " ")
       .replace(/\|/g, "\\|")
       .trim();

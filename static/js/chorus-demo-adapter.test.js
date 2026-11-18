@@ -112,5 +112,16 @@ describe("Chorus interactive browser demo adapter and share serializer", () => {
     expect(parsed.documentElement.getAttribute("role")).toBe("img");
     expect(parsed.documentElement.hasAttribute("tabindex")).toBe(false);
     expect(parsed.documentElement.hasAttribute("aria-label")).toBe(false);
+
+    const md = win.ChorusShare.formatPRSummary({
+      activeSwarm: "auth",
+      view: {
+        swarm: "auth",
+        agents: [{ handle: "codex", model: "GPT-6.1-Sol", role: "A\\|B" }],
+        channels: [{ name: "#auth", messages: [] }],
+        inboxes: [],
+      },
+    });
+    expect(md).toContain("| `@codex` | `GPT-6.1-Sol` | A\\\\\\|B |");
   });
 });

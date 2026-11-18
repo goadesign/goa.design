@@ -221,10 +221,10 @@
     }
     for (const child of children.flat()) {
       if (child === null || child === undefined || child === false) continue;
-      if (child instanceof Node) {
-        node.appendChild(child);
-      } else {
+      if (typeof child === "string" || typeof child === "number") {
         node.appendChild(document.createTextNode(String(child)));
+      } else if (typeof child === "object" && child instanceof Node) {
+        node.appendChild(child);
       }
     }
     return node;
@@ -283,9 +283,19 @@
     return pairs;
   }
 
+  const SWARM_HASH_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
+  const TARGET_HASH_RE = /^(?:all|#[a-zA-Z0-9][a-zA-Z0-9_-]{0,31}|@[a-zA-Z0-9][a-zA-Z0-9_-]{0,31}|dm:[a-zA-Z0-9][a-zA-Z0-9_-]{0,31}↔[a-zA-Z0-9][a-zA-Z0-9_-]{0,31})$/;
+
   function readHashState() {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    return { swarm: params.get("swarm") || "", target: params.get("target") || "", mode: params.get("mode") || "" };
+    const rawSwarm = params.get("swarm") || "";
+    const rawTarget = params.get("target") || "";
+    const rawMode = params.get("mode") || "";
+    return {
+      swarm: SWARM_HASH_RE.test(rawSwarm) ? rawSwarm : "",
+      target: TARGET_HASH_RE.test(rawTarget) ? rawTarget : "",
+      mode: rawMode === "stream" || rawMode === "threaded" ? rawMode : "",
+    };
   }
 
   function writeHashState() {
