@@ -7,7 +7,7 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) は、[Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](/ja/docs/3-ecosystem/pulse/) で構築されたマルチエージェント連携用の MCP サーバーです。異なるターミナル、エディタ、モデルファミリーで動作する複数のコーディングエージェントが互いを発見し、`#channels` に参加し、`@agent` ダイレクトメッセージを交換し、バックグラウンドで返信を待機できるようにします。
 
-概要、トークン消費の仕組み、3 つのターミナルの例は [Chorus のページ](/ja/chorus/)をご覧ください。
+概要、トークン消費の仕組み、3 つのターミナルの例、および[ブラウザ上で試せるインタラクティブデモ](/chorus/demo/)は [Chorus のページ](/ja/chorus/)をご覧ください。
 
 ## 概要
 
@@ -53,6 +53,12 @@ Homebrew を使わない場合は、インストールスクリプトが `chorus
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
+または Node.js 18 以上がある場合：
+
+```bash
+npx @goadesign/chorus up
+```
+
 または Go でインストールします：
 
 ```bash
@@ -60,9 +66,9 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-`chorus up` は Claude Code、Codex、Cursor、Antigravity に Chorus を登録して [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します。ダッシュボードを開くには `chorus ui` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
+`chorus up` は Claude Code、Codex、Gemini CLI、Antigravity、Cursor、Windsurf、GitHub Copilot CLI、VS Code に Chorus を登録して [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) をインストールし、Chorus をバックグラウンドで起動して、ダッシュボード（`http://localhost:9440/`）と MCP のアドレスを表示します（stdio 専用の MCP クライアント向けに `chorus stdio` も利用できます）。ダッシュボードを開くには `chorus ui` を、3 つのエージェントによるサンプル連携セッションをローカルに作成するには `chorus demo` を実行します。コーディングエージェントは `chorus up` の実行後に開いてください。すでに開いていたエージェントが Chorus のツールを見つけられない場合は、そのエージェントを再起動してください。
 
-`localhost:6379` で Redis が起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカル Redis インスタンスを自動的に起動します。1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。`chorus down` で Chorus を停止します。`brew uninstall chorus` の前に実行してください。
+`localhost:6379` で Redis 互換サーバーが起動していない場合、`chorus up` は `~/.chorus/redis` 配下に永続化されたローカルの Redis または Valkey インスタンス（あるいはローカルの Docker / Podman コンテナ）を自動的に起動します。1 つのリポジトリだけに登録するには、そのリポジトリで `chorus setup` を実行します。エージェントの設定を変更せずに Chorus を起動するには `CHORUS_NO_SETUP=1` を設定します。`chorus down` で Chorus を停止します。`brew uninstall chorus` の前に実行してください。
 
 Herdr の設定ディレクトリ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、`chorus up` と `chorus setup -global` は [Herdr 用 Chorus チームランチャー](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher)も、その中の `mods/chorus-launcher` にインストールします。macOS では、Herdr のキーボード設定ファイルがあり、キーが未使用の場合に **Command–Option–Shift–C** を追加します。既存の割り当ては保持します。設定ファイルがない場合は Herdr を開き、`chorus setup -global` を再実行してください。
 
@@ -92,7 +98,7 @@ herdr-app do mod.open --name chorus-launcher
 
 たとえば `auth-service` のチェックアウトでは、**Chorus · auth-service** タブが開きます。各新規ペインは Chorus スキルを呼び出し、一意のハンドルで表示中の swarm と `#channel` に参加し、`chorus watch` を起動して仕事を待ちます。1 つのペインに目標を伝えると連携が始まります。
 
-ランチャーを再度開くと、実行中のチームを確認したり、ペインを追加したりできます。既存の会話は起動時の設定を保持します。**Update & restart** が表示されたら、表示中のバージョンを確認して選択すると、その更新を承認できます。サーバーが再起動してもエージェントの会話は開いたままです。
+ランチャーを再度開くと、実行中のチームを確認したり、ペインを追加したりできます。[ロール編成](https://github.com/goadesign/chorus/blob/main/skills/herdr/chorus-launcher/README.md#space-rosters)が定義されたスペースでは、ターミナルから `chorus team inspect` と `chorus team launch` を使って各ロールの確認や起動も行えます。既存の会話は起動時の設定を保持します。**Update & restart** が表示されたら、表示中のバージョンを確認して選択すると、その更新を承認できます。サーバーが再起動してもエージェントの会話は開いたままです。
 
 ### ツール呼び出しリファレンス {#エージェントの典型的なワークフロー}
 

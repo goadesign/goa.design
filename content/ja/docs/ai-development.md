@@ -173,11 +173,20 @@ changes, checks performed, and any behavior still needing review.
 
 契約とセキュリティを確認するエージェント（`arch`）、Goa サービスを実装するエージェント（`api`）、並行テストを実行するエージェント（`qa`）など、複数の役割やモデルファミリーをまたいで作業する場合は、[Chorus](/ja/docs/3-ecosystem/chorus/)（`github.com/goadesign/chorus`）を使って共有ローカル MCP サーバー（`http://localhost:9440/mcp`）経由で各セッションを接続できます。
 
-Chorus と `chorus` スキルをインストールします：
+Chorus をインストールして起動します（コーディングエージェントに MCP と `chorus` スキルを登録します）：
+
+```bash
+brew install goadesign/tap/chorus && chorus up
+```
+
+Homebrew を使わない場合（`curl` または Node.js 18 以上の `npx`）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-npx skills add goadesign/chorus --skill chorus
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 各セッションのプロンプトでハンドルとチャネルを指定します：
@@ -186,7 +195,7 @@ npx skills add goadesign/chorus --skill chorus
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch -agent <handle> -mentions` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
+エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch <handle>` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
 
 ## プロジェクトで効果を測る
 

@@ -173,11 +173,20 @@ Añade el resultado deseado y los criterios de aceptación. La instrucción defi
 
 Cuando una tarea abarca varios roles o familias de modelos —por ejemplo, un agente revisando contratos y seguridad (`arch`), un segundo implementando el servicio Goa (`api`) y un tercero ejecutando pruebas concurrentes (`qa`)—, utiliza [Chorus](/es/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) para conectar sus sesiones a través de un servidor MCP local compartido (`http://localhost:9440/mcp`).
 
-Instala Chorus y la skill `chorus`:
+Instala e inicia Chorus (registra MCP y la skill `chorus` en tus agentes de programación):
+
+```bash
+brew install goadesign/tap/chorus && chorus up
+```
+
+O sin Homebrew (`curl` o `npx` con Node.js 18+):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-npx skills add goadesign/chorus --skill chorus
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 Indica a cada sesión su identificador y canal en tu instrucción:
@@ -186,7 +195,7 @@ Indica a cada sesión su identificador y canal en tu instrucción:
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-Los agentes se unen a `#channels`, intercambian mensajes directos `@agent`, reciben respuestas no leídas acumuladas en `send` y esperan en segundo plano mediante `chorus watch -agent <handle> -mentions` hasta que otro agente los menciona o les responde. Consulta la [guía de Chorus](/es/docs/3-ecosystem/chorus/) para la referencia completa de herramientas y arquitectura.
+Los agentes se unen a `#channels`, intercambian mensajes directos `@agent`, reciben respuestas no leídas acumuladas en `send` y esperan en segundo plano mediante `chorus watch <handle>` hasta que otro agente los menciona o les responde. Consulta la [guía de Chorus](/es/docs/3-ecosystem/chorus/) para la referencia completa de herramientas y arquitectura.
 
 ## Mide la ventaja
 

@@ -243,6 +243,9 @@ for (const width of [390, 1440]) {
       await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('brew install goadesign/tap/chorus && chorus up');
+      await page.getByRole('button', { name: 'Copy the npx command' }).click();
+      await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx @goadesign/chorus up');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.evaluate(() => {
         (document.activeElement as HTMLElement | null)?.blur?.();
@@ -274,6 +277,7 @@ test('localized Chorus pages, docs links, and Markdown are reachable', async ({ 
   expect(markdown.ok()).toBe(true);
   const mdText = await markdown.text();
   expect(mdText).toContain('brew install goadesign/tap/chorus');
+  expect(mdText).toContain('npx @goadesign/chorus up');
   expect(mdText).toContain('Invented task, real Chorus output.');
   expect(mdText).toContain('## How Chorus compares');
 });
@@ -366,9 +370,10 @@ test('interactive Chorus browser demo works across mobile/desktop, light/dark, S
   await page.locator('#swarm-select').selectOption('auth');
   await expect(page.locator('#active-title')).toHaveText('#auth');
 
-  await page.locator('#send-text').fill('@codex can you verify expiry status code?');
+  await page.locator('#send-text').fill('@codex can you verify expiry status code?\n\n| Case | Expected |\n| --- | --- |\n| Expired | 401 |');
   await page.locator('#btn-send').click();
   await expect(page.locator('#chat-sheet')).toContainText('can you verify expiry status code?');
+  await expect(page.locator('#message-stream .md-table-wrap table')).toContainText('401');
   await expect(page.locator('#chat-sheet')).toContainText('Acknowledged in', { timeout: 5000 });
 
   await page.locator('#demo-reset').focus();

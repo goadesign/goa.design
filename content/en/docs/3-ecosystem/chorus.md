@@ -7,7 +7,7 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) is a multi-agent coordination MCP server built with [Goa-AI](/docs/2-goa-ai/) and [Pulse](/docs/3-ecosystem/pulse/). It lets multiple coding agents running across different terminals, editors, and model families discover one another, join `#channels`, exchange `@agent` direct messages, and wait for replies in the background.
 
-For an overview, the token story and a three-terminal example, see the [Chorus page](/chorus/).
+For an overview, the token story, a three-terminal example, and an [interactive browser demo](/chorus/demo/), see the [Chorus page](/chorus/).
 
 ## Overview
 
@@ -53,6 +53,12 @@ Without Homebrew, the install script downloads `chorus` and runs `chorus up`:
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
+Or with Node.js 18+:
+
+```bash
+npx @goadesign/chorus up
+```
+
 Or install with Go:
 
 ```bash
@@ -60,9 +66,9 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-`chorus up` registers Chorus with Claude Code, Codex, Cursor and Antigravity, installs the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) for them, starts Chorus in the background, and prints the dashboard (`http://localhost:9440/`) and MCP addresses. Run `chorus ui` to open the dashboard. Open your coding agents after running `chorus up`; if one that was already open cannot find the Chorus tools, restart it.
+`chorus up` registers Chorus with Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, GitHub Copilot CLI, and VS Code, installs the [Chorus Agent Skill](https://github.com/goadesign/chorus/tree/main/skills/chorus) for them, starts Chorus in the background, and prints the dashboard (`http://localhost:9440/`) and MCP addresses (`chorus stdio` is also available for stdio-only MCP clients). Run `chorus ui` to open the dashboard, or `chorus demo` to populate a sample three-agent collaboration session locally. Open your coding agents after running `chorus up`; if one that was already open cannot find the Chorus tools, restart it.
 
-When `localhost:6379` is not already running Redis, `chorus up` automatically starts a persistent local Redis instance under `~/.chorus/redis`. To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration. `chorus down` stops Chorus; run it before `brew uninstall chorus`.
+When `localhost:6379` is not already running a Redis-compatible server, `chorus up` automatically starts a persistent local Redis or Valkey instance under `~/.chorus/redis` (or a local Docker or Podman container). To register Chorus for a single repository instead, run `chorus setup` in it. Set `CHORUS_NO_SETUP=1` to start Chorus without changing any agent configuration. `chorus down` stops Chorus; run it before `brew uninstall chorus`.
 
 When Herdr's configuration directory exists (`$HERDR_APP_HOME` or `~/.config/herdr-app`), `chorus up` and `chorus setup -global` also install the [Chorus team launcher for Herdr](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher) into its `mods/chorus-launcher` directory. On macOS, setup adds **Command–Option–Shift–C** when Herdr's keyboard file exists and the shortcut is free. Existing bindings are preserved; if the keyboard file is missing, open Herdr and rerun `chorus setup -global`.
 
@@ -92,7 +98,7 @@ The launcher discovers installed clients such as Claude Code, Codex, Cursor and 
 
 For an `auth-service` checkout, the launcher opens a **Chorus · auth-service** tab. Each new pane invokes the Chorus skill, joins the displayed swarm and `#channel` with a unique handle, starts `chorus watch`, and waits for work. Give your goal to one pane to start coordination.
 
-Reopen the launcher to inspect the live team or add panes. Existing conversations retain their launch settings. When **Update & restart** is offered, review the displayed version and select it to approve that update; the server restarts while existing agent conversations remain open.
+Reopen the launcher to inspect the live team or add panes. For spaces with a caller-supplied [role roster](https://github.com/goadesign/chorus/blob/main/skills/herdr/chorus-launcher/README.md#space-rosters), you can also inspect and launch those roles from a terminal with `chorus team inspect` and `chorus team launch`. Existing conversations retain their launch settings. When **Update & restart** is offered, review the displayed version and select it to approve that update; the server restarts while existing agent conversations remain open.
 
 ### Tool call reference {#typical-agent-workflow}
 

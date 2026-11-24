@@ -28,14 +28,21 @@
       <p class="skill-prompt-label">Homebrew</p>
       <div class="install-command">
         <code id="chorus-brew">brew install goadesign/tap/chorus &amp;&amp; chorus up</code>
-        <button type="button" class="copy-install" aria-label="{{ T "chorus_copy_brew" }}" data-copy-target="chorus-brew" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+        <button type="button" class="copy-install" command="--copy" commandfor="chorus-brew" aria-label="{{ T "chorus_copy_brew" }}" data-copy-target="chorus-brew" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
         </button>
       </div>
       <p class="skill-prompt-label chorus-install-alt">{{ T "chorus_install_curl" }}</p>
       <div class="install-command">
         <code id="chorus-curl">curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh</code>
-        <button type="button" class="copy-install" aria-label="{{ T "chorus_copy_curl" }}" data-copy-target="chorus-curl" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+        <button type="button" class="copy-install" command="--copy" commandfor="chorus-curl" aria-label="{{ T "chorus_copy_curl" }}" data-copy-target="chorus-curl" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="skill-prompt-label chorus-install-alt">{{ T "chorus_install_npx" }}</p>
+      <div class="install-command">
+        <code id="chorus-npx">npx @goadesign/chorus up</code>
+        <button type="button" class="copy-install" command="--copy" commandfor="chorus-npx" aria-label="{{ T "chorus_copy_npx" }}" data-copy-target="chorus-npx" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
         </button>
       </div>

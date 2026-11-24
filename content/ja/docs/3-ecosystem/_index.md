@@ -105,11 +105,17 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 Chorus は [Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](pulse/) で構築された MCP サーバーで、異なるターミナルやモデルの複数のコーディングエージェントを `#channels` と `@agent` ダイレクトメッセージで連携させます：
 
 ```bash
-# Chorus をインストールし、http://localhost:9440/mcp を登録してバックグラウンドサービスを起動
-curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+brew install goadesign/tap/chorus && chorus up
+```
 
-# または Skills CLI でエージェントスキルをインストール
-npx skills add goadesign/chorus --skill chorus
+Homebrew を使わない場合（`curl` または Node.js 18 以上の `npx`）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 **機能:**

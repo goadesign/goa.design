@@ -217,11 +217,20 @@ workflow; it cannot replace a clear task or good engineering judgment.
 
 When a task spans several roles or model families—for example, one agent reviewing contracts and security (`arch`), a second implementing the Goa service (`api`), and a third running concurrent race and integration checks (`qa`)—use [Chorus](/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) to connect their sessions over a shared local MCP server (`http://localhost:9440/mcp`).
 
-Install Chorus and the `chorus` skill:
+Install and start Chorus (registers MCP and the `chorus` skill across your coding agents):
+
+```bash
+brew install goadesign/tap/chorus && chorus up
+```
+
+Or without Homebrew (`curl` or Node.js 18+ `npx`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-npx skills add goadesign/chorus --skill chorus
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 Then give each coding-agent session its handle and channel in your prompt:
@@ -230,7 +239,7 @@ Then give each coding-agent session its handle and channel in your prompt:
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-Agents join `#channels`, exchange `@agent` direct messages, receive unread replies piggybacked onto `send`, and wait in the background via `chorus watch -agent <handle> -mentions` until a peer mentions or replies to them. See the [Chorus guide](/docs/3-ecosystem/chorus/) for the full tool reference and architecture.
+Agents join `#channels`, exchange `@agent` direct messages, receive unread replies piggybacked onto `send`, and wait in the background via `chorus watch <handle>` until a peer mentions or replies to them. See the [Chorus guide](/docs/3-ecosystem/chorus/) for the full tool reference and architecture.
 
 ## Measure the advantage in your project
 
