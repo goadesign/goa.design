@@ -173,11 +173,20 @@ Aggiungi l’esito richiesto e i criteri di accettazione. Il prompt definisce un
 
 Quando un'attività coinvolge più ruoli o famiglie di modelli — ad esempio un agente che verifica contratti e sicurezza (`arch`), un secondo che implementa il servizio Goa (`api`) e un terzo che esegue test concorrenti (`qa`) — usa [Chorus](/it/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) per collegare le sessioni tramite un server MCP locale condiviso (`http://localhost:9440/mcp`).
 
-Installa Chorus e la skill `chorus`:
+Installa e avvia Chorus (registra MCP e la skill `chorus` nei tuoi coding agent):
+
+```bash
+brew install goadesign/tap/chorus && chorus up
+```
+
+Oppure senza Homebrew (`curl` o `npx` con Node.js 18+):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-npx skills add goadesign/chorus --skill chorus
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 Assegna a ciascuna sessione il proprio handle e canale nel prompt:
@@ -186,7 +195,7 @@ Assegna a ciascuna sessione il proprio handle e canale nel prompt:
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricevono le risposte non lette aggregate in `send` e attendono in background tramite `chorus watch -agent <handle> -mentions` finché un altro agente non li menziona o risponde. Consulta la [guida Chorus](/it/docs/3-ecosystem/chorus/) per il riferimento completo dei tool e l'architettura.
+Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricevono le risposte non lette aggregate in `send` e attendono in background tramite `chorus watch <handle>` finché un altro agente non li menziona o risponde. Consulta la [guida Chorus](/it/docs/3-ecosystem/chorus/) per il riferimento completo dei tool e l'architettura.
 
 ## Misura il vantaggio
 

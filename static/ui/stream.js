@@ -12,16 +12,350 @@
     resetDisclosures,
   });
 
-  // Configured Marked lexer instance with GFM tables, strikethrough, autolinks,
-  // and line breaks enabled, and raw HTML/XML tag tokenizers disabled so raw
-  // tags (<script>, <details>, <agent>) remain inert plain text tokens.
+  // GFM alert callout labels keyed by lowercase alert kind.
+  const ALERT_LABELS = Object.freeze({
+    note: "Note",
+    tip: "Tip",
+    important: "Important",
+    warning: "Warning",
+    caution: "Caution",
+  });
+
+  // stepCodeFence updates a mutable { char, len } fenced-code-block tracker
+  // for one line (at any list/blockquote indentation, including list-bullet
+  // opening fences) and reports whether the line opens, closes, or lies inside
+  // a fenced block (``` or ~~~).
+  function stepCodeFence(line, fence) {
+    const pattern = fence.char
+      ? /^[ \t]*(?:>[ \t]*)*(`{3,}|~{3,})(.*)$/
+      : /^[ \t]*(?:>[ \t]*)*(?:(?:[*+-]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/;
+    const match = pattern.exec(line);
+    if (match) {
+      const marker = match[1];
+      if (!fence.char) {
+        if (marker[0] === "~" || !match[2].includes("`")) {
+          fence.char = marker[0];
+          fence.len = marker.length;
+          return true;
+        }
+      } else if (marker[0] === fence.char && marker.length >= fence.len && match[2].trim() === "") {
+        fence.char = "";
+        fence.len = 0;
+        return true;
+      }
+    }
+    return Boolean(fence.char);
+  }
+
+  // findClosingDetails scans rest line-by-line while skipping fenced code
+  // blocks, 4-space indented code blocks, backslash-escaped tags, and inline
+  // backtick spans to locate the matching </details> tag for an already-opened
+  // <details> block. Any inner <details...> tag increments nesting depth so
+  // attribute-bearing inner tags pair with their own </details> instead of
+  // closing the outer block.
+  function findClosingDetails(rest) {
+    let offset = 0;
+    let depth = 1;
+    const fence = { char: "", len: 0 };
+    const lines = rest.split("\n");
+    let prevBlank = true;
+    let inIndentedCode = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isBlank = line.trim() === "";
+      if (!fence.char) {
+        const isIndented = /^(?: {4}|\t)/.test(line);
+        if (isIndented && (prevBlank || inIndentedCode)) {
+          inIndentedCode = true;
+          prevBlank = false;
+          offset += line.length + 1;
+          continue;
+        }
+        if (!isBlank) inIndentedCode = false;
+      }
+      if (!stepCodeFence(line, fence) && !isBlank) {
+        const tagRe = /<details(?:\s[^>]*)?>|<\/details\s*>/gi;
+        const codeRanges = inlineCodeRanges(line);
+        let match;
+        while ((match = tagRe.exec(line)) !== null) {
+          if (insideRanges(match.index, codeRanges)) continue;
+          let slashes = 0;
+          for (let j = match.index - 1; j >= 0 && line[j] === "\\"; j--) slashes++;
+          if (slashes % 2 === 1) continue;
+          if (match[0].startsWith("</")) {
+            depth--;
+            if (depth === 0) return { index: offset + match.index, length: match[0].length };
+          } else {
+            depth++;
+          }
+        }
+      }
+      prevBlank = isBlank || (!fence.char && /<\/summary>\s*$/i.test(line));
+      offset += line.length + 1;
+    }
+    return null;
+  }
+
+  // inlineCodeRanges returns [start, end) ranges for balanced inline backtick
+  // spans on a single line so tag and pipe scanners leave code spans intact.
+  function inlineCodeRanges(line) {
+    const ranges = [];
+    let i = 0;
+    while (i < line.length) {
+      if (line[i] === "\\" && i + 1 < line.length) {
+        i += 2;
+        continue;
+      }
+      if (line[i] !== "`") {
+        i++;
+        continue;
+      }
+      let n = 1;
+      while (i + n < line.length && line[i + n] === "`") n++;
+      const openEnd = i + n;
+      let j = openEnd;
+      let closeStart = -1;
+      while (j < line.length) {
+        if (line[j] !== "`") {
+          j++;
+          continue;
+        }
+        let m = 1;
+        while (j + m < line.length && line[j + m] === "`") m++;
+        if (m === n) {
+          closeStart = j;
+          break;
+        }
+        j += m;
+      }
+      if (closeStart >= 0) {
+        ranges.push([i, closeStart + n]);
+        i = closeStart + n;
+      } else {
+        i = openEnd;
+      }
+    }
+    return ranges;
+  }
+
+  // insideRanges reports whether index falls inside any [start, end) range.
+  function insideRanges(index, ranges) {
+    for (const [start, end] of ranges) {
+      if (index >= start && index < end) return true;
+    }
+    return false;
+  }
+
+  // unescapeCellPipes removes one escaping backslash before "|" only when
+  // preceded by an odd number of backslashes so `a\|b` becomes `a|b`, while
+  // `a|b` and `a\\|b` remain unchanged.
+  function unescapeCellPipes(str) {
+    let out = "";
+    for (let i = 0; i < str.length; i++) {
+      if (str[i] === "|") {
+        let slashes = 0;
+        for (let j = out.length - 1; j >= 0 && out[j] === "\\"; j--) slashes++;
+        if (slashes % 2 === 1) out = out.slice(0, -1);
+      }
+      out += str[i];
+    }
+    return out;
+  }
+
+  // splitTableCells splits a GFM table row on unescaped "|" characters outside
+  // balanced inline backtick spans, trimming outer pipes and padding/truncating
+  // to count when specified.
+  function splitTableCells(row, count) {
+    const codeRanges = inlineCodeRanges(row);
+    const cells = [];
+    let start = 0;
+    for (let i = 0; i < row.length; i++) {
+      if (row[i] !== "|" || insideRanges(i, codeRanges)) continue;
+      let slashes = 0;
+      for (let j = i - 1; j >= 0 && row[j] === "\\"; j--) slashes++;
+      if (slashes % 2 === 1) continue;
+      cells.push(row.slice(start, i));
+      start = i + 1;
+    }
+    cells.push(row.slice(start));
+    if (cells.length > 0 && !cells[0].trim()) cells.shift();
+    if (cells.length > 0 && !cells.at(-1).trim()) cells.pop();
+    if (count) {
+      if (cells.length > count) cells.splice(count);
+      else while (cells.length < count) cells.push("");
+    }
+    return cells.map((cell) => unescapeCellPipes(cell.trim()));
+  }
+
+  // Configured Marked lexer instance with GFM tables (overridden to respect
+  // inline backtick spans during cell splitting), strikethrough, autolinks,
+  // and line breaks enabled; raw HTML/XML tag tokenizers disabled so arbitrary
+  // tags (<script>, <iframe>, <agent>) stay inert plain text; and narrow safe
+  // extensions for <br>, <kbd>/<sup>/<sub>/<mark>, <details>, and footnotes.
   const mdEngine = new globalThis.marked.Marked({
     gfm: true,
     breaks: true,
     tokenizer: {
       html() { return undefined; },
       tag() { return undefined; },
+      table(src) {
+        const cap = this.rules.block.table.exec(src);
+        if (!cap || !this.rules.other.tableDelimiter.test(cap[2])) return undefined;
+        const headers = splitTableCells(cap[1]);
+        const aligns = cap[2].replace(this.rules.other.tableAlignChars, "").split("|");
+        if (headers.length !== aligns.length) return undefined;
+        const rows = cap[3]?.trim()
+          ? cap[3].replace(this.rules.other.tableRowBlankLine, "").split("\n")
+          : [];
+        const token = {
+          type: "table",
+          raw: cap[0].replace(/\n+$/, ""),
+          header: [],
+          align: [],
+          rows: [],
+        };
+        for (const a of aligns) {
+          if (this.rules.other.tableAlignRight.test(a)) token.align.push("right");
+          else if (this.rules.other.tableAlignCenter.test(a)) token.align.push("center");
+          else if (this.rules.other.tableAlignLeft.test(a)) token.align.push("left");
+          else token.align.push(null);
+        }
+        for (let i = 0; i < headers.length; i++) {
+          token.header.push({
+            text: headers[i],
+            tokens: this.lexer.inline(headers[i]),
+            header: true,
+            align: token.align[i],
+          });
+        }
+        for (const row of rows) {
+          token.rows.push(splitTableCells(row, token.header.length).map((cell, idx) => ({
+            text: cell,
+            tokens: this.lexer.inline(cell),
+            header: false,
+            align: token.align[idx],
+          })));
+        }
+        return token;
+      },
     },
+  });
+  mdEngine.use({
+    extensions: [
+      {
+        name: "htmlBr",
+        level: "inline",
+        start(src) { return src.search(/<br\s*\/?>/i); },
+        tokenizer(src) {
+          const match = /^<br\s*\/?>/i.exec(src);
+          if (!match) return undefined;
+          return { type: "br", raw: match[0] };
+        },
+      },
+      {
+        name: "safeInlineTag",
+        level: "inline",
+        start(src) { return src.search(/<(kbd|sup|sub|mark)>/i); },
+        tokenizer(src) {
+          const match = /^<(kbd|sup|sub|mark)>((?:(?!<\1>|\n\n)[\s\S])*?)<\/\1>/i.exec(src);
+          if (!match) return undefined;
+          return {
+            type: match[1].toLowerCase(),
+            raw: match[0],
+            text: match[2],
+            tokens: this.lexer.inlineTokens(match[2]),
+          };
+        },
+      },
+      {
+        name: "footnoteRef",
+        level: "inline",
+        start(src) { return src.search(/\[\^[a-zA-Z0-9_-]{1,64}\](?!:)/); },
+        tokenizer(src) {
+          const match = /^\[\^([a-zA-Z0-9_-]{1,64})\](?!:)/.exec(src);
+          if (!match) return undefined;
+          return { type: "footnoteRef", raw: match[0], id: match[1] };
+        },
+      },
+      {
+        name: "footnoteDef",
+        level: "block",
+        start(src) { return src.search(/^ {0,3}\[\^[a-zA-Z0-9_-]{1,64}\]:/m); },
+        tokenizer(src) {
+          const match = /^ {0,3}\[\^([a-zA-Z0-9_-]{1,64})\]:[ \t]*([^\n]*)(?:\n|$)/.exec(src);
+          if (!match) return undefined;
+          let consumed = match[0].length;
+          const bodyLines = [match[2]];
+          const rest = src.slice(consumed);
+          const restLines = rest.split("\n");
+          let idx = 0;
+          while (idx < restLines.length) {
+            const ln = restLines[idx];
+            if (/^(?: {2,}|\t)/.test(ln)) {
+              bodyLines.push(ln.replace(/^(?: {1,4}|\t)/, ""));
+              consumed += ln.length + (idx + 1 < restLines.length ? 1 : 0);
+              idx++;
+            } else if (ln.trim() === "") {
+              let look = idx + 1;
+              while (look < restLines.length && restLines[look].trim() === "") look++;
+              if (look < restLines.length && /^(?: {2,}|\t)/.test(restLines[look])) {
+                while (idx < look) {
+                  bodyLines.push("");
+                  consumed += restLines[idx].length + 1;
+                  idx++;
+                }
+              } else {
+                break;
+              }
+            } else {
+              break;
+            }
+          }
+          const raw = src.slice(0, consumed);
+          const bodyText = bodyLines.join("\n").replace(/^(?:[ \t]*\n)+|\s+$/g, "");
+          const prevTop = this.lexer.state.top;
+          this.lexer.state.top = true;
+          const bodyTokens = bodyText ? this.lexer.blockTokens(bodyText) : [];
+          this.lexer.state.top = prevTop;
+          return {
+            type: "footnoteDef",
+            raw,
+            id: match[1],
+            text: bodyText,
+            tokens: bodyTokens,
+            rawTokens: this.lexer.inline(raw.replace(/\n+$/, "")),
+          };
+        },
+      },
+      {
+        name: "detailsBlock",
+        level: "block",
+        start(src) { return src.search(/^ {0,3}<details(?:\s+open(?:="(?:|open|true)")?)?\s*>/im); },
+        tokenizer(src) {
+          const openMatch = /^ {0,3}<details(\s+open(?:="(?:|open|true)")?)?\s*>[ \t]*\n?/i.exec(src);
+          if (!openMatch) return undefined;
+          const rest = src.slice(openMatch[0].length);
+          const close = findClosingDetails(rest);
+          if (!close) return undefined;
+          const inner = rest.slice(0, close.index);
+          const raw = src.slice(0, openMatch[0].length + close.index + close.length);
+          const sumMatch = /^\s*<summary>([\s\S]*?)<\/summary>[ \t]*\n?/i.exec(inner);
+          const summaryText = sumMatch ? sumMatch[1].trim() : "Details";
+          const bodyText = (sumMatch ? inner.slice(sumMatch[0].length) : inner).replace(/^(?:[ \t]*\n)+|\s+$/g, "");
+          const prevTop = this.lexer.state.top;
+          this.lexer.state.top = true;
+          const bodyTokens = bodyText ? this.lexer.blockTokens(bodyText) : [];
+          this.lexer.state.top = prevTop;
+          return {
+            type: "details",
+            raw,
+            open: Boolean(openMatch[1]),
+            summaryTokens: this.lexer.inline(summaryText || "Details"),
+            tokens: bodyTokens,
+          };
+        },
+      },
+    ],
   });
 
   // Single detached <textarea> used by decodeEntities to resolve standard
@@ -459,7 +793,8 @@
     }
     const pin = channel.pin;
     const key = `${state.activeSwarm}:${channel.name}`;
-    const previous = root.querySelector("details");
+    const previous = root.querySelector("details.pin-disclosure");
+    const prevOpenMdDetails = captureOpenMdDetails(root);
     const sameChannel = root.dataset.pinKey === key;
     if (!sameChannel) {
       root.dataset.pinMode = "fields";
@@ -480,25 +815,26 @@
     disclosure.append(summary);
 
     const clauses = pinClauses(pin.text);
+    const pinPrefix = `${key}:${pin.seq}`;
     const raw = element("pre", "pin-raw-text", pin.text);
-    const structured = renderPinStructured(clauses, key, actions);
+    const formatted = clauses.length > 0
+      ? renderPinStructured(clauses, pinPrefix, actions, prevOpenMdDetails)
+      : element("div", "pin-markdown-body message-body", formattedText(pin.text, `pin:${pinPrefix}:md`, actions, prevOpenMdDetails));
     const rawMode = sameChannel && root.dataset.pinMode === "raw";
-    raw.hidden = clauses.length > 0 && !rawMode;
-    structured.hidden = clauses.length === 0 || rawMode;
-    const body = element("div", "pin-body", structured, raw);
-    if (clauses.length > 0) {
-      const toggleBtn = element("button", "pin-raw-toggle", rawMode ? "Show structured view" : "Show original text");
-      toggleBtn.type = "button";
-      toggleBtn.dataset.focusKey = `pin-mode:${key}`;
-      toggleBtn.addEventListener("click", () => {
-        const showRaw = root.dataset.pinMode !== "raw";
-        root.dataset.pinMode = showRaw ? "raw" : "fields";
-        raw.hidden = !showRaw;
-        structured.hidden = showRaw;
-        toggleBtn.textContent = showRaw ? "Show structured view" : "Show original text";
-      });
-      body.append(toggleBtn);
-    }
+    raw.hidden = !rawMode;
+    formatted.hidden = rawMode;
+    const formattedLabel = clauses.length > 0 ? "Show structured view" : "Show formatted view";
+    const toggleBtn = element("button", "pin-raw-toggle", rawMode ? formattedLabel : "Show original text");
+    toggleBtn.type = "button";
+    toggleBtn.dataset.focusKey = `pin-mode:${key}`;
+    toggleBtn.addEventListener("click", () => {
+      const showRaw = root.dataset.pinMode !== "raw";
+      root.dataset.pinMode = showRaw ? "raw" : "fields";
+      raw.hidden = !showRaw;
+      formatted.hidden = showRaw;
+      toggleBtn.textContent = showRaw ? formattedLabel : "Show original text";
+    });
+    const body = element("div", "pin-body", formatted, raw, toggleBtn);
     disclosure.append(body);
 
     disclosure.addEventListener("toggle", () => {
@@ -529,18 +865,18 @@
   // renderPinStructured separates the documented fields for reading. Owners
   // remain authored text: known handles receive badges without inferred work
   // assignments, removed punctuation, or a new ownership grammar.
-  function renderPinStructured(clauses, pinKey = "pin", actions = null) {
+  function renderPinStructured(clauses, pinKey = "pin", actions = null, openMdDetails = null) {
     const container = element("div", "pin-structured");
     clauses.forEach((clause, idx) => {
       const kind = clause.key.toLowerCase();
       if (kind === "goal") {
         container.append(element("div", "pin-section",
           element("h3", "pin-section-label", "Goal"),
-          element("div", "pin-goal-block", formattedText(clause.value, `pin:${pinKey}:goal:${idx}`, actions))));
+          element("div", "pin-goal-block", formattedText(clause.value, `pin:${pinKey}:goal:${idx}`, actions, openMdDetails))));
       } else if (kind === "owners") {
         container.append(element("div", "pin-section",
           element("h3", "pin-section-label", "Owners"),
-          element("div", "pin-owner-text", formattedText(clause.value, `pin:${pinKey}:owners:${idx}`, actions))));
+          element("div", "pin-owner-text", formattedText(clause.value, `pin:${pinKey}:owners:${idx}`, actions, openMdDetails))));
       } else if (kind === "verify") {
         const copyBtn = actionButton("Copy command", `copy-verify:${idx}:${clause.value}`, async (ev) => {
           const btn = ev.currentTarget;
@@ -648,7 +984,7 @@
   // view and edit form.
   function cleanPinHeadline(text) {
     const goal = pinClauses(text).find((clause) => clause.key.toLowerCase() === "goal");
-    return stripInlineMarkdown(headline(goal?.value || text)).replace(/^\s*Goal\s*:\s*/i, "");
+    return stripInlineMarkdown(goal?.value || text).replace(/^\s*Goal\s*:\s*/i, "") || "Empty message";
   }
 
   // pinClauses recognizes complete labelled segments for display only. Any
@@ -784,12 +1120,23 @@
     return true;
   }
 
+  // captureOpenMdDetails snapshots the open state of Markdown <details> blocks
+  // inside root so live poll redraws preserve reader-toggled sections.
+  function captureOpenMdDetails(root) {
+    const map = new Map();
+    if (!root) return map;
+    for (const node of root.querySelectorAll("details.md-details[data-md-details-key]")) {
+      map.set(node.dataset.mdDetailsKey, Boolean(node.open));
+    }
+    return map;
+  }
+
   // captureScrollSnapshot records the scroll offset and visible reading rows
   // before any section in the scrollable stage replaces its DOM children.
   function captureScrollSnapshot(root, scrollEl) {
     if (!root || !scrollEl) return { oldTop: 0, hasOpenDisclosure: false, candidates: [] };
     const oldTop = scrollEl.scrollTop;
-    const hasOpenDisclosure = Boolean(root.querySelector("details[open]"));
+    const hasOpenDisclosure = Boolean(root.querySelector("details[open][data-disclosure-key]"));
     const rootTop = scrollEl.getBoundingClientRect().top;
     const rootBottom = scrollEl.getBoundingClientRect().bottom;
     const candidates = [...root.querySelectorAll("[data-disclosure-key]")]
@@ -863,7 +1210,7 @@
     if (state?.expandAllMessages) {
       delete root.dataset.expandAll;
     } else {
-      for (const d of root.querySelectorAll("details[open]")) d.open = false;
+      for (const d of root.querySelectorAll("details[open][data-disclosure-key]")) d.open = false;
     }
   }
 
@@ -873,6 +1220,7 @@
   function renderMessages(root, entries, targetEntries, state, actions) {
     const prevRenderedKeys = new Set([...root.querySelectorAll("details[data-disclosure-key]")].map((node) => node.dataset.disclosureKey));
     const openKeys = new Set([...root.querySelectorAll("details[open][data-disclosure-key]")].map((node) => node.dataset.disclosureKey));
+    const openMdDetails = captureOpenMdDetails(root);
     const expandAll = state.expandAllMessages === true;
     if (root.dataset.expandAll !== String(expandAll)) {
       openKeys.clear();
@@ -904,11 +1252,13 @@
         return lastB.sent_at_ms - lastA.sent_at_ms || lastB.seq - lastA.seq;
       });
       for (const group of groups) {
-        nodes.push(group.length === 1 ? messageDisclosure(group[0], state, actions, byTarget, openKeys) : threadDisclosure(group, state, actions, byTarget, openKeys));
+        nodes.push(group.length === 1
+          ? messageDisclosure(group[0], state, actions, byTarget, openKeys, openMdDetails)
+          : threadDisclosure(group, state, actions, byTarget, openKeys, openMdDetails));
       }
     } else {
       for (const entry of entries.toReversed()) {
-        nodes.push(messageDisclosure(entry, state, actions, byTarget, openKeys));
+        nodes.push(messageDisclosure(entry, state, actions, byTarget, openKeys, openMdDetails));
       }
     }
 
@@ -957,7 +1307,7 @@
   // threadDisclosure keeps the original root headline and the newest reply
   // visible in a consistent M3 list-row layout (32px avatar, primary headline,
   // supporting latest-reply line, and metadata).
-  function threadDisclosure(entries, state, actions, byTarget, openKeys) {
+  function threadDisclosure(entries, state, actions, byTarget, openKeys, openMdDetails = null) {
     const first = entries.rootEntry || entries[0];
     const last = entries.at(-1);
     const key = `thread:${coordinate(first)}`;
@@ -990,7 +1340,7 @@
     details.append(summary);
     details.addEventListener("toggle", () => {
       if (!details.open) {
-        for (const child of details.querySelectorAll("details[open]")) child.open = false;
+        for (const child of details.querySelectorAll("details[open][data-disclosure-key]")) child.open = false;
         if (entries.some((entry) => selected(entry, state))) actions.clearMessage();
         const detailsEl = document.getElementById("agent-details");
         if (detailsEl?.dataset?.returnFocusKey
@@ -1001,7 +1351,7 @@
     });
 
     const body = element("div", "thread-messages");
-    for (const entry of entries.toReversed()) body.append(messageDisclosure(entry, state, actions, byTarget, openKeys));
+    for (const entry of entries.toReversed()) body.append(messageDisclosure(entry, state, actions, byTarget, openKeys, openMdDetails));
     details.append(body);
     return details;
   }
@@ -1038,8 +1388,11 @@
 
   // copyTextButton creates a compact action button that copies text to the
   // clipboard with inline confirmation or accessible failure feedback.
-  function copyTextButton(text, focusKey) {
-    const btn = actionButton([svgIcon("copy", "icon icon-xs"), "Copy text"], focusKey, async (ev) => {
+  function copyTextButton(text, focusKey, label = "Copy text", className = "stream-action") {
+    const btn = element("button", className, svgIcon("copy", "icon icon-xs"), label);
+    btn.type = "button";
+    btn.dataset.focusKey = focusKey;
+    btn.addEventListener("click", async (ev) => {
       const target = ev.currentTarget;
       try {
         if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
@@ -1051,7 +1404,7 @@
         target.textContent = "Copy unavailable";
       }
       setTimeout(() => {
-        if (target.isConnected) target.replaceChildren(svgIcon("copy", "icon icon-xs"), "Copy text");
+        if (target.isConnected) target.replaceChildren(svgIcon("copy", "icon icon-xs"), label);
       }, 2000);
     });
     btn.setAttribute("aria-live", "polite");
@@ -1061,7 +1414,7 @@
   // messageDisclosure renders a single message row with a structured M3 detail
   // pane (quoted reply context, full formatted text, and Reply/Copy actions)
   // aligned to the author's content column.
-  function messageDisclosure(entry, state, actions, byTarget, openKeys) {
+  function messageDisclosure(entry, state, actions, byTarget, openKeys, openMdDetails = null) {
     const message = entry.message;
     const key = coordinate(entry);
     const fromHuman = isFromHumanMessage(message);
@@ -1106,7 +1459,7 @@
     const detailPane = element("div", "message-detail-pane");
     const parentQuote = renderParentContext(entry, state, actions, byTarget, key);
     if (parentQuote) detailPane.append(parentQuote);
-    detailPane.append(element("div", "message-body", formattedText(message.text, `msg:${key}`, actions)));
+    detailPane.append(element("div", "message-body", formattedText(message.text, `msg:${key}`, actions, openMdDetails)));
 
     const controls = element("div", "message-actions");
     if (entry.target.startsWith("#")) {
@@ -1201,21 +1554,96 @@
     );
   }
 
-  // lexMarkdownBlocks tokenizes text into CommonMark/GFM block and inline
-  // tokens using the configured Marked lexer instance.
-  function lexMarkdownBlocks(text) {
-    const str = String(text || "").replace(/\r\n|\r/g, "\n");
-    if (!str.trim()) return [];
-    return mdEngine.lexer(str);
+  // walkTokens traverses every nested block and inline token in a Marked token
+  // tree, invoking visit(tok) for each node. When skipFootnoteDefs is true,
+  // footnoteDef subtrees are skipped so only body references are inspected.
+  function walkTokens(tokens, visit, skipFootnoteDefs = false) {
+    for (const tok of tokens || []) {
+      if (!tok || typeof tok !== "object") continue;
+      visit(tok);
+      if (skipFootnoteDefs && tok.type === "footnoteDef") continue;
+      if (tok.type === "image") continue;
+      if (Array.isArray(tok.summaryTokens)) walkTokens(tok.summaryTokens, visit, skipFootnoteDefs);
+      if (Array.isArray(tok.tokens)) walkTokens(tok.tokens, visit, skipFootnoteDefs);
+      if (Array.isArray(tok.items)) {
+        for (const item of tok.items) {
+          if (Array.isArray(item.tokens)) walkTokens(item.tokens, visit, skipFootnoteDefs);
+        }
+      }
+      if (Array.isArray(tok.header)) {
+        for (const cell of tok.header) {
+          if (Array.isArray(cell.tokens)) walkTokens(cell.tokens, visit, skipFootnoteDefs);
+        }
+      }
+      if (Array.isArray(tok.rows)) {
+        for (const row of tok.rows) {
+          for (const cell of row) {
+            if (Array.isArray(cell.tokens)) walkTokens(cell.tokens, visit, skipFootnoteDefs);
+          }
+        }
+      }
+    }
+  }
+
+  // resolveFootnotes collects footnoteDef tokens from the lexed tree and
+  // numbers only definitions actually referenced by footnoteRef tokens (including
+  // cycle-safe chained references across footnote bodies) in document order.
+  function resolveFootnotes(tokens) {
+    const allDefs = new Map();
+    const refQueue = [];
+    walkTokens(tokens, (tok) => {
+      if (tok.type === "footnoteDef" && !allDefs.has(tok.id)) {
+        allDefs.set(tok.id, tok);
+      } else if (tok.type === "footnoteRef") {
+        refQueue.push(tok.id);
+      }
+    }, true);
+
+    const footnotes = new Map();
+    const orderedFootnotes = [];
+    if (allDefs.size === 0 || refQueue.length === 0) {
+      return { footnotes, orderedFootnotes };
+    }
+    for (let i = 0; i < refQueue.length; i++) {
+      const id = refQueue[i];
+      if (!allDefs.has(id) || footnotes.has(id)) continue;
+      const defTok = allDefs.get(id);
+      const entry = {
+        id,
+        num: orderedFootnotes.length + 1,
+        tokens: defTok.tokens || [],
+        title: "",
+      };
+      footnotes.set(id, entry);
+      orderedFootnotes.push(entry);
+      walkTokens(entry.tokens, (tok) => {
+        if (tok.type === "footnoteRef") refQueue.push(tok.id);
+      }, true);
+    }
+    for (const entry of orderedFootnotes) {
+      entry.title = tokensFirstLineText(entry.tokens, footnotes);
+    }
+    return { footnotes, orderedFootnotes };
+  }
+
+  // lexMarkdown tokenizes text with Marked and resolves referenced footnotes
+  // directly from the resulting token tree.
+  function lexMarkdown(text) {
+    const str = String(text || "");
+    if (!str.trim()) return { tokens: [], footnotes: new Map(), orderedFootnotes: [] };
+    const tokens = mdEngine.lexer(str);
+    const { footnotes, orderedFootnotes } = resolveFootnotes(tokens);
+    return { tokens, footnotes, orderedFootnotes };
   }
 
   // formattedText renders a full message body with CommonMark/GFM blocks,
   // clickable http/https links with stable focus keys, and clickable @handle
   // mention badges.
-  function formattedText(text, focusPrefix = "md", actions = null) {
+  function formattedText(text, focusPrefix = "md", actions = null, openDetails = null) {
     return renderMessageText(text, {
       allowLinks: true,
       focusPrefix,
+      openDetails,
       onInspect: (h, el) => (actions || window.ChorusUI?.actions)?.inspectAgent?.(h, el),
     });
   }
@@ -1225,26 +1653,53 @@
   // innerHTML. Raw HTML in messages stays inert text.
   function renderMessageText(text, opts = {}) {
     const allowLinks = opts.allowLinks !== false;
+    const { tokens, footnotes, orderedFootnotes } = lexMarkdown(text);
     const linkCtx = {
       prefix: opts.focusPrefix || "md",
       count: 0,
+      codeCount: 0,
+      detailsCount: 0,
+      openDetails: opts.openDetails instanceof Map ? opts.openDetails : null,
       onInspect: opts.onInspect || ((h, el) => window.ChorusUI?.actions?.inspectAgent?.(h, el)),
     };
+    const mdCtx = {
+      footnotes,
+      singleLine: false,
+    };
     const fragment = document.createDocumentFragment();
-    renderBlockTokens(fragment, lexMarkdownBlocks(text), allowLinks, linkCtx);
+    renderBlockTokens(fragment, tokens, allowLinks, linkCtx, mdCtx);
+    if (orderedFootnotes.length > 0 && allowLinks) {
+      fragment.append(renderFootnotesSection(orderedFootnotes, allowLinks, linkCtx, mdCtx));
+    }
     return fragment;
+  }
+
+  // renderFootnotesSection builds the numbered footnote list referenced in a
+  // message body from pre-lexed footnote token trees.
+  function renderFootnotesSection(orderedFootnotes, allowLinks, linkCtx, mdCtx) {
+    const section = element("section", "md-footnotes");
+    section.setAttribute("aria-label", "Footnotes");
+    const list = element("ol", "md-footnote-list");
+    for (const def of orderedFootnotes) {
+      const li = element("li", "md-footnote-item");
+      renderBlockTokens(li, def.tokens, allowLinks, linkCtx, mdCtx);
+      list.append(li);
+    }
+    section.append(list);
+    return section;
   }
 
   // formattedPreview renders the lineNumber-th nonblank logical line from the
   // Markdown lexer token tree so full messages and collapsed summaries share
   // one grammar: lines inside fenced (```, ~~~, ````) or indented code blocks
   // stay literal plain text, while prose lines render inline formatting
-  // (bold, italic, inline code, strikethrough, and @handle badges) without
-  // nested interactive <a> links.
+  // (bold, italic, inline code, strikethrough, and @handle badges) on a single
+  // line without nested interactive <a> links or <br> elements.
   function formattedPreview(text, lineNumber = 0) {
     const fragment = document.createDocumentFragment();
+    const { tokens, footnotes } = lexMarkdown(text);
     const lines = [];
-    collectPreviewLines(lexMarkdownBlocks(text), lines, lineNumber + 1);
+    collectPreviewLines(tokens, lines, lineNumber + 1, footnotes);
     const entry = lines[lineNumber];
     if (!entry) {
       if (lineNumber === 0) {
@@ -1256,60 +1711,185 @@
     if (entry.kind === "code") {
       fragment.append(document.createTextNode(entry.text));
     } else {
-      renderInlineTokens(fragment, entry.tokens, false, null);
+      renderInlineTokens(fragment, entry.tokens, false, null, { footnotes, singleLine: true });
     }
     return fragment;
   }
 
+  // extractAlert detects a GitHub-style alert callout ([!NOTE], [!TIP],
+  // [!IMPORTANT], [!WARNING], [!CAUTION]) at the start of a blockquote's token
+  // list. Returns { kind, bodyTokens } or null for ordinary blockquotes.
+  function extractAlert(tokens) {
+    const nonSpace = (tokens || []).filter((t) => t.type !== "space");
+    if (nonSpace.length === 0 || nonSpace[0].type !== "paragraph") return null;
+    const firstPara = nonSpace[0];
+    const inline = firstPara.tokens || [];
+    if (inline.length === 0) return null;
+    const head = inline[0];
+    if (head.type !== "text") return null;
+    const markerMatch = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*$/i.exec(head.text || "");
+    if (!markerMatch) return null;
+    if (inline.length > 1 && inline[1].type !== "br") return null;
+    const kind = markerMatch[1].toLowerCase();
+    const restInline = inline.length > 1 ? inline.slice(2) : [];
+    const bodyTokens = [];
+    if (restInline.length > 0) {
+      bodyTokens.push({ type: "paragraph", tokens: restInline });
+    }
+    bodyTokens.push(...nonSpace.slice(1));
+    return { kind, bodyTokens };
+  }
+
+  // renderCodeBlock builds a fenced/indented code block with an optional
+  // language header and Copy button (when interactive) plus diff line styling
+  // for diff/patch fences.
+  function renderCodeBlock(tok, allowLinks, linkCtx) {
+    const rawText = tok.text || "";
+    const langToken = String(tok.lang || "").trim().split(/\s+/)[0] || "";
+    const langLower = langToken.toLowerCase();
+    const codeEl = document.createElement("code");
+    if (tok.lang) codeEl.dataset.lang = tok.lang;
+
+    if (langLower === "diff" || langLower === "patch") {
+      const lines = rawText.split("\n");
+      lines.forEach((line, idx) => {
+        if (idx > 0) codeEl.append(document.createTextNode("\n"));
+        let cls = "";
+        if (line.startsWith("@@")) {
+          cls = "md-diff-line md-diff-hunk";
+        } else if (line.startsWith("+") && !line.startsWith("+++")) {
+          cls = "md-diff-line md-diff-add";
+        } else if (line.startsWith("-") && !line.startsWith("---")) {
+          cls = "md-diff-line md-diff-del";
+        }
+        if (cls) {
+          codeEl.append(element("span", cls, line));
+        } else {
+          codeEl.append(document.createTextNode(line));
+        }
+      });
+    } else {
+      codeEl.textContent = rawText;
+    }
+
+    const pre = element("pre", "message-code", codeEl);
+    const wrap = element("div", "md-code-block");
+    if (allowLinks) {
+      const header = element("div", "md-code-header");
+      header.append(element("span", "md-code-lang", langToken || "code"));
+      const idx = linkCtx ? linkCtx.codeCount++ : 0;
+      header.append(copyTextButton(rawText, `${linkCtx?.prefix || "md"}:code-copy:${idx}`, "Copy", "md-code-copy"));
+      wrap.append(header);
+    }
+    wrap.append(pre);
+    return wrap;
+  }
+
   // renderBlockTokens walks CommonMark/GFM block tokens and appends DOM nodes
   // to target.
-  function renderBlockTokens(target, tokens, allowLinks, linkCtx) {
+  function renderBlockTokens(target, tokens, allowLinks, linkCtx, mdCtx) {
     for (const tok of tokens || []) {
       if (tok.type === "space" || tok.type === "def") continue;
       switch (tok.type) {
+        case "footnoteDef": {
+          if (mdCtx?.footnotes?.has(tok.id)) break;
+          const p = element("p", "md-p");
+          if (Array.isArray(tok.rawTokens) && tok.rawTokens.length > 0) {
+            renderInlineTokens(p, tok.rawTokens, allowLinks, linkCtx, mdCtx);
+          } else {
+            appendTextWithMentions(p, decodeEntities(String(tok.raw || "").trim()), allowLinks ? linkCtx : null);
+          }
+          target.append(p);
+          break;
+        }
         case "hr":
           target.append(element("hr", "md-hr"));
           break;
         case "heading": {
-          const level = Math.min(4, Math.max(1, tok.depth || 1));
+          const level = Math.min(6, Math.max(1, tok.depth || 1));
           const h = element("h4", `md-heading md-h${level}`);
-          renderInlineTokens(h, tok.tokens || [], allowLinks, linkCtx);
+          renderInlineTokens(h, tok.tokens || [], allowLinks, linkCtx, mdCtx);
           target.append(h);
           break;
         }
-        case "code": {
-          const codeEl = element("code", "", tok.text || "");
-          if (tok.lang) codeEl.dataset.lang = tok.lang;
-          target.append(element("pre", "message-code", codeEl));
+        case "code":
+          target.append(renderCodeBlock(tok, allowLinks, linkCtx));
+          break;
+        case "blockquote": {
+          const alert = extractAlert(tok.tokens);
+          if (alert) {
+            const box = element("div", `md-alert md-alert-${alert.kind}`);
+            box.setAttribute("role", "note");
+            box.append(element("p", "md-alert-title", ALERT_LABELS[alert.kind]));
+            renderBlockTokens(box, alert.bodyTokens, allowLinks, linkCtx, mdCtx);
+            target.append(box);
+          } else {
+            const bq = element("blockquote", "md-quote");
+            renderBlockTokens(bq, tok.tokens || [], allowLinks, linkCtx, mdCtx);
+            target.append(bq);
+          }
           break;
         }
-        case "blockquote": {
-          const bq = element("blockquote", "md-quote");
-          renderBlockTokens(bq, tok.tokens || [], allowLinks, linkCtx);
-          target.append(bq);
+        case "details": {
+          if (!allowLinks) {
+            const box = element("div", "md-details");
+            const label = element("div", "md-details-summary");
+            renderInlineTokens(label, tok.summaryTokens || [], false, null, mdCtx);
+            box.append(label);
+            target.append(box);
+            break;
+          }
+          const idx = linkCtx ? linkCtx.detailsCount++ : 0;
+          const detailsKey = `${linkCtx?.prefix || "md"}:details:${idx}`;
+          const details = element("details", "md-details");
+          details.dataset.mdDetailsKey = detailsKey;
+          details.open = linkCtx?.openDetails?.has(detailsKey)
+            ? linkCtx.openDetails.get(detailsKey)
+            : Boolean(tok.open);
+          const summary = element("summary", "md-details-summary");
+          summary.dataset.focusKey = detailsKey;
+          renderInlineTokens(summary, tok.summaryTokens || [], false, linkCtx, mdCtx);
+          details.append(summary);
+          const body = element("div", "md-details-body");
+          renderBlockTokens(body, tok.tokens || [], allowLinks, linkCtx, mdCtx);
+          details.append(body);
+          details.addEventListener("toggle", () => {
+            if (details.open) return;
+            const detailsEl = document.getElementById("agent-details");
+            if (detailsEl?.dataset?.returnFocusKey
+              && [...details.querySelectorAll("[data-focus-key]")].some((n) => n.dataset.focusKey === detailsEl.dataset.returnFocusKey)) {
+              closeAgentDrawer(detailsEl, false);
+            }
+          });
+          target.append(details);
           break;
         }
         case "list": {
           const listEl = element(tok.ordered ? "ol" : "ul", "md-list");
           if (tok.ordered && tok.start && tok.start !== 1) listEl.start = Number(tok.start);
           for (const item of tok.items || []) {
-            listEl.append(renderListItem(item, allowLinks, linkCtx));
+            listEl.append(renderListItem(item, allowLinks, linkCtx, mdCtx));
           }
           target.append(listEl);
           break;
         }
         case "table": {
           const wrap = element("div", "md-table-wrap");
+          wrap.setAttribute("role", "region");
+          wrap.setAttribute("aria-label", "Table");
+          if (allowLinks) wrap.tabIndex = 0;
           const table = element("table", "md-table");
           if (Array.isArray(tok.header) && tok.header.length > 0) {
             const thead = document.createElement("thead");
             const tr = document.createElement("tr");
-            for (const cell of tok.header) {
+            tok.header.forEach((cell, idx) => {
               const th = document.createElement("th");
-              if (cell.align) th.style.textAlign = cell.align;
-              renderInlineTokens(th, cell.tokens || [], allowLinks, linkCtx);
+              th.scope = "col";
+              const align = cell.align || tok.align?.[idx];
+              if (align) th.style.textAlign = align;
+              renderInlineTokens(th, cell.tokens || [], allowLinks, linkCtx, mdCtx);
               tr.append(th);
-            }
+            });
             thead.append(tr);
             table.append(thead);
           }
@@ -1317,12 +1897,13 @@
             const tbody = document.createElement("tbody");
             for (const row of tok.rows) {
               const tr = document.createElement("tr");
-              for (const cell of row) {
+              row.forEach((cell, idx) => {
                 const td = document.createElement("td");
-                if (cell.align) td.style.textAlign = cell.align;
-                renderInlineTokens(td, cell.tokens || [], allowLinks, linkCtx);
+                const align = cell.align || tok.align?.[idx];
+                if (align) td.style.textAlign = align;
+                renderInlineTokens(td, cell.tokens || [], allowLinks, linkCtx, mdCtx);
                 tr.append(td);
-              }
+              });
               tbody.append(tr);
             }
             table.append(tbody);
@@ -1336,7 +1917,7 @@
         default: {
           const p = element("p", "md-p");
           if (Array.isArray(tok.tokens)) {
-            renderInlineTokens(p, tok.tokens, allowLinks, linkCtx);
+            renderInlineTokens(p, tok.tokens, allowLinks, linkCtx, mdCtx);
           } else {
             appendTextWithMentions(p, decodeEntities(tok.raw ?? tok.text ?? ""), allowLinks ? linkCtx : null);
           }
@@ -1350,7 +1931,7 @@
   // renderListItem builds a <li class="md-list-item"> from a Marked list_item
   // token, grouping tight inline text and task checkboxes into .md-li-text
   // while appending nested lists, code blocks, and loose paragraphs as blocks.
-  function renderListItem(item, allowLinks, linkCtx) {
+  function renderListItem(item, allowLinks, linkCtx, mdCtx) {
     const li = element("li", `md-list-item${item.task ? " is-task-item" : ""}`);
     let inlineSpan = null;
     for (const child of item.tokens || []) {
@@ -1369,13 +1950,13 @@
           inlineSpan.append(document.createElement("br"));
         }
         if (Array.isArray(child.tokens)) {
-          renderInlineTokens(inlineSpan, child.tokens, allowLinks, linkCtx);
+          renderInlineTokens(inlineSpan, child.tokens, allowLinks, linkCtx, mdCtx);
         } else {
           appendTextWithMentions(inlineSpan, decodeEntities(child.raw ?? child.text ?? ""), allowLinks ? linkCtx : null);
         }
       } else {
         inlineSpan = null;
-        renderBlockTokens(li, [child], allowLinks, linkCtx);
+        renderBlockTokens(li, [child], allowLinks, linkCtx, mdCtx);
       }
     }
     return li;
@@ -1395,7 +1976,7 @@
   // renderInlineTokens walks CommonMark/GFM inline tokens and appends DOM
   // elements and text nodes to target. Non-code text, link URLs, and titles
   // decode HTML character references before URL validation and text-node creation.
-  function renderInlineTokens(target, tokens, allowLinks, linkCtx) {
+  function renderInlineTokens(target, tokens, allowLinks, linkCtx, mdCtx = null) {
     for (const tok of tokens || []) {
       switch (tok.type) {
         case "codespan":
@@ -1403,24 +1984,33 @@
           break;
         case "strong": {
           const strong = document.createElement("strong");
-          renderInlineTokens(strong, tok.tokens || [], allowLinks, linkCtx);
+          renderInlineTokens(strong, tok.tokens || [], allowLinks, linkCtx, mdCtx);
           target.append(strong);
           break;
         }
         case "em": {
           const em = document.createElement("em");
-          renderInlineTokens(em, tok.tokens || [], allowLinks, linkCtx);
+          renderInlineTokens(em, tok.tokens || [], allowLinks, linkCtx, mdCtx);
           target.append(em);
           break;
         }
         case "del": {
           const del = document.createElement("del");
-          renderInlineTokens(del, tok.tokens || [], allowLinks, linkCtx);
+          renderInlineTokens(del, tok.tokens || [], allowLinks, linkCtx, mdCtx);
           target.append(del);
           break;
         }
+        case "kbd":
+        case "sup":
+        case "sub":
+        case "mark": {
+          const el = element(tok.type, `md-${tok.type}`);
+          renderInlineTokens(el, tok.tokens || [], allowLinks, linkCtx, mdCtx);
+          target.append(el);
+          break;
+        }
         case "br":
-          target.append(document.createElement("br"));
+          target.append(mdCtx?.singleLine ? document.createTextNode(" ") : document.createElement("br"));
           break;
         case "checkbox":
           target.append(taskCheckboxNode(tok.checked));
@@ -1428,6 +2018,17 @@
         case "escape":
           target.append(document.createTextNode(tok.text ?? ""));
           break;
+        case "footnoteRef": {
+          const def = mdCtx?.footnotes?.get(tok.id);
+          if (def) {
+            const sup = element("sup", "md-footnote-ref", `[${def.num}]`);
+            if (def.title) sup.title = def.title;
+            target.append(sup);
+          } else {
+            appendTextWithMentions(target, tok.raw ?? `[^${tok.id}]`, allowLinks ? linkCtx : null);
+          }
+          break;
+        }
         case "link": {
           const rawHref = tok.autolink ? (tok.href ?? "") : decodeEntities(tok.href ?? "");
           const href = allowLinks ? safeHttpUrl(rawHref) : "";
@@ -1442,25 +2043,41 @@
             if (tok.autolink) {
               a.append(document.createTextNode(tok.text ?? href));
             } else {
-              renderInlineTokens(a, tok.tokens || [], false, linkCtx);
+              renderInlineTokens(a, tok.tokens || [], false, linkCtx, mdCtx);
             }
             target.append(a);
           } else if (tok.autolink) {
             target.append(document.createTextNode(tok.raw ?? tok.text ?? ""));
           } else if (Array.isArray(tok.tokens) && tok.tokens.length > 0) {
-            renderInlineTokens(target, tok.tokens, false, linkCtx);
+            renderInlineTokens(target, tok.tokens, false, linkCtx, mdCtx);
           } else {
             appendTextWithMentions(target, decodeEntities(tok.text ?? ""), allowLinks ? linkCtx : null);
           }
           break;
         }
-        case "image":
-          appendTextWithMentions(target, decodeEntities(tok.text || tok.raw || ""), allowLinks ? linkCtx : null);
+        case "image": {
+          const rawHref = decodeEntities(tok.href ?? "");
+          const href = allowLinks ? safeHttpUrl(rawHref) : "";
+          const label = decodeEntities(tok.text || "");
+          if (href) {
+            const idx = linkCtx ? linkCtx.count++ : 0;
+            const a = element("a", "md-link md-image-link");
+            a.href = href;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.dataset.focusKey = `${linkCtx?.prefix || "md"}:link:${idx}`;
+            a.title = decodeEntities(tok.title || rawHref);
+            a.append(document.createTextNode(label || href));
+            target.append(a);
+          } else {
+            appendTextWithMentions(target, label || decodeEntities(tok.raw || ""), allowLinks ? linkCtx : null);
+          }
           break;
+        }
         case "text":
         default:
           if (Array.isArray(tok.tokens) && tok.tokens.length > 0) {
-            renderInlineTokens(target, tok.tokens, allowLinks, linkCtx);
+            renderInlineTokens(target, tok.tokens, allowLinks, linkCtx, mdCtx);
           } else {
             appendTextWithMentions(target, decodeEntities(tok.raw ?? tok.text ?? ""), allowLinks ? linkCtx : null);
           }
@@ -1472,13 +2089,22 @@
   // collectPreviewLines walks the block token tree and collects up to limit
   // logical preview lines, keeping fenced/indented code block lines as literal
   // code text and splitting prose inline tokens on line breaks.
-  function collectPreviewLines(tokens, out, limit) {
+  function collectPreviewLines(tokens, out, limit, footnotes = null) {
     for (const tok of tokens || []) {
       if (out.length >= limit) return;
       switch (tok.type) {
         case "space":
         case "def":
         case "hr":
+          break;
+        case "footnoteDef":
+          if (footnotes?.has(tok.id)) break;
+          if (Array.isArray(tok.rawTokens) && tok.rawTokens.length > 0) {
+            for (const lineTokens of splitInlineByLine(tok.rawTokens)) {
+              out.push({ kind: "inline", tokens: lineTokens });
+              if (out.length >= limit) return;
+            }
+          }
           break;
         case "code":
           for (const rawLine of String(tok.text || "").split("\n")) {
@@ -1488,12 +2114,44 @@
             if (out.length >= limit) return;
           }
           break;
-        case "blockquote":
-          collectPreviewLines(tok.tokens || [], out, limit);
+        case "blockquote": {
+          const alert = extractAlert(tok.tokens);
+          if (alert) {
+            const before = out.length;
+            collectPreviewLines(alert.bodyTokens, out, limit, footnotes);
+            const labelTok = {
+              type: "strong",
+              tokens: [{ type: "text", raw: `${ALERT_LABELS[alert.kind]}: `, text: `${ALERT_LABELS[alert.kind]}: ` }],
+            };
+            if (out.length > before) {
+              if (out[before].kind === "inline") {
+                out[before] = { kind: "inline", tokens: [labelTok, ...out[before].tokens] };
+              } else {
+                out[before] = {
+                  kind: "inline",
+                  tokens: [labelTok, { type: "escape", text: out[before].text }],
+                };
+              }
+            } else {
+              out.push({ kind: "inline", tokens: [{ type: "strong", tokens: [{ type: "text", raw: ALERT_LABELS[alert.kind], text: ALERT_LABELS[alert.kind] }] }] });
+            }
+          } else {
+            collectPreviewLines(tok.tokens || [], out, limit, footnotes);
+          }
+          break;
+        }
+        case "details":
+          if (Array.isArray(tok.summaryTokens) && tok.summaryTokens.length > 0) {
+            for (const lineTokens of splitInlineByLine(tok.summaryTokens)) {
+              out.push({ kind: "inline", tokens: lineTokens });
+              if (out.length >= limit) return;
+            }
+          }
+          collectPreviewLines(tok.tokens || [], out, limit, footnotes);
           break;
         case "list":
           for (const item of tok.items || []) {
-            collectPreviewLines(item.tokens || [], out, limit);
+            collectPreviewLines(item.tokens || [], out, limit, footnotes);
             if (out.length >= limit) return;
           }
           break;
@@ -1525,7 +2183,7 @@
   }
 
   // splitInlineByLine splits an array of inline tokens at { type: "br" }
-  // boundaries, preserving enclosing strong/em/del/link wrappers on each line.
+  // boundaries, preserving enclosing inline formatting wrappers on each line.
   function splitInlineByLine(tokens) {
     const lines = [[]];
     for (const tok of tokens || []) {
@@ -1533,7 +2191,8 @@
         lines.push([]);
       } else if (tok.type === "checkbox") {
         continue;
-      } else if ((tok.type === "strong" || tok.type === "em" || tok.type === "del" || tok.type === "link") && Array.isArray(tok.tokens)) {
+      } else if ((tok.type === "strong" || tok.type === "em" || tok.type === "del" || tok.type === "link"
+        || tok.type === "kbd" || tok.type === "sup" || tok.type === "sub" || tok.type === "mark") && Array.isArray(tok.tokens)) {
         const subLines = splitInlineByLine(tok.tokens);
         subLines.forEach((subTokens, idx) => {
           if (idx > 0) lines.push([]);
@@ -1570,19 +2229,26 @@
     }
   }
 
+  // tokensFirstLineText extracts unescaped plain text from the first logical
+  // preview line of an already-lexed block token tree.
+  function tokensFirstLineText(tokens, footnotes = null) {
+    const lines = [];
+    collectPreviewLines(tokens, lines, 1, footnotes);
+    if (lines.length === 0) return "";
+    const first = lines[0];
+    return first.kind === "code" ? first.text : inlineTokensToPlainText(first.tokens, footnotes).trim();
+  }
+
   // stripInlineMarkdown extracts plain text from the first logical line of
   // text using the Markdown lexer so collapsed pin headlines strip heading,
   // quote, list, link, emphasis, and multi-backtick code delimiters cleanly.
   function stripInlineMarkdown(text) {
-    const lines = [];
-    collectPreviewLines(lexMarkdownBlocks(text), lines, 1);
-    if (lines.length === 0) return String(text || "").trim();
-    const first = lines[0];
-    return first.kind === "code" ? first.text : inlineTokensToPlainText(first.tokens).trim();
+    const { tokens, footnotes } = lexMarkdown(text);
+    return tokensFirstLineText(tokens, footnotes) || String(text || "").trim();
   }
 
   // inlineTokensToPlainText flattens inline tokens to unescaped plain text.
-  function inlineTokensToPlainText(tokens) {
+  function inlineTokensToPlainText(tokens, footnotes = null) {
     let out = "";
     for (const tok of tokens || []) {
       if (tok.type === "codespan" || tok.type === "escape") {
@@ -1591,8 +2257,10 @@
         out += decodeEntities(tok.text ?? "");
       } else if (tok.type === "br") {
         out += " ";
+      } else if (tok.type === "footnoteRef") {
+        if (!footnotes?.has(tok.id)) out += tok.raw ?? `[^${tok.id}]`;
       } else if (Array.isArray(tok.tokens) && tok.tokens.length > 0) {
-        out += inlineTokensToPlainText(tok.tokens);
+        out += inlineTokensToPlainText(tok.tokens, footnotes);
       } else if (tok.type !== "checkbox") {
         out += decodeEntities(tok.raw ?? tok.text ?? "");
       }
@@ -1646,10 +2314,6 @@
       lastIndex = matchStart + 1 + handle.length;
     }
     if (lastIndex < text.length) target.append(document.createTextNode(text.slice(lastIndex)));
-  }
-
-  function headline(text) {
-    return text.split(/\r?\n/).find((line) => line.trim().length > 0)?.trim() || "Empty message";
   }
 
   function coordinate(entry) { return `${entry.target}:${entry.message.seq}`; }

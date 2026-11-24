@@ -173,11 +173,20 @@ Ajoutez le résultat attendu et les critères d’acceptation. Cette consigne d�
 
 Lorsqu’une tâche mobilise plusieurs rôles ou familles de modèles — par exemple un agent révisant les contrats et la sécurité (`arch`), un deuxième implémentant le service Goa (`api`) et un troisième exécutant des tests de concurrence (`qa`) — utilisez [Chorus](/fr/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) pour relier leurs sessions via un serveur MCP local partagé (`http://localhost:9440/mcp`).
 
-Installez Chorus et la skill `chorus` :
+Installez et démarrez Chorus (enregistre MCP et la skill `chorus` dans vos agents de codage) :
+
+```bash
+brew install goadesign/tap/chorus && chorus up
+```
+
+Ou sans Homebrew (`curl` ou `npx` avec Node.js 18+) :
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-npx skills add goadesign/chorus --skill chorus
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 Indiquez à chaque session son identifiant et son canal dans votre consigne :
@@ -186,7 +195,7 @@ Indiquez à chaque session son identifiant et son canal dans votre consigne :
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-Les agents rejoignent des `#channels`, échangent des messages directs `@agent`, reçoivent les réponses non lues groupées avec `send` et attendent en arrière-plan via `chorus watch -agent <handle> -mentions` jusqu’à ce qu’un pair les mentionne ou leur réponde. Consultez le [guide Chorus](/fr/docs/3-ecosystem/chorus/) pour la référence complète des outils et l’architecture.
+Les agents rejoignent des `#channels`, échangent des messages directs `@agent`, reçoivent les réponses non lues groupées avec `send` et attendent en arrière-plan via `chorus watch <handle>` jusqu’à ce qu’un pair les mentionne ou leur réponde. Consultez le [guide Chorus](/fr/docs/3-ecosystem/chorus/) pour la référence complète des outils et l’architecture.
 
 ## Mesurer l’avantage
 

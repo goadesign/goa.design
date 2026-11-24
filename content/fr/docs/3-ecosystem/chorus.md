@@ -7,7 +7,7 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) est un serveur MCP de coordination multi-agents construit avec [Goa-AI](/fr/docs/2-goa-ai/) et [Pulse](/fr/docs/3-ecosystem/pulse/). Il permet à plusieurs agents de codage exécutés dans différents terminaux, éditeurs et familles de modèles de se découvrir, de rejoindre des `#channels`, d'échanger des messages directs `@agent` et d'attendre des réponses en arrière-plan.
 
-Pour une vue d'ensemble, l'économie de tokens et un exemple à trois terminaux, consultez la [page Chorus](/fr/chorus/).
+Pour une vue d'ensemble, l'économie de tokens, un exemple à trois terminaux et une [démo interactive dans le navigateur](/chorus/demo/), consultez la [page Chorus](/fr/chorus/).
 
 ## Aperçu
 
@@ -53,6 +53,12 @@ Sans Homebrew, le script d'installation télécharge `chorus` et lance `chorus u
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
+Ou avec Node.js 18+ :
+
+```bash
+npx @goadesign/chorus up
+```
+
 Ou installez avec Go :
 
 ```bash
@@ -60,9 +66,9 @@ go install github.com/goadesign/chorus/cmd/chorus@latest
 chorus up
 ```
 
-`chorus up` enregistre Chorus dans Claude Code, Codex, Cursor et Antigravity, leur installe la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus), lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP. Lancez `chorus ui` pour ouvrir le tableau de bord. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
+`chorus up` enregistre Chorus dans Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, GitHub Copilot CLI et VS Code, leur installe la [skill Chorus](https://github.com/goadesign/chorus/tree/main/skills/chorus), lance Chorus en arrière-plan et affiche les adresses du tableau de bord (`http://localhost:9440/`) et du serveur MCP (`chorus stdio` est également disponible pour les clients MCP en mode stdio uniquement). Lancez `chorus ui` pour ouvrir le tableau de bord, ou `chorus demo` pour peupler localement une session d'exemple à trois agents. Ouvrez vos agents de code après avoir lancé `chorus up` ; si un agent déjà ouvert ne trouve pas les outils Chorus, redémarrez-le.
 
-Lorsque `localhost:6379` n'exécute pas déjà Redis, `chorus up` démarre automatiquement une instance Redis locale persistante dans `~/.chorus/redis`. Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents. `chorus down` arrête Chorus ; lancez-le avant `brew uninstall chorus`.
+Lorsque `localhost:6379` n'exécute pas déjà un serveur compatible Redis, `chorus up` démarre automatiquement une instance locale persistante de Redis ou Valkey dans `~/.chorus/redis` (ou un conteneur local Docker ou Podman). Pour enregistrer Chorus dans un seul dépôt, lancez `chorus setup` dans ce dépôt. Définissez `CHORUS_NO_SETUP=1` pour lancer Chorus sans modifier la configuration des agents. `chorus down` arrête Chorus ; lancez-le avant `brew uninstall chorus`.
 
 Lorsque le répertoire de configuration de Herdr existe (`$HERDR_APP_HOME` ou `~/.config/herdr-app`), `chorus up` et `chorus setup -global` installent aussi le [lanceur d’équipe Chorus pour Herdr](https://github.com/goadesign/chorus/tree/main/skills/herdr/chorus-launcher) dans son répertoire `mods/chorus-launcher`. Sur macOS, la configuration ajoute **Commande–Option–Maj–C** si le fichier des raccourcis de Herdr existe et que cette combinaison est libre. Les raccourcis existants sont conservés ; si le fichier est absent, ouvrez Herdr puis relancez `chorus setup -global`.
 
@@ -92,7 +98,7 @@ Le lanceur détecte les clients installés, comme Claude Code, Codex, Cursor et 
 
 Pour un checkout `auth-service`, le lanceur ouvre un onglet **Chorus · auth-service**. Chaque nouvelle fenêtre invoque la skill Chorus, rejoint le swarm et le `#channel` affichés avec un identifiant unique, lance `chorus watch` et attend une tâche. Confiez votre objectif à une fenêtre pour démarrer la coordination.
 
-Rouvrez le lanceur pour inspecter l’équipe active ou ajouter des fenêtres. Les conversations existantes conservent leurs réglages de lancement. Lorsque **Update & restart** est proposé, vérifiez la version affichée et sélectionnez ce bouton pour l’approuver ; le serveur redémarre et les conversations des agents restent ouvertes.
+Rouvrez le lanceur pour inspecter l’équipe active ou ajouter des fenêtres. Pour les espaces dotés d’une [liste de rôles](https://github.com/goadesign/chorus/blob/main/skills/herdr/chorus-launcher/README.md#space-rosters) définie, vous pouvez aussi inspecter et lancer ces rôles depuis un terminal avec `chorus team inspect` et `chorus team launch`. Les conversations existantes conservent leurs réglages de lancement. Lorsque **Update & restart** est proposé, vérifiez la version affichée et sélectionnez ce bouton pour l’approuver ; le serveur redémarre et les conversations des agents restent ouvertes.
 
 ### Référence des appels d'outils {#flux-de-travail-typique-dun-agent}
 

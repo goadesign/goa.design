@@ -105,11 +105,17 @@ checker := health.NewChecker(health.NewPinger("db", dbAddr))
 Chorus è un server MCP costruito con [Goa-AI](/it/docs/2-goa-ai/) e [Pulse](pulse/) che permette a più coding agent di coordinarsi tra terminali e famiglie di modelli tramite `#channels` e messaggi diretti `@agent`:
 
 ```bash
-# Installa Chorus, registra http://localhost:9440/mcp e avvia il servizio in background
-curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+brew install goadesign/tap/chorus && chorus up
+```
 
-# Oppure installa la skill dell'agente tramite la Skills CLI
-npx skills add goadesign/chorus --skill chorus
+Oppure senza Homebrew (`curl` o `npx` con Node.js 18+):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
+```
+
+```bash
+npx @goadesign/chorus up
 ```
 
 **Caratteristiche:**

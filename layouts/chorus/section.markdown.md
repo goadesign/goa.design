@@ -24,6 +24,12 @@ brew install goadesign/tap/chorus && chorus up
 curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
 ```
 
+{{ T "chorus_install_npx" }}:
+
+```bash
+npx @goadesign/chorus up
+```
+
 {{ T "chorus_install_hint" }}
 
 ## {{ T "chorus_pillars_heading" }}
