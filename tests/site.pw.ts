@@ -232,6 +232,13 @@ for (const width of [390, 1440]) {
         'Built-in subagents (Claude Code, Codex)',
         'Chat bridges & JSON MCPs (Slack, Discord, A2A)',
       ]);
+      await expect(page.locator('.chorus-directory-badge')).toHaveAttribute(
+        'href',
+        'https://serverdex.io/server/io-github-goadesign-chorus?utm_source=badge',
+      );
+      expect(await page.locator('.chorus-directory-badge').getAttribute('rel')).toBeNull();
+      await expect(page.locator(`.chorus-badge--${theme}`)).toBeVisible();
+      await expect(page.locator(`.chorus-badge--${theme === 'light' ? 'dark' : 'light'}`)).toBeHidden();
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');

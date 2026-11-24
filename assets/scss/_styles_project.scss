@@ -267,7 +267,13 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .chorus-session-review p { margin: 0; }
 .chorus-session-review p + p { margin-top: .85rem; }
 .chorus-install-alt { margin-top: 1rem; }
-.chorus-faq { padding-bottom: 88px; }
+.chorus-faq { padding-bottom: 40px; }
+.chorus-directory { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; padding-block: 0 56px; }
+.chorus-directory-badge { display: inline-flex; border-radius: 8px; }
+.chorus-badge--light { display: block; }
+.chorus-badge--dark { display: none; }
+[data-theme="dark"] .chorus-badge--light { display: none; }
+[data-theme="dark"] .chorus-badge--dark { display: block; }
 
 .td-footer { min-height: 0; padding: 2rem; background: var(--color-bg-alt); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); font-size: .85rem; }
 .td-footer .row { gap: 1.2rem; }
@@ -331,7 +337,8 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
   .chorus-hero { padding-block: 48px 32px; }
   .chorus-pillar-list, .chorus-terminals, .chorus-raw-grid { grid-template-columns: 1fr; }
   .chorus-example, .chorus-steps { padding-block: 24px 48px; }
-  .chorus-faq { padding-bottom: 48px; }
+  .chorus-faq { padding-bottom: 28px; }
+  .chorus-directory { padding-block: 0 40px; }
 }
 @media (max-width: 600px) {
   .chorus-pin { left: var(--mx); top: var(--my); width: 1.2rem; height: 1.2rem; font-size: .65rem; transform: translate(-50%, calc(-100% - 6px)); }
