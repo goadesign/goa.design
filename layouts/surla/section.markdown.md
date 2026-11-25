@@ -78,14 +78,15 @@ var _ = Story("Refunds", func() {
 
 ```go
 func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
-    out, err := h.requestRefund(ctx, "ORD-42", 5000)
+    // $50.00 subtotal + $4.50 tax
+    out, err := h.refund(ctx, 5000, 450)
     if err != nil {
         return eval.Result{}, err
     }
     return eval.Result{
         Checks: []eval.Check{
-            check("exact_50_gets_credit", out.Status == "instant_credit"),
-            check("credit_cents", out.CreditCents == 5000),
+            check("50_subtotal", out.Status == "credit"),
+            check("cents", out.Cents == 5450),
         },
     }, nil
 }
@@ -100,7 +101,7 @@ func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
 ```text
 1. generate_code(target: "candidate") -> writes agreed design/ and regenerates gen/
 2. check_project() -> builds and unit-tests inside a Linux container
-3. verify_change(change_id, request_revision, candidate_commit) -> runs accepted surla/tests-1 against candidate_commit
+3. verify_change(change_id, request_revision, candidate_commit) -> server runs accepted surla/tests-1 against candidate_commit
 ```
 
 {{ T "surla_builder_check" }}

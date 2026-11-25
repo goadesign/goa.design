@@ -28,12 +28,12 @@ Chaque aperçu, suite de tests acceptée, cible en direct, vérification et appr
 1. **`CP1` — Valider une Change Card** : Votre agent évalue une `Story` (`github.com/goadesign/surla/story/dsl`) dans son brouillon isolé et propose une Change Card en langage clair (résumé, questions produit ouvertes, exemples d'acceptation concrets et comportements préservés). Vous répondez et confirmez dans le navigateur.
 2. **`CP2` — Prévisualiser l'architecture** : Inspectez le diagramme C4 dérivé du design Goa et [Model](/fr/docs/3-ecosystem/model/) dans **Architecture** avant de lancer les agents.
 3. **`CP3` — Ajuster les prompts en direct (optionnel)** : Si le service inclut un agent Goa-AI et qu'une clé fournisseur ou passerelle modèle est configurée, le bâtisseur peut démarrer une copie en direct du commit candidat et tester des surcharges de prompts.
-4. **`CP4` — Vérification indépendante** : Surla recompile et contrôle le rapport `eval/` du rédacteur de tests sur `surla/tests-<n>` avant de l'accepter, puis compile le commit du bâtisseur et exécute la suite acceptée contre lui (avec un modèle scénarisé déterministe par défaut, sans clé API). Les scénarios holdout sont filtrés via `Report.ForBuilders()`.
+4. **`CP4` — Vérification indépendante** : Surla recompile et contrôle le rapport `eval/` du rédacteur de tests sur `surla/tests-<n>` avant de l'accepter, puis compile le commit du bâtisseur et exécute contre lui cette suite `eval/` acceptée (sans clé API requise sauf si la suite `eval/` appelle un fournisseur en direct ; l'exemple optionnel `-example` fournit un modèle scénarisé et le contrôle vierge n'utilise aucun modèle). Pour les évaluateurs configurés par l'opérateur, les noms, contrôles et journaux des scénarios holdout sont expurgés des rapports destinés au bâtisseur via `Report.ForBuilders()` (le rédacteur de tests ne peut pas soumettre de holdouts).
 5. **`CP5` — Approuver et fusionner** : Examinez le rapport dans **Approve**, enregistrez l'approbation et cliquez sur **Merge into current branch** pour fusionner les commits vérifiés sur votre branche locale.
 
 ## Installation
 
-Surla fonctionne sur macOS ou Linux et requiert **Go 1.27+**, **Git 2.45+** (`user.name` et `user.email` configurés) et **Docker** (utilisé par `check_project` pour compiler et tester le travail du bâtisseur dans des conteneurs Linux).
+Surla fonctionne sur macOS ou Linux et requiert **Go 1.27.3+**, **Git 2.45+** (`user.name` et `user.email` configurés) et **Docker** (utilisé par `check_project` pour compiler et tester le travail du bâtisseur dans des conteneurs Linux).
 
 Installez `surla` et enregistrez vos agents de programmation :
 
@@ -50,7 +50,7 @@ Lorsque le dossier de configuration Herdr (`$HERDR_APP_HOME` ou `~/.config/herdr
 
 ## Démarrer un projet : coquille vierge par défaut {#blank-and-example}
 
-Ouvrez un dossier vide ou un dépôt Goa existant dans votre agent et invoquez `/surla` (`$surla` dans Codex) :
+Ouvrez un dossier vide dans votre agent et invoquez `/surla` (`$surla` dans Codex) :
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
@@ -58,12 +58,14 @@ Ouvrez un dossier vide ou un dépôt Goa existant dans votre agent et invoquez `
 
 Dans un dossier non initialisé, votre agent appelle `init_project(dir: ".")` (en dérivant `example.com/<dossier>` si aucun chemin de module n'est fourni) :
 
-- **Coquille propre par défaut (`example: false`)** : `init_project` et `surla init` créent une structure neutre à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod`, sans endpoints ni agent de démonstration, et un scénario neutre de démarrage dans `eval/`. Votre première Change Card ne décrit que votre produit.
-- **Exemple exécutable sur demande (`example: true` / `-example`)** : Pour explorer d'abord un exemple complet d'agent Goa-AI, d'outil, de flux `Story` et de suite scénarisée, passez `-example` en CLI ou demandez `example: true` :
+- **Coquille propre par défaut (`worked_example: false`)** : `init_project` et `surla init` créent une structure neutre à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod`, sans endpoints ni agent de démonstration, et un scénario neutre de démarrage dans `eval/`. Votre première Change Card ne décrit que votre produit.
+- **Exemple exécutable sur demande (`worked_example: true` / `-example`)** : Pour explorer d'abord un exemple complet d'agent Goa-AI, d'outil, de flux `Story` et de suite scénarisée, passez `-example` en CLI ou demandez `worked_example: true` :
 
 ```bash
 surla init -dir ./demo-shop -module example.com/shop -example
 ```
+
+- **Dépôts Goa existants** : Adopter Surla dans un dépôt existant requiert un commit Git initial ainsi qu'une suite `<module>/eval` au format Surla ou des paramètres de vérification configurés (`surla verification set`) ; voir [What a build adds](https://github.com/goadesign/surla/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds).
 
 ---
 
@@ -85,7 +87,7 @@ Dans la vue **Build**, choisissez directement l'agent, le modèle et les permiss
 1. **DSL portable `Story` (`github.com/goadesign/surla/story/dsl`)** : Déclare acteurs, flux (`StartsWith`, `Step`, `Outcome`) et questions ouvertes `Question` en Go à côté de `design/`. Chaque flux terminé exige un test de scénario dans `eval/`.
 2. **Génération Goa et Goa-AI (`generate_code`)** : Matérialise le `design/` convenu dans `.surla-build` et exécute les générateurs épinglés sans modification manuelle de `gen/`.
 3. **Acceptation des tests (`internal/testwriter`)** : Régénère la table des tests Story, vérifie qu'aucun fichier hors de `eval/` n'a changé, compile le binaire de test et enregistre `surla/tests-<n>`.
-4. **Vérification et processus (`verify/candidate`)** : Les identifiants par rôle séparent les permissions MCP et masquent les scénarios holdout au bâtisseur ; l'évaluation du design, les binaires candidats et `eval/` tournent comme groupes de processus locaux sous votre compte utilisateur, tandis que `check_project` utilise des conteneurs Docker locaux.
+4. **Vérification et processus (`verify/candidate`)** : Les identifiants par rôle séparent les permissions MCP ; pour les évaluateurs configurés, les noms, contrôles et journaux des scénarios holdout sont expurgés des rapports destinés au bâtisseur (le rédacteur de tests ne peut pas soumettre de holdouts). Les agents, l'évaluation du design, les binaires candidats et `eval/` tournent comme processus locaux sous votre compte utilisateur et peuvent lire les fichiers locaux, tandis que `check_project` utilise des conteneurs Docker locaux.
 
 ## Voir aussi
 

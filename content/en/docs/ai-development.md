@@ -252,13 +252,13 @@ go install github.com/goadesign/surla/cmd/surla@latest
 surla up
 ```
 
-Then invoke `/surla` in an empty folder or an existing Goa repository:
+Then invoke `/surla` in an empty folder (or an existing Goa repository that already has a Git commit and either a `<module>/eval` suite or stored verification settings):
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`surla init -example` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Surla assigns the test writer (`.surla-tests`) and builder (`.surla-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Surla page](/surla/) and [Surla ecosystem guide](/docs/3-ecosystem/surla/).
+Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`surla init -example` or `worked_example: true` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Surla assigns the test writer (`.surla-tests`) and builder (`.surla-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Surla page](/surla/) and [Surla ecosystem guide](/docs/3-ecosystem/surla/).
 
 ## Measure the advantage in your project
 

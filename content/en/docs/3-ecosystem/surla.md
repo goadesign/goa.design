@@ -28,12 +28,12 @@ Every preview, accepted test suite, live target, verification run, and approval 
 1. **`CP1` — Agree on a Change Card**: Your coding agent evaluates a `Story` (`github.com/goadesign/surla/story/dsl`) in its isolated draft and proposes a plain-language Change Card containing a summary, open product questions, concrete acceptance examples, and preserved behaviors. You answer open questions and confirm the card on the browser page.
 2. **`CP2` — Preview Architecture**: Inspect the C4 architecture diagram derived from the agreed Goa and [Model](/docs/3-ecosystem/model/) design in **Architecture** before starting workers.
 3. **`CP3` — Tune Prompts Live (Optional)**: When your service includes a Goa-AI agent and you configure a model provider key or gateway, the builder can start a live copy of the candidate commit and test runtime prompt overrides before committing.
-4. **`CP4` — Independent Verification**: Surla compiles and validates the test writer's `eval/` report on branch `surla/tests-<n>` before accepting it, then builds the builder's candidate commit and runs the accepted suite against it (using a deterministic scripted model by default with no API key required). Holdout scenario details are filtered through `Report.ForBuilders()` so builders never see hidden checks.
+4. **`CP4` — Independent Verification**: Surla compiles and validates the test writer's `eval/` report on branch `surla/tests-<n>` before accepting it, then builds the builder's candidate commit and runs that accepted `eval/` suite against it (requiring no provider API key unless the project's `eval/` suite calls a live model; the opt-in `-example` starter supplies a scripted model, and the blank starter's readiness check uses no model). For operator-configured evaluators with holdouts, holdout scenario names, checks, and logs are redacted from builder-facing tool reports through `Report.ForBuilders()` (the test writer cannot submit holdouts).
 5. **`CP5` — Approve and Merge**: Review the scenario outcomes in **Approve**, record approval (with optional release-binary digest checks when promotion settings are configured), and click **Merge into current branch** to merge the verified candidate and test commits cleanly.
 
 ## Installation
 
-Surla runs on macOS or Linux and requires **Go 1.27+**, **Git 2.45+** (with `user.name` and `user.email` configured), and **Docker** (used by `check_project` to compile and unit-test builder work inside Linux containers).
+Surla runs on macOS or Linux and requires **Go 1.27.3+**, **Git 2.45+** (with `user.name` and `user.email` configured), and **Docker** (used by `check_project` to compile and unit-test builder work inside Linux containers).
 
 Install the `surla` binary and register your coding agents:
 
@@ -50,7 +50,7 @@ When Herdr's configuration folder (`$HERDR_APP_HOME` or `~/.config/herdr-app`) e
 
 ## Starting a Project: Clean Shell by Default {#blank-and-example}
 
-Open an empty folder or an existing Goa repository in your coding agent and invoke `/surla` (`$surla` in Codex):
+Open an empty folder in your coding agent and invoke `/surla` (`$surla` in Codex):
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
@@ -60,12 +60,14 @@ The first Surla MCP call starts or attaches to the project's Surla server, regis
 
 When the folder has not been initialized yet, your coding agent calls `init_project(dir: ".")` (deriving `example.com/<folder>` when you did not specify a Go module path):
 
-- **Blank shell by default (`example: false`)**: `init_project` and `surla init` create a clean, domain-neutral two-module Go layout (`<module>` and `<module>/eval`) with Goa, Goa-AI, Model, and Story pinned in `go.mod`, zero sample endpoints or demo agents, and a neutral startup readiness check in `eval/`. Your first Change Card describes only your product rather than explaining how to remove starter code.
-- **Opt-in runnable sample (`example: true` / `-example`)**: When you want to explore a complete Goa-AI agent, tool, `Story` flow, and scripted evaluation suite before writing your own service, pass `-example` on the CLI or ask your agent for `example: true`:
+- **Blank shell by default (`worked_example: false`)**: `init_project` and `surla init` create a clean, domain-neutral two-module Go layout (`<module>` and `<module>/eval`) with Goa, Goa-AI, Model, and Story pinned in `go.mod`, zero sample endpoints or demo agents, and a neutral startup readiness check in `eval/`. Your first Change Card describes only your product rather than explaining how to remove starter code.
+- **Opt-in runnable sample (`worked_example: true` / `-example`)**: When you want to explore a complete Goa-AI agent, tool, `Story` flow, and scripted evaluation suite before writing your own service, pass `-example` on the CLI or ask your agent for `worked_example: true`:
 
 ```bash
 surla init -dir ./demo-shop -module example.com/shop -example
 ```
+
+- **Existing Goa repositories**: Adopting Surla in an existing repository requires an initial Git commit and either a `<module>/eval` suite in Surla's layout or stored operator verification settings (`surla verification set`); see [What a build adds](https://github.com/goadesign/surla/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds).
 
 ---
 
@@ -89,7 +91,7 @@ If multiple coding-agent families are installed (for example Claude Code and Cod
 1. **Portable `Story` DSL (`github.com/goadesign/surla/story/dsl`)**: Declares actors, flows (`StartsWith`, `Step`, `Outcome`), and open `Question` items in Go alongside `design/`. A flow with a start, at least one outcome, and no open questions is *finished* and requires a matching scenario test in `eval/` during **Build**.
 2. **Goa & Goa-AI generation (`generate_code`)**: Surla materializes the agreed `design/` into `.surla-build` and runs the project's pinned Goa and Goa-AI generators atomically so neither agent hand-edits `gen/`.
 3. **Evaluator acceptance (`internal/testwriter`)**: Before tests count, Surla rewrites the generated Story test table, verifies nothing outside `eval/` was modified, compiles the test binary, and commits the accepted suite to `surla/tests-<n>`.
-4. **Candidate verification & process boundary (`verify/candidate`)**: Role credentials enforce who can propose, report tests, verify, or approve, and holdout scenarios remain hidden from builders. Design evaluation, candidate binaries, and `eval/` suites execute as ordinary local process groups with your user account's file and network access (they are separated by duty, not OS-sandboxed), while builder `check_project` runs inside local Docker containers with read-only module caches.
+4. **Candidate verification & process boundary (`verify/candidate`)**: Role credentials enforce who can propose, report tests, verify, or approve; for configured evaluators, holdout scenario names, checks, and logs are redacted from builder-facing tool reports (the test writer cannot submit holdouts). Agents, design evaluation, candidate binaries, and `eval/` suites execute as ordinary local process groups under your user account (separated by duty rather than OS-sandboxed, so local processes can read local files and access the network), while builder `check_project` runs inside local Docker containers with read-only module caches.
 
 ## See Also
 

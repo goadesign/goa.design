@@ -410,11 +410,17 @@ for (const width of [390, 1440]) {
         'Server-judged verification',
       ]);
       await expect(page.locator('.surla-lane')).toHaveCount(3);
+      await expect(page.locator('.surla-lane h3')).toHaveText([
+        'Guide · Story & Change Card',
+        'Test writer · .surla-tests',
+        'Builder · .surla-build',
+      ]);
       await expect(page.locator('.surla-lane').first().locator('pre')).toContainText('Story("Refunds"');
       const diagram = page.locator('.surla-diagram img');
       await diagram.scrollIntoViewIfNeeded();
       await expect(diagram).toBeVisible();
       await expect.poll(() => diagram.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+      await expect(page.getByRole('link', { name: 'Open full-size diagram', exact: true })).toHaveAttribute('href', '/images/diagrams/SurlaArchitecture.svg');
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Go install command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
@@ -453,7 +459,9 @@ test('localized Surla pages, ecosystem guides, and Markdown are reachable', asyn
       expect(response.status(), `${lang}${path}`).toBe(200);
       const mdText = await response.text();
       expect(mdText).toContain('github.com/goadesign/surla/cmd/surla@latest');
-      expect(mdText).toContain('-example');
+      expect(mdText).toContain('1.27.3');
+      expect(mdText).toContain('worked_example: true');
+      expect(mdText).not.toContain('`example: true`');
       if (path.startsWith('docs/')) {
         expect(mdText).toContain('{#blank-and-example}');
         expect(mdText).toContain('{#herdr}');

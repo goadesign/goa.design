@@ -292,7 +292,9 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .surla-lane__outcome p { margin: 0; }
 .surla-lane__check { display: block; margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--color-border-subtle); font-weight: 600; color: var(--color-text-heading); }
 .surla-diagram { margin: 0; padding: 1.5rem; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 12px; }
-.surla-diagram img { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+.surla-diagram__scroll { background: #f8fafc; border: 1px solid var(--color-border-subtle); border-radius: 8px; padding: .85rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.surla-diagram__scroll img { display: block; width: 100%; min-width: 720px; height: auto; margin-inline: auto; }
+.td-content img[src$="SurlaArchitecture.svg"] { background: #f8fafc; border: 1px solid var(--color-border-subtle); border-radius: 10px; padding: .85rem; }
 .surla-diagram figcaption { margin-top: 1rem; color: var(--color-text-muted); font-size: .86rem; text-align: center; }
 .surla-modes { padding-block: 72px 24px; }
 .surla-faq { padding-bottom: 64px; }

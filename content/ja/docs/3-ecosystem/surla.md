@@ -28,12 +28,12 @@ llm_optimized: true
 1. **`CP1` — Change Card で合意する**: エージェントは隔離されたドラフトで `Story`（`github.com/goadesign/surla/story/dsl`）を評価し、要約・未決の仕様質問・具体的な受け入れ例・維持する挙動を平易な言葉でまとめた Change Card を提案します。ブラウザ画面で質問に答えて確定します。
 2. **`CP2` — アーキテクチャを確認する**: ワーカーを動かす前に、合意した Goa と [Model](/ja/docs/3-ecosystem/model/) 設計から生成された C4 図を **Architecture** で確認します。
 3. **`CP3` — ライブターゲットでプロンプトを調整する（任意）**: サービスが Goa-AI エージェントを持ち、プロバイダーキーまたはモデルゲートウェイを設定している場合、実装者は候補コミットのライブコピーを起動してプロンプト文言を試せます。
-4. **`CP4` — 独立した検証**: Surla はテスト作成者の `eval/` レポートを再ビルド・検査して `surla/tests-<n>` として受理したあと、実装者の候補コミットをビルドして受理済みスイートを実行します（デフォルトでは API キー不要のスクリプトモデルを使用）。ホールドアウトシナリオの詳細は `Report.ForBuilders()` で除外され、実装者には公開されません。
+4. **`CP4` — 独立した検証**: Surla はテスト作成者の `eval/` レポートを再ビルド・検査して `surla/tests-<n>` として受理したあと、実装者の候補コミットをビルドして受理済み `eval/` スイートを実行します（`eval/` スイートがライブプロバイダーを呼ばない限り API キーは不要。`-example` サンプルはスクリプトモデルを同梱し、空シェルの初期チェックはモデルを使用しません）。オペレーター設定の評価スイートでは、ホールドアウトのシナリオ名・判定・ログが `Report.ForBuilders()` によって実装者向けツール結果から除外されます（テスト作成者はホールドアウトを提出できません）。
 5. **`CP5` — 承認してマージする**: **Approve** でシナリオ結果を確認して承認を記録し、**Merge into current branch** を押して検証済みの実装コミットとテストコミットをローカルブランチへマージします。
 
 ## インストール
 
-Surla は macOS または Linux で動作し、**Go 1.27 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内でビルド・単体テストを実行するために使用）を必要とします。
+Surla は macOS または Linux で動作し、**Go 1.27.3 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内でビルド・単体テストを実行するために使用）を必要とします。
 
 `surla` バイナリをインストールし、コーディングエージェントを登録します：
 
@@ -50,7 +50,7 @@ Herdr の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`�
 
 ## プロジェクトの開始：デフォルトでクリーンな構成 {#blank-and-example}
 
-空のフォルダまたは既存の Goa リポジトリをコーディングエージェントで開き、`/surla`（Codex では `$surla`）を実行します：
+空のフォルダをコーディングエージェントで開き、`/surla`（Codex では `$surla`）を実行します：
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
@@ -58,12 +58,14 @@ Herdr の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`�
 
 未初期化のフォルダでは、エージェントが `init_project(dir: ".")` を呼び出します（モジュールパス未指定時はフォルダ名から `example.com/<folder>` を導出）：
 
-- **デフォルトはクリーンな空シェル（`example: false`）**: `init_project` と `surla init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定したドメイン中立の 2 モジュール構成（`<module>` と `<module>/eval`）を作成します。不要なサンプルエンドポイントやデモエージェントは含まれず、最初の Change Card にはあなたのプロダクトだけが記述されます。
-- **動作するサンプルの明示指定（`example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すか `example: true` を指定します：
+- **デフォルトはクリーンな空シェル（`worked_example: false`）**: `init_project` と `surla init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定したドメイン中立の 2 モジュール構成（`<module>` と `<module>/eval`）を作成します。不要なサンプルエンドポイントやデモエージェントは含まれず、最初の Change Card にはあなたのプロダクトだけが記述されます。
+- **動作するサンプルの明示指定（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すか `worked_example: true` を指定します：
 
 ```bash
 surla init -dir ./demo-shop -module example.com/shop -example
 ```
+
+- **既存の Goa リポジトリ**: 既存のリポジトリで Surla を使うには、初期 Git コミットに加えて、Surla 形式の `<module>/eval` スイートまたは保存済みの検証設定（`surla verification set`）が必要です。詳しくは [What a build adds](https://github.com/goadesign/surla/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds) を参照してください。
 
 ---
 
@@ -85,7 +87,7 @@ surla init -dir ./demo-shop -module example.com/shop -example
 1. **ポータブルな `Story` DSL（`github.com/goadesign/surla/story/dsl`）**: `design/` と並べてアクター、フロー（`StartsWith`、`Step`、`Outcome`）、未決の `Question` を Go で記述します。完了したフローごとに `eval/` のシナリオテストが必須となります。
 2. **Goa / Goa-AI コード生成（`generate_code`）**: 合意済みの `design/` を `.surla-build` に反映し、固定バージョンのジェネレーターを実行するため、`gen/` の手編集は発生しません。
 3. **テストの検査と受理（`internal/testwriter`）**: Story テスト表を再生成し、`eval/` 以外が変更されていないことを確認してテストバイナリをコンパイルし、`surla/tests-<n>` に記録します。
-4. **候補検証とプロセス境界（`verify/candidate`）**: ロール別の資格情報で MCP 権限を分離し、ホールドアウトシナリオを実装者から隠します。設計評価・候補バイナリ・`eval/` スイートは現在のユーザー権限の通常プロセスグループとして動作し、実装者の `check_project` はローカルの Docker コンテナ内で実行されます。
+4. **候補検証とプロセス境界（`verify/candidate`）**: ロール別の資格情報で MCP 権限を分離し、オペレーター設定の評価スイートではホールドアウトのシナリオ名・判定・ログを実装者向けツール結果から除外します（テスト作成者はホールドアウトを提出できません）。エージェント・設計評価・候補バイナリ・`eval/` スイートは現在のユーザー権限の通常プロセスグループとして動作しローカルファイルを読み取れます。実装者の `check_project` はローカルの Docker コンテナ内で実行されます。
 
 ## 関連リンク
 

@@ -76,7 +76,7 @@ import . "github.com/goadesign/surla/story/dsl"
 var _ = Story("Refunds", func() {
   Actor("customer", "Customer")
   Flow("instant-credit", "Within limit", func() {
-    StartsWith("ask", "customer", "Asks <= $50")
+    StartsWith("ask", "customer", "Asks $50 refund")
     Outcome("paid", "customer", "Instant credit")
   })
 })</code></pre>
@@ -98,13 +98,14 @@ var _ = Story("Refunds", func() {
 func (h *Hooks) InstantCredit(
   ctx context.Context,
 ) (eval.Result, error) {
-  out, err := h.refund(ctx, "ORD-42", 5000)
+  // $50.00 subtotal + $4.50 tax
+  out, err := h.refund(ctx, 5000, 450)
   if err != nil {
     return eval.Result{}, err
   }
   return eval.Result{Checks: []eval.Check{
-    check("status", out.Status == "credit"),
-    check("cents", out.Cents == 5000),
+    check("50_subtotal", out.Status == "credit"),
+    check("cents", out.Cents == 5450),
   }}, nil
 }</code></pre>
         </div>
@@ -126,7 +127,7 @@ func (h *Hooks) InstantCredit(
    → builds and tests in a Linux container
 
 3. verify_change(change_id, rev, commit)
-   → runs surla/tests-1 against commit</code></pre>
+   → server runs surla/tests-1 on commit</code></pre>
         </div>
         <div class="surla-lane__outcome">
           <p>{{ T "surla_builder_check" | markdownify }}</p>
@@ -139,8 +140,10 @@ func (h *Hooks) InstantCredit(
     <div class="site-width">
       <div class="section-intro"><h2 id="surla-arch-title">{{ T "surla_arch_heading" }}</h2><p>{{ T "surla_arch_intro" | markdownify }}</p></div>
       <figure class="surla-diagram">
-        <img src="{{ "images/diagrams/SurlaArchitecture.svg" | relURL }}" alt="{{ T "surla_arch_alt" }}" loading="lazy" decoding="async">
-        <figcaption>{{ T "surla_arch_caption" }} <a href="{{ $docs }}">{{ T "surla_docs_cta" }}</a></figcaption>
+        <div class="surla-diagram__scroll">
+          <img src="{{ "images/diagrams/SurlaArchitecture.svg" | relURL }}" alt="{{ T "surla_arch_alt" }}" width="1741" height="946" loading="lazy" decoding="async">
+        </div>
+        <figcaption>{{ T "surla_arch_caption" }} <a href="{{ "images/diagrams/SurlaArchitecture.svg" | relURL }}" target="_blank" rel="noopener">{{ T "surla_arch_fullsize" }}</a> · <a href="{{ $docs }}">{{ T "surla_docs_cta" }}</a></figcaption>
       </figure>
     </div>
   </section>

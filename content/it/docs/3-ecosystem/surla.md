@@ -28,12 +28,12 @@ Ogni anteprima, suite di test accettata, live target, esecuzione di verifica e a
 1. **`CP1` — Confermare una Change Card**: L'agente valuta una `Story` (`github.com/goadesign/surla/story/dsl`) nella propria bozza isolata e propone una Change Card in linguaggio chiaro (riepilogo, domande di prodotto aperte, esempi concreti di accettazione e comportamenti preservati). Rispondi e confermi nel browser.
 2. **`CP2` — Anteprima dell'architettura**: Ispeziona il diagramma C4 derivato dal design Goa e [Model](/it/docs/3-ecosystem/model/) in **Architecture** prima di avviare i worker.
 3. **`CP3` — Provare i prompt dal vivo (opzionale)**: Se il servizio include un agente Goa-AI e configuri una chiave provider o un model gateway, il builder può avviare una copia live del commit candidato e provare override dei prompt prima del commit.
-4. **`CP4` — Verifica indipendente**: Surla ricompila e controlla il report `eval/` del test writer sul branch `surla/tests-<n>` prima di accettarlo, poi compila il commit del builder ed esegue contro di esso la suite accettata (con un modello scriptato deterministico per impostazione predefinita, senza chiave API). Gli scenari holdout vengono filtrati tramite `Report.ForBuilders()`.
+4. **`CP4` — Verifica indipendente**: Surla ricompila e controlla il report `eval/` del test writer sul branch `surla/tests-<n>` prima di accettarlo, poi compila il commit del builder ed esegue contro di esso quella suite `eval/` accettata (senza richiedere chiavi API a meno che la suite `eval/` non chiami un provider live; l'esempio opzionale `-example` fornisce un modello scriptato e il controllo iniziale a vuoto non usa modelli). Per i valutatori configurati dall'operatore, nomi, controlli e log degli scenari holdout sono omessi dai report destinati al builder tramite `Report.ForBuilders()` (il test writer non può inviare holdout).
 5. **`CP5` — Approvare e fare merge**: Esamina i risultati in **Approve**, registra l'approvazione e premi **Merge into current branch** per unire i commit verificati nel tuo branch locale.
 
 ## Installazione
 
-Surla funziona su macOS o Linux e richiede **Go 1.27+**, **Git 2.45+** (con `user.name` e `user.email` configurati) e **Docker** (usato da `check_project` per compilare e testare il lavoro del builder in container Linux).
+Surla funziona su macOS o Linux e richiede **Go 1.27.3+**, **Git 2.45+** (con `user.name` e `user.email` configurati) e **Docker** (usato da `check_project` per compilare e testare il lavoro del builder in container Linux).
 
 Installa il binario `surla` e registra i tuoi coding agent:
 
@@ -50,7 +50,7 @@ Quando esiste la cartella di configurazione di Herdr (`$HERDR_APP_HOME` o `~/.co
 
 ## Avviare un progetto: guscio pulito per impostazione predefinita {#blank-and-example}
 
-Apri una cartella vuota o un repository Goa esistente nel tuo agente e invoca `/surla` (`$surla` in Codex):
+Apri una cartella vuota nel tuo agente e invoca `/surla` (`$surla` in Codex):
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
@@ -58,12 +58,14 @@ Apri una cartella vuota o un repository Goa esistente nel tuo agente e invoca `/
 
 In una cartella non ancora inizializzata, l'agente chiama `init_project(dir: ".")` (ricavando `example.com/<cartella>` se non hai indicato un module path):
 
-- **Guscio pulito predefinito (`example: false`)**: `init_project` e `surla init` creano una struttura neutrale a due moduli Go (`<module>` e `<module>/eval`) con Goa, Goa-AI, Model e Story fissati in `go.mod`, zero endpoint o agenti demo e uno scenario neutrale di avvio in `eval/`. La prima Change Card descrive solo il tuo prodotto.
-- **Esempio eseguibile opzionale (`example: true` / `-example`)**: Se vuoi esplorare prima un esempio completo con agente Goa-AI, tool, flusso `Story` e suite scriptata, passa `-example` da CLI o chiedi `example: true`:
+- **Guscio pulito predefinito (`worked_example: false`)**: `init_project` e `surla init` creano una struttura neutrale a due moduli Go (`<module>` e `<module>/eval`) con Goa, Goa-AI, Model e Story fissati in `go.mod`, zero endpoint o agenti demo e uno scenario neutrale di avvio in `eval/`. La prima Change Card descrive solo il tuo prodotto.
+- **Esempio eseguibile opzionale (`worked_example: true` / `-example`)**: Se vuoi esplorare prima un esempio completo con agente Goa-AI, tool, flusso `Story` e suite scriptata, passa `-example` da CLI o chiedi `worked_example: true`:
 
 ```bash
 surla init -dir ./demo-shop -module example.com/shop -example
 ```
+
+- **Repository Goa esistenti**: Adottare Surla in un repository esistente richiede un commit Git iniziale e una suite `<module>/eval` nel formato Surla oppure impostazioni di verifica salvate (`surla verification set`); vedi [What a build adds](https://github.com/goadesign/surla/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds).
 
 ---
 
@@ -85,7 +87,7 @@ Nella vista **Build** scegli inline coding agent, modello e permessi per ciascun
 1. **DSL portabile `Story` (`github.com/goadesign/surla/story/dsl`)**: Dichiara attori, flussi (`StartsWith`, `Step`, `Outcome`) e domande aperte `Question` in Go accanto a `design/`. Ogni flusso completato richiede un test di scenario in `eval/`.
 2. **Generazione Goa e Goa-AI (`generate_code`)**: Scrive il `design/` concordato in `.surla-build` ed esegue i generatori fissati senza modifiche manuali a `gen/`.
 3. **Accettazione dei test (`internal/testwriter`)**: Rigenera la tabella dei test Story, verifica che nulla fuori da `eval/` sia cambiato, compila il binario di test e registra `surla/tests-<n>`.
-4. **Verifica e processi (`verify/candidate`)**: Le credenziali per ruolo separano i permessi MCP e nascondono gli scenari holdout al builder; valutazione del design, binari candidati ed `eval/` girano come gruppi di processi locali con il tuo utente, mentre `check_project` usa container Docker locali.
+4. **Verifica e processi (`verify/candidate`)**: Le credenziali per ruolo separano i permessi MCP; per i valutatori configurati, nomi, controlli e log degli scenari holdout vengono omessi dai report destinati al builder (il test writer non può inviare holdout). Agenti, valutazione del design, binari candidati ed `eval/` girano come normali processi locali con il tuo utente e possono leggere i file locali, mentre `check_project` usa container Docker locali.
 
 ## Vedi anche
 

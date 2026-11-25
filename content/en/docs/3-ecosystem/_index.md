@@ -139,7 +139,7 @@ surla up
 **Features:**
 - `/surla` (`$surla` in Codex) skill with plain-language Change Cards (`CP1`) and C4 architecture previews (`CP2`), starting new folders from a clean, domain-neutral Go and `eval/` shell by default (`surla init -example` for a runnable sample)
 - Separate `.surla-tests` and `.surla-build` Git working copies so the agent writing tests never writes the implementation
-- Server-checked `eval/` test acceptance, deterministic scripted-model verification (`CP4`), and optional live prompt tuning (`CP3`)
+- Server-checked `eval/` test acceptance, independent candidate verification (`CP4`), and optional live prompt tuning (`CP3`)
 - Side-by-side worker panes in Herdr with Chorus, or standalone background CLI workers, ending in one-click browser **Approve** and **Merge** (`CP5`)
 
 **Learn more:** [Surla Documentation](surla/)

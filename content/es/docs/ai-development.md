@@ -206,13 +206,13 @@ go install github.com/goadesign/surla/cmd/surla@latest
 surla up
 ```
 
-Después invoca `/surla` (`$surla` en Codex) en una carpeta vacía o en un repositorio Goa existente:
+Después invoca `/surla` (`$surla` en Codex) en una carpeta vacía (o en un repositorio Goa con un commit Git y suite `<module>/eval` o ajustes de verificación guardados):
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-En carpetas vacías, Surla crea de forma predeterminada una estructura limpia y neutral de Go y `eval/` (`surla init -example` incluye un ejemplo ejecutable), abre la Change Card en el navegador, asigna al autor de pruebas (`.surla-tests`) y al constructor (`.surla-build`) copias separadas y verifica el commit antes de permitir fusionarlo en tu rama local. Consulta la [página de Surla](/es/surla/) y la [guía de Surla](/es/docs/3-ecosystem/surla/).
+En carpetas vacías, Surla crea de forma predeterminada una estructura limpia y neutral de Go y `eval/` (`surla init -example` o `worked_example: true` incluye un ejemplo ejecutable), abre la Change Card en el navegador, asigna al autor de pruebas (`.surla-tests`) y al constructor (`.surla-build`) copias separadas y verifica el commit antes de permitir fusionarlo en tu rama local. Consulta la [página de Surla](/es/surla/) y la [guía de Surla](/es/docs/3-ecosystem/surla/).
 
 ## Mide la ventaja
 

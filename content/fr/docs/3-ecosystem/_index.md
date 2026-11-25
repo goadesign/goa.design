@@ -139,7 +139,7 @@ surla up
 **Caractéristiques:**
 - Skill `/surla` (`$surla` dans Codex) avec Change Cards en langage clair (`CP1`), aperçu C4 (`CP2`) et coquille Go / `eval/` vierge par défaut (`surla init -example` pour un exemple complet)
 - Copies de travail Git séparées (`.surla-tests` et `.surla-build`) afin que l'agent qui écrit les tests n'écrive pas l'implémentation
-- Validation serveur des suites `eval/`, vérification déterministe sur modèle scénarisé (`CP4`) et ajustement optionnel des prompts en direct (`CP3`)
+- Validation serveur des suites `eval/`, vérification indépendante du candidat (`CP4`) et ajustement optionnel des prompts en direct (`CP3`)
 - Fenêtres côte à côte dans Herdr avec Chorus, ou travailleurs CLI en arrière-plan, jusqu'aux actions **Approve** et **Merge** dans le navigateur (`CP5`)
 
 **En savoir plus:** [Documentation Surla](surla/)

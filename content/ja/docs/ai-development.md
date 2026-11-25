@@ -206,13 +206,13 @@ go install github.com/goadesign/surla/cmd/surla@latest
 surla up
 ```
 
-空のフォルダまたは既存の Goa リポジトリで `/surla`（Codex では `$surla`）を実行します：
+空のフォルダ（または初期 Git コミットと `<module>/eval` スイートもしくは検証設定がある既存の Goa リポジトリ）で `/surla`（Codex では `$surla`）を実行します：
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `surla init -example`）、ブラウザで Change Card を確定すると `.surla-tests` と `.surla-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Surla ページ](/ja/surla/)と [Surla ガイド](/ja/docs/3-ecosystem/surla/)を参照してください。
+空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `surla init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.surla-tests` と `.surla-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Surla ページ](/ja/surla/)と [Surla ガイド](/ja/docs/3-ecosystem/surla/)を参照してください。
 
 ## プロジェクトで効果を測る
 

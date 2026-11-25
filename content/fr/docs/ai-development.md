@@ -206,13 +206,13 @@ go install github.com/goadesign/surla/cmd/surla@latest
 surla up
 ```
 
-Invoquez ensuite `/surla` (`$surla` dans Codex) dans un dossier vide ou un dépôt Goa existant :
+Invoquez ensuite `/surla` (`$surla` dans Codex) dans un dossier vide (ou un dépôt Goa disposant d’un commit Git et d’une suite `<module>/eval` ou de paramètres de vérification) :
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-Dans un dossier vide, Surla initialise par défaut une coquille Go et `eval/` propre et neutre (`surla init -example` ajoute un exemple exécutable), présente la Change Card dans le navigateur, sépare `.surla-tests` et `.surla-build`, puis vérifie le commit avant la fusion sur votre branche locale. Consultez la [page Surla](/fr/surla/) et le [guide Surla](/fr/docs/3-ecosystem/surla/).
+Dans un dossier vide, Surla initialise par défaut une coquille Go et `eval/` propre et neutre (`surla init -example` ou `worked_example: true` ajoute un exemple exécutable), présente la Change Card dans le navigateur, sépare `.surla-tests` et `.surla-build`, puis vérifie le commit avant la fusion sur votre branche locale. Consultez la [page Surla](/fr/surla/) et le [guide Surla](/fr/docs/3-ecosystem/surla/).
 
 ## Mesurer l’avantage
 

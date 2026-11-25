@@ -7,15 +7,18 @@ import . "goa.design/model/dsl"
 // CSS variables: --mdl-<tag>-bg, --mdl-<tag>-color
 const (
 	// Element backgrounds
-	colorPrimary = "#5bc0eb" // goa.design brand blue - services, components
-	colorStore   = "#9d89e8" // Purple - data stores
-	colorQueue   = "#00cec9" // Teal - queues/streams
+	colorPrimary       = "#5bc0eb" // goa.design brand blue - services, components
+	colorStore         = "#9d89e8" // Purple - data stores
+	colorQueue         = "#00cec9" // Teal - queues/streams
+	colorSurlaNode     = "#1e4da8" // High-contrast blue (7.58:1 with white)
+	colorSurlaVerifier = "#0f766e" // High-contrast teal (5.47:1 with white)
 
 	// Text colors
 	colorWhite = "#ffffff"
 
 	// Relationship colors
-	colorGray = "#757575" // Muted gray - arrows
+	colorGray     = "#757575" // Muted gray - arrows
+	colorSurlaRel = "#334155" // High-contrast slate (10.9:1 on light canvas)
 )
 
 // ApplyGoaStyles applies the standard Goa documentation styles.
@@ -62,6 +65,25 @@ func ApplyGoaStyles() {
 		})
 		RelationshipStyle("async", func() {
 			Color(colorGray)
+			Thickness(2)
+			Dashed()
+		})
+
+		// Surla high-contrast process/container styles (WCAG AA+)
+		ElementStyle("surla", func() {
+			Background(colorSurlaNode)
+			Color(colorWhite)
+		})
+		ElementStyle("surla-verifier", func() {
+			Background(colorSurlaVerifier)
+			Color(colorWhite)
+		})
+		RelationshipStyle("surla-sync", func() {
+			Color(colorSurlaRel)
+			Thickness(2)
+		})
+		RelationshipStyle("surla-async", func() {
+			Color(colorSurlaRel)
 			Thickness(2)
 			Dashed()
 		})

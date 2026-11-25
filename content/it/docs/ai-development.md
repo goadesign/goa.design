@@ -206,13 +206,13 @@ go install github.com/goadesign/surla/cmd/surla@latest
 surla up
 ```
 
-Invoca poi `/surla` (`$surla` in Codex) in una cartella vuota o in un repository Goa esistente:
+Invoca poi `/surla` (`$surla` in Codex) in una cartella vuota (o in un repository Goa con un commit Git e una suite `<module>/eval` o impostazioni di verifica salvate):
 
 ```text
 /surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-In una cartella vuota, Surla crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`surla init -example` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.surla-tests` e `.surla-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Surla](/it/surla/) e la [guida Surla](/it/docs/3-ecosystem/surla/).
+In una cartella vuota, Surla crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`surla init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.surla-tests` e `.surla-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Surla](/it/surla/) e la [guida Surla](/it/docs/3-ecosystem/surla/).
 
 ## Misura il vantaggio
 
