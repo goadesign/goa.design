@@ -19,6 +19,7 @@ Goa のエコシステムには、サービス開発やエージェントシス�
 | [Pulse](pulse/) | 分散イベント | イベントストリーミング、ワーカープール、レプリケートマップ |
 | [Clue](clue/) | 観測可能性 | トレーシング、ロギング、メトリクス、ヘルスチェック |
 | [Chorus](chorus/) | マルチエージェント連携 | 共有 `#channels`、`@agent` DM、サーバー保持ウォーターマーク、`chorus watch` CLI |
+| [Surla](surla/) | 契約駆動制御プレーンと検証 | `Story` と Change Card、テスト作成と実装の分離、`eval/` 検証、ブラウザからのマージ |
 
 ## Model — コードとしてのアーキテクチャ図
 
@@ -126,6 +127,23 @@ npx @goadesign/chorus up
 
 **詳しくは:** [Chorus Documentation](chorus/)
 
+## Surla — 契約駆動のマルチエージェント制御プレーン
+
+Surla は 1 つのコンパイル済み [Goa](/ja/docs/1-goa/) / [Goa-AI](/ja/docs/2-goa-ai/) 設計のもとでコーディングエージェントを guide・test writer・builder の役割に分け、受理された `eval/` スイートで候補コミットを検証し、承認された変更をブラウザからマージします：
+
+```bash
+go install github.com/goadesign/surla/cmd/surla@latest
+surla up
+```
+
+**機能:**
+- 平易な言葉の Change Card（`CP1`）と C4 アーキテクチャ確認（`CP2`）を備える `/surla`（Codex では `$surla`）スキル。新規フォルダはデフォルトでクリーンな Go / `eval/` 構成を作成（サンプル付きは `surla init -example`）
+- テスト作成者が実装を書き換えないよう分離された Git 作業コピー（`.surla-tests` と `.surla-build`）
+- サーバー検査による `eval/` スイート受理、スクリプトモデルによる決定論的な検証（`CP4`）、ライブプロンプト調整（`CP3`）
+- Herdr + Chorus の並列ペイン、または単体のバックグラウンド CLI ワーカーから、ブラウザでのワンクリック **Approve**・**Merge**（`CP5`）まで対応
+
+**詳しくは:** [Surla Documentation](surla/)
+
 ## ドキュメントガイド
 
 | ガイド | 説明 | ~トークン |
@@ -134,8 +152,9 @@ npx @goadesign/chorus up
 | [Pulse](pulse/) | ストリーミング、ワーカープール、レプリケートマップ | ~2,200 |
 | [Clue](clue/) | ロギング、トレーシング、メトリクス、ヘルスチェック | ~2,800 |
 | [Chorus](chorus/) | マルチエージェント MCP 連携、CLI、Goa-AI + Pulse アーキテクチャ | ~1,100 |
+| [Surla](surla/) | 契約駆動マルチエージェント開発、Story フロー、独立検証、ブラウザマージ | ~1,400 |
 
-**セクション合計:** ~8,600 tokens
+**セクション合計:** ~10,000 tokens
 
 ## はじめに
 
@@ -145,6 +164,7 @@ npx @goadesign/chorus up
 - **イベント駆動システムを構築している？** → [Pulse](pulse/)
 - **Goa サービスに観測可能性を追加したい？** → [Clue](clue/)
 - **複数のコーディングエージェントを連携させたい？** → [Chorus](chorus/)
+- **テスト作成と実装の役割を分けてサービスを構築・検証したい？** → [Surla](surla/)
 
 いずれも `go get` / `go install` で取得できます：
 
@@ -153,4 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
+go install github.com/goadesign/surla/cmd/surla@latest
 ```

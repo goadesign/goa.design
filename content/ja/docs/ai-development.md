@@ -197,6 +197,23 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch <handle>` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
 
+## Surla でテスト作成と検証を分離する {#build-and-verify-with-surla}
+
+あるコーディングエージェントに受け入れテストを書かせ、別のコーディングエージェントに実装を書かせ、合意済み契約に対するサーバー検証を通過してからマージしたい場合は、[Surla](/ja/docs/3-ecosystem/surla/)（`github.com/goadesign/surla`）を使います：
+
+```bash
+go install github.com/goadesign/surla/cmd/surla@latest
+surla up
+```
+
+空のフォルダまたは既存の Goa リポジトリで `/surla`（Codex では `$surla`）を実行します：
+
+```text
+/surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+```
+
+空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `surla init -example`）、ブラウザで Change Card を確定すると `.surla-tests` と `.surla-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Surla ページ](/ja/surla/)と [Surla ガイド](/ja/docs/3-ecosystem/surla/)を参照してください。
+
 ## プロジェクトで効果を測る
 
 同じタスク、受け入れ条件、モデル、初期コードを使い、複数回比較します。入力・出力トークン、経過時間、生成とテストの時間、手作業の修正、レビュー、動作上の不具合を記録し、準備と失敗した試行も含めます。生成行数はジェネレーターが行う仕事を示すもので、トークン削減や生産性のベンチマークではありません。

@@ -1,0 +1,166 @@
+{{- /*
+  The Surla landing page (/surla/ in every language). Copy comes from the
+  surla_* keys in i18n/*.yaml; code excerpts match github.com/goadesign/surla
+  and github.com/goadesign/surla/story/dsl.
+*/ -}}
+{{ define "main" }}
+{{- $docs := relref . "/docs/3-ecosystem/surla/" -}}
+<div class="goa-home chorus-page surla-page">
+  <section class="home-hero chorus-hero surla-hero site-width" aria-labelledby="surla-title">
+    <div class="hero-copy">
+      <h1 id="surla-title">{{ T "surla_heading" }} <span>{{ T "surla_heading_second" }}</span></h1>
+      <p class="hero-lead">{{ T "surla_intro" }}</p>
+      <div class="hero-actions">
+        <a class="goa-button" href="#install">{{ T "surla_install_cta" }}</a>
+        <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "surla_docs_cta" }}</a>
+        <a class="goa-button chorus-button-quiet" href="https://github.com/goadesign/surla">GitHub</a>
+      </div>
+      <p class="hero-facts">{{ T "surla_clients" }}<br>{{ T "surla_facts" }}</p>
+    </div>
+    <div class="skill-install chorus-hero-install surla-hero-install" id="install" aria-labelledby="surla-install-title">
+      <h2 id="surla-install-title" class="chorus-install-title">{{ T "surla_install_heading" }}</h2>
+      <p class="chorus-install-intro">{{ T "surla_install_intro" }}</p>
+      <p class="skill-prompt-label">{{ T "surla_install_go_label" }}</p>
+      <div class="install-command">
+        <code id="surla-go">go install github.com/goadesign/surla/cmd/surla@latest &amp;&amp; surla up</code>
+        <button type="button" class="copy-install" command="--copy" commandfor="surla-go" aria-label="{{ T "surla_copy_go" }}" data-copy-target="surla-go" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="skill-prompt-label chorus-install-alt">{{ T "surla_install_chorus" }}</p>
+      <div class="install-command">
+        <code id="surla-chorus">brew install goadesign/tap/chorus &amp;&amp; chorus up</code>
+        <button type="button" class="copy-install" command="--copy" commandfor="surla-chorus" aria-label="{{ T "surla_copy_chorus" }}" data-copy-target="surla-chorus" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="skill-prompt-label chorus-install-alt">{{ T "surla_install_next" }}</p>
+      <blockquote class="surla-prompt">{{ T "surla_install_prompt" }}</blockquote>
+      <p class="install-hint">{{ T "surla_install_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
+    </div>
+  </section>
+
+  <section class="benefits-section chorus-pillars surla-pillars" aria-labelledby="surla-pillars-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="surla-pillars-title">{{ T "surla_pillars_heading" }}</h2><p>{{ T "surla_pillars_intro" }}</p></div>
+      <dl class="benefit-list chorus-pillar-list">
+        {{ range slice "contract" "card" "split" "verify" }}
+        <div><dt>{{ T (printf "surla_pillar_%s" .) }}</dt><dd>{{ T (printf "surla_pillar_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+    </div>
+  </section>
+
+  <section class="chorus-steps surla-steps site-width" aria-labelledby="surla-steps-title">
+    <div class="section-intro"><h2 id="surla-steps-title">{{ T "surla_steps_heading" }}</h2><p>{{ T "surla_steps_intro" }}</p></div>
+    <ol class="workflow-steps">
+      {{ range slice "describe" "agree" "build" "merge" }}
+      <li><h3>{{ T (printf "surla_step_%s" .) }}</h3><p>{{ T (printf "surla_step_%s_text" .) | markdownify }}</p></li>
+      {{ end }}
+    </ol>
+  </section>
+
+  <section class="surla-walkthrough site-width" aria-labelledby="surla-walkthrough-title">
+    <div class="section-intro"><h2 id="surla-walkthrough-title">{{ T "surla_walkthrough_heading" }}</h2><p>{{ T "surla_walkthrough_intro" | markdownify }}</p></div>
+    <div class="surla-lanes">
+      <article class="surla-lane" aria-labelledby="surla-lane-guide">
+        <header class="surla-lane__head">
+          <h3 id="surla-lane-guide">{{ T "surla_role_guide" }}</h3>
+          <p>{{ T "surla_role_guide_caption" | markdownify }}</p>
+        </header>
+        <div class="surla-lane__code">
+<pre><code>package design
+
+import . "github.com/goadesign/surla/story/dsl"
+
+var _ = Story("Refunds", func() {
+  Actor("customer", "Customer")
+  Flow("instant-credit", "Within limit", func() {
+    StartsWith("ask", "customer", "Asks <= $50")
+    Outcome("paid", "customer", "Instant credit")
+  })
+})</code></pre>
+        </div>
+        <div class="surla-lane__outcome">
+          <span class="surla-lane__label">{{ T "surla_card_question_label" }}</span>
+          <p>{{ T "surla_card_question" }}</p>
+          <span class="surla-lane__check">{{ T "surla_card_choice" }}</span>
+        </div>
+      </article>
+
+      <article class="surla-lane" aria-labelledby="surla-lane-tests">
+        <header class="surla-lane__head">
+          <h3 id="surla-lane-tests">{{ T "surla_role_tests" }}</h3>
+          <p>{{ T "surla_role_tests_caption" | markdownify }}</p>
+        </header>
+        <div class="surla-lane__code">
+<pre><code>// eval/acceptance/refunds.go
+func (h *Hooks) InstantCredit(
+  ctx context.Context,
+) (eval.Result, error) {
+  out, err := h.refund(ctx, "ORD-42", 5000)
+  if err != nil {
+    return eval.Result{}, err
+  }
+  return eval.Result{Checks: []eval.Check{
+    check("status", out.Status == "credit"),
+    check("cents", out.Cents == 5000),
+  }}, nil
+}</code></pre>
+        </div>
+        <div class="surla-lane__outcome">
+          <p>{{ T "surla_tests_check" | markdownify }}</p>
+        </div>
+      </article>
+
+      <article class="surla-lane" aria-labelledby="surla-lane-builder">
+        <header class="surla-lane__head">
+          <h3 id="surla-lane-builder">{{ T "surla_role_builder" }}</h3>
+          <p>{{ T "surla_role_builder_caption" | markdownify }}</p>
+        </header>
+        <div class="surla-lane__code">
+<pre><code>1. generate_code(target: "candidate")
+   → writes agreed design/ and gen/
+
+2. check_project()
+   → builds and tests in a Linux container
+
+3. verify_change(change_id, rev, commit)
+   → runs surla/tests-1 against commit</code></pre>
+        </div>
+        <div class="surla-lane__outcome">
+          <p>{{ T "surla_builder_check" | markdownify }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="benefits-section surla-arch" aria-labelledby="surla-arch-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="surla-arch-title">{{ T "surla_arch_heading" }}</h2><p>{{ T "surla_arch_intro" | markdownify }}</p></div>
+      <figure class="surla-diagram">
+        <img src="{{ "images/diagrams/SurlaArchitecture.svg" | relURL }}" alt="{{ T "surla_arch_alt" }}" loading="lazy" decoding="async">
+        <figcaption>{{ T "surla_arch_caption" }} <a href="{{ $docs }}">{{ T "surla_docs_cta" }}</a></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="surla-modes site-width" aria-labelledby="surla-modes-title">
+    <div class="section-intro"><h2 id="surla-modes-title">{{ T "surla_modes_heading" }}</h2><p>{{ T "surla_modes_intro" }}</p></div>
+    <dl class="benefit-list">
+      {{ range slice "herdr" "headless" "models" }}
+      <div><dt>{{ T (printf "surla_mode_%s" .) }}</dt><dd>{{ T (printf "surla_mode_%s_text" .) | markdownify }}</dd></div>
+      {{ end }}
+    </dl>
+  </section>
+
+  <section class="faq-section site-width chorus-faq surla-faq" aria-labelledby="surla-faq-title">
+    <h2 id="surla-faq-title">{{ T "home_faq_heading" }}</h2>
+    <dl>
+      {{ range slice "blank" "keys" "isolation" "docs" }}
+      <div><dt>{{ T (printf "surla_faq_%s_q" .) }}</dt><dd>{{ T (printf "surla_faq_%s_a" .) | markdownify }}</dd></div>
+      {{ end }}
+    </dl>
+  </section>
+</div>
+{{ end }}

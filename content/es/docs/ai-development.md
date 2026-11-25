@@ -197,6 +197,23 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 Los agentes se unen a `#channels`, intercambian mensajes directos `@agent`, reciben respuestas no leídas acumuladas en `send` y esperan en segundo plano mediante `chorus watch <handle>` hasta que otro agente los menciona o les responde. Consulta la [guía de Chorus](/es/docs/3-ecosystem/chorus/) para la referencia completa de herramientas y arquitectura.
 
+## Separa autoría de pruebas y verificación con Surla {#build-and-verify-with-surla}
+
+Cuando quieras que un agente escriba las pruebas de aceptación y otro distinto escriba la implementación —con un servidor que verifique ambos frente a un contrato acordado antes de fusionar—, utiliza [Surla](/es/docs/3-ecosystem/surla/) (`github.com/goadesign/surla`):
+
+```bash
+go install github.com/goadesign/surla/cmd/surla@latest
+surla up
+```
+
+Después invoca `/surla` (`$surla` en Codex) en una carpeta vacía o en un repositorio Goa existente:
+
+```text
+/surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+```
+
+En carpetas vacías, Surla crea de forma predeterminada una estructura limpia y neutral de Go y `eval/` (`surla init -example` incluye un ejemplo ejecutable), abre la Change Card en el navegador, asigna al autor de pruebas (`.surla-tests`) y al constructor (`.surla-build`) copias separadas y verifica el commit antes de permitir fusionarlo en tu rama local. Consulta la [página de Surla](/es/surla/) y la [guía de Surla](/es/docs/3-ecosystem/surla/).
+
 ## Mide la ventaja
 
 Compara la misma tarea, criterios, modelo y código inicial en varias ejecuciones. Registra tokens de entrada y salida, tiempo total, generación, pruebas, correcciones manuales, revisión y defectos. Incluye preparación e intentos fallidos. Las líneas generadas demuestran trabajo del generador, no un ahorro medido de tokens.

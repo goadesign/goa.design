@@ -376,7 +376,92 @@ test('interactive Chorus browser demo works across mobile/desktop, light/dark, S
   await expect(page.locator('#message-stream .md-table-wrap table')).toContainText('401');
   await expect(page.locator('#chat-sheet')).toContainText('Acknowledged in', { timeout: 5000 });
 
-  await page.locator('#demo-reset').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('#chat-sheet')).toHaveAttribute('inert', '');
+      await page.locator('#demo-reset').focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#chat-sheet')).toHaveAttribute('inert', '');
+    });
+
+
+for (const width of [390, 1440]) {
+  for (const theme of ['light', 'dark']) {
+    test(`${width}px ${theme}: Surla page walkthrough, diagram, and install`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
+      await page.goto('/surla/');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('One compiled contract. Separate jobs for every agent.');
+      await expect(page.locator('.surla-hero .hero-actions a').first()).toHaveText('Get Surla');
+      await expect(page.locator('.surla-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
+      await expect(page.locator('.surla-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/surla/');
+      const brand = page.locator('.td-navbar .navbar-brand');
+      await expect(brand).toHaveAccessibleName('Surla');
+      await expect(brand).toHaveAttribute('href', '/surla/');
+      await expect(brand.locator('svg')).toHaveAttribute('viewBox', '0 0 512 512');
+      const nav = page.locator('.td-navbar .navbar-nav');
+      await expect(nav.getByRole('link', { name: 'Documentation', exact: true })).toHaveAttribute('href', '/docs/3-ecosystem/surla/');
+      await expect(nav.getByRole('link', { name: 'GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/goadesign/surla');
+      await expect(nav.getByRole('link', { name: 'Goa framework', exact: true })).toHaveAttribute('href', '/');
+      await expect(nav.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
+      await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
+      await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
+      await expect(page.locator('.surla-pillars dt')).toHaveText([
+        'Compiled contract first',
+        'Plain-language Change Card',
+        'Separate test writer and builder',
+        'Server-judged verification',
+      ]);
+      await expect(page.locator('.surla-lane')).toHaveCount(3);
+      await expect(page.locator('.surla-lane').first().locator('pre')).toContainText('Story("Refunds"');
+      const diagram = page.locator('.surla-diagram img');
+      await diagram.scrollIntoViewIfNeeded();
+      await expect(diagram).toBeVisible();
+      await expect.poll(() => diagram.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      await page.getByRole('button', { name: 'Copy the Go install command' }).click();
+      await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('go install github.com/goadesign/surla/cmd/surla@latest && surla up');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.evaluate(() => {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      });
+      await page.screenshot({ path: `.impeccable/review/surla-${width}-${theme}.png`, fullPage: true });
+    });
+  }
+}
+
+test('localized Surla pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
+  for (const [lang, heading, docsLabel, goaLabel] of [
+    ['es', 'Un contrato compilado. Un rol distinto para cada agente.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Un contrat compilé. Un rôle distinct pour chaque agent.', 'Documentation', 'Framework Goa'],
+    ['it', 'Un unico contratto compilato. Un ruolo distinto per ogni agente.', 'Documentazione', 'Framework Goa'],
+    ['ja', '1 つのコンパイル済み契約。 エージェントごとに分かれた役割。', 'ドキュメント', 'Goa フレームワーク'],
+  ] as const) {
+    await page.goto(`/${lang}/surla/`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
+    await expect(page.locator('.td-navbar .navbar-brand')).toHaveAttribute('href', `/${lang}/surla/`);
+    const nav = page.locator('.td-navbar .navbar-nav');
+    await expect(nav.getByRole('link', { name: docsLabel, exact: true })).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/surla/`);
+    await expect(nav.getByRole('link', { name: goaLabel, exact: true })).toHaveAttribute('href', `/${lang}/`);
+    await expect(page.locator('.surla-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/surla/`);
+    const docs = await request.get(`/${lang}/docs/3-ecosystem/surla/`);
+    expect(docs.ok()).toBe(true);
+    expect(await docs.text()).toContain(`/${lang}/surla/`);
+  }
+  for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
+    for (const path of ['surla/index.md', 'docs/3-ecosystem/surla/index.md']) {
+      const response = await request.get(`/${lang}${path}`);
+      expect(response.status(), `${lang}${path}`).toBe(200);
+      const mdText = await response.text();
+      expect(mdText).toContain('github.com/goadesign/surla/cmd/surla@latest');
+      expect(mdText).toContain('-example');
+      if (path.startsWith('docs/')) {
+        expect(mdText).toContain('{#blank-and-example}');
+        expect(mdText).toContain('{#herdr}');
+        expect(mdText).toContain('{#architecture}');
+      }
+    }
+  }
+  const llms = await (await request.get('/llms.txt')).text();
+  expect(llms).toContain('https://goa.design/surla/');
+  expect(llms).toContain('https://github.com/goadesign/surla');
 });

@@ -275,6 +275,28 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 [data-theme="dark"] .chorus-badge--light { display: none; }
 [data-theme="dark"] .chorus-badge--dark { display: block; }
 
+// Surla landing page (/surla/). Reuses the Goa hero, benefit-list, workflow
+// and FAQ rhythm; adds the three-role walkthrough lanes and diagram panel.
+.surla-hero-install .surla-prompt { margin-top: .35rem; font-size: .92rem; }
+.surla-walkthrough { padding-block: 36px 72px; }
+.surla-lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.surla-lane { min-width: 0; display: flex; flex-direction: column; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 10px; overflow: hidden; }
+.surla-lane__head { padding: 1rem 1.15rem .85rem; background: var(--color-bg-alt); border-bottom: 1px solid var(--color-border-subtle); }
+.surla-lane__head h3 { font-size: 1rem; margin: 0 0 .35rem; color: var(--color-text-heading); }
+.surla-lane__head p { margin: 0; font-size: .85rem; line-height: 1.55; color: var(--color-text-muted); }
+.surla-lane__code { flex: 1; padding: .95rem 1.15rem; background: var(--color-bg-elevated); overflow-x: auto; }
+.surla-lane__code pre { margin: 0; padding: 0; border: 0; background: transparent; font-size: .77rem; line-height: 1.65; color: var(--color-text-heading); white-space: pre; }
+.surla-lane__code code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+.surla-lane__outcome { padding: .85rem 1.15rem 1rem; background: var(--color-highlight); border-top: 1px solid var(--color-border-subtle); font-size: .84rem; line-height: 1.55; color: var(--color-text-heading); }
+.surla-lane__label { display: block; font-size: .78rem; font-weight: 700; color: var(--doc-link-color); margin-bottom: .25rem; }
+.surla-lane__outcome p { margin: 0; }
+.surla-lane__check { display: block; margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--color-border-subtle); font-weight: 600; color: var(--color-text-heading); }
+.surla-diagram { margin: 0; padding: 1.5rem; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 12px; }
+.surla-diagram img { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+.surla-diagram figcaption { margin-top: 1rem; color: var(--color-text-muted); font-size: .86rem; text-align: center; }
+.surla-modes { padding-block: 72px 24px; }
+.surla-faq { padding-bottom: 64px; }
+
 .td-footer { min-height: 0; padding: 2rem; background: var(--color-bg-alt); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); font-size: .85rem; }
 .td-footer .row { gap: 1.2rem; }
 .td-footer a { color: var(--color-text); }
@@ -335,9 +357,11 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
   .company-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   .td-footer .row { flex-direction: column; }
   .chorus-hero { padding-block: 48px 32px; }
-  .chorus-pillar-list, .chorus-terminals, .chorus-raw-grid { grid-template-columns: 1fr; }
-  .chorus-example, .chorus-steps { padding-block: 24px 48px; }
+  .chorus-pillar-list, .chorus-terminals, .chorus-raw-grid, .surla-lanes { grid-template-columns: 1fr; }
+  .chorus-example, .chorus-steps, .surla-walkthrough { padding-block: 24px 48px; }
+  .surla-modes { padding-block: 48px 16px; }
   .chorus-faq { padding-bottom: 28px; }
+  .surla-faq { padding-bottom: 48px; }
   .chorus-directory { padding-block: 0 40px; }
 }
 @media (max-width: 600px) {

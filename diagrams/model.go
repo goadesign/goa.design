@@ -247,6 +247,41 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 	})
 
 	// =========================================================================
+	// Surla Architecture Diagram - Contract-driven multi-agent control plane
+	// =========================================================================
+
+	var SurlaArchSystem = SoftwareSystem("Surla", "Agentic control plane for Goa and Goa-AI services", func() {
+		Container("Guide Agent", "Drafts Story flows, Goa design, and Change Card", "MCP Client", func() {
+			Tag("goa")
+			Uses("Surla Server", "init_project, update_draft, refresh_story, propose_change")
+		})
+
+		Container("Browser Page", "Human confirms Change Card, starts Build, approves, and merges", "Views UI", func() {
+			Tag("goa")
+			Uses("Surla Server", "confirm, build, approve, merge")
+		})
+
+		Container("Surla Server", "Role-scoped control plane, Goa generator, and verifier", "Goa-AI MCP & HTTP", func() {
+			Tag("goa")
+			Uses("Test Writer", "Flow test assignment & report check (.surla-tests)", func() { Tag("async") })
+			Uses("Builder", "Agreed design, generate_code & Docker check (.surla-build)", func() { Tag("async") })
+			Uses("Verifier", "Runs accepted eval/ suite against candidate commit")
+		})
+
+		Container("Test Writer", "Authors scenario tests in eval/ without touching app code", "MCP Client", func() {
+			Tag("goa")
+		})
+
+		Container("Builder", "Implements business logic against generated Goa contracts", "MCP Client", func() {
+			Tag("goa")
+		})
+
+		Container("Verifier", "Builds digest-pinned binary and executes Goa-AI eval suite", "Process Group", func() {
+			Tag("store")
+		})
+	})
+
+	// =========================================================================
 	// Views
 	// =========================================================================
 
@@ -323,6 +358,16 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("Swarm Control Plane")
 			Add("Message Streams")
 			Add("Publication Lock")
+			AutoLayout(RankLeftRight)
+		})
+
+		ContainerView(SurlaArchSystem, "SurlaArchitecture", "Surla contract-driven control plane and independent verification", func() {
+			Add("Guide Agent")
+			Add("Browser Page")
+			Add("Surla Server")
+			Add("Test Writer")
+			Add("Builder")
+			Add("Verifier")
 			AutoLayout(RankLeftRight)
 		})
 

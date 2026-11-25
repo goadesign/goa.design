@@ -19,6 +19,7 @@ El ecosistema Goa incluye bibliotecas y herramientas complementarias que cubren 
 | [Pulse](pulse/) | Eventos distribuidos | Flujo de eventos, grupos de trabajadores, mapas replicados |
 | [Clue](clue/) | Observabilidad | Rastreo, registro, métricas, comprobaciones de salud |
 | [Chorus](chorus/) | Coordinación multiagente | `#channels` compartidos, mensajes directos `@agent`, cursores en el servidor, CLI `chorus watch` |
+| [Surla](surla/) | Plano de control y verificador | `Story` + Change Cards, copias separadas de pruebas y código, verificación `eval/` y fusión desde el navegador |
 
 ## Modelo - Diagramas de Arquitectura como Código
 
@@ -126,6 +127,23 @@ npx @goadesign/chorus up
 
 **Más información:** [Documentación de Chorus](chorus/)
 
+## Surla - Plano de control multiagente guiado por contratos
+
+Surla organiza tus agentes de programación en roles separados de guía, autor de pruebas y constructor en torno a un diseño compilado de [Goa](/es/docs/1-goa/) y [Goa-AI](/es/docs/2-goa-ai/), verifica los commits candidatos con suites `eval/` aceptadas y fusiona los cambios aprobados desde el navegador:
+
+```bash
+go install github.com/goadesign/surla/cmd/surla@latest
+surla up
+```
+
+**Características:**
+- Skill `/surla` (`$surla` en Codex) con Change Cards en lenguaje claro (`CP1`), vista previa C4 (`CP2`) e inicialización limpia y neutral de forma predeterminada (`surla init -example` para un ejemplo ejecutable)
+- Copias de trabajo Git separadas (`.surla-tests` y `.surla-build`) para que el agente que escribe las pruebas no escriba la implementación
+- Aceptación de pruebas `eval/` validada por el servidor, verificación con modelo guionizado (`CP4`) y ajuste opcional de prompts en vivo (`CP3`)
+- Paneles en paralelo con Herdr y Chorus, o trabajadores CLI en segundo plano, hasta **Approve** y **Merge** en el navegador (`CP5`)
+
+**Más información:** [Documentación de Surla](surla/)
+
 ## Guías de documentación
 
 | Guía | Descripción | ~Tokens |
@@ -134,8 +152,9 @@ npx @goadesign/chorus up
 | [Pulse](pulse/) | Streaming, pools de trabajadores, mapas replicados | ~2.200 |
 | [Clue](clue/) | Registro, rastreo, métricas, comprobaciones de salud | ~2.800 |
 | [Chorus](chorus/) | Coordinación MCP multiagente, CLI y arquitectura Goa-AI + Pulse | ~1.100 |
+| [Surla](surla/) | Construcción multiagente por contratos, flujos Story, verificación independiente y fusión en navegador | ~1.400 |
 
-**Sección total:** ~8.600 tokens
+**Sección total:** ~10.000 tokens
 
 ## Comenzando
 
@@ -145,6 +164,7 @@ Elija la biblioteca o herramienta que se ajuste a sus necesidades:
 - **¿Construir sistemas basados en eventos?** Empiece con [Pulse](pulse/)
 - **¿Añadir observabilidad a los servicios Goa?** Empiece con [Clue](clue/)
 - **¿Coordinar varios agentes de programación?** Empiece con [Chorus](chorus/)
+- **¿Construir y verificar servicios con roles separados de agentes?** Empiece con [Surla](surla/)
 
 Todas las bibliotecas y herramientas están disponibles a través de `go get` / `go install`:
 
@@ -153,4 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
+go install github.com/goadesign/surla/cmd/surla@latest
 ```
