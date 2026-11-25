@@ -10,15 +10,15 @@ const (
 	colorPrimary       = "#5bc0eb" // goa.design brand blue - services, components
 	colorStore         = "#9d89e8" // Purple - data stores
 	colorQueue         = "#00cec9" // Teal - queues/streams
-	colorSurlaNode     = "#1e4da8" // High-contrast blue (7.58:1 with white)
-	colorSurlaVerifier = "#0f766e" // High-contrast teal (5.47:1 with white)
+	colorHighbayNode     = "#1e4da8" // High-contrast blue (7.58:1 with white)
+	colorHighbayVerifier = "#0f766e" // High-contrast teal (5.47:1 with white)
 
 	// Text colors
 	colorWhite = "#ffffff"
 
 	// Relationship colors
 	colorGray     = "#757575" // Muted gray - arrows
-	colorSurlaRel = "#334155" // High-contrast slate (10.9:1 on light canvas)
+	colorHighbayRel = "#334155" // High-contrast slate (10.9:1 on light canvas)
 )
 
 // ApplyGoaStyles applies the standard Goa documentation styles.
@@ -69,21 +69,21 @@ func ApplyGoaStyles() {
 			Dashed()
 		})
 
-		// Surla high-contrast process/container styles (WCAG AA+)
-		ElementStyle("surla", func() {
-			Background(colorSurlaNode)
+		// Highbay high-contrast process/container styles (WCAG AA+)
+		ElementStyle("highbay", func() {
+			Background(colorHighbayNode)
 			Color(colorWhite)
 		})
-		ElementStyle("surla-verifier", func() {
-			Background(colorSurlaVerifier)
+		ElementStyle("highbay-verifier", func() {
+			Background(colorHighbayVerifier)
 			Color(colorWhite)
 		})
-		RelationshipStyle("surla-sync", func() {
-			Color(colorSurlaRel)
+		RelationshipStyle("highbay-sync", func() {
+			Color(colorHighbayRel)
 			Thickness(2)
 		})
-		RelationshipStyle("surla-async", func() {
-			Color(colorSurlaRel)
+		RelationshipStyle("highbay-async", func() {
+			Color(colorHighbayRel)
 			Thickness(2)
 			Dashed()
 		})

@@ -241,24 +241,24 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 Agents join `#channels`, exchange `@agent` direct messages, receive unread replies piggybacked onto `send`, and wait in the background via `chorus watch <handle>` until a peer mentions or replies to them. See the [Chorus guide](/docs/3-ecosystem/chorus/) for the full tool reference and architecture.
 
-## Separate test authoring and verification with Surla {#build-and-verify-with-surla}
+## Separate test authoring and verification with Highbay {#build-and-verify-with-highbay}
 
-When you want one coding agent to write the acceptance tests and a different coding agent to write the implementation—with a server verifying both against an agreed contract before anything merges—use [Surla](/docs/3-ecosystem/surla/) (`github.com/goadesign/surla`).
+When you want one coding agent to write the acceptance tests and a different coding agent to write the implementation—with a server verifying both against an agreed contract before anything merges—use [Highbay](/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`).
 
-Install Surla and register the `surla` MCP server and `/surla` (`$surla` in Codex) skill across your coding agents:
+Install Highbay and register the `highbay` MCP server and `/highbay` (`$highbay` in Codex) skill across your coding agents:
 
 ```bash
-go install github.com/goadesign/surla/cmd/surla@latest
-surla up
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
 ```
 
-Then invoke `/surla` in an empty folder (or an existing Goa repository that already has a Git commit and either a `<module>/eval` suite or stored verification settings):
+Then invoke `/highbay` in an empty folder (or an existing Goa repository that already has a Git commit and either a `<module>/eval` suite or stored verification settings):
 
 ```text
-/surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`surla init -example` or `worked_example: true` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Surla assigns the test writer (`.surla-tests`) and builder (`.surla-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Surla page](/surla/) and [Surla ecosystem guide](/docs/3-ecosystem/surla/).
+Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`hbay init -example` or `worked_example: true` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Highbay assigns the test writer (`.highbay-tests`) and builder (`.highbay-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Highbay page](/highbay/) and [Highbay ecosystem guide](/docs/3-ecosystem/highbay/).
 
 ## Measure the advantage in your project
 

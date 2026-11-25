@@ -197,22 +197,22 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricevono le risposte non lette aggregate in `send` e attendono in background tramite `chorus watch <handle>` finché un altro agente non li menziona o risponde. Consulta la [guida Chorus](/it/docs/3-ecosystem/chorus/) per il riferimento completo dei tool e l'architettura.
 
-## Separa scrittura dei test e verifica con Surla {#build-and-verify-with-surla}
+## Separa scrittura dei test e verifica con Highbay {#build-and-verify-with-highbay}
 
-Quando vuoi che un coding agent scriva i test di accettazione e un altro scriva l'implementazione — con un server che verifichi entrambi rispetto a un contratto confermato prima del merge — usa [Surla](/it/docs/3-ecosystem/surla/) (`github.com/goadesign/surla`):
+Quando vuoi che un coding agent scriva i test di accettazione e un altro scriva l'implementazione — con un server che verifichi entrambi rispetto a un contratto confermato prima del merge — usa [Highbay](/it/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`):
 
 ```bash
-go install github.com/goadesign/surla/cmd/surla@latest
-surla up
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
 ```
 
-Invoca poi `/surla` (`$surla` in Codex) in una cartella vuota (o in un repository Goa con un commit Git e una suite `<module>/eval` o impostazioni di verifica salvate):
+Invoca poi `/highbay` (`$highbay` in Codex) in una cartella vuota (o in un repository Goa con un commit Git e una suite `<module>/eval` o impostazioni di verifica salvate):
 
 ```text
-/surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-In una cartella vuota, Surla crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`surla init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.surla-tests` e `.surla-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Surla](/it/surla/) e la [guida Surla](/it/docs/3-ecosystem/surla/).
+In una cartella vuota, Highbay crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`hbay init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.highbay-tests` e `.highbay-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Highbay](/it/highbay/) e la [guida Highbay](/it/docs/3-ecosystem/highbay/).
 
 ## Misura il vantaggio
 

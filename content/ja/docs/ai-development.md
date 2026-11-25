@@ -197,22 +197,22 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch <handle>` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
 
-## Surla でテスト作成と検証を分離する {#build-and-verify-with-surla}
+## Highbay でテスト作成と検証を分離する {#build-and-verify-with-highbay}
 
-あるコーディングエージェントに受け入れテストを書かせ、別のコーディングエージェントに実装を書かせ、合意済み契約に対するサーバー検証を通過してからマージしたい場合は、[Surla](/ja/docs/3-ecosystem/surla/)（`github.com/goadesign/surla`）を使います：
+あるコーディングエージェントに受け入れテストを書かせ、別のコーディングエージェントに実装を書かせ、合意済み契約に対するサーバー検証を通過してからマージしたい場合は、[Highbay](/ja/docs/3-ecosystem/highbay/)（`github.com/goadesign/highbay`）を使います：
 
 ```bash
-go install github.com/goadesign/surla/cmd/surla@latest
-surla up
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
 ```
 
-空のフォルダ（または初期 Git コミットと `<module>/eval` スイートもしくは検証設定がある既存の Goa リポジトリ）で `/surla`（Codex では `$surla`）を実行します：
+空のフォルダ（または初期 Git コミットと `<module>/eval` スイートもしくは検証設定がある既存の Goa リポジトリ）で `/highbay`（Codex では `$highbay`）を実行します：
 
 ```text
-/surla — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `surla init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.surla-tests` と `.surla-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Surla ページ](/ja/surla/)と [Surla ガイド](/ja/docs/3-ecosystem/surla/)を参照してください。
+空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `hbay init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.highbay-tests` と `.highbay-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Highbay ページ](/ja/highbay/)と [Highbay ガイド](/ja/docs/3-ecosystem/highbay/)を参照してください。
 
 ## プロジェクトで効果を測る
 

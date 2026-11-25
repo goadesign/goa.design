@@ -247,37 +247,37 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 	})
 
 	// =========================================================================
-	// Surla Architecture Diagram - Contract-driven multi-agent control plane
+	// Highbay Architecture Diagram - Contract-driven multi-agent control plane
 	// =========================================================================
 
-	var SurlaArchSystem = SoftwareSystem("Surla", "Agentic control plane for Goa and Goa-AI services", func() {
+	var HighbayArchSystem = SoftwareSystem("Highbay", "Agentic control plane for Goa and Goa-AI services", func() {
 		Container("Guide Agent", "Drafts Story flows, Goa design, and Change Card", "MCP Client", func() {
-			Tag("surla")
-			Uses("Surla Server", "init_project, update_draft, refresh_story, propose_change", func() { Tag("surla-sync") })
+			Tag("highbay")
+			Uses("Highbay Server", "init_project, update_draft, refresh_story, propose_change", func() { Tag("highbay-sync") })
 		})
 
 		Container("Browser Page", "Human confirms Change Card, starts Build, approves, and merges", "Views UI", func() {
-			Tag("surla")
-			Uses("Surla Server", "confirm, build, approve, merge", func() { Tag("surla-sync") })
+			Tag("highbay")
+			Uses("Highbay Server", "confirm, build, approve, merge", func() { Tag("highbay-sync") })
 		})
 
-		Container("Surla Server", "Role-scoped control plane, Goa generator, and verifier", "Goa-AI MCP & HTTP", func() {
-			Tag("surla")
-			Uses("Test Writer", "Flow test assignment & report check (.surla-tests)", func() { Tag("surla-async") })
-			Uses("Builder", "Agreed design, generate_code & Docker check (.surla-build)", func() { Tag("surla-async") })
-			Uses("Verifier", "Runs accepted eval/ suite against candidate commit", func() { Tag("surla-sync") })
+		Container("Highbay Server", "Role-scoped control plane, Goa generator, and verifier", "Goa-AI MCP & HTTP", func() {
+			Tag("highbay")
+			Uses("Test Writer", "Flow test assignment & report check (.highbay-tests)", func() { Tag("highbay-async") })
+			Uses("Builder", "Agreed design, generate_code & Docker check (.highbay-build)", func() { Tag("highbay-async") })
+			Uses("Verifier", "Runs accepted eval/ suite against candidate commit", func() { Tag("highbay-sync") })
 		})
 
 		Container("Test Writer", "Authors scenario tests in eval/ without touching app code", "MCP Client", func() {
-			Tag("surla")
+			Tag("highbay")
 		})
 
 		Container("Builder", "Implements business logic against generated Goa contracts", "MCP Client", func() {
-			Tag("surla")
+			Tag("highbay")
 		})
 
 		Container("Verifier", "Builds digest-pinned binary and executes Goa-AI eval suite", "Process Group", func() {
-			Tag("surla-verifier")
+			Tag("highbay-verifier")
 		})
 	})
 
@@ -361,10 +361,10 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			AutoLayout(RankLeftRight)
 		})
 
-		ContainerView(SurlaArchSystem, "SurlaArchitecture", "Surla contract-driven control plane and independent verification", func() {
+		ContainerView(HighbayArchSystem, "HighbayArchitecture", "Highbay contract-driven control plane and independent verification", func() {
 			Add("Guide Agent")
 			Add("Browser Page")
-			Add("Surla Server")
+			Add("Highbay Server")
 			Add("Test Writer")
 			Add("Builder")
 			Add("Verifier")

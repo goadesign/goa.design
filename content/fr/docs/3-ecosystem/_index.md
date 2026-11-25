@@ -19,7 +19,7 @@ L'écosystème Goa comprend des bibliothèques et des outils complémentaires qu
 | [Pulse](pulse/) | Événements distribués | Flux d'événements, pools de travailleurs, cartes répliquées |
 | [Clue](clue/) | Observabilité | Traçage, journalisation, métriques, bilans de santé |
 | [Chorus](chorus/) | Coordination multi-agents | `#channels` partagés, messages directs `@agent`, curseurs côté serveur, CLI `chorus watch` |
-| [Surla](surla/) | Plan de contrôle et vérificateur | `Story` + Change Cards, copies séparées de tests et de code, vérification `eval/` et fusion navigateur |
+| [Highbay](highbay/) | Plan de contrôle et vérificateur | `Story` + Change Cards, copies séparées de tests et de code, vérification `eval/` et fusion navigateur |
 
 ## Modèle - Diagrammes d'architecture en tant que code
 
@@ -127,22 +127,22 @@ npx @goadesign/chorus up
 
 **En savoir plus:** [Chorus Documentation](chorus/)
 
-## Surla - Plan de contrôle multi-agents piloté par contrat
+## Highbay - Plan de contrôle multi-agents piloté par contrat
 
-Surla organise vos agents de programmation en rôles distincts de guide, rédacteur de tests et bâtisseur autour d'un design compilé [Goa](/fr/docs/1-goa/) et [Goa-AI](/fr/docs/2-goa-ai/), vérifie les commits candidats face aux suites `eval/` acceptées et fusionne le travail approuvé depuis votre navigateur :
+Highbay organise vos agents de programmation en rôles distincts de guide, rédacteur de tests et bâtisseur autour d'un design compilé [Goa](/fr/docs/1-goa/) et [Goa-AI](/fr/docs/2-goa-ai/), vérifie les commits candidats face aux suites `eval/` acceptées et fusionne le travail approuvé depuis votre navigateur :
 
 ```bash
-go install github.com/goadesign/surla/cmd/surla@latest
-surla up
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
 ```
 
 **Caractéristiques:**
-- Skill `/surla` (`$surla` dans Codex) avec Change Cards en langage clair (`CP1`), aperçu C4 (`CP2`) et coquille Go / `eval/` vierge par défaut (`surla init -example` pour un exemple complet)
-- Copies de travail Git séparées (`.surla-tests` et `.surla-build`) afin que l'agent qui écrit les tests n'écrive pas l'implémentation
+- Skill `/highbay` (`$highbay` dans Codex) avec Change Cards en langage clair (`CP1`), aperçu C4 (`CP2`) et coquille Go / `eval/` vierge par défaut (`hbay init -example` pour un exemple complet)
+- Copies de travail Git séparées (`.highbay-tests` et `.highbay-build`) afin que l'agent qui écrit les tests n'écrive pas l'implémentation
 - Validation serveur des suites `eval/`, vérification indépendante du candidat (`CP4`) et ajustement optionnel des prompts en direct (`CP3`)
 - Fenêtres côte à côte dans Herdr avec Chorus, ou travailleurs CLI en arrière-plan, jusqu'aux actions **Approve** et **Merge** dans le navigateur (`CP5`)
 
-**En savoir plus:** [Documentation Surla](surla/)
+**En savoir plus:** [Documentation Highbay](highbay/)
 
 ## Guides de documentation
 
@@ -152,7 +152,7 @@ surla up
 | [Pulse](pulse/) | Streaming, worker pools, replicated maps | ~2,200 |
 | [Clue](clue/) | Logging, tracing, metrics, health checks | ~2,800 |
 | [Chorus](chorus/) | Coordination MCP multi-agents, CLI et architecture Goa-AI + Pulse | ~1,100 |
-| [Surla](surla/) | Construction multi-agents par contrat, flux Story, vérification indépendante et fusion navigateur | ~1,400 |
+| [Highbay](highbay/) | Construction multi-agents par contrat, flux Story, vérification indépendante et fusion navigateur | ~1,400 |
 
 **Section totale:** ~10 000 jetons
 
@@ -164,7 +164,7 @@ Choisissez la bibliothèque ou l'outil qui correspond à vos besoins :
 - **Construire des systèmes pilotés par les événements ?** Commencez avec [Pulse](pulse/)
 - **Ajouter de l'observabilité aux services Goa ?** Commencez avec [Clue](clue/)
 - **Coordonner plusieurs agents de codage ?** Commencez avec [Chorus](chorus/)
-- **Construire et vérifier des services avec des rôles d'agents séparés ?** Commencez avec [Surla](surla/)
+- **Construire et vérifier des services avec des rôles d'agents séparés ?** Commencez avec [Highbay](highbay/)
 
 Toutes les bibliothèques et outils sont disponibles via `go get` / `go install` :
 
@@ -173,5 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
-go install github.com/goadesign/surla/cmd/surla@latest
+go install github.com/goadesign/highbay/cmd/hbay@latest
 ```

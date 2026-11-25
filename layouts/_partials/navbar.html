@@ -11,12 +11,12 @@
       </ul>
     </div>
     <div class="td-navbar__search"></div>
-    {{- else if eq .Section "surla" }}
-    <a class="navbar-brand" href="{{ relref . "/surla/" }}"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/surla-logo.svg").Content | safeHTML }}</span><span>Surla</span></a>
+    {{- else if eq .Section "highbay" }}
+    <a class="navbar-brand" href="{{ relref . "/highbay/" }}"><span class="navbar-brand__logo" aria-hidden="true">{{ (resources.Get "icons/highbay-logo.svg").Content | safeHTML }}</span><span>Highbay</span></a>
     <div class="td-navbar__main" id="main_navbar">
       <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/3-ecosystem/surla/" }}">{{ T "docs_overview" }}</a></li>
-        <li class="nav-item"><a class="nav-link" href="https://github.com/goadesign/surla">GitHub</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/3-ecosystem/highbay/" }}">{{ T "docs_overview" }}</a></li>
+        <li class="nav-item"><a class="nav-link" href="https://github.com/goadesign/highbay">GitHub</a></li>
         <li class="nav-item nav-item--ecosystem"><a class="nav-link" href="{{ .Site.Home.RelPermalink }}">{{ T "chorus_nav_goa" }}</a></li>
         <li class="nav-item td-navbar__lang-menu">{{ partial "navbar-lang-selector.html" . }}</li>
       </ul>
@@ -29,7 +29,7 @@
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_services" }}</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/2-goa-ai/" }}">{{ T "home_agents" }}</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/chorus/" }}">Chorus</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ relref . "/surla/" }}">Surla</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ relref . "/highbay/" }}">Highbay</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ relref . "/docs/" }}">{{ T "docs_overview" }}</a></li>
         <li class="nav-item td-navbar__lang-menu">{{ partial "navbar-lang-selector.html" . }}</li>
       </ul>

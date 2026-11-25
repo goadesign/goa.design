@@ -1,97 +1,97 @@
-<svg id="graph" width="1741.25" height="945" viewBox="0 0 1741.25 945" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
-  "name": "SurlaArchitecture",
-  "description": "Surla contract-driven control plane and independent verification",
+<svg id="graph" width="1771.515625" height="945" viewBox="0 0 1771.515625 945" xmlns="http://www.w3.org/2000/svg"><script type="application/json"><![CDATA[{
+  "name": "HighbayArchitecture",
+  "description": "Highbay contract-driven control plane and independent verification",
   "version": "1.0.0",
   "elements": [
     {
-      "id": "1e04khh",
-      "tags": "Element,Container,surla",
-      "technology": "MCP Client"
-    },
-    {
-      "id": "1v5d5w7",
-      "tags": "Element,Container,surla",
-      "technology": "MCP Client"
-    },
-    {
-      "id": "bbeszz",
-      "tags": "Element,Container,surla",
-      "technology": "Views UI"
-    },
-    {
-      "id": "dyeuto",
-      "tags": "Element,Container,surla",
+      "id": "1jggk5j",
+      "tags": "Element,Container,highbay",
       "technology": "Goa-AI MCP & HTTP"
     },
     {
-      "id": "hum7g2",
-      "tags": "Element,Container,surla-verifier",
+      "id": "1oshkyf",
+      "tags": "Element,Container,highbay",
+      "technology": "MCP Client"
+    },
+    {
+      "id": "aay2nm",
+      "tags": "Element,Container,highbay-verifier",
       "technology": "Process Group"
     },
     {
-      "id": "iww437",
-      "tags": "Element,Container,surla",
+      "id": "m0zg3",
+      "tags": "Element,Container,highbay",
       "technology": "MCP Client"
+    },
+    {
+      "id": "obdat1",
+      "tags": "Element,Container,highbay",
+      "technology": "MCP Client"
+    },
+    {
+      "id": "vus9e7",
+      "tags": "Element,Container,highbay",
+      "technology": "Views UI"
     }
   ],
   "layout": {
-    "1e04khh": {
-      "x": 265.234375,
-      "y": 655
+    "1jggk5j": {
+      "x": 851.015625,
+      "y": 449
     },
-    "1v5d5w7": {
-      "x": 1431.25,
+    "1oshkyf": {
+      "x": 1461.515625,
+      "y": 449
+    },
+    "aay2nm": {
+      "x": 1461.515625,
       "y": 685
     },
-    "bbeszz": {
-      "x": 265.234375,
-      "y": 419
-    },
-    "dyeuto": {
-      "x": 820.75,
-      "y": 449
-    },
-    "hum7g2": {
-      "x": 1431.25,
+    "m0zg3": {
+      "x": 1461.515625,
       "y": 213
     },
-    "iww437": {
-      "x": 1431.25,
-      "y": 449
+    "obdat1": {
+      "x": 295.5,
+      "y": 655
     },
-    "e-1bcqcyd": [
+    "vus9e7": {
+      "x": 295.5,
+      "y": 419
+    },
+    "e-1cfqdfj": [
       {
-        "x": 435.234375,
-        "y": 655,
-        "auto": true
-      },
-      {
-        "x": 435.234375,
-        "y": 479,
-        "auto": true
-      }
-    ],
-    "e-elwer9": [
-      {
-        "x": 990.75,
+        "x": 1021.015625,
         "y": 494,
         "auto": true
       },
       {
-        "x": 990.75,
+        "x": 1021.015625,
         "y": 685,
         "auto": true
       }
     ],
-    "e-frr72w": [
+    "e-9z5f9o": [
       {
-        "x": 990.75,
+        "x": 1021.015625,
         "y": 404,
         "auto": true
       },
       {
-        "x": 990.75,
+        "x": 1021.015625,
         "y": 213,
+        "auto": true
+      }
+    ],
+    "e-mo7tmm": [
+      {
+        "x": 465.5,
+        "y": 655,
+        "auto": true
+      },
+      {
+        "x": 465.5,
+        "y": 479,
         "auto": true
       }
     ]
@@ -235,4 +235,4 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 	<g id="icon-cube" transform="translate(0, -14)" class="icon">
 		<path d="M 5 0 h 10 v 10 l -5 5 h -10 v -10 l 5 -5 M 0 5 h 10 v 10 M 15 0 l -5 5"></path>
 	</g>
-</defs><g class="zoom" transform="scale(1) translate(50, 50)"><g class="groups"><g class="group"><rect x="40" y="40" rx="0" ry="0" width="1561.25" height="765" fill="none" stroke="#8492a6" stroke-width="1.5" stroke-dasharray="6 4"></rect><text x="45" y="45" dominant-baseline="hanging" fill="#475569" font-size="20" font-weight="600" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" cursor="default">Surla</text></g></g><g class="edges"><g class="edge" id="1bcqcyd" data-from="1e04khh" data-to="dyeuto"><rect x="465.234375" y="492" rx="0" ry="0" width="159.515625" height="91" fill="none" stroke="none"></rect><text x="0" y="492" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-surla-sync-color, #334155)" data-field="label"><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">init_project,</tspan><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">update_draft,</tspan><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">refresh_story,</tspan><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">propose_change</tspan></text><path marker-end="url(#arrow)" d="M405.234375,655 L435.234375,655 L435.234375,479 L680.75,479" class="edge" fill="none" stroke="var(--mdl-rel-surla-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-1bcqcyd-a-1pq24x6" cx="435.234375" cy="655" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1bcqcyd-a-1e47qia" cx="435.234375" cy="479" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="1wsmd4a" data-from="dyeuto" data-to="iww437"><rect x="1047.390625" y="462" rx="0" ry="0" width="161.21875" height="91" fill="none" stroke="none"></rect><text x="0" y="462" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-surla-sync-color, #334155)" data-field="label"><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Agreed design,</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">generate_code &amp;</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Docker check</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">(.surla-build)</tspan></text><path marker-end="url(#arrow)" d="M960.75,449 L1291.25,449" class="edge" fill="none" stroke="var(--mdl-rel-surla-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path></g><g class="edge" id="4fzt0y" data-from="bbeszz" data-to="dyeuto"><rect x="469.0625" y="355" rx="0" ry="0" width="151.859375" height="51" fill="none" stroke="none"></rect><text x="0" y="355" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-surla-sync-color, #334155)" data-field="label"><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">confirm, build,</tspan><tspan x="544.9921875" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">approve, merge</tspan></text><path marker-end="url(#arrow)" d="M405.234375,419 L680.75,419" class="edge" fill="none" stroke="var(--mdl-rel-surla-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path></g><g class="edge" id="elwer9" data-from="dyeuto" data-to="1v5d5w7"><rect x="1020.75" y="698" rx="0" ry="0" width="214.5" height="71" fill="none" stroke="none"></rect><text x="0" y="698" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-surla-sync-color, #334155)" data-field="label"><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Flow test assignment &amp;</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">report check</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">(.surla-tests)</tspan></text><path marker-end="url(#arrow)" d="M960.75,494 L990.75,494 L990.75,685 L1291.25,685" class="edge" fill="none" stroke="var(--mdl-rel-surla-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-elwer9-a-2dtvve" cx="990.75" cy="494" r="7" fill="none" class="v-dot auto"></circle><circle id="v-elwer9-a-rpjita" cx="990.75" cy="685" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="frr72w" data-from="dyeuto" data-to="hum7g2"><rect x="1020.796875" y="226" rx="0" ry="0" width="214.40625" height="71" fill="none" stroke="none"></rect><text x="0" y="226" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-surla-sync-color, #334155)" data-field="label"><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Runs accepted eval/</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">suite against candidate</tspan><tspan x="1128" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">commit</tspan></text><path marker-end="url(#arrow)" d="M960.75,404 L990.75,404 L990.75,213 L1291.25,213" class="edge" fill="none" stroke="var(--mdl-rel-surla-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-frr72w-a-ibt6fj" cx="990.75" cy="404" r="7" fill="none" class="v-dot auto"></circle><circle id="v-frr72w-a-n6akol" cx="990.75" cy="213" r="7" fill="none" class="v-dot auto"></circle></g></g><g class="nodes"><g class="node" id="1e04khh" transform="translate(265.234375,655)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Guide Agent</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[surla: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Drafts Story flows, Goa design,</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">and Change Card</tspan></text></g></g><g class="node" id="1v5d5w7" transform="translate(1431.25,685)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Test Writer</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[surla: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Authors scenario tests in eval/</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">without touching app code</tspan></text></g></g><g class="node" id="bbeszz" transform="translate(265.234375,419)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-33.7" font-size="22px" font-weight="bold">Browser Page</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-10.300000000000004" font-size="15.399999999999999px" font-weight="normal">[surla: Views UI]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="17.699999999999996" font-size="16px" font-weight="normal">Human confirms Change Card,</tspan><tspan x="0" y="35.699999999999996" font-size="16px" font-weight="normal">starts Build, approves, and</tspan><tspan x="0" y="53.699999999999996" font-size="16px" font-weight="normal">merges</tspan></text></g></g><g class="node" id="dyeuto" transform="translate(820.75,449)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Surla Server</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[surla: Goa-AI MCP &amp; HTTP]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Role-scoped control plane, Goa</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">generator, and verifier</tspan></text></g></g><g class="node" id="hum7g2" transform="translate(1431.25,213)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-verifier-bg, #0f766e)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Verifier</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[surla-verifier: Process Group]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Builds digest-pinned binary and</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">executes Goa-AI eval suite</tspan></text></g></g><g class="node" id="iww437" transform="translate(1431.25,449)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-surla-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="name"><tspan x="0" y="-33.7" font-size="22px" font-weight="bold">Builder</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)"><tspan x="0" y="-10.300000000000004" font-size="15.399999999999999px" font-weight="normal">[surla: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-surla-verifier-color, #ffffff)" data-field="description"><tspan x="0" y="17.699999999999996" font-size="16px" font-weight="normal">Implements business logic</tspan><tspan x="0" y="35.699999999999996" font-size="16px" font-weight="normal">against generated Goa</tspan><tspan x="0" y="53.699999999999996" font-size="16px" font-weight="normal">contracts</tspan></text></g></g></g></g></svg>
+</defs><g class="zoom" transform="scale(1) translate(50, 50)"><g class="groups"><g class="group"><rect x="40" y="40" rx="0" ry="0" width="1591.515625" height="765" fill="none" stroke="#8492a6" stroke-width="1.5" stroke-dasharray="6 4"></rect><text x="45" y="45" dominant-baseline="hanging" fill="#475569" font-size="20" font-weight="600" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" cursor="default">Highbay</text></g></g><g class="edges"><g class="edge" id="10x1kkv" data-from="1jggk5j" data-to="1oshkyf"><rect x="1051.015625" y="462" rx="0" ry="0" width="214.5" height="71" fill="none" stroke="none"></rect><text x="0" y="462" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-highbay-sync-color, #334155)" data-field="label"><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Flow test assignment &amp;</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">report check</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">(.highbay-tests)</tspan></text><path marker-end="url(#arrow)" d="M991.015625,449 L1321.515625,449" class="edge" fill="none" stroke="var(--mdl-rel-highbay-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path></g><g class="edge" id="1cfqdfj" data-from="1jggk5j" data-to="aay2nm"><rect x="1051.0625" y="698" rx="0" ry="0" width="214.40625" height="71" fill="none" stroke="none"></rect><text x="0" y="698" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-highbay-sync-color, #334155)" data-field="label"><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Runs accepted eval/</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">suite against candidate</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">commit</tspan></text><path marker-end="url(#arrow)" d="M991.015625,494 L1021.015625,494 L1021.015625,685 L1321.515625,685" class="edge" fill="none" stroke="var(--mdl-rel-highbay-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-1cfqdfj-a-l4h0ri" cx="1021.015625" cy="494" r="7" fill="none" class="v-dot auto"></circle><circle id="v-1cfqdfj-a-65gj0y" cx="1021.015625" cy="685" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="9z5f9o" data-from="1jggk5j" data-to="m0zg3"><rect x="1077.65625" y="226" rx="0" ry="0" width="161.21875" height="91" fill="none" stroke="none"></rect><text x="0" y="226" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-highbay-sync-color, #334155)" data-field="label"><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Agreed design,</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">generate_code &amp;</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">Docker check</tspan><tspan x="1158.265625" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">(.highbay-build)</tspan></text><path marker-end="url(#arrow)" d="M991.015625,404 L1021.015625,404 L1021.015625,213 L1321.515625,213" class="edge" fill="none" stroke="var(--mdl-rel-highbay-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-9z5f9o-a-76dlcm" cx="1021.015625" cy="404" r="7" fill="none" class="v-dot auto"></circle><circle id="v-9z5f9o-a-2bw73k" cx="1021.015625" cy="213" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="mo7tmm" data-from="obdat1" data-to="1jggk5j"><rect x="495.5" y="492" rx="0" ry="0" width="159.515625" height="91" fill="none" stroke="none"></rect><text x="0" y="492" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-highbay-sync-color, #334155)" data-field="label"><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">init_project,</tspan><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">update_draft,</tspan><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">refresh_story,</tspan><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">propose_change</tspan></text><path marker-end="url(#arrow)" d="M435.5,655 L465.5,655 L465.5,479 L711.015625,479" class="edge" fill="none" stroke="var(--mdl-rel-highbay-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path><circle id="v-mo7tmm-a-umfvyc" cx="465.5" cy="655" r="7" fill="none" class="v-dot auto"></circle><circle id="v-mo7tmm-a-4g9gtw" cx="465.5" cy="479" r="7" fill="none" class="v-dot auto"></circle></g><g class="edge" id="xeiocu" data-from="vus9e7" data-to="1jggk5j"><rect x="499.328125" y="355" rx="0" ry="0" width="151.859375" height="51" fill="none" stroke="none"></rect><text x="0" y="355" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" font-size="18" fill="var(--mdl-rel-highbay-sync-color, #334155)" data-field="label"><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">confirm, build,</tspan><tspan x="575.2578125" dy="20px" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="18px" font-weight="normal">approve, merge</tspan></text><path marker-end="url(#arrow)" d="M435.5,419 L711.015625,419" class="edge" fill="none" stroke="var(--mdl-rel-highbay-sync-color, #334155)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8"></path></g></g><g class="nodes"><g class="node" id="1jggk5j" transform="translate(851.015625,449)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Highbay Server</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[highbay: Goa-AI MCP &amp; HTTP]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Role-scoped control plane, Goa</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">generator, and verifier</tspan></text></g></g><g class="node" id="1oshkyf" transform="translate(1461.515625,449)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Test Writer</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[highbay: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Authors scenario tests in eval/</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">without touching app code</tspan></text></g></g><g class="node" id="aay2nm" transform="translate(1461.515625,685)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-verifier-bg, #0f766e)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Verifier</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[highbay-verifier: Process Group]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Builds digest-pinned binary and</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">executes Goa-AI eval suite</tspan></text></g></g><g class="node" id="m0zg3" transform="translate(1461.515625,213)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-33.7" font-size="22px" font-weight="bold">Builder</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-10.300000000000004" font-size="15.399999999999999px" font-weight="normal">[highbay: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="17.699999999999996" font-size="16px" font-weight="normal">Implements business logic</tspan><tspan x="0" y="35.699999999999996" font-size="16px" font-weight="normal">against generated Goa</tspan><tspan x="0" y="53.699999999999996" font-size="16px" font-weight="normal">contracts</tspan></text></g></g><g class="node" id="obdat1" transform="translate(295.5,655)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-24.700000000000003" font-size="22px" font-weight="bold">Guide Agent</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-1.3000000000000043" font-size="15.399999999999999px" font-weight="normal">[highbay: MCP Client]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="26.699999999999996" font-size="16px" font-weight="normal">Drafts Story flows, Goa design,</tspan><tspan x="0" y="44.699999999999996" font-size="16px" font-weight="normal">and Change Card</tspan></text></g></g><g class="node" id="vus9e7" transform="translate(295.5,419)"><rect rx="3" ry="3" x="-140" y="-90" width="280" height="180" class="nodeBorder" stroke-width="1.5" fill="var(--mdl-highbay-bg, #1e4da8)" stroke="#8492a6" opacity="1"></rect><g transform="translate(0,0)"><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="name"><tspan x="0" y="-33.7" font-size="22px" font-weight="bold">Browser Page</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)"><tspan x="0" y="-10.300000000000004" font-size="15.399999999999999px" font-weight="normal">[highbay: Views UI]</tspan></text><text text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" stroke="none" fill="var(--mdl-store-color, #ffffff)" data-field="description"><tspan x="0" y="17.699999999999996" font-size="16px" font-weight="normal">Human confirms Change Card,</tspan><tspan x="0" y="35.699999999999996" font-size="16px" font-weight="normal">starts Build, approves, and</tspan><tspan x="0" y="53.699999999999996" font-size="16px" font-weight="normal">merges</tspan></text></g></g></g></g></svg>
