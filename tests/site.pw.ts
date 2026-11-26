@@ -384,11 +384,11 @@ test('interactive Chorus browser demo works across mobile/desktop, light/dark, S
 
 for (const width of [390, 1440]) {
   for (const theme of ['light', 'dark']) {
-    test(`${width}px ${theme}: Highbay page walkthrough, diagram, and install`, async ({ page }) => {
+    test(`${width}px ${theme}: Highbay page contrast toggle, 4-view studio, and install`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Agree on what to build. One agent codes. Another tests.');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText("Your agent's tests pass. That only proves it agrees with itself.");
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveText('Get Highbay');
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.highbay-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/highbay/');
@@ -403,14 +403,28 @@ for (const width of [390, 1440]) {
       await expect(nav.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
       await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
-      await expect(page.locator('.highbay-pillars dt')).toHaveText([
-        'Compiled contract first',
-        'Plain-language Change Card',
-        'Separate test writer and builder',
-        'Server-run verification',
-      ]);
 
-      // Interactive 3-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
+      // Interactive "Same prompt. Two outcomes." policy toggle: solo code/tests stay identical while verdict flips.
+      const soloCard = page.locator('.highbay-sim__card--solo');
+      const hbCard = page.locator('.highbay-sim__card--hb');
+      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
+      await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeHidden();
+      await expect(soloCard.locator('.highbay-sim__verdict--pretax .highbay-chip')).toHaveText('Wrong, and green');
+      await expect(hbCard.locator('.highbay-sim__state--pretax')).toBeVisible();
+      await expect(hbCard.locator('.highbay-sim__state--withtax')).toBeHidden();
+
+      await page.locator('label[for="highbay-policy-withtax"]').click();
+      await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeVisible();
+      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeHidden();
+      await expect(soloCard.locator('.highbay-sim__verdict--withtax .highbay-chip')).toHaveText('Right by luck');
+      await expect(soloCard.locator('pre').first()).toContainText('order.TotalCents <= 5000');
+      await expect(hbCard.locator('.highbay-sim__state--withtax')).toBeVisible();
+      await expect(hbCard.locator('.highbay-sim__state--pretax')).toBeHidden();
+
+      await page.locator('label[for="highbay-policy-pretax"]').click();
+      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
+
+      // Interactive 4-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
       const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
       const checkStagePins = async (stageClass: string) => {
         const canvas = page.locator(`${stageClass} .highbay-window__canvas`);
@@ -436,6 +450,16 @@ for (const width of [390, 1440]) {
       await expect.poll(() => agreeImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
       await checkStagePins('.highbay-stage--agree');
 
+      await page.locator('label[for="highbay-stage-architecture"]').click();
+      const archImg = page.locator(`.highbay-stage--architecture ${shotSelector}`);
+      await expect(archImg).toBeVisible();
+      await expect(archImg).toHaveAttribute('fetchpriority', 'low');
+      await expect.poll(() => archImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
+      await checkStagePins('.highbay-stage--architecture');
+      if (width === 1440) {
+        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-architecture-${theme}.png` });
+      }
+
       await page.locator('label[for="highbay-stage-build"]').click();
       const buildImg = page.locator(`.highbay-stage--build ${shotSelector}`);
       await expect(buildImg).toBeVisible();
@@ -460,19 +484,18 @@ for (const width of [390, 1440]) {
 
       await expect(page.locator('.highbay-lane')).toHaveCount(3);
       await expect(page.locator('.highbay-lane h3')).toHaveText([
-        'Guide · Story & Change Card',
-        'Test writer · Acceptance tests',
-        'Builder · Implementation',
+        'The flows · design/story.go',
+        'The test · test writer',
+        'The rule · builder',
       ]);
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
-      const diagram = page.locator('.highbay-diagram img');
-      await diagram.scrollIntoViewIfNeeded();
-      await expect(diagram).toBeVisible();
-      await expect.poll(() => diagram.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
-      const fullsizeLink = page.getByRole('link', { name: 'Open full-size diagram', exact: true });
-      await expect(fullsizeLink).toHaveAttribute('href', '/images/diagrams/HighbayArchitecture.svg');
-      await fullsizeLink.focus();
-      await expect(fullsizeLink).toBeFocused();
+      await expect(page.locator('.highbay-trial')).toContainText('It caught a real one.');
+      await expect(page.locator('.highbay-compare-list dt')).toHaveText([
+        'One coding agent',
+        'Spec workflows (Spec Kit, OpenSpec)',
+        'Parallel agent workspaces (Conductor and others)',
+      ]);
+      await expect(page.locator('.highbay-faq dt')).toHaveCount(6);
       const faqDocLink = page.locator('.highbay-faq a').first();
       await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();
@@ -502,10 +525,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Acuerda qué construir. Un agente programa. Otro prueba.', 'Documentación', 'Framework Goa'],
-    ['fr', 'Validez quoi construire. Un agent code. Un autre teste.', 'Documentation', 'Framework Goa'],
-    ['it', 'Concorda cosa costruire. Un agente scrive il codice. Un altro i test.', 'Documentazione', 'Framework Goa'],
-    ['ja', '作るものに合意する。 1 つが実装し、もう 1 つがテストする。', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Las pruebas de tu agente pasan. Eso solo demuestra que está de acuerdo consigo mismo.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Les tests de votre agent passent. Cela prouve seulement qu’il est d’accord avec lui-même.', 'Documentation', 'Framework Goa'],
+    ['it', 'I test del tuo agente passano. Questo dimostra solo che è d’accordo con sé stesso.', 'Documentazione', 'Framework Goa'],
+    ['ja', 'エージェントのテストは通る。 それは自分自身と意見が一致した証明にすぎません。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
@@ -529,6 +552,8 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
       if (path.startsWith('docs/')) {
         expect(mdText).toContain('worked_example: true');
         expect(mdText).toContain('{#blank-and-example}');
+        expect(mdText).toContain('{#workflow}');
+        expect(mdText).toContain('{#checkpoints}');
         expect(mdText).toContain('{#herdr}');
         expect(mdText).toContain('{#architecture}');
       }

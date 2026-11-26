@@ -1,6 +1,6 @@
 // capture.mjs renders the real Highbay Views single-page bundle
 // (internal/controlplane/checkpoint.html from github.com/goadesign/highbay)
-// across the three stages shown on goa.design/highbay/ (Agree, Build, Approve)
+// across the four stages shown on goa.design/highbay/ (Agree, Architecture, Build, Approve)
 // in light and dark themes at desktop (1440x960 @ 1.5x) and mobile (390x780 @ 2x),
 // measures callout marker coordinates into pins.json, and writes optimized WebP
 // assets to static/img/highbay/.
@@ -261,8 +261,8 @@ function makeState(stage) {
     chorus_status: "connected",
     dismissed_notices: [],
     saved_choices: {
-      builder: { client: "claude", program: "claude", model: "claude-sonnet-4-6", thinking: "high", yolo: true },
-      test_writer: { client: "codex", program: "codex", model: "gpt-5.4", thinking: "high", yolo: true },
+      builder: { client: "claude", program: "claude", model: "claude-sonnet-4-6", thinking: "high", yolo: false },
+      test_writer: { client: "codex", program: "codex", model: "gpt-5.4", thinking: "high", yolo: false },
     },
     roles: [
       { role: "guide", handle: "guide", state: "waiting", attention: "none", watcher: "held", assignment: "nothing_owed" },
@@ -388,7 +388,66 @@ function makeState(stage) {
     },
   };
 
-  return { card, changes, build, team, options, verificationStatus, verificationReview };
+  const architecturePreview = {
+    change_id: CHANGE_ID,
+    request_revision: REV_2,
+    design_digest: "4e91c70a83f21b64d9052c87a13f6e409b28d514c703e891a6b42f08d37c5192",
+    system_name: "Refunds service",
+    banner: "5 containers, 4 boundary edges, 1 agent policy, 2 tool contracts",
+    containers: [
+      { id: "customer", kind: "person", name: "Customer", description: "Requests a store-credit refund on an order" },
+      { id: "manager", kind: "person", name: "Support manager", description: "Reviews refund requests above the $50 subtotal limit" },
+      { id: "refund_assistant", kind: "agent", name: "Refund Assistant", description: "Goa-AI agent evaluating refund eligibility" },
+      { id: "refunds_api", kind: "service", name: "Refunds API", description: "Enforces the $50 pre-tax subtotal policy" },
+      { id: "credit_tools", kind: "toolset", name: "Refund Toolset", description: "Typed service bindings for instant credit and review queue" },
+    ],
+    edges: [
+      { from_id: "customer", to_id: "refund_assistant", protocol: "HTTPS" },
+      { from_id: "manager", to_id: "refunds_api", protocol: "HTTPS" },
+      { from_id: "refund_assistant", to_id: "credit_tools", protocol: "BindTo" },
+      { from_id: "refunds_api", to_id: "credit_tools", protocol: "MCP" },
+    ],
+    agent_policies: [
+      {
+        agent_id: "refund_assistant",
+        max_execution_seconds: 30,
+        max_tool_calls: 4,
+        max_recovery_turns: 2,
+        compress_at_turns: 12,
+        keep_recent_turns: 6,
+        cache_after_system: true,
+        cache_after_tools: true,
+      },
+    ],
+    tools: [
+      {
+        id: "issue_store_credit",
+        name: "issue_store_credit",
+        toolset: "credit_tools",
+        description: "Issues immediate store credit when pre-tax subtotal <= $50.00.",
+        injected_fields: ["customer_id"],
+        requires_confirmation: false,
+        bounded_result: false,
+        requires_ui: false,
+        args_schema: '{"type":"object","required":["order_id","subtotal_cents","tax_cents"]}',
+        return_schema: '{"type":"object","required":["status","credited_cents"]}',
+      },
+      {
+        id: "queue_manager_refund",
+        name: "queue_manager_refund",
+        toolset: "credit_tools",
+        description: "Routes refunds above $50.00 pre-tax subtotal for manager approval.",
+        injected_fields: ["customer_id"],
+        requires_confirmation: true,
+        bounded_result: false,
+        requires_ui: false,
+        args_schema: '{"type":"object","required":["order_id","subtotal_cents","tax_cents"]}',
+        return_schema: '{"type":"object","required":["status","queue_id"]}',
+      },
+    ],
+  };
+
+  return { card, changes, build, team, options, verificationStatus, verificationReview, architecturePreview };
 }
 
 let currentStage = "agree";
@@ -432,6 +491,10 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && p === "/change-updates") {
     // Hold long-poll open cleanly until tab closes so the page stays calm.
     req.on("close", () => {});
+    return;
+  }
+  if (req.method === "POST" && p === "/changes/preview") {
+    json(200, state.architecturePreview);
     return;
   }
   if (req.method === "GET" && p === `/changes/${CHANGE_ID}`) {
@@ -495,7 +558,7 @@ const browser = await chromium.launch({ channel: "chrome" });
 const pins = {};
 
 try {
-  for (const stage of ["agree", "build", "approve"]) {
+  for (const stage of ["agree", "architecture", "build", "approve"]) {
     currentStage = stage;
     pins[stage] = {};
     for (const theme of ["light", "dark"]) {
@@ -529,6 +592,10 @@ try {
             await firstChoice.click();
           }
           await page.waitForTimeout(250);
+        } else if (stage === "architecture") {
+          await page.locator("#highbay-nav-cp2").click();
+          await page.waitForSelector("#highbay-c4-svg", { state: "visible", timeout: 5000 });
+          await page.waitForTimeout(200);
         } else if (stage === "build") {
           await page.getByRole("button", { name: "Build", exact: true }).click().catch(() => {});
           await page.waitForTimeout(400);
@@ -586,6 +653,13 @@ try {
               1: afterRight(inViewByText("h2, h3", /^Review & Confirm Change Intent$/i), 20),
               2: afterRight(simBadge || simHeading, 20),
               3: beforeLeft(inViewByText("button", /Confirm Intent|Jump to/i), 20),
+            };
+          }
+          if (stg === "architecture") {
+            return {
+              1: afterRight(inViewByText("h2, h3", /^C4 Directed Graph/i), 20),
+              2: afterRight(inViewByText("h3, h4", /^Evaluated Agent Policies/i), 20),
+              3: afterRight(inViewByText("h3, h4", /^Evaluated Tool Guardrails/i), 20),
             };
           }
           if (stg === "build") {

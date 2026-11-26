@@ -1,10 +1,8 @@
-# Highbay
+# Highbay — {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
 
 {{ T "highbay_intro" }}
 
-{{ T "highbay_clients" }}
-
-{{ T "highbay_facts" }}
+{{ T "highbay_clients" }} {{ T "highbay_facts" }}
 
 GitHub: [Highbay](https://github.com/goadesign/highbay)
 
@@ -18,40 +16,37 @@ Source: {{ .Permalink }}
 go install github.com/goadesign/highbay/cmd/hbay@latest && hbay up
 ```
 
-{{ T "highbay_install_chorus" }}:
-
-```bash
-brew install goadesign/tap/chorus && chorus up
-```
-
 {{ T "highbay_install_next" }}
 
 > {{ T "highbay_install_prompt" }}
 
 {{ T "highbay_install_hint" }}
 
+## {{ T "highbay_contrast_heading" }}
+
+{{ T "highbay_contrast_intro" }}
+
+> {{ T "highbay_contrast_request" }}
+
+{{ T "highbay_contrast_order" }}
+
+- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_suite" }}):** {{ T "highbay_solo_step_1" }} `if order.TotalCents <= 5000`. {{ T "highbay_solo_step_2" }}
+  - *{{ T "highbay_contrast_opt_pretax" }}:* **{{ T "highbay_solo_chip_pretax" }}** — {{ T "highbay_solo_verdict_pretax" }}
+  - *{{ T "highbay_contrast_opt_withtax" }}:* **{{ T "highbay_solo_chip_withtax" }}** — {{ T "highbay_solo_verdict_withtax" }}
+- **{{ T "highbay_with_title" }} ({{ T "highbay_with_suite" }}):** {{ T "highbay_with_step_1" }}
+  - *{{ T "highbay_contrast_opt_pretax" }}:* {{ T "highbay_with_verdict_pretax" }}
+  - *{{ T "highbay_contrast_opt_withtax" }}:* {{ T "highbay_with_verdict_withtax" }}
+
+{{ T "highbay_contrast_summary" }} {{ T "highbay_contrast_note" }}
+
 ## {{ T "highbay_showcase_heading" }}
 
 {{ T "highbay_showcase_intro" }}
 
-- **{{ T "highbay_tab_agree" }} ({{ T "highbay_tab_agree_sub" }}):** {{ T "highbay_agree_pin_2" }}
-- **{{ T "highbay_tab_build" }} ({{ T "highbay_tab_build_sub" }}):** {{ T "highbay_build_pin_1" }} · {{ T "highbay_build_pin_2" }}
-- **{{ T "highbay_tab_approve" }} ({{ T "highbay_tab_approve_sub" }}):** {{ T "highbay_approve_pin_1" }} ({{ T "highbay_approve_pin_3" }})
-
-## {{ T "highbay_pillars_heading" }}
-
-{{ T "highbay_pillars_intro" }}
-{{ range slice "contract" "card" "split" "verify" }}
-### {{ T (printf "highbay_pillar_%s" .) }}
-
-{{ T (printf "highbay_pillar_%s_text" .) }}
-{{ end }}
-
-## {{ T "highbay_steps_heading" }}
-
-{{ T "highbay_steps_intro" }}
-{{ range $i, $s := slice "describe" "agree" "build" "merge" }}
-{{ add $i 1 }}. **{{ T (printf "highbay_step_%s" $s) }}.** {{ T (printf "highbay_step_%s_text" $s) }}{{ end }}
+- **{{ T "highbay_tab_agree" }} ({{ T "highbay_tab_agree_sub" }}):** {{ T "highbay_agree_pin_1" }} · {{ T "highbay_agree_pin_2" }} · {{ T "highbay_agree_pin_3" }}
+- **{{ T "highbay_tab_arch" }} ({{ T "highbay_tab_arch_sub" }}):** {{ T "highbay_arch_pin_1" }} · {{ T "highbay_arch_pin_2" }} · {{ T "highbay_arch_pin_3" }}
+- **{{ T "highbay_tab_build" }} ({{ T "highbay_tab_build_sub" }}):** {{ T "highbay_build_pin_1" }} · {{ T "highbay_build_pin_2" }} · {{ T "highbay_build_pin_3" }}
+- **{{ T "highbay_tab_approve" }} ({{ T "highbay_tab_approve_sub" }}):** {{ T "highbay_approve_pin_1" }} · {{ T "highbay_approve_pin_2" }} · {{ T "highbay_approve_pin_3" }}
 
 ## {{ T "highbay_walkthrough_heading" }}
 
@@ -68,17 +63,14 @@ import . "github.com/goadesign/highbay/story/dsl"
 
 var _ = Story("Refunds", func() {
     Actor("customer", "Customer")
-    Actor("manager", "Support manager")
-
-    Flow("instant-credit", "Refund within the limit", func() {
-        StartsWith("request-refund", "customer", "Requests a refund up to $50.00")
-        Outcome("credit-issued", "customer", "Receives instant store credit")
+    Flow("instant_credit", "Within $50 subtotal", func() {
+        StartsWith("ask", "customer", "$48.00 + $4.32 tax")
+        Outcome("credit", "customer", "Instant $52.32 credit")
     })
 })
 ```
 
-- **{{ T "highbay_card_question_label" }}:** {{ T "highbay_card_question" }}
-- {{ T "highbay_card_choice" }}
+{{ T "highbay_card_choice" }}
 
 ### {{ T "highbay_role_tests" }}
 
@@ -86,15 +78,14 @@ var _ = Story("Refunds", func() {
 
 ```go
 func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
-    // $50.00 subtotal + $4.50 tax
-    out, err := h.refund(ctx, 5000, 450)
+    out, err := h.refund(ctx, 4800, 432)
     if err != nil {
         return eval.Result{}, err
     }
     return eval.Result{
         Checks: []eval.Check{
-            check("50_subtotal", out.Status == "credit"),
-            check("cents", out.Cents == 5450),
+            check("status", out.Status == "credit"),
+            check("cents", out.Cents == 5232),
         },
     }, nil
 }
@@ -106,31 +97,40 @@ func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
 
 {{ T "highbay_role_builder_caption" }}
 
-```text
-1. generate_code(target: "candidate") -> writes agreed design/ and regenerates gen/
-2. check_project() -> compiles and unit-tests inside a Linux container
-3. verify_change(change_id, request_revision, candidate_commit) -> server runs accepted eval/ suite against candidate_commit
+```go
+func (s *Service) RequestRefund(
+    ctx context.Context,
+    req *genrefunds.RequestPayload,
+) (*genrefunds.RefundResult, error) {
+    total := req.SubtotalCents + req.TaxCents
+    if req.SubtotalCents <= 5000 {
+        return s.issueCredit(ctx, req.OrderID, total)
+    }
+    return s.queueReview(ctx, req.OrderID, total)
+}
 ```
 
 {{ T "highbay_builder_check" }}
 
-## {{ T "highbay_arch_heading" }}
+### {{ T "highbay_trial_heading" }} ({{ T "highbay_trial_kicker" }})
 
-{{ T "highbay_arch_intro" }}
+{{ T "highbay_trial_body" }}
 
-{{ T "highbay_arch_caption" }}
+*{{ T "highbay_trial_note" }}*
 
-## {{ T "highbay_modes_heading" }}
+## {{ T "highbay_compare_heading" }}
 
-{{ T "highbay_modes_intro" }}
-{{ range slice "herdr" "headless" "models" }}
-### {{ T (printf "highbay_mode_%s" .) }}
+{{ T "highbay_compare_intro" }}
+{{ range slice "solo" "speckit" "workspaces" }}
+### {{ T (printf "highbay_compare_%s" .) }}
 
-{{ T (printf "highbay_mode_%s_text" .) }}
+{{ T (printf "highbay_compare_%s_text" .) }}
 {{ end }}
 
+{{ T "highbay_compare_summary" }}
+
 ## {{ T "home_faq_heading" }}
-{{ range slice "why" "ecosystem" "existing" "local" }}
+{{ range slice "scope" "tdd" "existing" "holdouts" "local" "sandbox" }}
 ### {{ T (printf "highbay_faq_%s_q" .) }}
 
 {{ T (printf "highbay_faq_%s_a" .) }}

@@ -1,5 +1,5 @@
 ---
-title: "Highbay — validez le comportement, un agent code et un autre teste"
+title: "Highbay — poids et contrepoids pour agents de code"
 linkTitle: "Highbay"
-description: "Décrivez une fonctionnalité dans votre agent de code. Highbay affiche les cas limites dans votre navigateur, génère les contrats Goa et Goa-AI, sépare l'agent qui écrit les tests de celui qui code et vérifie le résultat avant la fusion."
+description: "Highbay construit des services Go et des agents IA avec les agents de programmation que vous utilisez déjà, en séparant les rôles pour qu'aucun agent ne vérifie son propre travail : vous choisissez le comportement, l'un écrit le code, l'autre les tests, et Highbay les exécute avant la fusion."
 ---

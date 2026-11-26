@@ -1,5 +1,5 @@
 ---
-title: "Highbay — concorda cosa costruire; un agente scrive il codice e un altro i test"
+title: "Highbay — pesi e contrappesi per coding agent"
 linkTitle: "Highbay"
-description: "Descrivi una funzionalità nel tuo coding agent. Highbay mostra i casi limite nel browser, genera i contratti con Goa e Goa-AI, separa l'agente che scrive i test da quello che scrive il codice e verifica il risultato prima del merge."
+description: "Highbay sviluppa servizi Go e agenti IA con i coding agent che usi già, separando i compiti affinché nessun agente controlli il proprio lavoro: tu scegli il comportamento, uno scrive il codice, un altro i test e Highbay li esegue prima del merge."
 ---
