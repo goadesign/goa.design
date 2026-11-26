@@ -31,6 +31,8 @@ Ogni anteprima, suite di test accettata, live target, esecuzione di verifica e a
 4. **`CP4` — Verifica indipendente**: Highbay ricompila e controlla il report `eval/` del test writer sul branch `highbay/tests-<n>` prima di accettarlo, poi compila il commit del builder ed esegue contro di esso quella suite `eval/` accettata (senza richiedere chiavi API a meno che la suite `eval/` non chiami un provider live; l'esempio opzionale `-example` fornisce un modello scriptato e il controllo iniziale a vuoto non usa modelli). Per i valutatori configurati dall'operatore, nomi, controlli e log degli scenari holdout sono omessi dai report destinati al builder tramite `Report.ForBuilders()` (il test writer non può inviare holdout).
 5. **`CP5` — Approvare e fare merge**: Esamina i risultati in **Approve**, registra l'approvazione e premi **Merge into current branch** per unire i commit verificati nel tuo branch locale.
 
+{{< highbay-views >}}
+
 ## Installazione
 
 Highbay funziona su macOS o Linux e richiede **Go 1.27.3+**, **Git 2.45+** (con `user.name` e `user.email` configurati) e **Docker** (usato da `check_project` per compilare e testare il lavoro del builder in container Linux).

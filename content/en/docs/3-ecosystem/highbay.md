@@ -31,6 +31,8 @@ Every preview, accepted test suite, live target, verification run, and approval 
 4. **`CP4` — Independent Verification**: Highbay compiles and validates the test writer's `eval/` report on branch `highbay/tests-<n>` before accepting it, then builds the builder's candidate commit and runs that accepted `eval/` suite against it (requiring no provider API key unless the project's `eval/` suite calls a live model; the opt-in `-example` starter supplies a scripted model, and the blank starter's readiness check uses no model). For operator-configured evaluators with holdouts, holdout scenario names, checks, and logs are redacted from builder-facing tool reports through `Report.ForBuilders()` (the test writer cannot submit holdouts).
 5. **`CP5` — Approve and Merge**: Review the scenario outcomes in **Approve**, record approval (with optional release-binary digest checks when promotion settings are configured), and click **Merge into current branch** to merge the verified candidate and test commits cleanly.
 
+{{< highbay-views >}}
+
 ## Installation
 
 Highbay runs on macOS or Linux and requires **Go 1.27.3+**, **Git 2.45+** (with `user.name` and `user.email` configured), and **Docker** (used by `check_project` to compile and unit-test builder work inside Linux containers).

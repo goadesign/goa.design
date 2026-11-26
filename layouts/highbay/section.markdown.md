@@ -30,6 +30,14 @@ brew install goadesign/tap/chorus && chorus up
 
 {{ T "highbay_install_hint" }}
 
+## {{ T "highbay_showcase_heading" }}
+
+{{ T "highbay_showcase_intro" }}
+
+- **{{ T "highbay_tab_agree" }} ({{ T "highbay_tab_agree_sub" }}):** {{ T "highbay_agree_pin_2" }}
+- **{{ T "highbay_tab_build" }} ({{ T "highbay_tab_build_sub" }}):** {{ T "highbay_build_pin_1" }} · {{ T "highbay_build_pin_2" }}
+- **{{ T "highbay_tab_approve" }} ({{ T "highbay_tab_approve_sub" }}):** {{ T "highbay_approve_pin_1" }} ({{ T "highbay_approve_pin_3" }})
+
 ## {{ T "highbay_pillars_heading" }}
 
 {{ T "highbay_pillars_intro" }}

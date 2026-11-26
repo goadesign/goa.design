@@ -275,9 +275,37 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 [data-theme="dark"] .chorus-badge--light { display: none; }
 [data-theme="dark"] .chorus-badge--dark { display: block; }
 
-// Highbay landing page (/highbay/). Reuses the Goa hero, benefit-list, workflow
-// and FAQ rhythm; adds the three-role walkthrough lanes and diagram panel.
+// Highbay landing page (/highbay/). Reuses the Goa hero, contract-demo switch,
+// benefit-list, workflow and FAQ rhythm; adds the interactive three-stage Views
+// studio, pillar icons, three-role walkthrough lanes, workspace topology cards
+// and architecture diagram panel.
+.highbay-hero { padding-block: 52px 36px; }
 .highbay-hero-install .highbay-prompt { margin-top: .35rem; font-size: .92rem; }
+.highbay-flow-strip { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin-bottom: .95rem; padding-bottom: .85rem; border-bottom: 1px solid var(--color-border-subtle); color: var(--doc-link-color); }
+.highbay-flow-strip svg { width: 18px; height: 11px; flex-shrink: 0; }
+.highbay-flow-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .55rem; border-radius: 5px; background: var(--color-highlight); border: 1px solid var(--color-border-subtle); color: var(--color-text-heading); font-size: .78rem; font-weight: 600; }
+.highbay-flow-chip b { font-family: $font-family-monospace; color: var(--doc-link-color); }
+.highbay-showcase { padding-block: 12px 68px; }
+.highbay-showcase .section-intro { margin-bottom: 1.75rem; }
+.highbay-studio { margin: 0; background: var(--color-bg-elevated); }
+.highbay-studio:has(#highbay-stage-agree:checked) :is(.highbay-stage--build, .highbay-stage--approve),
+.highbay-studio:has(#highbay-stage-build:checked) :is(.highbay-stage--agree, .highbay-stage--approve),
+.highbay-studio:has(#highbay-stage-approve:checked) :is(.highbay-stage--agree, .highbay-stage--build) { display: none; }
+.highbay-stage { padding: 1.25rem 1.4rem 1.4rem; background: var(--color-bg-alt); }
+.highbay-callouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.4rem; list-style: none; padding: 0; margin: 0 0 1.15rem; font-size: .86rem; line-height: 1.55; color: var(--color-text); }
+.highbay-callouts li { display: flex; align-items: flex-start; gap: .55rem; min-width: 0; }
+.highbay-callouts .chorus-marker { flex-shrink: 0; margin: .12rem 0 0; }
+.highbay-callouts strong { color: var(--color-text-heading); }
+.highbay-window { border-radius: 10px; border: 1px solid var(--color-border-subtle); background: var(--color-bg-elevated); overflow: hidden; }
+.highbay-window__bar { display: flex; align-items: center; gap: .75rem; padding: .55rem .9rem; background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border-subtle); font: 600 .76rem $font-family-monospace; color: var(--color-text-muted); }
+.highbay-window__dots { display: inline-flex; gap: .35rem; }
+.highbay-window__dots i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--color-border-subtle); background: var(--color-bg-alt); }
+.highbay-window__url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.highbay-window__canvas { position: relative; }
+.highbay-pin { transform: translate(-50%, -50%); }
+.highbay-studio__caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1.5rem; padding: .85rem 1.4rem; background: var(--color-bg-elevated); border-top: 1px solid var(--color-border-subtle); color: var(--color-text-muted); font-size: .83rem; }
+.highbay-pillar-icon { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: .75rem; border-radius: 8px; background: var(--color-highlight); border: 1px solid var(--color-border-subtle); color: var(--doc-link-color); }
+.highbay-pillar-icon svg { width: 20px; height: 20px; }
 .highbay-walkthrough { padding-block: 36px 72px; }
 .highbay-lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .highbay-lane { min-width: 0; display: flex; flex-direction: column; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 10px; overflow: hidden; }
@@ -297,7 +325,23 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .td-content img[src$="HighbayArchitecture.svg"] { background: #f8fafc; border: 1px solid var(--color-border-subtle); border-radius: 10px; padding: .85rem; }
 .highbay-diagram figcaption { margin-top: 1rem; color: var(--color-text-muted); font-size: .86rem; text-align: center; }
 .highbay-modes { padding-block: 72px 24px; }
+.highbay-workspaces { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; margin-bottom: 2.5rem; }
+.highbay-ws-card { min-width: 0; border: 1px solid var(--color-border-subtle); border-radius: 10px; background: var(--color-bg-alt); overflow: hidden; display: flex; flex-direction: column; }
+.highbay-ws-card__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .65rem 1rem; background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border-subtle); font-size: .82rem; font-weight: 700; color: var(--color-text-heading); }
+.highbay-ws-pill { padding: .15rem .5rem; border-radius: 4px; background: var(--color-highlight); color: var(--doc-link-color); font: 600 .74rem $font-family-monospace; }
+.highbay-ws-split { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+.highbay-ws-stack { display: flex; flex-direction: column; gap: 10px; }
+.highbay-ws-single { flex: 1; display: flex; padding: 12px; }
+.highbay-ws-pane { flex: 1; display: flex; flex-direction: column; gap: .35rem; padding: .75rem .85rem; border: 1px solid var(--color-border-subtle); border-radius: 7px; background: var(--color-bg-elevated); font-size: .78rem; color: var(--color-text-muted); }
+.highbay-ws-pane--guide { border-inline-start: 3px solid var(--doc-link-color); }
+.highbay-ws-pane strong { font: 700 .78rem $font-family-monospace; color: var(--color-text-heading); }
+.highbay-ws-pane code { background: var(--color-bg-alt); color: var(--color-text-heading); padding: .25rem .45rem; border-radius: 4px; font-size: .74rem; }
+.highbay-ws-procs { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .2rem; }
+.highbay-ws-procs span { padding: .2rem .45rem; border-radius: 4px; border: 1px solid var(--color-border-subtle); background: var(--color-highlight); color: var(--doc-link-color); font: 600 .72rem $font-family-monospace; }
 .highbay-faq { padding-bottom: 64px; }
+.highbay-doc-views { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0 2rem; }
+.highbay-doc-shot { margin: 0; min-width: 0; }
+.highbay-doc-shot figcaption { margin-top: .55rem; font-size: .84rem; color: var(--color-text-muted); text-align: center; }
 
 .td-footer { min-height: 0; padding: 2rem; background: var(--color-bg-alt); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); font-size: .85rem; }
 .td-footer .row { gap: 1.2rem; }
@@ -359,7 +403,10 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
   .company-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   .td-footer .row { flex-direction: column; }
   .chorus-hero { padding-block: 48px 32px; }
-  .chorus-pillar-list, .chorus-terminals, .chorus-raw-grid, .highbay-lanes { grid-template-columns: 1fr; }
+  .chorus-pillar-list, .chorus-terminals, .chorus-raw-grid, .highbay-lanes, .highbay-callouts, .highbay-workspaces, .highbay-doc-views { grid-template-columns: 1fr; }
+  .highbay-showcase { padding-block: 8px 48px; }
+  .highbay-stage { padding: 1rem; }
+  .highbay-studio__caption { padding-inline: 1rem; }
   .chorus-example, .chorus-steps, .highbay-walkthrough { padding-block: 24px 48px; }
   .highbay-modes { padding-block: 48px 16px; }
   .chorus-faq { padding-bottom: 28px; }
@@ -368,6 +415,9 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 }
 @media (max-width: 600px) {
   .chorus-pin { left: var(--mx); top: var(--my); width: 1.2rem; height: 1.2rem; font-size: .65rem; transform: translate(-50%, calc(-100% - 6px)); }
+  .highbay-pin { display: none; }
+  .highbay-ws-split { grid-template-columns: 1fr; }
+  .highbay-stage-switch label span { display: block; margin-left: 0; font-size: .75rem; }
   .sponsor-list { grid-template-columns: 1fr; }
   .support-section { padding-block: 32px 48px; }
   .company-logo { padding-inline: 12px; }
