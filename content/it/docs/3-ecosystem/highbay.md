@@ -65,6 +65,19 @@ Quando un singolo coding agent scrive sia l'applicazione sia i test che la contr
 
 ---
 
+## Perché la generazione di codice conta per i coding agent {#codegen}
+
+Lasciare che un coding agent scriva a mano router HTTP, handler JSON-RPC, server MCP, logica di validazione e schemi JSON dei tool consuma token di output per codice ripetitivo, gonfia il contesto di input nelle modifiche successive e introduce differenze strutturali da una funzionalità all'altra. Highbay affianca alla separazione dei ruoli la generazione deterministica di Goa e Goa-AI:
+
+- **Zero token di output LLM spesi per scrivere `gen/`**: Quando il builder invoca `generate_code`, Highbay scrive il `design/` confermato in `.highbay-build` ed esegue i compilatori Goa e Goa-AI fissati nel progetto per sostituire `gen/` — server HTTP, JSON-RPC e MCP, client tipizzati, codec, validazione strutturale, specifiche OpenAPI, schemi JSON dei tool Goa-AI, guardrail `Inject` e `Confirmation` e `AGENTS_QUICKSTART.md`. Il risparmio complessivo di token dipende dal contesto, dalle iterazioni e dalla revisione richiesti dalla modifica.
+- **Contesto più compatto a ogni modifica**: Invece di caricare nel prompt tutti i file generati di trasporto e schema, builder e test writer leggono il pacchetto compatto `design/` e le interfacce Go generate.
+- **Struttura uniforme tra turni e famiglie di modelli**: Rigenerare `gen/` con un unico compilatore mantiene coerenti formati di errore, validazione e schemi dei tool sia con Claude sia con Codex o Gemini.
+- **Allineamento verificato dal compilatore tra i ruoli**: Aggiornare un campo del payload o un flusso `Story` rigenera insieme le interfacce di servizio in `gen/` e la tabella degli scenari in `eval/gen/`, trasformando firme non allineate o scenari mancanti in errori immediati di `go build` — e `verify_change` rifiuta i commit il cui `design/` diverge dall'accordo confermato.
+
+Per approfondire il flusso design-first con agenti, consulta [Sviluppare con un coding agent](/it/docs/ai-development/).
+
+---
+
 ## Cinque checkpoint (`CP1`–`CP5`) {#checkpoints}
 
 Ogni anteprima di architettura, commit di test accettato, copia live, esecuzione di verifica e approvazione è vincolata a un digest esatto `request_revision` della Change Card:

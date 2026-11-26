@@ -65,6 +65,19 @@ Lorsqu'une seule session d'agent écrit à la fois l'application et les tests ch
 
 ---
 
+## Pourquoi la génération de code change le travail des agents {#codegen}
+
+Laisser un agent de code écrire à la main les routeurs HTTP, les gestionnaires JSON-RPC, les serveurs MCP, la validation et les schémas JSON d'outils dépense des tokens de sortie en plomberie répétitive, alourdit le contexte d'entrée lors des retouches suivantes et fait dériver les conventions d'une fonctionnalité à l'autre. Highbay associe la séparation des rôles à la génération déterministe de Goa et Goa-AI :
+
+- **Aucun token de sortie LLM dépensé pour écrire `gen/`** : Lorsque le bâtisseur appelle `generate_code`, Highbay matérialise le `design/` confirmé dans `.highbay-build` et exécute les compilateurs Goa et Goa-AI épinglés pour remplacer `gen/` — serveurs HTTP, JSON-RPC et MCP, clients typés, codecs, validation structurelle, spécifications OpenAPI, schémas JSON d'outils Goa-AI, garde-fous `Inject` et `Confirmation` et `AGENTS_QUICKSTART.md`. L'économie totale de tokens dépend du contexte, des itérations et des relectures nécessaires.
+- **Un contexte plus compact à chaque modification** : Au lieu de charger tous les fichiers générés de transport et de schémas dans le prompt, le bâtisseur et le rédacteur de tests lisent le paquet `design/` et les interfaces Go générées.
+- **Une structure uniforme d'un tour et d'un modèle à l'autre** : Régénérer `gen/` avec un même compilateur garde les formats d'erreur, la validation et les schémas d'outils identiques, que le changement soit codé par Claude, Codex ou Gemini.
+- **Un alignement vérifié par le compilateur entre les rôles** : Modifier un champ de payload ou un flux `Story` met à jour simultanément les interfaces de `gen/` et la table des scénarios dans `eval/gen/`, transformant les signatures obsolètes ou les scénarios manquants en erreurs immédiates de `go build` — et `verify_change` refuse tout commit dont le `design/` s'écarte de l'accord confirmé.
+
+Pour structurer vos contrats Goa et Goa-AI avec des agents, consultez [Développer avec un agent de code](/fr/docs/ai-development/).
+
+---
+
 ## Cinq points de contrôle (`CP1`–`CP5`) {#checkpoints}
 
 Chaque aperçu d'architecture, commit de tests accepté, cible en direct, exécution de vérification et approbation est lié à l'empreinte exacte `request_revision` de la Change Card :

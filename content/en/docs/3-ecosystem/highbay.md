@@ -65,6 +65,19 @@ When a single coding agent writes both an application and the tests that check i
 
 ---
 
+## Why Code Generation Matters for Coding Agents {#codegen}
+
+Letting a coding agent write HTTP routers, JSON-RPC handlers, MCP servers, validation logic, and tool JSON schemas by hand spends output tokens on repetitive plumbing, bloats the input context of later edits, and drifts in conventions from feature to feature. Highbay pairs separated agent roles with Goa and Goa-AI code generation:
+
+- **No LLM output tokens spent writing `gen/`**: When the builder calls `generate_code`, Highbay writes the confirmed `design/` into `.highbay-build` and runs the project's pinned Goa and Goa-AI compilers to replace `gen/`—emitting HTTP, JSON-RPC, and MCP servers, typed clients, codecs, structural validation, OpenAPI specs, Goa-AI tool JSON schemas, `Inject` and `Confirmation` gates, and `AGENTS_QUICKSTART.md` deterministically. Total token savings depend on how much context, iteration, and review the change requires.
+- **Smaller context on subsequent edits**: Instead of loading every generated transport and schema file into the model context, the builder and test writer read the compact `design/` package and generated Go interfaces.
+- **Uniform structure across turns and model families**: Regenerating `gen/` from one compiler keeps error shapes, request validation, and tool schemas consistent whether a change is implemented by Claude, Codex, or Gemini.
+- **Compiler-enforced alignment across roles**: Updating a payload field or `Story` flow regenerates both the service interfaces in `gen/` and the scenario table in `eval/gen/`, turning stale method signatures or missing scenario hooks into immediate `go build` errors—and `verify_change` refuses commits whose `design/` diverges from the confirmed agreement.
+
+For guidance on structuring Goa and Goa-AI contracts for coding agents, see [Develop with a coding agent](/docs/ai-development/).
+
+---
+
 ## Five Checkpoints (`CP1`–`CP5`) {#checkpoints}
 
 Every architecture preview, accepted test commit, live target, verification run, and approval is bound to an exact `request_revision` digest of the Change Card:

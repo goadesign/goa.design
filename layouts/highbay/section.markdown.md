@@ -128,6 +128,47 @@ func (s *Service) RequestRefund(
 
 {{ T "highbay_builder_check" }}
 
+## {{ T "highbay_codegen_heading" }} {#codegen}
+
+{{ T "highbay_codegen_intro" }}
+
+```go
+var creditTools = Toolset("credit_tools", func() {
+    Tool("request_refund", "Refund or queue an order", func() {
+        Args(RequestPayload)
+        Return(RefundResult)
+        BindTo("refunds", "request_refund")
+        Inject("customer_id")
+    })
+})
+
+var _ = Service("refunds", func() {
+    MCP("refunds", "1.0.0")
+    Method("request_refund", func() {
+        Payload(RequestPayload)
+        Result(RefundResult)
+        HTTP(func() { POST("/refunds") })
+    })
+    Export(creditTools)
+    Agent("refund_assistant", "Handles customer refunds", func() {
+        Use(creditTools)
+    })
+})
+```
+
+`generate_code` ({{ T "highbay_codegen_zero" }}) → **{{ T "highbay_codegen_right_title" }}** ({{ T "highbay_codegen_right_sub" }}):
+{{ range slice "transports" "validation" "agents" "eval" }}
+- **{{ T (printf "highbay_codegen_out_%s" .) }}:** {{ T (printf "highbay_codegen_out_%s_text" .) }}
+{{- end }}
+
+{{ T "highbay_codegen_caption" }}
+{{ range slice "tokens" "context" "consistency" "compiler" }}
+### {{ T (printf "highbay_codegen_%s" .) }}
+
+{{ T (printf "highbay_codegen_%s_text" .) }}
+{{ end }}
+[{{ T "highbay_codegen_cta" }}]({{ relref . "/docs/ai-development/" }})
+
 ## {{ T "highbay_compare_heading" }}
 
 {{ T "highbay_compare_intro" }}
@@ -140,7 +181,7 @@ func (s *Service) RequestRefund(
 {{ T "highbay_compare_summary" }}
 
 ## {{ T "home_faq_heading" }}
-{{ range slice "scope" "tdd" "existing" "holdouts" "local" "sandbox" }}
+{{ range slice "scope" "codegen" "tdd" "existing" "holdouts" "local" "sandbox" }}
 ### {{ T (printf "highbay_faq_%s_q" .) }}
 
 {{ T (printf "highbay_faq_%s_a" .) }}

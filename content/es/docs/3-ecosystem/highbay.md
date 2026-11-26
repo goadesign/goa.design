@@ -65,6 +65,19 @@ Cuando un único agente escribe tanto la aplicación como las pruebas que la eva
 
 ---
 
+## Por qué la generación de código importa con agentes de programación {#codegen}
+
+Dejar que un agente escriba a mano enrutadores HTTP, manejadores JSON-RPC, servidores MCP, validaciones y esquemas JSON de herramientas consume tokens de salida en código repetitivo, infla el contexto de entrada en ediciones posteriores y desvía las convenciones entre funcionalidades. Highbay combina la separación de roles con la generación determinista de Goa y Goa-AI:
+
+- **Cero tokens de salida del modelo al escribir `gen/`**: Cuando el constructor llama a `generate_code`, Highbay escribe el `design/` confirmado en `.highbay-build` y ejecuta los compiladores fijados de Goa y Goa-AI para reemplazar `gen/`, emitiendo servidores HTTP, JSON-RPC y MCP, clientes tipados, códecs, validación estructural, especificaciones OpenAPI, esquemas JSON de herramientas Goa-AI, salvaguardas `Inject` y `Confirmation` y `AGENTS_QUICKSTART.md`. El ahorro total de tokens depende del contexto, las iteraciones y la revisión que requiera el cambio.
+- **Contexto más pequeño en cada edición**: En lugar de cargar en el prompt todos los archivos generados de transporte y esquemas, el constructor y el autor de pruebas leen el paquete compacto `design/` y las interfaces Go generadas.
+- **Estructura uniforme entre turnos y modelos**: Regenerar `gen/` con un único compilador mantiene idénticos los formatos de error, las validaciones y los esquemas de herramientas tanto si el cambio lo implementa Claude como Codex o Gemini.
+- **Alineación verificada por el compilador entre roles**: Cambiar un campo del payload o un flujo `Story` actualiza a la vez las interfaces de `gen/` y la tabla de escenarios de `eval/gen/`, convirtiendo firmas desfasadas o escenarios ausentes en errores inmediatos de `go build`, y `verify_change` rechaza cualquier commit cuyo `design/` difiera del acuerdo confirmado.
+
+Para estructurar contratos Goa y Goa-AI pensados para agentes, consulta [Desarrollar con un agente de programación](/es/docs/ai-development/).
+
+---
+
 ## Cinco puntos de control (`CP1`–`CP5`) {#checkpoints}
 
 Cada vista previa de arquitectura, commit de pruebas aceptado, copia en vivo, ejecución de verificación y aprobación queda vinculado a un digest exacto `request_revision` de la Change Card:
