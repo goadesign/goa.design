@@ -505,6 +505,12 @@ for (const width of [390, 1440]) {
         'The rule · builder',
       ]);
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
+      await expect(page.locator('.highbay-codegen h2')).toHaveText('Generate the plumbing. Spend tokens on the logic.');
+      await expect(page.locator('.highbay-codegen .mcp-generation')).toBeVisible();
+      await expect(page.locator('.highbay-codegen__zero')).toHaveText('Written by the compiler, not a model');
+      await expect(page.locator('.highbay-codegen__sig pre')).toContainText('context.Context, *ChatPayload');
+      await expect(page.locator('.highbay-codegen-list dt')).toHaveCount(3);
+      await expect(page.locator('.highbay-codegen .section-link')).toHaveAttribute('href', '/docs/ai-development/');
       await expect(page.locator('.highbay-compare-list dt')).toHaveText([
         'One coding agent',
         'Spec workflows (Spec Kit, OpenSpec)',
@@ -551,6 +557,7 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
     const nav = page.locator('.td-navbar .navbar-nav');
     await expect(nav.getByRole('link', { name: docsLabel, exact: true })).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/highbay/`);
     await expect(nav.getByRole('link', { name: goaLabel, exact: true })).toHaveAttribute('href', `/${lang}/`);
+    await expect(page.locator('.highbay-codegen .section-link')).toHaveAttribute('href', `/${lang}/docs/ai-development/`);
     await expect(page.locator('.highbay-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/highbay/`);
     const docs = await request.get(`/${lang}/docs/3-ecosystem/highbay/`);
     expect(docs.ok()).toBe(true);
@@ -563,6 +570,7 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
       const mdText = await response.text();
       expect(mdText).toContain('github.com/goadesign/highbay/cmd/hbay@latest');
       expect(mdText).toContain('1.27.3');
+      expect(mdText).toContain('{#codegen}');
       expect(mdText).not.toContain('`example: true`');
       if (path.startsWith('docs/')) {
         expect(mdText).toContain('worked_example: true');

@@ -65,6 +65,19 @@ When a single coding agent writes both an application and the tests that check i
 
 ---
 
+## Why Code Generation Matters for Coding Agents {#codegen}
+
+If a coding agent writes HTTP routers, JSON-RPC handlers, MCP servers, request validation, and tool JSON schemas by hand, it spends tokens on work Goa can generate and leaves conventions to vary from turn to turn. Highbay makes generation part of the agreed build across separate owners:
+
+- **Service `gen/` (`generate_code`)**: When the builder runs `generate_code`, Highbay writes the open build's agreed `design/` into `.highbay-build` and runs the project's pinned Goa and Goa-AI generators to replace candidate `gen/`—producing handlers, typed clients, codecs, and structural validation for the declared HTTP, JSON-RPC, and MCP transports, plus Goa-AI tool JSON schemas, method bindings, injected fields, confirmation declarations, and `AGENTS_QUICKSTART.md` at the module root (unless disabled). Goa writes those files without model output tokens; overall token savings depend on how much context, iteration, and review the change needs.
+- **Focused starting context**: Edits start with `design/` and the relevant generated Go interfaces rather than loading every transport and schema file into the prompt.
+- **Uniform generated shape across models**: Regenerating `gen/` from one compiler keeps generated transport, validation, and tool-schema code consistent whether the implementation around it was written by Claude, Codex, or Gemini.
+- **Compile-time and server checks across roles**: Giving a method a new result type and regenerating fails `go build` on handlers still returning the old type (while invalid model-authored tool calls are rejected at runtime). Separately, Highbay writes required `Story` flows to `eval/design/story_tests.go` when preparing or checking the test writer's assignment, generates the Go runner in `eval/gen/`, builds the test program and checks its scenario listing, and refuses a `verify_change` commit whose `design/` differs from the agreed revision.
+
+For guidance on structuring Goa and Goa-AI contracts for coding agents, see [Develop with a coding agent](/docs/ai-development/).
+
+---
+
 ## Five Checkpoints (`CP1`–`CP5`) {#checkpoints}
 
 Every architecture preview, accepted test commit, live target, verification run, and approval is bound to an exact `request_revision` digest of the Change Card:

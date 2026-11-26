@@ -65,6 +65,19 @@ Lorsqu'une seule session d'agent écrit à la fois l'application et les tests ch
 
 ---
 
+## Pourquoi la génération de code change le travail des agents {#codegen}
+
+Lorsqu’un agent de code écrit à la main les routeurs HTTP, les gestionnaires JSON-RPC, les serveurs MCP, la validation des requêtes et les schémas JSON d’outils, il dépense des tokens sur un travail que Goa peut générer et laisse les conventions varier d’un tour à l’autre. Highbay intègre la génération au build convenu en séparant chaque responsable :
+
+- **`gen/` du service (`generate_code`)** : Lorsque le bâtisseur lance `generate_code`, Highbay écrit le `design/` convenu du build ouvert dans `.highbay-build` et exécute les générateurs Goa et Goa-AI épinglés pour remplacer `gen/` — produisant gestionnaires, clients typés, codecs et validation structurelle pour les transports HTTP, JSON-RPC et MCP déclarés, ainsi que les schémas JSON d’outils Goa-AI, liaisons de méthodes, champs injectés, déclarations de confirmation et `AGENTS_QUICKSTART.md` à la racine du module (sauf désactivation). Goa écrit ces fichiers sans tokens de sortie LLM ; l’économie globale dépend du contexte, des itérations et des relectures nécessaires.
+- **Un point de départ ciblé** : Les modifications commencent par `design/` et les interfaces Go générées pertinentes plutôt que de charger chaque fichier de transport et de schéma dans le prompt.
+- **Une forme générée uniforme entre les modèles** : Régénérer `gen/` avec un même compilateur garde le code de transport, de validation et de schémas d’outils cohérent, que la logique autour ait été écrite par Claude, Codex ou Gemini.
+- **Contrôles du compilateur et du serveur entre les rôles** : Donner un nouveau type de retour à une méthode puis régénérer fait échouer `go build` sur les gestionnaires renvoyant l’ancien type (tandis que les appels d’outils invalides produits par un modèle sont rejetés à l’exécution). Séparément, Highbay écrit les flux `Story` requis dans `eval/design/story_tests.go` lors de la lecture ou du contrôle de la tâche du rédacteur de tests, génère le lanceur Go dans `eval/gen/`, compile le programme de tests et vérifie sa liste de scénarios, et refuse lors de `verify_change` tout commit dont `design/` diffère de la révision convenue.
+
+Pour structurer vos contrats Goa et Goa-AI avec des agents, consultez [Développer avec un agent de code](/fr/docs/ai-development/).
+
+---
+
 ## Cinq points de contrôle (`CP1`–`CP5`) {#checkpoints}
 
 Chaque aperçu d'architecture, commit de tests accepté, cible en direct, exécution de vérification et approbation est lié à l'empreinte exacte `request_revision` de la Change Card :

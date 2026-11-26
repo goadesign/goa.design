@@ -65,6 +65,19 @@ Quando un singolo coding agent scrive sia l'applicazione sia i test che la contr
 
 ---
 
+## Perché la generazione di codice conta per i coding agent {#codegen}
+
+Se un coding agent scrive a mano router HTTP, handler JSON-RPC, server MCP, validazione delle richieste e schemi JSON dei tool, consuma token su un lavoro che Goa può generare e lascia che le convenzioni cambino a ogni turno. Highbay rende la generazione parte della build concordata separando ciascun responsabile:
+
+- **`gen/` del servizio (`generate_code`)**: Quando il builder esegue `generate_code`, Highbay scrive il `design/` concordato della build aperta in `.highbay-build` ed esegue i generatori Goa e Goa-AI fissati nel progetto per sostituire il `gen/` candidato — producendo handler, client tipizzati, codec e validazione strutturale per i trasporti HTTP, JSON-RPC e MCP dichiarati, oltre agli schemi JSON dei tool Goa-AI, binding ai metodi, campi iniettati, dichiarazioni di conferma e `AGENTS_QUICKSTART.md` nella radice del modulo (salvo disattivazione). Goa scrive questi file senza token di output del modello; il risparmio complessivo dipende dal contesto, dalle iterazioni e dalla revisione richiesti.
+- **Contesto iniziale focalizzato**: Le modifiche partono da `design/` e dalle interfacce Go generate rilevanti invece di caricare ogni file di trasporto e schema nel prompt.
+- **Forma generata uniforme tra modelli**: Rigenerare `gen/` da un unico compilatore mantiene coerente il codice generato di trasporto, validazione e schemi dei tool sia con Claude sia con Codex o Gemini.
+- **Controlli del compilatore e del server tra i ruoli**: Dare un nuovo tipo di risultato a un metodo e rigenerare fa fallire `go build` sugli handler che restituiscono ancora il vecchio tipo (mentre le chiamate tool non valide prodotte dal modello vengono rifiutate a runtime). Separatamente, Highbay scrive i flussi `Story` richiesti in `eval/design/story_tests.go` quando prepara o controlla l’incarico del test writer, genera il runner Go in `eval/gen/`, compila il programma di test e ne verifica l’elenco degli scenari, e rifiuta in `verify_change` qualsiasi commit il cui `design/` diverga dalla revisione concordata.
+
+Per approfondire il flusso design-first con agenti, consulta [Sviluppare con un coding agent](/it/docs/ai-development/).
+
+---
+
 ## Cinque checkpoint (`CP1`–`CP5`) {#checkpoints}
 
 Ogni anteprima di architettura, commit di test accettato, copia live, esecuzione di verifica e approvazione è vincolata a un digest esatto `request_revision` della Change Card:

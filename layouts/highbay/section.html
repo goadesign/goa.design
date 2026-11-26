@@ -311,7 +311,8 @@ import . "github.com/goadesign/highbay/story/dsl"
 
 var _ = Story("Refunds", func() {
   Actor("customer", "Customer")
-  Flow("instant_credit", "Up to $50 subtotal", func() {
+  Flow("instant_credit",
+    "Up to $50 subtotal", func() {
     StartsWith(
       "ask", "customer",
       "$48.00 + $4.32 tax",
@@ -379,7 +380,63 @@ func (s *Service) RequestRefund(
     </div>
   </section>
 
-  <section class="benefits-section chorus-compare highbay-compare" aria-labelledby="highbay-compare-title">
+  <section class="mcp-section highbay-codegen" id="codegen" aria-labelledby="highbay-codegen-title">
+    <div class="site-width">
+      <div class="section-intro">
+        <h2 id="highbay-codegen-title">{{ T "highbay_codegen_heading" }}</h2>
+        <p>{{ T "highbay_codegen_intro" | markdownify }}</p>
+      </div>
+      <figure class="mcp-generation highbay-codegen__flow">
+        <div class="mcp-design">
+          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_left_title" }}</strong><span>examples/orders/design/orders.go</span></div>
+          {{ highlight `Method("chat", func() {
+    Payload(func() {
+        Token("token", String,
+            "Customer bearer token.")
+        Attribute("message", String,
+            "What the customer says.",
+            func() { MinLength(1) })
+        Required("token", "message")
+    })
+    Result(RunView)
+    HTTP(func() {
+        POST("/chat")
+        Response(StatusAccepted)
+    })
+})` "go" "" }}
+        </div>
+        <div class="mcp-generate">
+          <code>generate_code</code>
+          <svg viewBox="0 0 72 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M0 10h68M60 2l8 8-8 8"/></svg>
+          <span class="highbay-codegen__zero">{{ T "highbay_codegen_zero" }}</span>
+        </div>
+        <div class="mcp-results">
+          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_right_title" }}</strong><span>gen/orders/service.go</span></div>
+          <div class="highbay-codegen__sig">
+            {{ highlight `type Service interface {
+    Chat(
+        context.Context, *ChatPayload,
+    ) (res *RunView, err error)
+}` "go" "" }}
+          </div>
+          <dl>
+            {{ range slice "transports" "agents" "eval" }}
+            <div><dt>{{ T (printf "highbay_codegen_out_%s" .) }}</dt><dd>{{ T (printf "highbay_codegen_out_%s_text" .) | markdownify }}</dd></div>
+            {{ end }}
+          </dl>
+        </div>
+        <figcaption>{{ T "highbay_codegen_caption" | markdownify }}</figcaption>
+      </figure>
+      <dl class="benefit-list highbay-codegen-list">
+        {{ range slice "tokens" "consistency" "compiler" }}
+        <div><dt>{{ T (printf "highbay_codegen_%s" .) }}</dt><dd>{{ T (printf "highbay_codegen_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+      <a class="section-link" href="{{ relref . "/docs/ai-development/" }}">{{ T "highbay_codegen_cta" }}</a>
+    </div>
+  </section>
+
+  <section class="chorus-compare highbay-compare" aria-labelledby="highbay-compare-title">
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
