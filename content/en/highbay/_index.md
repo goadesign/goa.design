@@ -1,5 +1,5 @@
 ---
-title: "Highbay — build and verify services with coding agents"
+title: "Highbay — checks and balances for coding agents"
 linkTitle: "Highbay"
-description: "Highbay organizes your coding agents into separate roles around one compiled Goa and Goa-AI contract, verifies their code against independent tests, and merges approved changes from your browser."
+description: "Highbay builds Go services and AI agents with the coding agents you already use, and splits the job so no agent checks its own work: you choose the behavior, one agent writes the code, another writes the tests, and Highbay runs them before you merge."
 ---

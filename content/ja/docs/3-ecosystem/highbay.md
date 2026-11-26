@@ -1,41 +1,17 @@
 ---
 title: "Highbay"
 weight: 5
-description: "意図の合意、テスト作成、実装、検証を分離する Goa / Goa-AI 向け契約駆動マルチエージェント制御プレーン。"
+description: "コーディングエージェントの役割を分離して Go サービスと AI エージェントを構築・検証します。ブラウザで境界条件を確定し、Goa と Goa-AI のインターフェースを生成し、マージ前に独立したシナリオテストを実行します。"
 llm_optimized: true
 ---
 
-[Highbay](https://github.com/goadesign/highbay) は、コーディングエージェントを使って [Goa](/ja/docs/1-goa/) および [Goa-AI](/ja/docs/2-goa-ai/) サービスを構築・検証・進化させるローカル制御プレーンです。普段使っているコーディングエージェントを 1 つのコンパイル済み契約のもとで別々の役割に編成し、承認前に独立した検証を実行し、承認済みコミットをブラウザからローカルブランチへマージします。
+[Highbay](https://github.com/goadesign/highbay) は、普段使っているコーディングエージェントの役割を分け、サービスを実装するエージェントと承認の基準になるシナリオテストを書くエージェントを分離して [Goa](/ja/docs/1-goa/) サービスと [Goa-AI](/ja/docs/2-goa-ai/) エージェントを構築・検証するツールです。未決の仕様判断はあなたがブラウザで確定し、1 つのエージェントが Goa 生成インターフェースに対してサービスを実装し、別のエージェントが独立した作業コピーでシナリオテストを書き、承認・マージの前に Highbay がその受理済みテストを候補コミットに対して実行します。
 
-1 つの変更が各役割を進む具体的な流れは、[Highbay ページ](/ja/highbay/)も参照してください。
-
-## 概要 {#workflow}
-
-1 つのコーディングエージェントが実装とそれを判定するテストの両方を書くと、同じ思い込みがそのまま通り、手書きのトランスポートやスキーマも機能追加のたびにずれていきます。Highbay は役割の分離と Goa / Goa-AI の決定論的なコード生成を組み合わせます：
-
-| 参加者 | 接続経路 | 役割 |
-|--------|----------|------|
-| **あなた** | ブラウザ画面 | Change Card の確定、アーキテクチャの確認、ビルド開始、検証結果の承認、ローカルブランチへのマージ |
-| **Guide** | `highbay` MCP（`guide` ロール） | 作業中のエージェントセッション。空フォルダの初期化、`Story` フローと Goa 設計の作成、Change Card の提案・改訂を担当 |
-| **Test Writer** | `highbay` MCP（`.highbay-tests` 作業コピー） | 確定した Change Card と完了済み `Story` フローごとに `eval/` へシナリオテストを作成（アプリ実装は編集しない） |
-| **Builder** | `highbay` MCP（`.highbay-build` 作業コピー） | `generate_code` で合意済み `design/` と `gen/` を反映し、ドメインロジックを実装して Linux コンテナで検査後、検証を依頼 |
-| **Highbay サーバー** | プロジェクト単位のローカルプロセス | ロール別の権限管理、`eval/` スイートの検査・受理、ダイジェスト固定バイナリのビルドと検証実行、承認記録を担当 |
-
-## 5 つのチェックポイント（`CP1`〜`CP5`） {#checkpoints}
-
-設計プレビュー、受理テスト、ライブターゲット、検証実行、承認はすべて Change Card の厳密な `request_revision` ダイジェストに紐づきます：
-
-1. **`CP1` — Change Card で合意する**: エージェントは隔離されたドラフトで `Story`（`github.com/goadesign/highbay/story/dsl`）を評価し、要約・未決の仕様質問・具体的な受け入れ例・維持する挙動を平易な言葉でまとめた Change Card を提案します。ブラウザ画面で質問に答えて確定します。
-2. **`CP2` — アーキテクチャを確認する**: ワーカーを動かす前に、合意した Goa と [Model](/ja/docs/3-ecosystem/model/) 設計から生成された C4 図を **Architecture** で確認します。
-3. **`CP3` — ライブターゲットでプロンプトを調整する（任意）**: サービスが Goa-AI エージェントを持ち、プロバイダーキーまたはモデルゲートウェイを設定している場合、実装者は候補コミットのライブコピーを起動してプロンプト文言を試せます。
-4. **`CP4` — 独立した検証**: Highbay はテスト作成者の `eval/` レポートを再ビルド・検査して `highbay/tests-<n>` として受理したあと、実装者の候補コミットをビルドして受理済み `eval/` スイートを実行します（`eval/` スイートがライブプロバイダーを呼ばない限り API キーは不要。`-example` サンプルはスクリプトモデルを同梱し、空シェルの初期チェックはモデルを使用しません）。オペレーター設定の評価スイートでは、ホールドアウトのシナリオ名・判定・ログが `Report.ForBuilders()` によって実装者向けツール結果から除外されます（テスト作成者はホールドアウトを提出できません）。
-5. **`CP5` — 承認してマージする**: **Approve** でシナリオ結果を確認して承認を記録し、**Merge into current branch** を押して検証済みの実装コミットとテストコミットをローカルブランチへマージします。
-
-{{< highbay-views >}}
+`$50` 返金例のインタラクティブな比較は [Highbay ページ](/ja/highbay/)で試せます。
 
 ## インストール
 
-Highbay は macOS または Linux で動作し、**Go 1.27.3 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内でビルド・単体テストを実行するために使用）を必要とします。
+Highbay は macOS または Linux で動作し、**Go 1.27.3 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内で実装者のコンパイル・単体テストを実行するために使用）を必要とします。
 
 `hbay` バイナリをインストールし、コーディングエージェントを登録します：
 
@@ -44,56 +20,86 @@ go install github.com/goadesign/highbay/cmd/hbay@latest
 hbay up
 ```
 
-`hbay up` は検出されたコーディングエージェント（Claude Code、Codex、Cursor、Antigravity、Gemini CLI、Windsurf、GitHub Copilot CLI、VS Code）に `hbay stdio` MCP サーバーと `/highbay`（Codex では `$highbay`）スキルを登録し、[Chorus](/ja/docs/3-ecosystem/chorus/) があれば起動します。Chorus を起動せずに登録だけ行う場合は `hbay setup -global` を使います。
+`hbay up` は検出されたコーディングエージェント（Claude Code、Codex、Cursor、Antigravity、Gemini CLI、Windsurf、GitHub Copilot CLI、VS Code）に `hbay stdio` MCP サーバーと `/highbay`（Codex では `$highbay`）スキルを登録し、[Chorus](/ja/docs/3-ecosystem/chorus/) がインストールされていれば起動します。Chorus を起動せずに MCP とスキルだけ登録する場合は `hbay setup -global` を使います。すでにコーディングエージェントを開いていた場合は、再読み込みするか新しいセッションを開始してください。
 
-Herdr の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、フローティングコンパニオン `mods/highbay/` もインストールされ、macOS でショートカットが空いていれば **Command–Option–Shift–H**（`⌥⌘⇧H`）が設定されます。
+[Herdr](https://herdr.dev) の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、フローティングコンパニオン `mods/highbay/` もインストールされ、macOS でショートカットが空いていれば **Command–Option–Shift–H**（`⌥⌘⇧H`）が割り当てられます。
 
 ---
 
-## プロジェクトの開始：デフォルトでクリーンな構成 {#blank-and-example}
+## プロジェクトの開始 {#blank-and-example}
 
-空のフォルダをコーディングエージェントで開き、`/highbay`（Codex では `$highbay`）を実行します：
+フォルダをコーディングエージェントで開き、`/highbay`（Codex では `$highbay`）を実行します：
 
 ```text
-/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+/highbay — 返金アシスタントを作成：$50 以下は即時ストアクレジット、それを超える返金は責任者の承認待ちにする。
 ```
 
-未初期化のフォルダでは、エージェントが `init_project(dir: ".")` を呼び出します（モジュールパス未指定時はフォルダ名から `example.com/<folder>` を導出）：
+最初の Highbay MCP 呼び出しでプロジェクトのローカル Highbay サーバーが起動（または接続）され、現在のセッションが `guide` として登録され、`open_views` によってブラウザ画面が開きます。
 
-- **デフォルトはクリーンな空シェル（`worked_example: false`）**: `init_project` と `hbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定したドメイン中立の 2 モジュール構成（`<module>` と `<module>/eval`）を作成します。不要なサンプルエンドポイントやデモエージェントは含まれず、最初の Change Card にはあなたのプロダクトだけが記述されます。
-- **動作するサンプルの明示指定（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すか `worked_example: true` を指定します：
+まだ初期化されていないフォルダでは、エージェントが `init_project(dir: ".")` を呼び出します（Go モジュールパスを指定しなかった場合はフォルダ名から `example.com/<folder>` を導出します。初回は Go モジュールの取得とコンパイルに数分かかります）：
+
+- **新規ワークスペース（`worked_example: false`、デフォルト）**: `init_project` と `hbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定した 2 モジュール構成（`<module>` と `<module>/eval`）と起動確認チェックを初期化し、自分の `Story` と `design/` をすぐ書き始められる状態にします。
+- **動作するサンプル（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すかエージェントに `worked_example: true` を指定します：
 
 ```bash
 hbay init -dir ./demo-shop -module example.com/shop -example
 ```
 
-- **既存の Goa リポジトリ**: 既存のリポジトリで Highbay を使うには、初期 Git コミットに加えて、Highbay 形式の `<module>/eval` スイートまたは保存済みの検証設定（`hbay verification set`）が必要です。詳しくは [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds) を参照してください。
+- **既存の Goa リポジトリ**: 既存の Goa / Goa-AI リポジトリで Highbay を使うには、少なくとも 1 つの Git コミットと、Highbay 形式の `<module>/eval` スイートまたは `hbay verification set` で登録した独自のテストプログラムが必要です（保存済みの検証スイートを設定した場合、Highbay はテスト作成者を起動せず変更ごとにそのスイートを実行します）。詳しくは [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds) を参照してください。なお、`hbay gen` と `generate_code` が対応するのは Goa の HTTP・JSON-RPC・MCP 設計であり、`protoc` による最終処理は同梱していないため gRPC トランスポートを含む設計は現在拒否されます。
+
+{{< highbay-views >}}
 
 ---
 
-## Herdr の並列ペインとバックグラウンド実行 {#herdr}
+## 役割と責務 {#workflow}
 
-**Build** 画面では、各ワーカーのエージェント・モデル・権限モードをその場で選択できます（選択はプロジェクトごとに記憶されます）：
+1 つのコーディングエージェントがアプリケーションとそれを検査するテストの両方を書くと、未決の仕様判断が黙って推測され、両側に同じ前提が埋め込まれます。Highbay は作業コピーと MCP 資格情報を分けて責務を分離します：
+
+| 参加者 | 接続経路 | 役割 |
+|--------|----------|------|
+| **あなた** | ブラウザ画面 | Change Card の質問への回答、アーキテクチャプレビューの確認、ビルド開始、合格レポートへの承認記録、ローカルブランチへのマージ |
+| **Guide** | `highbay` MCP（`guide` ロール） | 作業中のエージェントセッション。空フォルダの初期化、`Story` フローと Goa 設計の作成、Change Card の提案・改訂を担当 |
+| **Test Writer** | `highbay` MCP（`.highbay-tests` 作業コピー） | 確定した Change Card から、完了済み `Story` フローごとに 1 つのシナリオテストを `eval/` に作成（サービスコードは編集しない） |
+| **Builder** | `highbay` MCP（`.highbay-build` 作業コピー） | `generate_code` で合意済み設計と `gen/` を反映し、ビジネスロジックを実装して Linux コンテナで検査後、検証を依頼 |
+| **Highbay サーバー** | プロジェクト単位のローカルプロセス | ロール権限の強制、`eval/` スイートのコンパイル・受理、ダイジェスト固定候補バイナリのビルド、検証実行、承認記録を担当 |
+
+---
+
+## 5 つのチェックポイント（`CP1`〜`CP5`） {#checkpoints}
+
+設計プレビュー、受理されたテストコミット、ライブターゲット、検証実行、承認はすべて Change Card の厳密な `request_revision` ダイジェストに紐づきます：
+
+1. **`CP1` — Change Card で合意する**: コーディングエージェントが隔離されたドラフトで `Story`（`github.com/goadesign/highbay/story/dsl`）を評価し、変更の要約・未決の仕様質問・具体的な受け入れ例・維持する挙動をまとめた Change Card を提案します。ブラウザで質問に答えてカードを確定します。
+2. **`CP2` — アーキテクチャをプレビューする**: ワーカーを起動する前に、合意した Goa と [Model](/ja/docs/3-ecosystem/model/) 設計で宣言された C4 コンテナ、Goa-AI エージェントのポリシー設定、ツールのガードレールを **Architecture** で確認します。
+3. **`CP3` — ライブ環境でプロンプトを調整する（任意）**: サービスに Goa-AI エージェントが含まれ、モデルプロバイダーキーまたはゲートウェイを設定している場合、実装者はコミット前に候補コミットのライブコピーを起動して実行時プロンプトの上書きを試せます。
+4. **`CP4` — 独立した検証を実行する**: Highbay はテスト作成者の `eval/` モジュールをブランチ `highbay/tests-<n>` 上でコンパイル・検査してからテストコミットとして受理し、続いて実装者の候補コミットをビルドして受理済みテストコミットを実行します（`eval/` スイートがライブプロバイダーを呼ばない限りモデル API キーは不要です）。オペレーターがホールドアウト付きの別評価器を設定している場合、Highbay は実装者向けレポート（`Report.ForBuilders()`）で各ホールドアウトの結果を匿名名で表示し、シナリオ名・チェック内容・診断情報を除外します（テスト作成者はホールドアウトを提出できません）。
+5. **`CP5` — 承認してマージする**: **Approve** でシナリオレポートを確認し、承認を記録して（プロモーション設定がある場合はリリースバイナリのダイジェスト照合も可能）、**Merge into current branch** をクリックすると検証済みの候補コミットとテストコミットがローカルブランチにマージされます。
+
+---
+
+## Herdr の並列ペインとバックグラウンドワーカー {#herdr}
+
+**Build** 画面では、各ワーカーロールのコーディングエージェントとモデルをその場で選択できます（選択はプロジェクトごとに記憶されます）。複数のコーディングエージェントファミリー（例：Claude Code と Codex）がインストールされている場合、Highbay は実装者とテスト作成者に異なるファミリーを優先して割り当てますが、1 つの CLI で両方の役割を担うこともできます：
 
 | 実行モード | 使用される条件 | 動作 |
 |------------|----------------|------|
-| **Herdr + Chorus** | `herdr-core`、`herdr-app`、Chorus（`chorus up`）が利用可能 | 作業中のエージェントペインをリンクし、**Build** 中に `builder` と `test_writer` ペインを隣に開き、マージまたは破棄時に自動で閉じます。macOS では **⌥⌘⇧H** で Highbay コンパニオンを開けます。 |
-| **バックグラウンドワーカー** | Herdr が未インストールまたは未使用 | **Build** でバックグラウンド実行に同意すると、Herdr や Chorus なしでサーバー管理下の非対話 CLI プロセスとして `builder` と `test_writer` を実行します。 |
+| **Herdr + Chorus** | [Herdr](https://herdr.dev)（`herdr-core`、`herdr-app`）と [Chorus](/ja/docs/3-ecosystem/chorus/)（`chorus up`）が利用可能 | 対応する作業中エージェントペインを引き継ぎ、**Build** 中に `builder` と `test_writer` ペインを隣に分割表示し、マージまたは破棄後に自動で閉じます。macOS では **⌥⌘⇧H** で Highbay コンパニオンを開き、ペインのフォーカスやブラウザの再表示を行えます。 |
+| **バックグラウンドワーカー** | Herdr が未インストールまたは未起動 | **Build** でバックグラウンド実行を確認すると、Herdr や Chorus なしでサーバー管理下の非対話 CLI プロセスとして `builder` と `test_writer` を実行します。 |
 
 ---
 
-## アーキテクチャと信頼境界 {#architecture}
+## アーキテクチャとプロセス境界 {#architecture}
 
 {{< figure src="/images/diagrams/HighbayArchitecture.svg" alt="Guide Agent、Browser Page、Highbay Server、Test Writer、Builder、Verifier を示す Highbay アーキテクチャ" class="img-fluid" >}}
 
-1. **ポータブルな `Story` DSL（`github.com/goadesign/highbay/story/dsl`）**: `design/` と並べてアクター、フロー（`StartsWith`、`Step`、`Outcome`）、未決の `Question` を Go で記述します。完了したフローごとに `eval/` のシナリオテストが必須となります。
-2. **Goa / Goa-AI コード生成（`generate_code`）**: 合意済みの `design/` を `.highbay-build` に反映し、固定バージョンのジェネレーターを実行するため、`gen/` の手編集は発生しません。
-3. **テストの検査と受理（`internal/testwriter`）**: Story テスト表を再生成し、`eval/` 以外が変更されていないことを確認してテストバイナリをコンパイルし、`highbay/tests-<n>` に記録します。
-4. **候補検証とプロセス境界（`verify/candidate`）**: ロール別の資格情報で MCP 権限を分離し、オペレーター設定の評価スイートではホールドアウトのシナリオ名・判定・ログを実装者向けツール結果から除外します（テスト作成者はホールドアウトを提出できません）。エージェント・設計評価・候補バイナリ・`eval/` スイートは現在のユーザー権限の通常プロセスグループとして動作しローカルファイルを読み取れます。実装者の `check_project` はローカルの Docker コンテナ内で実行されます。
+1. **ポータブルな `Story` DSL（`github.com/goadesign/highbay/story/dsl`）**: `design/` と並べてアクター、フロー（`StartsWith`、`Step`、`Outcome`）、未決の `Question` を Go で宣言します。ビルドが有効になるには、完了したすべてのフローに対応するシナリオテストが `eval/` に必要です（Highbay は必須シナリオが宣言されていることを確認して実行しますが、テスト内のアサーションが十分かどうかまでは判定しません）。
+2. **Goa / Goa-AI コード生成（`generate_code`）**: Highbay が合意済みの `design/` を `.highbay-build` に反映し、固定バージョンの Goa / Goa-AI ジェネレーターを不可分に実行するため、どのエージェントも `gen/` を手編集しません。
+3. **テストモジュールの受理（`internal/testwriter`）**: テストが有効になる前に、Highbay が Story テスト表を再生成し、`eval/` 以外のファイルが変更されていないことを確認してテストバイナリをコンパイルし、受理コミットを `highbay/tests-<n>` に記録します。
+4. **候補検証とローカル実行（`verify/candidate`）**: ロール別の資格情報は Highbay 内で各ロールが呼べる操作を制限し、Change Card の確定・承認記録・マージを行えるのはあなただけです。エージェント、設計評価、候補バイナリ、`eval/` スイートは現在のユーザーアカウント権限の通常のローカルプロセスグループとしてファイルとネットワークへのアクセスを持って動作し、実装者の `check_project` はローカルの Docker コンテナ内でコンパイルと単体テストを実行します。
 
 ## 関連リンク
 
 - [Highbay GitHub リポジトリ](https://github.com/goadesign/highbay) — ソースコード、`HOW_IT_WORKS.md`、`REFERENCE.md`、`story/dsl`
-- [Highbay ページ](/ja/highbay/) — 3 つの役割を進む変更のウォークスルー
-- [Chorus ドキュメント](/ja/docs/3-ecosystem/chorus/) — Herdr ワーカーペインで使われるマルチエージェント連携
+- [Highbay ページ](/ja/highbay/) — インタラクティブなポリシー比較と 4 画面のブラウザウォークスルー
+- [Chorus ドキュメント](/ja/docs/3-ecosystem/chorus/) — Herdr ワーカーペインで使われる `#channel` と `@agent` 連携
 - [コーディングエージェントと開発する](/ja/docs/ai-development/) — Goa と Goa-AI の設計ファースト開発フロー
