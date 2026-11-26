@@ -2,19 +2,30 @@
 
 {{ T "highbay_intro" }}
 
-{{ T "highbay_clients" }} {{ T "highbay_facts" }}
+- {{ T "highbay_hero_point_1" }}
+- {{ T "highbay_hero_point_2" }}
+- {{ T "highbay_hero_point_3" }}
 
-GitHub: [Highbay](https://github.com/goadesign/highbay)
-
-Source: {{ .Permalink }}
+GitHub: [github.com/goadesign/highbay](https://github.com/goadesign/highbay) · Docs: [Ecosystem Guide]({{ relref . "/docs/3-ecosystem/highbay/" }})
 
 ## {{ T "highbay_install_heading" }}
 
 {{ T "highbay_install_intro" }}
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest && hbay up
+# Homebrew (macOS or Linux)
+brew install goadesign/tap/highbay
+highbay up
+
+# npx (Linux or macOS, Node.js 18+)
+npx @goadesign/highbay up
+
+# Go 1.27.3+
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
+
+{{ T "highbay_install_prereq" }}
 
 {{ T "highbay_install_next" }}
 
@@ -22,170 +33,115 @@ go install github.com/goadesign/highbay/cmd/hbay@latest && hbay up
 
 {{ T "highbay_install_hint" }}
 
-## {{ T "highbay_contrast_heading" }}
+- {{ T "highbay_fit_agents" }}
+- {{ T "highbay_fit_scope" }}
+- {{ T "highbay_fit_local" }}
 
-{{ T "highbay_contrast_intro" }}
+## {{ T "highbay_contrast_heading" }} {#contrast}
+{{ range slice "1" "2" "3" "4" }}
+### {{ . }}. {{ T (printf "highbay_solo_row_%s_title" .) }}
+- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_chip_gate" }}):** {{ T (printf "highbay_solo_row_%s_text" .) }}
+- **{{ T "highbay_with_title" }} ({{ T "highbay_with_suite" }}):** {{ T (printf "highbay_with_row_%s_text" .) }}
+{{ end -}}
 
-> {{ T "highbay_contrast_request" }}
+## {{ T "highbay_showcase_heading" }} {#views}
 
-{{ T "highbay_contrast_order" }}
+- **{{ T "highbay_tab_agree" }}:** {{ T "highbay_agree_pin_1" }}
+- **{{ T "highbay_tab_arch" }}:** {{ T "highbay_arch_pin_1" }}
+- **{{ T "highbay_tab_check" }}:** {{ T "highbay_check_pin_1" }}
+- **{{ T "highbay_tab_approve" }}:** {{ T "highbay_approve_pin_1" }}
 
-- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_suite" }} · {{ T "highbay_solo_tag" }}):** {{ T "highbay_solo_step_1" }} `if order.TotalCents <= 5000`. {{ T "highbay_solo_step_2" }}
-  - *{{ T "highbay_contrast_opt_pretax" }}:* **{{ T "highbay_solo_chip_pretax" }}** — {{ T "highbay_solo_verdict_pretax" }}
-  - *{{ T "highbay_contrast_opt_withtax" }}:* **{{ T "highbay_solo_chip_withtax" }}** — {{ T "highbay_solo_verdict_withtax" }}
-- **{{ T "highbay_with_title" }} ({{ T "highbay_with_tag" }}):** {{ T "highbay_with_step_1" }}
-  - *{{ T "highbay_contrast_opt_pretax" }} ({{ T "highbay_with_suite_pretax" }}):*
-    - {{ T "highbay_with_run1_pretax" }}
-    - {{ T "highbay_with_run2_pretax" }}
-    - **{{ T "highbay_with_chip_pretax" }}** — {{ T "highbay_with_verdict_pretax" }}
-  - *{{ T "highbay_contrast_opt_withtax" }} ({{ T "highbay_with_suite" }}):*
-    - {{ T "highbay_with_run_withtax" }}
-    - **{{ T "highbay_with_chip" }}** — {{ T "highbay_with_verdict_withtax" }}
+*{{ T "highbay_showcase_caption" }} ([{{ T "highbay_showcase_method" }}](https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example))*
 
-{{ T "highbay_contrast_summary" }} {{ T "highbay_contrast_note" }}
-
-## {{ T "highbay_trial_heading" }} ({{ T "highbay_trial_kicker" }})
-
-- **{{ T "highbay_trial_stat_1_val" }}** {{ T "highbay_trial_stat_1_lbl" }}
-- **{{ T "highbay_trial_stat_2_val" }}** {{ T "highbay_trial_stat_2_lbl" }}
-- **{{ T "highbay_trial_stat_3_val" }}** {{ T "highbay_trial_stat_3_lbl" }}
-- **{{ T "highbay_trial_stat_4_val" }}** {{ T "highbay_trial_stat_4_lbl" }}
-
-{{ T "highbay_trial_body" }}
-
-*{{ T "highbay_trial_note" }}*
-
-## {{ T "highbay_showcase_heading" }}
-
-{{ T "highbay_showcase_intro" }}
-
-- **{{ T "highbay_tab_agree" }} ({{ T "highbay_tab_agree_sub" }}):** {{ T "highbay_agree_pin_1" }} · {{ T "highbay_agree_pin_2" }} · {{ T "highbay_agree_pin_3" }}
-- **{{ T "highbay_tab_arch" }} ({{ T "highbay_tab_arch_sub" }}):** {{ T "highbay_arch_pin_1" }} · {{ T "highbay_arch_pin_2" }} · {{ T "highbay_arch_pin_3" }}
-- **{{ T "highbay_tab_build" }} ({{ T "highbay_tab_build_sub" }}):** {{ T "highbay_build_pin_1" }} · {{ T "highbay_build_pin_2" }} · {{ T "highbay_build_pin_3" }}
-- **{{ T "highbay_tab_approve" }} ({{ T "highbay_tab_approve_sub" }}):** {{ T "highbay_approve_pin_1" }} · {{ T "highbay_approve_pin_2" }} · {{ T "highbay_approve_pin_3" }}
-
-## {{ T "highbay_walkthrough_heading" }}
-
-{{ T "highbay_walkthrough_intro" }}
+## {{ T "highbay_walkthrough_heading" }} {#codegen}
 
 ### {{ T "highbay_role_guide" }}
 
 {{ T "highbay_role_guide_caption" }}
 
 ```go
-package design
-
-import . "github.com/goadesign/highbay/story/dsl"
-
-var _ = Story("Refunds", func() {
-    Actor("customer", "Customer")
-    Flow("instant_credit", "Up to $50 subtotal", func() {
-        StartsWith("ask", "customer", "$48.00 + $4.32 tax")
-        Outcome("credit", "customer", "Instant $52.32 credit")
-    })
+// design/agents.go
+Tool("query_pod_logs", func() {
+    Inject("org_id")
+    BoundedResult()
+    BindTo("Ops", "QueryPodLogs")
+})
+Tool("rollback_service", func() {
+    Inject("org_id")
+    Confirmation("On-call approval")
+    BindTo("Ops", "RollbackService")
 })
 ```
 
 {{ T "highbay_card_choice" }}
+
+### {{ T "highbay_role_codegen" }}
+
+{{ T "highbay_role_codegen_caption" }}
+
+```go
+// gen/ops/service.go
+type Service interface {
+    QueryPodLogs(context.Context,
+        *LogsPayload) (*LogsPage, error)
+    RollbackService(context.Context,
+        *RollbackPayload) (*Result, error)
+}
+// + HTTP & MCP servers, OpenAPI 3 spec
+// + Tool JSON (org_id omitted)
+// + BoundedResult log cursors
+```
+
+{{ T "highbay_codegen_check" }}
 
 ### {{ T "highbay_role_tests" }}
 
 {{ T "highbay_role_tests_caption" }}
 
 ```go
-func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
-    out, err := h.refund(ctx, 4800, 432)
-    if err != nil {
-        return eval.Result{}, err
-    }
-    return eval.Result{
-        Checks: []eval.Check{
-            check("status", out.Status == "credit"),
-            check("cents", out.Cents == 5232),
-        },
-    }, nil
+// eval/acceptance/incidents.go
+run, err := h.startRollback(ctx, "prod", "api")
+if err != nil {
+    return eval.Result{}, err
 }
-```
-
-{{ T "highbay_tests_check" }}
-
-### {{ T "highbay_role_builder" }}
-
-{{ T "highbay_role_builder_caption" }}
-
-```go
-func (s *Service) RequestRefund(
-    ctx context.Context,
-    req *genrefunds.RequestPayload,
-) (*genrefunds.RefundResult, error) {
-    total := req.SubtotalCents + req.TaxCents
-    if req.SubtotalCents <= 5000 {
-        return s.issueCredit(ctx, req.OrderID, total)
-    }
-    return s.queueReview(ctx, req.OrderID, total)
+res, err := h.approveAs(ctx, run.ID, "viewer")
+if err != nil {
+    return eval.Result{}, err
 }
+return eval.Result{Checks: []eval.Check{
+    // eval.Check helper for named assertions
+    check("paused", run.PendingConfirmation),
+    check("non_oncall_approval_rejected",
+        res.StatusCode == 403),
+}}, nil
 ```
 
 {{ T "highbay_builder_check" }}
 
-## {{ T "highbay_codegen_heading" }} {#codegen}
-
-{{ T "highbay_codegen_intro" }}
-
-```go
-// examples/orders/design/orders.go
-Method("chat", func() {
-    Payload(func() {
-        Token("token", String,
-            "Customer bearer token.")
-        Attribute("message", String,
-            "What the customer says.",
-            func() { MinLength(1) })
-        Required("token", "message")
-    })
-    Result(RunView)
-    HTTP(func() {
-        POST("/chat")
-        Response(StatusAccepted)
-    })
-})
-```
-
-`generate_code` ({{ T "highbay_codegen_zero" }}) → **{{ T "highbay_codegen_right_title" }}** (`gen/orders/service.go`):
-
-```go
-type Service interface {
-    Chat(
-        context.Context, *ChatPayload,
-    ) (res *RunView, err error)
-}
-```
-{{ range slice "transports" "agents" "eval" }}
-- **{{ T (printf "highbay_codegen_out_%s" .) }}:** {{ T (printf "highbay_codegen_out_%s_text" .) }}
+### Guardrails & repository references {#llm-stack}
+{{ range slice "codegen" "playbook" "suite" }}
+- **{{ T (printf "highbay_proof_%s_title" .) }}:** {{ T (printf "highbay_proof_%s_body" .) }}
 {{- end }}
 
-{{ T "highbay_codegen_caption" }}
-{{ range slice "tokens" "consistency" "compiler" }}
-### {{ T (printf "highbay_codegen_%s" .) }}
-
-{{ T (printf "highbay_codegen_%s_text" .) }}
-{{ end }}
-[{{ T "highbay_codegen_cta" }}]({{ relref . "/docs/ai-development/" }})
+## {{ T "highbay_cap_heading" }} {#capabilities}
+{{ range slice "auth" "obs" "stream" "durable" }}
+- **{{ T (printf "highbay_cap_%s_title" .) }}:** {{ T (printf "highbay_cap_%s_body" .) }}
+{{- end }}
 
 ## {{ T "highbay_compare_heading" }}
-
-{{ T "highbay_compare_intro" }}
 {{ range slice "solo" "speckit" "workspaces" }}
 ### {{ T (printf "highbay_compare_%s" .) }}
 
 {{ T (printf "highbay_compare_%s_text" .) }}
 {{ end }}
 
-{{ T "highbay_compare_summary" }}
-
 ## {{ T "home_faq_heading" }}
-{{ range slice "scope" "tdd" "existing" "holdouts" "local" "sandbox" }}
+{{ range slice "scope" "holdouts" "local" "sandbox" }}
 ### {{ T (printf "highbay_faq_%s_q" .) }}
 
 {{ T (printf "highbay_faq_%s_a" .) }}
 {{ end }}
+
+## {{ T "highbay_bottom_heading" }}
+
+{{ T "highbay_bottom_intro" }}

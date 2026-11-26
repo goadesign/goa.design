@@ -248,8 +248,8 @@ When you want one coding agent to write the acceptance tests and a different cod
 Install Highbay and register the `highbay` MCP server and `/highbay` (`$highbay` in Codex) skill across your coding agents:
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 Then invoke `/highbay` in an empty folder (or an existing Goa repository that already has a Git commit and either a `<module>/eval` suite or stored verification settings):
@@ -258,7 +258,7 @@ Then invoke `/highbay` in an empty folder (or an existing Goa repository that al
 /highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`hbay init -example` or `worked_example: true` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Highbay assigns the test writer (`.highbay-tests`) and builder (`.highbay-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Highbay page](/highbay/) and [Highbay ecosystem guide](/docs/3-ecosystem/highbay/).
+Your coding agent initializes a clean, domain-neutral Go and `eval/` shell when the folder is empty (`highbay init -example` or `worked_example: true` adds a runnable sample if you want one), drafts business flows in `design/story.go`, and opens a Change Card in your browser. Once you confirm the card, Highbay assigns the test writer (`.highbay-tests`) and builder (`.highbay-build`) to separate working copies, checks and accepts the `eval/` suite, verifies the builder's commit against it, and lets you merge the approved commits into your local branch in one click. See the [Highbay page](/highbay/) and [Highbay ecosystem guide](/docs/3-ecosystem/highbay/).
 
 ## Measure the advantage in your project
 

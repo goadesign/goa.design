@@ -1,8 +1,8 @@
 // capture.mjs renders the real Highbay Views single-page bundle
 // (internal/controlplane/checkpoint.html from github.com/goadesign/highbay)
-// across the four stages shown on goa.design/highbay/ (Agree, Architecture, Build, Approve)
-// in light and dark themes at desktop (1440x960 @ 1.5x) and mobile (390x780 @ 2x),
-// measures callout marker coordinates into pins.json, and writes optimized WebP
+// across the four stages shown on goa.design/highbay/ (Agree, Architecture,
+// Check [Run 1 blocked], and Approve [Run 2 verified]) in light and dark themes
+// at desktop (1040x660 @ 2x) and mobile (390x680 @ 2x), writing optimized WebP
 // assets to static/img/highbay/.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -24,41 +24,44 @@ fs.mkdirSync(OUT_IMG_DIR, { recursive: true });
 
 const checkpointBody = fs.readFileSync(CHECKPOINT_HTML, "utf8");
 
-const CHANGE_ID = "refunds-instant-credit";
+const CHANGE_ID = "ops-copilot-platform";
 const REV_1 = "rev_9c41e8a2f017";
 const REV_2 = "rev_d830b41c77e2";
-const RUN_ID = "run_7f42a9e018c34b2190a1d6f8e3b20194";
-const CANDIDATE_COMMIT = "a41c9e208b74d12f9c3e65018ab42f9103c7d8e1";
+const RUN_1_ID = "run_3a18c4f902d14e67b8120c9a4d51e031";
+const RUN_2_ID = "run_7f42a9e018c34b2190a1d6f8e3b20194";
+const CANDIDATE_COMMIT_1 = "61d04b8e2f91c73a40e5b8129c3f7a104e82d9c3";
+const CANDIDATE_COMMIT_2 = "b92e4d108b74d12f9c3e65018ab42f9103c7d8e1";
 const SUITE_COMMIT = "5be07f193c62e84a10b29f473cd81e5264a9b0c2";
-const REPORT_DIGEST = "sha256:8f31d904c2a17e6b5409f3c1e82d7a4b9061c3e2f5a8d104b7c9e203a6f1d8b4";
+const REPORT_1_DIGEST = "sha256:2c94e108b7d34a62f0915c8e3d72a4109f68b2e1c4a7d093e5b8c102f4a6d9e1";
+const REPORT_2_DIGEST = "sha256:8f31d904c2a17e6b5409f3c1e82d7a4b9061c3e2f5a8d104b7c9e203a6f1d8b4";
 
 const STORIES = [
   {
-    name: "Refunds",
-    description: "Instant store-credit refunds within the policy threshold and manager review above it.",
+    name: "OpsCopilotPlatform",
+    description: "Multi-tenant incident triage & remediation platform with server-injected org_id, bounded log cursors, and on-call approval gates.",
     actors: [
-      { key: "customer", title: "Customer" },
-      { key: "manager", title: "Support manager" },
+      { key: "responder", title: "Incident responder" },
+      { key: "oncall", title: "On-call engineer" },
     ],
     flows: [
       {
-        key: "instant_credit",
-        title: "Issue instant store credit within the $50 subtotal limit",
+        key: "bounded_triage_and_tenant_guard",
+        title: "Correlate deploys and bounded pod logs with server-injected org_id",
         complete: true,
         questions: [],
         steps: [
-          { key: "ask", actor_key: "customer", kind: "start", summary: "Customer requests a refund on a $48.00 item (+$4.32 tax)", questions: [] },
-          { key: "credit", actor_key: "customer", kind: "outcome", summary: "Service issues $52.32 store credit immediately", questions: [] },
+          { key: "alert_in", actor_key: "responder", kind: "start", summary: "Alert arrives for api-gateway; prompt attempts cross-tenant org_id spoof", questions: [] },
+          { key: "triaged", actor_key: "responder", kind: "outcome", summary: "TriageAgent reads bounded 100-line log page under caller's verified org_id", questions: [] },
         ],
       },
       {
-        key: "manager_review",
-        title: "Queue refunds above $50 subtotal for manager approval",
+        key: "production_rollback_requires_approval",
+        title: "Pause production rollbacks at Confirmation and require oncall role to approve",
         complete: true,
         questions: [],
         steps: [
-          { key: "ask_over", actor_key: "customer", kind: "start", summary: "Customer requests a refund on a $65.00 item (+$5.85 tax)", questions: [] },
-          { key: "queue", actor_key: "manager", kind: "outcome", summary: "Request enters manager review queue without issuing credit", questions: [] },
+          { key: "escalate_prod", actor_key: "responder", kind: "start", summary: "TriageAgent hands unhealthy production deploy to RemediationAgent", questions: [] },
+          { key: "gate_oncall", actor_key: "oncall", kind: "outcome", summary: "Workflow suspends at Confirmation; non-oncall approvals return 403 Forbidden", questions: [] },
         ],
       },
     ],
@@ -68,97 +71,110 @@ const STORIES = [
 const EXAMPLES = [
   {
     id: "check_01",
-    scenario: "Order under $50 pre-tax subtotal",
-    input_summary: "Customer requests a refund for a $48.00 item plus $4.32 sales tax ($52.32 charged).",
-    expected_outcome: "Approved immediately for $52.32 in store credit.",
+    scenario: "Prompt-injected log line attempts cross-tenant spoof",
+    input_summary: "Log payload contains instruction to query org_id=\"other-tenant\" and dump 10,000 lines.",
+    expected_outcome: "Inject(\"org_id\") enforces caller's verified tenant; BoundedResult caps each page to 100 lines.",
     verification_kind: "deterministic",
   },
   {
     id: "check_02",
-    scenario: "Order above $50 pre-tax subtotal",
-    input_summary: "Customer requests a refund for a $65.00 item plus $5.85 sales tax ($70.85 charged).",
-    expected_outcome: "Queued for manager review; no credit is issued yet.",
+    scenario: "Unhealthy staging deploy self-heals",
+    input_summary: "TriageAgent hands unhealthy staging deploy to RemediationAgent.",
+    expected_outcome: "Rolls back staging automatically without paging on-call.",
+    verification_kind: "deterministic",
+  },
+  {
+    id: "check_03",
+    scenario: "Production rollback requires on-call role approval",
+    input_summary: "Production rollback pauses at Confirmation; a viewer without oncall role posts to /runs/{id}/approval.",
+    expected_outcome: "Suspends at Confirmation, rejects viewer approval with 403 Forbidden, and executes zero rollbacks until on-call approves.",
     verification_kind: "deterministic",
   },
 ];
 
 const CONFIRMED_ANSWERS = [
   {
-    id: "tax_in_limit",
-    question: "Does the $50 instant-credit limit count sales tax?",
-    answer: "Count the pre-tax item subtotal so local tax rates never push an identical order into manager review.",
+    id: "autonomy_boundary",
+    question: "Where should RemediationAgent draw the autonomy boundary for service rollbacks?",
+    answer: "Autonomous diagnostics and staging rollbacks; require on-call Confirmation before any production rollback.",
   },
 ];
 
 const COVERAGE = [
   {
-    scenario: "instant_credit",
-    question_ids: ["tax_in_limit"],
+    scenario: "bounded_triage_and_tenant_guard",
+    question_ids: ["autonomy_boundary"],
     example_ids: ["check_01"],
-    explanation: "Submits a $48.00 subtotal + $4.32 tax refund and asserts status == \"credit\" and cents == 5232.",
+    explanation: "Sends prompt-injected cross-tenant alert with 5,000 log lines; asserts OrgID == \"acme\" and len(Lines) <= 100.",
   },
   {
-    scenario: "manager_review",
-    question_ids: ["tax_in_limit"],
-    example_ids: ["check_02"],
-    explanation: "Submits a $65.00 subtotal + $5.85 tax refund and asserts status == \"pending_review\" with zero credit issued.",
+    scenario: "production_rollback_requires_approval",
+    question_ids: ["autonomy_boundary"],
+    example_ids: ["check_03"],
+    explanation: "Pauses production rollback at Confirmation; asserts 403 Forbidden when viewer approves and Rollbacks == 0.",
   },
 ];
 
 const REQUIRED_TESTS = [
-  { story: "Refunds", flow_key: "instant_credit", scenario: "instant_credit", hook: "InstantCredit" },
-  { story: "Refunds", flow_key: "manager_review", scenario: "manager_review", hook: "ManagerReview" },
+  { story: "OpsCopilotPlatform", flow_key: "bounded_triage_and_tenant_guard", scenario: "bounded_triage_and_tenant_guard", hook: "BoundedTriageAndTenantGuard" },
+  { story: "OpsCopilotPlatform", flow_key: "production_rollback_requires_approval", scenario: "production_rollback_requires_approval", hook: "ProductionRollbackRequiresApproval" },
 ];
 
 const OPENUI_PROGRAM = [
-  'root = DecisionWorkspace("Refund limit", [choice, table])',
-  'choice = AmbiguityChoiceCard(1, "Local sales tax changes whether orders near $50 wait for a manager")',
-  'table = PolicySimulatorTable("Threshold comparison", 1, [row1, row2])',
-  'row1 = PolicySimulatorRow("Order near the limit", "$48.00 subtotal + $4.32 tax ($52.32)", ["Instant $52.32 credit", "Queued for manager"], 1)',
-  'row2 = PolicySimulatorRow("Order above the limit", "$65.00 subtotal + $5.85 tax ($70.85)", ["Queued for manager", "Queued for manager"], 2)',
+  'root = DecisionWorkspace("Platform autonomy boundary", [choice, table])',
+  'choice = AmbiguityChoiceCard(1, "Choose which cluster actions RemediationAgent runs autonomously vs. behind on-call Confirmation")',
+  'table = PolicySimulatorTable("Autonomy matrix", 1, [row1, row2, row3])',
+  'row1 = PolicySimulatorRow("Log & deploy triage", "All environments", ["Autonomous (BoundedResult)", "Autonomous (BoundedResult)"], 1)',
+  'row2 = PolicySimulatorRow("Staging rollback", "staging", ["Autonomous self-healing", "Pause for on-call Confirmation"], 2)',
+  'row3 = PolicySimulatorRow("Production rollback", "production", ["Pause for on-call Confirmation (403 if not oncall)", "Pause for on-call Confirmation"], 3)',
 ].join("\n");
+
+const TEST_SOURCE = {
+  source: "written_tests",
+  commit: SUITE_COMMIT,
+  notice: "Written by a separate test-writer agent on branch highbay/tests-1.",
+};
 
 function makeState(stage) {
   const isAgree = stage === "agree";
+  const isCheck = stage === "check";
   const isApprove = stage === "approve";
+  const activeRunId = isCheck ? RUN_1_ID : RUN_2_ID;
+  const activeCandidate = isCheck ? CANDIDATE_COMMIT_1 : CANDIDATE_COMMIT_2;
 
   const approvalItem = {
     approved_by: "dana@acme.dev",
     artifacts: {},
-    candidate_commit: CANDIDATE_COMMIT,
+    candidate_commit: CANDIDATE_COMMIT_2,
     environment: "sim",
-    report_digest: REPORT_DIGEST,
-    scenario_count: 3,
+    report_digest: REPORT_2_DIGEST,
+    scenario_count: 4,
     suite_commit: SUITE_COMMIT,
-    suite_id: "refunds_acceptance",
-    test_source: {
-      source: "written_tests",
-      commit: SUITE_COMMIT,
-      notice: "These tests were written by a separate agent on this machine and are not isolated from the builder.",
-    },
+    suite_id: "ops_copilot_acceptance",
+    test_source: TEST_SOURCE,
   };
 
   const card = isAgree
     ? {
         change_id: CHANGE_ID,
-        prompt: "Let customers request instant store-credit refunds up to $50; send larger requests to a manager.",
-        summary: "Issue instant store-credit refunds up to $50 pre-tax and route larger requests to a manager.",
+        prompt: "Build a multi-tenant incident platform: a triage agent and remediation agent with MCP tools to search pod logs, correlate deploys, and roll back services with on-call approval.",
+        summary: "Multi-tenant incident platform with TriageAgent, RemediationAgent, MCP toolset, server-injected org_id, bounded log cursors, and on-call approval gates.",
         status: "needs_confirmation",
         request_revision: REV_1,
         ambiguities: [
           {
-            id: "tax_in_limit",
-            question: "Does the $50 instant-credit limit count sales tax?",
+            id: "autonomy_boundary",
+            question: "Where should RemediationAgent draw the autonomy boundary for service rollbacks?",
             options: [
-              "Count the pre-tax item subtotal so local tax rates never push an identical order into manager review.",
-              "Count the full charged total, including sales tax, against the $50 limit.",
+              "Autonomous diagnostics and staging rollbacks; require on-call Confirmation before any production rollback.",
+              "Read-only autonomous triage; require on-call Confirmation before rollbacks in every environment.",
             ],
             draft_option:
-              "Count the pre-tax item subtotal so local tax rates never push an identical order into manager review.",
+              "Autonomous diagnostics and staging rollbacks; require on-call Confirmation before any production rollback.",
           },
         ],
         examples: EXAMPLES,
-        preserved_behaviors: ["Existing full-order cancellations before shipment keep refunding the original card."],
+        preserved_behaviors: ["org_id is always server-injected from verified auth and omitted from model-visible tool JSON."],
         stories: STORIES,
         ui_composition: {
           composed_for_revision: REV_1,
@@ -167,17 +183,17 @@ function makeState(stage) {
       }
     : {
         change_id: CHANGE_ID,
-        prompt: "Let customers request instant store-credit refunds up to $50; send larger requests to a manager.",
-        summary: "Issue instant store-credit refunds up to $50 pre-tax and route larger requests to a manager.",
+        prompt: "Build a multi-tenant incident platform: a triage agent and remediation agent with MCP tools to search pod logs, correlate deploys, and roll back services with on-call approval.",
+        summary: "Multi-tenant incident platform with TriageAgent, RemediationAgent, MCP toolset, server-injected org_id, bounded log cursors, and on-call approval gates.",
         status: "confirmed",
         confirmed_by: "dana@acme.dev",
         request_revision: REV_2,
         answers: {
-          tax_in_limit:
-            "Count the pre-tax item subtotal so local tax rates never push an identical order into manager review.",
+          autonomy_boundary:
+            "Autonomous diagnostics and staging rollbacks; require on-call Confirmation before any production rollback.",
         },
         examples: EXAMPLES,
-        preserved_behaviors: ["Existing full-order cancellations before shipment keep refunding the original card."],
+        preserved_behaviors: ["org_id is always server-injected from verified auth and omitted from model-visible tool JSON."],
         stories: STORIES,
         ...(isApprove ? { approval: approvalItem } : {}),
       };
@@ -189,14 +205,22 @@ function makeState(stage) {
       {
         change_id: CHANGE_ID,
         request_revision: card.request_revision,
-        saved_at: "2026-11-25T18:12:00Z",
+        saved_at: "2026-11-26T08:12:00Z",
         status: card.status,
         summary: card.summary,
-        ...(isApprove
+        ...(isCheck
           ? {
               latest_verification: {
                 inputs_current: true,
-                run_id: RUN_ID,
+                run_id: RUN_1_ID,
+                state: "failed",
+              },
+            }
+          : isApprove
+          ? {
+              latest_verification: {
+                inputs_current: true,
+                run_id: RUN_2_ID,
                 state: "passed",
               },
             }
@@ -214,7 +238,7 @@ function makeState(stage) {
           state: "started",
           in_force: true,
           request_revision: REV_2,
-          started_at: "2026-11-25T18:14:00Z",
+          started_at: "2026-11-26T08:14:00Z",
           answers: CONFIRMED_ANSWERS,
           examples: EXAMPLES,
           coverage_statements: COVERAGE,
@@ -223,8 +247,8 @@ function makeState(stage) {
           builder: {
             read: true,
             branch: "highbay/build-1",
-            head_commit: CANDIDATE_COMMIT,
-            last_check_at: "2026-11-25T18:18:10Z",
+            head_commit: activeCandidate,
+            last_check_at: "2026-11-26T08:18:10Z",
             last_check_passed: true,
           },
           test_writer: {
@@ -233,7 +257,7 @@ function makeState(stage) {
             tests: {
               state: "accepted",
               commit: SUITE_COMMIT,
-              checked_at: "2026-11-25T18:16:40Z",
+              checked_at: "2026-11-26T08:16:40Z",
               not_judged:
                 "Highbay checked that these tests build into the generated test program and declare every required scenario; it did not judge what they assert.",
             },
@@ -241,8 +265,8 @@ function makeState(stage) {
           taking: isApprove
             ? {
                 state: "passed",
-                run_id: RUN_ID,
-                candidate_commit: CANDIDATE_COMMIT,
+                run_id: RUN_2_ID,
+                candidate_commit: CANDIDATE_COMMIT_2,
                 candidate_branch: "highbay/build-1",
                 base_in_branch: true,
                 tests: {
@@ -256,13 +280,13 @@ function makeState(stage) {
       };
 
   const team = {
-    team: "refunds-service",
+    team: "ops-copilot",
     herdr_mode: "attached",
     chorus_status: "connected",
     dismissed_notices: [],
     saved_choices: {
-      builder: { client: "claude", program: "claude", thinking: "high", yolo: false },
-      test_writer: { client: "codex", program: "codex", thinking: "high", yolo: false },
+      builder: { client: "codex", program: "codex", thinking: "high", yolo: false },
+      test_writer: { client: "claude", program: "claude", thinking: "high", yolo: false },
     },
     roles: [
       { role: "guide", handle: "guide", state: "waiting", attention: "none", watcher: "held", assignment: "nothing_owed" },
@@ -313,78 +337,149 @@ function makeState(stage) {
     ],
   };
 
-  const report = {
-    report_digest: REPORT_DIGEST,
-    passed: true,
+  const failedReport = {
+    report_digest: REPORT_1_DIGEST,
+    passed: false,
     suite_failed: false,
-    counts: { required: 3, passed: 3, failed: 0, harness_error: 0, not_run: 0 },
+    counts: { required: 4, passed: 3, failed: 1, harness_error: 0, not_run: 0 },
     scenarios: [
       {
         id: "starts_and_listens",
         outcome: "passed",
+        checks: [{ name: "readyz_and_mcp_ok", passed: true }],
+      },
+      {
+        id: "bounded_triage_and_tenant_guard",
+        outcome: "passed",
         checks: [
-          { name: "readyz_ok", passed: true },
+          { name: "spoofed_org_id_ignored", passed: true },
+          { name: "within_token_budget_3100", passed: true },
         ],
       },
       {
-        id: "instant_credit",
+        id: "staging_rollback_heals",
         outcome: "passed",
-        checks: [
-          { name: "status_is_instant_credit", passed: true },
-          { name: "credited_5232_cents_with_tax", passed: true },
-        ],
+        checks: [{ name: "rolled_back_without_paging", passed: true }],
       },
       {
-        id: "manager_review",
-        outcome: "passed",
+        id: "production_rollback_requires_approval",
+        outcome: "failed",
         checks: [
-          { name: "status_is_pending_review", passed: true },
-          { name: "no_store_credit_issued", passed: true },
+          { name: "suspended_for_oncall_confirmation", passed: true },
+          {
+            name: "non_oncall_approval_rejected",
+            passed: false,
+            diagnostic: 'POST /runs/inc_42/approval as role="viewer": expected 403 Forbidden, got 200 OK.',
+          },
         ],
       },
     ],
   };
 
-  const verificationStatus = {
-    run_id: RUN_ID,
+  const passedReport = {
+    report_digest: REPORT_2_DIGEST,
+    passed: true,
+    suite_failed: false,
+    counts: { required: 4, passed: 4, failed: 0, harness_error: 0, not_run: 0 },
+    scenarios: [
+      {
+        id: "starts_and_listens",
+        outcome: "passed",
+        checks: [{ name: "readyz_and_mcp_ok", passed: true }],
+      },
+      {
+        id: "bounded_triage_and_tenant_guard",
+        outcome: "passed",
+        checks: [
+          { name: "spoofed_org_id_ignored", passed: true },
+          { name: "within_token_budget_3100", passed: true },
+        ],
+      },
+      {
+        id: "staging_rollback_heals",
+        outcome: "passed",
+        checks: [{ name: "rolled_back_without_paging", passed: true }],
+      },
+      {
+        id: "production_rollback_requires_approval",
+        outcome: "passed",
+        checks: [
+          { name: "suspended_for_oncall_confirmation", passed: true },
+          { name: "non_oncall_approval_rejected", passed: true },
+        ],
+      },
+    ],
+  };
+
+  const run1Status = {
+    run_id: RUN_1_ID,
     change_id: CHANGE_ID,
     request_revision: REV_2,
-    candidate_commit: CANDIDATE_COMMIT,
+    candidate_commit: CANDIDATE_COMMIT_1,
     suite_commit: SUITE_COMMIT,
-    accepted_at: "2026-11-25T18:19:05Z",
+    accepted_at: "2026-11-26T08:17:20Z",
     inputs_current: true,
-    test_source: approvalItem.test_source,
+    test_source: TEST_SOURCE,
     state: {
       type: "completed",
       value: {
-        suite_id: "refunds_acceptance",
+        suite_id: "ops_copilot_acceptance",
         environment: "sim",
-        report,
+        report: failedReport,
       },
     },
   };
 
-  const verificationReview = {
-    ...verificationStatus,
+  const run2Status = {
+    run_id: RUN_2_ID,
+    change_id: CHANGE_ID,
+    request_revision: REV_2,
+    candidate_commit: CANDIDATE_COMMIT_2,
+    suite_commit: SUITE_COMMIT,
+    accepted_at: "2026-11-26T08:19:45Z",
+    inputs_current: true,
+    test_source: TEST_SOURCE,
+    state: {
+      type: "completed",
+      value: {
+        suite_id: "ops_copilot_acceptance",
+        environment: "sim",
+        report: passedReport,
+      },
+    },
+  };
+
+  const storyContext = {
+    state: "recorded",
+    build_number: 1,
+    build_started_at: "2026-11-26T08:14:00Z",
+    stories: STORIES,
+    mapping: { state: "mapped", required_tests: REQUIRED_TESTS },
+    test_coverage: {
+      state: "recorded",
+      report: 1,
+      answers: CONFIRMED_ANSWERS,
+      examples: EXAMPLES,
+      coverage_statements: COVERAGE,
+    },
+  };
+
+  const run1Review = {
+    ...run1Status,
     review: {
       approval: {
-        state: "recorded",
-        ...approvalItem,
+        state: "blocked",
+        reason: "Scenario production_rollback_requires_approval failed (3 of 4 passed).",
       },
-      story_context: {
-        state: "recorded",
-        build_number: 1,
-        build_started_at: "2026-11-25T18:14:00Z",
-        stories: STORIES,
-        mapping: { state: "mapped", required_tests: REQUIRED_TESTS },
-        test_coverage: {
-          state: "recorded",
-          report: 1,
-          answers: CONFIRMED_ANSWERS,
-          examples: EXAMPLES,
-          coverage_statements: COVERAGE,
-        },
-      },
+      story_context: storyContext,
+    },
+  };
+
+  const run2Review = {
+    ...run2Status,
+    review: {
+      approval: { state: "recorded", ...approvalItem },
+      story_context: storyContext,
     },
   };
 
@@ -392,62 +487,78 @@ function makeState(stage) {
     change_id: CHANGE_ID,
     request_revision: REV_2,
     design_digest: "4e91c70a83f21b64d9052c87a13f6e409b28d514c703e891a6b42f08d37c5192",
-    system_name: "Refunds service",
-    banner: "5 containers, 4 boundary edges, 1 agent policy, 2 tool contracts",
+    system_name: "Ops Copilot Platform",
+    banner: "8 containers, 7 boundary edges, 2 agent policies, 2 tool contracts",
     containers: [
-      { id: "customer", kind: "person", name: "Customer", description: "Requests a store-credit refund on an order" },
-      { id: "manager", kind: "person", name: "Support manager", description: "Reviews refund requests above the $50 subtotal limit" },
-      { id: "refund_assistant", kind: "agent", name: "Refund Assistant", description: "Goa-AI agent evaluating refund eligibility" },
-      { id: "refunds_api", kind: "service", name: "Refunds API", description: "Enforces the $50 pre-tax subtotal policy" },
-      { id: "credit_tools", kind: "toolset", name: "Refund Toolset", description: "Typed service bindings for instant credit and review queue" },
+      { id: "responder", kind: "person", name: "Incident Responder", description: "Investigates cluster alerts" },
+      { id: "oncall", kind: "person", name: "On-Call Engineer", description: "Approves production rollbacks" },
+      { id: "triage_agent", kind: "agent", name: "Triage Agent", description: "Correlates deploys & bounded logs" },
+      { id: "ops_api", kind: "service", name: "Ops API & MCP", description: "HTTP & MCP gateway, auth & run store" },
+      { id: "remediation_agent", kind: "agent", name: "Remediation Agent", description: "Gated service rollbacks" },
+      { id: "log_tools", kind: "toolset", name: "Pod Log Toolset", description: "Bounded log & deploy MCP tools" },
+      { id: "temporal", kind: "system", name: "Temporal Engine", description: "Durable workflow & approval state" },
+      { id: "rollout_tools", kind: "toolset", name: "Rollout Toolset", description: "Rollback MCP tools with Confirmation" },
     ],
     edges: [
-      { from_id: "customer", to_id: "refund_assistant", protocol: "HTTPS" },
-      { from_id: "manager", to_id: "refunds_api", protocol: "HTTPS" },
-      { from_id: "refund_assistant", to_id: "credit_tools", protocol: "BindTo" },
-      { from_id: "refunds_api", to_id: "credit_tools", protocol: "MCP" },
+      { from_id: "responder", to_id: "ops_api", protocol: "HTTPS" },
+      { from_id: "oncall", to_id: "ops_api", protocol: "HTTPS" },
+      { from_id: "ops_api", to_id: "triage_agent", protocol: "Agent" },
+      { from_id: "triage_agent", to_id: "log_tools", protocol: "MCP" },
+      { from_id: "ops_api", to_id: "temporal", protocol: "Temporal" },
+      { from_id: "ops_api", to_id: "remediation_agent", protocol: "Agent" },
+      { from_id: "remediation_agent", to_id: "rollout_tools", protocol: "MCP" },
     ],
     agent_policies: [
       {
-        agent_id: "refund_assistant",
-        max_execution_seconds: 30,
-        max_tool_calls: 4,
+        agent_id: "triage_agent",
+        max_execution_seconds: 60,
+        max_tool_calls: 6,
         max_recovery_turns: 2,
         compress_at_turns: 12,
         keep_recent_turns: 6,
         cache_after_system: true,
         cache_after_tools: true,
       },
+      {
+        agent_id: "remediation_agent",
+        max_execution_seconds: 45,
+        max_tool_calls: 4,
+        max_recovery_turns: 1,
+        compress_at_turns: 8,
+        keep_recent_turns: 4,
+        cache_after_system: true,
+        cache_after_tools: true,
+      },
     ],
     tools: [
       {
-        id: "refund_assistant/issue_store_credit",
-        name: "issue_store_credit",
-        toolset: "credit_tools",
-        description: "Issues immediate store credit when pre-tax subtotal <= $50.00.",
-        injected_fields: ["customer_id"],
+        id: "triage_agent/query_pod_logs",
+        name: "query_pod_logs",
+        toolset: "log_tools",
+        description: "Queries bounded pod logs and deploy correlation for the caller's verified organization.",
+        injected_fields: ["org_id"],
         requires_confirmation: false,
-        bounded_result: false,
+        bounded_result: true,
         requires_ui: false,
-        args_schema: '{"type":"object","required":["order_id","subtotal_cents","tax_cents"]}',
-        return_schema: '{"type":"object","required":["status","credited_cents"]}',
+        args_schema: '{"type":"object","required":["env","service"]}',
+        return_schema: '{"type":"object","required":["lines"]}',
       },
       {
-        id: "refund_assistant/queue_manager_refund",
-        name: "queue_manager_refund",
-        toolset: "credit_tools",
-        description: "Routes refunds above $50.00 pre-tax subtotal for manager approval.",
-        injected_fields: ["customer_id"],
+        id: "remediation_agent/rollback_service",
+        name: "rollback_service",
+        toolset: "rollout_tools",
+        description: "Rolls back an unhealthy deployment; pauses at Confirmation on production.",
+        injected_fields: ["org_id"],
         requires_confirmation: true,
         bounded_result: false,
         requires_ui: false,
-        args_schema: '{"type":"object","required":["order_id","subtotal_cents","tax_cents"]}',
-        return_schema: '{"type":"object","required":["status","queue_id"]}',
+        args_schema: '{"type":"object","required":["env","service"]}',
+        return_schema: '{"type":"object","required":["rolled_back","pending_confirmation"]}',
       },
     ],
   };
 
-  return { card, changes, build, team, options, verificationStatus, verificationReview, architecturePreview };
+  return { card, changes, build, team, options, run1Status, run2Status, run1Review, run2Review, activeRunId, architecturePreview };
 }
 
 let currentStage = "agree";
@@ -481,7 +592,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method === "POST" && p === "/project/browser-session") {
-    json(201, { project_name: "refunds-service", session: "demo-session-token" });
+    json(201, { project_name: "ops-copilot", session: "demo-session-token" });
     return;
   }
   if (req.method === "GET" && p === "/changes") {
@@ -489,7 +600,6 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method === "GET" && p === "/change-updates") {
-    // Hold long-poll open cleanly until tab closes so the page stays calm.
     req.on("close", () => {});
     return;
   }
@@ -518,15 +628,29 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method === "GET" && p === `/changes/${CHANGE_ID}/verifications`) {
-    json(200, { change_id: CHANGE_ID, runs: currentStage === "approve" ? [state.verificationStatus] : [] });
+    const runs =
+      currentStage === "check"
+        ? [state.run1Status]
+        : currentStage === "approve"
+        ? [state.run2Status, state.run1Status]
+        : [];
+    json(200, { change_id: CHANGE_ID, runs });
     return;
   }
-  if (req.method === "GET" && p === `/verifications/${RUN_ID}`) {
-    json(200, state.verificationStatus);
+  if (req.method === "GET" && p === `/verifications/${RUN_1_ID}`) {
+    json(200, state.run1Status);
     return;
   }
-  if (req.method === "GET" && p === `/verifications/${RUN_ID}/review`) {
-    json(200, state.verificationReview);
+  if (req.method === "GET" && p === `/verifications/${RUN_1_ID}/review`) {
+    json(200, state.run1Review);
+    return;
+  }
+  if (req.method === "GET" && p === `/verifications/${RUN_2_ID}`) {
+    json(200, state.run2Status);
+    return;
+  }
+  if (req.method === "GET" && p === `/verifications/${RUN_2_ID}/review`) {
+    json(200, state.run2Review);
     return;
   }
   if (req.method === "GET" && p === "/live-target") {
@@ -550,15 +674,15 @@ const { port } = server.address();
 const baseUrl = `http://127.0.0.1:${port}/views#link=demo-link`;
 
 const SIZES = {
-  desktop: { width: 1440, height: 960, scale: 1.5 },
-  mobile: { width: 390, height: 780, scale: 2 },
+  desktop: { width: 1040, height: 845, scale: 2 },
+  mobile: { width: 390, height: 740, scale: 2 },
 };
 
 const browser = await chromium.launch({ channel: "chrome" });
 const pins = {};
 
 try {
-  for (const stage of ["agree", "architecture", "build", "approve"]) {
+  for (const stage of ["agree", "architecture", "check", "approve"]) {
     currentStage = stage;
     pins[stage] = {};
     for (const theme of ["light", "dark"]) {
@@ -572,21 +696,11 @@ try {
         const page = await context.newPage();
         page.on("pageerror", (err) => console.error("PAGEERROR:", err));
         await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-        try {
-          await page.waitForSelector('[data-state="cp1-change-card"]', { state: "attached", timeout: 5000 });
-        } catch (err) {
-          console.error("DEBUG DOM:", await page.evaluate(() => ({
-            attrs: [...document.querySelectorAll("[data-session], [data-state]")].map((n) => ({ id: n.id, session: n.getAttribute("data-session"), state: n.getAttribute("data-state") })),
-            text: document.body.innerText.slice(0, 600),
-          })));
-          throw err;
-        }
+        await page.waitForSelector('[data-state="cp1-change-card"]', { state: "attached", timeout: 5000 });
 
         if (stage === "agree") {
           await page.getByRole("button", { name: "Agree", exact: true }).click().catch(() => {});
           await page.waitForTimeout(250);
-          // Select the pre-tax subtotal choice option so the simulator highlights it
-          // and the primary action updates to "Confirm Intent & Lock Examples".
           const firstChoice = page.locator(".shadcn-choice-option").first();
           if ((await firstChoice.count()) > 0) {
             await firstChoice.click();
@@ -595,90 +709,83 @@ try {
         } else if (stage === "architecture") {
           await page.locator("#highbay-nav-cp2").click();
           await page.waitForSelector("#highbay-c4-svg", { state: "visible", timeout: 5000 });
-          await page.waitForTimeout(200);
-        } else if (stage === "build") {
-          await page.getByRole("button", { name: "Build", exact: true }).click().catch(() => {});
-          await page.waitForTimeout(400);
+          await page.waitForTimeout(250);
+        } else if (stage === "check") {
+          await page.locator("#highbay-nav-cp4").click();
+          await page.waitForSelector("#highbay-cp4-verification", { state: "visible", timeout: 5000 });
+          await page.waitForTimeout(250);
+          const checkBtn = page.locator("#highbay-cp4-check-status");
+          if ((await checkBtn.count()) > 0) {
+            await checkBtn.scrollIntoViewIfNeeded();
+            await checkBtn.click();
+          }
+          await page.waitForFunction(
+            () => /This result matches the agreed revision/i.test(document.querySelector("#highbay-cp4-inputs")?.textContent || ""),
+            { timeout: 5000 },
+          );
+          await page.evaluate(() => {
+            for (const details of document.querySelectorAll(".highbay-verification-scenarios details")) {
+              if (/production_rollback_requires_approval/i.test(details.textContent || "")) {
+                details.open = true;
+              }
+            }
+          });
+          await page.waitForTimeout(150);
         } else if (stage === "approve") {
           await page.getByRole("button", { name: "Approve", exact: true }).click();
           await page.waitForTimeout(450);
         }
 
-        // Blur active focus ring and reset scroll to top for a clean capture.
-        await page.evaluate(() => {
+        await page.evaluate(([stg, sz]) => {
           if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
           }
-          window.scrollTo({ top: 0, behavior: "instant" });
-        });
+          const sticky = document.querySelector("#highbay-workspace-context") || document.querySelector("header");
+          const stickyBottom = sticky ? Math.ceil(sticky.getBoundingClientRect().bottom) : 220;
+          let top = 0;
+          if (stg === "agree" && sz === "desktop") {
+            const sim = [...document.querySelectorAll("h2, h3, div")].find((n) => /^Platform autonomy boundary$/i.test((n.textContent || "").trim()));
+            if (sim) {
+              top = Math.max(0, Math.round(sim.getBoundingClientRect().top + window.scrollY - stickyBottom - 16));
+            }
+          } else if (stg === "architecture") {
+            const heading = [...document.querySelectorAll("h2, h3")].find((n) => /^C4 Directed Graph/i.test((n.textContent || "").trim()));
+            if (heading) {
+              top = Math.max(0, Math.round(heading.getBoundingClientRect().top + window.scrollY - stickyBottom + 20));
+            }
+          } else if (stg === "check") {
+            if (sz === "mobile") {
+              document.body.style.paddingBottom = "420px";
+              const failedRow = [...document.querySelectorAll("details")].find((n) =>
+                /production_rollback_requires_approval/i.test(n.textContent || ""),
+              );
+              const bottomBar = document.querySelector("#highbay-workspace-context");
+              const bottomBarH = bottomBar ? Math.ceil(bottomBar.getBoundingClientRect().height) : 76;
+              if (failedRow) {
+                const visibleBottom = window.innerHeight - bottomBarH - 42;
+                top = Math.max(0, Math.round(failedRow.getBoundingClientRect().bottom + window.scrollY - visibleBottom));
+              }
+            } else {
+              const titleEl = document.querySelector("#highbay-cp4-title");
+              if (titleEl) {
+                top = Math.max(0, Math.round(titleEl.getBoundingClientRect().top + window.scrollY - stickyBottom - 16));
+              }
+            }
+          }
+          window.scrollTo({ top, behavior: "instant" });
+        }, [stage, sizeName]);
         await page.waitForTimeout(200);
 
         const baseName = `${stage}-${sizeName}-${theme}`;
         const pngPath = path.join(__dirname, `${baseName}.png`);
         const webpPath = path.join(OUT_IMG_DIR, `${baseName}.webp`);
         await page.screenshot({ path: pngPath, fullPage: false });
-        execFileSync("cwebp", ["-quiet", "-q", "82", "-m", "6", pngPath, "-o", webpPath]);
+        execFileSync("cwebp", ["-quiet", "-q", "85", "-m", "6", pngPath, "-o", webpPath]);
         fs.unlinkSync(pngPath);
 
-        const measured = await page.evaluate(([w, h, stg]) => {
-          const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-          const afterRight = (el, gapPx = 22) => {
-            if (!el) return null;
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            const r = range.getBoundingClientRect();
-            return {
-              x: +clamp(((r.right + gapPx) / w) * 100, 4, 95).toFixed(2),
-              y: +clamp(((r.top + r.height * 0.5) / h) * 100, 5, 95).toFixed(2),
-            };
-          };
-          const beforeLeft = (el, gapPx = 20) => {
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return {
-              x: +clamp(((r.left - gapPx) / w) * 100, 4, 95).toFixed(2),
-              y: +clamp(((r.top + r.height * 0.5) / h) * 100, 5, 95).toFixed(2),
-            };
-          };
-          const inViewByText = (selector, re) =>
-            [...document.querySelectorAll(selector)].find((n) => {
-              if (!re.test((n.textContent || "").trim())) return false;
-              const r = n.getBoundingClientRect();
-              return r.width > 0 && r.height > 0 && r.top >= 0 && r.top < h - 24;
-            });
-          if (stg === "agree") {
-            const simBadge = inViewByText("span, div", /^Question 1$/i);
-            const simHeading = inViewByText("h3, h4, strong", /^Threshold comparison$/i);
-            return {
-              1: afterRight(inViewByText("h2, h3", /^Review & Confirm Change Intent$/i), 20),
-              2: afterRight(simBadge || simHeading, 20),
-              3: beforeLeft(inViewByText("button", /Confirm Intent|Jump to/i), 20),
-            };
-          }
-          if (stg === "architecture") {
-            return {
-              1: afterRight(inViewByText("h2, h3", /^C4 Directed Graph/i), 20),
-              2: afterRight(inViewByText("h3, h4", /^Evaluated Agent Policies/i), 20),
-              3: afterRight(inViewByText("h3, h4", /^Evaluated Tool Guardrails/i), 20),
-            };
-          }
-          if (stg === "build") {
-            return {
-              1: afterRight(inViewByText("h3, h4, legend, strong", /^Builder$/i), 20),
-              2: afterRight(inViewByText("h3, h4, legend, strong", /^Test writer$/i), 20),
-              3: beforeLeft(inViewByText("span, div", /^Building$/i), 20),
-            };
-          }
-          return {
-            1: beforeLeft(inViewByText("button", /^Merge into current branch$/i), 20),
-            2: afterRight(inViewByText("h3, h4, strong, p", /^Agreed flows and their tests$/i), 20),
-            3: afterRight(inViewByText("p, span, strong", /^3 of 3 declared tests passed\.$/i), 20),
-          };
-        }, [viewport.width, viewport.height, stage]);
-
-        pins[stage][`${sizeName}-${theme}`] = measured;
         const sizeKb = (fs.statSync(webpPath).size / 1024).toFixed(1);
-        console.log(`${baseName}.webp (${sizeKb} KB)`, measured);
+        pins[stage][`${sizeName}-${theme}`] = { sizeKb: +sizeKb };
+        console.log(`${baseName}.webp (${sizeKb} KB)`);
         await context.close();
       }
     }

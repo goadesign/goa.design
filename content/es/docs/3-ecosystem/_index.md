@@ -132,12 +132,12 @@ npx @goadesign/chorus up
 Highbay organiza tus agentes de programación en roles separados de guía, autor de pruebas y constructor en torno a un diseño compilado de [Goa](/es/docs/1-goa/) y [Goa-AI](/es/docs/2-goa-ai/), verifica los commits candidatos con suites `eval/` aceptadas y fusiona los cambios aprobados desde el navegador:
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 **Características:**
-- Skill `/highbay` (`$highbay` en Codex) con Change Cards en lenguaje claro (`CP1`), vista previa C4 (`CP2`) e inicialización limpia y neutral de forma predeterminada (`hbay init -example` para un ejemplo ejecutable)
+- Skill `/highbay` (`$highbay` en Codex) con Change Cards en lenguaje claro (`CP1`), vista previa C4 (`CP2`) e inicialización limpia y neutral de forma predeterminada (`highbay init -example` para un ejemplo ejecutable)
 - Copias de trabajo Git separadas (`.highbay-tests` y `.highbay-build`) para que el agente que escribe las pruebas no escriba la implementación
 - Aceptación de pruebas `eval/` validada por el servidor, verificación independiente del candidato (`CP4`) y ajuste opcional de prompts en vivo (`CP3`)
 - Paneles en paralelo con Herdr y Chorus, o trabajadores CLI en segundo plano, hasta **Approve** y **Merge** en el navegador (`CP5`)
@@ -173,5 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
-go install github.com/goadesign/highbay/cmd/hbay@latest
+go install github.com/goadesign/highbay/cmd/highbay@latest
 ```

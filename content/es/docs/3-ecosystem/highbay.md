@@ -1,26 +1,34 @@
 ---
 title: "Highbay"
 weight: 5
-description: "Construye y verifica servicios Go y agentes de IA separando los roles de tus agentes de programación: confirma casos límite en el navegador, genera interfaces con Goa y Goa-AI y ejecuta pruebas de escenario independientes antes de fusionar."
+description: "Construye y verifica APIs, servidores MCP y agentes de IA separando los roles de tus agentes de programación: confirma decisiones abiertas en el navegador, genera ~70 % de la infraestructura de forma determinista y ejecuta pruebas de escenario independientes antes de fusionar."
 llm_optimized: true
 ---
 
-[Highbay](https://github.com/goadesign/highbay) construye y verifica servicios [Goa](/es/docs/1-goa/) y agentes [Goa-AI](/es/docs/2-goa-ai/) con los agentes de programación que ya utilizas, separando quién escribe el servicio de quién escribe las pruebas de escenario que condicionan la aprobación. Tú confirmas las decisiones abiertas de producto en el navegador, un agente implementa el servicio contra las interfaces generadas por Goa, un segundo agente escribe las pruebas de escenario en su propio espacio de trabajo y Highbay ejecuta esas pruebas aceptadas contra el commit candidato antes de que apruebes y fusiones.
+[Highbay](https://github.com/goadesign/highbay) convierte los agentes de programación que ya usas en un flujo de ingeniería disciplinado para APIs, servidores MCP y agentes de IA: impone una estructura de proyecto uniforme (`design/`, `gen/`, `cmd/`, `internal/`, `eval/`), reglas integradas del Golden Path (`highbay://golden-path`) para autenticación, trazas OpenTelemetry con [Clue](/es/docs/3-ecosystem/clue/), colas y grupos de workers sobre Redis Streams con [Pulse](/es/docs/3-ecosystem/pulse/), generación determinista con [Goa](/es/docs/1-goa/) y [Goa-AI](/es/docs/2-goa-ai/) y verificación en una copia independiente. Tú confirmas las decisiones abiertas en el navegador, un agente implementa el servicio contra las interfaces Go generadas, un segundo agente escribe las pruebas de escenario en su propia copia y Highbay verifica esos commits antes de aprobar y fusionar.
 
-Para probar la comparación interactiva del ejemplo de reembolsos de `$50`, visita la [página de Highbay](/es/highbay/).
+Para recorrer de principio a fin el ejemplo de plataforma de incidentes `ops-copilot`, visita la [página de Highbay](/es/highbay/).
 
 ## Instalación
 
-Highbay funciona en macOS o Linux y requiere **Go 1.27.3+**, **Git 2.45+** (con `user.name` y `user.email` configurados) y **Docker** (usado por `check_project` para compilar y ejecutar pruebas unitarias del constructor en contenedores Linux).
+Highbay funciona en macOS o Linux y utiliza **Go 1.27.3+**, **Git 2.45+** (con `user.name` y `user.email` configurados) y **Docker** (usado por `check_project` para compilar y ejecutar pruebas unitarias del constructor en contenedores Linux).
 
-Instala el binario `hbay` y registra tus agentes de programación:
+Instala `highbay` y registra tus agentes de programación con Homebrew, `npx` o `go install`:
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+# macOS o Linux (Homebrew)
+brew install goadesign/tap/highbay
+highbay up
+
+# Linux o macOS (Node.js 18+)
+npx @goadesign/highbay up
+
+# O con Go 1.27.3+
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
-`hbay up` registra el servidor MCP `hbay stdio` y la skill `/highbay` (`$highbay` en Codex) en los agentes detectados —Claude Code, Codex, Cursor, Antigravity, Gemini CLI, Windsurf, GitHub Copilot CLI y VS Code— e inicia [Chorus](/es/docs/3-ecosystem/chorus/) si está instalado. Usa `hbay setup -global` para registrar únicamente MCP y skills sin iniciar Chorus. Recarga tu agente o abre una nueva sesión si ya estaba abierto durante la instalación.
+`highbay up` registra el servidor MCP `highbay stdio` y la skill `/highbay` (`$highbay` en Codex) en los agentes detectados —Claude Code, Codex, Cursor, Antigravity, Gemini CLI, Windsurf, GitHub Copilot CLI y VS Code— e inicia [Chorus](/es/docs/3-ecosystem/chorus/) si está instalado. Ejecuta `highbay update` en cualquier momento para actualizar en el sitio el binario, las skills, los registros MCP y el complemento de Herdr (usa `highbay setup -global` para registrar únicamente MCP y skills sin iniciar Chorus). Highbay también está listado en el Official MCP Registry (`io.github.goadesign/highbay`), Glama, Serverdex y como plugin de Claude Code (`/plugin marketplace add goadesign/highbay`). Recarga tu agente o abre una nueva sesión si ya estaba abierto durante la instalación.
 
 Si existe la carpeta de configuración de [Herdr](https://herdr.dev) (`$HERDR_APP_HOME` o `~/.config/herdr-app`), la instalación también añade el módulo flotante de Highbay en `mods/highbay/` y asigna **Command–Option–Shift–H** (`⌥⌘⇧H`) en macOS cuando el atajo está libre.
 
@@ -28,24 +36,24 @@ Si existe la carpeta de configuración de [Herdr](https://herdr.dev) (`$HERDR_AP
 
 ## Iniciar un proyecto {#blank-and-example}
 
-Abre una carpeta en tu agente de programación e invoca `/highbay` (`$highbay` en Codex):
+Abre una carpeta de servicio nueva (o un repositorio Goa existente) en tu agente de programación e invoca `/highbay` (`$highbay` en Codex):
 
 ```text
-/highbay — crea un asistente de reembolsos: hasta $50 dan crédito en tienda al instante; los mayores esperan a un encargado.
+/highbay Crea una plataforma multitenant de incidentes con herramientas MCP para logs de pods y rollbacks con guardia.
 ```
 
 La primera llamada MCP inicia o se conecta al servidor local de Highbay del proyecto, registra tu sesión actual como `guide` y llama a `open_views` para abrir la página en tu navegador.
 
 Cuando la carpeta aún no está inicializada, tu agente llama a `init_project(dir: ".")` (derivando `example.com/<carpeta>` si no indicaste una ruta de módulo Go; la primera vez tarda un par de minutos mientras se descargan y compilan los módulos):
 
-- **Nuevo espacio de trabajo (`worked_example: false`, predeterminado)**: `init_project` y `hbay init` inicializan una estructura de dos módulos Go (`<module>` y `<module>/eval`) con Goa, Goa-AI, Model y Story fijados en `go.mod` y una comprobación inicial en `eval/`, lista para tu propia `Story` y `design/`.
+- **Nuevo espacio de trabajo (`worked_example: false`, predeterminado)**: `init_project` y `highbay init` inicializan una estructura de dos módulos Go (`<module>` y `<module>/eval`) con Goa, Goa-AI, Model y Story fijados en `go.mod` y una comprobación inicial en `eval/`, lista para tu propia `Story` y `design/`.
 - **Ejemplo ejecutable (`worked_example: true` / `-example`)**: Pasa `-example` en la CLI o pide `worked_example: true` cuando quieras explorar primero un agente Goa-AI completo con herramienta, flujo `Story` y suite de evaluación guionizada:
 
 ```bash
-hbay init -dir ./demo-shop -module example.com/shop -example
+highbay init -dir ./demo-shop -module example.com/shop -example
 ```
 
-- **Repositorios Goa existentes**: Adoptar Highbay en un repositorio Goa o Goa-AI existente requiere al menos un commit Git y una suite `<module>/eval` en el formato de Highbay o un programa de pruebas registrado con `hbay verification set` (cuando configuras una suite guardada, Highbay la ejecuta en cada cambio sin iniciar un autor de pruebas); consulta [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds). Ten en cuenta que `hbay gen` y `generate_code` admiten diseños HTTP, JSON-RPC y MCP; los diseños con transporte gRPC se rechazan hoy porque no se incluye la finalización con `protoc`.
+- **Repositorios Goa existentes**: Adoptar Highbay en un repositorio Goa o Goa-AI existente requiere al menos un commit Git y una suite `<module>/eval` en el formato de Highbay o un programa de pruebas registrado con `highbay verification set` (cuando configuras una suite guardada, Highbay la ejecuta en cada cambio sin iniciar un autor de pruebas); consulta [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds). Ten en cuenta que `highbay gen` y `generate_code` admiten diseños HTTP, JSON-RPC y MCP; los diseños con transporte gRPC se rechazan porque no se incluye la finalización con `protoc`.
 
 {{< highbay-views >}}
 
