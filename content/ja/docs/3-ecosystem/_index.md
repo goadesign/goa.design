@@ -132,12 +132,12 @@ npx @goadesign/chorus up
 Highbay は 1 つのコンパイル済み [Goa](/ja/docs/1-goa/) / [Goa-AI](/ja/docs/2-goa-ai/) 設計のもとでコーディングエージェントを guide・test writer・builder の役割に分け、受理された `eval/` スイートで候補コミットを検証し、承認された変更をブラウザからマージします：
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 **機能:**
-- 平易な言葉の Change Card（`CP1`）と C4 アーキテクチャ確認（`CP2`）を備える `/highbay`（Codex では `$highbay`）スキル。新規フォルダはデフォルトでクリーンな Go / `eval/` 構成を作成（サンプル付きは `hbay init -example`）
+- 平易な言葉の Change Card（`CP1`）と C4 アーキテクチャ確認（`CP2`）を備える `/highbay`（Codex では `$highbay`）スキル。新規フォルダはデフォルトでクリーンな Go / `eval/` 構成を作成（サンプル付きは `highbay init -example`）
 - テスト作成者が実装を書き換えないよう分離された Git 作業コピー（`.highbay-tests` と `.highbay-build`）
 - サーバー検査による `eval/` スイート受理、独立した候補コミット検証（`CP4`）、ライブプロンプト調整（`CP3`）
 - Herdr + Chorus の並列ペイン、または単体のバックグラウンド CLI ワーカーから、ブラウザでのワンクリック **Approve**・**Merge**（`CP5`）まで対応
@@ -173,5 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
-go install github.com/goadesign/highbay/cmd/hbay@latest
+go install github.com/goadesign/highbay/cmd/highbay@latest
 ```

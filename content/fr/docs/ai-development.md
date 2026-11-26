@@ -202,8 +202,8 @@ Les agents rejoignent des `#channels`, échangent des messages directs `@agent`,
 Lorsque vous souhaitez qu’un agent rédige les tests d’acceptation et qu’un autre écrive l’implémentation — avec un serveur qui vérifie les deux face à un contrat validé avant la fusion — utilisez [Highbay](/fr/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`) :
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 Invoquez ensuite `/highbay` (`$highbay` dans Codex) dans un dossier vide (ou un dépôt Goa disposant d’un commit Git et d’une suite `<module>/eval` ou de paramètres de vérification) :
@@ -212,7 +212,7 @@ Invoquez ensuite `/highbay` (`$highbay` dans Codex) dans un dossier vide (ou un 
 /highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-Dans un dossier vide, Highbay initialise par défaut une coquille Go et `eval/` propre et neutre (`hbay init -example` ou `worked_example: true` ajoute un exemple exécutable), présente la Change Card dans le navigateur, sépare `.highbay-tests` et `.highbay-build`, puis vérifie le commit avant la fusion sur votre branche locale. Consultez la [page Highbay](/fr/highbay/) et le [guide Highbay](/fr/docs/3-ecosystem/highbay/).
+Dans un dossier vide, Highbay initialise par défaut une coquille Go et `eval/` propre et neutre (`highbay init -example` ou `worked_example: true` ajoute un exemple exécutable), présente la Change Card dans le navigateur, sépare `.highbay-tests` et `.highbay-build`, puis vérifie le commit avant la fusion sur votre branche locale. Consultez la [page Highbay](/fr/highbay/) et le [guide Highbay](/fr/docs/3-ecosystem/highbay/).
 
 ## Mesurer l’avantage
 

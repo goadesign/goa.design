@@ -1,5 +1,5 @@
 ---
-title: "Highbay — pesi e contrappesi per coding agent"
+title: "Highbay — Architettura coerente su tutta la piattaforma costruita dal tuo coding agent."
 linkTitle: "Highbay"
-description: "Highbay sviluppa servizi Go e agenti IA con i coding agent che usi già, separando i compiti affinché nessun agente controlli il proprio lavoro: tu scegli il comportamento, uno scrive il codice, un altro i test e Highbay li esegue prima del merge."
+description: "Highbay mantiene tutta la piattaforma costruita dal tuo coding agent su un'architettura coerente, compilando server HTTP/MCP, validazione e schemi dei tool (~70% del codice Go non di test nel servizio di riferimento) da un contratto confermato da te."
 ---

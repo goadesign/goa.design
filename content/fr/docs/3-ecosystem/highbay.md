@@ -1,26 +1,34 @@
 ---
 title: "Highbay"
 weight: 5
-description: "Construisez et vérifiez des services Go et des agents IA en séparant les rôles de vos agents de code : confirmez les cas limites dans le navigateur, générez les interfaces Goa et Goa-AI et exécutez des tests de scénario indépendants avant de fusionner."
+description: "Construisez et vérifiez des API, serveurs MCP et agents IA en séparant les rôles de vos agents de code : confirmez les choix ouverts dans le navigateur, générez serveurs HTTP/MCP, validation et schémas (~70 % du code Go hors tests du service de référence) de façon déterministe et exécutez des tests indépendants avant de fusionner."
 llm_optimized: true
 ---
 
-[Highbay](https://github.com/goadesign/highbay) construit et vérifie des services [Goa](/fr/docs/1-goa/) et des agents [Goa-AI](/fr/docs/2-goa-ai/) avec les agents de code que vous utilisez déjà, en séparant celui qui écrit le service de celui qui écrit les tests de scénario conditionnant l’approbation. Vous tranchez les questions produit ouvertes dans votre navigateur, un agent implémente le service face aux interfaces générées par Goa, un second agent écrit les tests de scénario dans son propre espace de travail, et Highbay exécute ces tests acceptés contre le commit candidat avant que vous n'approuviez et fusionniez.
+[Highbay](https://github.com/goadesign/highbay) transforme les agents de code que vous utilisez déjà en un flux d'ingénierie discipliné pour les API, serveurs MCP et agents IA — avec une structure de projet uniforme (`design/`, `gen/`, `cmd/`, `internal/`, `eval/`), les règles Golden Path intégrées (`highbay://golden-path`) couvrant l'authentification, les traces OpenTelemetry via [Clue](/fr/docs/3-ecosystem/clue/) et les flux Redis Streams et pools de workers via [Pulse](/fr/docs/3-ecosystem/pulse/), la génération déterministe [Goa](/fr/docs/1-goa/) et [Goa-AI](/fr/docs/2-goa-ai/), ainsi qu'une vérification dans une copie séparée. Vous tranchez les questions produit ouvertes dans votre navigateur, un agent implémente le service face aux interfaces Go générées, un second agent écrit les tests de scénario dans sa propre copie, et Highbay vérifie ces commits avant approbation et fusion.
 
-Pour tester la comparaison interactive sur l'exemple de remboursement à `50 $`, consultez la [page Highbay](/fr/highbay/).
+Pour parcourir l'exemple complet de plateforme d'incidents `ops-copilot`, consultez la [page Highbay](/fr/highbay/).
 
 ## Installation
 
-Highbay fonctionne sur macOS ou Linux et requiert **Go 1.27.3+**, **Git 2.45+** (`user.name` et `user.email` configurés) et **Docker** (utilisé par `check_project` pour compiler et exécuter les tests unitaires du bâtisseur dans des conteneurs Linux).
+Highbay fonctionne sur macOS ou Linux et utilise **Go 1.27.3+**, **Git 2.45+** (`user.name` et `user.email` configurés) et **Docker** (utilisé par `check_project` pour compiler et exécuter les tests unitaires du bâtisseur dans des conteneurs Linux).
 
-Installez `hbay` et enregistrez vos agents de code :
+Installez `highbay` et enregistrez vos agents de code via Homebrew, `npx` ou `go install` :
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+# macOS ou Linux (Homebrew)
+brew install goadesign/tap/highbay
+highbay up
+
+# Linux ou macOS (Node.js 18+)
+npx @goadesign/highbay up
+
+# Ou avec Go 1.27.3+
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
-`hbay up` enregistre le serveur MCP `hbay stdio` et la skill `/highbay` (`$highbay` dans Codex) auprès des agents détectés — Claude Code, Codex, Cursor, Antigravity, Gemini CLI, Windsurf, GitHub Copilot CLI et VS Code — et démarre [Chorus](/fr/docs/3-ecosystem/chorus/) lorsqu'il est installé. Utilisez `hbay setup -global` pour enregistrer MCP et les skills sans démarrer Chorus. Rechargez votre agent ou ouvrez une nouvelle session s'il était déjà lancé pendant l'installation.
+`highbay up` enregistre le serveur MCP `highbay stdio` et la skill `/highbay` (`$highbay` dans Codex) auprès des agents détectés — Claude Code, Codex, Cursor, Antigravity, Gemini CLI, Windsurf, GitHub Copilot CLI et VS Code — et démarre [Chorus](/fr/docs/3-ecosystem/chorus/) lorsqu'il est installé. Exécutez `highbay update` à tout moment pour mettre à jour sur place le binaire, les skills, les enregistrements MCP et le compagnon Herdr (utilisez `highbay setup -global` pour enregistrer MCP et les skills sans démarrer Chorus). Highbay figure également sur l'Official MCP Registry (`io.github.goadesign/highbay`), Glama, Serverdex et comme plugin Claude Code (`/plugin marketplace add goadesign/highbay`). Rechargez votre agent ou ouvrez une nouvelle session s'il était déjà lancé pendant l'installation.
 
 Lorsque le dossier de configuration de [Herdr](https://herdr.dev) (`$HERDR_APP_HOME` ou `~/.config/herdr-app`) existe, l'installation ajoute également le compagnon flottant Highbay dans `mods/highbay/` et associe **Command–Option–Shift–H** (`⌥⌘⇧H`) sur macOS si le raccourci est libre.
 
@@ -28,24 +36,24 @@ Lorsque le dossier de configuration de [Herdr](https://herdr.dev) (`$HERDR_APP_H
 
 ## Démarrer un projet {#blank-and-example}
 
-Ouvrez un dossier dans votre agent de code et invoquez `/highbay` (`$highbay` dans Codex) :
+Ouvrez un nouveau dossier de service (ou un dépôt Goa existant) dans votre agent de code et invoquez `/highbay` (`$highbay` dans Codex) :
 
 ```text
-/highbay — crée un assistant de remboursement : jusqu'à 50 $ donnent un avoir immédiat ; au-delà, un responsable valide.
+/highbay Crée une plateforme d'incidents multi-tenant avec des outils MCP pour les logs de pods et les rollbacks soumis à approbation d'astreinte.
 ```
 
 Le premier appel MCP Highbay démarre ou rejoint le serveur local du projet, enregistre votre session active comme `guide` et appelle `open_views` pour ouvrir la page dans le navigateur.
 
 Lorsque le dossier n'est pas encore initialisé, votre agent appelle `init_project(dir: ".")` (en dérivant `example.com/<dossier>` si aucun chemin de module Go n'a été précisé ; la première initialisation prend deux ou trois minutes le temps de télécharger et compiler les modules Go) :
 
-- **Nouvel espace de travail (`worked_example: false`, par défaut)** : `init_project` et `hbay init` créent une structure à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod` et un test de démarrage dans `eval/`, prête pour votre propre `Story` et `design/`.
+- **Nouvel espace de travail (`worked_example: false`, par défaut)** : `init_project` et `highbay init` créent une structure à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod` et un test de démarrage dans `eval/`, prête pour votre propre `Story` et `design/`.
 - **Exemple exécutable (`worked_example: true` / `-example`)** : Passez `-example` en CLI ou demandez `worked_example: true` à votre agent pour explorer d'abord un agent Goa-AI complet avec outil, flux `Story` et suite d'évaluation scénarisée :
 
 ```bash
-hbay init -dir ./demo-shop -module example.com/shop -example
+highbay init -dir ./demo-shop -module example.com/shop -example
 ```
 
-- **Dépôts Goa existants** : Adopter Highbay dans un dépôt Goa ou Goa-AI existant requiert au moins un commit Git ainsi qu'une suite `<module>/eval` au format Highbay ou un programme de test enregistré via `hbay verification set` (lorsqu'une suite enregistrée est configurée, Highbay l'exécute à chaque changement sans lancer de rédacteur de tests) ; voir [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds). Notez que `hbay gen` et `generate_code` prennent en charge les designs HTTP, JSON-RPC et MCP ; les transports gRPC sont refusés aujourd'hui car la finalisation `protoc` n'est pas embarquée.
+- **Dépôts Goa existants** : Adopter Highbay dans un dépôt Goa ou Goa-AI existant requiert au moins un commit Git ainsi qu'une suite `<module>/eval` au format Highbay ou un programme de test enregistré via `highbay verification set` (lorsqu'une suite enregistrée est configurée, Highbay l'exécute à chaque changement sans lancer de rédacteur de tests) ; voir [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds). Notez que `highbay gen` et `generate_code` prennent en charge les designs HTTP, JSON-RPC et MCP ; les transports gRPC sont refusés car la finalisation `protoc` n'est pas embarquée.
 
 {{< highbay-views >}}
 

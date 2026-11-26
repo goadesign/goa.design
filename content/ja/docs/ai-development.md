@@ -202,8 +202,8 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 あるコーディングエージェントに受け入れテストを書かせ、別のコーディングエージェントに実装を書かせ、合意済み契約に対するサーバー検証を通過してからマージしたい場合は、[Highbay](/ja/docs/3-ecosystem/highbay/)（`github.com/goadesign/highbay`）を使います：
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 空のフォルダ（または初期 Git コミットと `<module>/eval` スイートもしくは検証設定がある既存の Goa リポジトリ）で `/highbay`（Codex では `$highbay`）を実行します：
@@ -212,7 +212,7 @@ hbay up
 /highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `hbay init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.highbay-tests` と `.highbay-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Highbay ページ](/ja/highbay/)と [Highbay ガイド](/ja/docs/3-ecosystem/highbay/)を参照してください。
+空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `highbay init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.highbay-tests` と `.highbay-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Highbay ページ](/ja/highbay/)と [Highbay ガイド](/ja/docs/3-ecosystem/highbay/)を参照してください。
 
 ## プロジェクトで効果を測る
 

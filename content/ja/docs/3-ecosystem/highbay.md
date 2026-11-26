@@ -1,26 +1,34 @@
 ---
 title: "Highbay"
 weight: 5
-description: "コーディングエージェントの役割を分離して Go サービスと AI エージェントを構築・検証します。ブラウザで境界条件を確定し、Goa と Goa-AI のインターフェースを生成し、マージ前に独立したシナリオテストを実行します。"
+description: "コーディングエージェントの役割を分離して API・MCP サーバー・AI エージェントを構築・検証します。ブラウザで仕様判断を確定し、HTTP/MCP サーバー・検証・ツールスキーマ（リファレンスサービスのテストを除く Go コードの約 70%）を決定論的に生成し、マージ前に独立したシナリオテストを実行します。"
 llm_optimized: true
 ---
 
-[Highbay](https://github.com/goadesign/highbay) は、普段使っているコーディングエージェントの役割を分け、サービスを実装するエージェントと承認の基準になるシナリオテストを書くエージェントを分離して [Goa](/ja/docs/1-goa/) サービスと [Goa-AI](/ja/docs/2-goa-ai/) エージェントを構築・検証するツールです。未決の仕様判断はあなたがブラウザで確定し、1 つのエージェントが Goa 生成インターフェースに対してサービスを実装し、別のエージェントが独立した作業コピーでシナリオテストを書き、承認・マージの前に Highbay がその受理済みテストを候補コミットに対して実行します。
+[Highbay](https://github.com/goadesign/highbay) は、普段使っているコーディングエージェントを API・MCP サーバー・AI エージェント向けの規律あるエンジニアリングワークフローへと変えるツールです。統一されたプロジェクト構成（`design/`、`gen/`、`cmd/`、`internal/`、`eval/`）、認証・[Clue](/ja/docs/3-ecosystem/clue/) による OpenTelemetry トレース・[Pulse](/ja/docs/3-ecosystem/pulse/) による Redis Streams やワーカープールを網羅した Golden Path ルール（`highbay://golden-path`）、[Goa](/ja/docs/1-goa/) と [Goa-AI](/ja/docs/2-goa-ai/) の決定論的コード生成、および別エージェントによるシナリオ検証を組み合わせます。未決の仕様判断はあなたがブラウザで確定し、1 つのエージェントが生成された Go インターフェースに対して実装し、別のエージェントが独立した作業コピーでシナリオテストを書き、承認・マージの前に Highbay がそれらを検証します。
 
-`$50` 返金例のインタラクティブな比較は [Highbay ページ](/ja/highbay/)で試せます。
+マルチテナント障害対応基盤 `ops-copilot` のウォークスルーは [Highbay ページ](/ja/highbay/)を参照してください。
 
 ## インストール
 
-Highbay は macOS または Linux で動作し、**Go 1.27.3 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内で実装者のコンパイル・単体テストを実行するために使用）を必要とします。
+Highbay は macOS または Linux で動作し、**Go 1.27.3 以上**、**Git 2.45 以上**（`user.name` と `user.email` 設定済み）、および **Docker**（`check_project` が Linux コンテナ内で実装者のコンパイル・単体テストを実行するために使用）を使用します。
 
-`hbay` バイナリをインストールし、コーディングエージェントを登録します：
+Homebrew、`npx`、または `go install` で `highbay` をインストールし、コーディングエージェントを登録します：
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+# macOS または Linux (Homebrew)
+brew install goadesign/tap/highbay
+highbay up
+
+# Linux または macOS (Node.js 18+)
+npx @goadesign/highbay up
+
+# または Go 1.27.3+
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
-`hbay up` は検出されたコーディングエージェント（Claude Code、Codex、Cursor、Antigravity、Gemini CLI、Windsurf、GitHub Copilot CLI、VS Code）に `hbay stdio` MCP サーバーと `/highbay`（Codex では `$highbay`）スキルを登録し、[Chorus](/ja/docs/3-ecosystem/chorus/) がインストールされていれば起動します。Chorus を起動せずに MCP とスキルだけ登録する場合は `hbay setup -global` を使います。すでにコーディングエージェントを開いていた場合は、再読み込みするか新しいセッションを開始してください。
+`highbay up` は検出されたコーディングエージェント（Claude Code、Codex、Cursor、Antigravity、Gemini CLI、Windsurf、GitHub Copilot CLI、VS Code）に `highbay stdio` MCP サーバーと `/highbay`（Codex では `$highbay`）スキルを登録し、[Chorus](/ja/docs/3-ecosystem/chorus/) がインストールされていれば起動します。`highbay update` を実行すれば、バイナリ、スキル、MCP 登録、Herdr コンパニオンをその場で最新化できます（Chorus を起動せずに MCP とスキルだけ登録する場合は `highbay setup -global` を使います）。Highbay は Official MCP Registry（`io.github.goadesign/highbay`）、Glama、Serverdex、および Claude Code プラグイン（`/plugin marketplace add goadesign/highbay`）にも登録されています。すでにコーディングエージェントを開いていた場合は再読み込みするか新しいセッションを開始してください。
 
 [Herdr](https://herdr.dev) の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`）がある場合、フローティングコンパニオン `mods/highbay/` もインストールされ、macOS でショートカットが空いていれば **Command–Option–Shift–H**（`⌥⌘⇧H`）が割り当てられます。
 
@@ -28,24 +36,24 @@ hbay up
 
 ## プロジェクトの開始 {#blank-and-example}
 
-フォルダをコーディングエージェントで開き、`/highbay`（Codex では `$highbay`）を実行します：
+新しいサービスフォルダ（または既存の Goa リポジトリ）をコーディングエージェントで開き、`/highbay`（Codex では `$highbay`）を実行します：
 
 ```text
-/highbay — 返金アシスタントを作成：$50 以下は即時ストアクレジット、それを超える返金は責任者の承認待ちにする。
+/highbay Pod ログ取得とオンコール承認付きロールバックの MCP ツールを備えたマルチテナント障害対応プラットフォームを構築して。
 ```
 
 最初の Highbay MCP 呼び出しでプロジェクトのローカル Highbay サーバーが起動（または接続）され、現在のセッションが `guide` として登録され、`open_views` によってブラウザ画面が開きます。
 
 まだ初期化されていないフォルダでは、エージェントが `init_project(dir: ".")` を呼び出します（Go モジュールパスを指定しなかった場合はフォルダ名から `example.com/<folder>` を導出します。初回は Go モジュールの取得とコンパイルに数分かかります）：
 
-- **新規ワークスペース（`worked_example: false`、デフォルト）**: `init_project` と `hbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定した 2 モジュール構成（`<module>` と `<module>/eval`）と起動確認チェックを初期化し、自分の `Story` と `design/` をすぐ書き始められる状態にします。
+- **新規ワークスペース（`worked_example: false`、デフォルト）**: `init_project` と `highbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定した 2 モジュール構成（`<module>` と `<module>/eval`）と起動確認チェックを初期化し、自分の `Story` と `design/` をすぐ書き始められる状態にします。
 - **動作するサンプル（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すかエージェントに `worked_example: true` を指定します：
 
 ```bash
-hbay init -dir ./demo-shop -module example.com/shop -example
+highbay init -dir ./demo-shop -module example.com/shop -example
 ```
 
-- **既存の Goa リポジトリ**: 既存の Goa / Goa-AI リポジトリで Highbay を使うには、少なくとも 1 つの Git コミットと、Highbay 形式の `<module>/eval` スイートまたは `hbay verification set` で登録した独自のテストプログラムが必要です（保存済みの検証スイートを設定した場合、Highbay はテスト作成者を起動せず変更ごとにそのスイートを実行します）。詳しくは [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds) を参照してください。なお、`hbay gen` と `generate_code` が対応するのは Goa の HTTP・JSON-RPC・MCP 設計であり、`protoc` による最終処理は同梱していないため gRPC トランスポートを含む設計は現在拒否されます。
+- **既存の Goa リポジトリ**: 既存の Goa / Goa-AI リポジトリで Highbay を使うには、少なくとも 1 つの Git コミットと、Highbay 形式の `<module>/eval` スイートまたは `highbay verification set` で登録した独自のテストプログラムが必要です（保存済みの検証スイートを設定した場合、Highbay はテスト作成者を起動せず変更ごとにそのスイートを実行します）。詳しくは [What a build adds](https://github.com/goadesign/highbay/blob/main/docs/HOW_IT_WORKS.md#what-a-build-adds) を参照してください。なお、`highbay gen` と `generate_code` が対応するのは Goa の HTTP・JSON-RPC・MCP 設計であり、`protoc` による最終処理は同梱していないため gRPC トランスポートを含む設計は拒否されます。
 
 {{< highbay-views >}}
 

@@ -202,8 +202,8 @@ Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricev
 Quando vuoi che un coding agent scriva i test di accettazione e un altro scriva l'implementazione — con un server che verifichi entrambi rispetto a un contratto confermato prima del merge — usa [Highbay](/it/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`):
 
 ```bash
-go install github.com/goadesign/highbay/cmd/hbay@latest
-hbay up
+go install github.com/goadesign/highbay/cmd/highbay@latest
+highbay up
 ```
 
 Invoca poi `/highbay` (`$highbay` in Codex) in una cartella vuota (o in un repository Goa con un commit Git e una suite `<module>/eval` o impostazioni di verifica salvate):
@@ -212,7 +212,7 @@ Invoca poi `/highbay` (`$highbay` in Codex) in una cartella vuota (o in un repos
 /highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-In una cartella vuota, Highbay crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`hbay init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.highbay-tests` e `.highbay-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Highbay](/it/highbay/) e la [guida Highbay](/it/docs/3-ecosystem/highbay/).
+In una cartella vuota, Highbay crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`highbay init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.highbay-tests` e `.highbay-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Highbay](/it/highbay/) e la [guida Highbay](/it/docs/3-ecosystem/highbay/).
 
 ## Misura il vantaggio
 

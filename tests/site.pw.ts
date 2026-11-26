@@ -384,14 +384,15 @@ test('interactive Chorus browser demo works across mobile/desktop, light/dark, S
 
 for (const width of [390, 1440]) {
   for (const theme of ['light', 'dark']) {
-    test(`${width}px ${theme}: Highbay page contrast toggle, 4-view studio, and install`, async ({ page }) => {
+    test(`${width}px ${theme}: Highbay page contrast, 4-view studio, capabilities, and install`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText("Your agent's tests pass. Did it build what you meant?");
-      await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveText('Get Highbay');
-      await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
-      await expect(page.locator('.highbay-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/highbay/');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        'Consistent architecture across the platform your coding agent builds. Services, MCP servers, and AI agents — ~70% of the code generated, not prompted.',
+      );
+      await expect(page.locator('.highbay-hero-actions a').first()).toHaveAttribute('href', '#install');
+      await expect(page.locator('.highbay-hero-actions a').nth(1)).toHaveAttribute('href', '#views');
       const brand = page.locator('.td-navbar .navbar-brand');
       await expect(brand).toHaveAccessibleName('Highbay');
       await expect(brand).toHaveAttribute('href', '/highbay/');
@@ -404,132 +405,66 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
 
-      // Interactive "Same prompt. Two outcomes." policy toggle: solo code/tests stay identical while Highbay catches the pre-tax mismatch.
-      const soloCard = page.locator('.highbay-sim__card--solo');
-      const hbCard = page.locator('.highbay-sim__card--hb');
-      await expect(soloCard.locator('.highbay-sim__tag')).toHaveText('Same for either answer');
-      await expect(hbCard.locator('.highbay-sim__tag')).toHaveText('Written from your answer');
-      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
-      await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeHidden();
-      await expect(soloCard.locator('.highbay-sim__verdict--pretax .highbay-chip')).toHaveText('Wrong, and green');
-      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeVisible();
-      await expect(hbCard.locator('.highbay-sim__pass--accent')).toBeHidden();
-      await expect(hbCard.locator('div.highbay-sim__state--pretax')).toBeVisible();
-      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--fail')).toContainText('Wanted $52.32 credit');
-      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--fail')).toContainText('Approval unavailable');
-      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--pass')).toContainText('3 of 3');
-      await expect(hbCard.locator('.highbay-sim__verdict--pretax .highbay-chip')).toHaveText('Caught before review');
-      await expect(hbCard.locator('div.highbay-sim__state--withtax')).toBeHidden();
+      // Paired Freehand vs. With Highbay contrast rows (both side labels stay available in the desktop accessibility tree).
+      await expect(page.locator('.highbay-sim__pair')).toHaveCount(4);
+      await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(4);
+      await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(4);
+      await expect(page.locator('.highbay-sim')).toContainText('Inject("org_id")');
+      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand coding agent');
+      await expect(page.locator('.highbay-sim__cell--hb .highbay-sim__mob-tag').first()).toHaveText('With Highbay');
+      expect(
+        await page.locator('.highbay-sim__mob-tag').first().evaluate((el) => getComputedStyle(el).display),
+      ).not.toBe('none');
 
-      await page.locator('label[for="highbay-policy-withtax"]').click();
-      await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeVisible();
-      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeHidden();
-      await expect(soloCard.locator('.highbay-sim__verdict--withtax .highbay-chip')).toHaveText('Right by luck');
-      await expect(soloCard.locator('pre').first()).toContainText('order.TotalCents <= 5000');
-      await expect(hbCard.locator('.highbay-sim__pass--accent')).toBeVisible();
-      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeHidden();
-      await expect(hbCard.locator('div.highbay-sim__state--withtax')).toBeVisible();
-      await expect(hbCard.locator('div.highbay-sim__state--withtax .highbay-sim__run--pass')).toContainText('3 of 3');
-      await expect(hbCard.locator('.highbay-sim__verdict--withtax .highbay-chip')).toHaveText('What you chose, checked');
-      await expect(hbCard.locator('div.highbay-sim__state--pretax')).toBeHidden();
-
-      await page.locator('label[for="highbay-policy-pretax"]').click();
-      await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
-      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeVisible();
-
-      await expect(page.locator('.highbay-evidence h2')).toHaveText('It caught a real one.');
-      await expect(page.locator('.highbay-trial-stats dt')).toHaveCount(4);
-
-      // Interactive 4-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
+      // Accessible 4-stage browser Views studio (default active tab = architecture C4 diagram + 4 thumbnails).
       const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
-      const checkStagePins = async (stageClass: string) => {
-        const canvas = page.locator(`${stageClass} .highbay-window__canvas`);
-        const pins = page.locator(`${stageClass} .highbay-pin`);
-        if (width < 601) {
-          await expect(pins.first()).toBeHidden();
-          return;
-        }
-        await expect(pins).toHaveText(['1', '2', '3']);
-        const frame = await canvas.boundingBox();
-        for (const pin of await pins.all()) {
-          const box = await pin.boundingBox();
-          expect(box!.x).toBeGreaterThanOrEqual(frame!.x);
-          expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
-          expect(box!.y).toBeGreaterThanOrEqual(frame!.y);
-          expect(box!.y + box!.height).toBeLessThanOrEqual(frame!.y + frame!.height);
-        }
-      };
-
-      const agreeImg = page.locator(`.highbay-stage--agree ${shotSelector}`);
-      await expect(agreeImg).toBeVisible();
-      await expect(agreeImg).toHaveAttribute('fetchpriority', 'high');
-      await expect.poll(() => agreeImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
-      await checkStagePins('.highbay-stage--agree');
-
-      await page.locator('label[for="highbay-stage-architecture"]').click();
+      await expect(page.locator('.highbay-tab__thumb')).toHaveCount(4);
       const archImg = page.locator(`.highbay-stage--architecture ${shotSelector}`);
       await expect(archImg).toBeVisible();
-      await expect(archImg).toHaveAttribute('fetchpriority', 'low');
+      await expect(archImg).toHaveAttribute('fetchpriority', 'high');
       await expect.poll(() => archImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
-      await checkStagePins('.highbay-stage--architecture');
-      if (width === 1440) {
-        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-architecture-${theme}.png` });
-      }
 
-      await page.locator('label[for="highbay-stage-build"]').click();
-      const buildImg = page.locator(`.highbay-stage--build ${shotSelector}`);
-      await expect(buildImg).toBeVisible();
-      await expect(buildImg).toHaveAttribute('fetchpriority', 'low');
-      await expect.poll(() => buildImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
-      await checkStagePins('.highbay-stage--build');
-      if (width === 1440) {
-        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-build-${theme}.png` });
+      for (const stage of ['agree', 'check', 'approve', 'architecture'] as const) {
+        const tab = page.locator(`#highbay-tab-${stage}`);
+        await expect(tab).toHaveAttribute('aria-controls', `highbay-panel-${stage}`);
+        await tab.click();
+        const img = page.locator(`.highbay-stage--${stage} ${shotSelector}`);
+        await expect(img).toBeVisible();
+        await expect.poll(() => img.evaluate(el => el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0)).toBe(true);
       }
-
-      await page.locator('label[for="highbay-stage-approve"]').click();
-      const approveImg = page.locator(`.highbay-stage--approve ${shotSelector}`);
-      await expect(approveImg).toBeVisible();
-      await expect.poll(() => approveImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
-      await checkStagePins('.highbay-stage--approve');
-      if (width === 1440) {
-        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-approve-${theme}.png` });
-      }
-
-      await page.locator('label[for="highbay-stage-agree"]').click();
-      await expect(agreeImg).toBeVisible();
 
       await expect(page.locator('.highbay-lane')).toHaveCount(3);
-      await expect(page.locator('.highbay-lane h3')).toHaveText([
-        'The flows · design/story.go',
-        'The test · test writer',
-        'The rule · builder',
-      ]);
-      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
-      await expect(page.locator('.highbay-codegen h2')).toHaveText('Generate the plumbing. Spend tokens on the logic.');
-      await expect(page.locator('.highbay-codegen .mcp-generation')).toBeVisible();
-      await expect(page.locator('.highbay-codegen__zero')).toHaveText('Written by the compiler, not a model');
-      await expect(page.locator('.highbay-codegen__sig pre')).toContainText('context.Context, *ChatPayload');
-      await expect(page.locator('.highbay-codegen-list dt')).toHaveCount(3);
-      await expect(page.locator('.highbay-codegen .section-link')).toHaveAttribute('href', '/docs/ai-development/');
-      await expect(page.locator('.highbay-compare-list dt')).toHaveText([
-        'One coding agent',
-        'Spec workflows (Spec Kit, OpenSpec)',
-        'Parallel agent workspaces (Conductor and others)',
-      ]);
-      await expect(page.locator('.highbay-faq dt')).toHaveCount(6);
+      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Toolset("ops"');
+      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Tool("rollback_production"');
+      await expect(page.getByRole('group', { name: 'Install method' })).toBeVisible();
+      await expect(page.getByRole('group', { name: 'Agent prefix' })).toBeVisible();
+      await expect(page.locator('.highbay-prefix-btn[data-prefix="$highbay"]')).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.locator('#llm-stack dt')).toHaveCount(3);
+      await expect(page.locator('#capabilities dt')).toHaveCount(4);
+      await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', '/docs/ai-development/');
+      await expect(page.locator('.highbay-compare-3col dt')).toHaveCount(3);
+      await expect(page.locator('.highbay-faq dt')).toHaveCount(4);
       const faqDocLink = page.locator('.highbay-faq a').first();
       await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();
+
+      // Step 1 [Homebrew | npx | Go] switcher + Step 2 [/highbay | $highbay] switcher + clipboard copy.
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-      await page.getByRole('button', { name: 'Copy the Go install command' }).click();
+      await page.locator('#install').getByRole('button', { name: 'Copy setup command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('go install github.com/goadesign/highbay/cmd/hbay@latest && hbay up');
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('brew install goadesign/tap/highbay\nhighbay up');
+
+      await page.locator('.highbay-mgr-btn[data-mgr="npx"]').click();
+      await expect(page.locator('#highbay-setup-cmd')).toHaveText('npx @goadesign/highbay up');
+      await page.locator('.highbay-mgr-btn[data-mgr="go"]').click();
+      await expect(page.locator('#highbay-setup-cmd')).toContainText('github.com/goadesign/highbay/cmd/highbay@latest');
+      await page.locator('.highbay-mgr-btn[data-mgr="brew"]').click();
+
+      await page.locator('.highbay-prefix-btn[data-prefix="$highbay"]').click();
+      await expect(page.locator('#highbay-prompt-cmd')).toContainText('$highbay Build a multi-tenant incident platform');
+      await page.locator('.highbay-prefix-btn[data-prefix="/highbay"]').click();
+
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      await page.evaluate(() => {
-        (document.activeElement as HTMLElement | null)?.blur?.();
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      });
-      await page.screenshot({ path: `.impeccable/review/highbay-${width}-${theme}.png`, fullPage: true });
 
       // Ecosystem guide embeds theme-matched Agree and Approve browser views without horizontal overflow.
       await page.goto('/docs/3-ecosystem/highbay/');
@@ -546,10 +481,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Las pruebas de tu agente pasan. ¿Construyó lo que querías decir?', 'Documentación', 'Framework Goa'],
-    ['fr', 'Les tests de votre agent passent. A-t-il construit ce que vous vouliez dire ?', 'Documentation', 'Framework Goa'],
-    ['it', 'I test del tuo agente passano. Ha costruito ciò che intendevi?', 'Documentazione', 'Framework Goa'],
-    ['ja', 'エージェントのテストは通る。 本当に意図したものを作りましたか？', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Arquitectura consistente en toda la plataforma que construye tu agente de programación. Servicios, servidores MCP y agentes de IA — ~70 % del código generado, no pedido por prompt.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Une architecture cohérente sur toute la plateforme que construit votre agent de code. Services, serveurs MCP et agents IA — ~70 % du code généré, pas demandé par prompt.', 'Documentation', 'Framework Goa'],
+    ['it', 'Architettura coerente su tutta la piattaforma costruita dal tuo coding agent. Servizi, server MCP e agenti IA — ~70% del codice generato, non scritto via prompt.', 'Documentazione', 'Framework Goa'],
+    ['ja', 'コーディングエージェントが構築するプラットフォーム全体に一貫したアーキテクチャを。 サービス・MCP サーバー・AI エージェント — コードの約 70% をプロンプトではなくコード生成で。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
@@ -557,8 +492,8 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
     const nav = page.locator('.td-navbar .navbar-nav');
     await expect(nav.getByRole('link', { name: docsLabel, exact: true })).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/highbay/`);
     await expect(nav.getByRole('link', { name: goaLabel, exact: true })).toHaveAttribute('href', `/${lang}/`);
-    await expect(page.locator('.highbay-codegen .section-link')).toHaveAttribute('href', `/${lang}/docs/ai-development/`);
-    await expect(page.locator('.highbay-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/highbay/`);
+    await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', `/${lang}/docs/ai-development/`);
+    await expect(page.locator('.highbay-faq a').first()).toHaveAttribute('href', `/${lang}/docs/3-ecosystem/highbay/#architecture`);
     const docs = await request.get(`/${lang}/docs/3-ecosystem/highbay/`);
     expect(docs.ok()).toBe(true);
     expect(await docs.text()).toContain(`/${lang}/highbay/`);
@@ -568,7 +503,7 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
       const response = await request.get(`/${lang}${path}`);
       expect(response.status(), `${lang}${path}`).toBe(200);
       const mdText = await response.text();
-      expect(mdText).toContain('github.com/goadesign/highbay/cmd/hbay@latest');
+      expect(mdText).toContain('github.com/goadesign/highbay/cmd/highbay@latest');
       expect(mdText).toContain('1.27.3');
       expect(mdText).toContain('{#codegen}');
       expect(mdText).not.toContain('`example: true`');
