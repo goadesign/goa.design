@@ -507,15 +507,16 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
       await expect(page.locator('.highbay-codegen h2')).toHaveText('Generate the plumbing. Spend tokens on the logic.');
       await expect(page.locator('.highbay-codegen .mcp-generation')).toBeVisible();
-      await expect(page.locator('.highbay-codegen__zero')).toHaveText('0 LLM output tokens');
-      await expect(page.locator('.highbay-codegen-list dt')).toHaveCount(4);
+      await expect(page.locator('.highbay-codegen__zero')).toHaveText('Written by the compiler, not a model');
+      await expect(page.locator('.highbay-codegen__sig pre')).toContainText('context.Context, *ChatPayload');
+      await expect(page.locator('.highbay-codegen-list dt')).toHaveCount(3);
       await expect(page.locator('.highbay-codegen .section-link')).toHaveAttribute('href', '/docs/ai-development/');
       await expect(page.locator('.highbay-compare-list dt')).toHaveText([
         'One coding agent',
         'Spec workflows (Spec Kit, OpenSpec)',
         'Parallel agent workspaces (Conductor and others)',
       ]);
-      await expect(page.locator('.highbay-faq dt')).toHaveCount(7);
+      await expect(page.locator('.highbay-faq dt')).toHaveCount(6);
       const faqDocLink = page.locator('.highbay-faq a').first();
       await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();

@@ -388,26 +388,19 @@ func (s *Service) RequestRefund(
       </div>
       <figure class="mcp-generation highbay-codegen__flow">
         <div class="mcp-design">
-          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_left_title" }}</strong><span>design/refunds.go</span></div>
-          {{ highlight `var creditTools = Toolset("credit_tools", func() {
-    Tool("request_refund", "Refund or queue an order", func() {
-        Args(RequestPayload)
-        Return(RefundResult)
-        BindTo("refunds", "request_refund")
-        Inject("customer_id")
+          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_left_title" }}</strong><span>examples/orders/design/orders.go</span></div>
+          {{ highlight `Method("chat", func() {
+    Payload(func() {
+        Token("token", String, "Customer bearer token.")
+        Attribute("message", String,
+            "What the customer says.",
+            func() { MinLength(1) })
+        Required("token", "message")
     })
-})
-
-var _ = Service("refunds", func() {
-    MCP("refunds", "1.0.0")
-    Method("request_refund", func() {
-        Payload(RequestPayload)
-        Result(RefundResult)
-        HTTP(func() { POST("/refunds") })
-    })
-    Export(creditTools)
-    Agent("refund_assistant", "Handles customer refunds", func() {
-        Use(creditTools)
+    Result(RunView)
+    HTTP(func() {
+        POST("/chat")
+        Response(StatusAccepted)
     })
 })` "go" "" }}
         </div>
@@ -417,17 +410,24 @@ var _ = Service("refunds", func() {
           <span class="highbay-codegen__zero">{{ T "highbay_codegen_zero" }}</span>
         </div>
         <div class="mcp-results">
-          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_right_title" }}</strong><span>{{ T "highbay_codegen_right_sub" }}</span></div>
+          <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_right_title" }}</strong><span>gen/orders/service.go</span></div>
+          <div class="highbay-codegen__sig">
+            {{ highlight `type Service interface {
+    Chat(
+        context.Context, *ChatPayload,
+    ) (res *RunView, err error)
+}` "go" "" }}
+          </div>
           <dl>
-            {{ range slice "transports" "validation" "agents" "eval" }}
-            <div><dt>{{ T (printf "highbay_codegen_out_%s" .) }}</dt><dd>{{ T (printf "highbay_codegen_out_%s_text" .) }}</dd></div>
+            {{ range slice "transports" "agents" "eval" }}
+            <div><dt>{{ T (printf "highbay_codegen_out_%s" .) }}</dt><dd>{{ T (printf "highbay_codegen_out_%s_text" .) | markdownify }}</dd></div>
             {{ end }}
           </dl>
         </div>
         <figcaption>{{ T "highbay_codegen_caption" | markdownify }}</figcaption>
       </figure>
-      <dl class="benefit-list chorus-pillar-list highbay-codegen-list">
-        {{ range slice "tokens" "context" "consistency" "compiler" }}
+      <dl class="benefit-list highbay-codegen-list">
+        {{ range slice "tokens" "consistency" "compiler" }}
         <div><dt>{{ T (printf "highbay_codegen_%s" .) }}</dt><dd>{{ T (printf "highbay_codegen_%s_text" .) | markdownify }}</dd></div>
         {{ end }}
       </dl>
@@ -453,7 +453,7 @@ var _ = Service("refunds", func() {
   <section class="faq-section site-width chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
     <h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2>
     <dl>
-      {{ range slice "scope" "codegen" "tdd" "existing" "holdouts" "local" "sandbox" }}
+      {{ range slice "scope" "tdd" "existing" "holdouts" "local" "sandbox" }}
       <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
       {{ end }}
     </dl>

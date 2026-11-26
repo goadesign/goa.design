@@ -133,36 +133,38 @@ func (s *Service) RequestRefund(
 {{ T "highbay_codegen_intro" }}
 
 ```go
-var creditTools = Toolset("credit_tools", func() {
-    Tool("request_refund", "Refund or queue an order", func() {
-        Args(RequestPayload)
-        Return(RefundResult)
-        BindTo("refunds", "request_refund")
-        Inject("customer_id")
+// examples/orders/design/orders.go
+Method("chat", func() {
+    Payload(func() {
+        Token("token", String, "Customer bearer token.")
+        Attribute("message", String,
+            "What the customer says.",
+            func() { MinLength(1) })
+        Required("token", "message")
     })
-})
-
-var _ = Service("refunds", func() {
-    MCP("refunds", "1.0.0")
-    Method("request_refund", func() {
-        Payload(RequestPayload)
-        Result(RefundResult)
-        HTTP(func() { POST("/refunds") })
-    })
-    Export(creditTools)
-    Agent("refund_assistant", "Handles customer refunds", func() {
-        Use(creditTools)
+    Result(RunView)
+    HTTP(func() {
+        POST("/chat")
+        Response(StatusAccepted)
     })
 })
 ```
 
-`generate_code` ({{ T "highbay_codegen_zero" }}) → **{{ T "highbay_codegen_right_title" }}** ({{ T "highbay_codegen_right_sub" }}):
-{{ range slice "transports" "validation" "agents" "eval" }}
+`generate_code` ({{ T "highbay_codegen_zero" }}) → **{{ T "highbay_codegen_right_title" }}** (`gen/orders/service.go`):
+
+```go
+type Service interface {
+    Chat(
+        context.Context, *ChatPayload,
+    ) (res *RunView, err error)
+}
+```
+{{ range slice "transports" "agents" "eval" }}
 - **{{ T (printf "highbay_codegen_out_%s" .) }}:** {{ T (printf "highbay_codegen_out_%s_text" .) }}
 {{- end }}
 
 {{ T "highbay_codegen_caption" }}
-{{ range slice "tokens" "context" "consistency" "compiler" }}
+{{ range slice "tokens" "consistency" "compiler" }}
 ### {{ T (printf "highbay_codegen_%s" .) }}
 
 {{ T (printf "highbay_codegen_%s_text" .) }}
@@ -181,7 +183,7 @@ var _ = Service("refunds", func() {
 {{ T "highbay_compare_summary" }}
 
 ## {{ T "home_faq_heading" }}
-{{ range slice "scope" "codegen" "tdd" "existing" "holdouts" "local" "sandbox" }}
+{{ range slice "scope" "tdd" "existing" "holdouts" "local" "sandbox" }}
 ### {{ T (printf "highbay_faq_%s_q" .) }}
 
 {{ T (printf "highbay_faq_%s_a" .) }}
