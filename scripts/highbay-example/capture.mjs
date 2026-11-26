@@ -261,8 +261,8 @@ function makeState(stage) {
     chorus_status: "connected",
     dismissed_notices: [],
     saved_choices: {
-      builder: { client: "claude", program: "claude", model: "claude-sonnet-4-6", thinking: "high", yolo: false },
-      test_writer: { client: "codex", program: "codex", model: "gpt-5.4", thinking: "high", yolo: false },
+      builder: { client: "claude", program: "claude", thinking: "high", yolo: false },
+      test_writer: { client: "codex", program: "codex", thinking: "high", yolo: false },
     },
     roles: [
       { role: "guide", handle: "guide", state: "waiting", attention: "none", watcher: "held", assignment: "nothing_owed" },
@@ -421,7 +421,7 @@ function makeState(stage) {
     ],
     tools: [
       {
-        id: "issue_store_credit",
+        id: "refund_assistant/issue_store_credit",
         name: "issue_store_credit",
         toolset: "credit_tools",
         description: "Issues immediate store credit when pre-tax subtotal <= $50.00.",
@@ -433,7 +433,7 @@ function makeState(stage) {
         return_schema: '{"type":"object","required":["status","credited_cents"]}',
       },
       {
-        id: "queue_manager_refund",
+        id: "refund_assistant/queue_manager_refund",
         name: "queue_manager_refund",
         toolset: "credit_tools",
         description: "Routes refunds above $50.00 pre-tax subtotal for manager approval.",

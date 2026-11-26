@@ -5,7 +5,7 @@ description: "Build and verify Go services and AI agents with separate coding-ag
 llm_optimized: true
 ---
 
-[Highbay](https://github.com/goadesign/highbay) builds and verifies [Goa](/docs/1-goa/) services and [Goa-AI](/docs/2-goa-ai/) agents with the coding agents you already use, splitting the job so no agent grades its own work. You confirm open product choices in your browser, one coding agent implements the service against Goa-generated interfaces, a second coding agent writes scenario tests in its own workspace, and Highbay runs those tests against the candidate commit before you approve and merge.
+[Highbay](https://github.com/goadesign/highbay) builds and verifies [Goa](/docs/1-goa/) services and [Goa-AI](/docs/2-goa-ai/) agents with the coding agents you already use, separating who writes the service from who writes the scenario tests that gate approval. You confirm open product choices in your browser, one coding agent implements the service against Goa-generated interfaces, a second coding agent writes scenario tests in its own workspace, and Highbay runs those accepted tests against the candidate commit before you approve and merge.
 
 For an interactive walkthrough of the `$50` refunds example, see the [Highbay page](/highbay/).
 

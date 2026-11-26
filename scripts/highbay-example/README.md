@@ -3,7 +3,7 @@
 The [Highbay page](https://goa.design/highbay/) and [Highbay guide](https://goa.design/docs/3-ecosystem/highbay/) show a single illustrative feature request—instant store-credit refunds up to $50—moving through four views of Highbay's browser interface:
 
 1. **Agree** (`agree-*.webp`): answering the open policy question on the Change Card, comparing the `$48.00 subtotal + $4.32 tax` boundary order under each option, and confirming examples.
-2. **Architecture** (`architecture-*.webp`): previewing the C4 containers, Goa-AI agent budgets, and `Confirmation` tool guardrails declared by the agreed Go design before workers run.
+2. **Architecture** (`architecture-*.webp`): previewing the C4 containers, Goa-AI agent policy settings, and `Confirmation` tool guardrails declared by the agreed Go design before implementation begins.
 3. **Build** (`build-*.webp`): assigning separate coding agents (`Claude Code` and `Codex`) to the builder and test-writer roles under the confirmed agreement.
 4. **Approve** (`approve-*.webp`): inspecting scenario results mapped to `Story` flows (`3 of 3` declared scenarios in this fixture), recording human approval, and merging into the local branch.
 

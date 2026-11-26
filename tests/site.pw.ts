@@ -388,7 +388,7 @@ for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText("Your agent's tests pass. That only proves it agrees with itself.");
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText("Your agent's tests pass. Did it build what you meant?");
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveText('Get Highbay');
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.highbay-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/highbay/');
@@ -404,25 +404,41 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
 
-      // Interactive "Same prompt. Two outcomes." policy toggle: solo code/tests stay identical while verdict flips.
+      // Interactive "Same prompt. Two outcomes." policy toggle: solo code/tests stay identical while Highbay catches the pre-tax mismatch.
       const soloCard = page.locator('.highbay-sim__card--solo');
       const hbCard = page.locator('.highbay-sim__card--hb');
+      await expect(soloCard.locator('.highbay-sim__tag')).toHaveText('Same for either answer');
+      await expect(hbCard.locator('.highbay-sim__tag')).toHaveText('Written from your answer');
       await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
       await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeHidden();
       await expect(soloCard.locator('.highbay-sim__verdict--pretax .highbay-chip')).toHaveText('Wrong, and green');
-      await expect(hbCard.locator('.highbay-sim__state--pretax')).toBeVisible();
-      await expect(hbCard.locator('.highbay-sim__state--withtax')).toBeHidden();
+      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeVisible();
+      await expect(hbCard.locator('.highbay-sim__pass--accent')).toBeHidden();
+      await expect(hbCard.locator('div.highbay-sim__state--pretax')).toBeVisible();
+      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--fail')).toContainText('Wanted $52.32 credit');
+      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--fail')).toContainText('Approval unavailable');
+      await expect(hbCard.locator('div.highbay-sim__state--pretax .highbay-sim__run--pass')).toContainText('3 of 3');
+      await expect(hbCard.locator('.highbay-sim__verdict--pretax .highbay-chip')).toHaveText('Caught before review');
+      await expect(hbCard.locator('div.highbay-sim__state--withtax')).toBeHidden();
 
       await page.locator('label[for="highbay-policy-withtax"]').click();
       await expect(soloCard.locator('.highbay-sim__verdict--withtax')).toBeVisible();
       await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeHidden();
       await expect(soloCard.locator('.highbay-sim__verdict--withtax .highbay-chip')).toHaveText('Right by luck');
       await expect(soloCard.locator('pre').first()).toContainText('order.TotalCents <= 5000');
-      await expect(hbCard.locator('.highbay-sim__state--withtax')).toBeVisible();
-      await expect(hbCard.locator('.highbay-sim__state--pretax')).toBeHidden();
+      await expect(hbCard.locator('.highbay-sim__pass--accent')).toBeVisible();
+      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeHidden();
+      await expect(hbCard.locator('div.highbay-sim__state--withtax')).toBeVisible();
+      await expect(hbCard.locator('div.highbay-sim__state--withtax .highbay-sim__run--pass')).toContainText('3 of 3');
+      await expect(hbCard.locator('.highbay-sim__verdict--withtax .highbay-chip')).toHaveText('What you chose, checked');
+      await expect(hbCard.locator('div.highbay-sim__state--pretax')).toBeHidden();
 
       await page.locator('label[for="highbay-policy-pretax"]').click();
       await expect(soloCard.locator('.highbay-sim__verdict--pretax')).toBeVisible();
+      await expect(hbCard.locator('.highbay-sim__pass--caught')).toBeVisible();
+
+      await expect(page.locator('.highbay-evidence h2')).toHaveText('It caught a real one.');
+      await expect(page.locator('.highbay-trial-stats dt')).toHaveCount(4);
 
       // Interactive 4-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
       const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
@@ -489,7 +505,6 @@ for (const width of [390, 1440]) {
         'The rule · builder',
       ]);
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
-      await expect(page.locator('.highbay-trial')).toContainText('It caught a real one.');
       await expect(page.locator('.highbay-compare-list dt')).toHaveText([
         'One coding agent',
         'Spec workflows (Spec Kit, OpenSpec)',
@@ -525,10 +540,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Las pruebas de tu agente pasan. Eso solo demuestra que está de acuerdo consigo mismo.', 'Documentación', 'Framework Goa'],
-    ['fr', 'Les tests de votre agent passent. Cela prouve seulement qu’il est d’accord avec lui-même.', 'Documentation', 'Framework Goa'],
-    ['it', 'I test del tuo agente passano. Questo dimostra solo che è d’accordo con sé stesso.', 'Documentazione', 'Framework Goa'],
-    ['ja', 'エージェントのテストは通る。 それは自分自身と意見が一致した証明にすぎません。', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Las pruebas de tu agente pasan. ¿Construyó lo que querías decir?', 'Documentación', 'Framework Goa'],
+    ['fr', 'Les tests de votre agent passent. A-t-il construit ce que vous vouliez dire ?', 'Documentation', 'Framework Goa'],
+    ['it', 'I test del tuo agente passano. Ha costruito ciò che intendevi?', 'Documentazione', 'Framework Goa'],
+    ['ja', 'エージェントのテストは通る。 本当に意図したものを作りましたか？', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);

@@ -30,14 +30,30 @@ go install github.com/goadesign/highbay/cmd/hbay@latest && hbay up
 
 {{ T "highbay_contrast_order" }}
 
-- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_suite" }}):** {{ T "highbay_solo_step_1" }} `if order.TotalCents <= 5000`. {{ T "highbay_solo_step_2" }}
+- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_suite" }} · {{ T "highbay_solo_tag" }}):** {{ T "highbay_solo_step_1" }} `if order.TotalCents <= 5000`. {{ T "highbay_solo_step_2" }}
   - *{{ T "highbay_contrast_opt_pretax" }}:* **{{ T "highbay_solo_chip_pretax" }}** — {{ T "highbay_solo_verdict_pretax" }}
   - *{{ T "highbay_contrast_opt_withtax" }}:* **{{ T "highbay_solo_chip_withtax" }}** — {{ T "highbay_solo_verdict_withtax" }}
-- **{{ T "highbay_with_title" }} ({{ T "highbay_with_suite" }}):** {{ T "highbay_with_step_1" }}
-  - *{{ T "highbay_contrast_opt_pretax" }}:* {{ T "highbay_with_verdict_pretax" }}
-  - *{{ T "highbay_contrast_opt_withtax" }}:* {{ T "highbay_with_verdict_withtax" }}
+- **{{ T "highbay_with_title" }} ({{ T "highbay_with_tag" }}):** {{ T "highbay_with_step_1" }}
+  - *{{ T "highbay_contrast_opt_pretax" }} ({{ T "highbay_with_suite_pretax" }}):*
+    - {{ T "highbay_with_run1_pretax" }}
+    - {{ T "highbay_with_run2_pretax" }}
+    - **{{ T "highbay_with_chip_pretax" }}** — {{ T "highbay_with_verdict_pretax" }}
+  - *{{ T "highbay_contrast_opt_withtax" }} ({{ T "highbay_with_suite" }}):*
+    - {{ T "highbay_with_run_withtax" }}
+    - **{{ T "highbay_with_chip" }}** — {{ T "highbay_with_verdict_withtax" }}
 
 {{ T "highbay_contrast_summary" }} {{ T "highbay_contrast_note" }}
+
+## {{ T "highbay_trial_heading" }} ({{ T "highbay_trial_kicker" }})
+
+- **{{ T "highbay_trial_stat_1_val" }}** {{ T "highbay_trial_stat_1_lbl" }}
+- **{{ T "highbay_trial_stat_2_val" }}** {{ T "highbay_trial_stat_2_lbl" }}
+- **{{ T "highbay_trial_stat_3_val" }}** {{ T "highbay_trial_stat_3_lbl" }}
+- **{{ T "highbay_trial_stat_4_val" }}** {{ T "highbay_trial_stat_4_lbl" }}
+
+{{ T "highbay_trial_body" }}
+
+*{{ T "highbay_trial_note" }}*
 
 ## {{ T "highbay_showcase_heading" }}
 
@@ -63,7 +79,7 @@ import . "github.com/goadesign/highbay/story/dsl"
 
 var _ = Story("Refunds", func() {
     Actor("customer", "Customer")
-    Flow("instant_credit", "Within $50 subtotal", func() {
+    Flow("instant_credit", "Up to $50 subtotal", func() {
         StartsWith("ask", "customer", "$48.00 + $4.32 tax")
         Outcome("credit", "customer", "Instant $52.32 credit")
     })
@@ -111,12 +127,6 @@ func (s *Service) RequestRefund(
 ```
 
 {{ T "highbay_builder_check" }}
-
-### {{ T "highbay_trial_heading" }} ({{ T "highbay_trial_kicker" }})
-
-{{ T "highbay_trial_body" }}
-
-*{{ T "highbay_trial_note" }}*
 
 ## {{ T "highbay_compare_heading" }}
 
