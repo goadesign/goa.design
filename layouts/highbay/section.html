@@ -1,7 +1,8 @@
 {{- /*
   The Highbay landing page (/highbay/ in every language). Copy comes from the
   highbay_* keys in i18n/*.yaml; code excerpts match github.com/goadesign/highbay
-  and github.com/goadesign/highbay/story/dsl.
+  and github.com/goadesign/highbay/story/dsl; browser screenshots are generated
+  reproducibly from Highbay's real checkpoint.html bundle via scripts/highbay-example/.
 */ -}}
 {{ define "main" }}
 {{- $docs := relref . "/docs/3-ecosystem/highbay/" -}}
@@ -18,6 +19,13 @@
       <p class="hero-facts">{{ T "highbay_clients" }}<br>{{ T "highbay_facts" }}</p>
     </div>
     <div class="skill-install chorus-hero-install highbay-hero-install" id="install" aria-labelledby="highbay-install-title">
+      <div class="highbay-flow-strip" aria-hidden="true">
+        <span class="highbay-flow-chip"><b>CP1</b> Agree</span>
+        <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h16M13 2l4 4-4 4"/></svg>
+        <span class="highbay-flow-chip"><b>CP4</b> Verify</span>
+        <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h16M13 2l4 4-4 4"/></svg>
+        <span class="highbay-flow-chip"><b>CP5</b> Merge</span>
+      </div>
       <h2 id="highbay-install-title" class="chorus-install-title">{{ T "highbay_install_heading" }}</h2>
       <p class="chorus-install-intro">{{ T "highbay_install_intro" }}</p>
       <p class="skill-prompt-label">{{ T "highbay_install_go_label" }}</p>
@@ -40,20 +48,137 @@
     </div>
   </section>
 
+  <section class="highbay-showcase site-width" aria-labelledby="highbay-showcase-title">
+    <div class="section-intro">
+      <h2 id="highbay-showcase-title">{{ T "highbay_showcase_heading" }}</h2>
+      <p>{{ T "highbay_showcase_intro" }}</p>
+    </div>
+    <figure class="contract-demo highbay-studio">
+      <fieldset class="demo-switch highbay-stage-switch">
+        <legend class="visually-hidden">{{ T "highbay_showcase_label" }}</legend>
+        <input type="radio" name="highbay-stage" id="highbay-stage-agree" checked>
+        <label for="highbay-stage-agree">{{ T "highbay_tab_agree" }} <span>{{ T "highbay_tab_agree_sub" }}</span></label>
+        <input type="radio" name="highbay-stage" id="highbay-stage-build">
+        <label for="highbay-stage-build">{{ T "highbay_tab_build" }} <span>{{ T "highbay_tab_build_sub" }}</span></label>
+        <input type="radio" name="highbay-stage" id="highbay-stage-approve">
+        <label for="highbay-stage-approve">{{ T "highbay_tab_approve" }} <span>{{ T "highbay_tab_approve_sub" }}</span></label>
+      </fieldset>
+
+      <div class="highbay-stage highbay-stage--agree">
+        <ol class="highbay-callouts" role="list">
+          <li><b class="chorus-marker" aria-hidden="true">1</b><span>{{ T "highbay_agree_pin_1" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">2</b><span>{{ T "highbay_agree_pin_2" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">3</b><span>{{ T "highbay_agree_pin_3" | markdownify }}</span></li>
+        </ol>
+        <div class="chorus-shot highbay-window">
+          <div class="highbay-window__bar" aria-hidden="true">
+            <span class="highbay-window__dots"><i></i><i></i><i></i></span>
+            <span class="highbay-window__url">127.0.0.1 · Highbay / refunds-service — Agree</span>
+          </div>
+          <div class="highbay-window__canvas">
+            <picture class="chorus-shot--light">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/agree-mobile-light.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/agree-desktop-light.webp" | relURL }}" alt="{{ T "highbay_agree_alt" }}" width="1440" height="960" fetchpriority="high" decoding="async">
+            </picture>
+            <picture class="chorus-shot--dark">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/agree-mobile-dark.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/agree-desktop-dark.webp" | relURL }}" alt="{{ T "highbay_agree_alt" }}" width="1440" height="960" fetchpriority="high" decoding="async">
+            </picture>
+            <span class="chorus-pin highbay-pin" style="--dx: 23.5%; --dy: 21.47%" aria-hidden="true">1</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 24.5%; --dy: 76.25%" aria-hidden="true">2</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 81.8%; --dy: 10.77%" aria-hidden="true">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="highbay-stage highbay-stage--build">
+        <ol class="highbay-callouts" role="list">
+          <li><b class="chorus-marker" aria-hidden="true">1</b><span>{{ T "highbay_build_pin_1" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">2</b><span>{{ T "highbay_build_pin_2" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">3</b><span>{{ T "highbay_build_pin_3" | markdownify }}</span></li>
+        </ol>
+        <div class="chorus-shot highbay-window">
+          <div class="highbay-window__bar" aria-hidden="true">
+            <span class="highbay-window__dots"><i></i><i></i><i></i></span>
+            <span class="highbay-window__url">127.0.0.1 · Highbay / refunds-service — Build</span>
+          </div>
+          <div class="highbay-window__canvas">
+            <picture class="chorus-shot--light">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/build-mobile-light.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/build-desktop-light.webp" | relURL }}" alt="{{ T "highbay_build_alt" }}" width="1440" height="960" fetchpriority="low" loading="lazy" decoding="async">
+            </picture>
+            <picture class="chorus-shot--dark">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/build-mobile-dark.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/build-desktop-dark.webp" | relURL }}" alt="{{ T "highbay_build_alt" }}" width="1440" height="960" fetchpriority="low" loading="lazy" decoding="async">
+            </picture>
+            <span class="chorus-pin highbay-pin" style="--dx: 19.3%; --dy: 38.77%" aria-hidden="true">1</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 21.2%; --dy: 68.52%" aria-hidden="true">2</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 72.0%; --dy: 25.96%" aria-hidden="true">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="highbay-stage highbay-stage--approve">
+        <ol class="highbay-callouts" role="list">
+          <li><b class="chorus-marker" aria-hidden="true">1</b><span>{{ T "highbay_approve_pin_1" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">2</b><span>{{ T "highbay_approve_pin_2" | markdownify }}</span></li>
+          <li><b class="chorus-marker" aria-hidden="true">3</b><span>{{ T "highbay_approve_pin_3" | markdownify }}</span></li>
+        </ol>
+        <div class="chorus-shot highbay-window">
+          <div class="highbay-window__bar" aria-hidden="true">
+            <span class="highbay-window__dots"><i></i><i></i><i></i></span>
+            <span class="highbay-window__url">127.0.0.1 · Highbay / refunds-service — Approve</span>
+          </div>
+          <div class="highbay-window__canvas">
+            <picture class="chorus-shot--light">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/approve-mobile-light.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/approve-desktop-light.webp" | relURL }}" alt="{{ T "highbay_approve_alt" }}" width="1440" height="960" fetchpriority="low" loading="lazy" decoding="async">
+            </picture>
+            <picture class="chorus-shot--dark">
+              <source media="(max-width: 600px)" srcset="{{ "img/highbay/approve-mobile-dark.webp" | relURL }}" width="390" height="780">
+              <img src="{{ "img/highbay/approve-desktop-dark.webp" | relURL }}" alt="{{ T "highbay_approve_alt" }}" width="1440" height="960" fetchpriority="low" loading="lazy" decoding="async">
+            </picture>
+            <span class="chorus-pin highbay-pin" style="--dx: 80.5%; --dy: 10.77%" aria-hidden="true">1</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 22.0%; --dy: 42.36%" aria-hidden="true">2</span>
+            <span class="chorus-pin highbay-pin" style="--dx: 84.0%; --dy: 47.99%" aria-hidden="true">3</span>
+          </div>
+        </div>
+      </div>
+
+      <figcaption class="highbay-studio__caption">
+        <span>{{ T "highbay_showcase_caption" }}</span>
+        <a href="https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example">{{ T "highbay_showcase_method" }}</a>
+      </figcaption>
+    </figure>
+  </section>
+
   <section class="benefits-section chorus-pillars highbay-pillars" aria-labelledby="highbay-pillars-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="highbay-pillars-title">{{ T "highbay_pillars_heading" }}</h2><p>{{ T "highbay_pillars_intro" }}</p></div>
       <dl class="benefit-list chorus-pillar-list">
-        {{ range slice "contract" "card" "split" "verify" }}
-        <div><dt>{{ T (printf "highbay_pillar_%s" .) }}</dt><dd>{{ T (printf "highbay_pillar_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
+        <div>
+          <dt><span class="highbay-pillar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9.5 12h5M12 9.5v5"/></svg></span>{{ T "highbay_pillar_contract" }}</dt>
+          <dd>{{ T "highbay_pillar_contract_text" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt><span class="highbay-pillar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>{{ T "highbay_pillar_card" }}</dt>
+          <dd>{{ T "highbay_pillar_card_text" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt><span class="highbay-pillar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M6 8v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V8M12 14v2"/></svg></span>{{ T "highbay_pillar_split" }}</dt>
+          <dd>{{ T "highbay_pillar_split_text" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt><span class="highbay-pillar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="m9 12 2 2 4-4"/></svg></span>{{ T "highbay_pillar_verify" }}</dt>
+          <dd>{{ T "highbay_pillar_verify_text" | markdownify }}</dd>
+        </div>
       </dl>
     </div>
   </section>
 
   <section class="chorus-steps highbay-steps site-width" aria-labelledby="highbay-steps-title">
     <div class="section-intro"><h2 id="highbay-steps-title">{{ T "highbay_steps_heading" }}</h2><p>{{ T "highbay_steps_intro" }}</p></div>
-    <ol class="workflow-steps">
+    <ol class="workflow-steps" role="list">
       {{ range slice "describe" "agree" "build" "merge" }}
       <li><h3>{{ T (printf "highbay_step_%s" .) }}</h3><p>{{ T (printf "highbay_step_%s_text" .) | markdownify }}</p></li>
       {{ end }}
@@ -150,6 +275,48 @@ func (h *Hooks) InstantCredit(
 
   <section class="highbay-modes site-width" aria-labelledby="highbay-modes-title">
     <div class="section-intro"><h2 id="highbay-modes-title">{{ T "highbay_modes_heading" }}</h2><p>{{ T "highbay_modes_intro" }}</p></div>
+    <div class="highbay-workspaces" aria-hidden="true">
+      <div class="highbay-ws-card">
+        <div class="highbay-ws-card__bar">
+          <span>{{ T "highbay_workspace_herdr_title" | markdownify }}</span>
+          <span class="highbay-ws-pill">Highbay · Build active</span>
+        </div>
+        <div class="highbay-ws-split">
+          <div class="highbay-ws-pane highbay-ws-pane--guide">
+            <strong>guide · Claude Code</strong>
+            <code>&gt; /highbay instant refunds up to $50</code>
+            <span>Change Card confirmed (rev_d830b41c)</span>
+          </div>
+          <div class="highbay-ws-stack">
+            <div class="highbay-ws-pane">
+              <strong>builder · .highbay-build</strong>
+              <code>generate_code → check_project ✓</code>
+            </div>
+            <div class="highbay-ws-pane">
+              <strong>test-writer · .highbay-tests</strong>
+              <code>highbay/tests-1 · 2 flows accepted ✓</code>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="highbay-ws-card">
+        <div class="highbay-ws-card__bar">
+          <span>{{ T "highbay_workspace_headless_title" | markdownify }}</span>
+          <span class="highbay-ws-pill">hbay serve · supervised</span>
+        </div>
+        <div class="highbay-ws-single">
+          <div class="highbay-ws-pane">
+            <strong>Cursor / Codex / Claude CLI</strong>
+            <code>&gt; /highbay instant refunds up to $50</code>
+            <span>Highbay server supervises headless workers:</span>
+            <div class="highbay-ws-procs">
+              <span>claude --print (.highbay-build)</span>
+              <span>codex exec (.highbay-tests)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <dl class="benefit-list">
       {{ range slice "herdr" "headless" "models" }}
       <div><dt>{{ T (printf "highbay_mode_%s" .) }}</dt><dd>{{ T (printf "highbay_mode_%s_text" .) | markdownify }}</dd></div>

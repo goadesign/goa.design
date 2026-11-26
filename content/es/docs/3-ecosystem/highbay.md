@@ -31,6 +31,8 @@ Cada vista previa, suite de pruebas aceptada, objetivo en vivo, ejecución de ve
 4. **`CP4` — Verificación independiente**: Highbay recompila y comprueba el informe `eval/` del autor de pruebas en la rama `highbay/tests-<n>` antes de aceptarlo, y después compila el commit del constructor y ejecuta contra él esa suite `eval/` aceptada (sin requerir clave de API salvo que la suite `eval/` llame a un proveedor en vivo; el ejemplo opcional `-example` incluye un modelo guionizado y el arranque inicial en blanco no usa modelo). En evaluadores configurados por el operador, los nombres, comprobaciones y registros de escenarios holdout se omiten en los informes al constructor mediante `Report.ForBuilders()` (el autor de pruebas no puede enviar holdouts).
 5. **`CP5` — Aprobar y fusionar**: Revisa los resultados en **Approve**, registra la aprobación y pulsa **Merge into current branch** para fusionar los commits verificados de código y pruebas en tu rama local.
 
+{{< highbay-views >}}
+
 ## Instalación
 
 Highbay funciona en macOS o Linux y requiere **Go 1.27.3+**, **Git 2.45+** (con `user.name` y `user.email` configurados) y **Docker** (usado por `check_project` para compilar y probar el trabajo del constructor en contenedores Linux).

@@ -409,6 +409,55 @@ for (const width of [390, 1440]) {
         'Separate test writer and builder',
         'Server-judged verification',
       ]);
+
+      // Interactive 3-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
+      const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
+      const checkStagePins = async (stageClass: string) => {
+        const canvas = page.locator(`${stageClass} .highbay-window__canvas`);
+        const pins = page.locator(`${stageClass} .highbay-pin`);
+        if (width < 601) {
+          await expect(pins.first()).toBeHidden();
+          return;
+        }
+        await expect(pins).toHaveText(['1', '2', '3']);
+        const frame = await canvas.boundingBox();
+        for (const pin of await pins.all()) {
+          const box = await pin.boundingBox();
+          expect(box!.x).toBeGreaterThanOrEqual(frame!.x);
+          expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
+          expect(box!.y).toBeGreaterThanOrEqual(frame!.y);
+          expect(box!.y + box!.height).toBeLessThanOrEqual(frame!.y + frame!.height);
+        }
+      };
+
+      const agreeImg = page.locator(`.highbay-stage--agree ${shotSelector}`);
+      await expect(agreeImg).toBeVisible();
+      await expect(agreeImg).toHaveAttribute('fetchpriority', 'high');
+      await expect.poll(() => agreeImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
+      await checkStagePins('.highbay-stage--agree');
+
+      await page.locator('label[for="highbay-stage-build"]').click();
+      const buildImg = page.locator(`.highbay-stage--build ${shotSelector}`);
+      await expect(buildImg).toBeVisible();
+      await expect(buildImg).toHaveAttribute('fetchpriority', 'low');
+      await expect.poll(() => buildImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
+      await checkStagePins('.highbay-stage--build');
+      if (width === 1440) {
+        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-build-${theme}.png` });
+      }
+
+      await page.locator('label[for="highbay-stage-approve"]').click();
+      const approveImg = page.locator(`.highbay-stage--approve ${shotSelector}`);
+      await expect(approveImg).toBeVisible();
+      await expect.poll(() => approveImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
+      await checkStagePins('.highbay-stage--approve');
+      if (width === 1440) {
+        await page.locator('.highbay-studio').screenshot({ path: `.impeccable/review/highbay-studio-approve-${theme}.png` });
+      }
+
+      await page.locator('label[for="highbay-stage-agree"]').click();
+      await expect(agreeImg).toBeVisible();
+
       await expect(page.locator('.highbay-lane')).toHaveCount(3);
       await expect(page.locator('.highbay-lane h3')).toHaveText([
         'Guide · Story & Change Card',
@@ -420,7 +469,13 @@ for (const width of [390, 1440]) {
       await diagram.scrollIntoViewIfNeeded();
       await expect(diagram).toBeVisible();
       await expect.poll(() => diagram.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
-      await expect(page.getByRole('link', { name: 'Open full-size diagram', exact: true })).toHaveAttribute('href', '/images/diagrams/HighbayArchitecture.svg');
+      const fullsizeLink = page.getByRole('link', { name: 'Open full-size diagram', exact: true });
+      await expect(fullsizeLink).toHaveAttribute('href', '/images/diagrams/HighbayArchitecture.svg');
+      await fullsizeLink.focus();
+      await expect(fullsizeLink).toBeFocused();
+      const faqDocLink = page.locator('.highbay-faq a').first();
+      await faqDocLink.focus();
+      await expect(faqDocLink).toBeFocused();
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.getByRole('button', { name: 'Copy the Go install command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
@@ -431,6 +486,16 @@ for (const width of [390, 1440]) {
         window.scrollTo({ top: 0, behavior: 'instant' });
       });
       await page.screenshot({ path: `.impeccable/review/highbay-${width}-${theme}.png`, fullPage: true });
+
+      // Ecosystem guide embeds theme-matched Agree and Approve browser views without horizontal overflow.
+      await page.goto('/docs/3-ecosystem/highbay/');
+      const docShots = page.locator(`.highbay-doc-views ${shotSelector}`);
+      await expect(docShots).toHaveCount(2);
+      await docShots.first().scrollIntoViewIfNeeded();
+      await expect.poll(() => docShots.evaluateAll(
+        imgs => imgs.every(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0),
+      )).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }
 }

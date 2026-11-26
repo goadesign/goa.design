@@ -31,6 +31,8 @@ Chaque aperçu, suite de tests acceptée, cible en direct, vérification et appr
 4. **`CP4` — Vérification indépendante** : Highbay recompile et contrôle le rapport `eval/` du rédacteur de tests sur `highbay/tests-<n>` avant de l'accepter, puis compile le commit du bâtisseur et exécute contre lui cette suite `eval/` acceptée (sans clé API requise sauf si la suite `eval/` appelle un fournisseur en direct ; l'exemple optionnel `-example` fournit un modèle scénarisé et le contrôle vierge n'utilise aucun modèle). Pour les évaluateurs configurés par l'opérateur, les noms, contrôles et journaux des scénarios holdout sont expurgés des rapports destinés au bâtisseur via `Report.ForBuilders()` (le rédacteur de tests ne peut pas soumettre de holdouts).
 5. **`CP5` — Approuver et fusionner** : Examinez le rapport dans **Approve**, enregistrez l'approbation et cliquez sur **Merge into current branch** pour fusionner les commits vérifiés sur votre branche locale.
 
+{{< highbay-views >}}
+
 ## Installation
 
 Highbay fonctionne sur macOS ou Linux et requiert **Go 1.27.3+**, **Git 2.45+** (`user.name` et `user.email` configurés) et **Docker** (utilisé par `check_project` pour compiler et tester le travail du bâtisseur dans des conteneurs Linux).
