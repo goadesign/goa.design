@@ -1,7 +1,7 @@
 ---
 title: "Highbay"
 weight: 5
-description: "Construye y verifica APIs, servidores MCP y agentes de IA separando los roles de tus agentes de programación: confirma decisiones abiertas en el navegador, genera ~70 % de la infraestructura de forma determinista y ejecuta pruebas de escenario independientes antes de fusionar."
+description: "Construye y verifica APIs, servidores MCP y agentes de IA separando los roles de tus agentes de programación: confirma decisiones abiertas en el navegador, genera servidores HTTP/MCP, validación y esquemas (~70 % del código Go fuera de pruebas en el servicio de referencia) de forma determinista y ejecuta pruebas independientes antes de fusionar."
 llm_optimized: true
 ---
 

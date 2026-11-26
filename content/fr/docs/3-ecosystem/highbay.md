@@ -1,7 +1,7 @@
 ---
 title: "Highbay"
 weight: 5
-description: "Construisez et vérifiez des API, serveurs MCP et agents IA en séparant les rôles de vos agents de code : confirmez les choix ouverts dans le navigateur, générez ~70 % de l'infrastructure de façon déterministe et exécutez des tests de scénario indépendants avant de fusionner."
+description: "Construisez et vérifiez des API, serveurs MCP et agents IA en séparant les rôles de vos agents de code : confirmez les choix ouverts dans le navigateur, générez serveurs HTTP/MCP, validation et schémas (~70 % du code Go hors tests du service de référence) de façon déterministe et exécutez des tests indépendants avant de fusionner."
 llm_optimized: true
 ---
 

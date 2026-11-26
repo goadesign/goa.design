@@ -405,11 +405,16 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar input[type="search"]')).toHaveCount(0);
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
 
-      // Paired Freehand vs. With Highbay contrast rows.
+      // Paired Freehand vs. With Highbay contrast rows (both side labels stay available in the desktop accessibility tree).
       await expect(page.locator('.highbay-sim__pair')).toHaveCount(4);
       await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(4);
       await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(4);
       await expect(page.locator('.highbay-sim')).toContainText('Inject("org_id")');
+      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand coding agent');
+      await expect(page.locator('.highbay-sim__cell--hb .highbay-sim__mob-tag').first()).toHaveText('With Highbay');
+      expect(
+        await page.locator('.highbay-sim__mob-tag').first().evaluate((el) => getComputedStyle(el).display),
+      ).not.toBe('none');
 
       // Accessible 4-stage browser Views studio (default active tab = architecture C4 diagram + 4 thumbnails).
       const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
@@ -420,14 +425,20 @@ for (const width of [390, 1440]) {
       await expect.poll(() => archImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
 
       for (const stage of ['agree', 'check', 'approve', 'architecture'] as const) {
-        await page.locator(`#highbay-tab-${stage}`).click();
+        const tab = page.locator(`#highbay-tab-${stage}`);
+        await expect(tab).toHaveAttribute('aria-controls', `highbay-panel-${stage}`);
+        await tab.click();
         const img = page.locator(`.highbay-stage--${stage} ${shotSelector}`);
         await expect(img).toBeVisible();
         await expect.poll(() => img.evaluate(el => el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0)).toBe(true);
       }
 
       await expect(page.locator('.highbay-lane')).toHaveCount(3);
-      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Tool("query_pod_logs"');
+      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Toolset("ops"');
+      await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Tool("rollback_production"');
+      await expect(page.getByRole('group', { name: 'Install method' })).toBeVisible();
+      await expect(page.getByRole('group', { name: 'Agent prefix' })).toBeVisible();
+      await expect(page.locator('.highbay-prefix-btn[data-prefix="$highbay"]')).toHaveAttribute('aria-pressed', 'false');
       await expect(page.locator('#llm-stack dt')).toHaveCount(3);
       await expect(page.locator('#capabilities dt')).toHaveCount(4);
       await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', '/docs/ai-development/');

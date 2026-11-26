@@ -354,7 +354,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .highbay-sim__cell--hb { border-inline-start: 1px solid var(--color-border-subtle); background: color-mix(in srgb, var(--color-highlight) 38%, var(--color-bg-elevated)); }
 .highbay-sim__cell h4 { font: 700 .87rem/1.35 "Manrope", sans-serif; color: var(--color-text-heading); margin: 0 0 .25rem; display: flex; align-items: safe center; gap: .45rem; }
 .highbay-sim__cell p { margin: 0; font-size: .85rem; line-height: 1.5; color: var(--color-text); }
-.highbay-sim__mob-tag { display: none; font: 700 .66rem/1.2 "Manrope", sans-serif; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem; }
+.highbay-sim__mob-tag { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; font: 700 .66rem/1.2 "Manrope", sans-serif; text-transform: uppercase; letter-spacing: .05em; }
 .highbay-sim__mob-tag--warn { color: #b45309; }
 .highbay-sim__mob-tag--ok { color: #15803d; }
 [data-theme="dark"] .highbay-sim__mob-tag--warn { color: #fcd34d; }
@@ -499,7 +499,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
   .highbay-sim__pair + .highbay-sim__pair { border-top: 6px solid var(--color-bg-alt); }
   .highbay-sim__cell { padding: .75rem 1rem; }
   .highbay-sim__cell--hb { border-inline-start: 0; border-top: 1px dashed var(--color-border-subtle); }
-  .highbay-sim__mob-tag { display: block; }
+  .highbay-sim__mob-tag { position: static; width: auto; height: auto; padding: 0; margin: 0 0 .25rem; overflow: visible; clip: auto; white-space: normal; display: block; }
   .highbay-lane__code pre { white-space: pre-wrap; overflow-wrap: break-word; font-size: .72rem; }
   .highbay-contrast, .highbay-showcase, .highbay-walkthrough, .highbay-compare, .highbay-bottom-cta { padding-block: 32px; }
   .highbay-sim__head, .highbay-sim__catch { padding-inline: 1rem; }

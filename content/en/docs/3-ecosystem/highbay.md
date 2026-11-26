@@ -1,7 +1,7 @@
 ---
 title: "Highbay"
 weight: 5
-description: "Build and verify APIs, MCP servers, and AI agents with separate coding-agent roles—confirm open decisions in your browser, generate ~70% of server plumbing deterministically, and run independent scenario tests before merging."
+description: "Build and verify APIs, MCP servers, and AI agents with separate coding-agent roles—confirm open decisions in your browser, generate HTTP/MCP servers, validation, and tool schemas (~70% of non-test Go code in Highbay's reference service) deterministically, and run independent scenario tests before merging."
 llm_optimized: true
 ---
 

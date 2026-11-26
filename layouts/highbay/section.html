@@ -33,7 +33,7 @@
           <div class="highbay-install-step">
             <div class="highbay-step1-head">
               <p class="chorus-install-intro">{{ T "highbay_install_intro" | markdownify }}</p>
-              <div class="highbay-prefix-switch highbay-mgr-switch" role="group" aria-label="Install method">
+              <div class="highbay-prefix-switch highbay-mgr-switch" role="group" aria-label="{{ T "highbay_install_method_label" }}">
                 <button type="button" class="highbay-mgr-btn" data-mgr="brew" aria-pressed="true">Homebrew</button>
                 <button type="button" class="highbay-mgr-btn" data-mgr="npx" aria-pressed="false">npx</button>
                 <button type="button" class="highbay-mgr-btn" data-mgr="go" aria-pressed="false">Go</button>
@@ -51,9 +51,9 @@ highbay up</code></pre>
           <div class="highbay-install-step">
             <div class="highbay-step2-head">
               <p class="skill-prompt-label chorus-install-alt">{{ T "highbay_install_next" | markdownify }}</p>
-              <div class="highbay-prefix-switch" role="group" aria-label="Agent prefix">
+              <div class="highbay-prefix-switch" role="group" aria-label="{{ T "highbay_agent_prefix_label" }}">
                 <button type="button" class="highbay-prefix-btn" data-prefix="/highbay" aria-pressed="true">/highbay</button>
-                <button type="button" class="highbay-prefix-btn" data-prefix="$highbay">$highbay (Codex)</button>
+                <button type="button" class="highbay-prefix-btn" data-prefix="$highbay" aria-pressed="false">$highbay (Codex)</button>
               </div>
             </div>
             <div class="install-command highbay-prompt-box">
@@ -81,7 +81,7 @@ highbay up</code></pre>
       </div>
 
       <figure class="highbay-sim">
-        <div class="highbay-sim__colheads" aria-hidden="true">
+        <div class="highbay-sim__colheads">
           <div class="highbay-sim__head">
             <h3>{{ T "highbay_solo_title" }}</h3>
             <span class="highbay-sim__pass highbay-sim__pass--warn">{{ T "highbay_solo_chip_gate" }}</span>
@@ -132,6 +132,7 @@ highbay up</code></pre>
             id="highbay-tab-{{ .key }}"
             class="highbay-tab"
             data-stage="{{ .key }}"
+            aria-controls="highbay-panel-{{ .key }}"
             aria-selected="{{ if .active }}true{{ else }}false{{ end }}"
             tabindex="{{ if .active }}0{{ else }}-1{{ end }}"
           >
@@ -204,16 +205,31 @@ highbay up</code></pre>
           <p>{{ T "highbay_role_guide_caption" | markdownify }}</p>
         </header>
         <div class="highbay-lane__code">
-<pre><code>// design/agents.go
-Tool("query_pod_logs", func() {
-  Inject("org_id")
-  BoundedResult()
-  BindTo("Ops", "QueryPodLogs")
-})
-Tool("rollback_service", func() {
-  Inject("org_id")
-  Confirmation("On-call approval")
-  BindTo("Ops", "RollbackService")
+<pre><code>// design/agents.go (illustrative excerpt)
+var opsTools = Toolset("ops", func() {
+  Tool("query_pod_logs", "Read pod logs.", func() {
+    Args(LogsArgs)
+    Return(LogsPage)
+    BindTo("ops", "query_pod_logs")
+    Inject("org_id")
+    BoundedResult(func() {
+      Cursor("cursor")
+      NextCursor("next_cursor")
+    })
+  })
+  Tool("rollback_staging", "Roll back staging.", func() {
+    BindTo("ops", "rollback_staging")
+    Inject("org_id")
+  })
+  Tool("rollback_production", "Roll back prod.", func() {
+    BindTo("ops", "rollback_production")
+    Inject("org_id")
+    Confirmation(func() {
+      Title("Approve production rollback")
+      PromptTemplate(`Roll back {{"{{"}} .service {{"}}"}} in prod?`)
+      DeniedResultTemplate(`{"status":"denied"}`)
+    })
+  })
 })</code></pre>
         </div>
         <div class="highbay-lane__outcome">
@@ -230,13 +246,15 @@ Tool("rollback_service", func() {
 <pre><code>// gen/ops/service.go
 type Service interface {
   QueryPodLogs(context.Context,
-    *LogsPayload) (*LogsPage, error)
-  RollbackService(context.Context,
-    *RollbackPayload) (*Result, error)
+    *LogsArgs) (*LogsPage, error)
+  RollbackStaging(context.Context,
+    *RollbackArgs) (*RollbackOutcome, error)
+  RollbackProduction(context.Context,
+    *RollbackArgs) (*RollbackOutcome, error)
 }
 // + HTTP &amp; MCP servers, OpenAPI 3 spec
 // + Tool JSON (org_id omitted)
-// + BoundedResult log cursors</code></pre>
+// + BoundedResult cursor bounds</code></pre>
         </div>
         <div class="highbay-lane__outcome">
           <p>{{ T "highbay_codegen_check" | markdownify }}</p>
@@ -341,8 +359,8 @@ highbay up</code></pre>
 
   <div class="site-width chorus-directory">
     <a class="chorus-directory-badge" href="https://serverdex.io/server/io-github-goadesign-highbay?utm_source=badge">
-      <img class="chorus-badge--light" src="https://serverdex.io/brand/badge-light.svg" alt="Highbay — listed on Serverdex" width="123" height="40" loading="lazy">
-      <img class="chorus-badge--dark" src="https://serverdex.io/brand/badge.svg" alt="Highbay — listed on Serverdex" width="123" height="40" loading="lazy">
+      <img class="chorus-badge--light" src="https://serverdex.io/brand/badge-light.svg" alt="{{ T "highbay_serverdex_alt" }}" width="123" height="40" loading="lazy">
+      <img class="chorus-badge--dark" src="https://serverdex.io/brand/badge.svg" alt="{{ T "highbay_serverdex_alt" }}" width="123" height="40" loading="lazy">
     </a>
   </div>
 </div>

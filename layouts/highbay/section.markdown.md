@@ -60,16 +60,31 @@ highbay up
 {{ T "highbay_role_guide_caption" }}
 
 ```go
-// design/agents.go
-Tool("query_pod_logs", func() {
-    Inject("org_id")
-    BoundedResult()
-    BindTo("Ops", "QueryPodLogs")
-})
-Tool("rollback_service", func() {
-    Inject("org_id")
-    Confirmation("On-call approval")
-    BindTo("Ops", "RollbackService")
+// design/agents.go (illustrative excerpt)
+var opsTools = Toolset("ops", func() {
+    Tool("query_pod_logs", "Read pod logs.", func() {
+        Args(LogsArgs)
+        Return(LogsPage)
+        BindTo("ops", "query_pod_logs")
+        Inject("org_id")
+        BoundedResult(func() {
+            Cursor("cursor")
+            NextCursor("next_cursor")
+        })
+    })
+    Tool("rollback_staging", "Roll back staging.", func() {
+        BindTo("ops", "rollback_staging")
+        Inject("org_id")
+    })
+    Tool("rollback_production", "Roll back prod.", func() {
+        BindTo("ops", "rollback_production")
+        Inject("org_id")
+        Confirmation(func() {
+            Title("Approve production rollback")
+            PromptTemplate(`Roll back {{"{{"}} .service {{"}}"}} in prod?`)
+            DeniedResultTemplate(`{"status":"denied"}`)
+        })
+    })
 })
 ```
 
@@ -83,13 +98,15 @@ Tool("rollback_service", func() {
 // gen/ops/service.go
 type Service interface {
     QueryPodLogs(context.Context,
-        *LogsPayload) (*LogsPage, error)
-    RollbackService(context.Context,
-        *RollbackPayload) (*Result, error)
+        *LogsArgs) (*LogsPage, error)
+    RollbackStaging(context.Context,
+        *RollbackArgs) (*RollbackOutcome, error)
+    RollbackProduction(context.Context,
+        *RollbackArgs) (*RollbackOutcome, error)
 }
 // + HTTP & MCP servers, OpenAPI 3 spec
 // + Tool JSON (org_id omitted)
-// + BoundedResult log cursors
+// + BoundedResult cursor bounds
 ```
 
 {{ T "highbay_codegen_check" }}
@@ -118,7 +135,7 @@ return eval.Result{Checks: []eval.Check{
 
 {{ T "highbay_builder_check" }}
 
-### Guardrails & repository references {#llm-stack}
+### {{ T "highbay_proof_heading" }} {#llm-stack}
 {{ range slice "codegen" "playbook" "suite" }}
 - **{{ T (printf "highbay_proof_%s_title" .) }}:** {{ T (printf "highbay_proof_%s_body" .) }}
 {{- end }}
