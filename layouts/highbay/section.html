@@ -1,0 +1,169 @@
+{{- /*
+  The Highbay landing page (/highbay/ in every language). Copy comes from the
+  highbay_* keys in i18n/*.yaml; code excerpts match github.com/goadesign/highbay
+  and github.com/goadesign/highbay/story/dsl.
+*/ -}}
+{{ define "main" }}
+{{- $docs := relref . "/docs/3-ecosystem/highbay/" -}}
+<div class="goa-home chorus-page highbay-page">
+  <section class="home-hero chorus-hero highbay-hero site-width" aria-labelledby="highbay-title">
+    <div class="hero-copy">
+      <h1 id="highbay-title">{{ T "highbay_heading" }} <span>{{ T "highbay_heading_second" }}</span></h1>
+      <p class="hero-lead">{{ T "highbay_intro" }}</p>
+      <div class="hero-actions">
+        <a class="goa-button" href="#install">{{ T "highbay_install_cta" }}</a>
+        <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "highbay_docs_cta" }}</a>
+        <a class="goa-button chorus-button-quiet" href="https://github.com/goadesign/highbay">GitHub</a>
+      </div>
+      <p class="hero-facts">{{ T "highbay_clients" }}<br>{{ T "highbay_facts" }}</p>
+    </div>
+    <div class="skill-install chorus-hero-install highbay-hero-install" id="install" aria-labelledby="highbay-install-title">
+      <h2 id="highbay-install-title" class="chorus-install-title">{{ T "highbay_install_heading" }}</h2>
+      <p class="chorus-install-intro">{{ T "highbay_install_intro" }}</p>
+      <p class="skill-prompt-label">{{ T "highbay_install_go_label" }}</p>
+      <div class="install-command">
+        <code id="highbay-go">go install github.com/goadesign/highbay/cmd/hbay@latest &amp;&amp; hbay up</code>
+        <button type="button" class="copy-install" command="--copy" commandfor="highbay-go" aria-label="{{ T "highbay_copy_go" }}" data-copy-target="highbay-go" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="skill-prompt-label chorus-install-alt">{{ T "highbay_install_chorus" }}</p>
+      <div class="install-command">
+        <code id="highbay-chorus">brew install goadesign/tap/chorus &amp;&amp; chorus up</code>
+        <button type="button" class="copy-install" command="--copy" commandfor="highbay-chorus" aria-label="{{ T "highbay_copy_chorus" }}" data-copy-target="highbay-chorus" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+      <p class="skill-prompt-label chorus-install-alt">{{ T "highbay_install_next" }}</p>
+      <blockquote class="highbay-prompt">{{ T "highbay_install_prompt" }}</blockquote>
+      <p class="install-hint">{{ T "highbay_install_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
+    </div>
+  </section>
+
+  <section class="benefits-section chorus-pillars highbay-pillars" aria-labelledby="highbay-pillars-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="highbay-pillars-title">{{ T "highbay_pillars_heading" }}</h2><p>{{ T "highbay_pillars_intro" }}</p></div>
+      <dl class="benefit-list chorus-pillar-list">
+        {{ range slice "contract" "card" "split" "verify" }}
+        <div><dt>{{ T (printf "highbay_pillar_%s" .) }}</dt><dd>{{ T (printf "highbay_pillar_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+    </div>
+  </section>
+
+  <section class="chorus-steps highbay-steps site-width" aria-labelledby="highbay-steps-title">
+    <div class="section-intro"><h2 id="highbay-steps-title">{{ T "highbay_steps_heading" }}</h2><p>{{ T "highbay_steps_intro" }}</p></div>
+    <ol class="workflow-steps">
+      {{ range slice "describe" "agree" "build" "merge" }}
+      <li><h3>{{ T (printf "highbay_step_%s" .) }}</h3><p>{{ T (printf "highbay_step_%s_text" .) | markdownify }}</p></li>
+      {{ end }}
+    </ol>
+  </section>
+
+  <section class="highbay-walkthrough site-width" aria-labelledby="highbay-walkthrough-title">
+    <div class="section-intro"><h2 id="highbay-walkthrough-title">{{ T "highbay_walkthrough_heading" }}</h2><p>{{ T "highbay_walkthrough_intro" | markdownify }}</p></div>
+    <div class="highbay-lanes">
+      <article class="highbay-lane" aria-labelledby="highbay-lane-guide">
+        <header class="highbay-lane__head">
+          <h3 id="highbay-lane-guide">{{ T "highbay_role_guide" }}</h3>
+          <p>{{ T "highbay_role_guide_caption" | markdownify }}</p>
+        </header>
+        <div class="highbay-lane__code">
+<pre><code>package design
+
+import . "github.com/goadesign/highbay/story/dsl"
+
+var _ = Story("Refunds", func() {
+  Actor("customer", "Customer")
+  Flow("instant-credit", "Within limit", func() {
+    StartsWith("ask", "customer", "Asks $50 refund")
+    Outcome("paid", "customer", "Instant credit")
+  })
+})</code></pre>
+        </div>
+        <div class="highbay-lane__outcome">
+          <span class="highbay-lane__label">{{ T "highbay_card_question_label" }}</span>
+          <p>{{ T "highbay_card_question" }}</p>
+          <span class="highbay-lane__check">{{ T "highbay_card_choice" }}</span>
+        </div>
+      </article>
+
+      <article class="highbay-lane" aria-labelledby="highbay-lane-tests">
+        <header class="highbay-lane__head">
+          <h3 id="highbay-lane-tests">{{ T "highbay_role_tests" }}</h3>
+          <p>{{ T "highbay_role_tests_caption" | markdownify }}</p>
+        </header>
+        <div class="highbay-lane__code">
+<pre><code>// eval/acceptance/refunds.go
+func (h *Hooks) InstantCredit(
+  ctx context.Context,
+) (eval.Result, error) {
+  // $50.00 subtotal + $4.50 tax
+  out, err := h.refund(ctx, 5000, 450)
+  if err != nil {
+    return eval.Result{}, err
+  }
+  return eval.Result{Checks: []eval.Check{
+    check("50_subtotal", out.Status == "credit"),
+    check("cents", out.Cents == 5450),
+  }}, nil
+}</code></pre>
+        </div>
+        <div class="highbay-lane__outcome">
+          <p>{{ T "highbay_tests_check" | markdownify }}</p>
+        </div>
+      </article>
+
+      <article class="highbay-lane" aria-labelledby="highbay-lane-builder">
+        <header class="highbay-lane__head">
+          <h3 id="highbay-lane-builder">{{ T "highbay_role_builder" }}</h3>
+          <p>{{ T "highbay_role_builder_caption" | markdownify }}</p>
+        </header>
+        <div class="highbay-lane__code">
+<pre><code>1. generate_code(target: "candidate")
+   → writes agreed design/ and gen/
+
+2. check_project()
+   → builds and tests in a Linux container
+
+3. verify_change(change_id, rev, commit)
+   → server runs highbay/tests-1 on commit</code></pre>
+        </div>
+        <div class="highbay-lane__outcome">
+          <p>{{ T "highbay_builder_check" | markdownify }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="benefits-section highbay-arch" aria-labelledby="highbay-arch-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="highbay-arch-title">{{ T "highbay_arch_heading" }}</h2><p>{{ T "highbay_arch_intro" | markdownify }}</p></div>
+      <figure class="highbay-diagram">
+        <div class="highbay-diagram__scroll">
+          <img src="{{ "images/diagrams/HighbayArchitecture.svg" | relURL }}" alt="{{ T "highbay_arch_alt" }}" width="1772" height="945" loading="lazy" decoding="async">
+        </div>
+        <figcaption>{{ T "highbay_arch_caption" }} <a href="{{ "images/diagrams/HighbayArchitecture.svg" | relURL }}" target="_blank" rel="noopener">{{ T "highbay_arch_fullsize" }}</a> · <a href="{{ $docs }}">{{ T "highbay_docs_cta" }}</a></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="highbay-modes site-width" aria-labelledby="highbay-modes-title">
+    <div class="section-intro"><h2 id="highbay-modes-title">{{ T "highbay_modes_heading" }}</h2><p>{{ T "highbay_modes_intro" }}</p></div>
+    <dl class="benefit-list">
+      {{ range slice "herdr" "headless" "models" }}
+      <div><dt>{{ T (printf "highbay_mode_%s" .) }}</dt><dd>{{ T (printf "highbay_mode_%s_text" .) | markdownify }}</dd></div>
+      {{ end }}
+    </dl>
+  </section>
+
+  <section class="faq-section site-width chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
+    <h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2>
+    <dl>
+      {{ range slice "blank" "keys" "isolation" "docs" }}
+      <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
+      {{ end }}
+    </dl>
+  </section>
+</div>
+{{ end }}

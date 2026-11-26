@@ -19,6 +19,7 @@ L'ecosistema Goa comprende librerie e strumenti complementari che rispondono a e
 | [Pulse](pulse/) | Eventi distribuiti | Streaming di eventi, pool di lavoratori, mappe replicate |
 | [Clue](clue/) | Osservabilità | Tracing, logging, metriche, controlli di salute |
 | [Chorus](chorus/) | Coordinamento multi-agente | `#channels` condivisi, DM `@agent`, watermark lato server, CLI `chorus watch` |
+| [Highbay](highbay/) | Control plane e verificatore | `Story` + Change Card, copie separate di test e codice, verifica `eval/` e merge dal browser |
 
 ## Modello - Diagrammi di architettura come codice
 
@@ -126,6 +127,23 @@ npx @goadesign/chorus up
 
 **Per saperne di più:** [Documentazione Chorus](chorus/)
 
+## Highbay - Control plane multi-agente guidato dai contratti
+
+Highbay organizza i tuoi coding agent in ruoli separati di guide, test writer e builder attorno a un design compilato [Goa](/it/docs/1-goa/) e [Goa-AI](/it/docs/2-goa-ai/), verifica i commit candidati contro suite `eval/` accettate e unisce il lavoro approvato direttamente dal browser:
+
+```bash
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
+```
+
+**Caratteristiche:**
+- Skill `/highbay` (`$highbay` in Codex) con Change Card in linguaggio chiaro (`CP1`), anteprima C4 (`CP2`) e guscio Go / `eval/` pulito per impostazione predefinita (`hbay init -example` per un esempio eseguibile)
+- Copie di lavoro Git separate (`.highbay-tests` e `.highbay-build`) affinché l'agente che scrive i test non scriva l'implementazione
+- Accettazione delle suite `eval/` controllata dal server, verifica indipendente del candidato (`CP4`) e prova opzionale dei prompt live (`CP3`)
+- Pannelli affiancati in Herdr con Chorus, oppure worker CLI in background, fino ad **Approve** e **Merge** nel browser (`CP5`)
+
+**Per saperne di più:** [Documentazione Highbay](highbay/)
+
 ## Guide alla documentazione
 
 | Guida | Descrizione | ~Tokens |
@@ -134,8 +152,9 @@ npx @goadesign/chorus up
 | [Pulse](pulse/) | Streaming, pool di lavoratori, mappe replicate | ~2.200 |
 | [Clue](clue/) | Logging, tracing, metriche, controlli di salute | ~2.800 |
 | [Chorus](chorus/) | Coordinamento MCP multi-agente, CLI e architettura Goa-AI + Pulse | ~1.100 |
+| [Highbay](highbay/) | Sviluppo multi-agente guidato dai contratti, flussi Story, verifica indipendente e merge nel browser | ~1.400 |
 
-**Sezione totale:** ~8.600 gettoni
+**Sezione totale:** ~10.000 gettoni
 
 ## Iniziare
 
@@ -145,6 +164,7 @@ Scegliere la libreria o lo strumento che corrisponde alle proprie esigenze:
 - **Costruire sistemi guidati dagli eventi?** Iniziate con [Pulse](pulse/)
 - **Aggiungere l'osservabilità ai servizi Goa?** Iniziate con [Clue](clue/)
 - **Coordinare più coding agent?** Iniziate con [Chorus](chorus/)
+- **Sviluppare e verificare servizi con ruoli separati degli agenti?** Iniziate con [Highbay](highbay/)
 
 Tutte le librerie e gli strumenti sono disponibili tramite `go get` / `go install`:
 
@@ -153,4 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
+go install github.com/goadesign/highbay/cmd/hbay@latest
 ```

@@ -197,6 +197,23 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 Gli agenti si uniscono a `#channels`, scambiano messaggi diretti `@agent`, ricevono le risposte non lette aggregate in `send` e attendono in background tramite `chorus watch <handle>` finché un altro agente non li menziona o risponde. Consulta la [guida Chorus](/it/docs/3-ecosystem/chorus/) per il riferimento completo dei tool e l'architettura.
 
+## Separa scrittura dei test e verifica con Highbay {#build-and-verify-with-highbay}
+
+Quando vuoi che un coding agent scriva i test di accettazione e un altro scriva l'implementazione — con un server che verifichi entrambi rispetto a un contratto confermato prima del merge — usa [Highbay](/it/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`):
+
+```bash
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
+```
+
+Invoca poi `/highbay` (`$highbay` in Codex) in una cartella vuota (o in un repository Goa con un commit Git e una suite `<module>/eval` o impostazioni di verifica salvate):
+
+```text
+/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+```
+
+In una cartella vuota, Highbay crea per impostazione predefinita un guscio Go ed `eval/` pulito e neutrale (`hbay init -example` o `worked_example: true` aggiunge un esempio eseguibile), apre la Change Card nel browser, separa `.highbay-tests` e `.highbay-build` e verifica il commit prima del merge nel tuo branch locale. Vedi la [pagina Highbay](/it/highbay/) e la [guida Highbay](/it/docs/3-ecosystem/highbay/).
+
 ## Misura il vantaggio
 
 Confronta lo stesso compito, criteri, modello e codice iniziale in più esecuzioni. Registra token in ingresso e uscita, tempo totale, generazione, test, correzioni manuali, revisione e difetti. Includi preparazione e tentativi falliti. Le righe generate dimostrano lavoro svolto dal generatore, non un benchmark di risparmio.

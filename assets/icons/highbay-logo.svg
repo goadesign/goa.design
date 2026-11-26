@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="44" height="44" fill="none" role="img" aria-label="Highbay">
+  <path d="M 184 104 H 136 A 56 56 0 0 0 80 160 V 352 A 56 56 0 0 0 136 408 H 184" stroke="#3B82F6" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 328 104 H 376 A 56 56 0 0 1 432 160 V 352 A 56 56 0 0 1 376 408 H 328" stroke="#F59E0B" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+  <rect x="234" y="68" width="44" height="72" rx="22" fill="#F43F5E" />
+  <rect x="234" y="372" width="44" height="72" rx="22" fill="#F43F5E" />
+  <path d="M 190 264 L 238 312 L 330 204" stroke="#14B8A6" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

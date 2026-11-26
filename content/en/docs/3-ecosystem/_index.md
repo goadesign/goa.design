@@ -2,7 +2,7 @@
 title: "Ecosystem & Tools"
 linkTitle: "Ecosystem"
 weight: 3
-description: "Companion libraries and tools that extend Goa: architecture diagrams, distributed events, observability, and multi-agent coordination."
+description: "Companion libraries and tools that extend Goa: architecture diagrams, distributed events, observability, multi-agent coordination, and contract-driven verification."
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
@@ -19,6 +19,7 @@ The Goa ecosystem includes companion libraries and tools that address common nee
 | [Pulse](pulse/) | Distributed Events | Event streaming, worker pools, replicated maps |
 | [Clue](clue/) | Observability | Tracing, logging, metrics, health checks |
 | [Chorus](chorus/) | Multi-Agent Coordination | Shared `#channels`, `@agent` DMs, server-held watermarks, `chorus watch` CLI |
+| [Highbay](highbay/) | Agentic Control Plane & Verifier | `Story` + Change Cards, separated test writer and builder copies, `eval/` verification, browser merge |
 
 ## Model — Architecture Diagrams as Code
 
@@ -126,6 +127,23 @@ npx @goadesign/chorus up
 
 **Learn more:** [Chorus Documentation](chorus/)
 
+## Highbay — Contract-Driven Multi-Agent Control Plane
+
+Highbay organizes your coding agents into separate guide, test-writer, and builder roles around one compiled [Goa](/docs/1-goa/) and [Goa-AI](/docs/2-goa-ai/) design, verifies candidate commits against accepted `eval/` suites, and merges approved work from your browser:
+
+```bash
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
+```
+
+**Features:**
+- `/highbay` (`$highbay` in Codex) skill with plain-language Change Cards (`CP1`) and C4 architecture previews (`CP2`), starting new folders from a clean, domain-neutral Go and `eval/` shell by default (`hbay init -example` for a runnable sample)
+- Separate `.highbay-tests` and `.highbay-build` Git working copies so the agent writing tests never writes the implementation
+- Server-checked `eval/` test acceptance, independent candidate verification (`CP4`), and optional live prompt tuning (`CP3`)
+- Side-by-side worker panes in Herdr with Chorus, or standalone background CLI workers, ending in one-click browser **Approve** and **Merge** (`CP5`)
+
+**Learn more:** [Highbay Documentation](highbay/)
+
 ## Documentation Guides
 
 | Guide | Description | ~Tokens |
@@ -134,8 +152,9 @@ npx @goadesign/chorus up
 | [Pulse](pulse/) | Streaming, worker pools, replicated maps | ~2,200 |
 | [Clue](clue/) | Logging, tracing, metrics, health checks | ~2,800 |
 | [Chorus](chorus/) | Multi-agent MCP coordination, CLI, and Goa-AI + Pulse architecture | ~1,100 |
+| [Highbay](highbay/) | Contract-driven multi-agent builds, Story flows, independent verification, and browser merge | ~1,400 |
 
-**Total Section:** ~8,600 tokens
+**Total Section:** ~10,000 tokens
 
 ## Getting Started
 
@@ -145,6 +164,7 @@ Choose the library or tool that matches your needs:
 - **Building event-driven systems?** Start with [Pulse](pulse/)
 - **Adding observability to Goa services?** Start with [Clue](clue/)
 - **Coordinating multiple coding agents?** Start with [Chorus](chorus/)
+- **Building and verifying services with separate agent roles?** Start with [Highbay](highbay/)
 
 All libraries are available via `go get` / `go install`:
 
@@ -153,4 +173,5 @@ go get goa.design/model
 go get goa.design/pulse
 go get goa.design/clue
 go install github.com/goadesign/chorus/cmd/chorus@latest
+go install github.com/goadesign/highbay/cmd/hbay@latest
 ```

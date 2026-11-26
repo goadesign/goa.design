@@ -247,6 +247,41 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 	})
 
 	// =========================================================================
+	// Highbay Architecture Diagram - Contract-driven multi-agent control plane
+	// =========================================================================
+
+	var HighbayArchSystem = SoftwareSystem("Highbay", "Agentic control plane for Goa and Goa-AI services", func() {
+		Container("Guide Agent", "Drafts Story flows, Goa design, and Change Card", "MCP Client", func() {
+			Tag("highbay")
+			Uses("Highbay Server", "init_project, update_draft, refresh_story, propose_change", func() { Tag("highbay-sync") })
+		})
+
+		Container("Browser Page", "Human confirms Change Card, starts Build, approves, and merges", "Views UI", func() {
+			Tag("highbay")
+			Uses("Highbay Server", "confirm, build, approve, merge", func() { Tag("highbay-sync") })
+		})
+
+		Container("Highbay Server", "Role-scoped control plane, Goa generator, and verifier", "Goa-AI MCP & HTTP", func() {
+			Tag("highbay")
+			Uses("Test Writer", "Flow test assignment & report check (.highbay-tests)", func() { Tag("highbay-async") })
+			Uses("Builder", "Agreed design, generate_code & Docker check (.highbay-build)", func() { Tag("highbay-async") })
+			Uses("Verifier", "Runs accepted eval/ suite against candidate commit", func() { Tag("highbay-sync") })
+		})
+
+		Container("Test Writer", "Authors scenario tests in eval/ without touching app code", "MCP Client", func() {
+			Tag("highbay")
+		})
+
+		Container("Builder", "Implements business logic against generated Goa contracts", "MCP Client", func() {
+			Tag("highbay")
+		})
+
+		Container("Verifier", "Builds digest-pinned binary and executes Goa-AI eval suite", "Process Group", func() {
+			Tag("highbay-verifier")
+		})
+	})
+
+	// =========================================================================
 	// Views
 	// =========================================================================
 
@@ -323,6 +358,16 @@ var _ = Design("Goa Documentation Diagrams", "Architecture diagrams for goa.desi
 			Add("Swarm Control Plane")
 			Add("Message Streams")
 			Add("Publication Lock")
+			AutoLayout(RankLeftRight)
+		})
+
+		ContainerView(HighbayArchSystem, "HighbayArchitecture", "Highbay contract-driven control plane and independent verification", func() {
+			Add("Guide Agent")
+			Add("Browser Page")
+			Add("Highbay Server")
+			Add("Test Writer")
+			Add("Builder")
+			Add("Verifier")
 			AutoLayout(RankLeftRight)
 		})
 

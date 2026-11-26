@@ -197,6 +197,23 @@ Use Chorus as arch in #catalog and review the LookupPayload contract with api an
 
 エージェントは `#channels` に参加し、`@agent` ダイレクトメッセージを交換し、`send` 時に未読の返信をまとめて受け取り、他のエージェントからメンションや返信が届くまで `chorus watch <handle>` でバックグラウンド待機します。ツールリファレンスとアーキテクチャの詳細は [Chorus ガイド](/ja/docs/3-ecosystem/chorus/)を参照してください。
 
+## Highbay でテスト作成と検証を分離する {#build-and-verify-with-highbay}
+
+あるコーディングエージェントに受け入れテストを書かせ、別のコーディングエージェントに実装を書かせ、合意済み契約に対するサーバー検証を通過してからマージしたい場合は、[Highbay](/ja/docs/3-ecosystem/highbay/)（`github.com/goadesign/highbay`）を使います：
+
+```bash
+go install github.com/goadesign/highbay/cmd/hbay@latest
+hbay up
+```
+
+空のフォルダ（または初期 Git コミットと `<module>/eval` スイートもしくは検証設定がある既存の Goa リポジトリ）で `/highbay`（Codex では `$highbay`）を実行します：
+
+```text
+/highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
+```
+
+空のフォルダではデフォルトでクリーンな Go / `eval/` 構成が作成され（サンプル付きは `hbay init -example` または `worked_example: true`）、ブラウザで Change Card を確定すると `.highbay-tests` と `.highbay-build` に分かれて作業と検証が進み、承認済みコミットをローカルブランチへマージできます。詳しくは [Highbay ページ](/ja/highbay/)と [Highbay ガイド](/ja/docs/3-ecosystem/highbay/)を参照してください。
+
 ## プロジェクトで効果を測る
 
 同じタスク、受け入れ条件、モデル、初期コードを使い、複数回比較します。入力・出力トークン、経過時間、生成とテストの時間、手作業の修正、レビュー、動作上の不具合を記録し、準備と失敗した試行も含めます。生成行数はジェネレーターが行う仕事を示すもので、トークン削減や生産性のベンチマークではありません。
