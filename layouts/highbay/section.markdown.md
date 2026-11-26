@@ -108,8 +108,8 @@ func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
 
 ```text
 1. generate_code(target: "candidate") -> writes agreed design/ and regenerates gen/
-2. check_project() -> builds and unit-tests inside a Linux container
-3. verify_change(change_id, request_revision, candidate_commit) -> server runs accepted highbay/tests-1 against candidate_commit
+2. check_project() -> compiles and unit-tests inside a Linux container
+3. verify_change(change_id, request_revision, candidate_commit) -> server runs accepted eval/ suite against candidate_commit
 ```
 
 {{ T "highbay_builder_check" }}
@@ -130,7 +130,7 @@ func (h *Hooks) InstantCredit(ctx context.Context) (eval.Result, error) {
 {{ end }}
 
 ## {{ T "home_faq_heading" }}
-{{ range slice "blank" "keys" "isolation" "docs" }}
+{{ range slice "why" "ecosystem" "existing" "local" }}
 ### {{ T (printf "highbay_faq_%s_q" .) }}
 
 {{ T (printf "highbay_faq_%s_a" .) }}

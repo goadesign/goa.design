@@ -28,7 +28,7 @@ llm_optimized: true
 1. **`CP1` — Change Card で合意する**: エージェントは隔離されたドラフトで `Story`（`github.com/goadesign/highbay/story/dsl`）を評価し、要約・未決の仕様質問・具体的な受け入れ例・維持する挙動を平易な言葉でまとめた Change Card を提案します。ブラウザ画面で質問に答えて確定します。
 2. **`CP2` — アーキテクチャを確認する**: ワーカーを動かす前に、合意した Goa と [Model](/ja/docs/3-ecosystem/model/) 設計から生成された C4 図を **Architecture** で確認します。
 3. **`CP3` — ライブターゲットでプロンプトを調整する（任意）**: サービスが Goa-AI エージェントを持ち、プロバイダーキーまたはモデルゲートウェイを設定している場合、実装者は候補コミットのライブコピーを起動してプロンプト文言を試せます。
-4. **`CP4` — 独立した検証**: Highbay はテスト作成者の `eval/` レポートを再ビルド・検査して `highbay/tests-<n>` として受理したあと、実装者の候補コミットをビルドして受理済み `eval/` スイートを実行します（`eval/` スイートがライブプロバイダーを呼ばない限り API キーは不要。`-example` サンプルはスクリプトモデルを同梱し、空シェルの初期チェックはモデルを使用しません）。オペレーター設定の評価スイートでは、ホールドアウトのシナリオ名・判定・ログが `Report.ForBuilders()` によって実装者向けツール結果から除外されます（テスト作成者はホールドアウトを提出できません）。
+4. **`CP4` — 独立した検証**: Highbay はテスト作成者の `eval/` レポートを再ビルド・検査して `highbay/tests-<n>` として受理したあと、実装者の候補コミットをビルドして受理済み `eval/` スイートを実行します（`eval/` スイートがライブプロバイダーを呼ばない限り API キーは不要です）。オペレーター設定の評価スイートでは、ホールドアウトのシナリオ名・判定・ログが `Report.ForBuilders()` によって実装者向けツール結果から除外されます（テスト作成者はホールドアウトを提出できません）。
 5. **`CP5` — 承認してマージする**: **Approve** でシナリオ結果を確認して承認を記録し、**Merge into current branch** を押して検証済みの実装コミットとテストコミットをローカルブランチへマージします。
 
 {{< highbay-views >}}
@@ -50,7 +50,7 @@ Herdr の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`�
 
 ---
 
-## プロジェクトの開始：デフォルトでクリーンな構成 {#blank-and-example}
+## プロジェクトの開始 {#blank-and-example}
 
 空のフォルダをコーディングエージェントで開き、`/highbay`（Codex では `$highbay`）を実行します：
 
@@ -60,8 +60,8 @@ Herdr の設定フォルダ（`$HERDR_APP_HOME` または `~/.config/herdr-app`�
 
 未初期化のフォルダでは、エージェントが `init_project(dir: ".")` を呼び出します（モジュールパス未指定時はフォルダ名から `example.com/<folder>` を導出）：
 
-- **デフォルトはクリーンな空シェル（`worked_example: false`）**: `init_project` と `hbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定したドメイン中立の 2 モジュール構成（`<module>` と `<module>/eval`）を作成します。不要なサンプルエンドポイントやデモエージェントは含まれず、最初の Change Card にはあなたのプロダクトだけが記述されます。
-- **動作するサンプルの明示指定（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すか `worked_example: true` を指定します：
+- **新規ワークスペース（`worked_example: false`、デフォルト）**: `init_project` と `hbay init` は、Goa・Goa-AI・Model・Story を `go.mod` に固定した 2 モジュール構成（`<module>` と `<module>/eval`）と起動確認チェックを作成し、すぐに自分の `Story` と `design/` を書き始められる状態にします。
+- **動作するサンプルの指定（`worked_example: true` / `-example`）**: Goa-AI エージェント、ツール、`Story` フロー、スクリプト評価スイートの一式を先に試したい場合は、CLI で `-example` を渡すか `worked_example: true` を指定します：
 
 ```bash
 hbay init -dir ./demo-shop -module example.com/shop -example

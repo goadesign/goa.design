@@ -28,7 +28,7 @@ Ogni anteprima, suite di test accettata, live target, esecuzione di verifica e a
 1. **`CP1` — Confermare una Change Card**: L'agente valuta una `Story` (`github.com/goadesign/highbay/story/dsl`) nella propria bozza isolata e propone una Change Card in linguaggio chiaro (riepilogo, domande di prodotto aperte, esempi concreti di accettazione e comportamenti preservati). Rispondi e confermi nel browser.
 2. **`CP2` — Anteprima dell'architettura**: Ispeziona il diagramma C4 derivato dal design Goa e [Model](/it/docs/3-ecosystem/model/) in **Architecture** prima di avviare i worker.
 3. **`CP3` — Provare i prompt dal vivo (opzionale)**: Se il servizio include un agente Goa-AI e configuri una chiave provider o un model gateway, il builder può avviare una copia live del commit candidato e provare override dei prompt prima del commit.
-4. **`CP4` — Verifica indipendente**: Highbay ricompila e controlla il report `eval/` del test writer sul branch `highbay/tests-<n>` prima di accettarlo, poi compila il commit del builder ed esegue contro di esso quella suite `eval/` accettata (senza richiedere chiavi API a meno che la suite `eval/` non chiami un provider live; l'esempio opzionale `-example` fornisce un modello scriptato e il controllo iniziale a vuoto non usa modelli). Per i valutatori configurati dall'operatore, nomi, controlli e log degli scenari holdout sono omessi dai report destinati al builder tramite `Report.ForBuilders()` (il test writer non può inviare holdout).
+4. **`CP4` — Verifica indipendente**: Highbay ricompila e controlla il report `eval/` del test writer sul branch `highbay/tests-<n>` prima di accettarlo, poi compila il commit del builder ed esegue contro di esso quella suite `eval/` accettata (nessuna chiave API è richiesta a meno che la suite `eval/` non chiami un provider live). Per i valutatori configurati dall'operatore, nomi, controlli e log degli scenari holdout sono omessi dai report destinati al builder tramite `Report.ForBuilders()` (il test writer non può inviare holdout).
 5. **`CP5` — Approvare e fare merge**: Esamina i risultati in **Approve**, registra l'approvazione e premi **Merge into current branch** per unire i commit verificati nel tuo branch locale.
 
 {{< highbay-views >}}
@@ -50,7 +50,7 @@ Quando esiste la cartella di configurazione di Herdr (`$HERDR_APP_HOME` o `~/.co
 
 ---
 
-## Avviare un progetto: guscio pulito per impostazione predefinita {#blank-and-example}
+## Avviare un progetto {#blank-and-example}
 
 Apri una cartella vuota nel tuo agente e invoca `/highbay` (`$highbay` in Codex):
 
@@ -60,8 +60,8 @@ Apri una cartella vuota nel tuo agente e invoca `/highbay` (`$highbay` in Codex)
 
 In una cartella non ancora inizializzata, l'agente chiama `init_project(dir: ".")` (ricavando `example.com/<cartella>` se non hai indicato un module path):
 
-- **Guscio pulito predefinito (`worked_example: false`)**: `init_project` e `hbay init` creano una struttura neutrale a due moduli Go (`<module>` e `<module>/eval`) con Goa, Goa-AI, Model e Story fissati in `go.mod`, zero endpoint o agenti demo e uno scenario neutrale di avvio in `eval/`. La prima Change Card descrive solo il tuo prodotto.
-- **Esempio eseguibile opzionale (`worked_example: true` / `-example`)**: Se vuoi esplorare prima un esempio completo con agente Goa-AI, tool, flusso `Story` e suite scriptata, passa `-example` da CLI o chiedi `worked_example: true`:
+- **Nuovo workspace (`worked_example: false`, predefinito)**: `init_project` e `hbay init` inizializzano una struttura a due moduli Go (`<module>` e `<module>/eval`) con Goa, Goa-AI, Model e Story fissati in `go.mod` e uno scenario di avvio in `eval/`, pronta per la tua `Story` e `design/`.
+- **Esempio eseguibile (`worked_example: true` / `-example`)**: Passa `-example` da CLI o chiedi `worked_example: true` quando vuoi esplorare prima un esempio completo con agente Goa-AI, tool, flusso `Story` e suite scriptata:
 
 ```bash
 hbay init -dir ./demo-shop -module example.com/shop -example

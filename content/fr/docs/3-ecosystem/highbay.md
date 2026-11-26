@@ -28,7 +28,7 @@ Chaque aperçu, suite de tests acceptée, cible en direct, vérification et appr
 1. **`CP1` — Valider une Change Card** : Votre agent évalue une `Story` (`github.com/goadesign/highbay/story/dsl`) dans son brouillon isolé et propose une Change Card en langage clair (résumé, questions produit ouvertes, exemples d'acceptation concrets et comportements préservés). Vous répondez et confirmez dans le navigateur.
 2. **`CP2` — Prévisualiser l'architecture** : Inspectez le diagramme C4 dérivé du design Goa et [Model](/fr/docs/3-ecosystem/model/) dans **Architecture** avant de lancer les agents.
 3. **`CP3` — Ajuster les prompts en direct (optionnel)** : Si le service inclut un agent Goa-AI et qu'une clé fournisseur ou passerelle modèle est configurée, le bâtisseur peut démarrer une copie en direct du commit candidat et tester des surcharges de prompts.
-4. **`CP4` — Vérification indépendante** : Highbay recompile et contrôle le rapport `eval/` du rédacteur de tests sur `highbay/tests-<n>` avant de l'accepter, puis compile le commit du bâtisseur et exécute contre lui cette suite `eval/` acceptée (sans clé API requise sauf si la suite `eval/` appelle un fournisseur en direct ; l'exemple optionnel `-example` fournit un modèle scénarisé et le contrôle vierge n'utilise aucun modèle). Pour les évaluateurs configurés par l'opérateur, les noms, contrôles et journaux des scénarios holdout sont expurgés des rapports destinés au bâtisseur via `Report.ForBuilders()` (le rédacteur de tests ne peut pas soumettre de holdouts).
+4. **`CP4` — Vérification indépendante** : Highbay recompile et contrôle le rapport `eval/` du rédacteur de tests sur `highbay/tests-<n>` avant de l'accepter, puis compile le commit du bâtisseur et exécute contre lui cette suite `eval/` acceptée (aucune clé API n'est requise sauf si la suite `eval/` appelle un fournisseur en direct). Pour les évaluateurs configurés par l'opérateur, les noms, contrôles et journaux des scénarios holdout sont expurgés des rapports destinés au bâtisseur via `Report.ForBuilders()` (le rédacteur de tests ne peut pas soumettre de holdouts).
 5. **`CP5` — Approuver et fusionner** : Examinez le rapport dans **Approve**, enregistrez l'approbation et cliquez sur **Merge into current branch** pour fusionner les commits vérifiés sur votre branche locale.
 
 {{< highbay-views >}}
@@ -50,7 +50,7 @@ Lorsque le dossier de configuration Herdr (`$HERDR_APP_HOME` ou `~/.config/herdr
 
 ---
 
-## Démarrer un projet : coquille vierge par défaut {#blank-and-example}
+## Démarrer un projet {#blank-and-example}
 
 Ouvrez un dossier vide dans votre agent et invoquez `/highbay` (`$highbay` dans Codex) :
 
@@ -60,8 +60,8 @@ Ouvrez un dossier vide dans votre agent et invoquez `/highbay` (`$highbay` dans 
 
 Dans un dossier non initialisé, votre agent appelle `init_project(dir: ".")` (en dérivant `example.com/<dossier>` si aucun chemin de module n'est fourni) :
 
-- **Coquille propre par défaut (`worked_example: false`)** : `init_project` et `hbay init` créent une structure neutre à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod`, sans endpoints ni agent de démonstration, et un scénario neutre de démarrage dans `eval/`. Votre première Change Card ne décrit que votre produit.
-- **Exemple exécutable sur demande (`worked_example: true` / `-example`)** : Pour explorer d'abord un exemple complet d'agent Goa-AI, d'outil, de flux `Story` et de suite scénarisée, passez `-example` en CLI ou demandez `worked_example: true` :
+- **Nouvel espace de travail (`worked_example: false`, par défaut)** : `init_project` et `hbay init` initialisent une structure à deux modules Go (`<module>` et `<module>/eval`) avec Goa, Goa-AI, Model et Story épinglés dans `go.mod` et un scénario de démarrage dans `eval/`, prête pour votre propre `Story` et `design/`.
+- **Exemple exécutable (`worked_example: true` / `-example`)** : Passez `-example` en CLI ou demandez `worked_example: true` pour explorer d'abord un exemple complet d'agent Goa-AI, d'outil, de flux `Story` et de suite scénarisée :
 
 ```bash
 hbay init -dir ./demo-shop -module example.com/shop -example

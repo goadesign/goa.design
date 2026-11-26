@@ -28,7 +28,7 @@ Every preview, accepted test suite, live target, verification run, and approval 
 1. **`CP1` — Agree on a Change Card**: Your coding agent evaluates a `Story` (`github.com/goadesign/highbay/story/dsl`) in its isolated draft and proposes a plain-language Change Card containing a summary, open product questions, concrete acceptance examples, and preserved behaviors. You answer open questions and confirm the card on the browser page.
 2. **`CP2` — Preview Architecture**: Inspect the C4 architecture diagram derived from the agreed Goa and [Model](/docs/3-ecosystem/model/) design in **Architecture** before starting workers.
 3. **`CP3` — Tune Prompts Live (Optional)**: When your service includes a Goa-AI agent and you configure a model provider key or gateway, the builder can start a live copy of the candidate commit and test runtime prompt overrides before committing.
-4. **`CP4` — Independent Verification**: Highbay compiles and validates the test writer's `eval/` report on branch `highbay/tests-<n>` before accepting it, then builds the builder's candidate commit and runs that accepted `eval/` suite against it (requiring no provider API key unless the project's `eval/` suite calls a live model; the opt-in `-example` starter supplies a scripted model, and the blank starter's readiness check uses no model). For operator-configured evaluators with holdouts, holdout scenario names, checks, and logs are redacted from builder-facing tool reports through `Report.ForBuilders()` (the test writer cannot submit holdouts).
+4. **`CP4` — Independent Verification**: Highbay compiles and validates the test writer's `eval/` report on branch `highbay/tests-<n>` before accepting it, then builds the builder's candidate commit and runs that accepted `eval/` suite against it (no model API key is required unless your `eval/` suite calls a live provider). For operator-configured evaluators with holdouts, holdout scenario names, checks, and logs are redacted from builder-facing tool reports through `Report.ForBuilders()` (the test writer cannot submit holdouts).
 5. **`CP5` — Approve and Merge**: Review the scenario outcomes in **Approve**, record approval (with optional release-binary digest checks when promotion settings are configured), and click **Merge into current branch** to merge the verified candidate and test commits cleanly.
 
 {{< highbay-views >}}
@@ -50,7 +50,7 @@ When Herdr's configuration folder (`$HERDR_APP_HOME` or `~/.config/herdr-app`) e
 
 ---
 
-## Starting a Project: Clean Shell by Default {#blank-and-example}
+## Starting a Project {#blank-and-example}
 
 Open an empty folder in your coding agent and invoke `/highbay` (`$highbay` in Codex):
 
@@ -62,8 +62,8 @@ The first Highbay MCP call starts or attaches to the project's Highbay server, r
 
 When the folder has not been initialized yet, your coding agent calls `init_project(dir: ".")` (deriving `example.com/<folder>` when you did not specify a Go module path):
 
-- **Blank shell by default (`worked_example: false`)**: `init_project` and `hbay init` create a clean, domain-neutral two-module Go layout (`<module>` and `<module>/eval`) with Goa, Goa-AI, Model, and Story pinned in `go.mod`, zero sample endpoints or demo agents, and a neutral startup readiness check in `eval/`. Your first Change Card describes only your product rather than explaining how to remove starter code.
-- **Opt-in runnable sample (`worked_example: true` / `-example`)**: When you want to explore a complete Goa-AI agent, tool, `Story` flow, and scripted evaluation suite before writing your own service, pass `-example` on the CLI or ask your agent for `worked_example: true`:
+- **New workspace (`worked_example: false`, default)**: `init_project` and `hbay init` initialize a two-module Go layout (`<module>` and `<module>/eval`) with Goa, Goa-AI, Model, and Story pinned in `go.mod` and a startup readiness check in `eval/`, ready for your own `Story` and `design/`.
+- **Runnable sample (`worked_example: true` / `-example`)**: Pass `-example` on the CLI or ask your agent for `worked_example: true` when you want to explore a complete Goa-AI agent, tool, `Story` flow, and scripted evaluation suite first:
 
 ```bash
 hbay init -dir ./demo-shop -module example.com/shop -example

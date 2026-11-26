@@ -388,7 +388,7 @@ for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('One compiled contract. Separate jobs for every agent.');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Agree on what to build. One agent codes. Another tests.');
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveText('Get Highbay');
       await expect(page.locator('.highbay-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.highbay-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/highbay/');
@@ -407,7 +407,7 @@ for (const width of [390, 1440]) {
         'Compiled contract first',
         'Plain-language Change Card',
         'Separate test writer and builder',
-        'Server-judged verification',
+        'Server-run verification',
       ]);
 
       // Interactive 3-stage browser Views studio: LCP priority, theme-matched WebP, pin bounds, and stage switching.
@@ -461,8 +461,8 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.highbay-lane')).toHaveCount(3);
       await expect(page.locator('.highbay-lane h3')).toHaveText([
         'Guide · Story & Change Card',
-        'Test writer · .highbay-tests',
-        'Builder · .highbay-build',
+        'Test writer · Acceptance tests',
+        'Builder · Implementation',
       ]);
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Story("Refunds"');
       const diagram = page.locator('.highbay-diagram img');
@@ -502,10 +502,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Un contrato compilado. Un rol distinto para cada agente.', 'Documentación', 'Framework Goa'],
-    ['fr', 'Un contrat compilé. Un rôle distinct pour chaque agent.', 'Documentation', 'Framework Goa'],
-    ['it', 'Un unico contratto compilato. Un ruolo distinto per ogni agente.', 'Documentazione', 'Framework Goa'],
-    ['ja', '1 つのコンパイル済み契約。 エージェントごとに分かれた役割。', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Acuerda qué construir. Un agente programa. Otro prueba.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Validez quoi construire. Un agent code. Un autre teste.', 'Documentation', 'Framework Goa'],
+    ['it', 'Concorda cosa costruire. Un agente scrive il codice. Un altro i test.', 'Documentazione', 'Framework Goa'],
+    ['ja', '作るものに合意する。 1 つが実装し、もう 1 つがテストする。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
@@ -525,9 +525,9 @@ test('localized Highbay pages, ecosystem guides, and Markdown are reachable', as
       const mdText = await response.text();
       expect(mdText).toContain('github.com/goadesign/highbay/cmd/hbay@latest');
       expect(mdText).toContain('1.27.3');
-      expect(mdText).toContain('worked_example: true');
       expect(mdText).not.toContain('`example: true`');
       if (path.startsWith('docs/')) {
+        expect(mdText).toContain('worked_example: true');
         expect(mdText).toContain('{#blank-and-example}');
         expect(mdText).toContain('{#herdr}');
         expect(mdText).toContain('{#architecture}');

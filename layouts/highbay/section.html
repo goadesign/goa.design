@@ -20,11 +20,13 @@
     </div>
     <div class="skill-install chorus-hero-install highbay-hero-install" id="install" aria-labelledby="highbay-install-title">
       <div class="highbay-flow-strip" aria-hidden="true">
-        <span class="highbay-flow-chip"><b>CP1</b> Agree</span>
+        <span class="highbay-flow-chip">{{ T "highbay_chip_agree" }}</span>
         <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h16M13 2l4 4-4 4"/></svg>
-        <span class="highbay-flow-chip"><b>CP4</b> Verify</span>
+        <span class="highbay-flow-chip">{{ T "highbay_chip_build" }}</span>
         <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h16M13 2l4 4-4 4"/></svg>
-        <span class="highbay-flow-chip"><b>CP5</b> Merge</span>
+        <span class="highbay-flow-chip">{{ T "highbay_chip_verify" }}</span>
+        <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h16M13 2l4 4-4 4"/></svg>
+        <span class="highbay-flow-chip">{{ T "highbay_chip_merge" }}</span>
       </div>
       <h2 id="highbay-install-title" class="chorus-install-title">{{ T "highbay_install_heading" }}</h2>
       <p class="chorus-install-intro">{{ T "highbay_install_intro" }}</p>
@@ -249,10 +251,10 @@ func (h *Hooks) InstantCredit(
    → writes agreed design/ and gen/
 
 2. check_project()
-   → builds and tests in a Linux container
+   → compiles and unit-tests in Docker
 
 3. verify_change(change_id, rev, commit)
-   → server runs highbay/tests-1 on commit</code></pre>
+   → server runs accepted eval/ on commit</code></pre>
         </div>
         <div class="highbay-lane__outcome">
           <p>{{ T "highbay_builder_check" | markdownify }}</p>
@@ -327,7 +329,7 @@ func (h *Hooks) InstantCredit(
   <section class="faq-section site-width chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
     <h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2>
     <dl>
-      {{ range slice "blank" "keys" "isolation" "docs" }}
+      {{ range slice "why" "ecosystem" "existing" "local" }}
       <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
       {{ end }}
     </dl>
