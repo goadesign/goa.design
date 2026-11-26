@@ -136,7 +136,8 @@ func (s *Service) RequestRefund(
 // examples/orders/design/orders.go
 Method("chat", func() {
     Payload(func() {
-        Token("token", String, "Customer bearer token.")
+        Token("token", String,
+            "Customer bearer token.")
         Attribute("message", String,
             "What the customer says.",
             func() { MinLength(1) })

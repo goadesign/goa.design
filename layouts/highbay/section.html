@@ -391,7 +391,8 @@ func (s *Service) RequestRefund(
           <div class="mcp-stage-title"><strong>{{ T "highbay_codegen_left_title" }}</strong><span>examples/orders/design/orders.go</span></div>
           {{ highlight `Method("chat", func() {
     Payload(func() {
-        Token("token", String, "Customer bearer token.")
+        Token("token", String,
+            "Customer bearer token.")
         Attribute("message", String,
             "What the customer says.",
             func() { MinLength(1) })
