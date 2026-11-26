@@ -473,7 +473,7 @@ highbay_build_pin_3: "**合意への紐づけ:** 両ロールとも `rev_d830b41
 highbay_build_alt: "合意 rev_d830b41c のもとで Builder に Claude Code、Test Writer に Codex を割り当てる Highbay の Build 画面。"
 highbay_approve_pin_1: "**1 クリックでマージ:** 検証済みの実装コミットとテストコミットをブラウザからローカルブランチへ取り込みます。"
 highbay_approve_pin_2: "**Story フロー別の結果:** `instant_credit` と `manager_review` の合否を `Story` と対応づけて確認します。"
-highbay_approve_pin_3: "**サーバー判定の証跡:** `3 of 3` シナリオ合格（実装者には伏せられたホールドアウト検証を含む）。"
+highbay_approve_pin_3: "**サーバー判定の証跡:** 実装（`a41c9e20`）とテスト（`5be07f19`）の正確なコミットに対して宣言済みテスト `3 of 3` が合格。"
 highbay_approve_alt: "3/3 シナリオ合格、Story フロー結果、カバレッジ説明、Merge into current branch ボタンを表示する Highbay の Approve 画面。"
 highbay_showcase_caption: "$50 返金ウォークスルーから取得した実際の Highbay ブラウザ画面。"
 highbay_showcase_method: "スクリーンショットの生成手順"

@@ -473,7 +473,7 @@ highbay_build_pin_3: "**Acuerdo vinculado:** Ambos agentes trabajan sobre `rev_d
 highbay_build_alt: "Vista Build de Highbay asignando Claude Code al Builder y Codex al Test Writer bajo el acuerdo rev_d830b41c."
 highbay_approve_pin_1: "**Fusión en un clic:** Integra los commits verificados de código y pruebas directamente en tu rama local."
 highbay_approve_pin_2: "**Flujos de Story:** Revisa los resultados `Passed` de `instant_credit` y `manager_review` frente a tu `Story`."
-highbay_approve_pin_3: "**Prueba juzgada por el servidor:** `3 of 3` escenarios superados (incluidos holdouts ocultos al constructor)."
+highbay_approve_pin_3: "**Prueba juzgada por el servidor:** `3 of 3` pruebas declaradas superadas sobre los commits exactos de código (`a41c9e20`) y pruebas (`5be07f19`)."
 highbay_approve_alt: "Vista Approve de Highbay con 3 de 3 escenarios superados, resultados por flujo Story y el botón Merge into current branch."
 highbay_showcase_caption: "Capturas reales de Highbay tomadas del ejemplo de reembolsos de $50."
 highbay_showcase_method: "Cómo se generan estas capturas"

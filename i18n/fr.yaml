@@ -475,7 +475,7 @@ highbay_build_pin_3: "**Accord verrouillé :** Les deux rôles restent liés à 
 highbay_build_alt: "Vue Build de Highbay associant Claude Code au Builder et Codex au Test Writer sous l'accord rev_d830b41c."
 highbay_approve_pin_1: "**Fusion en un clic :** Intégrez les commits applicatif et de tests vérifiés directement sur votre branche locale."
 highbay_approve_pin_2: "**Résultats par flux Story :** Inspectez `instant_credit` et `manager_review` reliés aux flux de votre `Story`."
-highbay_approve_pin_3: "**Preuve arbitrée par le serveur :** `3 of 3` scénarios réussis (y compris les holdouts masqués au bâtisseur)."
+highbay_approve_pin_3: "**Preuve arbitrée par le serveur :** `3 of 3` tests déclarés réussis sur les commits exacts du bâtisseur (`a41c9e20`) et des tests (`5be07f19`)."
 highbay_approve_alt: "Vue Approve de Highbay montrant 3 scénarios sur 3 réussis, la couverture déclarée et le bouton Merge into current branch."
 highbay_showcase_caption: "Vues réelles du navigateur Highbay capturées sur l'exemple de remboursement à 50 $."
 highbay_showcase_method: "Comment ces captures sont générées"

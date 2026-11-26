@@ -134,7 +134,7 @@ function makeState(stage) {
     test_source: {
       source: "written_tests",
       commit: SUITE_COMMIT,
-      notice: "Written by test-writer in .highbay-tests on branch highbay/tests-1.",
+      notice: "These tests were written by a separate agent on this machine and are not isolated from the builder.",
     },
   };
 
@@ -319,6 +319,13 @@ function makeState(stage) {
     suite_failed: false,
     counts: { required: 3, passed: 3, failed: 0, harness_error: 0, not_run: 0 },
     scenarios: [
+      {
+        id: "starts_and_listens",
+        outcome: "passed",
+        checks: [
+          { name: "readyz_ok", passed: true },
+        ],
+      },
       {
         id: "instant_credit",
         outcome: "passed",
@@ -548,9 +555,11 @@ try {
 
         const measured = await page.evaluate(([w, h, stg]) => {
           const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-          const afterRight = (el, gapPx = 20) => {
+          const afterRight = (el, gapPx = 22) => {
             if (!el) return null;
-            const r = el.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const r = range.getBoundingClientRect();
             return {
               x: +clamp(((r.right + gapPx) / w) * 100, 4, 95).toFixed(2),
               y: +clamp(((r.top + r.height * 0.5) / h) * 100, 5, 95).toFixed(2),

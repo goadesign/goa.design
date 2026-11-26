@@ -340,7 +340,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .highbay-ws-procs span { padding: .2rem .45rem; border-radius: 4px; border: 1px solid var(--color-border-subtle); background: var(--color-highlight); color: var(--doc-link-color); font: 600 .72rem $font-family-monospace; }
 .highbay-faq { padding-bottom: 64px; }
 .highbay-doc-views { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0 2rem; }
-.highbay-doc-shot { margin: 0; min-width: 0; }
+.highbay-doc-views .highbay-doc-shot { margin: 0; min-width: 0; }
 .highbay-doc-shot figcaption { margin-top: .55rem; font-size: .84rem; color: var(--color-text-muted); text-align: center; }
 
 .td-footer { min-height: 0; padding: 2rem; background: var(--color-bg-alt); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); font-size: .85rem; }

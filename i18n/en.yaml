@@ -474,7 +474,7 @@ highbay_build_pin_3: "**Pinned agreement:** Both workers stay bound to `rev_d830
 highbay_build_alt: "Highbay Build view assigning Claude Code to the Builder role and Codex to the Test Writer role under agreement rev_d830b41c."
 highbay_approve_pin_1: "**One-click merge:** Land both verified application and test commits onto your local branch from the browser."
 highbay_approve_pin_2: "**Story flow outcomes:** Inspect `instant_credit` and `manager_review` scenario results mapped to your `Story`."
-highbay_approve_pin_3: "**Server-judged proof:** `3 of 3` scenarios passed (including holdout checks redacted from builder reports)."
+highbay_approve_pin_3: "**Server-judged proof:** `3 of 3` declared tests passed against exact builder (`a41c9e20`) and test (`5be07f19`) commits."
 highbay_approve_alt: "Highbay Approve view showing 3 of 3 passed scenarios, Story flow results, stated test coverage, and the Merge into current branch button."
 highbay_showcase_caption: "Real Highbay browser views captured from the $50 Refunds walkthrough."
 highbay_showcase_method: "How these screenshots are generated"
