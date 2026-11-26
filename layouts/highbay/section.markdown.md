@@ -64,7 +64,7 @@ highbay up
 var opsTools = Toolset("ops", func() {
     Tool("query_pod_logs", "Read pod logs.", func() {
         Args(LogsArgs)
-        Return(LogsPage)
+        Return(LogLines)
         BindTo("ops", "query_pod_logs")
         Inject("org_id")
         BoundedResult(func() {
