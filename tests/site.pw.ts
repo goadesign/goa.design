@@ -353,14 +353,9 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
           await page.locator('.theme-toggle').click();
         }
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-        await expect(page.locator('.chorus-hero .hero-facts')).toContainText('Herdr');
-        await expect(page.locator('#install .install-hint')).toContainText('⌥⌘⇧C');
-        await expect(page.locator('#install .install-hint code')).toContainText([
-          '/chorus', '$chorus', 'chorus ui', 'herdr-app do mod.open --name chorus-launcher',
-        ]);
-        await expect(page.locator('#install')).toContainText('chorus update');
-        await page.locator('#install .chorus-setup-details summary').click();
-        await expect(page.locator('#install .chorus-setup-details')).toContainText('YOLO');
+        await expect(page.locator('#install .highbay-install-card__top')).toContainText('Herdr');
+        await expect(page.locator('#install .highbay-install-card__top a')).toHaveAttribute('href', `/${lang}docs/3-ecosystem/chorus/`);
+        await page.locator('#install .chorus-mgr-btn[data-chorus-mgr="npx"]').click({ trial: true });
         await expect(page.locator('.chorus-compare')).toContainText('chorus-launcher');
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} landing ${width}px ${theme}`).toBe(true);
 
@@ -384,9 +379,11 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
       const response = await request.get(`/${lang}${path}`);
       expect(response.ok()).toBe(true);
       const markdown = await response.text();
-      expect(markdown).toContain('herdr-app do mod.open --name chorus-launcher');
-      expect(markdown).toContain('chorus update');
+      expect(markdown).toContain('Herdr');
+      expect(markdown).toContain('chorus-launcher');
       if (path.startsWith('docs/')) {
+        expect(markdown).toContain('herdr-app do mod.open --name chorus-launcher');
+        expect(markdown).toContain('chorus update');
         expect(markdown).toContain('{#herdr}');
         expect(markdown).toContain('Update & Restart');
         expect(markdown).toContain('Update & restart');

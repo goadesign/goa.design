@@ -569,8 +569,8 @@ A full-width two-step quickstart card sits on its own row directly beneath the
 hero. Step 1 pairs a `[Coding-agent skill | Go CLI]` toggle (defaulting to
 `npx skills add goadesign/goa --skill goa-service-designer`) with a selectable
 command box; Step 2 pairs a `[Services | AI agents]` toggle with a copyable
-coding-agent starter prompt. Visible guidance notes Go 1.27+ and Node.js/npm
-for the skill installer. Its square copy control contains a (20px) outline SVG;
+coding-agent starter prompt. Visible guidance notes Go 1.27+ and supported
+coding agents alongside a setup-guide link. Its square copy control contains a (20px) outline SVG;
 success announces “Command copied.” in a `role="status"` region, and clipboard
 failure selects the command and says “Select and copy the command.”
 

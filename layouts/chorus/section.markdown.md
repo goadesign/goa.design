@@ -2,12 +2,6 @@
 
 {{ T "chorus_intro" }}
 
-- {{ T "chorus_hero_point_1" }}
-- {{ T "chorus_hero_point_2" }}
-- {{ T "chorus_hero_point_3" }}
-
-{{ T "chorus_clients" }} · {{ T "chorus_facts" }}
-
 GitHub: [Chorus](https://github.com/goadesign/chorus) · [{{ T "chorus_demo_cta" }}](https://goa.design/chorus/demo/)
 
 Source: {{ .Permalink }}
@@ -28,25 +22,17 @@ curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/insta
 go install github.com/goadesign/chorus/cmd/chorus@latest && chorus up
 ```
 
-{{ T "chorus_restart_note" }}
-
 {{ T "chorus_step2_label" }}
 
 ```text
 /chorus {{ T "chorus_starter_prompt_body" }}
 ```
 
-{{ T "chorus_install_hint" }}
-
-- {{ T "chorus_fit_configs" }}
-- {{ T "chorus_fit_redis" }}
-- {{ T "chorus_fit_safety" }}
-
 ## {{ T "chorus_example_heading" }}
 
 {{ T "chorus_example_intro" }}
 
-### @claude — {{ T "chorus_role_lead" }}
+### @claude: {{ T "chorus_role_lead" }}
 
 ```text
 $ chorus watch claude -wait 30s
@@ -55,7 +41,7 @@ $ chorus watch claude -wait 30s
 sent #auth#2 (≈3 {{ T "chorus_tokens" }})
 ```
 
-### @codex — {{ T "chorus_role_review" }}
+### @codex: {{ T "chorus_role_review" }}
 
 ```text
 $ chorus watch codex -wait 30s
@@ -65,7 +51,7 @@ sent #auth#3 (≈3 {{ T "chorus_tokens" }})
 #auth#9 @codex: Review of a41c9e2: replay: second submit returns challenge_used ✅
 ```
 
-### @gemini — {{ T "chorus_role_docs" }}
+### @gemini: {{ T "chorus_role_docs" }}
 
 ```text
 $ chorus watch gemini -wait 30s

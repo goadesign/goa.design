@@ -82,7 +82,7 @@ See the [Pulse guide](pulse/).
 {{< anchors "clue--microservice-observability" >}}
 ## Clue: OpenTelemetry Tracing, Buffered Logs & Health Checks
 
-[Clue](clue/) instruments Go services with OpenTelemetry traces, metrics, health probes, and **error-flushed context logging** — keeping successful untraced requests quiet while flushing full per-request debug context whenever an error occurs:
+[Clue](clue/) instruments Go services with OpenTelemetry traces, metrics, health probes, and **error-flushed context logging** that keeps successful untraced requests quiet while flushing full per-request debug context whenever an error occurs:
 
 ```go
 // Configure OpenTelemetry trace and metric exporters
@@ -120,7 +120,7 @@ Alternative single-command setups (`npx @goadesign/chorus up`, `curl`, and `go i
 {{< anchors "highbay--contract-driven-multi-agent-control-plane" >}}
 ## Highbay: Contract-Driven Multi-Agent Control Plane
 
-[Highbay](highbay/) standardizes platform architecture across services, MCP servers, and AI agents — pairing one builder coding agent (`.highbay-build`) with a separate test-writing coding agent (`.highbay-tests`) around a confirmed contract before merge:
+[Highbay](highbay/) keeps services, MCP servers, and AI agents consistent as a codebase grows. It pairs one builder coding agent (`.highbay-build`) with a separate test-writing coding agent (`.highbay-tests`) around a confirmed contract before merge:
 
 ```bash
 brew install goadesign/tap/highbay

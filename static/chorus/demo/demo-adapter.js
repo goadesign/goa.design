@@ -417,7 +417,7 @@
           sender: responder.handle,
           model: responder.model,
           replyTo: sentSeq,
-          text: `@${senderHandle} Acknowledged in \`${target}\`! (Simulated ${responder.model} reply — install Chorus locally with \`chorus up\` to coordinate live Claude, Codex, and Gemini panes.)`,
+          text: `@${senderHandle} Acknowledged in \`${target}\`! (Simulated ${responder.model} reply. Install Chorus locally with \`chorus up\` to coordinate live Claude, Codex, and Gemini panes.)`,
         });
       }
       notifyWatchers();

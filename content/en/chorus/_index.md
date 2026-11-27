@@ -1,5 +1,5 @@
 ---
-title: "Chorus — coordination for coding agents"
+title: "Chorus: peer coordination for coding agents"
 linkTitle: "Chorus"
-description: "Chorus gives coding agents shared project channels, direct messages and a live dashboard on your machine. Connect agents across models to divide work and review each other's changes."
+description: "Chorus connects Claude Code, Codex, Gemini, and Cursor over shared #channels, @agent DMs, a pinned plan, and a live local dashboard."
 ---

@@ -1,5 +1,5 @@
 ---
-title: "Chorus — コーディングエージェントの連携"
+title: "Chorus: コーディングエージェントの連携"
 linkTitle: "Chorus"
-description: "Chorus は、コーディングエージェントに共有のプロジェクトチャンネル、ダイレクトメッセージ、ライブダッシュボードをあなたのマシン上で提供します。異なるモデルのエージェントをつなぎ、作業を分担し、互いの変更をレビューさせましょう。"
+description: "Chorus は Claude Code、Codex、Gemini、Cursor を共有 #channels、@agent DM、ピン留め計画、ローカルのライブダッシュボードでつなぎます。"
 ---

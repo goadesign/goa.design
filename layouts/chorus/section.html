@@ -16,12 +16,6 @@
       <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "chorus_docs_cta" }}</a>
       <a class="goa-button chorus-button-quiet" href="/chorus/demo/">{{ T "chorus_demo_cta" }}</a>
     </div>
-    <ul class="highbay-hero-points highbay-hero-points--row" role="list">
-      <li>{{ T "chorus_hero_point_1" | markdownify }}</li>
-      <li>{{ T "chorus_hero_point_2" | markdownify }}</li>
-      <li>{{ T "chorus_hero_point_3" | markdownify }}</li>
-    </ul>
-    <p class="hero-facts">{{ T "chorus_clients" }} · {{ T "chorus_facts" }}</p>
   </section>
 
   <section class="highbay-install-band" id="install" aria-labelledby="chorus-install-title">
@@ -49,34 +43,21 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="chorus-restart-pill">{{ T "chorus_restart_note" | markdownify }}</p>
           </div>
 
           <div class="highbay-install-step">
             <div class="highbay-step2-head">
               <p class="skill-prompt-label chorus-install-alt">{{ T "chorus_step2_label" | markdownify }}</p>
-              <div class="highbay-prefix-switch chorus-prefix-switch" role="group" aria-label="{{ T "highbay_agent_prefix_label" }}">
-                <button type="button" class="highbay-prefix-btn chorus-prefix-btn" data-chorus-prefix="/chorus" aria-pressed="true">/chorus</button>
-                <button type="button" class="highbay-prefix-btn chorus-prefix-btn" data-chorus-prefix="$chorus" aria-pressed="false">$chorus (Codex)</button>
-              </div>
+              <span class="copy-install-status" role="status"></span>
             </div>
             <div class="install-command highbay-prompt-box">
-              <code id="chorus-prompt-cmd" class="highbay-prompt-code"><span class="chorus-prompt-prefix highbay-prompt-prefix">/chorus</span> {{ T "chorus_starter_prompt_body" }}</code>
+              <code id="chorus-prompt-cmd" class="highbay-prompt-code"><span class="highbay-prompt-prefix">/chorus</span> {{ T "chorus_starter_prompt_body" }}</code>
               <button type="button" class="copy-install" command="--copy" commandfor="chorus-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-copy-target="chorus-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="install-hint">{{ T "chorus_install_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
           </div>
         </div>
-        <details class="chorus-setup-details">
-          <summary>{{ T "chorus_setup_summary" }}</summary>
-          <ul class="highbay-fit highbay-fit--card" role="list">
-            <li>{{ T "chorus_fit_configs" | markdownify }}</li>
-            <li>{{ T "chorus_fit_redis" | markdownify }}</li>
-            <li>{{ T "chorus_fit_safety" | markdownify }}</li>
-          </ul>
-        </details>
       </div>
     </div>
   </section>
@@ -242,17 +223,6 @@ sent #auth#3
       const code = document.getElementById('chorus-brew');
       const key = `cmd${m[0].toUpperCase()}${m.slice(1)}`;
       if (code && code.dataset[key]) code.textContent = code.dataset[key];
-    });
-  }
-  for (const btn of document.querySelectorAll('.chorus-prefix-btn')) {
-    btn.addEventListener('click', () => {
-      const p = btn.dataset.chorusPrefix;
-      for (const b of document.querySelectorAll('.chorus-prefix-btn')) {
-        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-      }
-      for (const span of document.querySelectorAll('.chorus-prompt-prefix')) {
-        span.textContent = p;
-      }
     });
   }
 })();

@@ -44,8 +44,6 @@ go install goa.design/goa/v3/cmd/goa@latest
 {{ T "home_skill_prompt" }}
 ```
 
-{{ T "home_skill_outcome" }}
-
 [{{ T "home_service_cta" }}]({{ absLangURL "docs/1-goa/quickstart/" }}) · [{{ T "home_agent_cta" }}]({{ absLangURL "docs/2-goa-ai/quickstart/" }}) · [{{ T "home_skill_docs" }}]({{ absLangURL "docs/ai-development/" }}#install-the-skill)
 
 ## {{ T "home_benefits_heading" }}

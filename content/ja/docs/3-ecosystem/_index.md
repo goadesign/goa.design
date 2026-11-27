@@ -120,7 +120,7 @@ brew install goadesign/tap/chorus && chorus up
 {{< anchors "highbay--契約駆動のマルチエージェント制御プレーン" >}}
 ## Highbay：契約駆動のマルチエージェント・コントロールプレーン
 
-[Highbay](highbay/) は、サービス・MCP サーバー・AI エージェントにまたがるプラットフォームアーキテクチャを標準化し、マージ前に確定済みの契約を軸として実装担当エージェント（`.highbay-build`）と独立したテスト作成エージェント（`.highbay-tests`）を組み合わせます：
+[Highbay](highbay/) はコードベースが拡大してもサービス・MCP サーバー・AI エージェントの一貫性を保ちます。マージ前に確定済みの契約を軸として、実装担当エージェント（`.highbay-build`）と独立したテスト作成エージェント（`.highbay-tests`）を組み合わせます：
 
 ```bash
 brew install goadesign/tap/highbay
