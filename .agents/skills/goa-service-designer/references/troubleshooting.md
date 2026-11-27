@@ -70,7 +70,7 @@ Check the selected Goa version before applying examples from another release:
 - Request ID location and generated parameter representation.
 - Designed error code and generated error `data` shape.
 - Explicit `ServerSentEvents()` for a streaming result.
-- Unsupported combinations such as preview JSON-RPC client streams or `Result` plus
+- Combinations rejected by Goa v3.31 and later, such as JSON-RPC client streams or `Result` plus
   `StreamingResult`.
 
 Use the generated client/server contract and the selected release's upgrade notes. Do not repair

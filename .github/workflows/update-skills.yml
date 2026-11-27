@@ -1,0 +1,70 @@
+name: Update Agent Skills
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-skills:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'latest'
+          check-latest: true
+
+      - name: Update skills from skills-lock.json
+        run: npm run skills:update
+
+      - name: Open or update pull request if skills changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$(git status --porcelain -- .agents/skills skills-lock.json)" ]; then
+            echo "All agent skills are up to date."
+            exit 0
+          fi
+
+          branch="chore/update-agent-skills"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add -- .agents/skills skills-lock.json
+
+          summary="$(git diff --cached --stat -- .agents/skills skills-lock.json)"
+          git commit -m "chore(skills): update pinned agent skills"
+          git push --force-with-lease origin "$branch"
+
+          body_file="$(mktemp)"
+          {
+            echo "Automated weekly refresh of repository agent skills via \`npm run skills:update\` (\`skills-lock.json\`)."
+            echo ""
+            echo "Review any changed \`SKILL.md\` instructions or scripts carefully before merging, since agent skills execute with full coding-agent permissions."
+            echo ""
+            echo '```text'
+            echo "$summary"
+            echo '```'
+          } > "$body_file"
+
+          existing="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --body-file "$body_file"
+          else
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore(skills): update pinned agent skills" \
+              --body-file "$body_file"
+          fi
+          rm -f "$body_file"

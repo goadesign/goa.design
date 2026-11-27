@@ -240,12 +240,14 @@ for (const width of [390, 1440]) {
       await expect(page.locator(`.chorus-badge--${theme}`)).toBeVisible();
       await expect(page.locator(`.chorus-badge--${theme === 'light' ? 'dark' : 'light'}`)).toBeHidden();
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-      await page.getByRole('button', { name: 'Copy the Homebrew command' }).click();
+      await page.locator('#install').getByRole('button', { name: 'Copy setup command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('brew install goadesign/tap/chorus && chorus up');
-      await page.getByRole('button', { name: 'Copy the npx command' }).click();
+      await page.locator('.chorus-mgr-btn[data-chorus-mgr="npx"]').click();
+      await page.locator('#install').getByRole('button', { name: 'Copy setup command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx @goadesign/chorus up');
+      await page.locator('.chorus-mgr-btn[data-chorus-mgr="brew"]').click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.evaluate(() => {
         (document.activeElement as HTMLElement | null)?.blur?.();
@@ -299,8 +301,9 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
         await expect(page.locator('#install .install-hint code')).toContainText([
           '/chorus', '$chorus', 'chorus ui', 'herdr-app do mod.open --name chorus-launcher',
         ]);
-        await expect(page.locator('.chorus-steps')).toContainText('chorus update');
-        await expect(page.locator('.chorus-steps')).toContainText('YOLO');
+        await expect(page.locator('#install')).toContainText('chorus update');
+        await page.locator('#install .chorus-setup-details summary').click();
+        await expect(page.locator('#install .chorus-setup-details')).toContainText('YOLO');
         await expect(page.locator('.chorus-compare')).toContainText('chorus-launcher');
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} landing ${width}px ${theme}`).toBe(true);
 

@@ -2,7 +2,7 @@
 nav_group: guides
 title: Tratamiento de errores
 weight: 40
-description: "Guía completa para el tratamiento de errores en Goa: definición de errores, asignación de transporte, tipos personalizados y buenas prácticas."
+description: "Declara errores de dominio tipados, asígnalos a códigos de estado HTTP y gRPC, y devuelve respuestas de error estructuradas."
 llm_optimized: true
 aliases:
 ---

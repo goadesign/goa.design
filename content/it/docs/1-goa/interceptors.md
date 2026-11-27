@@ -2,7 +2,7 @@
 nav_group: guides
 title: Intercettatori
 weight: 50
-description: "Complete guide to interceptors and middleware in Goa - type-safe Goa interceptors, HTTP middleware, and gRPC interceptors."
+description: "Interceptor Goa tipizzati a tempo di compilazione su payload e risultati, insieme a middleware HTTP e interceptor gRPC di trasporto."
 llm_optimized: true
 aliases:
 ---

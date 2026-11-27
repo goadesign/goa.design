@@ -74,7 +74,7 @@ This is Clue's key feature. There are two types of log functions:
 **Buffered functions** - store in memory until flushed:
 - `Info()`, `Infof()` - buffer the message
 - `Warn()`, `Warnf()` - buffer the message  
-- `Debug()`, `Debugf()` - buffer if debug enabled
+- `Debug()`, `Debugf()` - written only when debug mode is enabled (dropped otherwise)
 
 The buffer flushes automatically when:
 1. `Error()` or `Fatal()` is called
@@ -442,15 +442,15 @@ func main() {
 }
 ```
 
-### Checking Dependencies
+### Checking HTTP Service Dependencies
 
-Use `NewPinger` to check services that expose health endpoints:
+Use `NewPinger` to probe upstream HTTP services that expose a `/livez` (or custom) health endpoint (for SQL databases or Redis, implement the two-method `Pinger` interface below):
 
 ```go
 checker := health.NewChecker(
-    health.NewPinger("database-service", "db.internal:8080"),
-    health.NewPinger("cache-service", "cache.internal:8080"),
-    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https")),
+    health.NewPinger("orders-service", "orders.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("inventory-service", "inventory.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https"), health.WithTimeout(5*time.Second)),
 )
 ```
 
@@ -889,7 +889,7 @@ func main() {
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(
         health.NewChecker(
-            health.NewPinger("database", dbAddr),
+            health.NewPinger("users-service", usersAddr, health.WithTimeout(5*time.Second)),
         ),
     ))
     

@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "skills": {
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "commit": "2bf95edb4ebd37198ab7fd18b99ba95c2145ec64",
+      "sourceType": "github",
+      "skillPath": "skills/copywriting/SKILL.md",
+      "computedHash": "6b86be15d7e8397c27d339fbcbf72718854f96f096ca617889e45b5b8174c393",
+      "installMode": "copy"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c",
+      "installMode": "copy"
+    },
+    "goa-service-designer": {
+      "source": "goadesign/goa",
+      "commit": "9ca14aacc550991559fed848fc818ef059b743b9",
+      "sourceType": "github",
+      "skillPath": "skills/goa-service-designer/SKILL.md",
+      "computedHash": "72fea140aee268848a70a9e03cfb5b0e8d0334a7abf5734de2d2e44725fe8e99",
+      "installMode": "copy"
+    },
+    "humanizer": {
+      "source": "blader/humanizer",
+      "commit": "a32f24407364c74c812b43c15926d638bee1e072",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "6da5d71e32eb66770b4c1ebe38b7e5c271bfca6290c9248aeb8449a84dbfe914",
+      "installMode": "copy"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "commit": "2fc5e1459efbbf06d92c7306517c286bf12490cf",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "ba5494cb853df34dc3284176083f954829717c42474107d5d01934b2f43930b4",
+      "installMode": "copy"
+    }
+  }
+}

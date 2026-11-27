@@ -2,7 +2,7 @@
 nav_group: reference
 title: Référence DSL
 weight: 70
-description: "Complete reference for Goa's design language - data modeling, services, methods, HTTP/gRPC mapping, and security."
+description: "Référence du DSL Go de Goa : types, validations, services, méthodes, correspondances HTTP/gRPC/JSON-RPC et schémas de sécurité."
 llm_optimized: true
 aliases:
 ---

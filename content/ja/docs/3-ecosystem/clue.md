@@ -1,17 +1,17 @@
 ---
 title: "Clue"
 weight: 3
-description: "Go 向けのマイクロサービス計測 - ロギング、トレーシング、メトリクス、ヘルスチェック、デバッグ。"
+description: "Go 向けのマイクロサービス計装ライブラリ — ロギング、トレーシング、メトリクス、ヘルスチェック、デバッグ。"
 llm_optimized: true
 ---
 
-Clue は OpenTelemetry をベースに、Go のマイクロサービス向けに包括的な計測（instrumentation）を提供します。Goa とシームレスに統合できるよう設計されていますが、Clue はあらゆる Go の HTTP / gRPC サービスで利用できます。
+Clue は OpenTelemetry をベースに、Go のマイクロサービス向けに包括的な計装（instrumentation）を提供します。Goa とシームレスに統合できるよう設計されていますが、あらゆる Go の HTTP / gRPC サービスで利用できます。
 
 ## なぜ Clue なのか？
 
-Clue が解くのは、マイクロサービスでよくある課題です。障害時には詳細なログが必要ですが、常にすべてをログに出してコストを支払いたくはありません。
+Clue が解決するのは、マイクロサービスでよく直面する課題です。障害時には詳細なログが必要ですが、常にあらゆるログを出力してコストを払いたくはありません。
 
-Clue のアプローチはこうです: **ログメッセージをメモリにバッファし、エラーが発生したとき、またはリクエストがトレースされているときだけ書き出す**。成功し、トレースされていないリクエストはログ出力を生成しません。エラーが起きたときは、失敗に至るまでの文脈がすべて手に入ります。
+Clue のアプローチは明快です：**ログメッセージをメモリにバッファし、エラーが発生したとき、またはリクエストがトレースされているときだけ書き出す**。トレース対象外の正常なリクエストはログを一切出力しません。エラーが起きたときは、失敗に至るまでの文脈がすべて手に入ります。
 
 この 1 つの設計判断によって、必要なデバッグ情報を保持したままログ量を劇的に削減できます。
 
@@ -19,12 +19,12 @@ Clue のアプローチはこうです: **ログメッセージをメモリに�
 
 | パッケージ | 目的 |
 |---------|---------|
-| `clue` | OpenTelemetry 設定 - 1 回の呼び出しでメトリクスとトレーシングをセットアップ |
-| `log` | コンテキストベースの構造化ロギング（賢いバッファリング付き） |
-| `health` | Kubernetes / オーケストレーション向けヘルスチェックエンドポイント |
-| `debug` | 実行時デバッグ - デバッグログの切り替え、pprof エンドポイント |
+| `clue` | OpenTelemetry 設定 — 1 回の呼び出しでメトリクスとトレーシングをセットアップ |
+| `log` | スマートバッファリングを備えたコンテキストベースの構造化ロギング |
+| `health` | Kubernetes やオーケストレーション基盤向けのヘルスチェックエンドポイント |
+| `debug` | 実行時デバッグ — デバッグログの動的切り替え、pprof エンドポイント |
 | `mock` | 依存関係のテストダブルを生成・設定 |
-| `interceptors` | 個々のストリームメッセージをトレースするための Goa インターセプタ |
+| `interceptors` | 個々のストリームメッセージをトレースするための Goa インターセプター |
 
 ## インストール
 
@@ -43,7 +43,7 @@ go get goa.design/clue/interceptors
 
 ## log パッケージ
 
-`log` パッケージは Go の `context.Context` を中心に設計されています。ロギング用のコンテキストを 1 度初期化し、アプリケーション全体で引き回します。すべてのログ関数は、第一引数にこのコンテキストを取ります。
+`log` パッケージは Go の `context.Context` を中心に設計されています。ロギング用のコンテキストを一度初期化し、アプリケーション全体で引き回します。すべてのログ関数は第 1 引数にこのコンテキストを受け取ります。
 
 ### クイックスタート
 
@@ -62,23 +62,23 @@ func main() {
 }
 ```
 
-### バッファリングを理解する
+### バッファリングの仕組み
 
-ここが Clue の中核機能です。ログ関数には 2 種類あります。
+ここが Clue の中核機能です。ログ関数には 2 種類あります：
 
-**即時関数** - 直接出力へ書き込みます:
-- `Print()`, `Printf()` - 常に即時に書き込み
+**即時関数** — 直接出力へ書き込みます:
+- `Print()`, `Printf()` - 常に即座に書き込み
 - `Error()`, `Errorf()` - バッファをフラッシュしてから書き込み
-- `Fatal()`, `Fatalf()` - バッファをフラッシュし、書き込み、終了
+- `Fatal()`, `Fatalf()` - バッファをフラッシュし、書き込んでから終了
 
-**バッファ関数** - フラッシュされるまでメモリに保持します:
-- `Info()`, `Infof()` - メッセージをバッファ
-- `Warn()`, `Warnf()` - メッセージをバッファ  
-- `Debug()`, `Debugf()` - デバッグが有効な場合にバッファ
+**バッファ関数** — フラッシュされるまでメモリに保持します:
+- `Info()`, `Infof()` - メッセージをバッファに保持
+- `Warn()`, `Warnf()` - メッセージをバッファに保持
+- `Debug()`, `Debugf()` - デバッグモードが有効な場合のみ出力（それ以外は破棄）
 
 バッファは次のタイミングで自動的にフラッシュされます:
 1. `Error()` または `Fatal()` が呼ばれたとき
-2. リクエストがトレースされているとき（OpenTelemetry の span context を検出）
+2. リクエストがトレースされているとき（OpenTelemetry のスパンコンテキストから検出）
 3. デバッグモードが有効なとき
 
 **例: これがなぜ重要か**
@@ -101,11 +101,11 @@ func HandleRequest(ctx context.Context, req *Request) error {
 }
 ```
 
-成功したリクエストでは: **ログ出力はゼロ**。失敗したリクエストでは: **完全な文脈**。
+成功したリクエストでは：**ログ出力はゼロ**。失敗したリクエストでは：**完全な文脈**が出力されます。
 
 ### With() でコンテキストを追加する
 
-サービス内をリクエストが流れていくにつれて、ロギングコンテキストを積み上げます:
+サービス内をリクエストが流れるにつれて、ロギングコンテキストを積み上げます:
 
 ```go
 func HandleOrder(ctx context.Context, orderID string) error {
@@ -146,30 +146,30 @@ log.Print(ctx, log.Fields{
 })
 ```
 
-ログフィールドの順序が重要な場合（目視で追いやすい）には `KV` を、重要でない場合は `Fields` を使います。
+ログフィールドの順序を揃えたい場合（目視で追いやすい）は `KV` を、順序を問わない場合は `Fields` を使います。
 
-値には、文字列・数値・ブール値・nil・これらの型のスライスが使えます。
+値には文字列、数値、真偽値、`nil`、およびこれらの型のスライスを指定できます。
 
 ### ログフォーマット
 
-Clue はターミナルを自動検出し、適切なフォーマットを選びます:
+Clue はターミナルを自動検出し、適切なフォーマットを選択します:
 
 ```go
 // Explicit format selection
 ctx := log.Context(context.Background(), log.WithFormat(log.FormatJSON))
 ```
 
-**FormatText**（非ターミナルのデフォルト） - logfmt 形式:
+**FormatText**（非ターミナル時のデフォルト） — logfmt 形式:
 ```
 time=2024-01-15T10:30:00Z level=info user=alice action=login
 ```
 
-**FormatTerminal**（ターミナルのデフォルト） - 色付き、相対タイムスタンプ:
+**FormatTerminal**（ターミナル時のデフォルト） — カラー表示・相対タイムスタンプ:
 ```
 INFO[0042] user=alice action=login
 ```
 
-**FormatJSON** - 構造化 JSON:
+**FormatJSON** — 構造化 JSON:
 ```json
 {"time":"2024-01-15T10:30:00Z","level":"info","user":"alice","action":"login"}
 ```
@@ -184,7 +184,7 @@ func myFormat(e *log.Entry) []byte {
 ctx := log.Context(context.Background(), log.WithFormat(myFormat))
 ```
 
-### Trace / Span ID を追加する
+### Trace ID と Span ID を追加する
 
 ログを分散トレースに紐付けます:
 
@@ -202,7 +202,7 @@ ctx := log.Context(context.Background(),
 
 ### ファイル位置を追加する
 
-デバッグ用途に、ソースファイルと行番号を追加します:
+デバッグ向けにソースファイルと行番号を追加します:
 
 ```go
 ctx := log.Context(context.Background(), log.WithFileLocation())
@@ -212,9 +212,9 @@ ctx := log.Context(context.Background(), log.WithFileLocation())
 
 ### HTTP ミドルウェア
 
-HTTP ミドルウェアは 2 つのことを行います:
-1. ベースコンテキストから logger を各リクエストのコンテキストへコピーする
-2. method / URL / status / duration を含めて、リクエストの開始と終了をログする
+HTTP ミドルウェアは次の 2 つを行います:
+1. ベースコンテキストから各リクエストのコンテキストへロガーをコピーする
+2. メソッド、URL、ステータス、所要時間を含めてリクエストの開始・終了をログに記録する
 
 ```go
 func main() {
@@ -240,7 +240,7 @@ handler = log.HTTP(ctx, log.WithDisableRequestLogging())(handler)
 handler = log.HTTP(ctx, log.WithDisableRequestID())(handler)
 ```
 
-### gRPC インターセプタ
+### gRPC インターセプター
 
 gRPC サーバー向け:
 
@@ -262,7 +262,7 @@ conn, err := grpc.Dial(addr,
 
 ### HTTP クライアントのロギング
 
-HTTP Transport をラップして外向きリクエストをログします:
+HTTP トランスポートをラップして外向きリクエストを記録します:
 
 ```go
 client := &http.Client{
@@ -286,9 +286,9 @@ endpoints := genservice.NewEndpoints(svc)
 endpoints.Use(log.Endpoint)  // Adds goa.service and goa.method to context
 ```
 
-### ログキーをカスタマイズする
+### ログキーのカスタマイズ
 
-ログキーはすべてパッケージ変数として定義されており、上書きできます:
+ログキーはすべてパッケージ変数として公開されており、上書きできます:
 
 ```go
 log.MessageKey = "message"       // default: "msg"
@@ -299,7 +299,7 @@ log.TraceIDKey = "traceId"       // default: "trace_id"
 log.SpanIDKey = "spanId"         // default: "span_id"
 ```
 
-### 他ロガー向けアダプタ
+### 他のロガー向けアダプター
 
 ```go
 // Standard library log.Logger compatible
@@ -319,7 +319,7 @@ goaLogger := log.AsGoaMiddlewareLogger(ctx)
 
 ## clue パッケージ
 
-`clue` パッケージは、OpenTelemetry を「良いデフォルト」で単一の関数呼び出しで設定します。
+`clue` パッケージは、単一の関数呼び出しで実用的なデフォルトを備えた OpenTelemetry 設定を行います。
 
 ### 基本セットアップ
 
@@ -360,7 +360,7 @@ func main() {
 
 ### アダプティブサンプリング
 
-Clue には、トラフィック量に応じてサンプリングレートを自動調整するアダプティブサンプラーが含まれます。これにより、トラフィックスパイク時にトレース保存が過負荷になるのを防げます。
+Clue には、トラフィック量に応じてサンプリングレートを自動調整するアダプティブサンプラーが組み込まれています。これにより、トラフィックスパイク時にトレースストレージが過負荷になるのを防ぎます。
 
 デフォルト設定:
 - **最大サンプリングレート:** 1 秒あたり 2 トレース
@@ -373,9 +373,9 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
-### エクスポータ作成のヘルパー関数
+### エクスポーター作成のヘルパー関数
 
-Clue は、適切な shutdown 処理まで含めてエクスポータを作成するヘルパー関数を提供します:
+適切なシャットダウン処理を備えたエクスポーターを作成するヘルパー関数が用意されています:
 
 ```go
 // gRPC exporters
@@ -412,7 +412,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 
 ### メトリクスまたはトレーシングの無効化
 
-不要な方のエクスポータに `nil` を渡します:
+不要なエクスポーターには `nil` を渡します:
 
 ```go
 // Tracing only, no metrics
@@ -426,9 +426,9 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, nil)
 
 ## health パッケージ
 
-`health` パッケージは、サービス依存先をレポートするヘルスチェックエンドポイントを作成します。
+`health` パッケージは、サービスの依存先状態をレポートするヘルスチェックエンドポイントを作成します。
 
-### 基本利用
+### 基本的な使い方
 
 ```go
 import "goa.design/clue/health"
@@ -442,15 +442,15 @@ func main() {
 }
 ```
 
-### 依存関係のチェック
+### HTTP サービス依存先のチェック
 
-ヘルスエンドポイントを公開しているサービスをチェックするには `NewPinger` を使います:
+`/livez`（または任意のパス）のヘルスエンドポイントを公開している上流 HTTP サービスをプローブするには `NewPinger` を使います（SQL データベースや Redis には、後述の 2 メソッドからなる `Pinger` インターフェースを実装してください）:
 
 ```go
 checker := health.NewChecker(
-    health.NewPinger("database-service", "db.internal:8080"),
-    health.NewPinger("cache-service", "cache.internal:8080"),
-    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https")),
+    health.NewPinger("orders-service", "orders.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("inventory-service", "inventory.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https"), health.WithTimeout(5*time.Second)),
 )
 ```
 
@@ -467,7 +467,7 @@ health.NewPinger("service", "host:port",
 
 ### カスタムヘルスチェック
 
-カスタムチェックのために `Pinger` インターフェイスを実装します:
+独自のチェックを行うには `Pinger` インターフェースを実装します:
 
 ```go
 type DBChecker struct {
@@ -488,7 +488,7 @@ checker := health.NewChecker(&DBChecker{db: db})
 
 ### レスポンス形式
 
-ハンドラはデフォルトでは JSON を返し、要求に応じて XML を返します:
+ハンドラーはデフォルトで JSON を返し、要求に応じて XML を返します:
 
 **正常（HTTP 200）:**
 ```json
@@ -514,7 +514,7 @@ checker := health.NewChecker(&DBChecker{db: db})
 }
 ```
 
-ビルド時に version を設定できます:
+ビルド時にバージョンを設定できます:
 
 ```go
 health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=v1.2.3
@@ -524,7 +524,7 @@ health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=
 
 ## debug パッケージ
 
-`debug` パッケージは、再デプロイなしで実行時のトラブルシューティングを可能にします。
+`debug` パッケージを使うと、再デプロイなしで実行時のトラブルシューティングを行えます。
 
 ### 動的デバッグロギング
 
@@ -551,7 +551,7 @@ curl "http://localhost:8080/debug?debug-logs=off"
 # {"debug-logs":"off"}
 ```
 
-**重要:** このエンドポイントはフラグを制御するだけです。効果を出すには debug ミドルウェアを使用する必要があります:
+**重要:** このエンドポイントはフラグを切り替えるだけです。実際に反映するには debug ミドルウェアを組み込む必要があります:
 
 ```go
 // For HTTP servers
@@ -584,14 +584,14 @@ debug.MountPprofHandlers(mux)  // Mounts at /debug/pprof/
 ```
 
 利用可能なエンドポイント:
-- `/debug/pprof/` - Index page
-- `/debug/pprof/heap` - Heap profile
-- `/debug/pprof/goroutine` - Goroutine profile
-- `/debug/pprof/profile` - CPU profile (30s by default)
-- `/debug/pprof/trace` - Execution trace
-- `/debug/pprof/allocs`, `/debug/pprof/block`, `/debug/pprof/mutex`, etc.
+- `/debug/pprof/` - インデックスページ
+- `/debug/pprof/heap` - ヒーププロファイル
+- `/debug/pprof/goroutine` - ゴルーチンプロファイル
+- `/debug/pprof/profile` - CPU プロファイル（デフォルト 30 秒）
+- `/debug/pprof/trace` - 実行トレース
+- `/debug/pprof/allocs`, `/debug/pprof/block`, `/debug/pprof/mutex` など
 
-⚠️ **セキュリティ警告:** pprof エンドポイントを公開インターネットへ露出させないでください。アプリケーションの機微情報が漏れる可能性があります。
+⚠️ **セキュリティ警告:** pprof エンドポイントを外部へ公開しないでください。アプリケーションの機微な内部情報が露出します。
 
 ```go
 debug.MountPprofHandlers(mux, debug.WithPrefix("/internal/pprof/"))
@@ -599,7 +599,7 @@ debug.MountPprofHandlers(mux, debug.WithPrefix("/internal/pprof/"))
 
 ### Goa 向けペイロードロギング
 
-デバッグが有効なときに、リクエストとレスポンスのペイロードをログします:
+デバッグ有効時にリクエストとレスポンスのペイロードをログ出力します:
 
 ```go
 endpoints := genservice.NewEndpoints(svc)
@@ -617,7 +617,7 @@ debug.LogPayloads(
 )
 ```
 
-### Goa Muxer アダプタ
+### Goa Muxer アダプター
 
 Goa の HTTP muxer 向け:
 
@@ -631,13 +631,13 @@ debug.MountPprofHandlers(debug.Adapt(mux))
 
 ## mock パッケージ
 
-`mock` パッケージは、依存関係のテストダブルを作成するのに役立ちます。呼び出し順序（sequence）や永続モック（permanent mock）をサポートします。
+`mock` パッケージは、呼び出し順序（シーケンス）や永続モックをサポートした依存関係のテストダブル作成を支援します。
 
-### 概念
+### 基本概念
 
-**シーケンス（Sequences）:** 期待される呼び出しを順序付きで定義します。`Next()` を呼ぶたびに、シーケンス内の次の関数を返します。
+**シーケンス（Sequences）:** 期待される呼び出しを順序付きで定義します。`Next()` を呼ぶたびにシーケンス内の次の関数を返します。
 
-**永続モック（Permanent mocks）:** 常に同じ関数を返します。シーケンスが尽きた後、または順序が重要でない場合に使います。
+**永続モック（Permanent mocks）:** シーケンスが尽きた後、または呼び出し順序を問わない場合に常に同じ関数を返します。
 
 ### モックの作成
 
@@ -709,11 +709,11 @@ userMock.SetGetUser(func(ctx context.Context, id string) (*User, error) {
 })
 ```
 
-シーケンスは永続モックより優先されます。シーケンスが尽きると `Next()` は永続モックを返します。
+シーケンスは永続モックより優先され、シーケンスが尽きると `Next()` は永続モックを返します。
 
-### モックジェネレータ（cmg）
+### モックジェネレーター（cmg）
 
-インターフェイスからモックを自動生成します:
+インターフェースからモックを自動生成します:
 
 ```bash
 go install goa.design/clue/mock/cmd/cmg@latest
@@ -725,24 +725,24 @@ cmg gen ./services/...
 cmg gen --testify ./services/...
 ```
 
-生成されたモックは、元のソースファイルの隣にある `mocks/` サブディレクトリへ出力されます。
+生成されたモックは、元のソースファイルと同じ階層の `mocks/` サブディレクトリに出力されます。
 
 ---
 
 ## interceptors パッケージ
 
-`interceptors` パッケージは、ストリーミング RPC で個々のメッセージをトレースするための Goa インターセプタを提供します。標準の OpenTelemetry 計測（ストリーム全体をトレース）とは異なり、これらのインターセプタは各メッセージを通じてトレースコンテキストを伝播します。
+`interceptors` パッケージは、ストリーミング RPC 内の個々のメッセージをトレースするための Goa インターセプターを提供します。ストリーム全体を 1 つとしてトレースする標準の OpenTelemetry 計装とは異なり、各メッセージを通じてトレースコンテキストを伝播します。
 
 ### 使いどころ
 
-次のような場合に利用します:
-- 長時間動くストリームで、メッセージ単位のトレーシングが必要
-- ストリームメッセージを通じて、クライアントからサーバへトレースコンテキストを流したい
-- 個々のメッセージのタイミングと相関（correlation）が欲しい
+次のようなケースで利用します:
+- 長時間接続のストリームにおけるメッセージ単位のトレーシング
+- ストリームメッセージを介したクライアントからサーバーへのトレースコンテキスト伝播
+- 個々のメッセージの所要時間計測と相関付け
 
-### デザイン設定
+### 設計側のセットアップ
 
-Goa のデザインで `TraceMetadata` 属性を持つインターセプタを定義します:
+Goa の設計で `TraceMetadata` 属性を持つインターセプターを定義します:
 
 ```go
 var TraceBidirectionalStream = Interceptor("TraceBidirectionalStream", func() {
@@ -774,7 +774,7 @@ Method("Chat", func() {
 
 ### 実装
 
-インターセプタ実装では、提供される関数を呼び出します:
+インターセプター実装で提供関数を呼び出します:
 
 ```go
 import "goa.design/clue/interceptors"
@@ -800,7 +800,7 @@ func (i *ServerInterceptors) TraceBidirectionalStream(
 
 ### 受信メッセージからトレースコンテキストを取り出す
 
-Goa が生成するストリームインターフェイスは context を返さないため、ヘルパー関数を使います:
+Goa が生成するストリームインターフェースは context を返さないため、ヘルパー関数を使います:
 
 ```go
 func (s *Service) Chat(ctx context.Context, stream genservice.ChatServerStream) error {
@@ -818,7 +818,7 @@ func (s *Service) Chat(ctx context.Context, stream genservice.ChatServerStream) 
 }
 ```
 
-よりすっきり書くには、ラッパーを使います:
+より簡潔に書くにはラッパーを使います:
 
 ```go
 wrapped := interceptors.WrapTraceBidirectionalStreamServerStream(stream)
@@ -834,9 +834,9 @@ for {
 
 ---
 
-## 完全な例
+## 完全な実装例
 
-完全に計測された Goa サービスの例:
+計装一式を組み込んだ Goa サービスの例です:
 
 ```go
 package main
@@ -889,7 +889,7 @@ func main() {
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(
         health.NewChecker(
-            health.NewPinger("database", dbAddr),
+            health.NewPinger("users-service", usersAddr, health.WithTimeout(5*time.Second)),
         ),
     ))
     
@@ -905,34 +905,30 @@ func main() {
 
 ### ロギング
 
-1. **リクエスト処理には `Info()`、ライフサイクルイベントには `Print()` を使う。** リクエストログはバッファし、起動・終了ログは即時に書き出します。
+1. **リクエスト処理には `Info()`、ライフサイクルイベントには `Print()` を使う。** リクエストログはバッファに溜め、起動・終了ログは即座に書き出します。
 
-2. **早くコンテキストを追加し、遅くログする。** `log.With()` を使い、ID やメタデータを分かった時点ですぐ追加します。
+2. **早めにコンテキストを追加し、遅めにログを出す。** ID やメタデータが判明した時点で `log.With()` を使って追加します。
 
-3. **常にトレース相関を追加する。** `log.WithFunc(log.Span)` を使って、ログをトレースと相関付けられるようにします。
+3. **常にトレース相関を有効にする。** `log.WithFunc(log.Span)` を設定し、ログとトレースを紐付けられるようにします。
 
 ### ヘルスチェック
 
-1. **実際の依存関係をチェックする。** ただ 200 を返すのではなく、DB 接続や下流サービスを検証します。
+1. **実際の依存先を検査する。** 無条件に 200 を返すのではなく、データベース接続や下流サービスを検証します。
 
-2. **タイムアウトを設定する。** ハングするヘルスチェックは、失敗するヘルスチェックより悪いです。
+2. **タイムアウトを設定する。** ハングするヘルスチェックは、失敗を返すヘルスチェックより深刻です。
 
-3. **liveness と readiness を分離する。** 基本的なプロセスの生存確認には `/livez`、依存関係まで含めた確認には `/readyz` を使います。
+3. **liveness と readiness を分ける。** プロセス自体の生存確認には `/livez`、依存先を含めた受け入れ可否には `/readyz` を使います。
 
 ### デバッグ
 
-1. **pprof を絶対に公開しない。** 別の内部ポート、またはネットワークポリシーで保護します。
+1. **pprof を外部に公開しない。** 内部専用ポートまたはネットワークポリシーで保護してください。
 
-2. **デバッグ切り替え前提で設計する。** デバッグモードで有用な情報が出て、かつ過剰なログにならないようにロギングを構造化します。
+2. **デバッグ切り替えを前提に設計する。** デバッグモードを有効にした際、過剰なノイズを出さずに有用な情報が得られるようログを構造化します。
 
 ---
 
 ## 関連リンク
 
 - [Production Guide](../../1-goa/production/) — 本番デプロイのパターン
-- [Clue GitHub Repository](https://github.com/goadesign/clue) — ソースコードと weather サンプル
-- [OpenTelemetry Documentation](https://opentelemetry.io/docs/) — OpenTelemetry の概念
-
-
-
-
+- [Clue GitHub リポジトリ](https://github.com/goadesign/clue) — ソースコードと weather サンプル
+- [OpenTelemetry ドキュメント](https://opentelemetry.io/docs/) — OpenTelemetry の概念

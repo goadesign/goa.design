@@ -2,7 +2,7 @@
 nav_group: guides
 title: HTTP Guide
 weight: 20
-description: "Complete guide to HTTP transport in Goa - routing, content negotiation, WebSocket, SSE, CORS, and static content."
+description: "Routage HTTP, en-têtes, paramètres de requête, négociation de contenu, WebSockets, Server-Sent Events et CORS."
 llm_optimized: true
 aliases:
 ---

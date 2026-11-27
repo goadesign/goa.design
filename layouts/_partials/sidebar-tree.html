@@ -1,6 +1,7 @@
-{{/* The current page determines active links; every section remains reachable in the same navigation. */}}
+{{/* Keep every top-level section reachable while expanding the active section's guides in full view. */}}
 {{ $p := .context }}
 {{ $docs := $p.Site.GetPage "/docs" }}
+{{ $showAll := or (eq $p $docs) (eq $p.CurrentSection $docs) }}
 <nav id="td-section-nav" class="td-sidebar-nav" aria-label="{{ T "docs_navigation" }}">
   <div class="docs-start-links">
     <a href="{{ $docs.RelPermalink }}" {{ if eq $p $docs }}class="active" aria-current="page"{{ end }}>{{ T "docs_start" }}</a>
@@ -10,17 +11,21 @@
   </div>
   <ul>
     {{ range $docs.Sections.ByWeight }}
+    {{ $sec := . }}
+    {{ $expanded := or $showAll (eq $p $sec) ($p.IsDescendant $sec) }}
     <li>
-      <a class="td-sidebar-nav-link--section{{ if eq $p . }} active{{ end }}" href="{{ .RelPermalink }}" {{ if eq $p . }}aria-current="page"{{ end }}>{{ .LinkTitle }}</a>
+      <a class="td-sidebar-nav-link--section{{ if eq $p $sec }} active{{ end }}" href="{{ $sec.RelPermalink }}" {{ if eq $p $sec }}aria-current="page"{{ end }}>{{ $sec.LinkTitle }}</a>
+      {{ if $expanded }}
       <ul>
       {{ $lastGroup := "" }}
-      {{ range .Pages.ByWeight }}
+      {{ range $sec.Pages.ByWeight }}
         {{ $group := .Params.nav_group | default "" }}
         {{ if and $group (ne $group $lastGroup) }}<li class="nav-group-title">{{ T (printf "docs_group_%s" $group) }}</li>{{ end }}
         {{ $lastGroup = $group }}
         <li><a href="{{ .RelPermalink }}" {{ if eq $p . }}class="active" aria-current="page"{{ end }}>{{ .LinkTitle }}</a></li>
       {{ end }}
       </ul>
+      {{ end }}
     </li>
     {{ end }}
   </ul>

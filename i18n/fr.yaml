@@ -1,6 +1,6 @@
 # Site title and meta
-site_title: "Goa et Goa-AI — Frameworks Go pour agents de développement"
-site_description: "Goa est un framework Go qui donne aux agents de développement moins de code à écrire et un seul contrat pour raisonner. Générez des serveurs HTTP, gRPC et JSON-RPC, clients typés, validations et spécifications API. Créez des agents IA, serveurs MCP et registres d’outils avec Goa-AI."
+site_title: "Goa et Goa-AI — Compilateur de contrats Go pour services, serveurs MCP et agents IA"
+site_description: "Goa est un framework Go qui donne aux agents de code moins de code à écrire et un contrat unique sur lequel raisonner. Générez des serveurs HTTP, gRPC et JSON-RPC, des clients typés, la validation et les spécifications OpenAPI. Créez des agents IA, des serveurs MCP et des registres d’outils avec Goa-AI."
 
 # Navigation
 nav_search_placeholder: "Rechercher"
@@ -15,430 +15,237 @@ footer_find_us: "Retrouvez-nous ailleurs"
 footer_copyright: " 2015-%s par Raphael Simon et les contributeurs Goa"
 footer_logo_by: "Logo par Jason Melgoza"
 
-# Hero Section
-
-# Features Section
-
-
-
 # Section Navigation
 subsections_title: "Dans Cette Section"
-
-# Goa-AI Section
-goa_ai_section_title: "Goa-AI : Les Agents comme Systèmes"
-goa_ai_section_description: "Goa-AI apporte la philosophie conception d'abord aux systèmes agentiques. Construisez des agents robustes et typés qui se composent proprement et évoluent sans effort."
-goa_ai_section_features: |
-  <ul>
-    <li><strong>Contrats Conception D'abord :</strong> Schémas forts et indices de réparation automatique pour une utilisation robuste des outils</li>
-    <li><strong>Agents comme Systèmes :</strong> Composition via les Arbres d'Exécution, pas de chaînes plates</li>
-    <li><strong>Streaming Structuré :</strong> Événements typés pour des interfaces riches et conscientes de la topologie</li>
-    <li><strong>Prêt pour la Production :</strong> Durabilité Temporal, politiques et intégration MCP</li>
-  </ul>
-goa_ai_section_cta: "Découvrir Goa-AI"
-
-# Goa-AI Hero Section
-goa_ai_hero_badge: "NOUVEAU"
-goa_ai_hero_badge_text: "Présentation de Goa-AI"
-goa_ai_hero_title_1: "Construisez des Agents IA"
-goa_ai_hero_title_2: "À la Manière Goa"
-goa_ai_hero_description: "Apportez la philosophie conception d'abord aux systèmes agentiques. Définissez les agents, outils et politiques avec un DSL puissant. Obtenez du code typé, du streaming structuré et une durabilité prête pour la production."
-goa_ai_hero_feature_design: "Définir des agents avec contrats typés"
-goa_ai_hero_feature_mcp: "Connecter tout serveur MCP"
-goa_ai_hero_feature_registries: "Découvrir les outils entre clusters"
-goa_ai_hero_feature_runtrees: "Composer des agents en hiérarchies"
-goa_ai_hero_feature_streaming: "Streamer des événements typés"
-goa_ai_hero_feature_durability: "Survivre aux pannes avec Temporal"
-goa_ai_hero_cta_primary: "Explorer Goa-AI"
-goa_ai_hero_cta_secondary: "Démarrage Rapide"
-
-# Wizard
-wizard_section_title: "Assistant de Conception Goa"
-wizard_section_description: "Laissez l'<a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Assistant de Conception Goa</a> alimenté par l'IA guider la création de votre API"
-wizard_section_features: |
-  <ul>
-    <li>Générez des conceptions Goa à travers de simples conversations en langage naturel</li>
-    <li>Obtenez des suggestions intelligentes et des meilleures pratiques en temps réel</li>
-    <li>Apprenez le DSL Goa avec des exemples pratiques et des explications détaillées</li>
-  </ul>
-wizard_section_cta: "Commencer"
-wizard_section_note: "(nécessite un abonnement <a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>)" 
-
-# Sponsors section
 sponsors_title: "Sponsors"
-
-sponsor_incidentio_title: "incident.io : Rebondissez plus fort après chaque incident"
-sponsor_incidentio_desc: "Utilisez notre plateforme pour permettre à votre équipe de gérer les incidents de bout en bout.<br/>Corrigez rapidement et apprenez des incidents pour construire des produits plus résilients."
-sponsor_incidentio_link: "En Savoir Plus"
-
-sponsor_speakeasy_title: "Speakeasy : DevEx Entreprise pour votre API"
-sponsor_speakeasy_desc: "Notre plateforme facilite la création de SDKs prêts pour la production riches en fonctionnalités.<br/>Accélérez les intégrations et réduisez les erreurs en donnant à votre API la DevEx qu'elle mérite."
-sponsor_speakeasy_link: "Intégrer avec Goa"
-
-
-# Why Goa Section
-
-# Trust Section
 trust_section_title: "Adopté par des Équipes d'Ingénierie dans le Monde Entier"
-trust_section_subtitle: "Rejoignez la communauté croissante d'entreprises utilisant Goa pour construire des APIs robustes et maintenables"
+home_trust_facts: "En production depuis 2016 · Goa v3 · Routage, décodage et validation Go générés sur `net/http` et `google.golang.org/grpc` standard"
 
-# Goa Hero Section Features
-goa_hero_feature_design: "Concevez des APIs avec un DSL puissant"
-goa_hero_feature_codegen: "Générez serveurs, clients et docs"
-goa_hero_feature_transports: "Support HTTP, gRPC et WebSocket"
-goa_hero_feature_validation: "Validation des requêtes intégrée"
-goa_hero_feature_docs: "Spécifications OpenAPI auto-générées"
-goa_hero_feature_extensible: "Architecture de plugins extensible"
-goa_hero_cta_primary: "Explorer Goa"
-
-# Common actions
-learn_more: "En Savoir Plus"
-get_started: "Démarrage Rapide"
-
-
-
-# Shared Goa ecosystem presentation.
-
+# Shared Goa ecosystem presentation
 home_heading: "Les agents raisonnent."
-
-home_intro: "Goa est un framework Go qui donne aux agents de développement moins de code à écrire et un seul contrat pour raisonner. Générez des serveurs HTTP, gRPC et JSON-RPC, clients typés, validations et spécifications API. Créez des agents IA, serveurs MCP et registres d’outils avec Goa-AI."
-
-home_service_cta: "Créer un service"
-
-home_agent_cta: "Créer un agent IA"
-
-home_workflow_cta: "Développer avec un agent de code"
-
-home_facts: "Open source. Licence MIT. Écrit en Go."
-
-home_example_label: "Choisir un exemple de conception"
-
-home_services: "Services"
-
-home_agents: "Agents IA"
-
-home_excerpt: "Extrait de conception"
-
-home_generated: "Du code que votre agent n’a pas à écrire"
-
-home_output_types: "Interfaces de service"
-
-home_output_http: "Serveur HTTP"
-
-home_output_client: "Clients typés"
-
-home_output_openapi: "Spécification OpenAPI"
-
-home_output_schemas: "Schémas JSON des outils"
-
-home_output_codecs: "Codecs de données typées"
-
-home_output_bindings: "Liaisons aux services"
-
-home_full_example: "Voir l’exemple complet"
-home_prompt_guide: "Lire le guide de gestion des prompts"
-
-home_workflow_heading: "Concevez l’intention. Générez la répétition."
-
-home_workflow_intro: "Un même processus pour vous, votre équipe et votre agent de développement."
-
-home_step_design: "Décrire le contrat"
-
-home_step_design_text: "Définissez types, opérations et contraintes dans une conception Go lisible."
-
-home_step_generate: "Lancer le générateur"
-
-home_step_generate_text: "Laissez goa gen produire le code qui découle du contrat."
-
-home_step_implement: "Implémenter le comportement"
-
-home_step_implement_text: "Vous et votre agent écrivez la logique métier, les planificateurs et les tests."
-
-home_step_check: "Évoluer avec des contrôles"
-
-home_step_check_text: "Régénérez après une modification. Compilez, testez et examinez le résultat."
-
-home_benefits_heading: "Moins de travail pour votre agent."
-
-home_benefits_intro: "Un modèle ne devrait pas avoir à redécouvrir votre architecture ni à réécrire les mêmes intégrations à chaque fonctionnalité."
-
-home_benefit_tokens: "Générez le code. Épargnez ces tokens."
-
-home_benefit_tokens_text: "Chaque transport, client et schéma généré est du code que le LLM n’a pas à composer. Consacrez ce travail à la logique métier, aux tests utiles et à de meilleurs outils."
-
-home_benefit_context: "Un contrat pour comprendre le système."
-
-home_benefit_context_text: "Types, contraintes, descriptions et méthodes sont réunis dans le design. La structure générée donne à l’agent une carte du code et un endroit précis où intervenir."
-
-home_benefit_feedback: "Le compilateur repère les écarts."
-
-home_benefit_feedback_text: "Modifiez le contrat et régénérez ses représentations ensemble. Go signale les appels et implémentations incompatibles : un retour concret pour la prochaine modification de votre agent."
-
-home_benefit_boundaries: "Relier les contrats"
-
-home_benefit_boundaries_text: "Réutilisez les types des services dans les outils des agents. Générez schémas et liaisons depuis la même conception sans maintenir des définitions parallèles."
-
-home_frameworks_heading: "Un écosystème. Deux façons de construire."
-
-home_frameworks_intro: "Commencez par un service, un agent ou les deux. Le même langage de conception les relie."
-
-home_service_title: "Un contrat. Tous les transports."
-
-home_service_text: "Définissez votre service une fois. Générez ses API, clients, validations et spécifications ensemble. Implémentez la logique métier derrière une interface Go typée."
-
-home_service_features: "Clients, validation et OpenAPI générés"
-
-home_service_docs: "Découvrir Goa"
-
-home_agent_title: "Des agents soutenus par un système."
-
-home_agent_text: "Concevez les outils et les résultats. Générez les contrats. Le runtime coordonne les appels aux modèles, les outils, les interventions humaines et les workflows durables."
-
-home_agent_features: "Schémas d’outils, liaisons aux services et MCP"
-
-home_agent_runtime: "Exécution locale ; durabilité avec Temporal"
-
-home_agent_docs: "Découvrir Goa-AI"
-
-home_community_heading: "Construisez sur des bases ouvertes."
-
-home_community_intro: "Goa et Goa-AI font partie d’un ensemble d’outils open source pour les services Go, les agents, l’observabilité et les systèmes distribués."
-
-home_ecosystem: "Découvrir l’écosystème"
-
-home_examples: "Exemples exécutables"
-
-home_discussions: "Interroger la communauté"
-
-home_contribute: "Contribuer"
-
-docs_skip: "Aller au contenu"
-
-docs_navigation: "Menu de documentation"
-
-docs_on_page: "Sur cette page"
-
-docs_start: "Commencer ici"
-
-docs_explore: "Explorer la documentation"
-
-docs_group_start: "Premiers pas"
-
-docs_group_guides: "Guides"
-
-docs_group_reference: "Référence"
-
-docs_copy: "Copier la page"
-
-docs_copy_markdown: "Copier en Markdown"
-
-docs_copy_text: "Copier en texte brut"
-
-docs_overview: "Documentation"
-
 home_heading_second: "Goa génère."
-
-home_output_validation: "Validation et codecs"
-
-home_output_cli: "Clients en ligne de commande"
-
-home_output_descriptors: "Descripteurs d’outils typés"
-
-home_output_registration: "Enregistrements du runtime"
+home_intro: "Goa est un framework Go qui donne aux agents de code moins de code à écrire et un contrat unique sur lequel raisonner. Compilez une conception Go en serveurs HTTP, gRPC et JSON-RPC, clients typés, validations et spécifications OpenAPI 3, ou utilisez Goa-AI pour créer des agents IA produit, des serveurs MCP et des registres d’outils."
+home_service_cta: "Créer un service"
+home_agent_cta: "Créer un agent IA"
+home_workflow_cta: "Lire l’exemple du catalogue en 54 lignes"
+home_facts: "Open source · Licence MIT · Go 1.27+"
+home_example_label: "Choisir un exemple de conception"
+home_services: "Services"
+home_agents: "Agents IA"
 home_prompts: "Prompts"
-home_output_prompt_checks: "Modèles vérifiés par goa gen"
+home_excerpt: "Extrait de conception"
+home_generated: "Généré dans gen/ (0 token LLM)"
+home_output_types: "Interfaces de service"
+home_output_client: "Clients typés"
+home_output_validation: "Validation + codecs"
+home_output_cli: "Clients en ligne de commande"
+home_output_schemas: "Schémas JSON des outils"
+home_output_codecs: "Codecs de données typées"
+home_output_bindings: "Liaisons aux services"
+home_output_descriptors: "Descripteurs d’outils typés"
+home_output_registration: "Enregistrements du runtime"
+home_output_prompt_checks: "Vérification des modèles à goa gen"
 home_output_prompt_render: "Fonctions de rendu typées"
 home_output_prompt_registration: "Enregistrements des prompts"
-home_output_prompt_overrides: "Remplacements par portée à l’exécution"
+home_output_prompt_overrides: "Surcharges par portée à l’exécution"
+home_full_example: "Inspecter l’exemple complet du catalogue en 54 lignes (57 fichiers générés) →"
+home_prompt_guide: "Lire le guide de gestion des prompts →"
 
-home_skill_cta: "Équipez votre agent de la skill Goa"
-
-home_skill_heading: "Apprenez la méthode Goa à votre agent."
-
-home_skill_intro: "Installez la skill Goa service designer dans votre projet. Elle guide votre agent du design à la vérification, en précisant quels fichiers modifier et lesquels régénérer."
-
+home_skill_cta: "Démarrage rapide et skill d’agent ↓"
+home_skill_heading: "Démarrez en deux étapes"
+home_skill_prereq: "Go 1.27+ · Aucune clé API pour la génération et les tests locaux"
+home_skill_step1: "**Étape 1** · Ajoutez la skill optionnelle pour agent de code ou installez la CLI Go :"
+home_setup_tab_skill: "Avec agent de code"
+home_setup_tab_go: "CLI Go autonome"
 home_skill_docs: "Installation et méthode"
-
-home_skill_copy: "Copier la commande d’installation"
-
+home_skill_copy: "Copier la commande d’installation de la skill"
 home_skill_copied: "Commande copiée."
-
 home_skill_copy_failed: "Sélectionnez et copiez la commande."
+home_skill_hint: "L’installateur de skill utilise Node.js/npm (Claude Code, Codex, Cursor, Windsurf, Copilot) · `go run` exécute Goa directement depuis `go.mod` sans Node.js."
+home_skill_next: "**Étape 2** · Demandez à votre agent de code :"
+home_cli_next: "**Étape 2** · Générez et testez depuis votre terminal :"
+home_skill_prompt: "Utilise goa-service-designer pour concevoir un service catalog avec des endpoints HTTP et gRPC, lance go run goa.design/goa/v3/cmd/goa@latest gen, implémente Lookup et teste-le."
+home_skill_prompt_agent: "Ajoute goa.design/goa-ai@v0.90.0, conçois un assistant catalogue lié à Lookup, lance go run goa.design/goa/v3/cmd/goa gen, lis AGENTS_QUICKSTART.md et teste-le localement."
+home_skill_outcome: "Le parcours service aboutit à un serveur HTTP + gRPC actif ; le parcours IA tourne localement en mémoire sans clé API avant d’ajouter des modèles réels ou Temporal."
 
-home_skill_hint: "À exécuter dans votre projet. Nécessite Node.js et npm."
+home_benefits_heading: "Pourquoi la génération sur contrat surpasse la plomberie écrite à la main"
+home_benefit_tokens: "54 lignes de DSL → 57 fichiers générés"
+home_benefit_tokens_text: "Dans l’[exemple de référence du catalogue](/fr/docs/ai-development/#one-design-two-entry-points), un fichier `design/catalog.go` de 54 lignes compile plus de 5 000 lignes de transports Go, OpenAPI, Protobuf et schémas JSON d’outils dans `gen/` (versionné dans Git, zéro token de sortie LLM)."
+home_benefit_context: "Un seul contrat à charger dans le contexte"
+home_benefit_context_text: "Types de données, règles d’expressions régulières et de bornes, descriptions et routes de transport résident dans `design/*.go`. Votre agent de code lit le contrat et l’interface `gen/` au lieu de parcourir quatre couches maintenues à la main."
+home_benefit_feedback: "Les erreurs de compilation détectent immédiatement les écarts"
+home_benefit_feedback_text: "Modifiez un champ ou une méthode dans `design/` et relancez `goa gen`. Go signale chaque gestionnaire, client et exécuteur d’outil dont la signature ne correspond plus."
 
-home_skill_next: "Puis confiez une vraie tâche à votre agent :"
+home_frameworks_heading: "Goa pour les services. Goa-AI pour les agents et MCP."
+home_service_title: "Un contrat. Tous les transports."
+home_service_text: "Déclarez une seule fois les charges utiles, validations et erreurs en Go. Générez des serveurs `net/http` standard, gRPC et JSON-RPC, des clients typés et des spécifications OpenAPI 3 / Protobuf — le routage, le décodage et la validation sont du code Go généré, pas un framework piloté par réflexion."
+home_service_docs: "Découvrir Goa"
+home_service_transports: "Serveurs, clients Go typés et clients CLI compilés depuis la même conception de service."
+home_service_streams: "Streaming intégré à la conception"
+home_service_contracts: "Validation en bordure de transport"
+home_service_contracts_text: "Champs requis, motifs, plages de valeurs, codes d’état d’erreur, OpenAPI 3 (3.2 sur demande) et Protocol Buffers."
 
-home_skill_prompt: "Utilise la skill goa-service-designer pour ajouter un service catalogue avec des endpoints HTTP et gRPC. Génère le code, implémente la recherche de produits et teste-la."
-
-home_service_transports: "Serveurs, clients typés et clients CLI à partir du même design."
-
-home_service_streams: "Le streaming dans le design"
-
-home_service_contracts: "Des contrats qui restent liés"
-
-home_service_contracts_text: "Types Go, validation, encodage, correspondance des erreurs, OpenAPI et Protocol Buffers."
-
-home_agent_contracts: "Outils typés et réponses structurées"
-
-home_agent_contracts_text: "Schémas, codecs, liaisons aux services et helpers de complétion générés."
-
-home_agent_composition: "Composition et évaluation"
-
-home_agent_composition_text: "Agents utilisés comme outils, exécutions enfants liées, suites d’évaluation typées et hooks de scénarios."
-
-home_agent_execution: "Une exécution que vous maîtrisez"
-
-home_agent_execution_text: "Événements typés, confirmations, annulation et politiques. Exécution locale pour commencer ; Temporal pour la durabilité."
-
-home_connect_heading: "Vos services dans l’écosystème IA."
-
-home_connect_intro: "Goa-AI fournit aussi l’infrastructure qui rend vos outils accessibles à vos agents et aux autres applications IA."
+home_agent_title: "Agents typés, serveurs MCP et exécutions durables."
+home_agent_text: "Étendez le même DSL Go aux agents IA outillés et aux serveurs MCP. Testez localement en mémoire sans clé API, puis connectez OpenAI, Anthropic, AWS Bedrock ou Google Vertex AI et exécutez durablement sur Temporal."
+home_agent_docs: "Découvrir Goa-AI"
+home_agent_contracts: "Validation de service et contexte masqué"
+home_agent_contracts_text: "Réutilisez vos méthodes Goa comme outils (`BindTo`), masquez au modèle les identifiants de tenant fournis par le serveur (`Inject`) et plafonnez les pages (`BoundedResult`)."
+home_agent_composition: "Arbres multi-agents et évaluations déterministes"
+home_agent_composition_text: "Composez des agents enfants sous forme d’outils à budget borné et testez leurs trajectoires d’outils de façon déterministe sans appels LLM réels."
+home_agent_execution: "Portes d’approbation, streaming et MCP autonome"
+home_agent_execution_text: "Mettez en pause les outils sensibles pour approbation humaine (`Confirmation`), diffusez des événements typés vers vos interfaces, ou exposez MCP sans boucle d’agent."
 
 home_mcp_heading: "Créez des serveurs MCP à partir de vos services."
-
-home_mcp_text: "Faites de MCP une autre interface de vos services Go. Goa-AI génère protocole, clients, schémas des outils et validation à partir d’un design commun. Le service conserve la logique applicative."
-
+home_mcp_text: "Ajoutez `MCP(...)` à n’importe quel service Goa pour exposer ses méthodes sous forme d’outils MCP validés, de ressources et de modèles de prompts."
 home_mcp_cta: "Créer un serveur MCP"
+home_mcp_caption: "La règle d’expression régulière de LookupPayload est compilée à la fois dans les décodeurs HTTP/gRPC et dans l’inputSchema de tools/list en MCP."
+home_mcp_design: "Votre conception Goa"
+home_mcp_generated: "Interface MCP générée"
+home_mcp_contract: "Un contrat typé unique"
+home_mcp_result_server: "Serveur HTTP"
+home_mcp_result_server_text: "Gestionnaires MCP HTTP Streamable reliés directement à vos endpoints Goa."
+home_mcp_result_client: "Clients typés"
+home_mcp_result_client_text: "Invoquez des outils MCP et lisez des ressources via les méthodes Go générées."
+home_mcp_result_schemas: "Schémas des outils"
+home_mcp_result_schemas_text: "Schémas JSON d’entrée et de sortie dérivés des mêmes règles `LookupPayload`."
+home_mcp_result_validation: "Validation et codecs"
+home_mcp_result_validation_text: "Rejetez les arguments malformés du modèle avec des indices de correction avant l’exécution de votre gestionnaire."
+home_mcp_humans: "Un contrat à relire"
+home_mcp_humans_text: "Vérifiez les types, la validation et la sécurité dans `design/catalog.go`. Implémentez `Lookup` une fois en Go et régénérez `gen/` lorsque les exigences évoluent."
+home_mcp_llms: "Un périmètre clair pour les agents de code"
+home_mcp_llms_text: "Votre agent de code modifie `design/` et `internal/` tandis que `gen/` reste intouchable, transformant tout écart de schéma en erreur immédiate du compilateur Go."
+home_mcp_capabilities: "Prend en charge les serveurs de ressources OAuth, les saisies interactives, les Tasks durables, les MCP Apps et les Skills."
 
-home_mcp_caption: "Extrait de design sélectionnable. LookupPayload et Product sont les types de votre application."
-
-home_registry_heading: "Hébergez votre registre d’outils."
-
-home_registry_text: "Exécutez le serveur de registre inclus comme catalogue partagé et passerelle d’invocation. Publiez des toolsets, découvrez leurs schémas et routez les appels vers les fournisseurs disponibles. Agents et fournisseurs se déploient et évoluent indépendamment. Avec Redis et Pulse."
-
+home_registry_heading: "Hébergez un registre pour vos outils."
+home_registry_text: "Exécutez le serveur de registre en cluster de Goa-AI comme catalogue partagé et passerelle d’invocation. Les services publient des toolsets, les agents recherchent et chargent les schémas à la demande au lieu d’alourdir chaque prompt, et les appels sont routés vers les fournisseurs sains via Redis et [Pulse](/fr/docs/3-ecosystem/pulse/) (la bibliothèque Goa de flux Redis et de cartes répliquées)."
 home_registry_cta: "Héberger un registre d’outils"
-
 home_registry_flow: "Les fournisseurs d’outils se connectent aux agents via un registre"
-
 home_registry_node: "Votre registre d’outils"
-
-home_registry_node_text: "Découvrir les schémas. Router les appels. Suivre l’état."
-
+home_registry_node_text: "Découvrir les schémas · Router les appels · Suivre la santé"
 home_registry_consumers: "Vos agents et applications"
 
-home_faq_heading: "Avant de commencer"
+home_compare_heading: "Comment Goa et Goa-AI se situent"
+home_compare_specs: "Chaînes d’outils Protobuf et OpenAPI (buf/Connect, oapi-codegen)"
+home_compare_specs_text: "`buf` + ConnectRPC génère HTTP/gRPC depuis `.proto` tandis qu’`oapi-codegen` cible OpenAPI YAML. Goa exprime un routage HTTP riche, gRPC, JSON-RPC, OpenAPI 3 (3.2 sur demande) et des toolsets MCP/agents dans un seul package Go — générant directement en Go le routage et la validation sur `net/http` et `grpc`."
+home_compare_mcp_sdk: "SDK MCP Go câblés à la main (go-sdk, mcp-go)"
+home_compare_mcp_sdk_text: "Les gestionnaires MCP fondés sur des tags de structs dupliquent les règles de paramètres déjà écrites pour votre API HTTP/gRPC. Ajouter `MCP(...)` et `Tool(...)` à un service Goa réutilise les mêmes types de données validés et la même implémentation de service."
+home_compare_agent_sdk: "SDK d’agents Python/TS (LangGraph, OpenAI Agents SDK)"
+home_compare_agent_sdk_text: "Les SDK de graphes câblent l’orchestration dans du code applicatif à typage dynamique. Goa-AI compile des codecs d’outils Go typés, le contexte injecté côté serveur, la pagination par curseur, les portes d’approbation et les activités de workflow Temporal dans un unique binaire Go statique."
 
-home_faq_codegen_q: "Pourquoi utiliser Goa si un agent peut écrire le code ?"
+home_faq_heading: "Questions avant de commencer"
+home_faq_codegen_q: "Puis-je adopter Goa progressivement dans un dépôt Go existant, et dois-je versionner gen/ ?"
+home_faq_codegen_a: "Oui aux deux. `goa gen` génère des gestionnaires `net/http` standard et des serveurs `google.golang.org/grpc` (sans routeur piloté par réflexion), ce qui permet de monter un service Goa à côté de vos routes Go existantes, d’y brancher des middlewares standard et de versionner `gen/` pour auditer chaque évolution du contrat en revue de code."
+home_faq_difference_q: "Comment des clients non-Go appellent-ils un service Goa, et quand ajouter Goa-AI ?"
+home_faq_difference_a: "Les clients TypeScript, Python et mobiles consomment directement les spécifications OpenAPI 3 (3.2 sur demande) et `.proto` générées. Commencez avec Goa pour vos API HTTP/gRPC/JSON-RPC ; ajoutez Goa-AI pour exposer des outils MCP ou exécuter des agents produit (testables localement sans clé API avant de connecter des modèles réels ou Temporal)."
+home_faq_tokens_q: "Quand Goa n’est-il pas adapté, et comment l’évaluer ?"
+home_faq_tokens_a: "Évitez Goa pour les scripts jetables ou les très petits prototypes où un package `design/` distinct ajoute du cérémonial. Sur des services multi-endpoints ou en équipe avec des agents de code, comparez une vraie fonctionnalité de bout en bout (tokens, diffs de revue et défauts) à partir de la [visite guidée du catalogue](/fr/docs/ai-development/#one-design-two-entry-points)."
+home_faq_mcp_q: "Puis-je utiliser Goa-AI uniquement pour exposer un serveur MCP ?"
+home_faq_mcp_a: "Oui. Ajoutez les déclarations `MCP(...)` et `Tool(...)` à un service Goa pour générer les schémas JSON `tools/list`, les indices de correction de validation et les gestionnaires HTTP Streamable sans exécuter de boucle d’agent."
 
-home_faq_codegen_a: "Un agent écrit du code par inférence ; Goa dérive le code des contrats du design. Serveurs, clients, codecs et schémas générés sont autant de code que le modèle n’a pas à écrire séparément. Le design concentre le contexte, la structure reste cohérente et le compilateur repère les implémentations incompatibles après une modification. L’agent écrit toujours la logique métier et les tests."
+home_community_heading: "Bibliothèques compagnes et outils multi-agents"
+home_community_intro: "Goa et Goa-AI s’associent à des bibliothèques Go open source pour l’observabilité, les flux d’événements Redis, les diagrammes C4 et le développement multi-agents."
+home_ecosystem: "Explorer tous les guides de l’écosystème"
+home_examples: "Exemples exécutables"
+home_discussions: "GitHub Discussions"
+home_contribute: "Guide de contribution"
+home_eco_chorus: "Bus de messages MCP local (`#channels`, messages directs `@agent`, plans épinglés et `chorus ui`) permettant à Claude Code, Codex et Gemini de se coordonner d’égal à égal à 0 token au repos."
+home_eco_highbay: "Plan de contrôle piloté par contrat qui associe un agent bâtisseur et un agent rédacteur de tests distinct dans des copies de travail séparées avant fusion dans le navigateur."
+home_eco_libs: "Flux Redis, pools de workers et cartes répliquées (`Pulse`), traçage OpenTelemetry et journaux vidés sur erreur (`Clue`), et diagrammes d’architecture C4 sous forme de code (`Model`)."
 
-home_faq_difference_q: "Quelle est la différence entre Goa et Goa-AI ?"
-
-home_faq_difference_a: "Goa conçoit et génère les API de services Go : HTTP, gRPC, JSON-RPC, clients, validation et spécifications. Goa-AI étend le même DSL et générateur avec des outils typés, agents IA, complétions structurées, évaluations et serveurs MCP. Il fournit aussi un runtime d’agents et un serveur de registre à héberger. Vous pouvez commencer par l’un ou l’autre ; Goa-AI n’exige pas de service Goa déployé séparément."
-
-home_faq_tokens_q: "Comment la génération réduit-elle le travail du LLM ?"
-
-home_faq_tokens_a: "Goa génère le code de transport et des contrats sans demander au LLM de composer ces fichiers. Une catégorie de travail en tokens de sortie disparaît. L’économie totale dépend de la tâche, du modèle, du contexte et des itérations : comparez des changements complets, tests et revue inclus, pour mesurer l’effet dans votre projet."
-
-home_faq_mcp_q: "Puis-je utiliser Goa-AI uniquement pour créer un serveur MCP ?"
-
-home_faq_mcp_a: "Oui. Ajoutez des déclarations MCP à un service Goa pour générer un serveur exposant outils, ressources et modèles de prompts. Implémentez les méthodes derrière les adaptateurs générés. Aucun agent Goa-AI n’est nécessaire pour servir MCP."
-
+docs_skip: "Aller au contenu"
+docs_navigation: "Menu de documentation"
+docs_on_page: "Sur cette page"
+docs_start: "Commencer ici"
+docs_explore: "Explorer la documentation"
+docs_group_start: "Premiers pas"
+docs_group_guides: "Guides"
+docs_group_reference: "Référence"
+docs_copy: "Copier la page"
+docs_copy_markdown: "Copier en Markdown"
+docs_copy_text: "Copier en texte brut"
+docs_overview: "Documentation"
 ui_search: "Rechercher"
 
-home_mcp_design: "Votre design Goa"
-home_mcp_generated: "Interface MCP générée"
-home_mcp_contract: "Un contrat typé commun"
-home_mcp_result_server: "Serveur HTTP"
-home_mcp_result_server_text: "Gestion du protocole reliée à vos endpoints Goa."
-home_mcp_result_client: "Clients typés"
-home_mcp_result_client_text: "Appelez des outils et lisez des ressources avec les méthodes générées."
-home_mcp_result_schemas: "Schémas des outils"
-home_mcp_result_schemas_text: "Arguments et résultats dérivés du même design."
-home_mcp_result_validation: "Validation et codecs"
-home_mcp_result_validation_text: "Vérifiez les entrées externes avant le code applicatif."
-home_mcp_humans: "Un contrat à examiner"
-home_mcp_humans_text: "Définissez types, validation et sécurité dans Goa. Implémentez la logique en Go ; régénérez serveur et clients quand le design change."
-home_mcp_llms: "Un travail clair pour les agents de programmation"
-home_mcp_llms_text: "Donnez à votre agent le design et les interfaces des services. Il modifie une petite surface de code écrit à la main ; les types générés et les erreurs du compilateur rendent les écarts du contrat visibles."
-home_mcp_capabilities: "Ajoutez OAuth, la saisie humaine, les Tasks durables, Apps et Skills avec le même design et runtime."
-chorus_title: "Chorus — la coordination des agents de programmation"
-chorus_description: "Chorus donne aux agents de code des canaux de projet partagés, des messages directs et un tableau de bord en direct sur votre machine. Connectez des agents de modèles différents pour répartir le travail et relire les changements des autres."
+# Chorus landing page (/chorus/)
+chorus_title: "Chorus — coordination entre pairs pour agents de code"
+chorus_description: "Chorus offre aux agents de code des #channels de projet partagés, des messages directs @agent, un tableau de tâches épinglé et un tableau de bord en direct sur votre machine."
 chorus_heading: "Vos agents de code."
 chorus_heading_second: "En équipe."
-chorus_intro: "Chorus donne aux agents de code des canaux de projet partagés, des messages directs et un tableau de bord en direct sur votre machine. Connectez des agents de modèles différents pour répartir le travail et relire les changements des autres."
-chorus_clients: "Configuration automatique pour Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, Copilot et VS Code · Lanceur d’équipe intégré pour Herdr · MCP sur HTTP et stdio."
+chorus_intro: "Chorus est un serveur MCP local qui offre à Claude Code, Codex, Gemini, Cursor et aux autres agents de code des `#channels` partagés, des messages directs `@agent`, un plan épinglé et un tableau de bord en direct pour se répartir les tâches et relire leurs diffs respectifs."
+chorus_hero_point_1: "**`#channels` partagés et plan épinglé :** Un agent responsable attribue les propriétaires des tâches, les périmètres de fichiers et les relecteurs."
+chorus_hero_point_2: "**`0` token modèle en attente :** `chorus watch` bloque dans un shell d’arrière-plan jusqu’à l’arrivée d’une mention, d’un message direct ou d’une réponse."
+chorus_hero_point_3: "**Relecture croisée entre modèles :** Faites relire le diff de Claude par Codex (ou tester les cas limites par Gemini) avant de fusionner."
+chorus_clients: "Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, Copilot, VS Code et Herdr"
 chorus_install_cta: "Obtenir Chorus"
 chorus_docs_cta: "Lire la documentation"
 chorus_demo_cta: "Essayer la démo"
-chorus_facts: "Gratuit et open source. Fonctionne sur votre machine."
-chorus_example_heading: "Trois agents, une passation chacun"
-chorus_example_intro: "Tâche inventée, sortie réelle de Chorus. Chaque carte montre en haut la commande ou l'appel d'outil, et en dessous le message reçu. Les repères numérotés correspondent au tableau de bord en direct."
-chorus_role_lead: "Claude Code · dirige la tâche"
-chorus_role_docs: "Gemini · documentation et SDK client"
-chorus_role_review: "Codex · tests et relecture"
+chorus_facts: "Open source (MIT) · Tourne sur 127.0.0.1"
+chorus_install_heading: "Essayez en deux étapes"
+chorus_install_intro: "macOS ou Linux · `chorus update` maintient le binaire, les skills et le lanceur à jour"
+chorus_step1_label: "**Étape 1** · Installez et lancez Chorus :"
+chorus_restart_note: "Redémarrez une fois les fenêtres d’agents déjà ouvertes afin qu’elles chargent les outils MCP de Chorus."
+chorus_step2_label: "**Étape 2** · Lancez `/chorus` dans au moins 2 fenêtres d’un dépôt, puis demandez à l’une d’elles :"
+chorus_starter_prompt_body: "Pilote cette tâche dans le canal de notre dépôt : inspecte notre point d’entrée, propose une petite amélioration de test et fais relire le diff par un second agent avant de résumer."
+chorus_install_hint: "Tapez `/chorus` (`$chorus` dans Codex), lancez `chorus ui` pour le tableau de bord en direct, ou appuyez sur **⌥⌘⇧C** (`herdr-app do mod.open --name chorus-launcher`) dans Herdr (terminal multi-agents macOS)."
+chorus_setup_summary: "Ce que modifie chorus up, configuration par projet et nettoyage"
+chorus_fit_configs: "**Portée et annulation :** `chorus setup` écrit une configuration limitée au projet (`.mcp.json`, ainsi que `.codex/config.toml`, `.gemini/settings.json` et `.vscode/mcp.json` s’ils existent) ; `chorus up` enregistre les configurations globales détectées (`CHORUS_NO_SETUP=1` ignore les modifications ; supprimez l’entrée MCP `chorus` pour annuler)."
+chorus_fit_redis: "**Stockage local et arrêt :** Lance une instance locale persistante Redis/Valkey dans `~/.chorus/redis` (ou Docker/Podman) liée à `127.0.0.1` afin que l’historique survive aux redémarrages ; `chorus down` arrête le serveur Chorus."
+chorus_fit_safety: "**Worktrees et confiance :** Le plan épinglé coordonne les propriétaires de fichiers socialement (utilisez des git worktrees distincts sur un même `swarm` explicite pour une isolation stricte) ; laissez **YOLO** désactivé en présence de processus locaux non fiables."
+chorus_copy_brew: "Copier la commande d’installation"
+chorus_pillars_heading: "Ce que Chorus coordonne"
+chorus_pillar_swarms: "Swarms de projet"
+chorus_pillar_swarms_text: "Dérive le nom du swarm depuis votre dépôt (ou partage un swarm explicite entre git worktrees), regroupant les agents, canaux et messages directs de ce projet."
+chorus_pillar_channels: "#channels et plan épinglé"
+chorus_pillar_channels_text: "Les agents se coordonnent dans des salons comme `#auth` autour d’un tableau de tâches épinglé désignant le propriétaire des fichiers, le relecteur et la commande de test de chaque lot."
+chorus_pillar_dms: "Messages directs @agent"
+chorus_pillar_dms_text: "Adressez directement vos passations et retours de relecture à `@codex` ou `@claude`, en ne réveillant que ce destinataire."
+chorus_pillar_dashboard: "Tableau de bord en direct (chorus ui)"
+chorus_pillar_dashboard_text: "Ouvrez `chorus ui` (`localhost:9440`) pour suivre la colonne de chaque participant, consulter le plan épinglé et répondre en temps réel."
+chorus_example_heading: "Trois agents, du prompt à la relecture croisée"
+chorus_example_intro: "Tâche inventée, sortie réelle de Chorus. Enregistré avec `-wait 30s` (la skill utilise `-wait 24h` par défaut) ; les repères 1–4 correspondent à `chorus ui` ci-dessous."
+chorus_role_lead: "Claude Code · pilote et implémente T1"
+chorus_role_docs: "Gemini · documentation et SDK TypeScript (T3)"
+chorus_role_review: "Codex · tests -race et relecture de diff (T2)"
 chorus_marker: "Repère"
 chorus_tokens: "tokens"
-chorus_claude_pins: "Claude épingle le plan commun dans #auth :"
-chorus_codex_sends: "Codex prend T2 dans #auth :"
+chorus_claude_pins: "Claude épingle le plan commun dans `#auth` :"
+chorus_codex_sends: "Codex prend T2 (`verify_test.go`), puis relit `a41c9e2` de Claude :"
+chorus_example_outcome: "Résultat : T1 relu par Codex avec `go test -race` au vert (#auth#9) ; T1 et T3 fusionnés (#auth#11)."
 chorus_raw_toggle: "Afficher la sortie complète enregistrée de chorus watch et les mesures de tokens"
-chorus_dashboard_alt: "Le tableau de bord de Chorus pour la même conversation : une chronologie avec une ligne par participant et le plan épinglé, suivie des derniers messages."
-chorus_dashboard_caption: "La même conversation, en direct dans le tableau de bord de Chorus. Les numéros correspondent aux terminaux."
-chorus_tokens_heading: "Un protocole conçu pour consommer peu de tokens"
-chorus_tokens_intro: "Chorus laisse les agents en attente éteints et renvoie des résultats d'outils en texte brut compact plutôt que des objets JSON imbriqués."
+chorus_dashboard_alt: "Le tableau de bord Chorus de la conversation passkey montrant les colonnes des participants, le plan épinglé et la fusion finale."
+chorus_dashboard_caption: "La même session `#auth` dans `chorus ui` — les repères 1–4 correspondent aux terminaux ci-dessus, jusqu’à la relecture `#auth#9` et la fusion `#auth#11`."
+chorus_tokens_heading: "Zéro token modèle en attente. Messages texte brut en activité."
 chorus_cost_wait: "Attendre : modèle à l'arrêt"
-chorus_cost_wait_text: "Pendant que `chorus watch` attend dans une tâche d'arrière-plan, le modèle de l'agent ne tourne pas. Un message direct, une mention, une réponse, un nouveau plan épinglé ou la fin du délai met fin à l'attente et livre ce qui est arrivé."
+chorus_cost_wait_text: "Pendant que `chorus watch` bloque dans une tâche shell d’arrière-plan, `0` token modèle n’est consommé. Seuls un message direct, une `@mention`, une réponse, un nouvel épinglage ou l’expiration du délai `-wait` réveillent l’agent."
 chorus_cost_wake: "Se réveiller : juste les nouvelles"
-chorus_cost_wake_text: "Chorus conserve côté serveur la position de lecture de chaque agent par canal et par message direct. Un agent ne reçoit que les messages qu'il a manqués, en texte compact avec des en-têtes courts comme `#auth#4 @gemini:` (16 à 52 tokens par message dans cet exemple)."
+chorus_cost_wake_text: "Chorus maintient les curseurs de lecture par agent en mémoire (`pulse/rmap`) et ne livre que les lignes non lues comme `#auth#4 @gemini:` (~16–52 tokens/message dans cette session)."
 chorus_cost_send: "Parler : quelques tokens"
-chorus_cost_send_text: "Envoyez un message, recevez une confirmation rapide comme `sent #auth#3` : environ 3 tokens ici, plus les messages non lus qui vous attendent."
-chorus_tokens_method: "Estimations tirées de l'exemple ci-dessus, à 1,3 token par mot (une estimation par octets donne de 19 à 77 par message). Un réveil avec plus de messages coûte plus : de 25 à 181 tokens ici. Vos chiffres dépendent de votre modèle et du bavardage de vos agents."
-chorus_tokens_method_link: "Voir les données."
-chorus_steps_heading: "Opérationnel en quatre étapes"
-chorus_session_heading: "Chorus, développé avec Chorus"
-chorus_session_intro: "Comment trois agents ont utilisé Chorus pour simplifier la première installation et le tableau de bord en direct de Chorus lui-même, et pourquoi associer des modèles différents attrape plus de bugs."
+chorus_cost_send_text: "`send` renvoie une confirmation de 3 tokens (`sent #auth#3`) accompagnée des réponses non lues en attente pour l’appelant en un seul aller-retour."
+chorus_tokens_method: "Mesuré sur la session passkey ci-dessus à 1,3 token/mot (19 à 77 selon les octets ; 25 à 181 tokens par réveil multi-messages). Le coût total dépend de vos modèles et de la taille de la tâche."
+chorus_tokens_method_link: "Voir le script de mesure."
+chorus_session_heading: "Détecté en relecture croisée : Chorus construit avec Chorus"
 chorus_session_caption: "Codex, l'agent responsable, explique le plan au mainteneur."
-chorus_session_result: "En travaillant ensemble dans `#chorus`, Opus a retracé le démarrage du serveur, intégré l'enregistrement des agents à `chorus up` et ajouté `chorus ui`. Gemini a découvert que les agents qui venaient de rejoindre restaient invisibles avant le premier message et a mis à jour le tableau de bord pour que les participants connectés apparaissent immédiatement. Codex a coordonné la répartition et relu les deux changements via Chorus, en repérant un bug de `config.toml` où un en-tête de table commenté pouvait supprimer l'URL d'un autre serveur MCP. Après l'installation, une seule commande (`chorus up`) configure désormais vos agents et lance le service, et les agents connectés apparaissent aussitôt dans `chorus ui`."
-chorus_review_heading: "Des modèles différents, moins d'angles morts"
-chorus_review_text: "D'après notre expérience avec Chorus, des familles de modèles différentes repèrent des cas limites différents. Faire relire le diff d'un modèle par un autre dans un `#channel` ou par message direct à un `@agent` avant de fusionner attrape des erreurs qu'un modèle relisant son propre travail peut laisser passer."
-chorus_review_example: "Ne laissez jamais un modèle corriger sa propre copie. Lorsqu'un même modèle écrit le code et sa propre relecture, il partage les mêmes angles morts — par exemple valider des tests concurrents d'anti-rejeu de passkeys avec `-race` tout en renvoyant HTTP 500 au lieu de `401 challenge_expired` sur un défi expiré, ou réécrire un en-tête de table TOML sans voir un commentaire de fin de ligne. Confier la relecture à une autre famille de modèles via `#channel` ou message direct à `@agent` révèle les hypothèses de contrat, de sécurité et de concurrence avant la fusion."
-chorus_steps_intro: "Rien de nouveau à apprendre. Vos agents continuent de travailler là où ils sont déjà."
-chorus_step_install: "Installez et lancez"
-chorus_step_install_text: "`chorus up` enregistre Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, Copilot et VS Code, installe la skill Chorus et lance le service en arrière-plan. Il installe aussi le lanceur d’équipe lorsque Herdr est présent. `chorus update` maintient le binaire, les skills et le lanceur à jour."
-chorus_step_join: "Dites /chorus"
-chorus_step_join_text: "Tapez `/chorus` dans Claude Code, Cursor ou Antigravity, ou `$chorus` dans Codex. Un autre client MCP ? Demandez-lui de rejoindre Chorus. Dans Herdr, ouvrez le lanceur avec **⌥⌘⇧C** (macOS) ou `herdr-app do mod.open --name chorus-launcher`, choisissez les agents, modèles, niveaux de raisonnement et mode YOLO, puis lancez toute l’équipe d’un coup."
-chorus_step_goal: "Confiez l'objectif à un agent"
-chorus_step_goal_text: "Il rédige le plan, donne à chaque tâche un responsable et un relecteur, et met tout le monde au travail sans que personne ne marche sur les fichiers des autres."
-chorus_step_steer: "Détendez-vous et pilotez"
-chorus_step_steer_text: "Lancez `chorus ui` (ou ouvrez `localhost:9440`) pour suivre tout en direct, et écrivez un message quand vous voulez."
-chorus_install_heading: "Obtenir Chorus"
-chorus_install_intro: "macOS ou Linux, une seule commande. Enregistre vos agents de code et lance le service en arrière-plan."
-chorus_install_curl: "Pas de Homebrew ? Utilisez le script d'installation"
-chorus_install_npx: "Node.js 18+ ? Lancez directement avec npx"
-chorus_install_hint: "Tapez ensuite `/chorus` (`$chorus` dans Codex) dans la fenêtre de chaque agent, et lancez `chorus ui` pour le tableau de bord en direct. Dans Herdr, appuyez sur **⌥⌘⇧C** (macOS) ou lancez `herdr-app do mod.open --name chorus-launcher` pour ouvrir un onglet avec toute l’équipe."
-chorus_copy_brew: "Copier la commande Homebrew"
-chorus_copy_curl: "Copier la commande du script d'installation"
-chorus_copy_npx: "Copier la commande npx"
-chorus_pillars_heading: "Ce que Chorus rend possible"
-chorus_pillars_intro: "Chaque agent reste dans son terminal ou son éditeur tout en partageant un espace de travail de projet via un seul serveur MCP local."
-chorus_pillar_swarms: "Swarms de projet"
-chorus_pillar_swarms_text: "La skill Chorus tire le nom du swarm du dossier de votre dépôt et regroupe les agents, les canaux et les messages directs de ce projet dans un même espace."
-chorus_pillar_channels: "#channels et plan épinglé"
-chorus_pillar_channels_text: "Les agents rejoignent des salons partagés comme `#auth` pour se coordonner. Un seul message épinglé contient l'objectif, les responsables des tâches, les relecteurs et la commande de vérification."
-chorus_pillar_dms: "Messages directs à @agent"
-chorus_pillar_dms_text: "Envoyez passations et retours de relecture directement à `@codex` ou `@claude`, en ne réveillant que ce destinataire."
-chorus_pillar_dashboard: "Tableau de bord en direct (chorus ui)"
-chorus_pillar_dashboard_text: "Lancez `chorus ui` (ou ouvrez `localhost:9440`) pour suivre une chronologie en direct de chaque participant, consulter le plan épinglé et répondre en temps réel."
-chorus_faq_replace_q: "Chorus remplace-t-il mon agent de programmation ?"
-chorus_faq_replace_a: "Non. Vos agents restent là où ils sont. Chorus leur donne un endroit commun pour se parler : canaux, messages directs et plan épinglé, le tout via un seul endpoint MCP."
-chorus_faq_agents_q: "Quels agents peuvent participer ?"
-chorus_faq_agents_a: "Tout agent capable d'appeler un serveur MCP sur HTTP ou stdio. `chorus up` configure automatiquement Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Windsurf, Copilot et VS Code ; pour les autres clients, ajoutez `http://localhost:9440/mcp` ou lancez `chorus stdio`."
-chorus_faq_local_q: "Où vont mes messages ?"
-chorus_faq_local_a: "Par défaut, nulle part : Chorus écoute sur `127.0.0.1` et garde les messages dans une instance locale de Redis ou Valkey (ou un conteneur local Docker ou Podman). Pointez-le vers une autre adresse ou un autre Redis et ils iront là où vous les envoyez. Ce qu'un agent fait d'un message dépend de cet agent."
-chorus_faq_docs_q: "Envie des détails ?"
-chorus_faq_docs_a: "La [documentation](../docs/3-ecosystem/chorus/) couvre l'usage au quotidien depuis les fenêtres de vos agents, les outils, la skill et l'architecture. Le code est sur [GitHub](https://github.com/goadesign/chorus)."
+chorus_session_result: "Dans `#chorus`, Opus a intégré l’enregistrement des agents à `chorus up` et ajouté `chorus ui`, tandis que Gemini a corrigé le tableau de bord pour afficher les nouveaux participants avant leur premier message. En relisant les deux diffs via Chorus avant fusion, Codex a repéré un bug du parseur `config.toml` où un en-tête de table TOML suivi d’un commentaire pouvait supprimer silencieusement l’URL d’un autre serveur MCP ([commit `62b8181`](https://github.com/goadesign/chorus/commit/62b8181)) — le type d’angle mort qu’un modèle évaluant son propre code laisse régulièrement passer."
+chorus_faq_replace_q: "Chorus remplace-t-il mon agent de code ou mon éditeur ?"
+chorus_faq_replace_a: "Non. Vos agents restent dans les terminaux et IDE que vous utilisez déjà ; Chorus les connecte via un point de terminaison MCP local unique (`http://localhost:9440/mcp` ou `chorus stdio`)."
+chorus_faq_agents_q: "Comment les agents évitent-ils de modifier le même fichier ou de boucler indéfiniment ?"
+chorus_faq_agents_a: "Le tableau épinglé par le responsable attribue un seul propriétaire par fichier ou package (en cas de modifications qui se recoupent, lancez les agents dans des git worktrees distincts sur le même `swarm` explicite). `chorus watch` ne se réveille que sur les mentions, réponses et messages directs (`-mentions`), et `chorus down` coupe immédiatement tout trafic."
+chorus_faq_local_q: "Où vont les messages et quel est le modèle de confiance sur localhost ?"
+chorus_faq_local_a: "Par défaut, Chorus écoute sur `127.0.0.1:9440` et stocke les messages dans une instance locale de Redis ou Valkey (`~/.chorus/redis` ou un conteneur local). Comme tout processus tournant sous votre compte utilisateur local peut joindre `127.0.0.1`, gardez les options **YOLO** désactivées lorsque du code local non fiable s’exécute, et configurez `REDIS_PASSWORD` ainsi que des contrôles réseau avant d’utiliser un Redis distant."
+chorus_faq_docs_q: "Où trouver la documentation complète sur la CLI, Herdr et l’architecture ?"
+chorus_faq_docs_a: "Consultez le [guide Chorus de l’écosystème](../docs/3-ecosystem/chorus/) pour le démarrage rapide en deux minutes, le format des cinq outils MCP, le lanceur Herdr et l’architecture Goa-AI + Pulse, ou parcourez le code source sur [GitHub](https://github.com/goadesign/chorus)."
 chorus_wake_messages: "{{ .Count }} messages en un seul réveil"
 chorus_nav_goa: "Framework Goa"
 chorus_compare_heading: "Comment Chorus se compare"
-chorus_compare_intro: "La plupart des outils multi-agents gèrent l'endroit où tournent les agents. Chorus donne aux agents en cours d'exécution un protocole pour se coordonner d'égal à égal."
 chorus_compare_ide: "IDE d'agents et lanceurs de worktrees (Orca, Superset, Conductor)"
-chorus_compare_ide_text: "Les IDE basés sur des worktrees remplacent votre éditeur pour lancer un même prompt dans des exécutions isolées et comparer les diffs. Chorus conserve vos éditeurs et terminaux existants, et offre aux agents un `#channel` partagé, un plan épinglé et des messages directs `@agent` pour se répartir une tâche au lieu de travailler en double."
+chorus_compare_ide_text: "Les IDE basés sur des worktrees remplacent votre éditeur pour diffuser un même prompt dans des exécutions solo isolées et comparer des résultats concurrents. Chorus conserve vos éditeurs existants et donne aux agents des `#channels`, un plan épinglé et des messages directs `@agent` pour se répartir une même tâche."
 chorus_compare_pty: "Multiplexeurs de terminaux (Herdr, cmux, tmux)"
-chorus_compare_pty_text: "Les multiplexeurs de terminaux maintiennent des sessions CLI dans des pseudo-terminaux, injectent du texte dans `stdin` et lisent les lignes brutes du tampon d’écran. Chorus est un bus de messages MCP : agents d’IDE (Cursor, Antigravity) et agents CLI rejoignent le même essaim et ne reçoivent que les messages non lus depuis leur curseur serveur. Son lanceur Herdr intégré (`chorus-launcher`) ouvre un onglet **Chorus · projet** et fait rejoindre chaque fenêtre automatiquement ; les agents peuvent aussi tourner dans tmux."
+chorus_compare_pty_text: "Les multiplexeurs hébergent des panneaux CLI dans des PTY. Chorus est le bus de coordination MCP qui tourne *à l’intérieur* — reliant sessions tmux, agents d’IDE (Cursor, Antigravity) et le `chorus-launcher` intégré à Herdr (onglets **Chorus · projet**) au sein d’un même swarm."
 chorus_compare_subagents: "Sous-agents intégrés (Claude Code, Codex)"
-chorus_compare_subagents_text: "Les sous-agents intégrés lancent des tâches filles éphémères au sein d'un seul fournisseur et d'une seule session. Chorus connecte des sessions indépendantes entre différentes familles de modèles afin que Claude, Codex et Gemini puissent confronter leurs hypothèses et relire leurs diffs avant fusion."
+chorus_compare_subagents_text: "Les sous-agents intégrés lancent des tâches filles au sein d’un seul fournisseur et d’une même famille de modèles. Chorus connecte des sessions paires indépendantes entre Claude, Codex et Gemini afin qu’une seconde famille de modèles relise les diffs avant fusion."
 chorus_compare_chat: "Ponts de chat et MCP JSON (Slack, Discord, A2A)"
-chorus_compare_chat_text: "Encapsuler des API de chat humain oblige les modèles à relire l'historique, renvoyer des curseurs et analyser du JSON verbeux à chaque tour. Chorus conserve les curseurs de lecture en mémoire, joint les réponses non lues aux appels `send`, attend à 0 token modèle dans `chorus watch` et utilise ~16 à 52 tokens par message."
+chorus_compare_chat_text: "Les adaptateurs de chat humain relisent l’historique et renvoient du JSON verbeux à chaque requête. Chorus suit les curseurs de lecture en mémoire, joint les réponses non lues aux appels `send`, reste à 0 token modèle au repos dans `chorus watch` et utilise ~16–52 tokens/message."
+chorus_serverdex_alt: "Chorus — référencé sur Serverdex"
 
 highbay_eyebrow: ""
 highbay_heading: "Une architecture cohérente sur toute la plateforme que construit votre agent de code."

@@ -2,7 +2,7 @@
 nav_group: reference
 title: Génération de codes
 weight: 80
-description: "Complete guide to Goa's code generation - commands, process, generated code structure, and customization options."
+description: "Fonctionnement de goa gen et goa example, organisation du répertoire gen/ et extension de la génération par plugins."
 llm_optimized: true
 aliases:
 ---

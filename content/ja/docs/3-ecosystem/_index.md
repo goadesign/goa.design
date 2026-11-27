@@ -2,37 +2,35 @@
 title: "エコシステムとツール"
 linkTitle: "エコシステム"
 weight: 3
-description: "Goa を拡張するコンパニオンライブラリとツール: アーキテクチャ図、分散イベント、観測可能性、マルチエージェント連携。"
+description: "コンパニオン Go ライブラリとマルチエージェント開発ツール：C4 アーキテクチャ図、Redis イベントストリーム・ワーカープール、OpenTelemetry 可観測性、MCP エージェント連携、契約駆動の独立検証。"
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
 ## 概要
 
-Goa のエコシステムには、サービス開発やエージェントシステム開発で頻出するニーズを満たす **コンパニオンライブラリとツール** が含まれます。これらのプロジェクトは Goa および Goa-AI と自然に連携するように設計されていますが、単体でも利用できます。
+これらのオープンソースライブラリと MCP ツールは、アーキテクチャモデリング、分散イベント処理、可観測性、マルチエージェント開発のために Goa と Goa-AI を拡張します。各ライブラリは Goa と組み合わせても、任意の Go サービスで単体としても利用できます。
 
-## コンパニオンライブラリとツール
+| プロジェクト | 役割 | 提供する機能 |
+|---------|------|------------------|
+| [Model](model/) | コードとしてのアーキテクチャ図 | Go による C4 モデル DSL、SVG / JSON エクスポート、対話型レイアウトエディタ（`mdl`）、Goa プラグイン |
+| [Pulse](pulse/) | Redis ストリーム・プール・マップ | 上限付き／無制限イベントストリーム、コンシステントハッシュ・ワーカープール、レプリケートされたインメモリマップ |
+| [Clue](clue/) | OpenTelemetry 可観測性 | エラー時フラッシュ型バッファロギング、OTLP トレース・メトリクス、`/healthz` チェック、実行時デバッグ切替 |
+| [Chorus](chorus/) | エージェント間のピア連携 | 共有 `#channels`、`@agent` DM、サーバー保持ウォーターマーク、待機トークン 0 の `chorus watch`、ライブ `chorus ui` |
+| [Highbay](highbay/) | 契約・検証コントロールプレーン | `Story` + Change Card、実装者とテスト作成者の分離された Git 作業コピー、`eval/` 検証ゲート、ブラウザマージ |
 
-| プロジェクト | 用途 | 主な機能 |
-|---------|---------|--------------|
-| [Model](model/) | アーキテクチャ図 | C4 図をコードとして記述、バージョン管理、インタラクティブエディタ |
-| [Pulse](pulse/) | 分散イベント | イベントストリーミング、ワーカープール、レプリケートマップ |
-| [Clue](clue/) | 観測可能性 | トレーシング、ロギング、メトリクス、ヘルスチェック |
-| [Chorus](chorus/) | マルチエージェント連携 | 共有 `#channels`、`@agent` DM、サーバー保持ウォーターマーク、`chorus watch` CLI |
-| [Highbay](highbay/) | 契約駆動制御プレーンと検証 | `Story` と Change Card、テスト作成と実装の分離、`eval/` 検証、ブラウザからのマージ |
+## Model：Go で記述する C4 アーキテクチャ図
 
-## Model — コードとしてのアーキテクチャ図
-
-Model は、[C4 model](https://c4model.com) を用いてソフトウェアアーキテクチャを記述するための Go DSL を提供します。GUI ツールで図を描く代わりに、アーキテクチャをコードで定義します：
+[Model](model/) は、サービスの契約と並べて [C4 アーキテクチャ図](https://c4model.com)を Go コードで定義し、バージョン管理と CI での自動再生成を可能にします：
 
 ```go
-var _ = Design("My System", "System description", func() {
-    var System = SoftwareSystem("My System", "Does something useful")
-    
-    Person("User", "A user of the system", func() {
-        Uses(System, "Uses")
+var _ = Design("Catalog Platform", "Product catalog architecture", func() {
+    var System = SoftwareSystem("Catalog Service", "Serves product lookups over HTTP, gRPC, and MCP")
+
+    Person("Developer", "Calls catalog APIs and MCP tools", func() {
+        Uses(System, "Queries products", "HTTPS / MCP")
     })
-    
+
     Views(func() {
         SystemContextView(System, "Context", "System context diagram", func() {
             AddAll()
@@ -42,136 +40,100 @@ var _ = Design("My System", "System description", func() {
 })
 ```
 
-**メリット:**
-- バージョン管理できるアーキテクチャドキュメント
-- 図の自動生成（SVG, JSON）
-- 位置調整のためのインタラクティブなグラフィカルエディタ
-- API 設計とアーキテクチャ設計を統合する Goa プラグイン
+`mdl serve` でブラウザ上から対話的にレイアウトを調整でき、`mdl svg` で CI 上からヘッドレスに SVG を書き出せます。詳しくは [Model ガイド](model/)を参照してください。
 
-**詳しくは:** [Model Documentation](model/)
+## Pulse：Redis イベントストリーム、ワーカープール、レプリケートマップ
 
-## Pulse — 分散イベント基盤
+[Pulse](pulse/) は、別途メッセージブローカーを導入することなく、Redis（`*redis.Client`）上に 3 つの分散プリミティブを構築します：
 
-Pulse は、イベント駆動の分散システムを構築するためのプリミティブを提供します。トランスポートに依存せず、Goa サービスの有無にかかわらず利用できます：
-
-- **ストリーミング**: マイクロサービス間の pub/sub ルーティング
-- **ワーカープール**: ジョブディスパッチのためのコンシステントハッシュ付き専用ワーカー
-- **レプリケートマップ**: ノード間での最終的整合性を持つ共有状態
+- **`streaming`**：独立したファンアウト用 `Reader` と共有コンシューマーグループ用 `Sink` を備えたイベントストリーム（デフォルトは厳密な `MAXLEN` による `1,000` 件保持、`options.WithStreamMaxLen` または `options.WithUnboundedStream` で変更可能）。
+- **`pool`**：ジャンプコンシステントハッシュによるキー単位のジョブルーティングと、停止ワーカーの自動フェイルオーバーを備えた専用ワーカープール。
+- **`rmap`**：原子的な Redis Lua スクリプトと pub/sub 通知で同期される、ローカル読み取り・結果整合性のキーバリューマップ。
 
 ```go
-// Publish events to a stream
-stream.Add(ctx, "user.created", userEvent)
+// Open a stream and append a typed JSON payload
+stream, err := streaming.NewStream("orders", rdb)
+if err != nil {
+    log.Fatal(err)
+}
+_, err = stream.Add(ctx, "order.created", payload)
 
-// Subscribe to events
-reader.Subscribe(ctx, func(event *Event) error {
-    return processEvent(event)
-})
+// Consume through a shared consumer-group sink with explicit acks
+sink, err := stream.NewSink(ctx, "billing-workers")
+if err != nil {
+    log.Fatal(err)
+}
+defer sink.Close(ctx)
+
+for event := range sink.Subscribe() {
+    if err := handleOrder(event); err == nil {
+        _ = sink.Ack(ctx, event)
+    }
+}
 ```
 
-**ユースケース:**
-- 非同期イベント処理
-- バックグラウンドジョブキュー
-- 分散キャッシュ
-- リアルタイム通知
+詳しくは [Pulse ガイド](pulse/)を参照してください。
 
-**詳しくは:** [Pulse Documentation](pulse/)
+## Clue：OpenTelemetry トレース、バッファ付きログ、ヘルスチェック
 
-## Clue — マイクロサービスの観測可能性
-
-Clue は、OpenTelemetry を基盤にした Goa サービス向けの計測（インストルメンテーション）を提供します。観測可能性の 3 本柱をカバーします：
+[Clue](clue/) は、OpenTelemetry のトレース、メトリクス、ヘルスプローブ、および**エラー時フラッシュ型のコンテキストロギング**で Go サービスを計装します。トレース対象外の正常リクエストではログ出力を抑えつつ、エラー発生時にはそのリクエストのデバッグ文脈をすべて書き出します：
 
 ```go
-// Configure OpenTelemetry
-cfg := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExporter)
+// Configure OpenTelemetry trace and metric exporters
+cfg, err := clue.NewConfig(ctx, "catalog", "1.0.0", metricExporter, spanExporter)
+if err != nil {
+    log.Fatal(ctx, err)
+}
 clue.ConfigureOpenTelemetry(ctx, cfg)
 
-// Context-based logging
-log.Info(ctx, "processing request", log.KV{"user_id", userID})
+// Buffered structured log (flushed automatically if an error is logged or request is traced)
+log.Info(ctx, log.KV{K: "msg", V: "looking up SKU"}, log.KV{K: "sku", V: sku})
 
-// Health checks
-checker := health.NewChecker(health.NewPinger("db", dbAddr))
+// HTTP dependency health check (probes upstream /livez with an explicit timeout)
+checker := health.NewChecker(
+    health.NewPinger("inventory-api", inventoryAddr, health.WithTimeout(5*time.Second)),
+)
 ```
 
-**機能:**
-- 自動スパン伝播を伴う分散トレーシング
-- インテリジェントなバッファリングを備えた構造化ロギング
-- メトリクス収集とエクスポート
-- ヘルスチェックエンドポイント
-- 実行時トラブルシューティング用のデバッグエンドポイント
+詳しくは [Clue ガイド](clue/)を参照してください。
 
-**詳しくは:** [Clue Documentation](clue/)
+## Chorus：MCP によるマルチエージェント連携
 
-## Chorus — MCP によるマルチエージェント連携
-
-Chorus は [Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](pulse/) で構築された MCP サーバーで、異なるターミナルやモデルの複数のコーディングエージェントを `#channels` と `@agent` ダイレクトメッセージで連携させます：
+[Chorus](chorus/) は、[Goa-AI](/ja/docs/2-goa-ai/) と [Pulse](pulse/) 上に構築されたローカル MCP サーバーです。共有 `#channels`、`@agent` ダイレクトメッセージ、ピン留めされたタスクボードを通じて、異なるターミナル、エディタ、モデルファミリー（`Claude Code`、`Codex`、`Gemini CLI`、`Antigravity`、`Cursor`、`Windsurf`、`Copilot`、`VS Code`）のコーディングエージェントを接続します：
 
 ```bash
 brew install goadesign/tap/chorus && chorus up
 ```
 
-Homebrew を使わない場合（`curl` または Node.js 18 以上の `npx`）：
+コマンド 1 つで実行できる他のセットアップ方法（`npx @goadesign/chorus up`、`curl`、`go install`）は [Chorus ガイド](chorus/)および [Chorus ページ](/ja/chorus/)を参照してください。
+
+- **5 つのツール（`who`、`join`、`leave`、`send`、`read`）**を `http://localhost:9440/mcp` で公開し、コンパクトなプレーンテキストの `ToolContent` ワイヤ応答（記録されたパスキーセッションでは 1 メッセージあたり `約 16〜52 トークン`）を返します。
+- **`pulse/rmap` によるサーバー保持の既読ウォーターマーク**、`send` 時の未読メッセージ同時配信、および待機中のモデルトークン消費 `0` の `chorus watch` を備えています。
+
+## Highbay：契約駆動のマルチエージェント・コントロールプレーン
+
+[Highbay](highbay/) は、サービス・MCP サーバー・AI エージェントにまたがるプラットフォームアーキテクチャを標準化し、マージ前に確定済みの契約を軸として実装担当エージェント（`.highbay-build`）と独立したテスト作成エージェント（`.highbay-tests`）を組み合わせます：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-```
-
-```bash
-npx @goadesign/chorus up
-```
-
-**機能:**
-- 単一の `POST /mcp` エンドポイントで提供される 5 つの MCP ツール（`who`、`join`、`leave`、`send`、`read`）
-- `pulse/rmap` によるエージェントごとの既読ウォーターマーク保持と、`pulse/streaming` による上限付きメッセージログ
-- `send` 時の未読メッセージ同時配信とコンパクトなプレーンテキスト応答
-- DM、メンション、または返信が届くまで待機するバックグラウンド OS リスナー（`chorus watch`）
-
-**詳しくは:** [Chorus Documentation](chorus/)
-
-## Highbay — 契約駆動のマルチエージェント制御プレーン
-
-Highbay は 1 つのコンパイル済み [Goa](/ja/docs/1-goa/) / [Goa-AI](/ja/docs/2-goa-ai/) 設計のもとでコーディングエージェントを guide・test writer・builder の役割に分け、受理された `eval/` スイートで候補コミットを検証し、承認された変更をブラウザからマージします：
-
-```bash
-go install github.com/goadesign/highbay/cmd/highbay@latest
+brew install goadesign/tap/highbay
 highbay up
 ```
 
-**機能:**
-- 平易な言葉の Change Card（`CP1`）と C4 アーキテクチャ確認（`CP2`）を備える `/highbay`（Codex では `$highbay`）スキル。新規フォルダはデフォルトでクリーンな Go / `eval/` 構成を作成（サンプル付きは `highbay init -example`）
-- テスト作成者が実装を書き換えないよう分離された Git 作業コピー（`.highbay-tests` と `.highbay-build`）
-- サーバー検査による `eval/` スイート受理、独立した候補コミット検証（`CP4`）、ライブプロンプト調整（`CP3`）
-- Herdr + Chorus の並列ペイン、または単体のバックグラウンド CLI ワーカーから、ブラウザでのワンクリック **Approve**・**Merge**（`CP5`）まで対応
+`npx @goadesign/highbay up` や `go install github.com/goadesign/highbay/cmd/highbay@latest` によるセットアップ手順は [Highbay ガイド](highbay/)および [Highbay ページ](/ja/highbay/)を参照してください。
 
-**詳しくは:** [Highbay Documentation](highbay/)
+- **`/highbay`（Codex では `$highbay`）**が Change Card（`CP1`）と C4 アーキテクチャプレビュー（`CP2`）を起草し、空フォルダではドメイン中立でクリーンな Go / `eval/` 構成から開始します（動作するサンプルを含める場合は `highbay init -example`）。
+- **独立検証（`CP4`）**がブラウザでの **Approve** と **Merge**（`CP5`）をゲート管理し、受理済みの `eval/` シナリオスイートに合格するまでマージをブロックします。
 
-## ドキュメントガイド
-
-| ガイド | 説明 | ~トークン |
-|-------|-------------|---------|
-| [Model](model/) | C4 図、DSL リファレンス、`mdl` CLI | ~2,500 |
-| [Pulse](pulse/) | ストリーミング、ワーカープール、レプリケートマップ | ~2,200 |
-| [Clue](clue/) | ロギング、トレーシング、メトリクス、ヘルスチェック | ~2,800 |
-| [Chorus](chorus/) | マルチエージェント MCP 連携、CLI、Goa-AI + Pulse アーキテクチャ | ~1,100 |
-| [Highbay](highbay/) | 契約駆動マルチエージェント開発、Story フロー、独立検証、ブラウザマージ | ~1,400 |
-
-**セクション合計:** ~10,000 tokens
-
-## はじめに
-
-目的に合うライブラリやツールを選んでください：
-
-- **アーキテクチャをドキュメント化したい？** → [Model](model/)
-- **イベント駆動システムを構築している？** → [Pulse](pulse/)
-- **Goa サービスに観測可能性を追加したい？** → [Clue](clue/)
-- **複数のコーディングエージェントを連携させたい？** → [Chorus](chorus/)
-- **テスト作成と実装の役割を分けてサービスを構築・検証したい？** → [Highbay](highbay/)
-
-いずれも `go get` / `go install` で取得できます：
+## インストールリファレンス
 
 ```bash
-go get goa.design/model
-go get goa.design/pulse
-go get goa.design/clue
+# Go libraries
+go get goa.design/model@latest
+go get goa.design/pulse@latest
+go get goa.design/clue@latest
+
+# CLI & MCP tools
+go install goa.design/model/cmd/mdl@latest
 go install github.com/goadesign/chorus/cmd/chorus@latest
 go install github.com/goadesign/highbay/cmd/highbay@latest
 ```

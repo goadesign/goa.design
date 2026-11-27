@@ -2,7 +2,7 @@
 nav_group: guides
 title: Gestione degli errori
 weight: 40
-description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
+description: "Dichiara errori di dominio tipizzati, mappali ai codici di stato HTTP e gRPC e restituisci payload di errore strutturati."
 llm_optimized: true
 aliases:
 ---

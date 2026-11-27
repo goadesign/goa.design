@@ -2,7 +2,7 @@
 nav_group: reference
 title: Référence DSL
 weight: 90
-description: "Complete reference for Goa-AI's DSL functions - agents, toolsets, policies, and MCP integration."
+description: "Référence du DSL Go de Goa-AI : Agents, Toolsets, BindTo, BoundedResult, Confirmation, RunPolicy, Completions et MCP."
 llm_optimized: true
 aliases:
 ---

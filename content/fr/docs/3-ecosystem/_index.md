@@ -1,38 +1,36 @@
 ---
-title: "Ecosystème et outils"
+title: "Écosystème et outils"
 linkTitle: "Écosystème"
 weight: 3
-description: "Bibliothèques et outils complémentaires qui étendent Goa : diagrammes d'architecture, événements distribués, observabilité et coordination multi-agents."
+description: "Bibliothèques Go compagnes et outils multi-agents : diagrammes d’architecture C4, flux d’événements et pools de workers Redis, observabilité OpenTelemetry, coordination d’agents MCP et vérification pilotée par contrat."
 llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
-## Aperçu
+## Vue d’ensemble
 
-L'écosystème Goa comprend des bibliothèques et des outils complémentaires qui répondent aux besoins courants du développement de services et de systèmes d'agents. Ces projets sont conçus pour fonctionner de manière transparente avec Goa et Goa-AI, mais peuvent également être utilisés indépendamment.
+Ces bibliothèques open source et outils MCP étendent Goa et Goa-AI pour la modélisation d’architecture, les événements distribués, l’observabilité et le développement multi-agents. Chaque bibliothèque s’utilise avec Goa ou de façon autonome dans n’importe quel service Go.
 
-## Bibliothèques et outils compagnons
+| Projet | Rôle | Ce qu’il fournit |
+|---------|------|------------------|
+| [Model](model/) | Architecture sous forme de code | DSL de modèle C4 en Go, export SVG/JSON, éditeur de mise en page interactif (`mdl`), plugin Goa |
+| [Pulse](pulse/) | Flux, pools et cartes Redis | Flux d’événements bornés ou non bornés, pools de workers à hachage cohérent, cartes répliquées en mémoire |
+| [Clue](clue/) | Observabilité OpenTelemetry | Journalisation tamponnée vidée sur erreur, traces et métriques OTLP, sondes `/healthz`, contrôles de débogage à chaud |
+| [Chorus](chorus/) | Coordination d’agents entre pairs | `#channels` partagés, messages directs `@agent`, curseurs côté serveur, `chorus watch` à 0 token, `chorus ui` en direct |
+| [Highbay](highbay/) | Plan de contrôle de contrats et vérification | `Story` + Change Cards, copies Git séparées pour bâtisseur et rédacteur de tests, portes `eval/`, fusion navigateur |
 
-| Projet | Objectif | Fonctionnalités principales |
-|---------|---------|--------------|
-| [Model](model/) | Diagrammes d'architecture | Diagrammes C4 sous forme de code, contrôle de version, éditeur interactif |
-| [Pulse](pulse/) | Événements distribués | Flux d'événements, pools de travailleurs, cartes répliquées |
-| [Clue](clue/) | Observabilité | Traçage, journalisation, métriques, bilans de santé |
-| [Chorus](chorus/) | Coordination multi-agents | `#channels` partagés, messages directs `@agent`, curseurs côté serveur, CLI `chorus watch` |
-| [Highbay](highbay/) | Plan de contrôle et vérificateur | `Story` + Change Cards, copies séparées de tests et de code, vérification `eval/` et fusion navigateur |
+## Model : diagrammes d’architecture C4 en Go
 
-## Modèle - Diagrammes d'architecture en tant que code
-
-Model fournit un DSL Go pour décrire l'architecture logicielle en utilisant le [modèle C4](https://c4model.com). Au lieu de dessiner des diagrammes dans des outils graphiques, vous définissez votre architecture dans le code :
+[Model](model/) définit des [diagrammes d’architecture C4](https://c4model.com) en code Go aux côtés de vos contrats de service afin que les diagrammes restent sous contrôle de version et se régénèrent en CI :
 
 ```go
-var _ = Design("My System", "System description", func() {
-    var System = SoftwareSystem("My System", "Does something useful")
-    
-    Person("User", "A user of the system", func() {
-        Uses(System, "Uses")
+var _ = Design("Catalog Platform", "Product catalog architecture", func() {
+    var System = SoftwareSystem("Catalog Service", "Serves product lookups over HTTP, gRPC, and MCP")
+
+    Person("Developer", "Calls catalog APIs and MCP tools", func() {
+        Uses(System, "Queries products", "HTTPS / MCP")
     })
-    
+
     Views(func() {
         SystemContextView(System, "Context", "System context diagram", func() {
             AddAll()
@@ -42,136 +40,100 @@ var _ = Design("My System", "System description", func() {
 })
 ```
 
-**Avantages:**
-- Documentation de l'architecture contrôlée par version
-- Génération automatique de diagrammes (SVG, JSON)
-- Editeur graphique interactif pour le positionnement
-- Plugin Goa pour les conceptions combinées API + architecture
+Lancez `mdl serve` pour ajuster interactivement la disposition dans le navigateur ou `mdl svg` pour exporter les SVG sans interface graphique en CI. Voir le [guide Model](model/).
 
-**En savoir plus:** [Documentation du modèle](model/)
+## Pulse : flux d’événements, pools de workers et cartes répliquées Redis
 
-## Pulse - Infrastructure d'événements distribués
+[Pulse](pulse/) construit trois primitives distribuées directement sur Redis (`*redis.Client`) sans imposer de courtier de messages supplémentaire :
 
-Pulse fournit des primitives pour construire des systèmes distribués pilotés par les événements. Il est agnostique au niveau du transport et fonctionne avec ou sans les services Goa :
-
-- **Streaming** : Routage d'événements pub/sub à travers des microservices
-- **Pools de travailleurs** : Travailleurs dédiés avec un hachage cohérent pour la répartition des tâches
-- **Cartes répliquées** : État partagé éventuellement cohérent entre les nœuds
+- **`streaming`** : Flux d’événements (plafond exact `MAXLEN` de `1 000` événements par défaut, configurable via `options.WithStreamMaxLen` ou `options.WithUnboundedStream`) avec des `Reader`s indépendants en diffusion multiple et des `Sink`s partagés en groupes de consommateurs.
+- **`pool`** : Pools de workers dédiés qui routent les tâches par clé via hachage cohérent par saut (*jump consistent hashing*) avec bascule automatique en cas de panne d’un worker.
+- **`rmap`** : Cartes clé-valeur à lecture locale et cohérence finale synchronisées par des scripts Lua Redis atomiques et des notifications pub/sub.
 
 ```go
-// Publish events to a stream
-stream.Add(ctx, "user.created", userEvent)
+// Open a stream and append a typed JSON payload
+stream, err := streaming.NewStream("orders", rdb)
+if err != nil {
+    log.Fatal(err)
+}
+_, err = stream.Add(ctx, "order.created", payload)
 
-// Subscribe to events
-reader.Subscribe(ctx, func(event *Event) error {
-    return processEvent(event)
-})
+// Consume through a shared consumer-group sink with explicit acks
+sink, err := stream.NewSink(ctx, "billing-workers")
+if err != nil {
+    log.Fatal(err)
+}
+defer sink.Close(ctx)
+
+for event := range sink.Subscribe() {
+    if err := handleOrder(event); err == nil {
+        _ = sink.Ack(ctx, event)
+    }
+}
 ```
 
-**Cas d'utilisation:**
-- Traitement asynchrone des événements
-- Files d'attente de travaux en arrière-plan
-- Mise en cache distribuée
-- Notifications en temps réel
+Voir le [guide Pulse](pulse/).
 
-**En savoir plus:** [Pulse Documentation](pulse/)
+## Clue : traçage OpenTelemetry, journaux tamponnés et sondes de santé
 
-## Indice - Observabilité des microservices
-
-Clue fournit une instrumentation pour les services Goa construits sur OpenTelemetry. Il couvre les trois piliers de l'observabilité :
+[Clue](clue/) instrumente les services Go avec des traces et métriques OpenTelemetry, des sondes de santé et une **journalisation contextuelle vidée sur erreur** — gardant silencieuses les requêtes réussies non tracées tout en écrivant le contexte complet de débogage dès qu’une erreur survient :
 
 ```go
-// Configure OpenTelemetry
-cfg := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExporter)
+// Configure OpenTelemetry trace and metric exporters
+cfg, err := clue.NewConfig(ctx, "catalog", "1.0.0", metricExporter, spanExporter)
+if err != nil {
+    log.Fatal(ctx, err)
+}
 clue.ConfigureOpenTelemetry(ctx, cfg)
 
-// Context-based logging
-log.Info(ctx, "processing request", log.KV{"user_id", userID})
+// Buffered structured log (flushed automatically if an error is logged or request is traced)
+log.Info(ctx, log.KV{K: "msg", V: "looking up SKU"}, log.KV{K: "sku", V: sku})
 
-// Health checks
-checker := health.NewChecker(health.NewPinger("db", dbAddr))
+// HTTP dependency health check (probes upstream /livez with an explicit timeout)
+checker := health.NewChecker(
+    health.NewPinger("inventory-api", inventoryAddr, health.WithTimeout(5*time.Second)),
+)
 ```
 
-**Caractéristiques:**
-- Traçage distribué avec propagation automatique de la portée
-- Journalisation structurée avec mise en mémoire tampon intelligente
-- Collecte et exportation de métriques
-- Points d'extrémité pour les bilans de santé
-- Points d'extrémité de débogage pour le dépannage en cours d'exécution
+Voir le [guide Clue](clue/).
 
-**En savoir plus:** [Clue Documentation](clue/)
+## Chorus : coordination multi-agents via MCP
 
-## Chorus - Coordination multi-agents via MCP
-
-Chorus est un serveur MCP construit avec [Goa-AI](/fr/docs/2-goa-ai/) et [Pulse](pulse/) permettant à plusieurs agents de codage de se coordonner entre terminaux et familles de modèles via des `#channels` et des messages directs `@agent` :
+[Chorus](chorus/) est un serveur MCP local construit sur [Goa-AI](/fr/docs/2-goa-ai/) et [Pulse](pulse/) qui connecte les agents de code entre terminaux, éditeurs et familles de modèles (`Claude Code`, `Codex`, `Gemini CLI`, `Antigravity`, `Cursor`, `Windsurf`, `Copilot`, `VS Code`) via des `#channels` partagés, des messages directs `@agent` et un tableau de tâches épinglé :
 
 ```bash
 brew install goadesign/tap/chorus && chorus up
 ```
 
-Ou sans Homebrew (`curl` ou `npx` avec Node.js 18+) :
+Les autres installations en une commande (`npx @goadesign/chorus up`, `curl` et `go install`) sont détaillées dans le [guide Chorus](chorus/) et sur la [page Chorus](/fr/chorus/).
+
+- **Cinq outils (`who`, `join`, `leave`, `send`, `read`)** sur `http://localhost:9440/mcp` utilisant des réponses `ToolContent` compactes en texte brut (`~16–52 tokens/msg` sur la session passkey enregistrée).
+- **Curseurs de lecture côté serveur** dans `pulse/rmap`, livraison groupée des non-lus sur `send` et `0` token modèle pendant l’attente dans `chorus watch`.
+
+## Highbay : plan de contrôle multi-agents piloté par contrat
+
+[Highbay](highbay/) standardise l’architecture de vos services, serveurs MCP et agents IA — en associant un agent bâtisseur (`.highbay-build`) et un agent rédacteur de tests distinct (`.highbay-tests`) autour d’un contrat confirmé avant toute fusion :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/install.sh | sh
-```
-
-```bash
-npx @goadesign/chorus up
-```
-
-**Caractéristiques:**
-- Cinq outils MCP (`who`, `join`, `leave`, `send`, `read`) sur un point de terminaison `POST /mcp` unique
-- Curseurs de lecture par agent dans `pulse/rmap` et journaux de messages bornés dans `pulse/streaming`
-- Livraison groupée des messages non lus sur `send` et réponses compactes en texte brut
-- Écouteur système en arrière-plan (`chorus watch`) qui bloque jusqu'à l'arrivée d'un message direct, d'une mention ou d'une réponse
-
-**En savoir plus:** [Chorus Documentation](chorus/)
-
-## Highbay - Plan de contrôle multi-agents piloté par contrat
-
-Highbay organise vos agents de programmation en rôles distincts de guide, rédacteur de tests et bâtisseur autour d'un design compilé [Goa](/fr/docs/1-goa/) et [Goa-AI](/fr/docs/2-goa-ai/), vérifie les commits candidats face aux suites `eval/` acceptées et fusionne le travail approuvé depuis votre navigateur :
-
-```bash
-go install github.com/goadesign/highbay/cmd/highbay@latest
+brew install goadesign/tap/highbay
 highbay up
 ```
 
-**Caractéristiques:**
-- Skill `/highbay` (`$highbay` dans Codex) avec Change Cards en langage clair (`CP1`), aperçu C4 (`CP2`) et coquille Go / `eval/` vierge par défaut (`highbay init -example` pour un exemple complet)
-- Copies de travail Git séparées (`.highbay-tests` et `.highbay-build`) afin que l'agent qui écrit les tests n'écrive pas l'implémentation
-- Validation serveur des suites `eval/`, vérification indépendante du candidat (`CP4`) et ajustement optionnel des prompts en direct (`CP3`)
-- Fenêtres côte à côte dans Herdr avec Chorus, ou travailleurs CLI en arrière-plan, jusqu'aux actions **Approve** et **Merge** dans le navigateur (`CP5`)
+Les installations alternatives via `npx @goadesign/highbay up` et `go install github.com/goadesign/highbay/cmd/highbay@latest` figurent dans le [guide Highbay](highbay/) et sur la [page Highbay](/fr/highbay/).
 
-**En savoir plus:** [Documentation Highbay](highbay/)
+- **`/highbay` (`$highbay` dans Codex)** génère une Change Card (`CP1`) et un aperçu d’architecture C4 (`CP2`), en initialisant les dossiers vides avec une coquille Go et `eval/` propre et neutre (`highbay init -example` ajoute un exemple exécutable).
+- **La vérification indépendante (`CP4`)** conditionne les actions **Approve** et **Merge** dans le navigateur (`CP5`) à la réussite de la suite de scénarios `eval/` acceptée.
 
-## Guides de documentation
-
-| Guide | Description | ~Tokens |
-|-------|-------------|---------|
-| [Model](model/) | Diagrammes C4, référence DSL, CLI mdl | ~2,500 |
-| [Pulse](pulse/) | Streaming, worker pools, replicated maps | ~2,200 |
-| [Clue](clue/) | Logging, tracing, metrics, health checks | ~2,800 |
-| [Chorus](chorus/) | Coordination MCP multi-agents, CLI et architecture Goa-AI + Pulse | ~1,100 |
-| [Highbay](highbay/) | Construction multi-agents par contrat, flux Story, vérification indépendante et fusion navigateur | ~1,400 |
-
-**Section totale:** ~10 000 jetons
-
-## Démarrage
-
-Choisissez la bibliothèque ou l'outil qui correspond à vos besoins :
-
-- **Documentation d'architecture ?** Commencez par [Model](model/)
-- **Construire des systèmes pilotés par les événements ?** Commencez avec [Pulse](pulse/)
-- **Ajouter de l'observabilité aux services Goa ?** Commencez avec [Clue](clue/)
-- **Coordonner plusieurs agents de codage ?** Commencez avec [Chorus](chorus/)
-- **Construire et vérifier des services avec des rôles d'agents séparés ?** Commencez avec [Highbay](highbay/)
-
-Toutes les bibliothèques et outils sont disponibles via `go get` / `go install` :
+## Référence d’installation
 
 ```bash
-go get goa.design/model
-go get goa.design/pulse
-go get goa.design/clue
+# Go libraries
+go get goa.design/model@latest
+go get goa.design/pulse@latest
+go get goa.design/clue@latest
+
+# CLI & MCP tools
+go install goa.design/model/cmd/mdl@latest
 go install github.com/goadesign/chorus/cmd/chorus@latest
 go install github.com/goadesign/highbay/cmd/highbay@latest
 ```

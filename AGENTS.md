@@ -5,9 +5,13 @@ system before changing public copy or UI.
 
 ## Local skills
 
-- `.agents/skills/frontend-design/`: layout, typography, and visual execution.
-- `.agents/skills/goa-service-designer/`: verify Goa design examples and the
-  boundary between generated contracts and application code.
+Pinned in `skills-lock.json` and refreshed via `make update-skills` (`npm run skills:update`) or `.github/workflows/update-skills.yml`:
+
+- `.agents/skills/impeccable/`: UI hierarchy, layout, typography, visual polish, and design critique (`PRODUCT.md` and `DESIGN.md`).
+- `.agents/skills/frontend-design/`: distinctive visual direction and avoiding generic AI layout chrome.
+- `.agents/skills/copywriting/`: product positioning, hero/CTA hierarchy, evidence-backed claims, and eliminating AI copy tells.
+- `.agents/skills/humanizer/`: prose editing pass to strip AI writing patterns across landing pages and documentation.
+- `.agents/skills/goa-service-designer/`: verify Goa design examples and the boundary between generated contracts and application code.
 
 ## Content
 

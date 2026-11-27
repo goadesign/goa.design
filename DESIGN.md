@@ -37,21 +37,21 @@ colors:
 typography:
   display:
     fontFamily: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-    fontSize: "clamp(2.625rem, 4.35vw, 4rem)"
+    fontSize: "clamp(2.5rem, 4.1vw, 3.75rem)"
     fontWeight: 750
     lineHeight: 1.12
     letterSpacing: "-.035em"
   display-compact:
     fontSize: "3.1rem"
   display-mobile:
-    fontSize: "clamp(2.625rem, 8vw, 3.75rem)"
+    fontSize: "clamp(2.25rem, 7.5vw, 3.25rem)"
   display-narrow:
-    fontSize: "2.55rem"
+    fontSize: "2.35rem"
   headline:
     fontFamily: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-    fontSize: "clamp(1.9rem, 3vw, 2.65rem)"
+    fontSize: "clamp(1.8rem, 2.75vw, 2.45rem)"
     fontWeight: 700
-    lineHeight: 1.2
+    lineHeight: 1.18
     letterSpacing: "-.025em"
   title:
     fontFamily: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
@@ -81,10 +81,10 @@ typography:
     fontSize: ".875rem"
     lineHeight: 1.7
   hero-lead:
-    fontSize: "1.16rem"
-    lineHeight: 1.75
+    fontSize: "1.08rem"
+    lineHeight: 1.65
   hero-lead-mobile:
-    fontSize: "1.05rem"
+    fontSize: "1rem"
   benefit-title:
     fontFamily: '"Manrope", sans-serif'
     fontSize: "1.08rem"
@@ -402,23 +402,26 @@ responsive display variants, the display role. They are not new font families.
 
 The landing container is capped at (1240px), with side gutters of (48px),
 (32px) at widths up to (1100px), and (20px) at widths up to (800px). The hero
-pairs text and source code in a (1fr / 1.06fr) grid. The skill installation
-section uses (.88fr / 1.12fr), framework choices use equal columns, and the FAQ
-uses (.6fr / 1.4fr). Hero, skill, and connection rows use `column-gap`, reducing
-to `column-gap-compact` at (1100px). Benefit definitions form three open columns.
+pairs text and source code in a (.96fr / 1.08fr) grid. Below the hero, a
+dedicated two-step quickstart card spans the container in two equal columns,
+framework choices use equal columns, and the FAQ uses (.6fr / 1.4fr). Hero and
+connection rows use `column-gap`, reducing to `column-gap-compact` at (1100px).
+Section headings sit on their own full-width row without right-column prose
+summaries. Benefit and comparison definitions form three open columns.
 
 At widths up to (800px), these sections become one column, framework choices
-gain a horizontal divider, and workflow steps move from four to two columns.
-Open sections use `section-open`; benefits and workflow use `section-band`.
-The framework band uses (72px) vertical padding. Hero padding is (80px 88px);
+gain a horizontal divider, and multi-column cards stack cleanly.
+Open sections use `section-open`; benefits and comparisons use `section-band`.
+The framework band uses (72px) vertical padding. Hero padding is (56px 40px);
 mobile section padding uses `section-mobile`, with connection rows at (28px).
-At (420px), the two hero actions stretch and stack, and generated outputs
-become one column.
+At (420px), generated outputs become one column while hero action buttons wrap cleanly.
 
 The homepage's implemented sequence is benefit definition and generated
-outputs, coding-agent mechanisms, skill installation, equal framework
-capabilities, MCP and registry, workflow, visible FAQ, then community and
-support. This describes this landing page, not a required template for docs.
+outputs, two-step quickstart and coding-agent skill installation, trusted
+engineering teams and production maturity facts, contract-generation
+mechanisms, equal framework capabilities, MCP and registry, peer comparisons
+(`#compare`), visible FAQ, community and companion ecosystem tools, then
+sponsors. This describes this landing page, not a required template for docs.
 
 Documentation uses a (1440px) container: navigation (240px), flexible article,
 and outline (200px), separated by (40px). At widths up to (1200px), the
@@ -507,9 +510,9 @@ and MCP code use the panel radius; registry providers use the control radius
 and the central registry uses the panel radius. These functional boundaries
 do not introduce a decorative card grid.
 
-### Sponsors and trusted companies
+### Trusted companies and sponsors
 
-Sponsor and company rows and their headings are horizontally centered.
+Trusted company logos precede sponsor banners; both rows and their headings are horizontally centered.
 Sponsor banners occupy two equal columns within (960px), retain their native
 (2:1) aspect ratio, and have no added white padding. They become a single column
 below (600px). Company marks use four equal columns, becoming two below (800px),
@@ -533,22 +536,24 @@ native `details`/`summary`; the same navigation remains visible on desktop.
 
 ### GitHub repositories
 
-A compact GitHub group sits beneath the two primary hero actions, on its own
-row before the designer-skill link. The GitHub icon identifies the destination;
-separate Goa and Goa-AI links open their repositories. Native anchors have
-(46px) minimum height, visible keyboard focus, and a subtle surface change on
-hover. Their small arrows move (2px) on hover with reduced-motion preferences
-respected. The homepage Markdown exposes both repository URLs as well.
+A compact GitHub group sits beneath the two primary hero actions. The GitHub
+icon identifies the destination; separate Goa and Goa-AI links open their
+repositories. Native anchors have (44px) minimum height, visible keyboard
+focus, and a subtle surface change on hover. Their small arrows move (2px) on
+hover with reduced-motion preferences respected. The homepage Markdown exposes
+both repository URLs as well.
 
 ### Contract demonstration
 
-A native radio group switches between real Goa and Goa-AI excerpts, commands,
-and six generated-output entries per example. The service excerpt includes
+A native three-tab radio group switches between real Goa Services, Goa-AI
+Agents, and Goa-AI Prompts excerpts, commands, implementation boundary lines,
+and generated-output entries per example. The service excerpt includes
 HTTP, gRPC, and JSON-RPC declarations; its outputs name transports, typed
 clients, service interfaces, validation and codecs, OpenAPI and Protocol
 Buffers, and command-line clients. The agent example names schemas, payload
 codecs, service bindings, tool descriptors, runtime registrations, and
-`AGENTS_QUICKSTART.md`.
+`AGENTS_QUICKSTART.md`. The prompt example names compile-time template checks,
+typed render functions, prompt registrations, and scoped runtime overrides.
 
 Equal-width labels show selection through a blue-tinted surface, blue text, and
 a blue bottom border.
@@ -559,15 +564,14 @@ body ink with gaps of (.55rem .7rem).
 
 ### Skill installation
 
-The explanation sits beside a selectable one-command installer and a concrete
-task prompt. The command is
-`npx skills add goadesign/goa --skill goa-service-designer`; visible guidance
-says to run it in the application project with Node.js and npm available.
-The command wraps anywhere inside its bordered alternate surface. Its square
-copy control contains a (20px) outline SVG; hover changes ink and border to the
-link color. Success announces “Command copied.” in a `role="status"` region;
-clipboard failure selects the command and says “Select and copy the command.”
-The hint reserves (2.6em) minimum height and leaves the command available.
+A full-width two-step quickstart card sits on its own row directly beneath the
+hero. Step 1 pairs a `[Coding-agent skill | Go CLI]` toggle (defaulting to
+`npx skills add goadesign/goa --skill goa-service-designer`) with a selectable
+command box; Step 2 pairs a `[Services | AI agents]` toggle with a copyable
+coding-agent starter prompt. Visible guidance notes Go 1.27+ and Node.js/npm
+for the skill installer. Its square copy control contains a (20px) outline SVG;
+success announces “Command copied.” in a `role="status"` region, and clipboard
+failure selects the command and says “Select and copy the command.”
 
 ### MCP and registry
 

@@ -10,19 +10,25 @@
 
 {{ T "home_faq_difference_a" }}
 
-## Install the Goa service designer skill
+## Install Goa and the coding-agent skill
 
-Run in your application repository with Node.js and npm available:
+Install the Goa CLI (`Go 1.27+`):
+
+```bash
+go install goa.design/goa/v3/cmd/goa@latest
+```
+
+Optional coding-agent skill (`Node.js` and `npm`):
 
 ```bash
 npx skills add goadesign/goa --skill goa-service-designer
 ```
 
-For Goa-AI, also read the generated AGENTS_QUICKSTART.md in your application.
+For Goa-AI, also read the generated `AGENTS_QUICKSTART.md` in your application.
 
 ## Start here
 {{ with .Site.GetPage "/docs/ai-development" }}
-- [Develop with a coding agent]({{ .Permalink }}index.md): workflow, generated-code boundaries, and a shared service/agent example.
+- [Develop with a coding agent]({{ .Permalink }}index.md): workflow, generated-code boundaries, and a shared 54-line service/agent example producing 57 generated files.
 {{ end }}
 ## Documentation
 {{ range (.Site.GetPage "/docs").Sections.ByWeight }}
@@ -34,7 +40,7 @@ For Goa-AI, also read the generated AGENTS_QUICKSTART.md in your application.
 ## Source
 
 - [Goa](https://github.com/goadesign/goa): service DSL and generator.
-- [Goa-AI](https://github.com/goadesign/goa-ai): agent DSL, generator, and runtime.
+- [Goa-AI](https://github.com/goadesign/goa-ai): agent DSL, generator, MCP servers, and runtime (OpenAI, Anthropic, AWS Bedrock, Google Vertex AI; in-memory and Temporal engines).
 - [Goa coding skill](https://github.com/goadesign/goa/tree/v3/skills): design-first workflow for coding agents.
 - [Chorus](https://goa.design/chorus/): coordination for coding agents over shared channels and direct messages, built on Goa-AI and Pulse; source at https://github.com/goadesign/chorus.
 - [Highbay](https://goa.design/highbay/): contract-driven control plane that organizes coding agents into separate test-writing and implementation roles around Goa and Goa-AI designs and verifies candidate commits before merge; source at https://github.com/goadesign/highbay.

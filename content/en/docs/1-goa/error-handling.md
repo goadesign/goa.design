@@ -2,7 +2,7 @@
 nav_group: guides
 title: Error Handling
 weight: 40
-description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
+description: "Declare typed domain errors, map them to HTTP status codes and gRPC codes, and return structured error payloads."
 llm_optimized: true
 aliases:
 ---

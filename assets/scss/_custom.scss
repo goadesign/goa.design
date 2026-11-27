@@ -85,7 +85,8 @@
 }
 .section-index { margin-top: 2.5rem; }
 .section-index .entry { padding: 1.1rem 0; border-bottom: 1px solid var(--color-border-subtle); }
-.section-index .entry > a { display: block; text-decoration: none; }
+.td-content .section-index .entry > a { display: block; text-decoration: none !important; }
+.td-content .section-index .entry > a:hover h3 { text-decoration: underline; }
 .section-index h3 { font-size: 1.1rem; margin: 0 0 .4rem; color: var(--doc-link-color); }
 .section-index .entry p { margin: 0; color: var(--color-text-muted); font-size: .95rem; }
 .section-meta { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .75rem; color: var(--color-text-muted); }

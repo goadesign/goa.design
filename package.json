@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browser": "playwright test",
-    "check:links": "python3 scripts/check_links.py"
+    "check:links": "python3 scripts/check_links.py",
+    "skills:update": "npx --yes skills update --project --yes"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0"

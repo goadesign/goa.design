@@ -2,7 +2,7 @@
 nav_group: reference
 title: コード生成
 weight: 80
-description: "Complete guide to Goa's code generation - commands, process, generated code structure, and customization options."
+description: "goa gen と goa example の仕組み、gen/ ディレクトリの構成、プラグインによるコード生成の拡張。"
 llm_optimized: true
 aliases:
 ---

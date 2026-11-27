@@ -14,11 +14,10 @@
           <a href="https://github.com/goadesign/goa" aria-label="GitHub: Goa"><span>Goa</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
           <a href="https://github.com/goadesign/goa-ai" aria-label="GitHub: Goa-AI"><span>Goa-AI</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
         </div>
-        <a class="hero-guide" href="#designer-skill">{{ T "home_skill_cta" }}</a>
       </div>
       <div class="hero-meta">
         <p class="hero-facts">{{ T "home_facts" }}</p>
-        <div id="goa-assistant" class="hero-assistant"><a href="https://gurubase.io/g/goa">Goa Guru</a></div>
+        <div id="goa-assistant" class="hero-assistant"><a href="https://gurubase.io/g/goa">Ask Goa Guru</a></div>
       </div>
     </div>
     <div class="contract-demo">
@@ -33,18 +32,26 @@
       </fieldset>
       <div class="demo-service demo-panel">
         <div class="demo-filename"><span>design/catalog.go</span><span>{{ T "home_excerpt" }}</span></div>
-        {{ highlight `Service("catalog", func() {
+        {{ highlight `var LookupPayload = Type("LookupPayload", func() {
+    Field(1, "sku", String, func() { Pattern("^[A-Z0-9-]+$") })
+    Required("sku")
+})
+var _ = Service("catalog", func() {
+    Error("not_found", ErrorResult)
     JSONRPC(func() { POST("/rpc") })
     Method("lookup", func() {
         Payload(LookupPayload)
         Result(Product)
+        Error("not_found")
         HTTP(func() { GET("/products/{sku}") })
         GRPC(func() {})
         JSONRPC(func() {})
     })
 })` "go" "" }}
         <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/catalog/design</code></div>
-        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+        <div class="demo-impl"><code>// Implement Lookup -&gt; GET /products/BOOK-1 -&gt; 200 OK
+Lookup(ctx context.Context, p *LookupPayload) (*Product, error)</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul role="list">
           <li>HTTP + gRPC + JSON-RPC</li><li>{{ T "home_output_client" }}</li>
           <li>{{ T "home_output_types" }}</li><li>{{ T "home_output_validation" }}</li>
           <li>OpenAPI + Protocol Buffers</li><li>{{ T "home_output_cli" }}</li>
@@ -52,7 +59,10 @@
       </div>
       <div class="demo-agent demo-panel">
         <div class="demo-filename"><span>design/catalog.go</span><span>{{ T "home_excerpt" }}</span></div>
-        {{ highlight `Agent("assistant", "Find products", func() {
+        {{ highlight `Agent("assistant", "Answer product questions", func() {
+    RunPolicy(func() {
+        DefaultCaps(MaxToolCalls(6))
+    })
     Use("catalog", func() {
         Tool("lookup", "Find a product by SKU", func() {
             Args(LookupPayload)
@@ -62,7 +72,9 @@
     })
 })` "go" "" }}
         <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/catalog/design</code></div>
-        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+        <div class="demo-impl"><code>// Local in-memory (0 API keys in tests) or Temporal
+assistant.RegisterAssistantAgent(ctx, rt, cfg)</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul role="list">
           <li>{{ T "home_output_schemas" }}</li><li>{{ T "home_output_codecs" }}</li>
           <li>{{ T "home_output_bindings" }}</li><li>{{ T "home_output_descriptors" }}</li>
           <li>{{ T "home_output_registration" }}</li><li>AGENTS_QUICKSTART.md</li>
@@ -83,7 +95,9 @@
     })
 })` "go" "" }}
         <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/support/design</code></div>
-        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul>
+        <div class="demo-impl"><code>// Checked at goa gen; rendered with typed Go structs at runtime
+support.RenderSupportSystemPrompt(support.SystemPromptArgs{...})</code></div>
+        <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul role="list">
           <li>{{ T "home_output_prompt_checks" }}</li><li>{{ T "home_output_prompt_render" }}</li>
           <li>{{ T "home_output_prompt_registration" }}</li><li>{{ T "home_output_prompt_overrides" }}</li>
         </ul></div>
@@ -93,54 +107,87 @@
     </div>
   </section>
 
-  <section class="benefits-section" aria-labelledby="benefits-title">
+  <section class="highbay-install-band home-quickstart-band" id="designer-skill" aria-labelledby="skill-title">
     <div class="site-width">
-      <div class="section-intro"><h2 id="benefits-title">{{ T "home_benefits_heading" }}</h2><p>{{ T "home_benefits_intro" }}</p></div>
-      <dl class="benefit-list">
-        {{ range slice "tokens" "context" "feedback" }}
-        <div><dt>{{ T (printf "home_benefit_%s" .) }}</dt><dd>{{ T (printf "home_benefit_%s_text" .) }}</dd></div>
-        {{ end }}
-      </dl>
-      <a class="section-link" href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }}</a>
+      <div class="skill-install highbay-install-card">
+        <div class="highbay-install-card__top">
+          <h2 id="skill-title" class="chorus-install-title">{{ T "home_skill_heading" }}</h2>
+          <p class="highbay-go-alt">{{ T "home_skill_prereq" | markdownify }} · <a href="{{ relref . "/docs/ai-development/" }}#install-the-skill">{{ T "home_skill_docs" }}</a></p>
+        </div>
+        <div class="highbay-install-card__steps">
+          <div class="highbay-install-step">
+            <div class="highbay-step1-head">
+              <p class="chorus-install-intro">{{ T "home_skill_step1" | markdownify }}</p>
+              <div class="highbay-prefix-switch home-setup-switch" role="group" aria-label="{{ T "highbay_install_method_label" }}">
+                <button type="button" class="highbay-mgr-btn home-setup-btn" data-home-cmd="skill" aria-pressed="true">{{ T "home_setup_tab_skill" }}</button>
+                <button type="button" class="highbay-mgr-btn home-setup-btn" data-home-cmd="go" aria-pressed="false">{{ T "home_setup_tab_go" }}</button>
+              </div>
+            </div>
+            <div class="install-command highbay-setup-box">
+              <pre class="highbay-cmd-pre"><code id="skill-command" data-cmd-skill="npx skills add goadesign/goa --skill goa-service-designer" data-cmd-go="go install goa.design/goa/v3/cmd/goa@latest">npx skills add goadesign/goa --skill goa-service-designer</code></pre>
+              <button type="button" class="copy-install" command="--copy" commandfor="skill-command" aria-label="{{ T "home_skill_copy" }}" data-copy-target="skill-command" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+            <p class="install-hint">{{ T "home_skill_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
+          </div>
+
+          <div class="highbay-install-step">
+            <div class="highbay-step2-head">
+              <p id="home-step2-label" class="skill-prompt-label chorus-install-alt" data-label-skill="{{ T "home_skill_next" | markdownify }}" data-label-go="{{ T "home_cli_next" | markdownify }}">{{ T "home_skill_next" | markdownify }}</p>
+              <div class="highbay-prefix-switch home-prompt-switch" role="group" aria-label="{{ T "home_example_label" }}">
+                <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="service" aria-pressed="true">{{ T "home_services" }}</button>
+                <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="agent" aria-pressed="false">{{ T "home_agents" }}</button>
+              </div>
+            </div>
+            <div class="install-command highbay-prompt-box">
+              <code id="home-prompt-cmd" class="highbay-prompt-code" data-prompt-service="{{ T "home_skill_prompt" }}" data-prompt-agent="{{ T "home_skill_prompt_agent" }}" data-cli-service="goa gen example.com/catalog/design &amp;&amp; go test ./..." data-cli-agent="go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design &amp;&amp; go test ./...">{{ T "home_skill_prompt" }}</code>
+              <button type="button" class="copy-install" command="--copy" commandfor="home-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-copy-target="home-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+            <p class="install-hint">{{ T "home_skill_outcome" | markdownify }}</p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="skill-section site-width" id="designer-skill" aria-labelledby="skill-title">
-    <div class="skill-copy">
-      <h2 id="skill-title">{{ T "home_skill_heading" }}</h2>
-      <p>{{ T "home_skill_intro" }}</p>
-      <a href="{{ relref . "/docs/ai-development/" }}#install-the-skill">{{ T "home_skill_docs" }}</a>
-    </div>
-    <div class="skill-install">
-      <div class="install-command">
-        <code id="skill-command">npx skills add goadesign/goa --skill goa-service-designer</code>
-        <button type="button" class="copy-install" command="--copy" commandfor="skill-command" aria-label="{{ T "home_skill_copy" }}" data-copy-target="skill-command" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
-        </button>
-      </div>
-      <p class="install-hint">{{ T "home_skill_hint" }} <span class="copy-install-status" role="status"></span></p>
-      <p class="skill-prompt-label">{{ T "home_skill_next" }}</p>
-      <blockquote>{{ T "home_skill_prompt" }}</blockquote>
+  <section class="home-trust-band site-width" aria-labelledby="trust-title">
+    <h2 id="trust-title">{{ T "trust_section_title" }}</h2>
+    <p class="home-trust-facts">{{ T "home_trust_facts" | markdownify }}</p>
+    <div class="company-list">{{ range .Site.Params.companies }}<a class="company-logo{{ with .logo_shape }} company-logo--{{ . }}{{ end }}" href="{{ .url }}"><img src="{{ .logo | relURL }}" alt="{{ .name }}" width="200" height="80" loading="lazy" decoding="async"></a>{{ end }}</div>
+  </section>
+
+  <section class="benefits-section" aria-labelledby="benefits-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="benefits-title">{{ T "home_benefits_heading" }}</h2></div>
+      <dl class="benefit-list">
+        {{ range slice "tokens" "context" "feedback" }}
+        <div><dt>{{ T (printf "home_benefit_%s" .) }}</dt><dd>{{ T (printf "home_benefit_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+      <a class="section-link" href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }} →</a>
     </div>
   </section>
 
   <section class="framework-section" aria-labelledby="frameworks-title">
     <div class="site-width">
-      <div class="section-intro"><h2 id="frameworks-title">{{ T "home_frameworks_heading" }}</h2><p>{{ T "home_frameworks_intro" }}</p></div>
+      <div class="section-intro"><h2 id="frameworks-title">{{ T "home_frameworks_heading" }}</h2></div>
       <div class="framework-pair">
-        <article><h3>Goa</h3><p class="framework-purpose">{{ T "home_service_title" }}</p><p>{{ T "home_service_text" }}</p>
+        <article><h3>Goa</h3><p class="framework-purpose">{{ T "home_service_title" }}</p><p>{{ T "home_service_text" | markdownify }}</p>
           <dl class="framework-capabilities">
-            <div><dt>HTTP · gRPC · JSON-RPC</dt><dd>{{ T "home_service_transports" }}</dd></div>
+            <div><dt>HTTP · gRPC · JSON-RPC</dt><dd>{{ T "home_service_transports" | markdownify }}</dd></div>
             <div><dt>{{ T "home_service_streams" }}</dt><dd>WebSocket, Server-Sent Events, gRPC streaming.</dd></div>
-            <div><dt>{{ T "home_service_contracts" }}</dt><dd>{{ T "home_service_contracts_text" }}</dd></div>
+            <div><dt>{{ T "home_service_contracts" }}</dt><dd>{{ T "home_service_contracts_text" | markdownify }}</dd></div>
           </dl>
           <a class="goa-button" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_service_docs" }}</a><a class="repo-link" href="https://github.com/goadesign/goa">GitHub</a>
         </article>
-        <article><h3>Goa-AI</h3><p class="framework-purpose">{{ T "home_agent_title" }}</p><p>{{ T "home_agent_text" }}</p>
+        <article><h3>Goa-AI</h3><p class="framework-purpose">{{ T "home_agent_title" }}</p><p>{{ T "home_agent_text" | markdownify }}</p>
           <dl class="framework-capabilities">
-            <div><dt>{{ T "home_agent_contracts" }}</dt><dd>{{ T "home_agent_contracts_text" }}</dd></div>
-            <div><dt>{{ T "home_agent_composition" }}</dt><dd>{{ T "home_agent_composition_text" }}</dd></div>
-            <div><dt>{{ T "home_agent_execution" }}</dt><dd>{{ T "home_agent_execution_text" }}</dd></div>
+            <div><dt>{{ T "home_agent_contracts" }}</dt><dd>{{ T "home_agent_contracts_text" | markdownify }}</dd></div>
+            <div><dt>{{ T "home_agent_composition" }}</dt><dd>{{ T "home_agent_composition_text" | markdownify }}</dd></div>
+            <div><dt>{{ T "home_agent_execution" }}</dt><dd>{{ T "home_agent_execution_text" | markdownify }}</dd></div>
           </dl>
           <a class="goa-button" href="{{ relref . "/docs/2-goa-ai/" }}">{{ T "home_agent_docs" }}</a><a class="repo-link" href="https://github.com/goadesign/goa-ai">GitHub</a>
         </article>
@@ -150,7 +197,7 @@
 
   <section class="mcp-section" id="mcp" aria-labelledby="mcp-title">
     <div class="site-width">
-      <div class="section-intro"><h2 id="mcp-title">{{ T "home_mcp_heading" }}</h2><p>{{ T "home_mcp_text" }}</p></div>
+      <div class="section-intro"><h2 id="mcp-title">{{ T "home_mcp_heading" }}</h2></div>
       <figure class="mcp-generation" aria-labelledby="mcp-generation-caption">
         <div class="mcp-design">
           <div class="mcp-stage-title"><strong>{{ T "home_mcp_design" }}</strong><span>design/catalog.go</span></div>
@@ -159,7 +206,7 @@
     JSONRPC(func() { POST("/mcp") })
 
     Method("lookup", func() {
-        Payload(LookupPayload)
+        Payload(LookupPayload) // Pattern("^[A-Z0-9-]+$")
         Result(Product)
         Tool("lookup",
             "Find a product by SKU")
@@ -171,24 +218,23 @@
           <div class="mcp-stage-title"><strong>{{ T "home_mcp_generated" }}</strong><span>{{ T "home_mcp_contract" }}</span></div>
           <dl>
             {{ range slice "server" "client" "schemas" "validation" }}
-            <div><dt>{{ T (printf "home_mcp_result_%s" .) }}</dt><dd>{{ T (printf "home_mcp_result_%s_text" .) }}</dd></div>
+            <div><dt>{{ T (printf "home_mcp_result_%s" .) }}</dt><dd>{{ T (printf "home_mcp_result_%s_text" .) | markdownify }}</dd></div>
             {{ end }}
           </dl>
         </div>
-        <figcaption id="mcp-generation-caption">{{ T "home_mcp_caption" }}</figcaption>
+        <figcaption id="mcp-generation-caption">{{ T "home_mcp_caption" | markdownify }}</figcaption>
       </figure>
       <dl class="mcp-benefits">
-        <div><dt>{{ T "home_mcp_humans" }}</dt><dd>{{ T "home_mcp_humans_text" }}</dd></div>
-        <div><dt>{{ T "home_mcp_llms" }}</dt><dd>{{ T "home_mcp_llms_text" }}</dd></div>
+        <div><dt>{{ T "home_mcp_humans" }}</dt><dd>{{ T "home_mcp_humans_text" | markdownify }}</dd></div>
+        <div><dt>{{ T "home_mcp_llms" }}</dt><dd>{{ T "home_mcp_llms_text" | markdownify }}</dd></div>
       </dl>
-      <div class="mcp-next"><a class="goa-button" href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}">{{ T "home_mcp_cta" }}</a><p>{{ T "home_mcp_capabilities" }}</p></div>
+      <div class="mcp-next"><a class="goa-button" href="{{ relref . "/docs/2-goa-ai/mcp-integration/" }}">{{ T "home_mcp_cta" }}</a><p>{{ T "home_mcp_capabilities" | markdownify }}</p></div>
     </div>
   </section>
 
   <section class="connect-section site-width" aria-labelledby="connect-title">
-    <div class="section-intro"><h2 id="connect-title">{{ T "home_connect_heading" }}</h2><p>{{ T "home_connect_intro" }}</p></div>
     <article class="connect-row">
-      <div><h3>{{ T "home_registry_heading" }}</h3><p>{{ T "home_registry_text" }}</p><a href="{{ relref . "/docs/2-goa-ai/registry/" }}">{{ T "home_registry_cta" }}</a></div>
+      <div><h2 id="connect-title">{{ T "home_registry_heading" }}</h2><p>{{ T "home_registry_text" | markdownify }}</p><a href="{{ relref . "/docs/2-goa-ai/registry/" }}">{{ T "home_registry_cta" }}<span aria-hidden="true"> →</span></a></div>
       <div class="registry-flow" aria-label="{{ T "home_registry_flow" }}">
         <div class="registry-providers"><span>catalog</span><span>search</span><span>billing</span></div>
         <svg class="registry-connector" viewBox="0 0 400 32" preserveAspectRatio="none" aria-hidden="true"><path d="M66 0V12H200M334 0V12H200M200 0V32" fill="none" stroke="currentColor"/></svg>
@@ -199,14 +245,14 @@
     </article>
   </section>
 
-  <section class="workflow-section" aria-labelledby="workflow-title">
+  <section class="benefits-section home-compare-section" id="compare" aria-labelledby="compare-title">
     <div class="site-width">
-      <div class="section-intro"><h2 id="workflow-title">{{ T "home_workflow_heading" }}</h2><p>{{ T "home_workflow_intro" }}</p></div>
-      <ol class="workflow-steps">
-        {{ range slice "design" "generate" "implement" "check" }}
-        <li><h3>{{ T (printf "home_step_%s" .) }}</h3><p>{{ T (printf "home_step_%s_text" .) }}</p></li>
+      <div class="section-intro"><h2 id="compare-title">{{ T "home_compare_heading" }}</h2></div>
+      <dl class="benefit-list">
+        {{ range slice "specs" "mcp_sdk" "agent_sdk" }}
+        <div><dt>{{ T (printf "home_compare_%s" .) }}</dt><dd>{{ T (printf "home_compare_%s_text" .) | markdownify }}</dd></div>
         {{ end }}
-      </ol>
+      </dl>
     </div>
   </section>
 
@@ -214,22 +260,69 @@
     <h2 id="faq-title">{{ T "home_faq_heading" }}</h2>
     <dl>
       {{ range slice "codegen" "difference" "mcp" "tokens" }}
-      <div><dt>{{ T (printf "home_faq_%s_q" .) }}</dt><dd>{{ T (printf "home_faq_%s_a" .) }}</dd></div>
+      <div><dt>{{ T (printf "home_faq_%s_q" .) }}</dt><dd>{{ T (printf "home_faq_%s_a" .) | markdownify }}</dd></div>
       {{ end }}
     </dl>
   </section>
 
   <section class="site-width community-section" aria-labelledby="community-title">
-    <div><h2 id="community-title">{{ T "home_community_heading" }}</h2><p>{{ T "home_community_intro" }}</p><a href="{{ relref . "/docs/3-ecosystem/" }}">{{ T "home_ecosystem" }}</a></div>
-    <div class="community-links"><a href="https://github.com/goadesign/examples">{{ T "home_examples" }}</a><a href="https://github.com/goadesign/goa/discussions">{{ T "home_discussions" }}</a><a href="https://gophers.slack.com/messages/goa">Gophers Slack</a><a href="{{ relref . "/docs/contributing/" }}">{{ T "home_contribute" }}</a></div>
+    <div>
+      <h2 id="community-title">{{ T "home_community_heading" }}</h2>
+      <p>{{ T "home_community_intro" }}</p>
+      <a href="{{ relref . "/docs/3-ecosystem/" }}">{{ T "home_ecosystem" }} →</a>
+      <div class="community-links"><a href="https://github.com/goadesign/examples">{{ T "home_examples" }}</a><a href="https://github.com/goadesign/goa/discussions">{{ T "home_discussions" }}</a><a href="https://gophers.slack.com/messages/goa">Gophers Slack</a><a href="{{ relref . "/docs/contributing/" }}">{{ T "home_contribute" }}</a></div>
+    </div>
+    <dl class="ecosystem-cards">
+      <div><dt><a href="{{ relref . "/chorus/" }}">Chorus</a></dt><dd>{{ T "home_eco_chorus" | markdownify }}</dd></div>
+      <div><dt><a href="{{ relref . "/highbay/" }}">Highbay</a></dt><dd>{{ T "home_eco_highbay" | markdownify }}</dd></div>
+      <div><dt><a href="{{ relref . "/docs/3-ecosystem/pulse/" }}">Pulse</a> · <a href="{{ relref . "/docs/3-ecosystem/clue/" }}">Clue</a> · <a href="{{ relref . "/docs/3-ecosystem/model/" }}">Model</a></dt><dd>{{ T "home_eco_libs" | markdownify }}</dd></div>
+    </dl>
   </section>
 
   <section class="support-section site-width" aria-labelledby="support-title">
     <h2 id="support-title">{{ T "sponsors_title" }}</h2>
     <div class="sponsor-list">{{ range .Site.Params.sponsors }}<a href="{{ .url }}"><img src="{{ .image | relURL }}" alt="{{ .name }}" width="1280" height="640" loading="lazy" decoding="async"></a>{{ end }}</div>
-    <h2>{{ T "trust_section_title" }}</h2>
-    <div class="company-list">{{ range .Site.Params.companies }}<a class="company-logo{{ with .logo_shape }} company-logo--{{ . }}{{ end }}" href="{{ .url }}"><img src="{{ .logo | relURL }}" alt="{{ .name }}" width="200" height="80" loading="lazy" decoding="async"></a>{{ end }}</div>
   </section>
 </div>
+<script>
+(() => {
+  let mode = 'skill';
+  let kind = 'service';
+  function syncStep2() {
+    const promptEl = document.getElementById('home-prompt-cmd');
+    const labelEl = document.getElementById('home-step2-label');
+    if (labelEl) {
+      labelEl.innerHTML = mode === 'go' ? labelEl.dataset.labelGo : labelEl.dataset.labelSkill;
+    }
+    if (promptEl) {
+      const attr = mode === 'go'
+        ? (kind === 'agent' ? 'cliAgent' : 'cliService')
+        : (kind === 'agent' ? 'promptAgent' : 'promptService');
+      if (promptEl.dataset[attr]) promptEl.textContent = promptEl.dataset[attr];
+    }
+  }
+  for (const btn of document.querySelectorAll('.home-setup-btn')) {
+    btn.addEventListener('click', () => {
+      mode = btn.dataset.homeCmd;
+      for (const b of document.querySelectorAll('.home-setup-btn')) {
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      }
+      const code = document.getElementById('skill-command');
+      const key = `cmd${mode[0].toUpperCase()}${mode.slice(1)}`;
+      if (code && code.dataset[key]) code.textContent = code.dataset[key];
+      syncStep2();
+    });
+  }
+  for (const btn of document.querySelectorAll('.home-prompt-btn')) {
+    btn.addEventListener('click', () => {
+      kind = btn.dataset.homePrompt;
+      for (const b of document.querySelectorAll('.home-prompt-btn')) {
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      }
+      syncStep2();
+    });
+  }
+})();
+</script>
 {{ partial "guru-widget.html" . }}
 {{ end }}

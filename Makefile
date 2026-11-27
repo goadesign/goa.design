@@ -1,4 +1,4 @@
-.PHONY: help serve clean build start setup update-deps prereqs diagrams diagrams-check readme-banner
+.PHONY: help serve clean build start setup update-deps update-skills prereqs diagrams diagrams-check readme-banner
 
 # Default Hugo port
 PORT ?= 1313
@@ -93,6 +93,12 @@ update-deps: check-npm  ## Update npm dependencies
 	npm install autoprefixer@latest postcss@latest postcss-cli@latest vitest@latest fast-check@latest jsdom@latest sass-embedded@latest --save-dev
 	npm audit fix
 	@echo "Dependencies updated successfully"
+
+## Update pinned agent skills in .agents/skills/ and skills-lock.json
+update-skills: check-npm
+	@echo "Updating agent skills..."
+	npm run skills:update
+	@echo "Agent skills updated successfully"
 
 ## Install prerequisites (npm packages, hugo)
 prereqs: check-npm  ## Install prerequisites (npm, hugo)

@@ -1,187 +1,139 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 380" role="img" aria-label="Goa-AI architecture: Design DSL compiles into generated typed packages, executed by the Runtime over In-Memory or Temporal engines and model/tool adapters">
+  <style>
+    .bg { fill: #f3f6fa; stroke: #dce3ec; stroke-width: 1.5; }
+    .panel { fill: #ffffff; stroke: #dce3ec; stroke-width: 1.5; }
+    .panel-accent { fill: #eaf0fd; stroke: #2255c5; stroke-width: 1.5; }
+    .head { fill: #2255c5; }
+    .head-ink { fill: #ffffff; font: 700 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .chip { fill: #f3f6fa; stroke: #dce3ec; stroke-width: 1; }
+    .ink { fill: #172b45; font: 600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .muted { fill: #526278; font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .mono { fill: #293f75; font: 600 11.5px "SFMono-Regular", Consolas, monospace; }
+    .wire { stroke: #2255c5; stroke-width: 1.75; fill: none; }
+    .arrow { fill: #2255c5; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #192a40; stroke: #35475e; }
+      .panel { fill: #1b2d43; stroke: #35475e; }
+      .panel-accent { fill: #293f60; stroke: #a9c5ff; }
+      .head { fill: #293f60; }
+      .head-ink { fill: #edf2f9; }
+      .chip { fill: #142133; stroke: #35475e; }
+      .ink { fill: #edf2f9; }
+      .muted { fill: #b0bfd1; }
+      .mono { fill: #c2d5ff; }
+      .wire { stroke: #a9c5ff; }
+      .arrow { fill: #a9c5ff; }
+    }
+  </style>
   <defs>
-    <!-- Gradients -->
-    <linearGradient id="dslGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
-    </linearGradient>
-    <linearGradient id="codegenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#06b6d4"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
-    </linearGradient>
-    <linearGradient id="runtimeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#22c55e"/>
-    </linearGradient>
-    <linearGradient id="engineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#eab308"/>
-    </linearGradient>
-    <linearGradient id="featuresGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ec4899"/>
-      <stop offset="100%" stop-color="#f43f5e"/>
-    </linearGradient>
-    <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#64748b"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </linearGradient>
-    
-    <!-- Drop shadow filter -->
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
-    </filter>
-    
-    <!-- Arrow marker -->
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
-    </marker>
-    <marker id="arrowheadBi" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#ec4899"/>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" class="arrow"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="900" height="520" fill="#0f172a"/>
-  
-  <!-- DSL Layer -->
-  <g filter="url(#shadow)">
-    <rect x="30" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#dslGrad)" stroke-width="2"/>
-    <rect x="30" y="30" width="160" height="40" rx="12" fill="url(#dslGrad)"/>
-    <text x="110" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">DSL</text>
-    
-    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
-      <rect x="45" y="85" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="110" y="106" text-anchor="middle">Agents</text>
-      
-      <rect x="45" y="127" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="110" y="148" text-anchor="middle">Toolsets</text>
-      
-      <rect x="45" y="169" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="110" y="190" text-anchor="middle">Policies</text>
-      
-      <rect x="45" y="211" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="110" y="232" text-anchor="middle">MCP Servers</text>
-      
-      <rect x="45" y="253" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="110" y="274" text-anchor="middle">Registries</text>
-    </g>
-  </g>
-  
-  <!-- Arrow: DSL → Codegen -->
-  <path d="M 200 170 L 240 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Code Generation Layer -->
-  <g filter="url(#shadow)">
-    <rect x="250" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#codegenGrad)" stroke-width="2"/>
-    <rect x="250" y="30" width="160" height="40" rx="12" fill="url(#codegenGrad)"/>
-    <text x="330" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Codegen</text>
-    
-    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="11">
-      <rect x="265" y="85" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="330" y="106" text-anchor="middle">Tool Specs</text>
-      
-      <rect x="265" y="127" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="330" y="148" text-anchor="middle">Workflow Activities</text>
-      
-      <rect x="265" y="169" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="330" y="190" text-anchor="middle">Registry Clients</text>
-      
-      <rect x="265" y="211" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="330" y="232" text-anchor="middle">MCP Wrappers</text>
-      
-      <rect x="265" y="253" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="330" y="274" text-anchor="middle">Type Codecs</text>
-    </g>
-  </g>
-  
-  <!-- Arrow: Codegen → Runtime -->
-  <path d="M 420 170 L 460 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Runtime Layer -->
-  <g filter="url(#shadow)">
-    <rect x="470" y="30" width="160" height="280" rx="12" fill="#1e293b" stroke="url(#runtimeGrad)" stroke-width="2"/>
-    <rect x="470" y="30" width="160" height="40" rx="12" fill="url(#runtimeGrad)"/>
-    <text x="550" y="56" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Runtime</text>
-    
-    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
-      <rect x="485" y="85" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="550" y="106" text-anchor="middle">Planner</text>
-      
-      <rect x="485" y="127" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="550" y="148" text-anchor="middle">Executor</text>
-      
-      <rect x="485" y="169" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="550" y="190" text-anchor="middle">Memory Store</text>
-      
-      <rect x="485" y="211" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="550" y="232" text-anchor="middle">Event Bus</text>
-      
-      <rect x="485" y="253" width="130" height="32" rx="6" fill="#334155"/>
-      <text x="550" y="274" text-anchor="middle">Policy Engine</text>
-    </g>
-  </g>
-  
-  <!-- Arrow: Runtime → Engine -->
-  <path d="M 640 170 L 680 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Engine Layer -->
-  <g filter="url(#shadow)">
-    <rect x="690" y="70" width="180" height="140" rx="12" fill="#1e293b" stroke="url(#engineGrad)" stroke-width="2"/>
-    <rect x="690" y="70" width="180" height="40" rx="12" fill="url(#engineGrad)"/>
-    <text x="780" y="96" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Engine</text>
-    
-    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="12">
-      <rect x="705" y="125" width="70" height="32" rx="6" fill="#334155"/>
-      <text x="740" y="146" text-anchor="middle">In-Memory</text>
-      
-      <rect x="785" y="125" width="70" height="32" rx="6" fill="#334155"/>
-      <text x="820" y="146" text-anchor="middle">Temporal</text>
-      
-      <text x="780" y="185" text-anchor="middle" fill="#94a3b8" font-size="10">Dev ↔ Production</text>
-    </g>
-  </g>
-  
-  <!-- Features Layer -->
-  <g filter="url(#shadow)">
-    <rect x="690" y="240" width="180" height="200" rx="12" fill="#1e293b" stroke="url(#featuresGrad)" stroke-width="2"/>
-    <rect x="690" y="240" width="180" height="40" rx="12" fill="url(#featuresGrad)"/>
-    <text x="780" y="266" text-anchor="middle" fill="white" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
-    
-    <g fill="#e2e8f0" font-family="Inter, system-ui, sans-serif" font-size="11">
-      <rect x="705" y="295" width="150" height="28" rx="6" fill="#334155"/>
-      <text x="780" y="314" text-anchor="middle">Model Clients</text>
-      
-      <rect x="705" y="333" width="150" height="28" rx="6" fill="#334155"/>
-      <text x="780" y="352" text-anchor="middle">Persistence</text>
-      
-      <rect x="705" y="371" width="150" height="28" rx="6" fill="#334155"/>
-      <text x="780" y="390" text-anchor="middle">Pulse Streaming</text>
-      
-      <rect x="705" y="409" width="150" height="28" rx="6" fill="#334155"/>
-      <text x="780" y="428" text-anchor="middle">Registry Gateway</text>
-    </g>
-  </g>
-  
-  <!-- Bidirectional Arrow: Runtime ↔ Features -->
-  <path d="M 630 280 Q 665 340 690 340" stroke="#ec4899" stroke-width="2" fill="none" marker-end="url(#arrowheadBi)"/>
-  <path d="M 690 340 Q 665 340 630 280" stroke="#ec4899" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
-  
-  <!-- Labels for providers -->
-  <g fill="#64748b" font-family="Inter, system-ui, sans-serif" font-size="9">
-    <text x="780" y="478" text-anchor="middle">Bedrock · OpenAI · MongoDB · Redis</text>
-  </g>
-  
-  <!-- Flow label -->
-  <text x="330" y="340" text-anchor="middle" fill="#64748b" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500">Define → Generate → Execute</text>
-  
-  <!-- Decorative dots -->
-  <circle cx="30" cy="500" r="3" fill="#6366f1" opacity="0.5"/>
-  <circle cx="45" cy="500" r="3" fill="#06b6d4" opacity="0.5"/>
-  <circle cx="60" cy="500" r="3" fill="#10b981" opacity="0.5"/>
-  <circle cx="75" cy="500" r="3" fill="#f59e0b" opacity="0.5"/>
-  <circle cx="90" cy="500" r="3" fill="#ec4899" opacity="0.5"/>
+
+  <rect x="4" y="4" width="912" height="372" rx="12" class="bg"/>
+
+  <!-- Column 1: Design -->
+  <rect x="28" y="28" width="184" height="292" rx="8" class="panel"/>
+  <rect x="28" y="28" width="184" height="36" rx="8" class="head"/>
+  <text x="120" y="51" text-anchor="middle" class="head-ink">1. Design (design/*.go)</text>
+
+  <rect x="42" y="78" width="156" height="34" rx="5" class="chip"/>
+  <text x="120" y="99" text-anchor="middle" class="ink">Agent &amp; SystemPrompt</text>
+
+  <rect x="42" y="122" width="156" height="34" rx="5" class="chip"/>
+  <text x="120" y="143" text-anchor="middle" class="ink">Toolset &amp; BindTo</text>
+
+  <rect x="42" y="166" width="156" height="34" rx="5" class="chip"/>
+  <text x="120" y="187" text-anchor="middle" class="ink">BoundedResult &amp; Inject</text>
+
+  <rect x="42" y="210" width="156" height="34" rx="5" class="chip"/>
+  <text x="120" y="231" text-anchor="middle" class="ink">RunPolicy &amp; Confirmation</text>
+
+  <rect x="42" y="254" width="156" height="34" rx="5" class="chip"/>
+  <text x="120" y="275" text-anchor="middle" class="ink">MCP &amp; Evaluations</text>
+
+  <text x="120" y="308" text-anchor="middle" class="muted">You &amp; coding agent edit</text>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="216" y1="174" x2="254" y2="174" class="wire" marker-end="url(#arr)"/>
+  <text x="235" y="164" text-anchor="middle" class="mono">goa gen</text>
+
+  <!-- Column 2: Generated -->
+  <rect x="260" y="28" width="192" height="292" rx="8" class="panel"/>
+  <rect x="260" y="28" width="192" height="36" rx="8" class="head"/>
+  <text x="356" y="51" text-anchor="middle" class="head-ink">2. Generated (gen/)</text>
+
+  <rect x="274" y="78" width="164" height="34" rx="5" class="chip"/>
+  <text x="356" y="99" text-anchor="middle" class="ink">JSON Schemas &amp; Codecs</text>
+
+  <rect x="274" y="122" width="164" height="34" rx="5" class="chip"/>
+  <text x="356" y="143" text-anchor="middle" class="ink">Service &amp; MCP Adapters</text>
+
+  <rect x="274" y="166" width="164" height="34" rx="5" class="chip"/>
+  <text x="356" y="187" text-anchor="middle" class="ink">Workflow &amp; Activity Specs</text>
+
+  <rect x="274" y="210" width="164" height="34" rx="5" class="chip"/>
+  <text x="356" y="231" text-anchor="middle" class="ink">Completion &amp; Prompt Render</text>
+
+  <rect x="274" y="254" width="164" height="34" rx="5" class="chip"/>
+  <text x="356" y="275" text-anchor="middle" class="mono">AGENTS_QUICKSTART.md</text>
+
+  <text x="356" y="308" text-anchor="middle" class="muted">Never hand-edited</text>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="456" y1="174" x2="488" y2="174" class="wire" marker-end="url(#arr)"/>
+
+  <!-- Column 3: Runtime -->
+  <rect x="494" y="28" width="184" height="292" rx="8" class="panel-accent"/>
+  <rect x="494" y="28" width="184" height="36" rx="8" class="head"/>
+  <text x="586" y="51" text-anchor="middle" class="head-ink">3. Runtime &amp; Planner</text>
+
+  <rect x="508" y="78" width="156" height="34" rx="5" class="panel"/>
+  <text x="586" y="99" text-anchor="middle" class="ink">Your Planner Logic</text>
+
+  <rect x="508" y="122" width="156" height="34" rx="5" class="panel"/>
+  <text x="586" y="143" text-anchor="middle" class="ink">Validated Tool Executor</text>
+
+  <rect x="508" y="166" width="156" height="34" rx="5" class="panel"/>
+  <text x="586" y="187" text-anchor="middle" class="ink">Policy &amp; Budget Guard</text>
+
+  <rect x="508" y="210" width="156" height="34" rx="5" class="panel"/>
+  <text x="586" y="231" text-anchor="middle" class="ink">Child-Agent Run Trees</text>
+
+  <rect x="508" y="254" width="156" height="34" rx="5" class="panel"/>
+  <text x="586" y="275" text-anchor="middle" class="ink">Typed Stream Events</text>
+
+  <text x="586" y="308" text-anchor="middle" class="muted">Coordinates turns &amp; tools</text>
+
+  <!-- Arrows 3 -> 4 -->
+  <line x1="682" y1="106" x2="714" y2="106" class="wire" marker-end="url(#arr)"/>
+  <line x1="682" y1="242" x2="714" y2="242" class="wire" marker-end="url(#arr)"/>
+
+  <!-- Column 4 Top: Engines -->
+  <rect x="720" y="28" width="172" height="136" rx="8" class="panel"/>
+  <rect x="720" y="28" width="172" height="36" rx="8" class="head"/>
+  <text x="806" y="51" text-anchor="middle" class="head-ink">Execution Engine</text>
+
+  <rect x="734" y="76" width="144" height="32" rx="5" class="chip"/>
+  <text x="806" y="96" text-anchor="middle" class="ink">In-Memory (local dev)</text>
+
+  <rect x="734" y="116" width="144" height="32" rx="5" class="chip"/>
+  <text x="806" y="136" text-anchor="middle" class="ink">Temporal (durable)</text>
+
+  <!-- Column 4 Bottom: Providers & Infra -->
+  <rect x="720" y="180" width="172" height="140" rx="8" class="panel"/>
+  <rect x="720" y="180" width="172" height="36" rx="8" class="head"/>
+  <text x="806" y="203" text-anchor="middle" class="head-ink">Models &amp; Tool Infra</text>
+
+  <rect x="734" y="226" width="144" height="26" rx="5" class="chip"/>
+  <text x="806" y="243" text-anchor="middle" class="muted">OpenAI · Anthropic</text>
+
+  <rect x="734" y="258" width="144" height="26" rx="5" class="chip"/>
+  <text x="806" y="275" text-anchor="middle" class="muted">Bedrock · Vertex AI</text>
+
+  <rect x="734" y="290" width="144" height="22" rx="5" class="chip"/>
+  <text x="806" y="305" text-anchor="middle" class="muted">Pulse Streams · Registry</text>
+
+  <text x="460" y="354" text-anchor="middle" class="muted">Static contracts stay in design/*.go; generated codecs, schemas, and bindings live in gen/; application code owns planners and services.</text>
 </svg>
-
-
-
-
