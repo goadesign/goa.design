@@ -65,11 +65,14 @@ highbay up</code></pre>
             <p class="install-hint">{{ T "highbay_install_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
           </div>
         </div>
-        <ul class="highbay-fit highbay-fit--card" role="list">
-          <li>{{ T "highbay_fit_agents" | markdownify }}</li>
-          <li>{{ T "highbay_fit_scope" | markdownify }}</li>
-          <li>{{ T "highbay_fit_local" | markdownify }}</li>
-        </ul>
+        <details class="chorus-setup-details highbay-setup-details">
+          <summary>{{ T "highbay_setup_summary" }}</summary>
+          <ul class="highbay-fit highbay-fit--card" role="list">
+            <li>{{ T "highbay_fit_agents" | markdownify }}</li>
+            <li>{{ T "highbay_fit_scope" | markdownify }}</li>
+            <li>{{ T "highbay_fit_local" | markdownify }}</li>
+          </ul>
+        </details>
       </div>
     </div>
   </section>
@@ -78,6 +81,7 @@ highbay up</code></pre>
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-contrast-title">{{ T "highbay_contrast_heading" }}</h2>
+        <p>{{ T "highbay_contrast_intro" }}</p>
       </div>
 
       <figure class="highbay-sim">
@@ -115,6 +119,7 @@ highbay up</code></pre>
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-showcase-title">{{ T "highbay_showcase_heading" }}</h2>
+        <p>{{ T "highbay_showcase_intro" }}</p>
       </div>
 
       {{- $stages := slice
@@ -177,18 +182,6 @@ highbay up</code></pre>
           </div>
           {{- end }}
         </div>
-
-        <div class="highbay-sim__catch">
-          <div class="highbay-sim__run highbay-sim__run--agree">
-            <strong>{{ T "highbay_tab_agree" | replaceRE "^[0-9]+\\.\\s*" "" }}:</strong> {{ T "highbay_agree_pin_1" | markdownify }}
-          </div>
-          <div class="highbay-sim__run highbay-sim__run--fail">
-            <strong>{{ T "highbay_tab_check" | replaceRE "^[0-9]+\\.\\s*" "" }}:</strong> {{ T "highbay_check_pin_1" | markdownify }}
-          </div>
-          <div class="highbay-sim__run highbay-sim__run--pass">
-            <strong>{{ T "highbay_tab_approve" | replaceRE "^[0-9]+\\.\\s*" "" }}:</strong> {{ T "highbay_approve_pin_1" | markdownify }}
-          </div>
-        </div>
       </div>
       <p class="highbay-showcase__foot">{{ T "highbay_showcase_caption" }} <a href="https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example">{{ T "highbay_showcase_method" }}</a></p>
     </div>
@@ -198,6 +191,7 @@ highbay up</code></pre>
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-walkthrough-title">{{ T "highbay_walkthrough_heading" }}</h2>
+        <p>{{ T "highbay_walkthrough_intro" | markdownify }}</p>
       </div>
       <div class="highbay-lanes">
       <article class="highbay-lane" aria-labelledby="highbay-lane-guide">
@@ -306,6 +300,7 @@ return eval.Result{Checks: []eval.Check{
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-cap-title">{{ T "highbay_cap_heading" }}</h2>
+        <p>{{ T "highbay_cap_intro" | markdownify }}</p>
       </div>
       <dl class="benefit-list highbay-cap-grid">
         {{ range slice "auth" "obs" "stream" "durable" }}
@@ -322,6 +317,7 @@ return eval.Result{Checks: []eval.Check{
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
+        <p>{{ T "highbay_compare_intro" }}</p>
       </div>
       <dl class="benefit-list highbay-compare-3col">
         {{ range slice "solo" "speckit" "workspaces" }}

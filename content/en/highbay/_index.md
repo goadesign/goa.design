@@ -1,5 +1,5 @@
 ---
-title: "Highbay — Consistent architecture across the platform your coding agent builds."
+title: "Highbay: Give your coding agents one way to build"
 linkTitle: "Highbay"
-description: "Highbay keeps the platform your coding agent builds on one consistent architecture—compiling HTTP/MCP servers, validation, and tool schemas (~70% of non-test Go code in Highbay's reference service) from a contract you confirm and verifying behavior before approval."
+description: "Highbay gives your coding agents one way to build services, MCP servers, and AI agents. Confirm a short contract in your browser, compile HTTP and MCP plumbing in Go (~70% of non-test code in the Orders reference service), and verify behavior in a separate Git copy before merge."
 ---

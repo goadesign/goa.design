@@ -1,4 +1,4 @@
-# Highbay — {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
+# Highbay: {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
 
 {{ T "highbay_intro" }}
 
