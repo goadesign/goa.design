@@ -312,9 +312,10 @@ that distinction and the product claims.
 - Native controls and local scrolling keep dense content usable.
 - Selectable commands, visible answers, and simple topology make value extractable.
 
-Source of truth: `assets/scss/_variables_project.scss`, `_dark_theme.scss`,
-`_styles_project.scss`, `_custom.scss`, `_syntax_light.scss`, and
-`_syntax_dark.scss`; `layouts/index.html`, `layouts/docs/baseof.html`, and
+Source of truth: `assets/scss/_variables_project.scss`,
+`assets/scss/_dark_theme.scss`, `assets/scss/_styles_project.scss`,
+`assets/scss/_custom.scss`, `assets/scss/_syntax_light.scss`, and
+`assets/scss/_syntax_dark.scss`; `layouts/index.html`, `layouts/docs/baseof.html`, and
 `layouts/_partials/guru-widget.html`. The header wordmark is
 `assets/icons/logo.svg`; its letter paths also supply the monochrome Safari
 pinned-tab mask. The round badge in `static/img/goa-logo.png` supplies the footer;

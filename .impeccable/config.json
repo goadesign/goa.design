@@ -1,0 +1,33 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "assets/scss/_custom.scss"
+        ],
+        "createdAt": "2026-11-27T08:03:51.541Z",
+        "reason": "DESIGN.md: active sidebar links use 2px leading border and notes/blockquotes use 3px leading border"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "assets/scss/_styles_project.scss"
+        ],
+        "createdAt": "2026-11-27T08:03:51.561Z",
+        "reason": "DESIGN.md: Chorus command callouts and session blockquotes use the approved 3px blue leading border"
+      }
+    ]
+  }
+}
