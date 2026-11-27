@@ -241,6 +241,7 @@ for (const width of [390, 1440]) {
       await page.goto('/chorus/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your coding agents. Working as a team.');
       await expect(page.locator('.chorus-hero .highbay-roles dt')).toHaveText(['For you', 'For your agents']);
+      await expect(page.locator('.chorus-swarm-card .highbay-playbook__head strong')).toHaveText('Pinned task board');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveText('Get Chorus');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.chorus-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');

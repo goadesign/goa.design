@@ -35,7 +35,7 @@
               <strong>design/*.go</strong>
               <span>{{ T "home_diag_source_meta" }}</span>
             </div>
-            <ul class="highbay-playbook__chips">
+            <ul class="highbay-playbook__chips" role="list">
               <li>{{ T "home_diag_chip_types" }}</li>
               <li>{{ T "home_diag_chip_transports" }}</li>
               <li>{{ T "home_diag_chip_tools" }}</li>
@@ -341,7 +341,7 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
   <section class="benefits-section home-compare-section" id="compare" aria-labelledby="compare-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="compare-title">{{ T "home_compare_heading" }}</h2></div>
-      <div class="highbay-matrix-wrap">
+      <div class="highbay-matrix-wrap" role="region" aria-labelledby="compare-title" tabindex="0">
         <table class="highbay-matrix">
           <thead>
             <tr>

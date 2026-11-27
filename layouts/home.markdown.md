@@ -1,4 +1,4 @@
-# Goa and Goa-AI
+# {{ T "home_compare_col_goa" }}: {{ T "home_heading" }} {{ T "home_heading_second" }}
 
 - **{{ T "home_for_agents_label" }}:** {{ T "home_for_agents_text" }}
 - **{{ T "home_for_products_label" }}:** {{ T "home_for_products_text" }}

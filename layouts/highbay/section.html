@@ -35,7 +35,7 @@
               <strong>{{ T "highbay_diag_playbook_title" }}</strong>
               <span>{{ T "highbay_diag_playbook_meta" }}</span>
             </div>
-            <ul class="highbay-playbook__chips">
+            <ul class="highbay-playbook__chips" role="list">
               <li>{{ T "highbay_diag_chip_auth" }}</li>
               <li>{{ T "highbay_diag_chip_otel" }}</li>
               <li>{{ T "highbay_diag_chip_pulse" }}</li>
@@ -392,7 +392,7 @@ return eval.Result{Checks: []eval.Check{
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
       </div>
-      <div class="highbay-matrix-wrap">
+      <div class="highbay-matrix-wrap" role="region" aria-labelledby="highbay-compare-title" tabindex="0">
         <table class="highbay-matrix">
           <thead>
             <tr>

@@ -1,9 +1,9 @@
 {{- /*
   The Chorus landing page (/chorus/ in every language). Copy comes from the
-  chorus_* keys in i18n/*.yaml; a focused full-width hero is followed by a
-  dedicated two-step quickstart card, the recorded three-agent passkey handoff
-  paired with the live dashboard, token economics, peer comparisons, and a
-  concise real-world cross-model review case.
+  chorus_* keys in i18n/*.yaml; a two-column split hero with a localized swarm
+  diagram is followed by a two-step quickstart card, the recorded three-agent
+  passkey handoff paired with the live dashboard, open icon pillars, token
+  economics, a comparison matrix, and visible FAQs.
 */ -}}
 {{ define "main" }}
 {{- $docs := relref . "/docs/3-ecosystem/chorus/" -}}
@@ -30,40 +30,44 @@
       </div>
 
       <div class="highbay-hero__visual">
-        <div class="highbay-arch-card chorus-swarm-card" aria-hidden="true">
+        <div class="highbay-arch-card chorus-swarm-card">
           <div class="highbay-playbook">
             <div class="highbay-playbook__head">
               <strong>{{ T "chorus_diag_board_title" }}</strong>
               <span>#auth · localhost:9440</span>
             </div>
-            <ul class="chorus-board-rows">
+            <ul class="chorus-board-rows" role="list">
               <li><code>T1 @claude</code><span>{{ T "chorus_diag_t1" }}</span></li>
               <li><code>T2 @codex</code><span>{{ T "chorus_diag_t2" }}</span></li>
               <li><code>T3 @gemini</code><span>{{ T "chorus_diag_t3" }}</span></li>
             </ul>
           </div>
 
-          <div class="chorus-bus-bar">
-            <code>chorus watch</code>
-            <span>{{ T "chorus_diag_bus" }}</span>
-          </div>
-
-          <div class="chorus-peer-grid">
-            <div class="chorus-peer-node">
-              <code>@claude</code>
-              <span>{{ T "chorus_diag_peer_claude" }}</span>
+          <div class="highbay-pipe">
+            <svg class="highbay-pipe__conn" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 0v13m-3.5-3.5L12 13.5l3.5-4"/></svg>
+            <div class="chorus-bus-bar">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="14" cy="6" r="2.2"/><circle cx="10" cy="14.2" r="2.2"/><path d="M8.2 6h3.6M7.1 7.9l2 4.3M12.9 7.9l-2 4.3"/></svg>
+              <code>chorus watch</code>
+              <span>{{ T "chorus_diag_bus" }}</span>
             </div>
-            <div class="chorus-peer-node">
-              <code>@codex</code>
-              <span>{{ T "chorus_diag_peer_codex" }}</span>
-            </div>
-            <div class="chorus-peer-node">
-              <code>@gemini</code>
-              <span>{{ T "chorus_diag_peer_gemini" }}</span>
-            </div>
-            <div class="chorus-peer-node chorus-peer-node--you">
-              <code>{{ T "chorus_diag_you_handle" }}</code>
-              <span>{{ T "chorus_diag_peer_you" }}</span>
+            <svg class="highbay-pipe__conn highbay-pipe__conn--wide" viewBox="0 0 240 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M120 0v8M56 8h128M56 8v9m128-9v9"/></svg>
+            <div class="chorus-peer-grid">
+              <div class="chorus-peer-node">
+                <code>@claude</code>
+                <span>{{ T "chorus_diag_peer_claude" }}</span>
+              </div>
+              <div class="chorus-peer-node">
+                <code>@codex</code>
+                <span>{{ T "chorus_diag_peer_codex" }}</span>
+              </div>
+              <div class="chorus-peer-node">
+                <code>@gemini</code>
+                <span>{{ T "chorus_diag_peer_gemini" }}</span>
+              </div>
+              <div class="chorus-peer-node chorus-peer-node--you">
+                <code>{{ T "chorus_diag_you_handle" }}</code>
+                <span>{{ T "chorus_diag_peer_you" }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -270,7 +274,7 @@ sent #auth#3
   <section class="chorus-compare highbay-compare" id="compare" aria-labelledby="chorus-compare-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="chorus-compare-title">{{ T "chorus_compare_heading" }}</h2></div>
-      <div class="highbay-matrix-wrap">
+      <div class="highbay-matrix-wrap" role="region" aria-labelledby="chorus-compare-title" tabindex="0">
         <table class="highbay-matrix chorus-matrix">
           <thead>
             <tr>
