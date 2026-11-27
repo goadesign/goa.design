@@ -158,7 +158,3 @@ return eval.Result{Checks: []eval.Check{
 
 {{ T (printf "highbay_faq_%s_a" .) }}
 {{ end }}
-
-## {{ T "highbay_bottom_heading" }}
-
-{{ T "highbay_bottom_intro" }}

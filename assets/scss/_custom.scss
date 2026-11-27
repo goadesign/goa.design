@@ -1,11 +1,12 @@
 // Documentation keeps navigation, article text, and the outline in separate columns.
-.docs-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr) 200px; gap: 40px; max-width: 1440px; margin: 0 auto; padding: 112px 32px 64px; }
-.docs-sidebar, .docs-outline { position: sticky; top: 100px; max-height: calc(100vh - 124px); overflow-y: auto; align-self: start; scrollbar-width: thin; }
+.docs-layout { display: grid; grid-template-columns: clamp(224px, 16vw, 256px) minmax(0, 1fr) clamp(196px, 14vw, 224px); gap: clamp(32px, 3vw, 48px); width: 100%; max-width: 1632px; margin-inline: auto; padding: 104px clamp(24px, 3vw, 48px) 64px; }
+.docs-sidebar, .docs-outline { position: sticky; top: 96px; max-height: calc(100dvh - 120px); overflow-y: auto; overscroll-behavior: contain; align-self: start; scrollbar-width: thin; }
 .docs-sidebar summary { display: none; }
 .docs-main { min-width: 0; }
 .docs-outline { order: 3; }
 .docs-outline-title { font-size: .8rem; font-weight: 700; margin: .25rem 0 1rem; color: var(--color-text-heading); }
-.td-content { max-width: 48rem; padding: 0; font-size: 1.125rem; line-height: 1.75; color: var(--color-text); }
+.td-content { max-width: none; inline-size: 100%; padding: 0; font-size: 1.0625rem; line-height: 1.72; color: var(--color-text); }
+.goa-docs .td-content > * { max-width: 100%; }
 .td-content p, .td-content ul, .td-content ol { margin-bottom: 1.3rem; }
 .td-content li { margin-bottom: .45rem; }
 .td-content h1 { font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1.2; margin: 0; }
@@ -24,7 +25,7 @@
 .td-content .highlight pre { margin: 0; }
 .td-content .chroma { background: var(--color-bg-code); }
 .td-content .td-click-to-copy { color: var(--doc-link-color); }
-.td-content table { display: block; max-width: 100%; overflow-x: auto; margin: 1.75rem 0; border-collapse: collapse; font-size: .94rem; }
+.td-content table { width: 100%; max-width: 100%; margin: 1.75rem 0; border-collapse: collapse; font-size: .94rem; }
 .td-content table th, .td-content table td { padding: .75rem 1rem; border-bottom: 1px solid var(--color-border-subtle); background: transparent; color: var(--color-text); box-shadow: none; }
 .td-content table th { background: var(--color-bg-alt); color: var(--color-text-heading); font-weight: 650; }
 .td-content table td code { white-space: normal; }
@@ -96,8 +97,11 @@
 .external-link-icon { font-size: .65em; margin-left: .25em; }
 
 @media (max-width: 1200px) {
-  .docs-layout { grid-template-columns: 210px minmax(0, 1fr); gap: 32px; }
+  .docs-layout { grid-template-columns: 224px minmax(0, 1fr); gap: 36px; }
   .docs-outline { display: none; }
+}
+@media (max-width: 960px) {
+  .td-content table { display: block; overflow-x: auto; }
 }
 @media (max-width: 800px) {
   .docs-layout { display: block; padding: 24px 20px 48px; }
