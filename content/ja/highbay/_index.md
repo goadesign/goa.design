@@ -1,5 +1,5 @@
 ---
-title: "Highbay: コードが増えてもエージェントの速度を保つ"
+title: "Highbay: 信頼できるコーディングエージェントでサービス・MCP サーバー・AI ワークフローを出荷"
 linkTitle: "Highbay"
-description: "ブラウザで短い契約を確定。Highbay がサービス・MCP サーバー・AI エージェントを Go にコンパイル（Orders リファレンスサービスの約 70%）し、クリーンな Git コピーで検証します。"
+description: "Highbay はブラウザ上でバックエンド開発をガイドし、組み込みの Go アーキテクチャ規約、70% のコード自動生成（Orders リファレンスサービス）、分離されたテスト専用 worktree をエージェントに提供します。"
 ---

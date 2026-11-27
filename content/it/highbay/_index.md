@@ -1,5 +1,5 @@
 ---
-title: "Highbay: Mantieni veloci i tuoi coding agent mentre il codice cresce"
+title: "Highbay: Rilascia servizi, server MCP e workflow IA con coding agent affidabili"
 linkTitle: "Highbay"
-description: "Conferma un breve contratto nel browser. Highbay compila servizi Go, server MCP e agenti IA (~70% del codice non di test nel servizio Orders), poi testa gli handler in una copia Git pulita."
+description: "Highbay guida ogni modifica backend nel browser e fornisce ai coding agent regole di architettura Go integrate, il 70% di server e schemi generato (servizio Orders) e un worktree di test separato."
 ---

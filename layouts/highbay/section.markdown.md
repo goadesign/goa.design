@@ -1,6 +1,7 @@
 # Highbay: {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
 
-{{ T "highbay_intro" }}
+- **{{ T "highbay_for_you_label" }}:** {{ T "highbay_for_you_text" }}
+- **{{ T "highbay_for_model_label" }}:** {{ T "highbay_for_model_text" }}
 
 GitHub: [github.com/goadesign/highbay](https://github.com/goadesign/highbay) · Docs: [Ecosystem Guide]({{ relref . "/docs/3-ecosystem/highbay/" }})
 
@@ -93,8 +94,8 @@ type Service interface {
         *RollbackArgs) (*RollbackOutcome, error)
 }
 // + HTTP & MCP servers, OpenAPI 3 spec
-// + Tool JSON (org_id omitted)
-// + BoundedResult cursor bounds
+// + Tenant ID bound server-side
+// + Enforced log page cursors
 ```
 
 ### {{ T "highbay_role_tests" }}
@@ -126,11 +127,12 @@ return eval.Result{Checks: []eval.Check{
 {{- end }}
 
 ## {{ T "highbay_compare_heading" }}
-{{ range slice "solo" "speckit" "workspaces" }}
-### {{ T (printf "highbay_compare_%s" .) }}
 
-{{ T (printf "highbay_compare_%s_text" .) }}
-{{ end }}
+| {{ T "highbay_compare_col_dim" }} | {{ T "highbay_with_title" }} | {{ T "highbay_compare_solo" }} | {{ T "highbay_compare_speckit" }} | {{ T "highbay_compare_workspaces" }} |
+| --- | --- | --- | --- | --- |
+{{- range slice "r1" "r2" "r3" "r4" }}
+| {{ T (printf "highbay_matrix_%s_label" .) }} | {{ T (printf "highbay_matrix_%s_hb" .) }} | {{ T (printf "highbay_matrix_%s_solo" .) }} | {{ T (printf "highbay_matrix_%s_sdk" .) }} | {{ T (printf "highbay_matrix_%s_wt" .) }} |
+{{- end }}
 
 ## {{ T "home_faq_heading" }}
 {{ range slice "scope" "holdouts" "local" "sandbox" }}

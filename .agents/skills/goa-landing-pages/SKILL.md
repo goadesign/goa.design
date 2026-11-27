@@ -32,7 +32,7 @@ A landing page earns a first run in seconds; `/docs/` owns CLI flags, edge-case 
   - Place the interactive product demonstration (`#views` studio or `.contract-demo`) **immediately below `#install`**, before prose comparison tables (`#contrast`). Show the real contract, generated code, or UI stages before arguing against alternatives.
   - Give each visual tab a 1-sentence caption (≤15 words) and omit footnotes about how screenshots were captured.
 - **Comparisons, code lanes, capabilities, and FAQ:**
-  - Omit section intro paragraphs when the heading and column titles already explain the structure (e.g., `Without X vs. with X`, `How X compares`). Where an intro adds essential context (e.g., linking the reference repository for a `~70%` measurement), keep it to **1 sentence (≤18 words)**.
+  - Omit section intro paragraphs when the heading and column titles already explain the structure (e.g., `Without X vs. with X`, `How X compares`). Where an intro adds essential context (e.g., linking the reference repository for a `70%` measurement), keep it to **1 sentence (≤18 words)**, and do not repeat the same percentage across every section.
   - Keep comparison cells, capability descriptions, and FAQ answers to **1–2 short sentences (≤25 words)**; link `/docs/...` for deeper caveats (`protoc`, sandbox boundaries, holdout evaluators).
   - Give code columns **one** short caption above the `<pre><code>` block. Never sandwich a code block between both a top caption and a bottom paragraph, and never follow code columns with a separate footnote strip repeating the same metrics.
 
@@ -45,8 +45,10 @@ Read `.agents/product-marketing.md` (especially `## Learnings`) before proposing
 1. **Never frame tooling as restricting the user's coding agent:**
    - Avoid lines like *"Give your coding agents one way to build."* Developers value what their coding agents can build; restriction framing triggers *"Why would I limit my agent to one way?"*
    - Frame value around **keeping coding agents fast as the codebase grows, skipping hand-written plumbing, or shipping verified services**, never around narrowing the agent.
-2. **State concrete functionality, not just downstream promises:**
-   - Pair any outcome headline immediately with what the product actually *is and does* (e.g., confirming a short contract in the browser, compiling ~70% of HTTP/MCP/validation code in Go, and testing handlers in a separate Git copy).
+2. **State concrete functionality, not just downstream promises or insider jargon:**
+   - Pair any outcome headline immediately with what the product actually *is and does* (e.g., confirming edge cases on a one-page change card in the browser, following built-in Go architecture rules, compiling 70% of HTTP/MCP/validation code in Go, and testing handlers in a separate Git copy).
+   - Describe what built-in libraries and DSL primitives **enable** (`Auth & tenant isolation`, `Tracing & health checks`, `Event streams & rate limits`, `Human approvals & durable runs`) rather than leaning on unfamiliar internal names (`Inject`, `Clue`, `Pulse`, `BoundedResult`, `Confirmation`, `highbay://golden-path`).
+   - Write round benchmark numbers directly (`70%`, never `~70%`; a round figure already reads as an estimate, and a leading tilde weakens it).
 3. **Zero AI writing tells across all five locales (`en`, `es`, `fr`, `it`, `ja`):**
    - **Zero em dashes (`—`)** or spaced hyphens used as punctuation in landing-page copy. Split into two short sentences or use a plain conjunction.
    - **Zero `"X, not Y"` / `"not X, it's Y"` / `"no X, no Y"` contrast tails** (e.g., avoid *"generated, not prompted"* or *"no model in the loop"*; write *"in zero model tokens"* or *"writes only the handlers"*).

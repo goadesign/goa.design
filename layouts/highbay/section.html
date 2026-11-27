@@ -1,18 +1,81 @@
 {{- /*
   The Highbay landing page (/highbay/ in every language). Copy comes from the
-  highbay_* keys in i18n/*.yaml; a spacious full-width hero is followed by a
-  dedicated two-step Get Highbay row, paired comparison, interactive four-stage
-  UI viewer (defaulting to the C4 Architecture diagram with visual thumbnails),
-  standardized layout, and production infrastructure patterns.
+  highbay_* keys in i18n/*.yaml; a two-column hero pairs the headline with an
+  interactive code-ratio and pipeline diagram above a compact two-step install
+  bar, followed by a dark-stage four-view browser showcase, visual topology
+  contrast, syntax-highlighted repository lanes, stack icons, a comparison
+  matrix, and native <details> FAQ accordions.
 */ -}}
 {{ define "main" }}
 <div class="goa-home chorus-page highbay-page">
   <section class="highbay-hero-full site-width" aria-labelledby="highbay-title">
-    <h1 id="highbay-title"><strong class="highbay-h1-lead">{{ T "highbay_heading" }}</strong> <span class="highbay-h1-sub">{{ T "highbay_heading_second" }}</span></h1>
-    <p class="hero-lead">{{ T "highbay_intro" }}</p>
-    <div class="hero-actions highbay-hero-actions">
-      <a class="goa-button" href="#install">{{ T "highbay_install_cta" }}</a>
-      <a class="goa-button chorus-button-quiet" href="#views">{{ T "highbay_walkthrough_cta" }}</a>
+    <div class="highbay-hero-split">
+      <div class="highbay-hero__copy">
+        <h1 id="highbay-title"><strong class="highbay-h1-lead">{{ T "highbay_heading" }}</strong> <span class="highbay-h1-sub">{{ T "highbay_heading_second" }}</span></h1>
+        <dl class="highbay-roles">
+          <div class="highbay-roles__row highbay-roles__row--you">
+            <dt><span class="highbay-role-pill highbay-role-pill--you">{{ T "highbay_for_you_label" }}</span></dt>
+            <dd>{{ T "highbay_for_you_text" | markdownify }}</dd>
+          </div>
+          <div class="highbay-roles__row highbay-roles__row--model">
+            <dt><span class="highbay-role-pill highbay-role-pill--model">{{ T "highbay_for_model_label" }}</span></dt>
+            <dd>{{ T "highbay_for_model_text" | markdownify }}</dd>
+          </div>
+        </dl>
+        <div class="hero-actions highbay-hero-actions">
+          <a class="goa-button" href="#install">{{ T "highbay_install_cta" }}</a>
+          <a class="goa-button chorus-button-quiet" href="#views">{{ T "highbay_walkthrough_cta" }}</a>
+        </div>
+      </div>
+
+      <div class="highbay-hero__visual">
+        <div class="highbay-arch-card">
+          <div class="highbay-playbook">
+            <div class="highbay-playbook__head">
+              <strong>{{ T "highbay_diag_playbook_title" }}</strong>
+              <span>{{ T "highbay_diag_playbook_meta" }}</span>
+            </div>
+            <ul class="highbay-playbook__chips">
+              <li>{{ T "highbay_diag_chip_auth" }}</li>
+              <li>{{ T "highbay_diag_chip_otel" }}</li>
+              <li>{{ T "highbay_diag_chip_pulse" }}</li>
+              <li>{{ T "highbay_diag_chip_durable" }}</li>
+            </ul>
+          </div>
+
+          <div class="highbay-pipe">
+            <button type="button" class="highbay-pipe__node" data-jump-stage="agree">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="2.5" width="13" height="15" rx="2"/><path d="m7 10 2 2 4-4M7 6.5h6"/></svg>
+              <code>{{ T "highbay_diag_badge_you" }}</code>
+              <span>{{ T "highbay_diag_step_agree" }}</span>
+            </button>
+            <svg class="highbay-pipe__conn" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 0v13m-3.5-3.5L12 13.5l3.5-4"/></svg>
+            <button type="button" class="highbay-pipe__node highbay-pipe__node--accent" data-jump-stage="architecture">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m10 2.5 7 3.8-7 3.8-7-3.8 7-3.8Z"/><path d="m3 10 7 3.8 7-3.8M3 13.7l7 3.8 7-3.8"/></svg>
+              <code>highbay gen</code>
+              <span>{{ T "highbay_diag_step_arch" }}</span>
+            </button>
+            <svg class="highbay-pipe__conn highbay-pipe__conn--wide" viewBox="0 0 240 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M120 0v8M56 8h128M56 8v9m128-9v9"/></svg>
+            <div class="highbay-pipe__fork">
+              <button type="button" class="highbay-pipe__node highbay-pipe__node--branch" data-jump-stage="check">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="5.5" r="2"/><circle cx="6" cy="14.5" r="2"/><circle cx="14" cy="10" r="2"/><path d="M6 7.5v5M8 6c3 0 4 2 4 4"/></svg>
+                <code>.highbay-build</code>
+                <span>{{ T "highbay_diag_step_build" }}</span>
+              </button>
+              <button type="button" class="highbay-pipe__node highbay-pipe__node--branch highbay-pipe__node--eval" data-jump-stage="check">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2.5 4 5v4.6c0 4 2.6 6.8 6 7.9 3.4-1.1 6-3.9 6-7.9V5l-6-2.5Z"/><path d="m7.5 10 1.8 1.8 3.4-3.6"/></svg>
+                <code>.highbay-tests</code>
+                <span>{{ T "highbay_diag_step_test" }}</span>
+              </button>
+            </div>
+            <svg class="highbay-pipe__conn highbay-pipe__conn--wide" viewBox="0 0 240 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M56 0v9m128-9v9M56 9h128M120 9v9"/></svg>
+            <button type="button" class="highbay-pipe__node highbay-pipe__node--ok" data-jump-stage="approve">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="m6.8 10.2 2.1 2.1 4.4-4.5"/></svg>
+              <span>{{ T "highbay_diag_step_merge" }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -59,7 +122,7 @@ highbay up</code></pre>
     </div>
   </section>
 
-  <section class="highbay-showcase" id="views" aria-labelledby="highbay-showcase-title">
+  <section class="highbay-showcase highbay-showcase--dark" id="views" aria-labelledby="highbay-showcase-title">
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-showcase-title">{{ T "highbay_showcase_heading" }}</h2>
@@ -87,8 +150,8 @@ highbay up</code></pre>
           >
             <span class="highbay-tab__label">{{ T .title }}</span>
             <span class="highbay-tab__thumb" aria-hidden="true">
-              <img class="chorus-shot--light" src="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" alt="" width="260" height="211" loading="lazy" decoding="async">
-              <img class="chorus-shot--dark" src="{{ (printf "img/highbay/%s-desktop-dark.webp" .file) | relURL }}" alt="" width="260" height="211" loading="lazy" decoding="async">
+              <img class="chorus-shot--light" src="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" alt="" width="260" height="175" loading="lazy" decoding="async">
+              <img class="chorus-shot--dark" src="{{ (printf "img/highbay/%s-desktop-dark.webp" .file) | relURL }}" alt="" width="260" height="175" loading="lazy" decoding="async">
             </span>
           </button>
           {{- end }}
@@ -113,13 +176,13 @@ highbay up</code></pre>
                   {{- if .mobile }}
                   <source media="(max-width: 640px)" srcset="{{ (printf "img/highbay/%s-mobile-light.webp" .file) | relURL }}" width="390" height="740">
                   {{- end }}
-                  <img src="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" alt="{{ T .alt }}" width="1040" height="845" {{ if .active }}fetchpriority="high"{{ else }}loading="lazy"{{ end }} decoding="async">
+                  <img src="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" alt="{{ T .alt }}" width="1280" height="860" {{ if .active }}fetchpriority="high"{{ else }}loading="lazy"{{ end }} decoding="async">
                 </picture>
                 <picture class="chorus-shot--dark">
                   {{- if .mobile }}
                   <source media="(max-width: 640px)" srcset="{{ (printf "img/highbay/%s-mobile-dark.webp" .file) | relURL }}" width="390" height="740">
                   {{- end }}
-                  <img src="{{ (printf "img/highbay/%s-desktop-dark.webp" .file) | relURL }}" alt="{{ T .alt }}" width="1040" height="845" {{ if .active }}fetchpriority="high"{{ else }}loading="lazy"{{ end }} decoding="async">
+                  <img src="{{ (printf "img/highbay/%s-desktop-dark.webp" .file) | relURL }}" alt="{{ T .alt }}" width="1280" height="860" {{ if .active }}fetchpriority="high"{{ else }}loading="lazy"{{ end }} decoding="async">
                 </picture>
               </div>
             </figure>
@@ -138,11 +201,38 @@ highbay up</code></pre>
 
       <figure class="highbay-sim">
         <div class="highbay-sim__colheads">
-          <div class="highbay-sim__head">
-            <h3>{{ T "highbay_solo_title" }}</h3>
+          <div class="highbay-sim__head highbay-sim__head--solo">
+            <h3><i class="highbay-sim__dot highbay-sim__dot--warn" aria-hidden="true"></i>{{ T "highbay_solo_title" }}</h3>
+            <svg class="highbay-topo highbay-topo--solo" viewBox="0 0 440 92" fill="none" aria-hidden="true">
+              <rect x="4" y="18" width="110" height="56" rx="8" stroke="currentColor" stroke-width="1.5"/>
+              <text x="59" y="43" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">1 agent</text>
+              <text x="59" y="60" text-anchor="middle" fill="currentColor" font-size="11" opacity=".78">1 worktree</text>
+              <path d="M114 34h46M114 46h46M114 58h46" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3"/>
+              <rect x="160" y="8" width="274" height="76" rx="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <text x="297" y="31" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">routes + auth + OpenAPI + MCP</text>
+              <text x="297" y="51" text-anchor="middle" fill="currentColor" font-size="11" opacity=".82">hand-edited on every field change</text>
+              <text x="297" y="70" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">writes &amp; grades its own tests ↺</text>
+            </svg>
           </div>
-          <div class="highbay-sim__head">
-            <h3>{{ T "highbay_with_title" }}</h3>
+          <div class="highbay-sim__head highbay-sim__head--hb">
+            <h3><i class="highbay-sim__dot highbay-sim__dot--ok" aria-hidden="true"></i>{{ T "highbay_with_title" }}</h3>
+            <svg class="highbay-topo highbay-topo--hb" viewBox="0 0 440 92" fill="none" aria-hidden="true">
+              <rect x="4" y="24" width="98" height="44" rx="8" stroke="currentColor" stroke-width="1.6"/>
+              <text x="53" y="43" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">design/ + rules</text>
+              <text x="53" y="58" text-anchor="middle" fill="currentColor" font-size="11" opacity=".8">confirmed</text>
+              <path d="M102 46h22" stroke="currentColor" stroke-width="1.6"/>
+              <rect x="124" y="24" width="102" height="44" rx="8" stroke="currentColor" stroke-width="1.6"/>
+              <text x="175" y="43" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">gen/ servers</text>
+              <text x="175" y="58" text-anchor="middle" fill="currentColor" font-size="11" opacity=".8">0 tokens</text>
+              <path d="M226 46h16M242 24v44M242 24h18M242 68h18" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="260" y="8" width="104" height="32" rx="6" stroke="currentColor" stroke-width="1.5"/>
+              <text x="312" y="28" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">internal/ · build</text>
+              <rect x="260" y="52" width="104" height="32" rx="6" stroke="currentColor" stroke-width="1.5"/>
+              <text x="312" y="72" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">eval/ · test</text>
+              <path d="M364 24h14v44h-14M378 46h14" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="392" y="26" width="44" height="40" rx="8" stroke="currentColor" stroke-width="1.6"/>
+              <text x="414" y="50" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">4/4 ✓</text>
+            </svg>
           </div>
         </div>
         <div class="highbay-sim__pairs">
@@ -173,14 +263,14 @@ highbay up</code></pre>
         <p>{{ T "highbay_walkthrough_intro" | markdownify }}</p>
       </div>
       <div class="highbay-lanes">
-      <article class="highbay-lane" aria-labelledby="highbay-lane-guide">
-        <header class="highbay-lane__head">
-          <h3 id="highbay-lane-guide">{{ T "highbay_role_guide" }}</h3>
-          <p>{{ T "highbay_role_guide_caption" | markdownify }}</p>
-        </header>
-        <div class="highbay-lane__code">
-<pre><code>// design/agents.go (illustrative excerpt)
-var opsTools = Toolset("ops", func() {
+        <article class="highbay-lane" aria-labelledby="highbay-lane-guide">
+          <header class="highbay-lane__head">
+            <h3 id="highbay-lane-guide">{{ T "highbay_role_guide" }}</h3>
+            <p>{{ T "highbay_role_guide_caption" | markdownify }}</p>
+          </header>
+          <div class="highbay-lane__code">
+            <div class="demo-filename"><span>design/agents.go</span><span>{{ T "highbay_badge_confirmed" }}</span></div>
+            {{ highlight `var opsTools = Toolset("ops", func() {
   Tool("query_pod_logs", "Read pod logs.", func() {
     Args(LogsArgs)
     Return(LogLines)
@@ -191,31 +281,27 @@ var opsTools = Toolset("ops", func() {
       NextCursor("next_cursor")
     })
   })
-  Tool("rollback_staging", "Roll back staging.", func() {
-    BindTo("ops", "rollback_staging")
-    Inject("org_id")
-  })
   Tool("rollback_production", "Roll back prod.", func() {
     BindTo("ops", "rollback_production")
     Inject("org_id")
     Confirmation(func() {
-      Title("Approve production rollback")
-      PromptTemplate(`Roll back {{"{{"}} .service {{"}}"}} in prod?`)
-      DeniedResultTemplate(`{"status":"denied"}`)
+      Title("Confirm prod rollback")
+      PromptTemplate("Roll back {{.svc}}?")
+      DeniedResultTemplate("denied")
     })
   })
-})</code></pre>
-        </div>
-      </article>
+})` "go" "" }}
+          </div>
+        </article>
 
-      <article class="highbay-lane" aria-labelledby="highbay-lane-codegen">
-        <header class="highbay-lane__head">
-          <h3 id="highbay-lane-codegen">{{ T "highbay_role_codegen" }}</h3>
-          <p>{{ T "highbay_role_codegen_caption" | markdownify }}</p>
-        </header>
-        <div class="highbay-lane__code">
-<pre><code>// gen/ops/service.go
-type Service interface {
+        <article class="highbay-lane" aria-labelledby="highbay-lane-codegen">
+          <header class="highbay-lane__head">
+            <h3 id="highbay-lane-codegen">{{ T "highbay_role_codegen" }}</h3>
+            <p>{{ T "highbay_role_codegen_caption" | markdownify }}</p>
+          </header>
+          <div class="highbay-lane__code">
+            <div class="demo-filename"><span>gen/ops/service.go</span><span>{{ T "highbay_badge_zero_tok" }}</span></div>
+            {{ highlight `type Service interface {
   QueryPodLogs(context.Context,
     *LogsArgs) (*LogsPage, error)
   RollbackStaging(context.Context,
@@ -223,20 +309,20 @@ type Service interface {
   RollbackProduction(context.Context,
     *RollbackArgs) (*RollbackOutcome, error)
 }
-// + HTTP &amp; MCP servers, OpenAPI 3 spec
-// + Tool JSON (org_id omitted)
-// + BoundedResult cursor bounds</code></pre>
-        </div>
-      </article>
+// + HTTP & MCP servers, OpenAPI 3 spec
+// + Tenant ID bound server-side
+// + Enforced log page cursors` "go" "" }}
+          </div>
+        </article>
 
-      <article class="highbay-lane" aria-labelledby="highbay-lane-tests">
-        <header class="highbay-lane__head">
-          <h3 id="highbay-lane-tests">{{ T "highbay_role_tests" }}</h3>
-          <p>{{ T "highbay_role_tests_caption" | markdownify }}</p>
-        </header>
-        <div class="highbay-lane__code">
-<pre><code>// eval/acceptance/incidents.go
-run, err := h.startRollback(ctx, "prod", "api")
+        <article class="highbay-lane" aria-labelledby="highbay-lane-tests">
+          <header class="highbay-lane__head">
+            <h3 id="highbay-lane-tests">{{ T "highbay_role_tests" }}</h3>
+            <p>{{ T "highbay_role_tests_caption" | markdownify }}</p>
+          </header>
+          <div class="highbay-lane__code">
+            <div class="demo-filename"><span>eval/acceptance/incidents.go</span><span>{{ T "highbay_badge_isolated" }}</span></div>
+            {{ highlight `run, err := h.startRollback(ctx, "prod", "api")
 if err != nil {
   return eval.Result{}, err
 }
@@ -248,10 +334,10 @@ return eval.Result{Checks: []eval.Check{
   check("paused", run.PendingConfirmation),
   check("non_oncall_approval_rejected",
     res.StatusCode == 403),
-}}, nil</code></pre>
-        </div>
-      </article>
-    </div>
+}}, nil` "go" "" }}
+          </div>
+        </article>
+      </div>
       <p class="section-link"><a href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }} →</a></p>
     </div>
   </section>
@@ -263,37 +349,89 @@ return eval.Result{Checks: []eval.Check{
         <p>{{ T "highbay_cap_intro" | markdownify }}</p>
       </div>
       <dl class="benefit-list highbay-cap-grid">
-        {{ range slice "auth" "obs" "stream" "durable" }}
-        <div>
-          <dt>{{ T (printf "highbay_cap_%s_title" .) | markdownify }}</dt>
-          <dd>{{ T (printf "highbay_cap_%s_body" .) | markdownify }}</dd>
+        <div class="highbay-cap-card">
+          <span class="highbay-cap-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 5 6v5.5c0 4.8 3.1 8.2 7 9.5 3.9-1.3 7-4.7 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <dt>{{ T "highbay_cap_auth_title" | markdownify }}</dt>
+          <dd>{{ T "highbay_cap_auth_body" | markdownify }}</dd>
         </div>
-        {{ end }}
+        <div class="highbay-cap-card">
+          <span class="highbay-cap-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
+          </span>
+          <dt>{{ T "highbay_cap_obs_title" | markdownify }}</dt>
+          <dd>{{ T "highbay_cap_obs_body" | markdownify }}</dd>
+        </div>
+        <div class="highbay-cap-card">
+          <span class="highbay-cap-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="7" r="2.2"/><circle cx="6" cy="17" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M8.2 7.5 15.8 11M8.2 16.5 15.8 13"/></svg>
+          </span>
+          <dt>{{ T "highbay_cap_stream_title" | markdownify }}</dt>
+          <dd>{{ T "highbay_cap_stream_body" | markdownify }}</dd>
+        </div>
+        <div class="highbay-cap-card">
+          <span class="highbay-cap-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="7" height="6" rx="1.5"/><rect x="13.5" y="14" width="7" height="6" rx="1.5"/><path d="M10.5 7H15a2 2 0 0 1 2 2v5M7 10v5a2 2 0 0 0 2 2h4.5"/></svg>
+          </span>
+          <dt>{{ T "highbay_cap_durable_title" | markdownify }}</dt>
+          <dd>{{ T "highbay_cap_durable_body" | markdownify }}</dd>
+        </div>
       </dl>
     </div>
   </section>
 
-  <section class="chorus-compare highbay-compare" aria-labelledby="highbay-compare-title">
+  <section class="chorus-compare highbay-compare" id="compare" aria-labelledby="highbay-compare-title">
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
       </div>
-      <dl class="benefit-list highbay-compare-3col">
-        {{ range slice "solo" "speckit" "workspaces" }}
-        <div><dt>{{ T (printf "highbay_compare_%s" .) }}</dt><dd>{{ T (printf "highbay_compare_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
-      </dl>
+      <div tabindex="0" role="region" aria-labelledby="highbay-compare-title" class="highbay-matrix-wrap">
+        <table
+          class="highbay-matrix"
+          style="--col-hb: '{{ T "highbay_with_title" }}'; --col-solo: '{{ T "highbay_compare_solo" }}'; --col-sdk: '{{ T "highbay_compare_speckit" }}'; --col-wt: '{{ T "highbay_compare_workspaces" }}';"
+        >
+          <thead>
+            <tr>
+              <th scope="col">{{ T "highbay_compare_col_dim" }}</th>
+              <th scope="col" class="highbay-matrix__hb">{{ T "highbay_with_title" }}</th>
+              <th scope="col">{{ T "highbay_compare_solo" }}</th>
+              <th scope="col">{{ T "highbay_compare_speckit" }}</th>
+              <th scope="col">{{ T "highbay_compare_workspaces" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{- range slice "r1" "r2" "r3" "r4" }}
+            <tr>
+              <th scope="row">{{ T (printf "highbay_matrix_%s_label" .) }}</th>
+              <td class="highbay-matrix__hb">
+                <svg class="highbay-matrix__check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3.2 3.2L13 4.8"/></svg>
+                <span>{{ T (printf "highbay_matrix_%s_hb" .) | markdownify }}</span>
+              </td>
+              <td>{{ T (printf "highbay_matrix_%s_solo" .) | markdownify }}</td>
+              <td>{{ T (printf "highbay_matrix_%s_sdk" .) | markdownify }}</td>
+              <td>{{ T (printf "highbay_matrix_%s_wt" .) | markdownify }}</td>
+            </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
   <section class="faq-section chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2></div>
-      <dl class="faq-grid">
-        {{ range slice "scope" "holdouts" "local" "sandbox" }}
-        <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
-        {{ end }}
-      </dl>
+      <div class="highbay-accordion">
+        {{- range $i, $k := slice "scope" "holdouts" "local" "sandbox" }}
+        <details class="highbay-faq-item"{{ if eq $i 0 }} open{{ end }}>
+          <summary>{{ T (printf "highbay_faq_%s_q" $k) }}</summary>
+          <div class="highbay-faq-item__body">
+            <p>{{ T (printf "highbay_faq_%s_a" $k) | markdownify }}</p>
+          </div>
+        </details>
+        {{- end }}
+      </div>
     </div>
   </section>
 
@@ -347,6 +485,13 @@ return eval.Result{Checks: []eval.Check{
           e.preventDefault();
           activate(target, true);
         }
+      });
+    }
+    for (const jump of document.querySelectorAll('[data-jump-stage]')) {
+      jump.addEventListener('click', () => {
+        const match = tabs.find((t) => t.dataset.stage === jump.dataset.jumpStage);
+        if (match) activate(match, false);
+        document.getElementById('views')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
   }
