@@ -74,20 +74,25 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/skills-bundle"
           python3 - "$RUNNER_TEMP/skills-bundle/skills.tar" <<'PY'
-          import os, sys, tarfile
+          import json, os, sys, tarfile
 
           out_tar = sys.argv[1]
+          with open("skills-lock.json", "r", encoding="utf-8") as f:
+              locked_skills = sorted(json.load(f).get("skills", {}).keys())
           with tarfile.open(out_tar, "w", format=tarfile.PAX_FORMAT) as tf:
               tf.add("skills-lock.json", recursive=False)
-              for root, dirs, files in os.walk(".agents/skills", followlinks=False):
-                  dirs.sort()
-                  files.sort()
-                  tf.add(root, recursive=False)
-                  for fn in files:
-                      full = os.path.join(root, fn)
-                      if os.path.islink(full) or not os.path.isfile(full):
-                          raise SystemExit(f"Refusing non-regular skill file: {full}")
-                      tf.add(full, recursive=False)
+              tf.add(".agents/skills", recursive=False)
+              for skill_name in locked_skills:
+                  skill_dir = os.path.join(".agents/skills", skill_name)
+                  for root, dirs, files in os.walk(skill_dir, followlinks=False):
+                      dirs.sort()
+                      files.sort()
+                      tf.add(root, recursive=False)
+                      for fn in files:
+                          full = os.path.join(root, fn)
+                          if os.path.islink(full) or not os.path.isfile(full):
+                              raise SystemExit(f"Refusing non-regular skill file: {full}")
+                          tf.add(full, recursive=False)
           PY
 
       - name: Upload refreshed skills bundle
@@ -191,15 +196,18 @@ jobs:
 
               tf.extractall(path=stage_dir, filter="data")
 
-          rm_targets = [".agents/skills", "skills-lock.json"]
-          for t in rm_targets:
-              if os.path.exists(t):
-                  if os.path.isdir(t) and not os.path.islink(t):
-                      shutil.rmtree(t)
-                  else:
-                      os.unlink(t)
+          os.makedirs(".agents/skills", exist_ok=True)
+          if os.path.exists("skills-lock.json"):
+              os.unlink("skills-lock.json")
           shutil.copy2(os.path.join(stage_dir, "skills-lock.json"), "skills-lock.json")
-          shutil.copytree(os.path.join(stage_dir, ".agents", "skills"), ".agents/skills", symlinks=False)
+          for s in sorted(expected_skills):
+              dst = os.path.join(".agents", "skills", s)
+              if os.path.exists(dst):
+                  if os.path.isdir(dst) and not os.path.islink(dst):
+                      shutil.rmtree(dst)
+                  else:
+                      os.unlink(dst)
+              shutil.copytree(os.path.join(stage_dir, ".agents", "skills", s), dst, symlinks=False)
           PY
 
           outside="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(\.agents/skills/|skills-lock\.json$)' || true)"
