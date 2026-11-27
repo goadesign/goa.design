@@ -207,6 +207,21 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .company-logo img { display: block; width: 160px; max-width: 100%; height: 52px; object-fit: contain; mix-blend-mode: multiply; }
 .company-logo--wide img { width: 190px; }
 .company-logo--stacked img { width: 94px; height: 78px; }
+.home-hero-full.highbay-hero-full { padding-block: 44px 28px; }
+.home-hero-full.highbay-hero-full h1 { font-size: clamp(2.15rem, 3.3vw, 3.05rem); line-height: 1.12; margin: 0 0 1.25rem; }
+.home-hero-full .highbay-roles__row { grid-template-columns: minmax(9.5rem, max-content) minmax(0, 1fr); }
+.home-hero-full .hero-meta { margin-top: .75rem; }
+.home-hero-full .hero-assistant > a { display: inline-flex; align-items: center; padding: .24rem .62rem; border-radius: 6px; border: 1px solid var(--color-border-subtle); background: var(--color-bg-alt); font-size: .78rem; font-weight: 600; color: var(--color-text-heading); text-decoration: none; }
+.home-hero-full .hero-assistant > a:hover { border-color: var(--doc-link-color); background: var(--color-highlight); color: var(--doc-link-color); }
+.home-pipe-link { text-decoration: none; }
+.home-pipe-link:hover { text-decoration: none; }
+.home-hero-full .highbay-pipe__node--branch code { white-space: normal; }
+.home-pipe-static { cursor: default; }
+.home-pipe-static:hover { background: var(--color-bg-elevated); border-color: #16a34a; }
+[data-theme="dark"] .home-pipe-static:hover { border-color: #4ade80; }
+.home-icon-list dt { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; }
+@media (max-width: 800px) { .home-hero-full.highbay-hero-full { padding-block: 32px 22px; } }
+@media (max-width: 600px) { .home-hero-full .highbay-roles__row { grid-template-columns: 1fr; } }
 [data-theme="dark"] .company-logo img { filter: grayscale(1) invert(1) brightness(1.35); mix-blend-mode: screen; opacity: .9; }
 
 // Chorus landing page (/chorus/). It reuses the homepage hero, section intro,

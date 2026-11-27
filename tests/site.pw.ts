@@ -22,6 +22,8 @@ for (const width of [390, 1440]) {
       expect(brandBox!.height).toBeGreaterThanOrEqual(44);
       await page.locator('.td-navbar').screenshot({ path: `.impeccable/review/header-${width}-${theme}.png` });
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Let agents reason. Let Goa generate.');
+      await expect(page.locator('.home-hero-full .highbay-roles dt')).toHaveText(['For coding agents', 'For AI products']);
+      await expect(page.locator('.home-hero-full .highbay-playbook__head strong')).toHaveText('design/*.go');
       await expect(page.getByRole('link', { name: 'Build a service', exact: true })).toHaveAttribute('href', '/docs/1-goa/quickstart/');
       await expect(page.getByRole('link', { name: 'Build an AI agent', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/quickstart/');
       await page.locator('label[for="demo-agent"]').click();
@@ -79,6 +81,8 @@ for (const width of [390, 1440]) {
       await mcp.locator('h2').click();
       await mcp.screenshot({ path: `.impeccable/review/mcp-${width}-${theme}.png` });
       await expect(page.getByRole('link', { name: 'Host a tool registry', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/registry/');
+      await expect(page.locator('#compare .highbay-matrix tbody tr')).toHaveCount(4);
+      await expect(page.locator('#compare').getByRole('table')).toBeVisible();
       await page.locator('.support-section').scrollIntoViewIfNeeded();
       await expect.poll(() => page.locator('.support-section img').evaluateAll(
         images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0),

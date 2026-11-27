@@ -1,6 +1,7 @@
 # Goa and Goa-AI
 
-{{ T "home_intro" }}
+- **{{ T "home_for_agents_label" }}:** {{ T "home_for_agents_text" }}
+- **{{ T "home_for_products_label" }}:** {{ T "home_for_products_text" }}
 
 GitHub: [Goa](https://github.com/goadesign/goa) · [Goa-AI](https://github.com/goadesign/goa-ai)
 
@@ -95,11 +96,12 @@ HTTP, gRPC, JSON-RPC. {{ T "home_service_transports" }}
 [{{ T "home_registry_cta" }}]({{ absLangURL "docs/2-goa-ai/registry/" }})
 
 ## {{ T "home_compare_heading" }}
-{{ range slice "specs" "mcp_sdk" "agent_sdk" }}
-### {{ T (printf "home_compare_%s" .) }}
 
-{{ T (printf "home_compare_%s_text" .) }}
-{{ end }}
+| {{ T "home_compare_col_dim" }} | {{ T "home_compare_col_goa" }} | {{ T "home_compare_specs" }} | {{ T "home_compare_mcp_sdk" }} | {{ T "home_compare_agent_sdk" }} |
+| --- | --- | --- | --- | --- |
+{{- range slice "r1" "r2" "r3" "r4" }}
+| {{ T (printf "home_matrix_%s_label" .) }} | {{ T (printf "home_matrix_%s_goa" .) }} | {{ T (printf "home_matrix_%s_specs" .) }} | {{ T (printf "home_matrix_%s_mcp" .) }} | {{ T (printf "home_matrix_%s_agent" .) }} |
+{{- end }}
 {{ range slice "codegen" "difference" "mcp" "tokens" }}
 ## {{ T (printf "home_faq_%s_q" .) }}
 
