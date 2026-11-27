@@ -178,17 +178,6 @@ sent #auth#3
     </div>
   </section>
 
-  <section class="benefits-section chorus-compare" aria-labelledby="chorus-compare-title">
-    <div class="site-width">
-      <div class="section-intro"><h2 id="chorus-compare-title">{{ T "chorus_compare_heading" }}</h2></div>
-      <dl class="benefit-list chorus-compare-list">
-        {{ range slice "ide" "pty" "subagents" "chat" }}
-        <div><dt>{{ T (printf "chorus_compare_%s" .) }}</dt><dd>{{ T (printf "chorus_compare_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
-      </dl>
-    </div>
-  </section>
-
   <section class="benefits-section chorus-tokens" aria-labelledby="chorus-tokens-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="chorus-tokens-title">{{ T "chorus_tokens_heading" }}</h2></div>
@@ -200,22 +189,39 @@ sent #auth#3
     </div>
   </section>
 
-  <section class="chorus-session site-width" aria-labelledby="chorus-session-title">
-    <div class="section-intro"><h2 id="chorus-session-title">{{ T "chorus_session_heading" }}</h2></div>
-    <figure class="chorus-session-quote">
-      <figcaption class="chorus-quote-speaker">{{ T "chorus_session_caption" }}</figcaption>
-      <blockquote lang="en">{{ range hugo.Data.chorus_session.quote }}<p>{{ . }}</p>{{ end }}</blockquote>
-    </figure>
-    <p class="chorus-session-result">{{ T "chorus_session_result" | markdownify }}</p>
+  <section class="chorus-session" aria-labelledby="chorus-session-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="chorus-session-title">{{ T "chorus_session_heading" }}</h2></div>
+      <div class="chorus-session-grid">
+        <figure class="chorus-session-quote">
+          <figcaption class="chorus-quote-speaker">{{ T "chorus_session_caption" }}</figcaption>
+          <blockquote lang="en">{{ range hugo.Data.chorus_session.quote }}<p>{{ . }}</p>{{ end }}</blockquote>
+        </figure>
+        <p class="chorus-session-result">{{ T "chorus_session_result" | markdownify }}</p>
+      </div>
+    </div>
   </section>
 
-  <section class="faq-section site-width chorus-faq" aria-labelledby="chorus-faq-title">
-    <h2 id="chorus-faq-title">{{ T "home_faq_heading" }}</h2>
-    <dl>
-      {{ range slice "replace" "agents" "local" "docs" }}
-      <div><dt>{{ T (printf "chorus_faq_%s_q" .) }}</dt><dd>{{ T (printf "chorus_faq_%s_a" .) | markdownify }}</dd></div>
-      {{ end }}
-    </dl>
+  <section class="benefits-section chorus-compare" aria-labelledby="chorus-compare-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="chorus-compare-title">{{ T "chorus_compare_heading" }}</h2></div>
+      <dl class="benefit-list chorus-compare-list">
+        {{ range slice "ide" "pty" "subagents" "chat" }}
+        <div><dt>{{ T (printf "chorus_compare_%s" .) }}</dt><dd>{{ T (printf "chorus_compare_%s_text" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+    </div>
+  </section>
+
+  <section class="faq-section chorus-faq" aria-labelledby="chorus-faq-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="chorus-faq-title">{{ T "home_faq_heading" }}</h2></div>
+      <dl class="faq-grid">
+        {{ range slice "replace" "agents" "local" "docs" }}
+        <div><dt>{{ T (printf "chorus_faq_%s_q" .) }}</dt><dd>{{ T (printf "chorus_faq_%s_a" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
+    </div>
   </section>
 
   <div class="site-width chorus-directory">

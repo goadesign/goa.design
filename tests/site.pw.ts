@@ -35,6 +35,16 @@ for (const width of [390, 1440]) {
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx skills add goadesign/goa --skill goa-service-designer');
       await expect(page.locator('#home-prompt-cmd')).toContainText('gen example.com/catalog/design');
       await expect(page.locator('#home-step2-copy')).toHaveAccessibleName('Copy starter prompt');
+      if (width >= 1440) {
+        const homeNavBox = await brand.boundingBox();
+        const homeHeroBox = await page.locator('.home-hero-full').boundingBox();
+        const homeCardBox = await page.locator('#designer-skill .highbay-install-card').boundingBox();
+        const homeStep1Box = await page.locator('#designer-skill .highbay-setup-box').boundingBox();
+        const homeStep2Box = await page.locator('#home-prompt-box').boundingBox();
+        expect(Math.abs(homeNavBox!.x - homeHeroBox!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(homeHeroBox!.x - homeCardBox!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(homeStep1Box!.y - homeStep2Box!.y)).toBeLessThanOrEqual(1);
+      }
       await page.locator('.home-prompt-btn[data-home-prompt="agent"]').click();
       await expect(page.locator('#home-prompt-cmd')).toContainText('gen example.com/catalog/design');
       await page.locator('.home-setup-btn[data-home-cmd="go"]').click();
@@ -83,6 +93,11 @@ for (const width of [390, 1440]) {
         await page.locator('.docs-sidebar summary').click();
       } else {
         await expect(page.locator('.docs-sidebar nav')).toBeVisible();
+        const docsNavBox = await page.locator('.td-navbar .navbar-brand').boundingBox();
+        const docsSidebarBox = await page.locator('.docs-sidebar').boundingBox();
+        const docsContentBox = await page.locator('.td-content').boundingBox();
+        expect(Math.abs(docsNavBox!.x - docsSidebarBox!.x)).toBeLessThanOrEqual(1);
+        expect(docsContentBox!.width).toBeGreaterThan(800);
       }
       await page.getByRole('button', { name: 'Copy page content' }).click();
       await expect(page.getByRole('menuitem', { name: 'Copy as Markdown' })).toBeVisible();
@@ -280,6 +295,11 @@ for (const width of [390, 1440]) {
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx @goadesign/chorus up');
       await page.locator('.chorus-mgr-btn[data-chorus-mgr="brew"]').click();
+      if (width >= 1440) {
+        const chorusStep1Box = await page.locator('#install .highbay-setup-box').boundingBox();
+        const chorusStep2Box = await page.locator('#install .highbay-prompt-box').boundingBox();
+        expect(Math.abs(chorusStep1Box!.y - chorusStep2Box!.y)).toBeLessThanOrEqual(1);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.evaluate(() => {
         (document.activeElement as HTMLElement | null)?.blur?.();
@@ -498,6 +518,20 @@ for (const width of [390, 1440]) {
       await page.locator('.highbay-prefix-btn[data-prefix="$highbay"]').click();
       await expect(page.locator('#highbay-prompt-cmd')).toContainText('$highbay Build a multi-tenant incident platform');
       await page.locator('.highbay-prefix-btn[data-prefix="/highbay"]').click();
+      if (width >= 1440) {
+        const hbNavBox = await brand.boundingBox();
+        const hbHeroBox = await page.locator('.highbay-hero-full').boundingBox();
+        const hbCardBox = await page.locator('#install .highbay-install-card').boundingBox();
+        const hbStep1Box = await page.locator('#install .highbay-setup-box').boundingBox();
+        const hbStep2Box = await page.locator('#install .highbay-prompt-box').boundingBox();
+        const hbH2Box = await page.locator('#highbay-showcase-title').boundingBox();
+        const hbStudioBox = await page.locator('.highbay-studio').boundingBox();
+        expect(Math.abs(hbNavBox!.x - hbHeroBox!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(hbHeroBox!.x - hbCardBox!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(hbH2Box!.x - hbStudioBox!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(hbCardBox!.width - hbStudioBox!.width)).toBeLessThanOrEqual(1);
+        expect(Math.abs(hbStep1Box!.y - hbStep2Box!.y)).toBeLessThanOrEqual(1);
+      }
 
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 

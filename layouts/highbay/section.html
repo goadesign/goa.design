@@ -46,6 +46,7 @@ highbay up</code></pre>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
+            <p class="install-hint">{{ T "highbay_install_step1_hint" | markdownify }}</p>
           </div>
 
           <div class="highbay-install-step">
@@ -194,11 +195,12 @@ highbay up</code></pre>
     </div>
   </section>
 
-  <section class="highbay-walkthrough site-width" id="codegen" aria-labelledby="highbay-walkthrough-title">
-    <div class="section-intro">
-      <h2 id="highbay-walkthrough-title">{{ T "highbay_walkthrough_heading" }}</h2>
-    </div>
-    <div class="highbay-lanes">
+  <section class="highbay-walkthrough" id="codegen" aria-labelledby="highbay-walkthrough-title">
+    <div class="site-width">
+      <div class="section-intro">
+        <h2 id="highbay-walkthrough-title">{{ T "highbay_walkthrough_heading" }}</h2>
+      </div>
+      <div class="highbay-lanes">
       <article class="highbay-lane" aria-labelledby="highbay-lane-guide">
         <header class="highbay-lane__head">
           <h3 id="highbay-lane-guide">{{ T "highbay_role_guide" }}</h3>
@@ -297,7 +299,8 @@ return eval.Result{Checks: []eval.Check{
       </div>
       {{ end }}
     </dl>
-    <p class="section-link"><a href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }} →</a></p>
+      <p class="section-link"><a href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }} →</a></p>
+    </div>
   </section>
 
   <section class="benefits-section highbay-capabilities" id="capabilities" aria-labelledby="highbay-cap-title">
@@ -329,31 +332,14 @@ return eval.Result{Checks: []eval.Check{
     </div>
   </section>
 
-  <section class="faq-section site-width chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
-    <h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2>
-    <dl>
-      {{ range slice "scope" "holdouts" "local" "sandbox" }}
-      <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
-      {{ end }}
-    </dl>
-  </section>
-
-  <section class="highbay-bottom-cta" aria-labelledby="highbay-bottom-title">
-    <div class="site-width highbay-bottom-cta__inner">
-      <div class="highbay-bottom-cta__copy">
-        <h2 id="highbay-bottom-title">{{ T "highbay_bottom_heading" }}</h2>
-        <p>{{ T "highbay_bottom_intro" | markdownify }}</p>
-      </div>
-      <div class="skill-install highbay-bottom-cta__box">
-        <div class="install-command">
-          <pre class="highbay-cmd-pre"><code id="highbay-go-bottom">brew install goadesign/tap/highbay
-highbay up</code></pre>
-          <button type="button" class="copy-install" command="--copy" commandfor="highbay-go-bottom" aria-label="{{ T "highbay_copy_brew" }}" data-copy-target="highbay-go-bottom" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
-          </button>
-        </div>
-        <p class="install-hint"><a href="{{ $docs }}">{{ T "highbay_docs_cta" }}</a> · <a href="https://github.com/goadesign/highbay/blob/main/internal/goldenpath/GOLDEN_PATH.md">Golden Path Playbook</a> · <a href="https://github.com/goadesign/highbay">GitHub</a> · <code>npx @goadesign/highbay up</code> <span class="copy-install-status" role="status"></span></p>
-      </div>
+  <section class="faq-section chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
+    <div class="site-width">
+      <div class="section-intro"><h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2></div>
+      <dl class="faq-grid">
+        {{ range slice "scope" "holdouts" "local" "sandbox" }}
+        <div><dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt><dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd></div>
+        {{ end }}
+      </dl>
     </div>
   </section>
 
@@ -392,8 +378,8 @@ highbay up</code></pre>
       tab.addEventListener('keydown', (e) => {
         const idx = tabs.indexOf(tab);
         let target = null;
-        if (e.key === 'ArrowRight') target = tabs[(idx + 1) % tabs.length];
-        else if (e.key === 'ArrowLeft') target = tabs[(idx - 1 + tabs.length) % tabs.length];
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = tabs[(idx + 1) % tabs.length];
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = tabs[(idx - 1 + tabs.length) % tabs.length];
         else if (e.key === 'Home') target = tabs[0];
         else if (e.key === 'End') target = tabs[tabs.length - 1];
         if (target) {
