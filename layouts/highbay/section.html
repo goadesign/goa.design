@@ -122,7 +122,7 @@ highbay up</code></pre>
     </div>
   </section>
 
-  <section class="highbay-showcase highbay-showcase--dark" id="views" aria-labelledby="highbay-showcase-title">
+  <section class="highbay-showcase" id="views" aria-labelledby="highbay-showcase-title">
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-showcase-title">{{ T "highbay_showcase_heading" }}</h2>
@@ -169,7 +169,8 @@ highbay up</code></pre>
             <figure class="highbay-stage-frame">
               <figcaption class="highbay-stage-frame__bar">
                 <p>{{ T .sub | markdownify }}</p>
-                <a class="highbay-window__zoom" href="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" target="_blank" rel="noopener">{{ T "highbay_zoom_label" }}</a>
+                <a class="highbay-window__zoom chorus-badge--light" href="{{ (printf "img/highbay/%s-desktop-light.webp" .file) | relURL }}" target="_blank" rel="noopener">{{ T "highbay_zoom_label" }}</a>
+                <a class="highbay-window__zoom chorus-badge--dark" href="{{ (printf "img/highbay/%s-desktop-dark.webp" .file) | relURL }}" target="_blank" rel="noopener">{{ T "highbay_zoom_label" }}</a>
               </figcaption>
               <div class="chorus-shot highbay-window">
                 <picture class="chorus-shot--light">
@@ -203,36 +204,29 @@ highbay up</code></pre>
         <div class="highbay-sim__colheads">
           <div class="highbay-sim__head highbay-sim__head--solo">
             <h3><i class="highbay-sim__dot highbay-sim__dot--warn" aria-hidden="true"></i>{{ T "highbay_solo_title" }}</h3>
-            <svg class="highbay-topo highbay-topo--solo" viewBox="0 0 440 92" fill="none" aria-hidden="true">
-              <rect x="4" y="18" width="110" height="56" rx="8" stroke="currentColor" stroke-width="1.5"/>
-              <text x="59" y="43" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">1 agent</text>
-              <text x="59" y="60" text-anchor="middle" fill="currentColor" font-size="11" opacity=".78">1 worktree</text>
-              <path d="M114 34h46M114 46h46M114 58h46" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3"/>
-              <rect x="160" y="8" width="274" height="76" rx="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
-              <text x="297" y="31" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">routes + auth + OpenAPI + MCP</text>
-              <text x="297" y="51" text-anchor="middle" fill="currentColor" font-size="11" opacity=".82">hand-edited on every field change</text>
-              <text x="297" y="70" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">writes &amp; grades its own tests ↺</text>
-            </svg>
+            <div class="highbay-topo highbay-topo--solo" aria-hidden="true">
+              <span class="highbay-topo__box">{{ T "highbay_topo_solo_box1" }}</span>
+              <span class="highbay-topo__arrow">⇢</span>
+              <span class="highbay-topo__box highbay-topo__box--dashed">
+                <strong>{{ T "highbay_topo_solo_box2" }}</strong>
+                <span>{{ T "highbay_topo_solo_box3" }}</span>
+              </span>
+            </div>
           </div>
           <div class="highbay-sim__head highbay-sim__head--hb">
             <h3><i class="highbay-sim__dot highbay-sim__dot--ok" aria-hidden="true"></i>{{ T "highbay_with_title" }}</h3>
-            <svg class="highbay-topo highbay-topo--hb" viewBox="0 0 440 92" fill="none" aria-hidden="true">
-              <rect x="4" y="24" width="98" height="44" rx="8" stroke="currentColor" stroke-width="1.6"/>
-              <text x="53" y="43" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">design/ + rules</text>
-              <text x="53" y="58" text-anchor="middle" fill="currentColor" font-size="11" opacity=".8">confirmed</text>
-              <path d="M102 46h22" stroke="currentColor" stroke-width="1.6"/>
-              <rect x="124" y="24" width="102" height="44" rx="8" stroke="currentColor" stroke-width="1.6"/>
-              <text x="175" y="43" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">gen/ servers</text>
-              <text x="175" y="58" text-anchor="middle" fill="currentColor" font-size="11" opacity=".8">0 tokens</text>
-              <path d="M226 46h16M242 24v44M242 24h18M242 68h18" stroke="currentColor" stroke-width="1.5"/>
-              <rect x="260" y="8" width="104" height="32" rx="6" stroke="currentColor" stroke-width="1.5"/>
-              <text x="312" y="28" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">internal/ · build</text>
-              <rect x="260" y="52" width="104" height="32" rx="6" stroke="currentColor" stroke-width="1.5"/>
-              <text x="312" y="72" text-anchor="middle" fill="currentColor" font-size="11.5" font-weight="700">eval/ · test</text>
-              <path d="M364 24h14v44h-14M378 46h14" stroke="currentColor" stroke-width="1.5"/>
-              <rect x="392" y="26" width="44" height="40" rx="8" stroke="currentColor" stroke-width="1.6"/>
-              <text x="414" y="50" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">4/4 ✓</text>
-            </svg>
+            <div class="highbay-topo highbay-topo--hb" aria-hidden="true">
+              <span class="highbay-topo__box"><code>{{ T "highbay_topo_hb_box1" }}</code></span>
+              <span class="highbay-topo__arrow">→</span>
+              <span class="highbay-topo__box"><code>{{ T "highbay_topo_hb_box2" }}</code></span>
+              <span class="highbay-topo__arrow">→</span>
+              <span class="highbay-topo__stack">
+                <span class="highbay-topo__box"><code>{{ T "highbay_topo_hb_build" }}</code></span>
+                <span class="highbay-topo__box"><code>{{ T "highbay_topo_hb_test" }}</code></span>
+              </span>
+              <span class="highbay-topo__arrow">→</span>
+              <span class="highbay-topo__box highbay-topo__box--ok">{{ T "highbay_topo_hb_pass" }}</span>
+            </div>
           </div>
         </div>
         <div class="highbay-sim__pairs">
@@ -281,13 +275,17 @@ highbay up</code></pre>
       NextCursor("next_cursor")
     })
   })
+  Tool("rollback_staging", "Roll back staging.", func() {
+    BindTo("ops", "rollback_staging")
+    Inject("org_id")
+  })
   Tool("rollback_production", "Roll back prod.", func() {
     BindTo("ops", "rollback_production")
     Inject("org_id")
     Confirmation(func() {
       Title("Confirm prod rollback")
       PromptTemplate("Roll back {{.svc}}?")
-      DeniedResultTemplate("denied")
+      DeniedResultTemplate(` + "`" + `{"ok":false}` + "`" + `)
     })
   })
 })` "go" "" }}
@@ -349,32 +347,40 @@ return eval.Result{Checks: []eval.Check{
         <p>{{ T "highbay_cap_intro" | markdownify }}</p>
       </div>
       <dl class="benefit-list highbay-cap-grid">
-        <div class="highbay-cap-card">
-          <span class="highbay-cap-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 5 6v5.5c0 4.8 3.1 8.2 7 9.5 3.9-1.3 7-4.7 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
-          </span>
-          <dt>{{ T "highbay_cap_auth_title" | markdownify }}</dt>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 5 6v5.5c0 4.8 3.1 8.2 7 9.5 3.9-1.3 7-4.7 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <span>{{ T "highbay_cap_auth_title" | markdownify }}</span>
+          </dt>
           <dd>{{ T "highbay_cap_auth_body" | markdownify }}</dd>
         </div>
-        <div class="highbay-cap-card">
-          <span class="highbay-cap-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
-          </span>
-          <dt>{{ T "highbay_cap_obs_title" | markdownify }}</dt>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
+            </span>
+            <span>{{ T "highbay_cap_obs_title" | markdownify }}</span>
+          </dt>
           <dd>{{ T "highbay_cap_obs_body" | markdownify }}</dd>
         </div>
-        <div class="highbay-cap-card">
-          <span class="highbay-cap-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="7" r="2.2"/><circle cx="6" cy="17" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M8.2 7.5 15.8 11M8.2 16.5 15.8 13"/></svg>
-          </span>
-          <dt>{{ T "highbay_cap_stream_title" | markdownify }}</dt>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="7" r="2.2"/><circle cx="6" cy="17" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M8.2 7.5 15.8 11M8.2 16.5 15.8 13"/></svg>
+            </span>
+            <span>{{ T "highbay_cap_stream_title" | markdownify }}</span>
+          </dt>
           <dd>{{ T "highbay_cap_stream_body" | markdownify }}</dd>
         </div>
-        <div class="highbay-cap-card">
-          <span class="highbay-cap-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="7" height="6" rx="1.5"/><rect x="13.5" y="14" width="7" height="6" rx="1.5"/><path d="M10.5 7H15a2 2 0 0 1 2 2v5M7 10v5a2 2 0 0 0 2 2h4.5"/></svg>
-          </span>
-          <dt>{{ T "highbay_cap_durable_title" | markdownify }}</dt>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="7" height="6" rx="1.5"/><rect x="13.5" y="14" width="7" height="6" rx="1.5"/><path d="M10.5 7H15a2 2 0 0 1 2 2v5M7 10v5a2 2 0 0 0 2 2h4.5"/></svg>
+            </span>
+            <span>{{ T "highbay_cap_durable_title" | markdownify }}</span>
+          </dt>
           <dd>{{ T "highbay_cap_durable_body" | markdownify }}</dd>
         </div>
       </dl>
@@ -386,11 +392,8 @@ return eval.Result{Checks: []eval.Check{
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
       </div>
-      <div tabindex="0" role="region" aria-labelledby="highbay-compare-title" class="highbay-matrix-wrap">
-        <table
-          class="highbay-matrix"
-          style="--col-hb: '{{ T "highbay_with_title" }}'; --col-solo: '{{ T "highbay_compare_solo" }}'; --col-sdk: '{{ T "highbay_compare_speckit" }}'; --col-wt: '{{ T "highbay_compare_workspaces" }}';"
-        >
+      <div class="highbay-matrix-wrap">
+        <table class="highbay-matrix">
           <thead>
             <tr>
               <th scope="col">{{ T "highbay_compare_col_dim" }}</th>
@@ -405,8 +408,10 @@ return eval.Result{Checks: []eval.Check{
             <tr>
               <th scope="row">{{ T (printf "highbay_matrix_%s_label" .) }}</th>
               <td class="highbay-matrix__hb">
-                <svg class="highbay-matrix__check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3.2 3.2L13 4.8"/></svg>
-                <span>{{ T (printf "highbay_matrix_%s_hb" .) | markdownify }}</span>
+                <span class="highbay-matrix__hb-cell">
+                  <svg class="highbay-matrix__check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3.2 3.2L13 4.8"/></svg>
+                  <span>{{ T (printf "highbay_matrix_%s_hb" .) | markdownify }}</span>
+                </span>
               </td>
               <td>{{ T (printf "highbay_matrix_%s_solo" .) | markdownify }}</td>
               <td>{{ T (printf "highbay_matrix_%s_sdk" .) | markdownify }}</td>
@@ -422,16 +427,14 @@ return eval.Result{Checks: []eval.Check{
   <section class="faq-section chorus-faq highbay-faq" aria-labelledby="highbay-faq-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="highbay-faq-title">{{ T "home_faq_heading" }}</h2></div>
-      <div class="highbay-accordion">
-        {{- range $i, $k := slice "scope" "holdouts" "local" "sandbox" }}
-        <details class="highbay-faq-item"{{ if eq $i 0 }} open{{ end }}>
-          <summary>{{ T (printf "highbay_faq_%s_q" $k) }}</summary>
-          <div class="highbay-faq-item__body">
-            <p>{{ T (printf "highbay_faq_%s_a" $k) | markdownify }}</p>
-          </div>
-        </details>
+      <dl class="faq-grid">
+        {{- range slice "scope" "holdouts" "local" "sandbox" }}
+        <div>
+          <dt>{{ T (printf "highbay_faq_%s_q" .) }}</dt>
+          <dd>{{ T (printf "highbay_faq_%s_a" .) | markdownify }}</dd>
+        </div>
         {{- end }}
-      </div>
+      </dl>
     </div>
   </section>
 

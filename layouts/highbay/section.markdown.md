@@ -71,9 +71,9 @@ var opsTools = Toolset("ops", func() {
         BindTo("ops", "rollback_production")
         Inject("org_id")
         Confirmation(func() {
-            Title("Approve production rollback")
-            PromptTemplate(`Roll back {{"{{"}} .service {{"}}"}} in prod?`)
-            DeniedResultTemplate(`{"status":"denied"}`)
+            Title("Confirm prod rollback")
+            PromptTemplate(`Roll back {{"{{"}}.svc{{"}}"}}?`)
+            DeniedResultTemplate(`{"ok":false}`)
         })
     })
 })

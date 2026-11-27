@@ -482,7 +482,8 @@ for (const width of [390, 1440]) {
       await expect(archImg).toBeVisible();
       await expect(archImg).toHaveAttribute('fetchpriority', 'high');
       await expect.poll(() => archImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
-      await page.locator('.highbay-stage--architecture .highbay-window__zoom').click({ trial: true });
+      await expect(page.locator(`.highbay-stage--architecture .highbay-window__zoom.chorus-badge--${theme}`)).toBeVisible();
+      await page.locator(`.highbay-stage--architecture .highbay-window__zoom.chorus-badge--${theme}`).click({ trial: true });
 
       for (const stage of ['agree', 'check', 'approve', 'architecture'] as const) {
         const tab = page.locator(`#highbay-tab-${stage}`);
@@ -500,13 +501,11 @@ for (const width of [390, 1440]) {
       await expect(page.locator('#capabilities dt')).toHaveCount(4);
       await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', '/docs/ai-development/');
       await expect(page.locator('#compare .highbay-matrix tbody tr')).toHaveCount(4);
-      await expect(page.locator('.highbay-faq details.highbay-faq-item')).toHaveCount(4);
-      const fourthFaq = page.locator('.highbay-faq details.highbay-faq-item').nth(3);
-      await fourthFaq.locator('summary').click();
-      await expect(fourthFaq).toHaveAttribute('open', '');
+      await expect(page.getByRole('table')).toBeVisible();
+      await expect(page.locator('.highbay-faq dt')).toHaveCount(4);
       const faqDocLink = page.locator('.highbay-faq a').first();
       await expect(faqDocLink).toBeVisible();
-      await page.keyboard.press('Tab');
+      await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();
 
       // Step 1 [Homebrew | npx | Go] switcher + Step 2 copyable prompt.
