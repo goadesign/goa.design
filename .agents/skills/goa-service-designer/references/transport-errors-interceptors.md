@@ -1,8 +1,9 @@
 # Transport, Errors, And Interceptors
 
 Use this reference when changing HTTP, gRPC, or JSON-RPC mappings, streaming, errors, security,
-interceptors, middleware, or production wiring. Check the application's selected Goa version;
-preview-specific behavior below is described by that version's `UPGRADING.md`.
+interceptors, middleware, or production wiring. The gRPC presence and JSON-RPC behavior below
+describes Goa v3.31 and later. Check the application's selected module version and its
+`UPGRADING.md` before changing older code.
 
 ## HTTP Mapping
 
@@ -41,7 +42,7 @@ Goa's streaming DSL is transport-agnostic. The transport mapping determines HTTP
 - Add `ServerSentEvents()` only for one-way server-to-client streams.
 - WebSocket endpoints use `GET`.
 - For gRPC streaming, check generated protobuf and server/client stream types.
-- JSON-RPC in the generation preview supports unary calls or a single request followed by an
+- JSON-RPC supports unary calls or a single request followed by an
   explicit SSE stream. It rejects client or bidirectional streaming, WebSocket streams, and a
   method combining `Result` with `StreamingResult`. Ordinary HTTP WebSocket support is separate.
 - Streaming implementations must handle flow control, `io.EOF`, send errors, context cancellation,
@@ -55,7 +56,7 @@ Goa's streaming DSL is transport-agnostic. The transport mapping determines HTTP
 - Use streaming for large or continuous datasets.
 - Never renumber released `Field` values.
 - Check `.proto` output after changing shared types, streaming methods, or custom protobuf metadata.
-- In the preview, required singular scalars preserve protobuf presence. An omitted required
+- Required singular scalars preserve protobuf presence. An omitted required
   boolean is invalid; an explicitly supplied `false` can be valid. Generated decoders validate
   before converting to service values. See the modeling reference for collections and defaults.
 
@@ -65,7 +66,7 @@ Goa's streaming DSL is transport-agnostic. The transport mapping determines HTTP
   `JSONRPC` for method-specific behavior and error mappings.
 - Let generated code own the JSON-RPC envelope, dispatch, request IDs, batches, and protocol errors.
   The payload describes `params`; do not handwrite transport envelopes in service code.
-- In the preview, ordinary generated client calls have an ID even without an `ID` payload field.
+- Ordinary generated client calls have an ID even without an `ID` payload field.
   `Notification()` explicitly declares a one-way call. Having no result does not by itself make
   a method a notification. Notifications cannot declare a result, ID field, or stream.
 - `ID` belongs directly in the payload, not the result. The transport returns the request ID;

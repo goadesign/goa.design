@@ -2,7 +2,7 @@
 nav_group: start
 title: クイックスタート
 weight: 10
-description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
+description: "Goa をインストールし、サービスの契約を記述して goa gen を実行し、5 分で動く HTTP エンドポイントを起動します。"
 llm_optimized: true
 aliases:
 ---

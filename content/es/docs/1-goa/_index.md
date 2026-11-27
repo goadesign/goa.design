@@ -2,46 +2,133 @@
 title: "Goa: servicios a partir de un diseño"
 linkTitle: "Goa"
 weight: 1
-description: "Define el contrato API en Go. Genera tipos, transportes, clientes, validación y documentación."
+description: "Define tu contrato API en Go una sola vez. Genera servidores HTTP, gRPC y JSON-RPC, clientes tipados, validación y especificaciones OpenAPI 3."
 llm_optimized: true
 ---
 
-## Introducción
+Goa genera APIs de servicios Go a partir de un único contrato tipado en Go. Declaras tipos de entrada, restricciones de validación, mapeos de errores y transportes HTTP, gRPC o JSON-RPC en `design/*.go`; `goa gen` compila la capa de transporte, los clientes y las especificaciones OpenAPI / Protobuf dentro de `gen/`. Tú solo escribes la lógica de negocio detrás de una interfaz estándar de Go.
 
-Goa construye servicios Go a partir de un diseño. Describe tipos, operaciones, errores y transportes en un lenguaje específico del dominio (DSL) escrito en Go. El generador produce el código derivado de esas decisiones; tú implementas el comportamiento con las interfaces generadas.
+- **Empieza en 5 minutos:** **[Crea un servicio HTTP funcional](quickstart/)** (`go install goa.design/goa/v3/cmd/goa@latest`, requiere Go 1.27+)
+- **¿Usas Claude Code, Codex o Cursor?** Sigue el **[flujo con agentes de programación](../ai-development/)** (`npx skills add goadesign/goa --skill goa-service-designer`)
 
-**[Crea tu primer servicio](quickstart/)** o sigue el **[flujo con un agente de programación](../ai-development/)**.
+{{< anchors "introducción" "por-qué-ayuda-a-los-agentes-de-programación" "cómo-funciona" >}}
 
-## Por qué ayuda a los agentes de programación
+## De un contrato a un endpoint en marcha
 
-El agente parte del contrato en lugar de reconstruirlo a partir de manejadores, clientes y esquemas separados. Cambia el diseño, regenera y utiliza los errores del compilador para actualizar la aplicación. El generador escribe el código repetitivo sin que lo redacte el modelo. Proporciona el diseño, la interfaz relevante y la implementación; consulta los transportes generados cuando la tarea lo requiera.
+### 1. Diseña el contrato (`design/catalog.go`) {#phase-1-design-you-write}
 
-## Cómo funciona
+```go
+package design
 
-### Diseña {#phase-1-design-you-write}
+import . "goa.design/goa/v3/dsl"
 
-Define métodos, datos, resultados, validación y correspondencias HTTP, gRPC o JSON-RPC en `design/*.go`. Las descripciones y ejemplos alimentan la documentación API.
+var LookupPayload = Type("LookupPayload", func() {
+    Field(1, "sku", String, "Product SKU", func() {
+        Pattern("^[A-Z0-9-]+$")
+        Example("BOOK-1")
+    })
+    Required("sku")
+})
 
-### Genera {#phase-2-generate-automated}
+var Product = Type("Product", func() {
+    Field(1, "sku", String, "Product SKU")
+    Field(2, "name", String, "Display name")
+    Field(3, "price_cents", Int, "Price in cents", func() { Minimum(0) })
+    Required("sku", "name", "price_cents")
+})
 
-```bash
-goa gen example.com/myservice/design
+var _ = Service("catalog", func() {
+    Error("not_found", ErrorResult, "SKU does not exist")
+
+    Method("lookup", func() {
+        Payload(LookupPayload)
+        Result(Product)
+        Error("not_found")
+        HTTP(func() {
+            GET("/products/{sku}")
+            Response("not_found", StatusNotFound)
+        })
+    })
+})
 ```
 
-Los transportes elegidos determinan los tipos, interfaces, servidores, clientes, validaciones, especificaciones OpenAPI y definiciones Protocol Buffer generados. No edites `gen/`: se reemplaza. `goa example` crea archivos iniciales sin sobrescribir los existentes.
+*(Para exponer gRPC o JSON-RPC desde el mismo método, añade `GRPC(func() {})` — que requiere `protoc`, `protoc-gen-go` y `protoc-gen-go-grpc` además de un puerto separado `--grpc-port 8081` al arrancar — o `JSONRPC(func() {})`; consulta la [guía de gRPC](grpc-guide/).)*
 
-### Implementa {#phase-3-implement-you-write}
+### 2. Genera el código de transporte y validación (`gen/`) {#phase-2-generate-automated}
 
-Escribe lógica, autorización, persistencia y pruebas. Tras cambiar una firma, regenera y compila para encontrar implementaciones y llamadas incompatibles.
+```bash
+go mod init example.com/catalog
+go get goa.design/goa/v3@v3.36.0
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
+go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
+```
 
-## Responsabilidades {#whats-hand-written-vs-auto-generated}
+`goa gen` escribe `gen/` (versionado en Git, nunca se edita a mano): decodificadores de peticiones que rechazan SKUs no válidos antes de ejecutar tu manejador, servidores `net/http` estándar (enrutamiento y validación generados en Go, no un router basado en reflexión), clientes Go tipados y de línea de comandos, `gen/http/openapi3.yaml` + `openapi3.2.yaml` y la interfaz Go que implementa tu servicio:
 
-Tú y el agente mantenéis diseño, decisiones de dominio, lógica, autorización, inicio y pruebas. Goa genera tipos, interfaces, rutas, códecs, validación, clientes y especificaciones API. La validación comprueba las restricciones declaradas; la corrección de negocio, seguridad y compatibilidad con clientes desplegados requieren diseño y pruebas.
+```go
+// gen/catalog/service.go — Code generated by goa, DO NOT EDIT.
+type Service interface {
+    Lookup(context.Context, *LookupPayload) (*Product, error)
+}
+```
 
-## Añade capacidades de IA
+`goa example` crea una sola vez el arranque `cmd/catalog` y un `catalog.go` inicial sin sobrescribir ediciones posteriores.
 
-[Goa-AI](../2-goa-ai/) utiliza el mismo modelo para herramientas tipadas, respuestas estructuradas y agentes. Una herramienta puede reutilizar tipos y métodos de servicio para conectar los contratos.
+### 3. Implementa la lógica de negocio y ejecuta (`catalog.go`) {#phase-3-implement-you-write}
 
-## Guías
+Sustituye el `catalog.go` inicial por tu manejador:
 
-Empieza por la guía rápida, utiliza las guías de transporte para tareas prácticas y la referencia DSL para modificar diseños.
+```go
+package catalogapi
+
+import (
+    "context"
+    "fmt"
+
+    catalog "example.com/catalog/gen/catalog"
+)
+
+type catalogsrvc struct{}
+
+func NewCatalog() catalog.Service { return &catalogsrvc{} }
+
+func (s *catalogsrvc) Lookup(
+    ctx context.Context, p *catalog.LookupPayload,
+) (*catalog.Product, error) {
+    if p.Sku != "BOOK-1" {
+        return nil, catalog.MakeNotFound(
+            fmt.Errorf("unknown sku %q", p.Sku),
+        )
+    }
+    return &catalog.Product{
+        Sku: "BOOK-1", Name: "The Go Book", PriceCents: 3800,
+    }, nil
+}
+```
+
+Descarga las dependencias restantes e inicia el servidor (`go mod tidy && go run ./cmd/catalog --http-port 8080`), y haz una consulta:
+
+```text
+$ curl -i http://localhost:8080/products/BOOK-1
+HTTP/1.1 200 OK
+{"sku":"BOOK-1","name":"The Go Book","price_cents":3800}
+```
+
+Cuando cambias un campo o método en `design/catalog.go` y vuelves a ejecutar `goa gen`, el compilador de Go señala de inmediato cualquier manejador o llamada desfasada.
+
+## Qué mantienes tú frente a qué genera Goa {#whats-hand-written-vs-auto-generated}
+
+| Tú y tu agente mantenéis (`design/`, `internal/`) | `goa gen` genera (`gen/` — regenerado en cada cambio) |
+| --- | --- |
+| Tipos de dominio, restricciones y rutas de transporte en `design/` | Tipos Go, interfaces `Service` y puntos de extensión de middleware |
+| Reglas de negocio, autorización y persistencia | Enrutamiento HTTP, gRPC y JSON-RPC, códecs y validación de entrada |
+| Idempotencia, transacciones de base de datos y pruebas de comportamiento | Clientes Go tipados, clientes CLI, OpenAPI 2/3/3.2 y especificaciones Protobuf |
+
+La validación generada aplica reglas estructurales (`Required`, `Pattern`, `Minimum`, `Enum`) en el borde del transporte. La autorización, el control por tenant y los invariantes de dominio pertenecen a la implementación y las pruebas de tu servicio.
+
+{{< anchors "añade-capacidades-de-ia" "guías" >}}
+
+## Amplía tus servicios a MCP y agentes de IA
+
+[Goa-AI](../2-goa-ai/) amplía los mismos archivos `design/*.go` con declaraciones de servidores `MCP(...)`, `Toolset`s tipados vinculados a métodos Goa mediante `BindTo`, salidas estructuradas `Completion` y flujos de agentes duraderos sobre Temporal.

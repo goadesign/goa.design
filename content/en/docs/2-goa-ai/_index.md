@@ -2,102 +2,244 @@
 title: "Goa-AI: agents from a design"
 linkTitle: "Goa-AI"
 weight: 2
-description: "Design typed tools and agent contracts in Go. Generate their integration code and run them with an explicit execution model."
+description: "Design typed tools, MCP servers, and AI agent contracts in Go. Generate schemas and codecs, then run locally in memory or durably on Temporal."
 llm_optimized: true
-content_scope: "Goa-AI documentation"
 ---
 
-## Overview
+Goa-AI brings Goa's contract compiler to AI agents, MCP servers, and hosted tool registries. You define tool arguments, return types, prompt templates, and run policies in Go; `goa gen` produces JSON schemas, boundary validation codecs, service bindings, and **`AGENTS_QUICKSTART.md`**. Your code owns the planner and domain handlers.
 
-Goa-AI extends Goa's design language and generator to AI applications. Define
-agents, tool payloads and results, structured completions, policies, and
-evaluation scenarios. Generate the types, schemas, codecs, and bindings; write
-the planners and application behavior.
+- **Start locally (in-memory engine, no external infra):** **[Build your first agent](quickstart/)** (Go 1.27+, works standalone without a separate Goa service)
+- **Only need an MCP server?** Jump straight to **[MCP integration](mcp-integration/)**
+- **Using a coding agent?** Pair generated **`AGENTS_QUICKSTART.md`** with the **[coding-agent workflow](../ai-development/)**
 
-**[Build your first agent](quickstart/)** or follow the
-**[coding-agent workflow](../ai-development/)**. You can start with Goa-AI without
-first deploying a separate Goa service.
+{{< anchors "overview" "build-with-a-coding-agent" "build-agents-into-your-product" >}}
 
-## Build with a coding agent
+## One contract to a running agent
 
-Goa-AI makes the contract visible to both the developer and the coding agent.
-Tool schemas and typed Go codecs come from the same design. A service-backed
-tool can reuse an existing service's types and implementation through `BindTo`.
+### 1. Declare service, bound tool, and run policy (`design/catalog.go`)
 
-Generation also creates **`AGENTS_QUICKSTART.md`**, a guide based on your
-application's agent design. Give that guide and the relevant design files to
-your coding agent, then have it implement the planner and executors outside
-`gen/`. Regenerate, compile, and run evaluations as the design evolves.
+```go
+package design
 
-This keeps repetitive schema and integration work out of LLM authoring. It does
-not establish a fixed token-saving percentage: measure complete tasks,
-including context, retries, and review, for your application.
+import (
+    . "goa.design/goa/v3/dsl"
+    . "goa.design/goa-ai/dsl"
+)
 
-## Build agents into your product
+var _ = API("catalog", func() {})
 
-### Typed tool contracts {#design-first-agents}
+var LookupPayload = Type("LookupPayload", func() {
+    Field(1, "tenant_id", String, "Caller tenant ID")
+    Field(2, "sku", String, "Product SKU", func() {
+        Pattern("^[A-Z0-9-]+$")
+        Example("BOOK-1")
+    })
+    Required("tenant_id", "sku")
+})
 
-Define inputs and results using Goa types, descriptions, examples, and
-validation. The generator produces model-facing JSON schemas and typed codecs.
-The model boundary validates tool arguments before executor code runs.
-[Toolsets](toolsets/) explains service bindings, execution, and bounded results.
+var Product = Type("Product", func() {
+    Field(1, "sku", String, "Product SKU", func() {
+        Example("BOOK-1")
+    })
+    Field(2, "name", String, "Display name", func() {
+        Example("The Go Book")
+    })
+    Field(3, "price_cents", Int, "Price in cents", func() {
+        Example(3800)
+    })
+    Required("sku", "name", "price_cents")
+})
 
-### Structured output {#typed-direct-completions}
+var _ = Service("catalog", func() {
+    Method("lookup", func() {
+        Payload(LookupPayload)
+        Result(Product)
+    })
 
-Declare a service-owned `Completion(...)` when you need a typed assistant answer.
-Generated unary and streaming helpers validate the completed result.
-See the [DSL reference](dsl-reference/) and [runtime guide](runtime/).
+    Agent("assistant", "Answer product questions", func() {
+        RunPolicy(func() {
+            DefaultCaps(MaxToolCalls(6))
+        })
+        Use("catalog", func() {
+            // Required tenant_id is hidden from the LLM JSON schema
+            Tool("lookup", "Find a product by SKU", func() {
+                BindTo("lookup")
+                Inject("tenant_id")
+            })
+        })
+    })
+})
+```
+
+### 2. Generate schemas, bindings, and `AGENTS_QUICKSTART.md`
+
+Save `design/catalog.go` above, then initialize the module and run the generator:
+
+```bash
+go mod init example.com/catalog
+go get goa.design/goa-ai@v0.90.0
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
+go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
+go mod tidy
+```
+
+Running `goa` via `go run` uses the exact generator version pinned in `go.mod` (no Node.js or API keys required). `goa example` creates `cmd/catalog/main.go` with a zero-credential stub planner; pass `runtime.WithLabels(map[string]string{"tenant_id": "acme"})` on `client.Run(...)` in `cmd/catalog/main.go`, and `go run ./cmd/catalog` prints:
+
+```text
+RunID: demo-assistant-run
+Assistant: Hello from example planner.
+```
+
+`Inject("tenant_id")` strips `tenant_id` from the model-facing `gen/catalog/agents/assistant/specs/tool_schemas.json` while keeping `sku`'s regex rule:
+
+```json
+{
+  "id": "catalog.lookup",
+  "payload": {
+    "schema": {
+      "properties": {
+        "sku": { "type": "string", "pattern": "^[A-Z0-9-]+$" }
+      },
+      "required": ["sku"]
+    }
+  },
+  "hidden_fields": ["tenant_id"]
+}
+```
+
+### 3. Wire a model-backed planner and run (In-Memory or Temporal)
+
+To connect a live model (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, Bedrock, or Vertex AI), implement `planner.Planner` (`PlanStart` and `PlanResume`) and set `Model` (or `ModelClass`) on each `model.Request`:
+
+```go
+type CatalogPlanner struct{}
+
+func (p *CatalogPlanner) PlanStart(
+    ctx context.Context, in *planner.PlanInput,
+) (*planner.PlanResult, error) {
+    return p.next(ctx, in.Agent, in.Messages)
+}
+
+func (p *CatalogPlanner) PlanResume(
+    ctx context.Context, in *planner.PlanResumeInput,
+) (*planner.PlanResult, error) {
+    return p.next(ctx, in.Agent, in.Messages)
+}
+
+func (p *CatalogPlanner) next(
+    ctx context.Context,
+    agent planner.PlannerContext,
+    msgs []*model.Message,
+) (*planner.PlanResult, error) {
+    mc, ok := agent.PlannerModelClient("default")
+    if !ok {
+        return nil, errors.New(`model "default" is not registered`)
+    }
+    res, err := mc.Stream(ctx, &model.Request{
+        Model:    "gpt-5-mini",
+        Messages: msgs,
+        Tools:    agent.AdvertisedToolDefinitions(),
+        Stream:   true,
+    })
+    if err != nil {
+        return nil, err
+    }
+    if len(res.ToolCalls) > 0 {
+        return &planner.PlanResult{ToolCalls: res.ToolCalls}, nil
+    }
+    return &planner.PlanResult{FinalResponse: res.FinalResponse()}, nil
+}
+```
+
+Create an explicit session in `runtime/agent/storage/inmem` (`inmem.New()`, paired with the default in-memory workflow engine locally or `runtime.WithEngine(temporalEng)` in production) and pass a unique `runtime.WithRunID` plus `runtime.WithLabels`:
+
+```go
+store := inmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+    return err
+}
+rt := runtime.New(store)
+modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
+    APIKey: os.Getenv("OPENAI_API_KEY"), DefaultModel: "gpt-5-mini",
+})
+if err != nil {
+    return err
+}
+if err := rt.RegisterModel("default", modelClient); err != nil {
+    return err
+}
+if err := assistant.RegisterAssistantAgent(ctx, rt,
+    assistant.AssistantAgentConfig{Planner: &CatalogPlanner{}},
+); err != nil {
+    return err
+}
+// catalogClient is catalog.NewClient(...) wrapping your Goa endpoints
+exec := assistantcatalog.NewAssistantCatalogExec(
+    assistantcatalog.WithClient(catalogClient),
+)
+if err := assistant.RegisterUsedToolsets(
+    ctx, rt, assistant.WithCatalogExecutor(exec),
+); err != nil {
+    return err
+}
+
+client := assistant.NewClient(rt)
+msg := &model.Message{
+    Role: model.ConversationRoleUser,
+    Parts: []model.Part{
+        model.TextPart{Text: "What does BOOK-1 cost?"},
+    },
+}
+out, err := client.Run(ctx, "session-1", []*model.Message{msg},
+    runtime.WithRunID("run-1"),
+    runtime.WithLabels(map[string]string{"tenant_id": "acme"}),
+)
+```
+
+```text
+tool_start: catalog.lookup {"sku":"BOOK-1"}  # tenant_id="acme" injected
+tool_end:   {"sku":"BOOK-1","name":"The Go Book","price_cents":3800}
+assistant:  BOOK-1 ("The Go Book") costs $38.00.
+```
+
+## Core capabilities
+
+### Typed tool contracts & bounds {#design-first-agents}
+
+Define tool inputs and outputs with Goa validations, `Inject("tenant_id")` for server-bound context fields hidden from the model, `BoundedResult` for cursor-paginated responses, and `Confirmation` for human approval gates before sensitive actions execute. See [Toolsets](toolsets/) and [Tool payload defaults](tool-payload-defaults/).
+
+### Structured direct completions {#typed-direct-completions}
+
+Declare `Completion(...)` when a service needs a schema-validated typed response from a model without a multi-turn tool loop. Generated unary and streaming helpers decode and validate the output. See [DSL reference](dsl-reference/) and [Runtime](runtime/).
+
+### MCP servers & hosted tool registries {#tool-registries}
+
+- **MCP servers (`MCP(...)`)**: Expose Goa service methods as MCP tools, resources, and prompt templates over HTTP without running an agent runtime. See [MCP integration](mcp-integration/).
+- **Tool registry & search**: Run the included Redis/[Pulse](../3-ecosystem/pulse/)-backed registry gateway so agents discover schemas dynamically across services instead of stuffing every tool schema into every prompt. See [Registry](registry/) and [Tool search](tool-search/).
+
+### Agent composition & run trees {#run-trees-composition}
+
+Export an agent as a tool consumed by a parent agent (`Export` / `Use`). Child runs preserve independent run IDs, budgets, and parent-linked telemetry spans. See [Agent composition](agent-composition/).
+
+### Typed streaming events {#structured-streaming}
+
+Stream typed runtime events (`AssistantReply`, `ToolStart`, `ToolEnd`, `AwaitConfirmation`, `RunCompleted`) to web UIs over SSE or WebSockets. See [Production streaming](production/#streaming-ui).
+
+### Local to Temporal durability {#temporal-durability}
+
+Develop and test with the zero-dependency in-memory engine, then configure the Temporal engine in production for crash recovery, durable `Confirmation` pauses, and activity retries (pair external side effects with idempotency keys). See [Production](production/).
 
 ### Evaluation suites {#generated-evaluations}
 
-Declare suites and scenarios alongside the agent. Generate typed hooks and
-implement checks for the outcome your product needs. Semantic judging requires
-calibration; generated structure does not determine whether an answer is useful.
-See [generated evaluations](evaluations/).
+Declare scenario suites alongside your agent and run deterministic tool-trajectory assertions with scripted model doubles or calibrated semantic judges. See [Evaluations](evaluations/) and [Testing](testing/).
 
-### Agent composition {#run-trees-composition}
+### Model providers & session state {#model-providers}
 
-Expose an agent as a tool for another agent. Child runs have their own identity,
-parent links, and execution history. See [agent composition](agent-composition/).
+Built-in model adapters cover **OpenAI**, **Anthropic**, **AWS Bedrock**, and **Google Vertex AI**. Your application supplies session transcripts, authorization, and domain memory. See [Memory and sessions](memory-sessions/) and [Provider operations](provider-operations/).
 
-### Streaming {#structured-streaming}
-
-The runtime emits typed events for assistant output, tool progress, human input,
-and run state. The application decides what to expose to its users and how to
-transport it. See [production streaming](production/#streaming-ui).
-
-### Durable execution {#temporal-durability}
-
-Use the in-memory engine for local development. Configure the Temporal engine
-for persisted workflow execution, recovery, and activity retries. External
-side effects still need application-level idempotency and appropriate retry
-policies. See [production](production/).
-
-### MCP servers and hosted tool registries {#tool-registries}
-
-**Create MCP servers.** Expose service methods as tools, publish resources, and provide prompt templates through generated protocol handling and adapters. Agents can also consume external MCP tools. See [MCP integration](mcp-integration/).
-
-**Host a tool registry.** Run the included registry server as a shared catalog and invocation gateway backed by Redis and Pulse. Providers publish toolsets and schemas; consumers discover tools and invoke healthy providers. Generated helpers connect applications to the registry. See [hosting and operating a registry](registry/).
-
-### Models and application state {#model-providers}
-
-Use the provided model adapters for OpenAI, Anthropic, AWS Bedrock, and Google
-Vertex AI. Provider capabilities vary; consult the [runtime guide](runtime/)
-when choosing structured output or streaming behavior. Your application supplies
-runtime storage and controls sessions, authorization, and product memory.
-See [memory and sessions](memory-sessions/).
+{{< anchors "documentation-guides" >}}
 
 ## Architecture
 
-The design owns static contracts. Generated code turns them into typed packages.
-The runtime coordinates execution, and an engine supplies local or durable
-workflow execution. Planners own semantic choices; application services own
-business behavior.
-
-{{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI design, code generation, runtime, and execution engines" >}}
-
-## Documentation guides
-
-Begin with the local quickstart. Follow task-oriented guides as you add tools,
-models, state, and deployment. Use the DSL and runtime references for exact
-contracts.
+{{< figure src="/images/goa-ai-architecture.svg" alt="Goa-AI architecture: Design DSL compiles into generated typed packages, executed by the Runtime over In-Memory or Temporal engines and model/tool adapters" >}}

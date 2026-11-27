@@ -25,9 +25,9 @@ C4 は 4 つの抽象度レベルを定義します。Model は最初の 3 つ�
 
 | レベル | 表すもの | 例 |
 |-------|---------------|------------------|
-| **コンテキスト** | 環境の中のシステム | ソフトウェアシステム、人 |
-| **コンテナ** | システム内のアプリケーション | Web アプリ、API、データベース、メッセージキュー |
-| **コンポーネント** | コンテナ内のモジュール | サービス、コントローラ、リポジトリ |
+| **Context（コンテキスト）** | 環境の中のシステム | ソフトウェアシステム、人 |
+| **Container（コンテナ）** | システム内のアプリケーション | Web アプリ、API、データベース、メッセージキュー |
+| **Component（コンポーネント）** | コンテナ内のモジュール | サービス、コントローラー、リポジトリ |
 
 第 4 レベル（Code）は実際のクラスや関数に対応します。そこは IDE がすでに示してくれます。
 
@@ -40,7 +40,7 @@ go install goa.design/model/cmd/mdl@latest
 go install goa.design/model/cmd/stz@latest
 ```
 
-Go 1.23+ が必要です。
+Go 1.27+ が必要です。
 
 ---
 
@@ -128,18 +128,19 @@ Design
 
 多くの DSL 関数は要素の参照を受け取ります。参照の方法は 2 つあります：
 
-**変数で参照**（参照を持っている場合）:
-
+**変数で参照**（呼び出し元要素の DSL 関数内で `Uses` を呼ぶ）:
 ```go
-var API = Container("API", "Backend service", "Go")
-var DB = Container("Database", "Stores data", "PostgreSQL")
-
-// Reference by variable
-API.Uses(DB, "Reads from", "SQL")
+var _ = Design("My System", "Overall design", func() {
+    SoftwareSystem("My System", "Application backend", func() {
+        var DB = Container("Database", "Stores data", "PostgreSQL")
+        Container("API", "Backend service", "Go", func() {
+            Uses(DB, "Reads from", "SQL")
+        })
+    })
+})
 ```
 
 **パスで参照**（要素が別の場所で定義されている場合）:
-
 ```go
 // Same container, reference sibling by name
 Uses("Database", "Reads from", "SQL")
@@ -158,14 +159,18 @@ Uses("My System/Other Container/Service", "Invokes")
 同じ要素を 2 回定義すると（同じ階層で同名）、Model はそれらをマージします：
 
 ```go
-var User = Person("User", "First definition", func() {
-    Uses("System A", "Uses")
-})
+var _ = Design("Enterprise", "Merged model", func() {
+    SoftwareSystem("System A", "First system")
+    SoftwareSystem("System B", "Second system")
 
-var User2 = Person("User", "Updated description", func() {
-    Uses("System B", "Also uses")
+    Person("User", "First definition", func() {
+        Uses("System A", "Uses")
+    })
+    Person("User", "Updated description", func() {
+        Uses("System B", "Also uses")
+    })
+    // Result: One "User" person with "Updated description" and both relationships
 })
-// Result: One "User" person with "Updated description" and both relationships
 ```
 
 これにより、共有モデルをインポートしつつ、ローカルな関係を追加して拡張できます。
@@ -177,19 +182,21 @@ var User2 = Person("User", "Updated description", func() {
 デプロイ可能なソフトウェアシステムを表すトップレベル要素：
 
 ```go
-var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() {
-    // Mark as external to the enterprise
-    External()
-    
-    // Documentation link
-    URL("https://docs.example.com/ecommerce")
-    
-    // Custom metadata
-    Prop("owner", "Platform Team")
-    Prop("tier", "1")
-    
-    // Tags for styling
-    Tag("critical", "public-facing")
+var _ = Design("Enterprise", "System landscape", func() {
+    SoftwareSystem("E-Commerce", "Online shopping platform", func() {
+        // Mark as external to the enterprise
+        External()
+
+        // Documentation link
+        URL("https://docs.example.com/ecommerce")
+
+        // Custom metadata
+        Prop("owner", "Platform Team")
+        Prop("tier", "1")
+
+        // Tags for styling
+        Tag("critical", "public-facing")
+    })
 })
 ```
 
@@ -198,28 +205,28 @@ var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() 
 ソフトウェアシステム内のアプリケーション、サービス、またはデータストア：
 
 ```go
-var _ = SoftwareSystem("E-Commerce", "Online store", func() {
-    var WebApp = Container("Web Application", "Customer UI", "React", func() {
-        Tag("frontend")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
+            Tag("database")
+        })
+
+        var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
+            Tag("infrastructure")
+        })
+
+        var API = Container("API", "Backend REST API", "Go/Goa", func() {
+            Tag("backend")
+            URL("https://api.example.com")
+            Uses(Database, "Reads/writes", "SQL")
+            Uses(Queue, "Publishes events to", "AMQP")
+        })
+
+        Container("Web Application", "Customer UI", "React", func() {
+            Tag("frontend")
+            Uses(API, "Makes requests to", "HTTPS/JSON")
+        })
     })
-    
-    var API = Container("API", "Backend REST API", "Go/Goa", func() {
-        Tag("backend")
-        URL("https://api.example.com")
-    })
-    
-    var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
-        Tag("database")
-    })
-    
-    var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
-        Tag("infrastructure")
-    })
-    
-    // Relationships between containers
-    WebApp.Uses(API, "Makes requests to", "HTTPS/JSON")
-    API.Uses(Database, "Reads/writes", "SQL")
-    API.Uses(Queue, "Publishes events to", "AMQP")
 })
 ```
 
@@ -229,11 +236,13 @@ Goa では、サービス定義をそのまま使えます：
 // Goa service definition
 var OrdersService = Service("orders", func() { /* ... */ })
 
-// Use it as a container
-var _ = SoftwareSystem("E-Commerce", func() {
-    Container(OrdersService, func() {
-        // Name, description, and "Go and Goa v3" technology come from the service
-        Tag("api")
+// Reference it inside Design -> SoftwareSystem
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container(OrdersService, func() {
+            // Name, description, and "Go and Goa v3" technology come from the service
+            Tag("api")
+        })
     })
 })
 ```
@@ -243,14 +252,25 @@ var _ = SoftwareSystem("E-Commerce", func() {
 コンテナ内のモジュール。技術的な詳細ドキュメントに使います：
 
 ```go
-var _ = Container("API", "Backend API", "Go", func() {
-    var OrderService = Component("Order Service", "Handles order lifecycle", "Go package")
-    var PaymentService = Component("Payment Service", "Processes payments", "Go package")
-    var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
-    
-    OrderService.Uses(PaymentService, "Calls for payment")
-    OrderService.Uses(NotificationService, "Triggers confirmations")
-    PaymentService.Uses("Stripe/API", "Processes cards via", "HTTPS")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("Stripe", "Payment processor", func() {
+        External()
+        Container("API", "Card processing API", "HTTPS")
+    })
+
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("API", "Backend API", "Go", func() {
+            var PaymentService = Component("Payment Service", "Processes payments", "Go package", func() {
+                Uses("Stripe/API", "Processes cards via", "HTTPS")
+            })
+            var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
+
+            Component("Order Service", "Handles order lifecycle", "Go package", func() {
+                Uses(PaymentService, "Calls for payment")
+                Uses(NotificationService, "Triggers confirmations")
+            })
+        })
+    })
 })
 ```
 
@@ -261,21 +281,28 @@ var _ = Container("API", "Backend API", "Go", func() {
 システムとやり取りするユーザー、アクター、ロール：
 
 ```go
-var Customer = Person("Customer", "A customer placing orders", func() {
-    External()  // Outside the enterprise
-    Tag("user")
-    Uses("E-Commerce", "Places orders using", "HTTPS")
-})
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("Admin Portal", "Back-office UI", "Web")
+        Container("Support Tools", "Agent console", "Web")
+    })
 
-var Admin = Person("Administrator", "Manages the platform", func() {
-    // Internal by default
-    Tag("internal")
-    Uses("E-Commerce/Admin Portal", "Manages products via")
-})
+    var Customer = Person("Customer", "A customer placing orders", func() {
+        External() // Outside the enterprise
+        Tag("user")
+        Uses("E-Commerce", "Places orders using", "HTTPS")
+    })
 
-var Support = Person("Support Agent", "Handles customer issues", func() {
-    InteractsWith(Customer, "Helps")  // Person-to-person relationship
-    Uses("E-Commerce/Support Tools", "Uses")
+    Person("Administrator", "Manages the platform", func() {
+        // Internal by default
+        Tag("internal")
+        Uses("E-Commerce/Admin Portal", "Manages products via")
+    })
+
+    Person("Support Agent", "Handles customer issues", func() {
+        InteractsWith(Customer, "Helps") // Person-to-person relationship
+        Uses("E-Commerce/Support Tools", "Uses")
+    })
 })
 ```
 
@@ -286,7 +313,7 @@ var Support = Person("Support Agent", "Handles customer issues", func() {
 ### 種類
 
 | 関数 | From | To | 用途 |
-|----------|------|----|---------| 
+|----------|------|----|---------|
 | `Uses` | 任意の要素 | 任意の要素 | 一般的な依存関係 |
 | `Delivers` | System/Container/Component | Person | ユーザーへの出力 |
 | `InteractsWith` | Person | Person | 人同士の相互作用 |
@@ -316,15 +343,23 @@ Uses(Target, "description", "technology", func() {
 
 ### 例
 
+`Uses`、`Delivers`、`InteractsWith` は呼び出し元要素の DSL クロージャ内で呼び出します：
+
 ```go
-// System uses system
-PaymentSystem.Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+// System uses external system
+SoftwareSystem("Payments", "Handles checkout", func() {
+    Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+})
 
 // Container uses external system
-API.Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+Container("API", "Backend API", "Go", func() {
+    Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+})
 
 // System delivers to person
-NotificationSystem.Delivers(Customer, "Sends order updates to", "Email")
+SoftwareSystem("Notifications", "Customer alerts", func() {
+    Delivers(Customer, "Sends order updates to", "Email")
+})
 ```
 
 ---
@@ -390,24 +425,20 @@ ComponentView(API, "Components", "API internals", func() {
 ```go
 DynamicView(ECommerce, "OrderFlow", "Order placement flow", func() {
     Title("Customer places an order")
-    
+
     Link(Customer, WebApp, func() {
         Description("1. Submits order")
-        Order("1")
     })
     Link(WebApp, API, func() {
         Description("2. Creates order")
-        Order("2")
     })
     Link(API, PaymentService, func() {
         Description("3. Processes payment")
-        Order("3")
     })
     Link(API, Database, func() {
         Description("4. Saves order")
-        Order("4")
     })
-    
+
     AutoLayout(RankLeftRight)
 })
 ```
@@ -574,7 +605,6 @@ RelationshipStyle("async", func() {
 出力される SVG には、フォールバック値付きの CSS カスタムプロパティが含まれます。これにより、図を再生成せずにライト/ダークテーマを適用できます。`ElementStyle` と `RelationshipStyle` で定義した色は、タグ名に基づく CSS 変数へ変換されます。
 
 **変数名の規約:**
-
 - 要素背景: `--mdl-<tag>-bg`
 - 要素テキスト色: `--mdl-<tag>-color`
 - 要素ストローク: `--mdl-<tag>-stroke`
@@ -692,7 +722,6 @@ mdl serve ./model -dir gen -port 8080
 ```
 
 `http://localhost:8080` で Web ベースのエディタを起動します。主な機能：
-
 - 要素をドラッグして配置できる
 - ELK.js による複数のレイアウトアルゴリズム（Layered, Force, Tree, Radial）
 - 整列と分配ツール
@@ -739,7 +768,7 @@ mdl svg ./model -dir gen --view Context --view Containers
 mdl svg ./model -dir gen --all --direction LEFT --compact --timeout 30s
 ```
 
-ヘッドレスブラウザで自動レイアウトして保存します。CI/CD に最適です。
+ヘッドレスブラウザで自動レイアウトして保存します。CI/CD パイプラインに最適です。
 
 ---
 
@@ -777,7 +806,7 @@ var _ = API("orders", func() {
     Title("Orders API")
 })
 
-var _ = Service("orders", func() {
+var OrdersService = Service("orders", func() {
     Method("create", func() { /* ... */ })
 })
 
@@ -816,11 +845,11 @@ jobs:
   diagrams:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: 'stable'
       
       - name: Install mdl
         run: go install goa.design/model/cmd/mdl@latest
@@ -843,7 +872,7 @@ jobs:
 
 ### 大規模モデルの整理
 
-複数ファイルへ分割します：
+大規模なアーキテクチャは複数ファイルのヘルパー関数へ分割し、`Design(...)` の中で呼び出します（`SoftwareSystem` と `Person` は `Design` クロージャ内で実行する必要があります）：
 
 ```go
 // model/systems.go
@@ -851,13 +880,15 @@ package model
 
 import . "goa.design/model/dsl"
 
-var ECommerce = SoftwareSystem("E-Commerce", "Online store", func() {
-    // containers...
-})
+func defineSystems() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        // containers...
+    })
 
-var Payments = SoftwareSystem("Payments", "Payment processing", func() {
-    // containers...
-})
+    SoftwareSystem("Payments", "Payment processing", func() {
+        // containers...
+    })
+}
 ```
 
 ```go
@@ -866,12 +897,13 @@ package model
 
 import . "goa.design/model/dsl"
 
-var _ = Design("Platform", func() {
+var _ = Design("Platform", "Company platform architecture", func() {
+    defineSystems()
+
     Views(func() {
         SystemLandscapeView("Landscape", "All systems", func() {
             AddAll()
         })
-        // more views...
     })
 })
 ```
@@ -898,16 +930,20 @@ Tag("tier-1")
 
 ### 共有コンポーネントのインポート
 
+共有 Go パッケージからヘルパー関数をエクスポートし、各サービスの `Design` ブロック内で呼び出します：
+
 ```go
 // shared/infrastructure.go
 package shared
 
 import . "goa.design/model/dsl"
 
-var Stripe = SoftwareSystem("Stripe", "Payment processing", func() {
-    External()
-    Tag("external", "payments")
-})
+func DefineStripe() {
+    SoftwareSystem("Stripe", "Payment processing", func() {
+        External()
+        Tag("external", "payments")
+    })
+}
 ```
 
 ```go
@@ -916,12 +952,14 @@ package model
 
 import (
     . "goa.design/model/dsl"
-    _ "mycompany/shared"  // Import shared elements
+    "mycompany/shared"
 )
 
-var _ = Design("My Service", func() {
-    var Service = SoftwareSystem("My Service", func() {
-        Uses("Stripe", "Processes payments via")  // Reference by name
+var _ = Design("My Service", "Checkout architecture", func() {
+    shared.DefineStripe()
+
+    SoftwareSystem("My Service", "Handles checkout", func() {
+        Uses("Stripe", "Processes payments via", "HTTPS")
     })
 })
 ```
@@ -930,11 +968,7 @@ var _ = Design("My Service", func() {
 
 ## リファレンス
 
-- [DSL Package Documentation](https://pkg.go.dev/goa.design/model/dsl) — DSL の全体リファレンス
-- [Model GitHub Repository](https://github.com/goadesign/model) — ソースコードと例
+- [DSL パッケージドキュメント](https://pkg.go.dev/goa.design/model/dsl) — DSL の完全リファレンス
+- [Model GitHub リポジトリ](https://github.com/goadesign/model) — ソースコードとサンプル
 - [C4 Model](https://c4model.com) — C4 モデルのドキュメント
-- [Structurizr](https://structurizr.com) — 図のホスティングサービス
-
-
-
-
+- [Structurizr](https://structurizr.com) — オンラインの図ホスティングサービス

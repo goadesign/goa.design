@@ -3,6 +3,9 @@
 Use this reference when changing Goa types, payloads, results, validation, views, shared types, or
 compatibility-sensitive schemas.
 
+The gRPC presence/default and JSON-RPC view behavior below describes Goa v3.31 and later.
+Check the application's selected module version and its `UPGRADING.md` before changing older code.
+
 ## Type Design
 
 - Prefer focused `Type` definitions with field descriptions.
@@ -88,9 +91,9 @@ protobuf message can represent the same field differently.
   without a default. Objects are generally pointers. Bytes, arrays, maps, `Any`, and generated
   unions have their own representations; "every optional field is a pointer" is not a safe rule.
 - Incoming HTTP body fields may be pointers even when required, so decoding can detect omission.
-  In the generation preview, required protobuf scalars also preserve presence; most use pointers,
+  Required protobuf scalars also preserve presence; most use pointers,
   while bytes remain slices and messages remain pointers.
-- For preview gRPC input, defaults apply when an incoming value is absent. Explicit zero, `false`,
+- For gRPC input, defaults apply when an incoming value is absent. Explicit zero, `false`,
   or empty values remain explicit. Service-to-protobuf conversion preserves the supplied service
   values and does not replace zero values with defaults.
 - Do not generalize a default or pointer rule across transports, directions, or releases.
@@ -110,7 +113,7 @@ If result views are involved:
 - Only fields included in the selected view participate in its contract. Do not treat a missing
   required field as valid merely because another view omits it.
 - Dynamic HTTP views use the `Goa-View` response header; gRPC uses `goa-view` metadata.
-  Preview JSON-RPC uses a `{ "view": ..., "body": ... }` value inside `result` when the view is
+  JSON-RPC uses a `{ "view": ..., "body": ... }` value inside `result` when the view is
   dynamic. Fixed views do not need that JSON-RPC envelope.
 - Keep custom clients and servers aligned when upgrading view representations.
 

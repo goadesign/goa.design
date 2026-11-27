@@ -1,448 +1,263 @@
 ---
 title: "Pulse"
 weight: 2
-description: "Distributed event infrastructure - streaming, worker pools, and replicated maps for Go microservices."
+description: "Redis-backed event streams, consistent-hash worker pools, and replicated in-memory maps for Go services."
 llm_optimized: true
 ---
 
-Pulse provides primitives for building event-driven distributed systems. It's transport-agnostic and works independently of Goa, though it integrates well with Goa services.
+Pulse provides three focused Go packages for distributed coordination on top of Redis (`*redis.Client`), without introducing a separate message broker. It works standalone in any Go binary or alongside Goa and Goa-AI services.
 
+{{< anchors "why-pulse" "use-cases" >}}
 ## Overview
 
-Pulse consists of three main packages:
-
-| Package | Purpose | Use Case |
-|---------|---------|----------|
-| `streaming` | Event streams | Pub/sub, fan-out, fan-in |
-| `pool` | Worker pools | Background jobs, task dispatch |
-| `rmap` | Replicated maps | Shared state across nodes |
-
-All packages use Redis as the backing store for distributed coordination.
-
-## Why Pulse?
-
-- **Redis-native, minimal infrastructure**: Pulse runs entirely on Redis Streams and hashes, so if you already run Redis you get streaming, worker pools, and replicated state without introducing Kafka or new brokers.
-- **Small, focused APIs**: `streaming.Stream`, `pool.Node`, and `rmap.Map` are tiny, composable building blocks instead of a large framework, making it easy to adopt Pulse incrementally.
-- **Go-first ergonomics**: APIs are idiomatic Go (`context.Context`, `[]byte` payloads, strong typing via your own structs), with clear contracts and structured logging hooks.
-- **Composability over complexity**: Use streams for events, the pool for long-running jobs, and replicated maps for shared control-plane data like feature flags or worker metadata.
-- **Operationally simple**: Bounded streams, at-least-once delivery with explicit acks, and consistent hashing for job routing keep runtime behavior predictable and easy to reason about in production.
+| Package | Primary Type | Use Case |
+|---------|--------------|----------|
+| `goa.design/pulse/streaming` | `streaming.Stream`, `Reader`, `Sink` | Event streams, independent fan-out, consumer-group queues |
+| `goa.design/pulse/pool` | `pool.Node`, `pool.Worker` | Key-hashed background jobs with automatic dead-worker failover |
+| `goa.design/pulse/rmap` | `rmap.Map` | Replicated, locally cached key-value state across service replicas |
 
 ## Installation
 
 ```bash
-go get goa.design/pulse/streaming
-go get goa.design/pulse/pool
-go get goa.design/pulse/rmap
+go get goa.design/pulse@latest
 ```
 
 ---
 
-## Replicated Maps
+{{< anchors "replicated-maps" "distributed-caching" >}}
+## Replicated Maps (`rmap`)
 
-The `rmap` package provides an eventually-consistent, read-optimized key-value map replicated across distributed nodes, backed by Redis hashes and pub/sub channels.
+`rmap` maintains an eventually consistent, read-local key-value map across nodes using a Redis hash (`map:<name>:content`), atomic Lua write scripts, and a Redis pub/sub update channel (`map:<name>:updates`).
 
 ### Architecture
 
 {{< figure src="/images/diagrams/PulseRmap.svg" alt="Pulse replicated map architecture showing distributed state synchronization" class="img-fluid" >}}
 
-At a high level:
+- **Authoritative store**: Redis hash `map:<name>:content` stores canonical key-value entries.
+- **Atomic writes**: Every mutation (`Set`, `Inc`, `AppendValues`, `TestAndSet`, `Delete`, `Reset`) runs in a single Redis Lua script that updates the hash and publishes a compact binary notification on `map:<name>:updates`.
+- **Zero-network reads**: Each joined process keeps an in-memory copy updated from pub/sub, so `Get`, `Keys`, and `Map` read local memory without round-tripping to Redis.
 
-- **Authoritative store**: Redis hash `map:<name>:content` holds the canonical map values.
-- **Update channel**: Redis pub/sub `map:<name>:updates` broadcasts map mutations (`set`, `del`, `reset`).
-- **Local caches**: each process maintains an in-memory copy that is kept in sync from Redis, so reads are local and fast.
-
-### Joining and Reading
+{{< anchors "joining-and-reading" "writing" >}}
+### Joining, Reading, and Writing
 
 ```go
+package main
+
 import (
+    "context"
+    "log"
+
     "github.com/redis/go-redis/v9"
     "goa.design/pulse/rmap"
 )
 
 func main() {
-    rdb := redis.NewClient(&redis.Options{
-        Addr: "localhost:6379",
-    })
+    ctx := context.Background()
+    rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
-    // Join a replicated map (loads a snapshot and subscribes to updates)
-    m, err := rmap.New(ctx, "config", rdb)
+    // Join loads a snapshot from Redis and subscribes to live updates
+    m, err := rmap.Join(ctx, "config", rdb)
     if err != nil {
         log.Fatal(err)
     }
     defer m.Close()
 
-    // Read from the local cache
-    value, ok := m.Get("feature.enabled")
-    keys := m.Keys()
+    // Mutate state atomically in Redis (propagates to all joined nodes)
+    if _, err := m.Set(ctx, "feature.enabled", "true"); err != nil {
+        log.Fatal(err)
+    }
+    _, _ = m.Inc(ctx, "requests.total", 1)
+    _, _ = m.AppendValues(ctx, "allowed.regions", "us-east-1", "eu-west-1")
+    _, _ = m.TestAndSet(ctx, "config.version", "v1", "v2")
+
+    // Read directly from the local in-memory cache
+    if value, ok := m.Get("feature.enabled"); ok {
+        log.Printf("feature.enabled = %s (keys: %v)", value, m.Keys())
+    }
 }
 ```
 
-On join:
-
-- `rmap.New` (via `Join`) validates the map name, loads and caches the Lua scripts used for atomic updates,
-- subscribes to the `map:<name>:updates` channel, then
-- reads the current content of the Redis hash and seeds the local cache.
-
-This makes the local map **eventually consistent** with Redis and other nodes that have joined the same map.
-
-### Writing
+{{< anchors "change-notifications" >}}
+### Watching Change Notifications
 
 ```go
-// Set a value
-if _, err := m.Set(ctx, "feature.enabled", "true"); err != nil {
-    log.Fatal(err)
-}
-
-// Increment a counter
-count, err := m.Inc(ctx, "requests.total", 1)
-
-// Append values to a list-like key
-_, err = m.AppendValues(ctx, "allowed.regions", "us-east-1", "eu-west-1")
-
-// Compare-and-swap a value
-prev, err := m.TestAndSet(ctx, "config.version", "v1", "v2")
-
-// Delete a key
-_, err = m.Delete(ctx, "feature.enabled")
-```
-
-All mutating operations go through Lua scripts that:
-
-- update the Redis hash in a single command, and
-- publish a compact binary notification on the updates channel.
-
-Because Redis runs Lua scripts atomically, each write is applied and broadcast as a single, ordered operation.
-
-### Change Notifications
-
-```go
-// Watch for changes
 changes := m.Subscribe()
+defer m.Unsubscribe(changes)
 
 go func() {
     for kind := range changes {
         switch kind {
         case rmap.EventChange:
-            log.Info("config changed", "snapshot", m.Map())
+            log.Printf("config updated: %v", m.Map())
         case rmap.EventDelete:
-            log.Info("config key deleted")
+            log.Println("config key deleted")
         case rmap.EventReset:
-            log.Info("config reset")
+            log.Println("config reset")
         }
     }
 }()
 ```
 
-- `Subscribe` returns a channel of coarse-grained events (`EventChange`, `EventDelete`, `EventReset`).
-- Notifications do **not** include the changed key/value; callers should use `Get`, `Map`, or `Keys` to inspect the current state.
-- Multiple remote updates may be coalesced into a single notification, which keeps notification traffic small even when the map is busy.
+`Subscribe` emits coarse-grained `EventKind` notifications (`EventChange`, `EventDelete`, `EventReset`) and coalesces rapid bursts so high-write maps never flood readers; inspect `m.Get`, `m.Map()`, or `m.Keys()` on wake.
 
+{{< anchors "key-configuration-options" >}}
 ### Consistency and Failure Modes
 
-- **Atomic updates**: Every write (`Set`, `Inc`, `Append*`, `Delete`, `Reset`, `TestAnd*`) is performed by a Lua script that updates the hash and publishes a notification in one step.
-  - Readers never see a hash change without a corresponding notification (and vice versa).
-- **Join consistency**: On join, the map:
-  - subscribes to the updates channel, then
-  - loads the hash via `HGETALL`.
-  A tiny window exists where updates may be seen both via pub/sub and the snapshot, but they are idempotent and lead to the same final state.
-- **Redis disconnects**: If the pub/sub connection drops, the background `run` goroutine logs the error and repeatedly attempts to resubscribe.
-  - While disconnected, the local cache stops receiving remote updates but remains usable for reads.
-  - Once reconnected, new updates from Redis resume flowing; callers always treat Redis as the source of truth when writing.
-- **Process crash**: If a process using `Map` exits, the authoritative content remains in Redis; other nodes are unaffected.
-  - A new process can call `rmap.New` to rejoin and rebuild its local cache from Redis.
-- **Redis durability**: As with worker pools, durability depends on how Redis is configured.
-  - With AOF/snapshots or replicated cluster, map content survives process and node failures.
-  - If Redis loses its data, all maps are effectively reset; the next join will see an empty map.
-
-### Use Cases
-
-- **Feature flags**: Distribute configuration changes instantly across a fleet.
-- **Rate limiting**: Share counters across instances to enforce global limits.
-- **Session / control-plane state**: Keep small, frequently-read state (like active nodes, worker metadata) in sync across services.
-
-### Key Configuration Options
-
-**Maps (`rmap.New`)**
-
-| Option | Description |
-|--------|-------------|
-| `rmap.WithLogger(logger)` | Attach a logger to replicated map internals and Redis operations. |
-
-See the [rmap package docs](https://pkg.go.dev/goa.design/pulse/rmap) for the full API surface.
+- **Join order**: `rmap.Join` subscribes to `map:<name>:updates` *before* running `HGETALL`, so no mutation between snapshot and subscription can be missed.
+- **Disconnects & crashes**: If Redis pub/sub drops, the background loop retries resubscription automatically while local reads continue serving the last cached snapshot. If a process crashes, Redis retains canonical state and restarting processes call `rmap.Join` to rehydrate.
+- **Options**: Pass `rmap.WithLogger(pulse.ClueLogger(ctx))` (from `goa.design/pulse/pulse`) to attach structured logging. See [`pkg.go.dev/goa.design/pulse/rmap`](https://pkg.go.dev/goa.design/pulse/rmap).
 
 ---
 
-## Streaming
+{{< anchors "streaming" "event-sourcing" >}}
+## Streaming (`streaming`)
 
-The `streaming` package provides event routing across microservices using Redis Streams.
+`streaming` routes typed events across microservices over Redis Streams, supporting both independent fan-out cursors (`Reader`) and shared consumer-group work queues (`Sink`).
 
 ### Architecture
 
 {{< figure src="/images/diagrams/PulseStreaming.svg" alt="Pulse streaming architecture showing event producer, streams, and consumer" class="img-fluid" >}}
 
-### Creating Streams
+### Stream Retention Defaults (`1,000` Events)
+
+By default, `streaming.NewStream` retains the **most recent `1,000` events** using exact `MAXLEN =` trimming on Redis Streams:
+- Pass `options.WithStreamMaxLen(n)` (from `goa.design/pulse/streaming/options`) to raise or lower the retained event cap.
+- Pass `options.WithUnboundedStream()` when unconsumed work items must never be trimmed automatically, and call `stream.Remove(ctx, event.ID)` once each item is settled.
+
+{{< anchors "creating-streams" "publishing-events" >}}
+### Creating Streams and Publishing Events
 
 ```go
+package main
+
 import (
+    "context"
+    "encoding/json"
+    "log"
+
     "github.com/redis/go-redis/v9"
     "goa.design/pulse/streaming"
+    "goa.design/pulse/streaming/options"
 )
 
-func main() {
-    // Connect to Redis
-    rdb := redis.NewClient(&redis.Options{
-        Addr: "localhost:6379",
-    })
-    
-    // Create a stream
-    stream, err := streaming.NewStream(ctx, "events", rdb,
-        streaming.WithStreamMaxLen(10000),
-    )
-    if err != nil {
-        log.Fatal(err)
-    }
-}
-```
-
-### Publishing Events
-
-```go
 type UserCreatedEvent struct {
     UserID string `json:"user_id"`
     Email  string `json:"email"`
 }
 
-// Add strongly-typed event to the stream (payload is JSON-encoded)
-payload, err := json.Marshal(UserCreatedEvent{
-    UserID: "123",
-    Email:  "user@example.com",
-})
-if err != nil {
-    log.Fatal(err)
-}
+func publishSignup(ctx context.Context, rdb *redis.Client) error {
+    stream, err := streaming.NewStream("users", rdb,
+        options.WithStreamMaxLen(10_000),
+    )
+    if err != nil {
+        return err
+    }
 
-eventID, err := stream.Add(ctx, "user.created", payload)
-if err != nil {
-    log.Fatal(err)
+    payload, err := json.Marshal(UserCreatedEvent{
+        UserID: "123",
+        Email:  "user@example.com",
+    })
+    if err != nil {
+        return err
+    }
+
+    eventID, err := stream.Add(ctx, "user.created", payload)
+    if err != nil {
+        return err
+    }
+    log.Printf("published user.created as %s", eventID)
+    return nil
 }
 ```
 
-### Consuming Events
+{{< anchors "consuming-events" "readers-vs-sinks" "sinks-consumer-groups" "patterns" "fan-out-pattern" "fan-in-pattern" >}}
+### Consuming Events: `Sink` vs `Reader`
+
+Both `Sink` and `Reader` deliver events over a Go channel returned by `Subscribe() <-chan *streaming.Event`:
+
+| | `Reader` (`stream.NewReader`) | `Sink` (`stream.NewSink`) |
+|---|---|---|
+| **Cursor** | Independent per `Reader` instance (no group name) | Shared across all `Sink` instances with the same `name` |
+| **Delivery** | Every `Reader` sees **every** event | Each event is delivered to **one** `Sink` consumer |
+| **Ack** | None (`reader.Close()` stops reading) | Explicit `sink.Ack(ctx, event)` (unless `WithSinkNoAck()`) |
+| **Best for** | Live projections, cache invalidation, audit/replay | At-least-once background queues, parallel workers |
+
+**Shared consumer-group `Sink` (at-least-once work queue):**
 
 ```go
-// Create a reader
-reader, err := stream.NewReader(ctx, "my-consumer-group",
-    streaming.WithReaderBlockDuration(time.Second),
+sink, err := stream.NewSink(ctx, "billing-workers",
+    options.WithSinkBlockDuration(time.Second),
 )
 if err != nil {
     log.Fatal(err)
 }
+defer sink.Close(ctx)
 
-// Read events
-for {
-    events, err := reader.Read(ctx)
-    if err != nil {
-        log.Error(err)
+for event := range sink.Subscribe() {
+    if err := processBilling(event); err != nil {
+        log.Printf("billing failed for %s (will retry after ack grace period): %v", event.ID, err)
         continue
     }
-    
-    for _, event := range events {
-        if err := processEvent(event); err != nil {
-            log.Error(err)
-            continue
-        }
-        reader.Ack(ctx, event.ID)
+    if err := sink.Ack(ctx, event); err != nil {
+        log.Printf("ack failed: %v", err)
     }
 }
 ```
 
-### Fan-Out Pattern
-
-Multiple consumer groups receive all events:
+**Independent `Reader` (fan-out, replay from oldest, and multi-stream fan-in):**
 
 ```go
-// Service A - analytics
-analyticsReader, _ := stream.NewReader(ctx, "analytics-group")
+// Replay from the oldest retained event in ordersStream, and fan in paymentsStream
+reader, err := ordersStream.NewReader(ctx, options.WithReaderStartAtOldest())
+if err != nil {
+    log.Fatal(err)
+}
+defer reader.Close()
 
-// Service B - notifications  
-notifyReader, _ := stream.NewReader(ctx, "notify-group")
+if err := reader.AddStream(ctx, paymentsStream); err != nil {
+    log.Fatal(err)
+}
 
-// Both receive all events independently
+for event := range reader.Subscribe() {
+    applyProjection(event.StreamName, event.EventName, event.Payload)
+}
 ```
 
-### Fan-In Pattern
+{{< anchors "key-configuration-options-1" >}}
+### Key Streaming Options (`goa.design/pulse/streaming/options`)
 
-Aggregate events from multiple streams:
+| Option | Target | Description |
+|--------|--------|-------------|
+| `options.WithStreamMaxLen(n)` | `NewStream` | Exact `MAXLEN =` event cap per stream (default: `1,000`). |
+| `options.WithUnboundedStream()` | `NewStream` | Disable `MAXLEN` trimming; pair with `stream.Remove(ctx, ids...)`. |
+| `options.WithStreamLogger(logger)` | `NewStream` | Attach structured logger (`pulse.ClueLogger(ctx)`). |
+| `options.WithReaderStartAtOldest()` | `NewReader` | Replay from the oldest retained stream entry instead of newest. |
+| `options.WithReaderTopic(t)` / `WithReaderTopicPattern(re)` | `NewReader` | Filter delivered events by exact topic or regular expression. |
+| `options.WithSinkAckGracePeriod(d)` | `NewSink` | Lease window before an unacknowledged event is reclaimed by another consumer. |
+| `options.WithSinkMaxPolled(n)` / `WithReaderMaxPolled(n)` | `NewSink` / `NewReader` | Max events fetched per Redis poll batch. |
+| `options.WithTopic(topic)` / `WithOnlyIfStreamExists()` | `stream.Add` | Tag published event with a topic, or skip auto-creating missing streams. |
 
-```go
-// Create readers for multiple streams
-ordersReader, _ := ordersStream.NewReader(ctx, "aggregator")
-paymentsReader, _ := paymentsStream.NewReader(ctx, "aggregator")
-
-// Process events from both
-go processStream(ordersReader)
-go processStream(paymentsReader)
-```
-
-### Readers vs Sinks
-
-Pulse gives you two ways to consume streams:
-
-- **Readers**: each reader has its own cursor and sees **every event** in the stream. They are ideal for analytics, projections, and any fan-out style processing.
-- **Sinks**: all sink instances with the same name share a **consumer-group cursor**. Each event is delivered to **one** sink consumer, giving you at-least-once work-queue semantics.
-
-|                | Readers                                        | Sinks                                                       |
-|----------------|-------------------------------------------------|-------------------------------------------------------------|
-| Cursor         | Independent per reader                          | Shared per sink name (consumer group)                       |
-| Delivery       | Every reader sees every event                  | Each event goes to one sink consumer                        |
-| Acknowledgment | Optional (just stop reading)                   | Explicit `Ack` (unless `WithSinkNoAck` is used)             |
-| Typical use    | Projections, analytics, debugging, replays     | Background processing, parallel workers, task distribution  |
-
-### Key Configuration Options
-
-**Streams (`streaming.NewStream`)**
-
-| Option | Description |
-|--------|-------------|
-| `streaming.WithStreamMaxLen(n)` | Bounds how many events are kept per stream before older events are trimmed. |
-| `streaming.WithStreamLogger(logger)` | Injects a logger for stream internals, readers, and sinks. |
-
-**Readers (`stream.NewReader`)**
-
-| Option | Description |
-|--------|-------------|
-| `options.WithReaderBlockDuration(d)` | Controls how long `Read` waits for events before returning. |
-| `options.WithReaderStartAtOldest()` | Start from the oldest event instead of only new ones. |
-| `options.WithReaderTopic(topic)` / `WithReaderTopicPattern(re)` | Filter events by topic or topic regex on the client side. |
-
-**Sinks (`stream.NewSink`)**
-
-| Option | Description |
-|--------|-------------|
-| `options.WithSinkBlockDuration(d)` | Controls how long the sink blocks waiting for work. |
-| `options.WithSinkAckGracePeriod(d)` | Time window for a consumer to ack before the event is made available again. |
-| `options.WithSinkNoAck()` | Disable acknowledgements entirely (fire-and-forget consumption). |
-
-**Event options (`stream.Add`)**
-
-| Option | Description |
-|--------|-------------|
-| `options.WithTopic(topic)` | Attach a topic to the event so readers/sinks can filter on it. |
-| `options.WithOnlyIfStreamExists()` | Only append the event if the stream already exists (do not auto-create). |
-
-For the full list of reader, sink, and stream options, see the Go package docs for
-[`goa.design/pulse/streaming/options`](https://pkg.go.dev/goa.design/pulse/streaming/options).
+See [`pkg.go.dev/goa.design/pulse/streaming/options`](https://pkg.go.dev/goa.design/pulse/streaming/options) for the full option set.
 
 ---
 
-## Worker Pools
+{{< anchors "worker-pools" "async-task-processing" >}}
+## Worker Pools (`pool`)
 
-The `pool` package implements dedicated worker pools with consistent hashing for job dispatch.
+`pool` dispatches keyed jobs across a fleet of worker processes using jump consistent hashing so jobs with the same key route to the same worker, rebalancing automatically when workers join, leave, or stop heartbeating.
 
 ### Architecture
 
 {{< figure src="/images/diagrams/PulsePool.svg" alt="Pulse worker pool architecture showing job dispatch flow" class="img-fluid" >}}
 
-Jobs are routed to workers based on a key using consistent hashing. This ensures:
-- Jobs with the same key go to the same worker
-- Load is distributed evenly across workers
-- Worker failures trigger automatic rebalancing
-
-### Failure Modes and Durability
-
-Pulse worker pools are designed for **at-least-once** delivery: jobs may be retried, but they are not silently dropped as long as Redis persists state.
-
-**Worker process crash**
-
-- Each worker periodically updates a keep-alive timestamp in a replicated map.
-- Background cleanup goroutines on the nodes periodically scan this map:
-  - Workers that have not updated their timestamp within `workerTTL` are marked inactive.
-  - All jobs owned by an inactive worker are requeued and reassigned via the same consistent-hash routing used for normal dispatch.
-- Result: if a worker dies mid-job, that job will eventually be rerun on another active worker.
-
-**Node crash (process or host)**
-
-- Job state (job keys, job payloads, worker assignments and pending dispatch information) lives in Redis replicated maps and streams, not in memory.
-- If a node disappears:
-  - Other nodes detect its absence via a keep-alive map for nodes.
-  - Its node-specific streams are garbage collected.
-  - Jobs previously assigned to workers on that node are requeued and redistributed across remaining nodes.
-- `Close` and `Shutdown` distinguish between:
-  - **Close**: requeues this node’s jobs so that other nodes continue processing the pool.
-  - **Shutdown**: coordinates a global stop across nodes, draining jobs without requeueing.
-
-**Dispatch failures and retries**
-
-- `DispatchJob` writes a start-job event into a pool stream and waits for:
-  - an acknowledgement from a worker (success or failure of `Start`), or
-  - detection that a job with the same key is already present.
-- A separate pending-jobs map and timestamp-based TTL prevent duplicate dispatches when multiple nodes race to enqueue the same job key.
-- If a worker fails to acknowledge starting a job within the configured grace period, that dispatch is eligible to be retried by cleanup logic.
-
-**Rebalancing when workers join or leave**
-
-- The pool maintains a replicated map of active workers.
-- When workers are added or removed:
-  - Nodes detect changes to the worker map and ask each worker to rebalance its jobs.
-  - Jobs whose consistent-hash bucket now maps to a different worker are stopped and requeued so they can be picked up by the new target worker.
-- This keeps job assignments aligned with the current worker set while respecting the key-based routing contract.
-
-**Redis durability**
-
-- Pulse relies on Redis for durability. If Redis is configured with persistence (AOF/snapshots or cluster with replication), jobs survive process and node crashes.
-- If Redis loses its data, Pulse cannot recover jobs or worker metadata; in that case the pool starts from a clean slate.
-
-In practice, this means:
-- With a durable Redis, a job that `DispatchJob` has accepted will either run successfully, fail with a surfaced error, or be retried until a worker can process it.
-- The main trade-off is at-least-once semantics: handlers must be idempotent because retries and rebalances can cause the same job to run more than once.
-
-### Creating a Pool
-
-```go
-import (
-    "github.com/redis/go-redis/v9"
-    "goa.design/pulse/pool"
-)
-
-func main() {
-    rdb := redis.NewClient(&redis.Options{
-        Addr: "localhost:6379",
-    })
-
-    // Create a pool node that can run workers
-    node, err := pool.AddNode(ctx, "my-pool", rdb)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer node.Close(ctx)
-}
-```
-
-### Dispatching Jobs
+{{< anchors "creating-a-pool" "dispatching-jobs" "processing-jobs" "key-configuration-options-2" >}}
+### Creating a Pool Node, Adding Workers, and Dispatching Jobs
 
 ```go
 type EmailJob struct {
     Email string `json:"email"`
 }
 
-// Producer node (often created with pool.WithClientOnly)
-payload, err := json.Marshal(EmailJob{
-    Email: "user@example.com",
-})
-if err != nil {
-    log.Fatal(err)
-}
-
-// Dispatch job with key (determines which worker handles it)
-if err := node.DispatchJob(ctx, "user:123", payload); err != nil {
-    log.Fatal(err)
-}
-```
-
-### Processing Jobs
-
-```go
-// Worker implementation: decode strongly-typed jobs from []byte payloads.
 type EmailJobHandler struct{}
 
 func (h *EmailJobHandler) Start(job *pool.Job) error {
@@ -454,146 +269,64 @@ func (h *EmailJobHandler) Start(job *pool.Job) error {
 }
 
 func (h *EmailJobHandler) Stop(key string) error {
-    // Optional: clean up resources for the given job key.
     return nil
 }
 
-// Attach the handler to a worker in the pool.
-_, err := node.AddWorker(ctx, &EmailJobHandler{})
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Sinks (Consumer Groups)
-
-Sinks in Pulse are built on top of the streaming package and are used internally by the pool
-to balance work across workers. Multiple pool nodes joining the same pool name share the work:
-
-```go
-// Two nodes participating in the same pool
-node1, _ := pool.AddNode(ctx, "email-pool", rdb)
-node2, _ := pool.AddNode(ctx, "email-pool", rdb)
-
-// Jobs dispatched to "email-pool" are distributed across all active workers.
-```
-
-### Key Configuration Options
-
-**Pool nodes (`pool.AddNode`)**
-
-| Option | Description |
-|--------|-------------|
-| `pool.WithWorkerTTL(d)` | How aggressively to detect dead workers; lower values mean faster failover, higher values mean fewer heartbeats. |
-| `pool.WithMaxQueuedJobs(n)` | Global cap on in-flight queued jobs; exceeding it causes new `DispatchJob` calls to fail fast. |
-| `pool.WithAckGracePeriod(d)` | How long the pool waits for a worker to acknowledge starting a job before it can be reassigned. |
-| `pool.WithClientOnly()` | Create a node that only dispatches jobs (no background routing or workers). |
-| `pool.WithLogger(logger)` | Attach a structured logger for all pool internals. |
-
-For more advanced tuning (shutdown TTLs, sink block durations, etc.), see the
-[pool package docs](https://pkg.go.dev/goa.design/pulse/pool).
-
----
-
-## Infrastructure Setup
-
-### Redis Requirements
-
-Pulse requires Redis 5.0+ for Streams support. For production:
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-
-volumes:
-  redis-data:
-```
-
-### Redis Cluster
-
-For high availability, use Redis Cluster:
-
-```go
-rdb := redis.NewClusterClient(&redis.ClusterOptions{
-    Addrs: []string{
-        "redis-1:6379",
-        "redis-2:6379",
-        "redis-3:6379",
-    },
-})
-```
-
----
-
-## Patterns
-
-### Event Sourcing
-
-```go
-// Append events to a stream
-stream.Add(ctx, "order.created", orderCreatedEvent)
-stream.Add(ctx, "order.paid", orderPaidEvent)
-stream.Add(ctx, "order.shipped", orderShippedEvent)
-
-// Replay events to rebuild state
-reader, _ := stream.NewReader(ctx, "replay", streaming.WithStartID("0"))
-for {
-    events, _ := reader.Read(ctx)
-    for _, e := range events {
-        applyEvent(state, e)
-    }
-}
-```
-
-### Async Task Processing
-
-```go
-// Task payload type used on both producer and worker sides.
-type ImageTask struct {
-    URL string `json:"url"`
-}
-
-// Producer: queue tasks into the pool with a strongly-typed payload.
-payload, err := json.Marshal(ImageTask{URL: imageURL})
-if err != nil {
-    log.Fatal(err)
-}
-if err := node.DispatchJob(ctx, taskID, payload); err != nil {
-    log.Fatal(err)
-}
-
-// Worker: process tasks in a JobHandler.
-type ImageTaskHandler struct{}
-
-func (h *ImageTaskHandler) Start(job *pool.Job) error {
-    var task ImageTask
-    if err := json.Unmarshal(job.Payload, &task); err != nil {
+func runPool(ctx context.Context, rdb *redis.Client) error {
+    node, err := pool.AddNode(ctx, "email-pool", rdb,
+        pool.WithWorkerTTL(30*time.Second),
+        pool.WithAckGracePeriod(20*time.Second),
+        pool.WithMaxQueuedJobs(1_000),
+    )
+    if err != nil {
         return err
     }
-    return processImage(task.URL)
-}
+    defer node.Close(ctx)
 
-func (h *ImageTaskHandler) Stop(key string) error {
-    return nil
+    if _, err := node.AddWorker(ctx, &EmailJobHandler{}); err != nil {
+        return err
+    }
+
+    payload, err := json.Marshal(EmailJob{Email: "user@example.com"})
+    if err != nil {
+        return err
+    }
+    // Producers that only enqueue jobs can pass pool.WithClientOnly() to AddNode
+    return node.DispatchJob(ctx, "user:123", payload)
 }
 ```
+
+{{< anchors "failure-modes-and-durability" >}}
+### Delivery Semantics and Failover
+
+- **At-least-once execution**: Workers heartbeat into an `rmap`; if a worker misses `WithWorkerTTL`, peer nodes requeue its active jobs onto surviving consistent-hash owners. Keep `Start` handlers idempotent.
+- **`Close` vs `Shutdown`**: `node.Close(ctx)` requeues this node's jobs onto remaining nodes during a rolling deploy; `node.Shutdown(ctx)` coordinates a fleet-wide stop without requeueing.
+- **Backpressure**: `pool.WithMaxQueuedJobs(n)` bounds queued dispatches so overloaded pools fail fast rather than growing unbounded in Redis.
 
 ---
 
 ## Complete Example: User Signup Flow
 
-The following sketch shows how you might combine streams, a worker pool, and a replicated map
-to implement a user signup flow with email confirmation and feature flags:
+Combining `rmap`, `streaming`, and `pool` in one service:
 
 ```go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "log"
+    "time"
+
+    "github.com/redis/go-redis/v9"
+    cluelog "goa.design/clue/log"
+    "goa.design/pulse/pool"
+    "goa.design/pulse/pulse"
+    "goa.design/pulse/rmap"
+    "goa.design/pulse/streaming"
+    "goa.design/pulse/streaming/options"
+)
+
 type UserCreatedEvent struct {
     UserID string `json:"user_id"`
     Email  string `json:"email"`
@@ -605,70 +338,69 @@ type EmailJob struct {
 }
 
 func main() {
-    ctx := context.Background()
+    ctx := cluelog.Context(context.Background())
     rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+    logger := pulse.ClueLogger(ctx)
 
-    // 1. Shared feature flags / config across services.
-    flags, err := rmap.New(ctx, "feature-flags", rdb, rmap.WithLogger(pulse.ClueLogger(ctx)))
+    // 1. Replicated feature flags across service instances
+    flags, err := rmap.Join(ctx, "feature-flags", rdb, rmap.WithLogger(logger))
     if err != nil {
         log.Fatal(err)
     }
     defer flags.Close()
 
-    // 2. Stream for user lifecycle events.
+    // 2. Bounded stream for user lifecycle events
     userStream, err := streaming.NewStream("users", rdb,
-        streaming.WithStreamMaxLen(10_000),
-        streaming.WithStreamLogger(pulse.ClueLogger(ctx)),
+        options.WithStreamMaxLen(10_000),
+        options.WithStreamLogger(logger),
     )
     if err != nil {
         log.Fatal(err)
     }
-    defer userStream.Destroy(ctx)
 
-    // 3. Worker pool for sending emails.
+    // 3. Consistent-hash worker pool for welcome emails
     node, err := pool.AddNode(ctx, "email-pool", rdb,
         pool.WithWorkerTTL(30*time.Second),
         pool.WithAckGracePeriod(20*time.Second),
+        pool.WithMaxQueuedJobs(1_000),
+        pool.WithLogger(logger),
     )
     if err != nil {
         log.Fatal(err)
     }
     defer node.Close(ctx)
 
-    // 4. Attach a worker that reads jobs from the pool.
-    _, err = node.AddWorker(ctx, &EmailJobHandler{})
-    if err != nil {
+    if _, err := node.AddWorker(ctx, &EmailJobHandler{flags: flags}); err != nil {
         log.Fatal(err)
     }
 
-    // 5. On user signup, publish an event and dispatch a job.
-    created := UserCreatedEvent{
-        UserID: "123",
-        Email:  "user@example.com",
-    }
-    payload, _ := json.Marshal(created)
-    if _, err := userStream.Add(ctx, "user.created", payload); err != nil {
+    // 4. Publish lifecycle event and dispatch keyed background job
+    created := UserCreatedEvent{UserID: "123", Email: "user@example.com"}
+    eventBytes, _ := json.Marshal(created)
+    if _, err := userStream.Add(ctx, "user.created", eventBytes); err != nil {
         log.Fatal(err)
     }
 
-    jobPayload, _ := json.Marshal(EmailJob{
-        UserID: created.UserID,
-        Email:  created.Email,
-    })
-    if err := node.DispatchJob(ctx, "email:"+created.UserID, jobPayload); err != nil {
+    jobBytes, _ := json.Marshal(EmailJob(created))
+    if err := node.DispatchJob(ctx, "email:"+created.UserID, jobBytes); err != nil {
         log.Fatal(err)
     }
 }
 
-type EmailJobHandler struct{}
+type EmailJobHandler struct {
+    flags *rmap.Map
+}
 
 func (h *EmailJobHandler) Start(job *pool.Job) error {
     var j EmailJob
     if err := json.Unmarshal(job.Payload, &j); err != nil {
         return err
     }
-    // Optionally read feature flags from rmap here before sending.
-    return sendWelcomeEmail(j.Email)
+    if enabled, ok := h.flags.Get("welcome_email"); ok && enabled == "false" {
+        return nil
+    }
+    log.Printf("sending welcome email to %s", j.Email)
+    return nil
 }
 
 func (h *EmailJobHandler) Stop(key string) error {
@@ -676,61 +408,16 @@ func (h *EmailJobHandler) Stop(key string) error {
 }
 ```
 
-This pattern scales naturally: you can add more email workers, add additional consumers of the
-`users` stream (analytics, audit, etc.), and share additional control-plane state via replicated maps.
-
 ---
 
-## Production Considerations
+{{< anchors "infrastructure-setup" "redis-requirements" "redis-cluster" "production-considerations" "troubleshooting" >}}
+## Redis Setup and Production Checklist
 
-- **Redis sizing and durability**: Use Redis 5+ with persistence configured appropriately (AOF or snapshotting) depending on how critical stream data and replicated maps are for your workload.
-- **Stream trimming**: Set `WithStreamMaxLen` high enough to accommodate replay needs (event sourcing, debugging) but low enough to avoid unbounded growth; remember trimming is approximate.
-- **At-least-once semantics**: Streams and sinks are at-least-once; design handlers to be idempotent and safe to retry.
-- **Worker TTLs and shutdown**: Tune `WithWorkerTTL` and `WithWorkerShutdownTTL` based on how quickly you want to detect failed workers and how long they need to drain work on shutdown.
-- **Pending and stuck jobs**: `WithAckGracePeriod` and pool’s internal pending job tracking prevent jobs from getting stuck forever, but you should still monitor for jobs that repeatedly fail to start.
-- **Observability**: Use `pulse.ClueLogger` or your own structured logger with `WithStreamLogger`, `WithLogger`, and `rmap.WithLogger` so you can trace events and job lifecycles in production.
-- **Backpressure and queue limits**: Use `WithMaxQueuedJobs`, `WithReaderMaxPolled`, and `WithSinkMaxPolled` to bound memory usage and make backpressure explicit when the system is overloaded.
-- **High availability**: For critical systems, run Redis in cluster or sentinel mode and run multiple pool nodes so workers can fail over cleanly.
-
----
-
-## Troubleshooting
-
-- **Cannot connect to Redis**: Verify the address, password, and TLS settings used by `redis.NewClient` or `redis.NewClusterClient`; Pulse simply propagates these connection errors.
-- **No events are being delivered**: Check that readers and sinks use the correct stream name, start position (`WithReaderStart*` / `WithSinkStart*`), and topic/topic pattern; also verify that `BlockDuration` is not set to `0` inadvertently.
-- **Events appear to be missing**: If `WithStreamMaxLen` is too small, older events may have been trimmed; increase the max length or persist important events elsewhere.
-- **Jobs are never picked up**: Ensure at least one non-client-only node is running with active workers (`AddWorker`) and that `WithMaxQueuedJobs` has not been exceeded.
-- **Jobs keep being retried or moved between workers**: This usually indicates the worker fails to start or crashes while processing; inspect job handler logs and consider increasing `WithAckGracePeriod` or fixing non-idempotent handlers.
-- **Uneven worker load**: Jump consistent hashing normally balances keys well; if most jobs share the same key, consider sharding the key space or using a different keying strategy.
-- **Shutdown hangs**: If `Close` or a pool shutdown takes too long, review `WithWorkerShutdownTTL` and ensure workers’ `Stop` implementations return promptly even when work is slow or external services are down.
-
-### Distributed Caching
-
-```go
-// Cache with replicated map
-cache, _ := rmap.New(ctx, "cache", rdb)
-
-func GetUser(ctx context.Context, id string) (*User, error) {
-    // Check cache
-    if data, err := cache.Get(ctx, "user:"+id); err == nil {
-        return unmarshalUser(data)
-    }
-    
-    // Fetch from database
-    user, err := db.GetUser(ctx, id)
-    if err != nil {
-        return nil, err
-    }
-    
-    // Update cache (propagates to all nodes)
-    cache.Set(ctx, "user:"+id, marshalUser(user))
-    return user, nil
-}
-```
-
----
+- **Client type & persistence**: Pulse constructors (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) accept `*redis.Client` against Redis 7.0+ or Valkey (Redis 6.2+ suffices when not using `rmap.WithTTL`'s `EXPIRE NX`; sink recovery requires `XAUTOCLAIM` from Redis 6.2) in standalone, Sentinel (`redis.NewFailoverClient`), or managed AOF-enabled setups. `*redis.ClusterClient` is not supported because Lua scripts touch map/stream keys directly.
+- **Exact stream trimming**: `NewStream` trims at `1,000` events by default using exact `MAXLEN =`. Size `options.WithStreamMaxLen(n)` for your replay window, or use `options.WithUnboundedStream()` + explicit `stream.Remove(ctx, id)` when every queued item must be processed before deletion.
+- **Idempotent handlers**: Both `Sink` consumers and `pool` workers deliver at-least-once across crashes and rebalances; guard external side effects with idempotency keys.
 
 ## See Also
 
-- [Pulse GitHub Repository](https://github.com/goadesign/pulse) — Source code and examples
-- [Redis Streams Documentation](https://redis.io/docs/data-types/streams/) — Redis Streams concepts
+- [Pulse GitHub Repository](https://github.com/goadesign/pulse) — Source code and tests
+- [Chorus Architecture](../chorus/#architecture) — Production example combining `pulse/rmap`, `pulse/streaming`, and `pulse/semaphore`

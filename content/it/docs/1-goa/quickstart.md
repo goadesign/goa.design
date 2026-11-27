@@ -2,7 +2,7 @@
 nav_group: start
 title: Avvio rapido
 weight: 10
-description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
+description: "Installa Goa, scrivi un contratto di servizio, esegui goa gen ed esponi un endpoint HTTP funzionante in cinque minuti."
 llm_optimized: true
 aliases:
 ---

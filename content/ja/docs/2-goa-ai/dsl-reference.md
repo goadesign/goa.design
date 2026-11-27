@@ -2,7 +2,7 @@
 nav_group: reference
 title: DSLリファレンス
 weight: 90
-description: "Goa-AI の DSL 関数（エージェント、ツールセット、ポリシー、MCP 連携）を網羅した完全リファレンス。"
+description: "Goa-AI の Go DSL リファレンス：Agent、Toolset、BindTo、BoundedResult、Confirmation、RunPolicy、Completion、MCP 宣言。"
 llm_optimized: true
 aliases:
 ---

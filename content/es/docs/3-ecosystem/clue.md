@@ -1,34 +1,35 @@
 ---
-title: "Pista"
+title: "Clue"
 weight: 3
-description: "Microservice instrumentation for Go - logging, tracing, metrics, health checks, and debugging."
+description: "Instrumentación de microservicios para Go: logs, trazas, métricas, comprobaciones de salud y depuración."
 llm_optimized: true
 ---
 
-Clue proporciona instrumentación completa para microservicios Go construidos sobre OpenTelemetry. Aunque está diseñado para integrarse perfectamente con Goa, Clue funciona con cualquier servicio Go HTTP o gRPC.
+Clue proporciona instrumentación integral para microservicios Go basada en OpenTelemetry. Aunque está diseñado para integrarse de forma nativa con Goa, Clue funciona con cualquier servicio HTTP o gRPC en Go.
 
 ## ¿Por qué Clue?
 
-Clue resuelve un problema común en microservicios: necesitas registros detallados cuando las cosas van mal, pero no quieres pagar el coste de registrar todo todo el tiempo.
+Clue resuelve un dilema habitual en microservicios: necesitas logs detallados cuando algo falla, pero no quieres pagar el coste de registrarlo todo continuamente.
 
-El enfoque de Clue: **Almacena los mensajes de registro en memoria y sólo los escribe cuando se produce un error o la solicitud está siendo rastreada**. Las peticiones exitosas y no rastreadas no generan salida de registro. Cuando se producen errores, se obtiene el contexto completo de lo que condujo al fracaso.
+El enfoque de Clue consiste en **acumular los mensajes de log en memoria y escribirlos únicamente cuando ocurre un error o la petición está siendo trazada**. Las peticiones exitosas sin traza no generan ninguna salida de log. Cuando se produce un fallo, obtienes todo el contexto previo que condujo al error.
 
-Esta única decisión de diseño reduce drásticamente el volumen de registro al tiempo que conserva la información de depuración que necesita.
+Esta decisión de diseño reduce drásticamente el volumen de logs conservando intacta la información necesaria para depurar.
 
-## Visión general del paquete
+{{< anchors "visión-general-del-paquete" >}}
+## Resumen de paquetes
 
 | Paquete | Propósito |
-|---------|---------|
-| `clue` | Configuración de OpenTelemetry - una llamada para configurar métricas y rastreo |
-| `log` | Registro estructurado basado en el contexto con almacenamiento inteligente |
-| `health` | Puntos finales de comprobación de estado para Kubernetes y sistemas de orquestación |
-| `debug` | Depuración en tiempo de ejecución: alternar registros de depuración, puntos finales de pprof | `mock`
-| `mock` | Generar y configurar dobles de prueba para las dependencias |
-| `interceptors` | Interceptores Goa para rastrear mensajes de flujo individuales |
+|---------|-----------|
+| `clue` | Configuración de OpenTelemetry: una sola llamada para activar métricas y trazas |
+| `log` | Logging estructurado basado en contexto con almacenamiento inteligente en búfer |
+| `health` | Endpoints de comprobación de salud para Kubernetes y sistemas de orquestación |
+| `debug` | Depuración en vivo: activación dinámica de logs de depuración y endpoints pprof |
+| `mock` | Generación y configuración de dobles de prueba para dependencias |
+| `interceptors` | Interceptores Goa para trazar mensajes individuales en streams |
 
 ## Instalación
 
-Instale sólo los paquetes que necesita:
+Instala únicamente los paquetes que necesites:
 
 ```bash
 go get goa.design/clue/clue
@@ -41,11 +42,12 @@ go get goa.design/clue/interceptors
 
 ---
 
-## El paquete de registro
+{{< anchors "el-paquete-de-registro" >}}
+## El paquete `log`
 
-El paquete `log` está construido alrededor de `context.Context` de Go. Inicializas un contexto de registro una vez y lo pasas a través de tu aplicación. Todas las funciones de registro toman este contexto como primer argumento.
+El paquete `log` gira en torno a `context.Context` de Go. Inicializas una vez el contexto de logging y lo propagas por tu aplicación. Todas las funciones de log reciben ese contexto como primer argumento.
 
-### Inicio Rápido
+### Inicio rápido
 
 ```go
 import "goa.design/clue/log"
@@ -62,26 +64,27 @@ func main() {
 }
 ```
 
-### Entendiendo el Buffering
+{{< anchors "entendiendo-el-buffering" >}}
+### Cómo funciona el búfer
 
-Esta es la característica clave de Clue. Hay dos tipos de funciones de registro:
+Esta es la capacidad central de Clue. Existen dos familias de funciones de log:
 
-**Funciones inmediatas** - escriben directamente a la salida:
-- `Print()`, `Printf()` - escriben siempre inmediatamente
-- `Error()`, `Errorf()` - vacía el buffer, luego escribe
-- `Fatal()`, `Fatalf()` - vacía la memoria intermedia, escribe y luego sale
+**Funciones inmediatas** — escriben directamente en la salida:
+- `Print()`, `Printf()` — escriben siempre de inmediato
+- `Error()`, `Errorf()` — vuelcan el búfer y después escriben
+- `Fatal()`, `Fatalf()` — vuelcan el búfer, escriben y terminan el proceso
 
-**Funciones con búfer** - almacenar en memoria hasta que se vacíe:
-- `Info()`, `Infof()` - almacenar el mensaje en la memoria intermedia
-- `Warn()`, `Warnf()` - almacena el mensaje en la memoria intermedia
-- `Debug()`, `Debugf()` - almacenan el mensaje si está activada la depuración
+**Funciones con búfer** — guardan en memoria hasta que se vuelca el búfer:
+- `Info()`, `Infof()` — almacenan el mensaje en el búfer
+- `Warn()`, `Warnf()` — almacenan el mensaje en el búfer
+- `Debug()`, `Debugf()` — se escriben solo cuando el modo de depuración está activo (se descartan en caso contrario)
 
-El búfer se vacía automáticamente cuando:
-1. `Error()` o `Fatal()` se llama
-2. La solicitud está siendo rastreada (detectada a través del contexto OpenTelemetry span)
+El búfer se vuelca automáticamente cuando:
+1. Se llama a `Error()` o `Fatal()`
+2. La petición está siendo trazada (detectado mediante el contexto de span de OpenTelemetry)
 3. El modo de depuración está activado
 
-**Ejemplo: Por qué es importante**
+**Ejemplo práctico:**
 
 ```go
 func HandleRequest(ctx context.Context, req *Request) error {
@@ -101,11 +104,11 @@ func HandleRequest(ctx context.Context, req *Request) error {
 }
 ```
 
-Para una petición con éxito: **cero salida de registro**. Para una petición fallida: **contexto completo**.
+En una petición exitosa: **cero líneas de log**. En una petición fallida: **todo el contexto**.
 
-### Añadir contexto con With()
+### Añadir contexto con `With()`
 
-Construye el contexto de registro a medida que las peticiones fluyen a través de tu servicio:
+Enriquece el contexto de logging a medida que la petición atraviesa el servicio:
 
 ```go
 func HandleOrder(ctx context.Context, orderID string) error {
@@ -128,7 +131,7 @@ func processPayment(ctx context.Context) error {
 
 ### Pares clave-valor
 
-Dos formas de especificar pares clave-valor:
+Dos formas de expresar pares clave-valor:
 
 ```go
 // KV - deterministic order, slice-backed
@@ -146,30 +149,31 @@ log.Print(ctx, log.Fields{
 })
 ```
 
-Utilice `KV` cuando el orden de los campos de registro sea importante (más fácil de escanear). Utilice `Fields` cuando no importe.
+Usa `KV` cuando importe el orden de los campos (más fácil de leer). Usa `Fields` cuando no sea relevante.
 
-Los valores pueden ser: cadenas, números, booleanos, nil, o trozos de estos tipos.
+Los valores admitidos son cadenas, números, booleanos, `nil` o slices de cualquiera de ellos.
 
-### Formatos de registro
+{{< anchors "formatos-de-registro" >}}
+### Formatos de log
 
-Clue detecta automáticamente los terminales y selecciona el formato apropiado:
+Clue detecta automáticamente si la salida es una terminal y elige el formato adecuado:
 
 ```go
 // Explicit format selection
 ctx := log.Context(context.Background(), log.WithFormat(log.FormatJSON))
 ```
 
-**FormatText** (por defecto para no terminales) - estilo logfmt:
+**FormatText** (por defecto fuera de terminales) — estilo logfmt:
 ```
 time=2024-01-15T10:30:00Z level=info user=alice action=login
 ```
 
-**FormatTerminal** (por defecto para terminales) - color, marcas de tiempo relativas:
+**FormatTerminal** (por defecto en terminales) — con color y marcas de tiempo relativas:
 ```
 INFO[0042] user=alice action=login
 ```
 
-**FormatJSON** - JSON estructurado:
+**FormatJSON** — JSON estructurado:
 ```json
 {"time":"2024-01-15T10:30:00Z","level":"info","user":"alice","action":"login"}
 ```
@@ -184,9 +188,10 @@ func myFormat(e *log.Entry) []byte {
 ctx := log.Context(context.Background(), log.WithFormat(myFormat))
 ```
 
-### Añadir IDs de Trace y Span
+{{< anchors "añadir-ids-de-trace-y-span" >}}
+### Añadir IDs de traza y span
 
-Conectar logs a trazas distribuidas:
+Vincula cada línea de log con sus trazas distribuidas:
 
 ```go
 ctx := log.Context(context.Background(),
@@ -200,21 +205,22 @@ Salida:
 {"time":"...","level":"info","trace_id":"abc123","span_id":"def456","msg":"hello"}
 ```
 
-### Añadir ubicación del archivo
+{{< anchors "añadir-ubicación-del-archivo" >}}
+### Añadir ubicación del archivo fuente
 
-Para depuración, añada el archivo fuente y los números de línea:
+Para facilitar la depuración, incluye el archivo fuente y el número de línea:
 
 ```go
 ctx := log.Context(context.Background(), log.WithFileLocation())
 ```
 
-La salida incluye: `file=mypackage/handler.go:42`
+La salida añade: `file=mypackage/handler.go:42`
 
 ### Middleware HTTP
 
-El middleware HTTP hace dos cosas:
-1. Copia el logger de su contexto base en el contexto de cada petición
-2. Registra el inicio/final de la solicitud con método, URL, estado y duración
+El middleware HTTP cumple dos funciones:
+1. Copia el logger del contexto base en el contexto de cada petición
+2. Registra el inicio y fin de la petición con método, URL, código de estado y duración
 
 ```go
 func main() {
@@ -242,7 +248,7 @@ handler = log.HTTP(ctx, log.WithDisableRequestID())(handler)
 
 ### Interceptores gRPC
 
-Para servidores gRPC:
+En servidores gRPC:
 
 ```go
 grpcServer := grpc.NewServer(
@@ -251,7 +257,7 @@ grpcServer := grpc.NewServer(
 )
 ```
 
-Para clientes gRPC:
+En clientes gRPC:
 
 ```go
 conn, err := grpc.Dial(addr,
@@ -260,9 +266,10 @@ conn, err := grpc.Dial(addr,
 )
 ```
 
-### Registro de clientes HTTP
+{{< anchors "registro-de-clientes-http" >}}
+### Logging en clientes HTTP
 
-Envuelva los transportes HTTP para registrar las peticiones salientes:
+Envuelve el transporte HTTP para registrar las peticiones salientes:
 
 ```go
 client := &http.Client{
@@ -279,16 +286,17 @@ client := &http.Client{
 
 ### Integración con Goa
 
-Añadir nombres de servicios y métodos a los logs:
+Añade el nombre del servicio y del método a los logs:
 
 ```go
 endpoints := genservice.NewEndpoints(svc)
 endpoints.Use(log.Endpoint)  // Adds goa.service and goa.method to context
 ```
 
-### Personalización de las claves de registro
+{{< anchors "personalización-de-las-claves-de-registro" >}}
+### Personalizar las claves de log
 
-Todas las claves de registro son variables de paquete que puede anular:
+Todas las claves de log son variables de paquete que puedes redefinir:
 
 ```go
 log.MessageKey = "message"       // default: "msg"
@@ -299,7 +307,8 @@ log.TraceIDKey = "traceId"       // default: "trace_id"
 log.SpanIDKey = "spanId"         // default: "span_id"
 ```
 
-### Adaptador para otros registradores
+{{< anchors "adaptador-para-otros-registradores" >}}
+### Adaptadores para otros loggers
 
 ```go
 // Standard library log.Logger compatible
@@ -317,11 +326,12 @@ goaLogger := log.AsGoaMiddlewareLogger(ctx)
 
 ---
 
-## El paquete de pistas
+{{< anchors "el-paquete-de-pistas" >}}
+## El paquete `clue`
 
-El paquete `clue` configura OpenTelemetry con valores predeterminados sensibles en una sola llamada a la función.
+El paquete `clue` configura OpenTelemetry con valores predeterminados razonables en una sola llamada.
 
-### Configuración Básica
+### Configuración básica
 
 ```go
 import (
@@ -360,11 +370,11 @@ func main() {
 
 ### Muestreo adaptativo
 
-Clue incluye un muestreador adaptativo que ajusta automáticamente la frecuencia de muestreo en función del volumen de tráfico. Esto evita que el almacenamiento de trazas se sature durante los picos de tráfico.
+Clue incorpora un muestreador adaptativo que ajusta automáticamente la tasa de muestreo según el volumen de tráfico, evitando saturar el almacenamiento de trazas durante picos de carga.
 
-Ajustes por defecto:
-- **Velocidad máxima de muestreo:** 2 trazas por segundo
-- **Tamaño de la muestra:** 10 peticiones entre ajustes
+Valores por defecto:
+- **Tasa máxima de muestreo:** 2 trazas por segundo
+- **Tamaño de muestra:** 10 peticiones entre ajustes
 
 ```go
 cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExporter,
@@ -373,9 +383,10 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
-### Funciones de ayuda al exportador
+{{< anchors "funciones-de-ayuda-al-exportador" >}}
+### Funciones auxiliares para exportadores
 
-Clue proporciona funciones de ayuda que crean exportadores con un manejo adecuado de los cierres:
+Clue incluye constructores auxiliares que crean exportadores con cierre ordenado:
 
 ```go
 // gRPC exporters
@@ -410,9 +421,10 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
-### Desactivación de métricas o rastreo
+{{< anchors "desactivación-de-métricas-o-rastreo" >}}
+### Desactivar métricas o trazas
 
-Pasa `nil` para el exportador que no necesites:
+Pasa `nil` en el exportador que no necesites:
 
 ```go
 // Tracing only, no metrics
@@ -424,11 +436,12 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, nil)
 
 ---
 
-## El paquete de salud
+{{< anchors "el-paquete-de-salud" >}}
+## El paquete `health`
 
-El paquete `health` crea puntos finales de comprobación de salud que informan sobre las dependencias de los servicios.
+El paquete `health` construye endpoints de comprobación de salud que informan del estado de las dependencias del servicio.
 
-### Uso Básico
+### Uso básico
 
 ```go
 import "goa.design/clue/health"
@@ -442,19 +455,20 @@ func main() {
 }
 ```
 
-### Comprobación de dependencias
+{{< anchors "comprobación-de-dependencias" >}}
+### Comprobar dependencias de servicios HTTP
 
-Utilice `NewPinger` para comprobar los servicios que exponen puntos finales de salud:
+Usa `NewPinger` para sondear servicios HTTP aguas arriba que expongan un endpoint de salud `/livez` (o personalizado; para bases de datos SQL o Redis, implementa la interfaz `Pinger` de dos métodos mostrada más abajo):
 
 ```go
 checker := health.NewChecker(
-    health.NewPinger("database-service", "db.internal:8080"),
-    health.NewPinger("cache-service", "cache.internal:8080"),
-    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https")),
+    health.NewPinger("orders-service", "orders.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("inventory-service", "inventory.internal:8080", health.WithTimeout(5*time.Second)),
+    health.NewPinger("auth-api", "auth.example.com:443", health.WithScheme("https"), health.WithTimeout(5*time.Second)),
 )
 ```
 
-**Opciones de llamada:**
+**Opciones de `NewPinger`:**
 
 ```go
 health.NewPinger("service", "host:port",
@@ -465,9 +479,10 @@ health.NewPinger("service", "host:port",
 )
 ```
 
-### Controles de salud personalizados
+{{< anchors "controles-de-salud-personalizados" >}}
+### Comprobaciones de salud personalizadas
 
-Implementa la interfaz `Pinger` para comprobaciones personalizadas:
+Implementa la interfaz `Pinger` para verificaciones propias:
 
 ```go
 type DBChecker struct {
@@ -488,9 +503,9 @@ checker := health.NewChecker(&DBChecker{db: db})
 
 ### Formato de respuesta
 
-El manejador devuelve JSON por defecto, XML si se solicita:
+El manejador devuelve JSON por defecto y XML si se solicita:
 
-**Saludable (HTTP 200):**
+**Sano (HTTP 200):**
 ```json
 {
     "uptime": 3600,
@@ -502,7 +517,7 @@ El manejador devuelve JSON por defecto, XML si se solicita:
 }
 ```
 
-**No saludable (HTTP 503):**
+**Degradado (HTTP 503):**
 ```json
 {
     "uptime": 3600,
@@ -514,7 +529,7 @@ El manejador devuelve JSON por defecto, XML si se solicita:
 }
 ```
 
-Establecer la versión en tiempo de compilación:
+Fija la versión en tiempo de compilación:
 
 ```go
 health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=v1.2.3
@@ -522,20 +537,22 @@ health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=
 
 ---
 
-## El paquete de depuración
+{{< anchors "el-paquete-de-depuración" >}}
+## El paquete `debug`
 
-El paquete `debug` permite la resolución de problemas en tiempo de ejecución sin necesidad de volver a desplegar.
+El paquete `debug` permite diagnosticar problemas en tiempo de ejecución sin volver a desplegar.
 
-### Registro dinámico de depuración
+{{< anchors "registro-dinámico-de-depuración" >}}
+### Activación dinámica de logs de depuración
 
-Montar un punto final para alternar los registros de depuración en tiempo de ejecución:
+Monta un endpoint para encender o apagar los logs de depuración en caliente:
 
 ```go
 mux := http.NewServeMux()
 debug.MountDebugLogEnabler(mux)  // Mounts at /debug
 ```
 
-Controlar los registros de depuración a través de HTTP:
+Controla el estado por HTTP:
 
 ```bash
 # Check current state
@@ -551,7 +568,7 @@ curl "http://localhost:8080/debug?debug-logs=off"
 # {"debug-logs":"off"}
 ```
 
-**Importante:** El endpoint sólo controla una bandera. Debe utilizar el middleware de depuración para que tenga efecto:
+**Importante:** El endpoint solo cambia un indicador; debes instalar el middleware de `debug` para que surta efecto:
 
 ```go
 // For HTTP servers
@@ -575,7 +592,8 @@ debug.MountDebugLogEnabler(mux,
 )
 ```
 
-### pprof Endpoints
+{{< anchors "pprof-endpoints" >}}
+### Endpoints `pprof`
 
 Monta los endpoints de perfilado de Go:
 
@@ -584,22 +602,23 @@ debug.MountPprofHandlers(mux)  // Mounts at /debug/pprof/
 ```
 
 Endpoints disponibles:
-- `/debug/pprof/` - Página de índice
-- `/debug/pprof/heap` - Perfil de montón
-- `/debug/pprof/goroutine` - Perfil Goroutine
-- `/debug/pprof/profile` - Perfil de CPU (30s por defecto)
-- `/debug/pprof/trace` - Traza de ejecución
+- `/debug/pprof/` — Página índice
+- `/debug/pprof/heap` — Perfil de memoria (heap)
+- `/debug/pprof/goroutine` — Perfil de goroutines
+- `/debug/pprof/profile` — Perfil de CPU (30 s por defecto)
+- `/debug/pprof/trace` — Traza de ejecución
 - `/debug/pprof/allocs`, `/debug/pprof/block`, `/debug/pprof/mutex`, etc.
 
-⚠️ **Advertencia de seguridad:** No expongas públicamente los endpoints pprof. Revelan información sensible sobre tu aplicación.
+⚠️ **Aviso de seguridad:** Nunca expongas los endpoints `pprof` públicamente; revelan detalles internos sensibles de la aplicación.
 
 ```go
 debug.MountPprofHandlers(mux, debug.WithPrefix("/internal/pprof/"))
 ```
 
-### Registro de carga útil para Goa
+{{< anchors "registro-de-carga-útil-para-goa" >}}
+### Registro de cargas útiles en Goa
 
-Registra las cargas útiles de solicitud y respuesta cuando la depuración está activada:
+Registra las cargas útiles de entrada y respuesta cuando la depuración está activa:
 
 ```go
 endpoints := genservice.NewEndpoints(svc)
@@ -617,9 +636,10 @@ debug.LogPayloads(
 )
 ```
 
-### Adaptador Goa Muxer
+{{< anchors "adaptador-goa-muxer" >}}
+### Adaptador para el muxer de Goa
 
-Para el muxer HTTP de Goa:
+Con el muxer HTTP de Goa:
 
 ```go
 mux := goahttp.NewMuxer()
@@ -629,17 +649,19 @@ debug.MountPprofHandlers(debug.Adapt(mux))
 
 ---
 
-## El paquete falso
+{{< anchors "el-paquete-falso" >}}
+## El paquete `mock`
 
-El paquete `mock` ayuda a crear dobles de prueba para dependencias con soporte para secuencias de llamada y mocks permanentes.
+El paquete `mock` facilita crear dobles de prueba para tus dependencias con soporte para secuencias ordenadas de llamadas y mocks permanentes.
 
 ### Conceptos
 
-**Secuencias:** Define las llamadas esperadas en orden. Cada llamada a `Next()` devuelve la siguiente función de la secuencia.
+**Secuencias:** Definen las llamadas esperadas en orden. Cada invocación a `Next()` devuelve la siguiente función de la secuencia.
 
-**Mocks permanentes:** Siempre devuelven la misma función, se usan después de agotar las secuencias o cuando el orden no importa.
+**Mocks permanentes:** Devuelven siempre la misma función; se utilizan una vez agotadas las secuencias o cuando el orden no importa.
 
-### Creando un Mock
+{{< anchors "creando-un-mock" >}}
+### Crear un mock
 
 ```go
 type MockUserService struct {
@@ -668,7 +690,8 @@ func (m *MockUserService) SetGetUser(f func(context.Context, string) (*User, err
 }
 ```
 
-### Uso de Mocks en Pruebas
+{{< anchors "uso-de-mocks-en-pruebas" >}}
+### Usar mocks en pruebas
 
 ```go
 func TestOrderService(t *testing.T) {
@@ -701,7 +724,7 @@ func TestOrderService(t *testing.T) {
 
 ### Mocks permanentes
 
-Utilice `Set()` para las llamadas que deben comportarse siempre igual:
+Usa `Set()` para llamadas que deban comportarse siempre igual:
 
 ```go
 userMock.SetGetUser(func(ctx context.Context, id string) (*User, error) {
@@ -709,11 +732,12 @@ userMock.SetGetUser(func(ctx context.Context, id string) (*User, error) {
 })
 ```
 
-Las secuencias tienen prioridad sobre los mocks permanentes. Una vez agotada la secuencia, `Next()` devuelve el mock permanente.
+Las secuencias tienen prioridad sobre los mocks permanentes. Cuando la secuencia se agota, `Next()` devuelve el mock permanente.
 
-### Generador de simulacros (cmg)
+{{< anchors "generador-de-simulacros-cmg" >}}
+### Generador de mocks (`cmg`)
 
-Genera mocks automáticamente a partir de interfaces:
+Genera mocks automáticamente a partir de interfaces Go:
 
 ```bash
 go install goa.design/clue/mock/cmd/cmg@latest
@@ -725,24 +749,27 @@ cmg gen ./services/...
 cmg gen --testify ./services/...
 ```
 
-Los mocks generados van en un subdirectorio `mocks/` junto al fichero fuente.
+Los mocks generados se escriben en un subdirectorio `mocks/` junto al archivo de origen.
 
 ---
 
-## El paquete de interceptores
+{{< anchors "el-paquete-de-interceptores" >}}
+## El paquete `interceptors`
 
-El paquete `interceptors` proporciona interceptores Goa para rastrear mensajes individuales en RPCs de flujo. A diferencia de la instrumentación estándar de OpenTelemetry (que rastrea todo el flujo), estos interceptores propagan el contexto de rastreo a través de cada mensaje.
+El paquete `interceptors` ofrece interceptores Goa para trazar mensajes individuales en RPCs de streaming. A diferencia de la instrumentación estándar de OpenTelemetry (que traza el stream completo como una sola unidad), estos interceptores propagan el contexto de traza en cada mensaje.
 
-### Cuando Usar
+{{< anchors "cuando-usar" >}}
+### Cuándo usarlos
 
-Utilice estos interceptores cuando necesite
-- Rastreo por mensaje en flujos de larga duración
-- Contexto de rastreo para fluir del cliente al servidor a través de mensajes de flujo
-- Cronometraje y correlación de mensajes individuales
+Utilízalos cuando necesites:
+- Trazas por mensaje en streams de larga duración
+- Propagar el contexto de traza del cliente al servidor en cada mensaje del stream
+- Medición de tiempos y correlación mensaje a mensaje
 
-### Configuración del diseño
+{{< anchors "configuración-del-diseño" >}}
+### Configuración en el diseño
 
-En su diseño Goa, defina interceptores con atributos `TraceMetadata`:
+En tu diseño Goa, declara interceptores con atributos `TraceMetadata`:
 
 ```go
 var TraceBidirectionalStream = Interceptor("TraceBidirectionalStream", func() {
@@ -761,7 +788,7 @@ var TraceBidirectionalStream = Interceptor("TraceBidirectionalStream", func() {
 })
 ```
 
-Aplicar a los métodos de streaming:
+Aplícalos a los métodos en streaming:
 
 ```go
 Method("Chat", func() {
@@ -774,7 +801,7 @@ Method("Chat", func() {
 
 ### Implementación
 
-En tus implementaciones de interceptores, llama a las funciones proporcionadas:
+En las implementaciones de tus interceptores, delega en las funciones incluidas:
 
 ```go
 import "goa.design/clue/interceptors"
@@ -798,9 +825,10 @@ func (i *ServerInterceptors) TraceBidirectionalStream(
 }
 ```
 
-### Extracción del contexto de rastreo de los mensajes recibidos
+{{< anchors "extracción-del-contexto-de-rastreo-de-los-mensajes-recibidos" >}}
+### Extraer el contexto de traza de los mensajes recibidos
 
-Dado que las interfaces de flujo generadas por Goa no devuelven un contexto, utilice las funciones de ayuda:
+Como las interfaces de stream generadas por Goa no devuelven un `context.Context`, usa las funciones auxiliares:
 
 ```go
 func (s *Service) Chat(ctx context.Context, stream genservice.ChatServerStream) error {
@@ -818,7 +846,7 @@ func (s *Service) Chat(ctx context.Context, stream genservice.ChatServerStream) 
 }
 ```
 
-O usa el wrapper para un código más limpio:
+O utiliza el envoltorio para simplificar el código:
 
 ```go
 wrapped := interceptors.WrapTraceBidirectionalStreamServerStream(stream)
@@ -844,91 +872,109 @@ package main
 import (
     "context"
     "net/http"
-    
+    "time"
+
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+    "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
     "goa.design/clue/clue"
     "goa.design/clue/debug"
     "goa.design/clue/health"
     "goa.design/clue/log"
-    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-    "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-    
-    genservice "myapp/gen/myservice"
+    goahttp "goa.design/goa/v3/http"
+
+    catalogapi "example.com/catalog"
+    gencatalog "example.com/catalog/gen/catalog"
+    genhttp "example.com/catalog/gen/http/catalog/server"
 )
 
 func main() {
     // 1. Initialize logging context with trace correlation
     ctx := log.Context(context.Background(),
         log.WithFormat(log.FormatJSON),
-        log.WithFunc(log.Span))
-    
+        log.WithFunc(log.Span),
+    )
+
     // 2. Configure OpenTelemetry
-    spanExporter, _ := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
-    metricExporter, _ := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
-    cfg, _ := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExporter)
+    spanExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
+    metricExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
+    cfg, err := clue.NewConfig(ctx, "catalog", "1.0.0", metricExporter, spanExporter)
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
     clue.ConfigureOpenTelemetry(ctx, cfg)
-    
-    // 3. Create service and endpoints
-    svc := NewService()
-    endpoints := genservice.NewEndpoints(svc)
-    endpoints.Use(debug.LogPayloads())  // Log payloads when debug enabled
-    endpoints.Use(log.Endpoint)          // Add service/method to logs
-    
-    // 4. Create HTTP handler with middleware stack
-    handler := genservice.NewHandler(endpoints)
-    handler = otelhttp.NewHandler(handler, "myservice")  // OpenTelemetry
-    handler = debug.HTTP()(handler)                       // Debug log control
-    handler = log.HTTP(ctx)(handler)                      // Request logging
-    
-    // 5. Mount on mux
-    mux := http.NewServeMux()
-    mux.Handle("/", handler)
-    
-    // 6. Mount operational endpoints
-    debug.MountDebugLogEnabler(mux)
-    debug.MountPprofHandlers(mux)
-    mux.Handle("/healthz", health.Handler(
-        health.NewChecker(
-            health.NewPinger("database", dbAddr),
-        ),
+
+    // 3. Create Goa endpoints and mount generated HTTP server
+    svc := catalogapi.NewCatalog()
+    endpoints := gencatalog.NewEndpoints(svc)
+    endpoints.Use(debug.LogPayloads()) // Log payloads when debug enabled
+    endpoints.Use(log.Endpoint)        // Add goa.service and goa.method to logs
+
+    mux := goahttp.NewMuxer()
+    srv := genhttp.New(endpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
+    genhttp.Mount(mux, srv)
+
+    // 4. Mount debug, pprof, and dependency health endpoints
+    usersAddr := "localhost:8081"
+    debug.MountDebugLogEnabler(debug.Adapt(mux))
+    debug.MountPprofHandlers(debug.Adapt(mux))
+    check := health.Handler(health.NewChecker(
+        health.NewPinger("users-service", usersAddr, health.WithTimeout(5*time.Second)),
     ))
-    
-    // 7. Start server
+    mux.Handle("GET", "/healthz", check.ServeHTTP)
+
+    // 5. Wrap mux with OpenTelemetry, debug control, and request logging middleware
+    var handler http.Handler = mux
+    handler = otelhttp.NewHandler(handler, "catalog")
+    handler = debug.HTTP()(handler)
+    handler = log.HTTP(ctx)(handler)
+
+    // 6. Start server
     log.Printf(ctx, "starting server on :8080")
-    http.ListenAndServe(":8080", mux)
+    log.Fatal(ctx, http.ListenAndServe(":8080", handler))
 }
 ```
 
 ---
 
-## Mejores prácticas
+{{< anchors "mejores-prácticas" >}}
+## Buenas prácticas
 
-### Registro
+{{< anchors "registro" >}}
+### Logging
 
-1. **Utilice `Info()` para el procesamiento de solicitudes, `Print()` para los eventos del ciclo de vida.** Los registros de solicitudes deben almacenarse en búfer; los registros de inicio/apagado deben escribirse inmediatamente.
+1. **Usa `Info()` al procesar peticiones y `Print()` para eventos de ciclo de vida.** Los logs de peticiones deben ir al búfer; el arranque y la parada deben escribirse al instante.
 
-2. **Utilice `log.With()` para añadir IDs y metadatos tan pronto como los tenga.
+2. **Añade contexto pronto y registra tarde.** Usa `log.With()` para incorporar IDs y metadatos en cuanto estén disponibles.
 
-3. **Utilice `log.WithFunc(log.Span)` para correlacionar los registros con las trazas.
+3. **Activa siempre la correlación con trazas.** Usa `log.WithFunc(log.Span)` para enlazar cada línea de log con su traza.
 
-### Health Checks
+{{< anchors "health-checks" >}}
+### Comprobaciones de salud
 
-1. **Comprueba dependencias reales.** No devuelvas sólo 200. Verifique las conexiones de la base de datos, servicios aguas abajo.
+1. **Comprueba las dependencias reales.** No devuelvas `200` sin más: verifica conexiones a bases de datos y servicios aguas arriba.
 
-2. **Un chequeo que se cuelga es peor que uno que falla.
+2. **Configura tiempos límite.** Una sonda de salud que se queda colgada es peor que una que falla rápido.
 
-3. **Utilice `/livez` para la salud básica del proceso, `/readyz` para comprobaciones completas de dependencia.
+3. **Separa liveness y readiness.** Usa `/livez` para la salud básica del proceso y `/readyz` para verificar todas las dependencias.
 
 ### Depuración
 
-1. **Nunca exponga pprof públicamente.** Use un puerto interno separado o una política de red.
+1. **Nunca expongas `pprof` públicamente.** Utiliza un puerto interno separado o políticas de red.
 
-2. **Estructurar el registro de modo que el modo de depuración revele información útil sin abrumar.
+2. **Diseña pensando en activar `debug` en caliente.** Estructura los logs `Debug()` para que aporten diagnóstico útil sin inundar la salida.
 
 ---
 
-## Ver también
+{{< anchors "ver-también" >}}
+## Véase también
 
-- [Guía de producción](../../1-goa/production/) - Patrones de despliegue de producción
-- [Clue GitHub Repository](https://github.com/goadesign/clue) - Código fuente y ejemplo meteorológico
-- [Documentación de OpenTelemetry](https://opentelemetry.io/docs/) - Conceptos de OpenTelemetry
+- [Guía de producción](../../1-goa/production/) — Patrones de despliegue en producción
+- [Repositorio de Clue en GitHub](https://github.com/goadesign/clue) — Código fuente y ejemplo `weather`
+- [Documentación de OpenTelemetry](https://opentelemetry.io/docs/) — Conceptos de OpenTelemetry

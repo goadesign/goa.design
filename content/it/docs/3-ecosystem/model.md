@@ -1,35 +1,35 @@
 ---
-title: "Modello"
+title: "Model"
 weight: 1
-description: "Architecture diagrams as code using the C4 model - version-controlled, automatically generated, and interactive."
+description: "Diagrammi di architettura come codice con il modello C4 — versionati, generati automaticamente e interattivi."
 llm_optimized: true
 ---
 
-Model fornisce un DSL Go per descrivere l'architettura del software secondo il [modello C4] (https://c4model.com). Definisce l'architettura nel codice, la versione insieme al software e genera automaticamente i diagrammi.
+Model fornisce un DSL Go per descrivere l'architettura del software secondo il [modello C4](https://c4model.com). Definisci l'architettura nel codice, versionala insieme al software e genera i diagrammi automaticamente.
 
 ## Perché i diagrammi come codice?
 
-I diagrammi di architettura tradizionali sono imputati. Vengono creati con strumenti grafici, sono scollegati dalla base di codice e diventano rapidamente obsoleti. Model risolve questo problema rendendo l'architettura una parte di prima classe del vostro repository:
+I diagrammi di architettura tradizionali invecchiano in fretta: creati in strumenti grafici separati dalla codebase, diventano rapidamente obsoleti. Model risolve il problema rendendo l'architettura un cittadino di prima classe del repository:
 
-- **Versione controllata**: Le modifiche all'architettura sono commit git con una cronologia completa
-- **Consistente**: Stili e componenti condivisi in tutti i diagrammi
-- **Automatizzato**: Generazione di diagrammi in CI/CD, senza schermate manuali
-- **Componibile**: Importazione di componenti dell'architettura in tutti i progetti tramite pacchetti Go
-- **Rivedibile**: Le modifiche all'architettura passano attraverso la revisione del codice come qualsiasi altro codice
+- **Sotto controllo di versione**: Le modifiche architetturali sono commit Git con cronologia completa
+- **Coerente**: Stili e componenti condivisi tra tutti i diagrammi
+- **Automatizzato**: Genera i diagrammi in CI/CD senza screenshot manuali
+- **Componibile**: Importa componenti architetturali tra progetti tramite pacchetti Go
+- **Revisionabile**: Le modifiche all'architettura passano dalla code review come qualsiasi altro codice
 
 ---
 
 ## Il modello C4
 
-C4 definisce quattro livelli di astrazione. Il modello supporta i primi tre:
+C4 definisce quattro livelli di astrazione. Model supporta i primi tre:
 
-| Livello | Cosa mostra | Elementi di esempio |
+| Livello | Cosa mostra | Elementi tipici |
 |-------|---------------|------------------|
-| **Contesto** | Sistema nel suo ambiente | Sistemi software, persone |
-| **Contenitore** | Applicazioni all'interno di un sistema | Applicazioni web, API, database, code di messaggi |
-| **Componente** | Moduli all'interno di un contenitore | Servizi, controllori, repository |
+| **Context** | Il sistema nel suo ambiente | Sistemi software, persone |
+| **Container** | Le applicazioni dentro un sistema | Web app, API, database, code di messaggi |
+| **Component** | I moduli dentro un container | Servizi, controller, repository |
 
-Il quarto livello (Codice) si riferisce a classi e funzioni vere e proprie, come già mostrato dal vostro IDE.
+Il quarto livello (Code) corrisponde a tipi e funzioni reali, che il tuo IDE mostra già direttamente.
 
 ---
 
@@ -40,13 +40,14 @@ go install goa.design/model/cmd/mdl@latest
 go install goa.design/model/cmd/stz@latest
 ```
 
-Richiede Go 1.23+.
+Richiede Go 1.27+.
 
 ---
 
 ## Avvio rapido
 
-### 1. Creare un pacchetto di modelli
+{{< anchors "1-creare-un-pacchetto-di-modelli" >}}
+### 1. Crea un pacchetto Model
 
 ```go
 // model/model.go
@@ -87,21 +88,23 @@ var _ = Design("My System", "A description of the overall design", func() {
 })
 ```
 
-### 2. Avviare l'editor
+{{< anchors "2-avviare-leditor" >}}
+### 2. Avvia l'editor
 
 ```bash
 mdl serve ./model -dir gen
 ```
 
-Aprire `http://localhost:8080`. Trascinare gli elementi per posizionarli, quindi salvare. L'SVG viene scritto nella cartella `gen/`.
+Apri `http://localhost:8080`. Trascina gli elementi per posizionarli e salva: l'SVG viene scritto nella cartella `gen/`.
 
-### 3. Generare diagrammi in CI
+{{< anchors "3-generare-diagrammi-in-ci" >}}
+### 3. Genera i diagrammi in CI
 
 ```bash
 mdl svg ./model -dir gen --all
 ```
 
-Esegue un browser headless per il layout automatico e salva tutte le viste come file SVG.
+Esegue un browser headless per applicare il layout automatico e salvare tutte le viste come file SVG.
 
 ---
 
@@ -109,7 +112,7 @@ Esegue un browser headless per il layout automatico e salva tutte le viste come 
 
 ### Gerarchia degli elementi
 
-Il modello segue la gerarchia di C4. Gli elementi si annidano all'interno dei loro genitori:
+Model segue la gerarchia di C4; ogni elemento si annida all'interno del proprio genitore:
 
 ```
 Design
@@ -126,15 +129,18 @@ Design
 
 ### Riferimenti agli elementi
 
-Molte funzioni del DSL accettano riferimenti a elementi. È possibile fare riferimento agli elementi in due modi:
+Molte funzioni del DSL accettano riferimenti agli elementi. Puoi referenziarli in due modi:
 
-**Per variabile** (quando si dispone di un riferimento):
+**Per variabile** (chiama `Uses` dentro la funzione DSL dell'elemento sorgente):
 ```go
-var API = Container("API", "Backend service", "Go")
-var DB = Container("Database", "Stores data", "PostgreSQL")
-
-// Reference by variable
-API.Uses(DB, "Reads from", "SQL")
+var _ = Design("My System", "Overall design", func() {
+    SoftwareSystem("My System", "Application backend", func() {
+        var DB = Container("Database", "Stores data", "PostgreSQL")
+        Container("API", "Backend service", "Go", func() {
+            Uses(DB, "Reads from", "SQL")
+        })
+    })
+})
 ```
 
 **Per percorso** (quando l'elemento è definito altrove):
@@ -149,106 +155,127 @@ Uses("Other System/API", "Calls")
 Uses("My System/Other Container/Service", "Invokes")
 ```
 
-I percorsi usano `/` come separatore. I percorsi relativi funzionano all'interno dell'ambito (contenitori nello stesso sistema, componenti nello stesso contenitore).
+I percorsi usano `/` come separatore. I percorsi relativi funzionano all'interno dello stesso ambito (container nello stesso sistema, componenti nello stesso container).
 
-### Fusione di elementi
+{{< anchors "fusione-di-elementi" >}}
+### Unione degli elementi
 
-Se si definisce due volte lo stesso elemento (stesso nome e stesso livello), Model li fonde:
+Se definisci due volte lo stesso elemento (stesso nome allo stesso livello), Model unisce le definizioni:
 
 ```go
-var User = Person("User", "First definition", func() {
-    Uses("System A", "Uses")
-})
+var _ = Design("Enterprise", "Merged model", func() {
+    SoftwareSystem("System A", "First system")
+    SoftwareSystem("System B", "Second system")
 
-var User2 = Person("User", "Updated description", func() {
-    Uses("System B", "Also uses")
+    Person("User", "First definition", func() {
+        Uses("System A", "Uses")
+    })
+    Person("User", "Updated description", func() {
+        Uses("System B", "Also uses")
+    })
+    // Result: One "User" person with "Updated description" and both relationships
 })
-// Result: One "User" person with "Updated description" and both relationships
 ```
 
-Ciò consente di importare modelli condivisi e di estenderli con relazioni locali.
+Questo permette di importare modelli condivisi ed estenderli con relazioni locali.
 
 ---
 
 ## Sistemi software
 
-Elemento di primo livello che rappresenta un sistema software distribuibile:
+L'elemento di primo livello che rappresenta un sistema software distribuibile:
 
 ```go
-var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() {
-    // Mark as external to the enterprise
-    External()
-    
-    // Documentation link
-    URL("https://docs.example.com/ecommerce")
-    
-    // Custom metadata
-    Prop("owner", "Platform Team")
-    Prop("tier", "1")
-    
-    // Tags for styling
-    Tag("critical", "public-facing")
+var _ = Design("Enterprise", "System landscape", func() {
+    SoftwareSystem("E-Commerce", "Online shopping platform", func() {
+        // Mark as external to the enterprise
+        External()
+
+        // Documentation link
+        URL("https://docs.example.com/ecommerce")
+
+        // Custom metadata
+        Prop("owner", "Platform Team")
+        Prop("tier", "1")
+
+        // Tags for styling
+        Tag("critical", "public-facing")
+    })
 })
 ```
 
-### Contenitori
+{{< anchors "contenitori" >}}
+### Container
 
-Applicazioni, servizi o archivi di dati all'interno di un sistema software:
+Applicazioni, servizi o data store all'interno di un sistema software:
 
 ```go
-var _ = SoftwareSystem("E-Commerce", "Online store", func() {
-    var WebApp = Container("Web Application", "Customer UI", "React", func() {
-        Tag("frontend")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
+            Tag("database")
+        })
+
+        var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
+            Tag("infrastructure")
+        })
+
+        var API = Container("API", "Backend REST API", "Go/Goa", func() {
+            Tag("backend")
+            URL("https://api.example.com")
+            Uses(Database, "Reads/writes", "SQL")
+            Uses(Queue, "Publishes events to", "AMQP")
+        })
+
+        Container("Web Application", "Customer UI", "React", func() {
+            Tag("frontend")
+            Uses(API, "Makes requests to", "HTTPS/JSON")
+        })
     })
-    
-    var API = Container("API", "Backend REST API", "Go/Goa", func() {
-        Tag("backend")
-        URL("https://api.example.com")
-    })
-    
-    var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
-        Tag("database")
-    })
-    
-    var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
-        Tag("infrastructure")
-    })
-    
-    // Relationships between containers
-    WebApp.Uses(API, "Makes requests to", "HTTPS/JSON")
-    API.Uses(Database, "Reads/writes", "SQL")
-    API.Uses(Queue, "Publishes events to", "AMQP")
 })
 ```
 
-Con Goa, è possibile utilizzare direttamente una definizione di servizio:
+Con Goa puoi passare direttamente una definizione di servizio:
 
 ```go
 // Goa service definition
 var OrdersService = Service("orders", func() { /* ... */ })
 
-// Use it as a container
-var _ = SoftwareSystem("E-Commerce", func() {
-    Container(OrdersService, func() {
-        // Name, description, and "Go and Goa v3" technology come from the service
-        Tag("api")
+// Reference it inside Design -> SoftwareSystem
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container(OrdersService, func() {
+            // Name, description, and "Go and Goa v3" technology come from the service
+            Tag("api")
+        })
     })
 })
 ```
 
 ### Componenti
 
-Moduli all'interno di un contenitore. Utilizzateli per la documentazione tecnica dettagliata:
+Moduli all'interno di un container, ideali per documentare la struttura tecnica interna:
 
 ```go
-var _ = Container("API", "Backend API", "Go", func() {
-    var OrderService = Component("Order Service", "Handles order lifecycle", "Go package")
-    var PaymentService = Component("Payment Service", "Processes payments", "Go package")
-    var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
-    
-    OrderService.Uses(PaymentService, "Calls for payment")
-    OrderService.Uses(NotificationService, "Triggers confirmations")
-    PaymentService.Uses("Stripe/API", "Processes cards via", "HTTPS")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("Stripe", "Payment processor", func() {
+        External()
+        Container("API", "Card processing API", "HTTPS")
+    })
+
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("API", "Backend API", "Go", func() {
+            var PaymentService = Component("Payment Service", "Processes payments", "Go package", func() {
+                Uses("Stripe/API", "Processes cards via", "HTTPS")
+            })
+            var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
+
+            Component("Order Service", "Handles order lifecycle", "Go package", func() {
+                Uses(PaymentService, "Calls for payment")
+                Uses(NotificationService, "Triggers confirmations")
+            })
+        })
+    })
 })
 ```
 
@@ -259,21 +286,28 @@ var _ = Container("API", "Backend API", "Go", func() {
 Utenti, attori o ruoli che interagiscono con i sistemi:
 
 ```go
-var Customer = Person("Customer", "A customer placing orders", func() {
-    External()  // Outside the enterprise
-    Tag("user")
-    Uses("E-Commerce", "Places orders using", "HTTPS")
-})
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("Admin Portal", "Back-office UI", "Web")
+        Container("Support Tools", "Agent console", "Web")
+    })
 
-var Admin = Person("Administrator", "Manages the platform", func() {
-    // Internal by default
-    Tag("internal")
-    Uses("E-Commerce/Admin Portal", "Manages products via")
-})
+    var Customer = Person("Customer", "A customer placing orders", func() {
+        External() // Outside the enterprise
+        Tag("user")
+        Uses("E-Commerce", "Places orders using", "HTTPS")
+    })
 
-var Support = Person("Support Agent", "Handles customer issues", func() {
-    InteractsWith(Customer, "Helps")  // Person-to-person relationship
-    Uses("E-Commerce/Support Tools", "Uses")
+    Person("Administrator", "Manages the platform", func() {
+        // Internal by default
+        Tag("internal")
+        Uses("E-Commerce/Admin Portal", "Manages products via")
+    })
+
+    Person("Support Agent", "Handles customer issues", func() {
+        InteractsWith(Customer, "Helps") // Person-to-person relationship
+        Uses("E-Commerce/Support Tools", "Uses")
+    })
 })
 ```
 
@@ -285,9 +319,9 @@ var Support = Person("Support Agent", "Handles customer issues", func() {
 
 | Funzione | Da | A | Caso d'uso |
 |----------|------|----|---------|
-| `Uses` | Qualsiasi elemento | Qualsiasi elemento | Dipendenza generale |
-| `Delivers` | Sistema/Contenitore/Componente | Persona | Output agli utenti |
-| `InteractsWith` | Persona | Persona | Interazione umana |
+| `Uses` | Qualsiasi elemento | Qualsiasi elemento | Dipendenza generica |
+| `Delivers` | Sistema/Container/Componente | Persona | Invio di output agli utenti |
+| `InteractsWith` | Persona | Persona | Interazione tra persone |
 
 ### Sintassi
 
@@ -314,26 +348,36 @@ Uses(Target, "description", "technology", func() {
 
 ### Esempi
 
+Chiama `Uses`, `Delivers` e `InteractsWith` dentro la closure DSL dell'elemento sorgente:
+
 ```go
-// System uses system
-PaymentSystem.Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+// System uses external system
+SoftwareSystem("Payments", "Handles checkout", func() {
+    Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+})
 
 // Container uses external system
-API.Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+Container("API", "Backend API", "Go", func() {
+    Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+})
 
 // System delivers to person
-NotificationSystem.Delivers(Customer, "Sends order updates to", "Email")
+SoftwareSystem("Notifications", "Customer alerts", func() {
+    Delivers(Customer, "Sends order updates to", "Email")
+})
 ```
 
 ---
 
-## Visualizzazioni
+{{< anchors "visualizzazioni" >}}
+## Viste
 
-Le viste visualizzano sottoinsiemi del modello a diversi livelli di dettaglio.
+Le viste rappresentano sottoinsiemi del modello a diversi livelli di dettaglio.
 
-### Vista orizzontale del sistema
+{{< anchors "vista-orizzontale-del-sistema" >}}
+### System Landscape View
 
-Mostra tutti i sistemi e le persone: il quadro generale:
+Mostra tutti i sistemi e le persone — la visione d'insieme:
 
 ```go
 SystemLandscapeView("Landscape", "Enterprise overview", func() {
@@ -344,7 +388,8 @@ SystemLandscapeView("Landscape", "Enterprise overview", func() {
 })
 ```
 
-### Vista del contesto del sistema
+{{< anchors "vista-del-contesto-del-sistema" >}}
+### System Context View
 
 Mostra un sistema e le sue dipendenze dirette:
 
@@ -357,9 +402,10 @@ SystemContextView(ECommerce, "Context", "E-Commerce in context", func() {
 })
 ```
 
-### Vista contenitore
+{{< anchors "vista-contenitore" >}}
+### Container View
 
-Mostra i contenitori all'interno di un sistema:
+Mostra i container all'interno di un sistema:
 
 ```go
 ContainerView(ECommerce, "Containers", "E-Commerce containers", func() {
@@ -369,9 +415,10 @@ ContainerView(ECommerce, "Containers", "E-Commerce containers", func() {
 })
 ```
 
-### Vista dei componenti
+{{< anchors "vista-dei-componenti" >}}
+### Component View
 
-Mostra i componenti all'interno di un contenitore:
+Mostra i componenti all'interno di un container:
 
 ```go
 ComponentView(API, "Components", "API internals", func() {
@@ -381,40 +428,38 @@ ComponentView(API, "Components", "API internals", func() {
 })
 ```
 
-### Vista dinamica
+{{< anchors "vista-dinamica" >}}
+### Dynamic View
 
 Mostra un flusso o uno scenario specifico con interazioni ordinate:
 
 ```go
 DynamicView(ECommerce, "OrderFlow", "Order placement flow", func() {
     Title("Customer places an order")
-    
+
     Link(Customer, WebApp, func() {
         Description("1. Submits order")
-        Order("1")
     })
     Link(WebApp, API, func() {
         Description("2. Creates order")
-        Order("2")
     })
     Link(API, PaymentService, func() {
         Description("3. Processes payment")
-        Order("3")
     })
     Link(API, Database, func() {
         Description("4. Saves order")
-        Order("4")
     })
-    
+
     AutoLayout(RankLeftRight)
 })
 ```
 
-L'ambito può essere `Global` (qualsiasi elemento), un sistema software (i suoi contenitori) o un contenitore (i suoi componenti).
+Lo scope può essere `Global` (qualsiasi elemento), un sistema software (i suoi container) o un container (i suoi componenti).
 
-### Vista di distribuzione
+{{< anchors "vista-di-distribuzione" >}}
+### Deployment View
 
-Mostra come i container vengono distribuiti nell'infrastruttura:
+Mostra come i container vengono distribuiti sull'infrastruttura:
 
 ```go
 DeploymentView(Global, "Production", "ProdDeployment", "Production setup", func() {
@@ -423,9 +468,10 @@ DeploymentView(Global, "Production", "ProdDeployment", "Production setup", func(
 })
 ```
 
-### Vista filtrata
+{{< anchors "vista-filtrata" >}}
+### Filtered View
 
-Crea una versione filtrata di un'altra vista basata sui tag:
+Crea una versione filtrata di un'altra vista in base ai tag:
 
 ```go
 // Base view
@@ -447,23 +493,26 @@ FilteredView("AllContext", func() {
 
 ---
 
-## Manipolazione della vista
+{{< anchors "manipolazione-della-vista" >}}
+## Manipolazione delle viste
 
-### Aggiunta di elementi
+{{< anchors "aggiunta-di-elementi" >}}
+### Aggiungere elementi
 
 | Funzione | Comportamento |
 |----------|----------|
-| `AddAll()` | Aggiunge tutto ciò che è nello scope |
-| `AddDefault()` | Aggiungere elementi contestualmente rilevanti |
-| `Add(element)` | Aggiungi elemento specifico |
-| `AddNeighbors(element)` | Aggiungere l'elemento e le sue connessioni dirette |
-| `AddContainers()` | Aggiungere tutti i contenitori (ContainerView/ComponentView) |
-| `AddComponents()` | Aggiungere tutti i componenti (ComponentView) |
-| `AddInfluencers()` | Aggiungere i contenitori + le dipendenze esterne (ContainerView) |
+| `AddAll()` | Aggiunge tutti gli elementi nello scope |
+| `AddDefault()` | Aggiunge gli elementi contestualmente rilevanti |
+| `Add(element)` | Aggiunge un elemento specifico |
+| `AddNeighbors(element)` | Aggiunge l'elemento e le sue connessioni dirette |
+| `AddContainers()` | Aggiunge tutti i container (`ContainerView` / `ComponentView`) |
+| `AddComponents()` | Aggiunge tutti i componenti (`ComponentView`) |
+| `AddInfluencers()` | Aggiunge i container + le dipendenze esterne (`ContainerView`) |
 
-**AddAll vs AddDefault**: `AddAll` aggiunge tutto il possibile nell'ambito. `AddDefault` aggiunge ciò che è tipicamente rilevante: per una SystemContextView, si tratta del sistema più i sistemi e le persone direttamente collegati, ma non gli elementi non collegati.
+**`AddAll` vs `AddDefault`**: `AddAll` include tutto ciò che appartiene allo scope; `AddDefault` include solo ciò che è normalmente rilevante — per una `SystemContextView`, il sistema insieme ai sistemi e alle persone direttamente collegati, escludendo gli elementi isolati.
 
-### Rimozione di elementi
+{{< anchors "rimozione-di-elementi" >}}
+### Rimuovere elementi
 
 ```go
 SystemContextView(System, "key", "desc", func() {
@@ -475,7 +524,8 @@ SystemContextView(System, "key", "desc", func() {
 })
 ```
 
-### Gestione delle relazioni
+{{< anchors "gestione-delle-relazioni" >}}
+### Gestire le relazioni
 
 ```go
 // Explicitly add a relationship
@@ -496,7 +546,7 @@ CoalesceAllRelationships()  // Auto-merge all duplicates
 
 ### Posizionamento degli elementi
 
-Quando si aggiungono elementi, è possibile specificare le coordinate esatte:
+Quando aggiungi un elemento puoi specificare coordinate esatte:
 
 ```go
 Add(Customer, func() {
@@ -509,7 +559,7 @@ Add(Customer, func() {
 
 ## AutoLayout
 
-AutoLayout posiziona automaticamente gli elementi utilizzando algoritmi di layout del grafo:
+`AutoLayout` posiziona automaticamente gli elementi tramite algoritmi di layout su grafo:
 
 ```go
 AutoLayout(RankTopBottom, func() {
@@ -521,13 +571,13 @@ AutoLayout(RankTopBottom, func() {
 })
 ```
 
-**Direzioni di rango**: `RankTopBottom`, `RankBottomTop`, `RankLeftRight`, `RankRightLeft`
+**Direzioni disponibili**: `RankTopBottom`, `RankBottomTop`, `RankLeftRight`, `RankRightLeft`
 
 ---
 
 ## Stili
 
-Gli stili sono applicati tramite tag. Gli elementi e le relazioni possono avere più tag; gli stili sono a cascata.
+Gli stili vengono applicati tramite tag. Elementi e relazioni possono avere più tag e gli stili si compongono in cascata.
 
 ### Stili degli elementi
 
@@ -552,7 +602,8 @@ Styles(func() {
 
 **Forme disponibili**: `ShapeBox`, `ShapeRoundedBox`, `ShapeCircle`, `ShapeEllipse`, `ShapeHexagon`, `ShapeCylinder`, `ShapePipe`, `ShapePerson`, `ShapeRobot`, `ShapeFolder`, `ShapeWebBrowser`, `ShapeMobileDevicePortrait`, `ShapeMobileDeviceLandscape`, `ShapeComponent`
 
-### Stili di relazione
+{{< anchors "stili-di-relazione" >}}
+### Stili delle relazioni
 
 ```go
 RelationshipStyle("async", func() {
@@ -567,14 +618,15 @@ RelationshipStyle("async", func() {
 })
 ```
 
-### Supporto della tematizzazione CSS
+{{< anchors "supporto-della-tematizzazione-css" >}}
+### Tematizzazione CSS
 
-Gli SVG esportati includono proprietà personalizzate CSS con valori di fallback, consentendo il supporto di temi chiari/scuri senza rigenerare i diagrammi. I colori definiti in `ElementStyle` e `RelationshipStyle` sono convertiti in variabili CSS in base al nome del tag.
+Gli SVG esportati includono custom property CSS con valori di fallback, abilitando il supporto per tema chiaro e scuro senza rigenerare i diagrammi. I colori definiti in `ElementStyle` e `RelationshipStyle` vengono convertiti in variabili CSS basate sul nome del tag.
 
-**Convenzione di denominazione delle variabili:**
+**Convenzione sui nomi delle variabili:**
 - Sfondi degli elementi: `--mdl-<tag>-bg`
 - Colori del testo degli elementi: `--mdl-<tag>-color`
-- Tratti degli elementi: `--mdl-<tag>-stroke`
+- Contorni degli elementi: `--mdl-<tag>-stroke`
 - Colori delle relazioni: `--mdl-rel-<tag>-color`
 
 Ad esempio, questa definizione di stile:
@@ -599,7 +651,7 @@ Genera elementi SVG con:
 <path stroke="var(--mdl-rel-async-color, #707070)" ... />
 ```
 
-**Implementazione di temi nel sito:**
+**Implementare i temi nel tuo sito:**
 
 ```css
 /* Light theme (defaults from SVG) */
@@ -617,9 +669,9 @@ Genera elementi SVG con:
 }
 ```
 
-Gli SVG funzionano autonomamente (i valori di fallback vengono visualizzati correttamente) e si adattano automaticamente quando vengono incorporati in pagine che definiscono queste variabili CSS.
+Gli SVG funzionano anche standalone (grazie ai valori di fallback) e si adattano automaticamente quando incorporati in pagine che definiscono queste variabili CSS.
 
-**Importante:** Le proprietà personalizzate CSS funzionano solo quando l'SVG è inserito nel documento HTML. Gli SVG caricati tramite `<img src="...">` non ereditano i CSS dalla pagina madre. Per i siti Hugo, utilizzare lo shortcode `diagram` per inserire gli SVG:
+**Importante:** Le custom property CSS funzionano solo quando l'SVG è incorporato inline nel documento HTML; gli SVG caricati tramite `<img src="...">` non ereditano il CSS della pagina padre. Nei siti Hugo usa lo shortcode `diagram` per incorporare gli SVG inline:
 
 ```markdown
 {{</* diagram name="MyDiagram" */>}}
@@ -628,9 +680,10 @@ Gli SVG funzionano autonomamente (i valori di fallback vengono visualizzati corr
 
 ---
 
-## Modellazione della distribuzione
+{{< anchors "modellazione-della-distribuzione" >}}
+## Modellazione del deployment
 
-Modellare l'infrastruttura e gli ambienti di runtime:
+Modella infrastruttura e ambienti di esecuzione:
 
 ```go
 var _ = Design("System", "desc", func() {
@@ -680,23 +733,25 @@ var _ = Design("System", "desc", func() {
 
 ---
 
-## La `mdl` CLI
+{{< anchors "la-mdl-cli" >}}
+## La CLI `mdl`
 
-### `mdl serve` - Editor interattivo
+{{< anchors "mdl-serve---editor-interattivo" >}}
+### `mdl serve` — Editor interattivo
 
 ```bash
 mdl serve ./model -dir gen -port 8080
 ```
 
-Avvia un editor basato sul Web a `http://localhost:8080`. Caratteristiche:
-- Trascinare gli elementi per posizionarli
-- Algoritmi di layout multipli (a strati, a forza, ad albero, radiale) tramite ELK.js
+Avvia un editor web su `http://localhost:8080`. Funzionalità principali:
+- Trascinamento degli elementi per posizionarli
+- Più algoritmi di layout (Layered, Force, Tree, Radial) tramite ELK.js
 - Strumenti di allineamento e distribuzione
-- Annullamento/ripristino (Ctrl+Z / Ctrl+Shift+Z)
+- Annulla/ripristina (Ctrl+Z / Ctrl+Shift+Z)
 - Esportazione SVG
-- Ricarica a caldo quando il DSL cambia
+- Hot reload quando il DSL cambia
 
-**Scorciatoie da tastiera** (usare Cmd su Mac):
+**Scorciatoie da tastiera** (usa Cmd su Mac):
 
 | Azione | Scorciatoia |
 |--------|----------|
@@ -704,25 +759,27 @@ Avvia un editor basato sul Web a `http://localhost:8080`. Caratteristiche:
 | Annulla | Ctrl+Z |
 | Ripristina | Ctrl+Shift+Z |
 | Seleziona tutto | Ctrl+A |
-| Zoom in/out | Ctrl++/- o Ctrl+scroll |
-| Adatta alla visualizzazione | Ctrl+9 |
-| Zoom al 100% | Ctrl+0 |
+| Zoom avanti/indietro | Ctrl++/- o Ctrl+rotellina |
+| Adatta alla vista | Ctrl+9 |
+| Zoom 100% | Ctrl+0 |
 | Layout automatico | Ctrl+L |
-| Allinea la griglia | Ctrl+G |
+| Mostra/nascondi griglia | Ctrl+G |
 | Aggancia alla griglia | Ctrl+Shift+G |
-| Allinea orizzontale | Ctrl+Shift+H |
-| Allinea verticale | Ctrl+Shift+A |
+| Allinea in orizzontale | Ctrl+Shift+H |
+| Allinea in verticale | Ctrl+Shift+A |
 | Aggiungi vertice | Alt+Click |
 
-### `mdl gen` - Esportazione JSON
+{{< anchors "mdl-gen---esportazione-json" >}}
+### `mdl gen` — Esportazione JSON
 
 ```bash
 mdl gen ./model -out design.json
 ```
 
-Esporta il modello come JSON. Utile per l'integrazione con altri strumenti.
+Esporta il modello in formato JSON, utile per l'integrazione con altri strumenti.
 
-### `mdl svg` - Generazione di SVG senza testa
+{{< anchors "mdl-svg---generazione-di-svg-senza-testa" >}}
+### `mdl svg` — Generazione SVG headless
 
 ```bash
 # Generate all views
@@ -735,13 +792,14 @@ mdl svg ./model -dir gen --view Context --view Containers
 mdl svg ./model -dir gen --all --direction LEFT --compact --timeout 30s
 ```
 
-Esegue un browser headless per creare e salvare automaticamente le viste. Ideale per le pipeline CI/CD.
+Esegue un browser headless per applicare il layout automatico e salvare le viste, ideale nelle pipeline CI/CD.
 
 ---
 
-## La `stz` CLI
+{{< anchors "la-stz-cli" >}}
+## La CLI `stz`
 
-Carica i modelli su [Structurizr] (https://structurizr.com):
+Carica e scarica modelli su [Structurizr](https://structurizr.com):
 
 ```bash
 # Generate Structurizr workspace JSON
@@ -758,7 +816,7 @@ stz get -id WORKSPACE_ID -key API_KEY -secret API_SECRET -out workspace.json
 
 ## Plugin Goa
 
-Quando si usa Model con Goa, aggiungere l'importazione DSL al pacchetto di progettazione:
+Quando usi Model insieme a Goa, aggiungi l'importazione del DSL al tuo pacchetto `design`:
 
 ```go
 package design
@@ -773,7 +831,7 @@ var _ = API("orders", func() {
     Title("Orders API")
 })
 
-var _ = Service("orders", func() {
+var OrdersService = Service("orders", func() {
     Method("create", func() { /* ... */ })
 })
 
@@ -796,13 +854,14 @@ var _ = Design("Orders", "Order management system", func() {
 })
 ```
 
-L'esecuzione di `goa gen` produce sia il codice API che i diagrammi di architettura (`design.json` e `workspace.json`).
+L'esecuzione di `goa gen` produce sia il codice dell'API sia gli artefatti dei diagrammi di architettura (`design.json` e `workspace.json`).
 
 ---
 
 ## Integrazione CI/CD
 
-### Azioni GitHub
+{{< anchors "azioni-github" >}}
+### GitHub Actions
 
 ```yaml
 name: Generate Architecture Diagrams
@@ -812,11 +871,11 @@ jobs:
   diagrams:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: 'stable'
       
       - name: Install mdl
         run: go install goa.design/model/cmd/mdl@latest
@@ -835,11 +894,12 @@ jobs:
 
 ---
 
-## Migliori pratiche
+{{< anchors "migliori-pratiche" >}}
+## Best practice
 
 ### Organizzare modelli di grandi dimensioni
 
-Dividere i modelli in più file:
+Suddividi le architetture ampie in funzioni helper su più file e invocale dentro `Design(...)` (`SoftwareSystem` e `Person` devono essere eseguiti all'interno di una closure `Design`):
 
 ```go
 // model/systems.go
@@ -847,13 +907,15 @@ package model
 
 import . "goa.design/model/dsl"
 
-var ECommerce = SoftwareSystem("E-Commerce", "Online store", func() {
-    // containers...
-})
+func defineSystems() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        // containers...
+    })
 
-var Payments = SoftwareSystem("Payments", "Payment processing", func() {
-    // containers...
-})
+    SoftwareSystem("Payments", "Payment processing", func() {
+        // containers...
+    })
+}
 ```
 
 ```go
@@ -862,19 +924,21 @@ package model
 
 import . "goa.design/model/dsl"
 
-var _ = Design("Platform", func() {
+var _ = Design("Platform", "Company platform architecture", func() {
+    defineSystems()
+
     Views(func() {
         SystemLandscapeView("Landscape", "All systems", func() {
             AddAll()
         })
-        // more views...
     })
 })
 ```
 
-### Etichettatura coerente
+{{< anchors "etichettatura-coerente" >}}
+### Convenzioni coerenti sui tag
 
-Definite una convenzione per i tag e attenetevi ad essa:
+Definisci una convenzione di tagging e mantienila uniforme:
 
 ```go
 // Element types
@@ -892,7 +956,10 @@ Tag("critical")
 Tag("tier-1")
 ```
 
-### Importazione di componenti condivisi
+{{< anchors "importazione-di-componenti-condivisi" >}}
+### Importare componenti condivisi
+
+Esporta funzioni helper da un pacchetto Go condiviso e chiamale dentro il blocco `Design` del tuo servizio:
 
 ```go
 // shared/infrastructure.go
@@ -900,10 +967,12 @@ package shared
 
 import . "goa.design/model/dsl"
 
-var Stripe = SoftwareSystem("Stripe", "Payment processing", func() {
-    External()
-    Tag("external", "payments")
-})
+func DefineStripe() {
+    SoftwareSystem("Stripe", "Payment processing", func() {
+        External()
+        Tag("external", "payments")
+    })
+}
 ```
 
 ```go
@@ -912,21 +981,24 @@ package model
 
 import (
     . "goa.design/model/dsl"
-    _ "mycompany/shared"  // Import shared elements
+    "mycompany/shared"
 )
 
-var _ = Design("My Service", func() {
-    var Service = SoftwareSystem("My Service", func() {
-        Uses("Stripe", "Processes payments via")  // Reference by name
+var _ = Design("My Service", "Checkout architecture", func() {
+    shared.DefineStripe()
+
+    SoftwareSystem("My Service", "Handles checkout", func() {
+        Uses("Stripe", "Processes payments via", "HTTPS")
     })
 })
 ```
 
 ---
 
-## Riferimento
+{{< anchors "riferimento" >}}
+## Riferimenti
 
-- [Documentazione del pacchetto DSL](https://pkg.go.dev/goa.design/model/dsl) - Riferimento completo al DSL
-- [Model GitHub Repository](https://github.com/goadesign/model) - Codice sorgente ed esempi
-- [Modello C4](https://c4model.com) - Documentazione del modello C4
-- [Structurizr](https://structurizr.com) - Hosting di diagrammi online
+- [Documentazione del pacchetto DSL](https://pkg.go.dev/goa.design/model/dsl) — Riferimento completo del DSL
+- [Repository GitHub di Model](https://github.com/goadesign/model) — Codice sorgente ed esempi
+- [Modello C4](https://c4model.com) — Documentazione del modello C4
+- [Structurizr](https://structurizr.com) — Hosting online per i diagrammi

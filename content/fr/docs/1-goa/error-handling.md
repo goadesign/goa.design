@@ -2,7 +2,7 @@
 nav_group: guides
 title: Gestion des erreurs
 weight: 40
-description: "Complete guide to error handling in Goa - defining errors, transport mapping, custom types, and best practices."
+description: "Déclarez des erreurs métier typées, associez-les aux codes HTTP et gRPC et renvoyez des charges d’erreur structurées."
 llm_optimized: true
 aliases:
 ---

@@ -2,46 +2,133 @@
 title: "Goa : des services à partir d’une conception"
 linkTitle: "Goa"
 weight: 1
-description: "Définissez le contrat API en Go. Générez types, transports, clients, validation et documentation."
+description: "Définissez une seule fois votre contrat API en Go. Générez des serveurs HTTP, gRPC et JSON-RPC, des clients typés, la validation et les spécifications OpenAPI 3."
 llm_optimized: true
 ---
 
-## Présentation
+Goa génère des API de services Go à partir d’un contrat Go typé unique. Vous déclarez les charges utiles, les contraintes de validation, la correspondance des erreurs et les transports HTTP, gRPC ou JSON-RPC dans `design/*.go` ; `goa gen` compile la couche de transport, les clients et les spécifications OpenAPI / Protobuf dans `gen/`. Vous n’écrivez que la logique métier derrière une simple interface Go.
 
-Goa construit des services Go à partir d’une conception. Décrivez types, opérations, erreurs et transports dans un langage spécifique au domaine (DSL) écrit en Go. Le générateur produit le code dérivé de ces décisions ; vous implémentez le comportement derrière les interfaces générées.
+- **Démarrez en 5 minutes :** **[Créer un service HTTP fonctionnel](quickstart/)** (`go install goa.design/goa/v3/cmd/goa@latest`, nécessite Go 1.27+)
+- **Vous utilisez Claude Code, Codex ou Cursor ?** Suivez le **[processus avec un agent de code](../ai-development/)** (`npx skills add goadesign/goa --skill goa-service-designer`)
 
-**[Créer votre premier service](quickstart/)** ou suivre le **[processus avec un agent de code](../ai-development/)**.
+{{< anchors "présentation" "pourquoi-cela-aide-les-agents-de-code" "fonctionnement" >}}
 
-## Pourquoi cela aide les agents de code
+## D’un contrat à un endpoint opérationnel
 
-L’agent part du contrat au lieu de le reconstruire depuis des gestionnaires, clients et schémas séparés. Il modifie la conception, régénère et utilise les erreurs du compilateur pour mettre à jour l’application. Le générateur écrit le code répétitif sans le faire rédiger au modèle. Fournissez la conception, l’interface utile et l’implémentation ; consultez les transports générés quand la tâche l’exige.
+### 1. Concevoir le contrat (`design/catalog.go`) {#phase-1-design-you-write}
 
-## Fonctionnement
+```go
+package design
 
-### Concevoir {#phase-1-design-you-write}
+import . "goa.design/goa/v3/dsl"
 
-Définissez méthodes, données, résultats, validation et correspondances HTTP, gRPC ou JSON-RPC dans `design/*.go`. Descriptions et exemples alimentent la documentation API.
+var LookupPayload = Type("LookupPayload", func() {
+    Field(1, "sku", String, "Product SKU", func() {
+        Pattern("^[A-Z0-9-]+$")
+        Example("BOOK-1")
+    })
+    Required("sku")
+})
 
-### Générer {#phase-2-generate-automated}
+var Product = Type("Product", func() {
+    Field(1, "sku", String, "Product SKU")
+    Field(2, "name", String, "Display name")
+    Field(3, "price_cents", Int, "Price in cents", func() { Minimum(0) })
+    Required("sku", "name", "price_cents")
+})
 
-```bash
-goa gen example.com/myservice/design
+var _ = Service("catalog", func() {
+    Error("not_found", ErrorResult, "SKU does not exist")
+
+    Method("lookup", func() {
+        Payload(LookupPayload)
+        Result(Product)
+        Error("not_found")
+        HTTP(func() {
+            GET("/products/{sku}")
+            Response("not_found", StatusNotFound)
+        })
+    })
+})
 ```
 
-Les transports choisis déterminent les types, interfaces, serveurs, clients, validations, spécifications OpenAPI et définitions Protocol Buffer produites. Ne modifiez pas `gen/` : il est remplacé. `goa example` crée les fichiers initiaux sans écraser les fichiers existants.
+*(Pour exposer gRPC ou JSON-RPC depuis la même méthode, ajoutez `GRPC(func() {})` — ce qui requiert `protoc`, `protoc-gen-go` et `protoc-gen-go-grpc` ainsi qu’un port séparé `--grpc-port 8081` au lancement — ou `JSONRPC(func() {})` ; voir le [guide gRPC](grpc-guide/).)*
 
-### Implémenter {#phase-3-implement-you-write}
+### 2. Générer le code de transport et de validation (`gen/`) {#phase-2-generate-automated}
 
-Écrivez logique métier, autorisation, persistance et tests. Après une modification de signature, régénérez et compilez pour repérer les implémentations et appels incompatibles.
+```bash
+go mod init example.com/catalog
+go get goa.design/goa/v3@v3.36.0
+go mod tidy
+go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
+go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
+```
 
-## Responsabilités {#whats-hand-written-vs-auto-generated}
+`goa gen` génère `gen/` (versionné dans Git, jamais modifié à la main) : des décodeurs de requêtes qui rejettent les SKU invalides avant l’exécution de votre gestionnaire, des serveurs `net/http` standard (routage et validation générés en Go, sans routeur piloté par réflexion), des clients Go et CLI typés, `gen/http/openapi3.yaml` + `openapi3.2.yaml` et l’interface Go qu’implémente votre service :
 
-Vous et l’agent maintenez conception, décisions métier, logique, autorisation, démarrage et tests. Goa génère types, interfaces, routage, codecs, validation, clients et spécifications API. La validation vérifie les contraintes déclarées ; la justesse métier, la sécurité et la compatibilité avec les clients déployés exigent conception et tests.
+```go
+// gen/catalog/service.go — Code generated by goa, DO NOT EDIT.
+type Service interface {
+    Lookup(context.Context, *LookupPayload) (*Product, error)
+}
+```
 
-## Ajouter des capacités IA
+`goa example` crée une seule fois le point d’entrée `cmd/catalog` et une ébauche `catalog.go` sans écraser vos modifications ultérieures.
 
-[Goa-AI](../2-goa-ai/) utilise le même modèle pour les outils typés, réponses structurées et agents. Un outil peut réutiliser types et méthodes de service pour relier les contrats.
+### 3. Implémenter la logique métier et exécuter (`catalog.go`) {#phase-3-implement-you-write}
 
-## Guides
+Remplacez l’ébauche `catalog.go` générée par votre gestionnaire :
 
-Commencez par le démarrage rapide, puis utilisez les guides de transport pour les tâches pratiques et la référence DSL pour modifier les conceptions.
+```go
+package catalogapi
+
+import (
+    "context"
+    "fmt"
+
+    catalog "example.com/catalog/gen/catalog"
+)
+
+type catalogsrvc struct{}
+
+func NewCatalog() catalog.Service { return &catalogsrvc{} }
+
+func (s *catalogsrvc) Lookup(
+    ctx context.Context, p *catalog.LookupPayload,
+) (*catalog.Product, error) {
+    if p.Sku != "BOOK-1" {
+        return nil, catalog.MakeNotFound(
+            fmt.Errorf("unknown sku %q", p.Sku),
+        )
+    }
+    return &catalog.Product{
+        Sku: "BOOK-1", Name: "The Go Book", PriceCents: 3800,
+    }, nil
+}
+```
+
+Récupérez les dépendances restantes et démarrez le serveur (`go mod tidy && go run ./cmd/catalog --http-port 8080`), puis interrogez-le :
+
+```text
+$ curl -i http://localhost:8080/products/BOOK-1
+HTTP/1.1 200 OK
+{"sku":"BOOK-1","name":"The Go Book","price_cents":3800}
+```
+
+Lorsque vous modifiez un champ ou une méthode dans `design/catalog.go` et relancez `goa gen`, le compilateur Go signale immédiatement chaque gestionnaire et appelant devenu incompatible.
+
+## Ce qui vous appartient vs ce que Goa génère {#whats-hand-written-vs-auto-generated}
+
+| Vous et votre agent de code gérez (`design/`, `internal/`) | `goa gen` génère (`gen/` — régénéré à chaque changement) |
+| --- | --- |
+| Types métier, contraintes et routes de transport dans `design/` | Types Go, interfaces `Service` et points d’ancrage middleware par endpoint |
+| Règles métier, autorisation et persistance | Routage HTTP, gRPC et JSON-RPC, codecs et validation des entrées |
+| Idempotence, transactions de base de données et tests de comportement | Clients Go typés, clients CLI, spécifications OpenAPI 2/3/3.2 et Protobuf |
+
+La validation générée applique les règles structurelles (`Required`, `Pattern`, `Minimum`, `Enum`) en bordure de transport. L’autorisation, le contrôle d’accès par tenant et les invariants métier appartiennent à l’implémentation et aux tests de votre service.
+
+{{< anchors "ajouter-des-capacités-ia" "guides" >}}
+
+## Étendre vos services à MCP et aux agents IA
+
+[Goa-AI](../2-goa-ai/) étend ces mêmes fichiers `design/*.go` avec des déclarations de serveurs `MCP(...)`, des `Toolset`s typés liés aux méthodes Goa via `BindTo`, des `Completion`s structurées et des workflows d’agents durables sur Temporal.

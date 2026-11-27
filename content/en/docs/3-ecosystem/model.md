@@ -40,7 +40,7 @@ go install goa.design/model/cmd/mdl@latest
 go install goa.design/model/cmd/stz@latest
 ```
 
-Requires Go 1.23+.
+Requires Go 1.27+.
 
 ---
 
@@ -128,13 +128,16 @@ Design
 
 Many DSL functions accept element references. You can reference elements two ways:
 
-**By variable** (when you have a reference):
+**By variable** (call `Uses` inside the source element's DSL function):
 ```go
-var API = Container("API", "Backend service", "Go")
-var DB = Container("Database", "Stores data", "PostgreSQL")
-
-// Reference by variable
-API.Uses(DB, "Reads from", "SQL")
+var _ = Design("My System", "Overall design", func() {
+    SoftwareSystem("My System", "Application backend", func() {
+        var DB = Container("Database", "Stores data", "PostgreSQL")
+        Container("API", "Backend service", "Go", func() {
+            Uses(DB, "Reads from", "SQL")
+        })
+    })
+})
 ```
 
 **By path** (when the element is defined elsewhere):
@@ -156,14 +159,18 @@ Paths use `/` as separator. Relative paths work within scope (containers in the 
 If you define the same element twice (same name at the same level), Model merges them:
 
 ```go
-var User = Person("User", "First definition", func() {
-    Uses("System A", "Uses")
-})
+var _ = Design("Enterprise", "Merged model", func() {
+    SoftwareSystem("System A", "First system")
+    SoftwareSystem("System B", "Second system")
 
-var User2 = Person("User", "Updated description", func() {
-    Uses("System B", "Also uses")
+    Person("User", "First definition", func() {
+        Uses("System A", "Uses")
+    })
+    Person("User", "Updated description", func() {
+        Uses("System B", "Also uses")
+    })
+    // Result: One "User" person with "Updated description" and both relationships
 })
-// Result: One "User" person with "Updated description" and both relationships
 ```
 
 This enables importing shared models and extending them with local relationships.
@@ -175,19 +182,21 @@ This enables importing shared models and extending them with local relationships
 The top-level element representing a deployable software system:
 
 ```go
-var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() {
-    // Mark as external to the enterprise
-    External()
-    
-    // Documentation link
-    URL("https://docs.example.com/ecommerce")
-    
-    // Custom metadata
-    Prop("owner", "Platform Team")
-    Prop("tier", "1")
-    
-    // Tags for styling
-    Tag("critical", "public-facing")
+var _ = Design("Enterprise", "System landscape", func() {
+    SoftwareSystem("E-Commerce", "Online shopping platform", func() {
+        // Mark as external to the enterprise
+        External()
+
+        // Documentation link
+        URL("https://docs.example.com/ecommerce")
+
+        // Custom metadata
+        Prop("owner", "Platform Team")
+        Prop("tier", "1")
+
+        // Tags for styling
+        Tag("critical", "public-facing")
+    })
 })
 ```
 
@@ -196,28 +205,28 @@ var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() 
 Applications, services, or data stores within a software system:
 
 ```go
-var _ = SoftwareSystem("E-Commerce", "Online store", func() {
-    var WebApp = Container("Web Application", "Customer UI", "React", func() {
-        Tag("frontend")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
+            Tag("database")
+        })
+
+        var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
+            Tag("infrastructure")
+        })
+
+        var API = Container("API", "Backend REST API", "Go/Goa", func() {
+            Tag("backend")
+            URL("https://api.example.com")
+            Uses(Database, "Reads/writes", "SQL")
+            Uses(Queue, "Publishes events to", "AMQP")
+        })
+
+        Container("Web Application", "Customer UI", "React", func() {
+            Tag("frontend")
+            Uses(API, "Makes requests to", "HTTPS/JSON")
+        })
     })
-    
-    var API = Container("API", "Backend REST API", "Go/Goa", func() {
-        Tag("backend")
-        URL("https://api.example.com")
-    })
-    
-    var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
-        Tag("database")
-    })
-    
-    var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
-        Tag("infrastructure")
-    })
-    
-    // Relationships between containers
-    WebApp.Uses(API, "Makes requests to", "HTTPS/JSON")
-    API.Uses(Database, "Reads/writes", "SQL")
-    API.Uses(Queue, "Publishes events to", "AMQP")
 })
 ```
 
@@ -227,11 +236,13 @@ With Goa, you can use a service definition directly:
 // Goa service definition
 var OrdersService = Service("orders", func() { /* ... */ })
 
-// Use it as a container
-var _ = SoftwareSystem("E-Commerce", func() {
-    Container(OrdersService, func() {
-        // Name, description, and "Go and Goa v3" technology come from the service
-        Tag("api")
+// Reference it inside Design -> SoftwareSystem
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container(OrdersService, func() {
+            // Name, description, and "Go and Goa v3" technology come from the service
+            Tag("api")
+        })
     })
 })
 ```
@@ -241,14 +252,25 @@ var _ = SoftwareSystem("E-Commerce", func() {
 Modules within a container. Use these for detailed technical documentation:
 
 ```go
-var _ = Container("API", "Backend API", "Go", func() {
-    var OrderService = Component("Order Service", "Handles order lifecycle", "Go package")
-    var PaymentService = Component("Payment Service", "Processes payments", "Go package")
-    var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
-    
-    OrderService.Uses(PaymentService, "Calls for payment")
-    OrderService.Uses(NotificationService, "Triggers confirmations")
-    PaymentService.Uses("Stripe/API", "Processes cards via", "HTTPS")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("Stripe", "Payment processor", func() {
+        External()
+        Container("API", "Card processing API", "HTTPS")
+    })
+
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("API", "Backend API", "Go", func() {
+            var PaymentService = Component("Payment Service", "Processes payments", "Go package", func() {
+                Uses("Stripe/API", "Processes cards via", "HTTPS")
+            })
+            var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
+
+            Component("Order Service", "Handles order lifecycle", "Go package", func() {
+                Uses(PaymentService, "Calls for payment")
+                Uses(NotificationService, "Triggers confirmations")
+            })
+        })
+    })
 })
 ```
 
@@ -259,21 +281,28 @@ var _ = Container("API", "Backend API", "Go", func() {
 Users, actors, or roles that interact with systems:
 
 ```go
-var Customer = Person("Customer", "A customer placing orders", func() {
-    External()  // Outside the enterprise
-    Tag("user")
-    Uses("E-Commerce", "Places orders using", "HTTPS")
-})
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("Admin Portal", "Back-office UI", "Web")
+        Container("Support Tools", "Agent console", "Web")
+    })
 
-var Admin = Person("Administrator", "Manages the platform", func() {
-    // Internal by default
-    Tag("internal")
-    Uses("E-Commerce/Admin Portal", "Manages products via")
-})
+    var Customer = Person("Customer", "A customer placing orders", func() {
+        External() // Outside the enterprise
+        Tag("user")
+        Uses("E-Commerce", "Places orders using", "HTTPS")
+    })
 
-var Support = Person("Support Agent", "Handles customer issues", func() {
-    InteractsWith(Customer, "Helps")  // Person-to-person relationship
-    Uses("E-Commerce/Support Tools", "Uses")
+    Person("Administrator", "Manages the platform", func() {
+        // Internal by default
+        Tag("internal")
+        Uses("E-Commerce/Admin Portal", "Manages products via")
+    })
+
+    Person("Support Agent", "Handles customer issues", func() {
+        InteractsWith(Customer, "Helps") // Person-to-person relationship
+        Uses("E-Commerce/Support Tools", "Uses")
+    })
 })
 ```
 
@@ -314,15 +343,23 @@ Uses(Target, "description", "technology", func() {
 
 ### Examples
 
+Call `Uses`, `Delivers`, and `InteractsWith` inside the source element's DSL closure:
+
 ```go
-// System uses system
-PaymentSystem.Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+// System uses external system
+SoftwareSystem("Payments", "Handles checkout", func() {
+    Uses(BankAPI, "Processes payments via", "REST/JSON", Synchronous)
+})
 
 // Container uses external system
-API.Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+Container("API", "Backend API", "Go", func() {
+    Uses("Stripe/API", "Charges cards", "HTTPS", Asynchronous)
+})
 
 // System delivers to person
-NotificationSystem.Delivers(Customer, "Sends order updates to", "Email")
+SoftwareSystem("Notifications", "Customer alerts", func() {
+    Delivers(Customer, "Sends order updates to", "Email")
+})
 ```
 
 ---
@@ -388,24 +425,20 @@ Shows a specific flow or scenario with ordered interactions:
 ```go
 DynamicView(ECommerce, "OrderFlow", "Order placement flow", func() {
     Title("Customer places an order")
-    
+
     Link(Customer, WebApp, func() {
         Description("1. Submits order")
-        Order("1")
     })
     Link(WebApp, API, func() {
         Description("2. Creates order")
-        Order("2")
     })
     Link(API, PaymentService, func() {
         Description("3. Processes payment")
-        Order("3")
     })
     Link(API, Database, func() {
         Description("4. Saves order")
-        Order("4")
     })
-    
+
     AutoLayout(RankLeftRight)
 })
 ```
@@ -773,7 +806,7 @@ var _ = API("orders", func() {
     Title("Orders API")
 })
 
-var _ = Service("orders", func() {
+var OrdersService = Service("orders", func() {
     Method("create", func() { /* ... */ })
 })
 
@@ -812,11 +845,11 @@ jobs:
   diagrams:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: 'stable'
       
       - name: Install mdl
         run: go install goa.design/model/cmd/mdl@latest
@@ -839,7 +872,7 @@ jobs:
 
 ### Organize Large Models
 
-Split models across multiple files:
+Split large architectures into helper functions across files and invoke them inside `Design(...)` (`SoftwareSystem` and `Person` must run inside a `Design` closure):
 
 ```go
 // model/systems.go
@@ -847,13 +880,15 @@ package model
 
 import . "goa.design/model/dsl"
 
-var ECommerce = SoftwareSystem("E-Commerce", "Online store", func() {
-    // containers...
-})
+func defineSystems() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        // containers...
+    })
 
-var Payments = SoftwareSystem("Payments", "Payment processing", func() {
-    // containers...
-})
+    SoftwareSystem("Payments", "Payment processing", func() {
+        // containers...
+    })
+}
 ```
 
 ```go
@@ -862,12 +897,13 @@ package model
 
 import . "goa.design/model/dsl"
 
-var _ = Design("Platform", func() {
+var _ = Design("Platform", "Company platform architecture", func() {
+    defineSystems()
+
     Views(func() {
         SystemLandscapeView("Landscape", "All systems", func() {
             AddAll()
         })
-        // more views...
     })
 })
 ```
@@ -894,16 +930,20 @@ Tag("tier-1")
 
 ### Import Shared Components
 
+Export helper functions from a shared Go package and call them inside your service's `Design` block:
+
 ```go
 // shared/infrastructure.go
 package shared
 
 import . "goa.design/model/dsl"
 
-var Stripe = SoftwareSystem("Stripe", "Payment processing", func() {
-    External()
-    Tag("external", "payments")
-})
+func DefineStripe() {
+    SoftwareSystem("Stripe", "Payment processing", func() {
+        External()
+        Tag("external", "payments")
+    })
+}
 ```
 
 ```go
@@ -912,12 +952,14 @@ package model
 
 import (
     . "goa.design/model/dsl"
-    _ "mycompany/shared"  // Import shared elements
+    "mycompany/shared"
 )
 
-var _ = Design("My Service", func() {
-    var Service = SoftwareSystem("My Service", func() {
-        Uses("Stripe", "Processes payments via")  // Reference by name
+var _ = Design("My Service", "Checkout architecture", func() {
+    shared.DefineStripe()
+
+    SoftwareSystem("My Service", "Handles checkout", func() {
+        Uses("Stripe", "Processes payments via", "HTTPS")
     })
 })
 ```

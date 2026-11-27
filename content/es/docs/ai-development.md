@@ -2,20 +2,36 @@
 title: "Desarrollar con un agente de programación"
 linkTitle: "Flujo con agentes"
 weight: 1
-description: "Proporciona un contrato explícito, genera el código repetitivo y utiliza el compilador para orientar la implementación."
+description: "Dale a tu agente de programación un contrato explícito, genera el código repetitivo y usa el compilador para guiar la implementación."
 ---
 
-Goa ayuda a **desarrollar software con un agente de programación** y a **integrar agentes de IA en ese software**. Goa genera contratos de servicio; Goa-AI amplía la generación a herramientas, salidas estructuradas e integración de agentes.
+Goa cubre dos tareas complementarias: **construir software con un agente de programación** e
+**integrar agentes de IA dentro de ese software**. El mismo flujo guiado por el diseño ayuda en
+ambas. Goa genera contratos de servicio; Goa-AI amplía la generación a herramientas,
+respuestas estructuradas e integración de agentes.
 
-## Por qué la generación cambia el trabajo
+{{< anchors "por-qué-la-generación-cambia-el-trabajo" >}}
+## Por qué la generación cambia el flujo de trabajo
 
-Un LLM que escribe por separado manejadores, clientes, esquemas y validación debe mantenerlos coherentes. Goa los deriva del diseño, dejando al modelo requisitos, decisiones de dominio e implementación.
+Cuando un LLM escribe por separado manejadores, clientes, esquemas JSON y validaciones,
+tiene que mantener todas esas representaciones alineadas. Goa las deriva del diseño.
+Así el modelo puede centrarse en los requisitos, las decisiones de dominio y la implementación.
 
-- **Menos escritura repetitiva.** El generador produce archivos sin que los redacte el LLM. El ahorro total depende del contexto, iteraciones y revisión.
-- **Contexto concreto.** Tipos, descripciones, ejemplos y restricciones están juntos. Lee diseño e interfaz antes de explorar toda la implementación.
-- **Responsabilidades predecibles.** Edita diseño y aplicación; regenera `gen/`. Reutiliza esquemas y convenciones.
-- **Información del compilador.** Las firmas generadas hacen visibles llamadas e implementaciones incompatibles. Los cambios de comportamiento requieren pruebas.
-- **Contratos conectados.** Goa-AI reutiliza tipos y vincula herramientas a métodos con esquemas, códecs y transformaciones generados.
+- **Menos escritura repetitiva.** El generador produce el código sin que un LLM
+  redacte cada archivo generado. Esto reduce el trabajo en tokens de salida; el ahorro total
+  depende del contexto, las iteraciones y la revisión que requiera la tarea.
+- **Un punto de partida concentrado.** El diseño reúne tipos, descripciones, ejemplos,
+  restricciones y operaciones. Carga el diseño y la interfaz relevantes antes de pedir
+  al agente que explore una base de código grande.
+- **Responsabilidades predecibles.** Edita el diseño y el código de aplicación. Regenera
+  `gen/`. Un agente de programación no tiene que inventar un patrón de transporte nuevo en
+  cada servicio ni una convención de esquemas distinta en cada herramienta.
+- **Verificación del compilador.** Si cambia la firma de un método generado, el compilador
+  de Go señala al instante las implementaciones y llamadas incompatibles. Los cambios de
+  comportamiento siguen requiriendo pruebas.
+- **Contratos de servicio y herramientas conectados.** Goa-AI reutiliza tipos de Goa y
+  vincula herramientas a métodos de servicio. Los esquemas, códecs y transformaciones
+  generados mantienen conectadas ambas representaciones.
 
 ## Instala la skill Goa service designer {#install-the-skill}
 
@@ -25,28 +41,44 @@ Ejecuta este comando en el repositorio de tu aplicación. La [Skills CLI](https:
 npx skills add goadesign/goa --skill goa-service-designer
 ```
 
-La skill enseña al agente a examinar el proyecto, cambiar primero el diseño, ejecutar el generador correspondiente, implementar fuera de `gen/`, actualizar los consumidores afectados y verificar el cambio. Cubre contratos de servicio, HTTP/gRPC, validación, errores e interceptores. Para Goa-AI, proporciona también el archivo generado `AGENTS_QUICKSTART.md`; esta skill se centra en servicios Goa.
+La skill enseña al agente a inspeccionar tu proyecto, editar primero el diseño, ejecutar el generador correspondiente, implementar fuera de `gen/`, actualizar los consumidores afectados y verificar el cambio. Incluye pautas sobre contratos de servicio, HTTP/gRPC, validación, errores e interceptores. Para Goa-AI, facilita también el archivo generado `AGENTS_QUICKSTART.md`; la skill de diseño de servicios se centra en servicios Goa.
 
-Para seleccionar herramientas sin las preguntas del instalador:
+Para seleccionar herramientas concretas sin las preguntas interactivas del instalador:
 
 ```bash
 npx --yes skills add goadesign/goa --skill goa-service-designer \
   -a codex -a cursor -a claude-code --yes
 ```
 
-La instalación es local al proyecto por defecto. Añade `--global` para una instalación personal o `--copy` si tu entorno no admite enlaces simbólicos. Sin Node.js, copia el [directorio `goa-service-designer` completo](https://github.com/goadesign/goa/tree/v3/skills/goa-service-designer) en la carpeta de skills compatible con tu herramienta.
+La instalación es local al proyecto por defecto. Añade `--global` para una instalación personal o `--copy` si tu entorno no admite enlaces simbólicos. Sin Node.js, copia el [directorio `goa-service-designer` completo](https://github.com/goadesign/goa/tree/v3/skills/goa-service-designer) en el directorio de skills que admita tu herramienta de programación.
 
 ## El ciclo de desarrollo
 
-### 1. Proporciona el contexto necesario
+{{< anchors "1-proporciona-el-contexto-necesario" >}}
+### 1. Aporta el contexto relevante
 
-Da al agente el objetivo, diseño e implementación que cambiará. Instala la [skill Goa service designer](https://github.com/goadesign/goa/tree/v3/skills) según las instrucciones de tu herramienta.
+Entrega al agente de programación el objetivo, los archivos de diseño y la implementación que
+vaya a modificar. Para un servicio, instala la
+[skill Goa service designer](https://github.com/goadesign/goa/tree/v3/skills)
+siguiendo las instrucciones de tu herramienta.
 
-Con Goa-AI, lee también **`AGENTS_QUICKSTART.md`** en la raíz de la aplicación. Se genera desde el diseño salvo con `DisableAgentDocs()` y describe los paquetes y el trabajo pendiente. Usa páginas Markdown o el [índice](/es/llms.txt) para aportar referencias concretas. No cargues todos los transportes generados por defecto; consúltalos cuando la tarea lo requiera.
+Con Goa-AI, lee también **`AGENTS_QUICKSTART.md`** en la raíz de la aplicación. Goa-AI
+genera esta guía a partir del diseño del agente salvo que se indique `DisableAgentDocs()`.
+Describe los paquetes generados y el trabajo de implementación pendiente.
+
+Usa las páginas en Markdown de este sitio o el [índice de documentación](/es/llms.txt) para
+aportar material de referencia preciso. Evita cargar todos los transportes generados en el
+contexto del modelo por defecto; inspecciónalos cuando la tarea lo requiera.
 
 ### 2. Cambia primero el diseño
 
-Define operaciones, entradas, resultados, errores y restricciones en `design/`. La validación estructural pertenece al diseño; autorización y reglas de negocio al código responsable. Explica cuándo usar una herramienta, su resultado y sus campos. Reutiliza tipos de servicio cuando expresen el mismo contrato.
+Describe operaciones, entradas, resultados, errores y restricciones en `design/`.
+Pon la validación estructural en el diseño. Mantén la autorización y las reglas de negocio
+en la capa de aplicación que sea su propietaria.
+
+En una herramienta de agente, haz que su descripción explique cuándo usarla y qué
+devuelve. Añade una descripción clara en cada campo. Reutiliza tipos de servicio existentes
+cuando expresen el mismo contrato de dominio.
 
 ### 3. Genera e implementa
 
@@ -54,7 +86,10 @@ Define operaciones, entradas, resultados, errores y restricciones en `design/`. 
 goa gen example.com/catalog/design
 ```
 
-Implementa las interfaces fuera de `gen/`. `goa example` crea archivos iniciales una vez y no actualiza la lógica existente. No arregles errores de compilación editando `gen/`: corrige diseño o implementación y regenera.
+Implementa o actualiza las interfaces generadas en los archivos propios de la aplicación.
+`goa example` crea archivos iniciales una sola vez; no actualiza la lógica de negocio
+existente cuando cambia el diseño. Nunca modifiques `gen/` para silenciar un error de
+compilación: corrige el diseño o la implementación de la aplicación y vuelve a generar.
 
 ### 4. Verifica el cambio completo
 
@@ -63,24 +98,31 @@ gofmt -w design
 go test ./...
 ```
 
-Revisa el contrato público y prueba el comportamiento observable. Para IA, evalúa resultados y uso de herramientas. Un esquema válido no demuestra que se eligiera la herramienta correcta. Autorización, idempotencia de efectos externos y compatibilidad con clientes desplegados siguen siendo responsabilidades de la aplicación.
+Revisa el diff del diseño y el contrato público resultante. Añade pruebas de comportamiento
+sobre lo que observan los clientes. En aplicaciones de IA, ejecuta evaluaciones que comprueben
+los resultados y el uso de herramientas. Que los argumentos cumplan el esquema no demuestra que
+el modelo eligiera la herramienta adecuada ni produjera una respuesta útil.
+
+La generación tampoco resuelve la autorización, ni vuelve idempotentes los efectos externos,
+ni demuestra la compatibilidad con clientes ya desplegados. Prueba esas propiedades en la
+capa de aplicación que las gobierna.
 
 ## Un diseño, dos puntos de entrada {#one-design-two-entry-points}
 
-Este catálogo expone la misma operación por **HTTP, gRPC y JSON-RPC**, y ofrece al agente una herramienta vinculada a ella. `LookupPayload` y `Product` definen ambos contratos. Los campos numerados también definen el mapeo de Protocol Buffer. Implementa la búsqueda y el planificador en el código de la aplicación.
+Este catálogo expone la misma operación sobre **HTTP, gRPC y JSON-RPC**, y ofrece a un agente una herramienta vinculada a ella. `LookupPayload` y `Product` definen ambos contratos. Los campos numerados definen también el mapeo de Protocol Buffers. Implementa la búsqueda de productos y el planificador en el código de la aplicación.
 
-Crea el módulo e instala las versiones del ejemplo:
+Crea un módulo e instala las versiones utilizadas en este ejemplo:
 
-Esta guía usa la versión `v0.89.0` de Goa-AI (que requiere Go 1.27.3 o posterior). Su módulo Go selecciona la dependencia correspondiente de Goa (`v3.35.0`). Ejecuta el generador mediante `go run` para que utilice esa versión seleccionada.
+Esta guía emplea la versión `v0.90.0` de Goa-AI (que requiere Go 1.27.3 o posterior). Su módulo Go selecciona automáticamente una dependencia compatible de Goa `v3.35+` (o ejecuta `go get goa.design/goa/v3@v3.36.0` para fijar la última versión de Goa). Ejecuta el generador con `go run` para utilizar la versión seleccionada por el módulo.
 
 ```bash
 mkdir catalog && cd catalog
 go mod init example.com/catalog
-go get goa.design/goa-ai@v0.89.0
+go get goa.design/goa-ai@v0.90.0
 mkdir design
 ```
 
-Guarda este código en `design/catalog.go`:
+Guarda lo siguiente como `design/catalog.go`:
 
 ```go
 package design
@@ -139,7 +181,7 @@ var _ = Service("catalog", func() {
 })
 ```
 
-Genera contratos y archivos iniciales:
+Genera los contratos y los archivos iniciales de la aplicación:
 
 ```bash
 go mod tidy
@@ -149,9 +191,16 @@ go mod tidy
 go test ./...
 ```
 
-Examina interfaz, servidor y cliente HTTP, OpenAPI, esquemas y códecs de herramientas, y `AGENTS_QUICKSTART.md`. Implementa la búsqueda y sustituye el planificador de ejemplo antes de usarlo en un producto.
+Inspecciona la interfaz de servicio generada, el servidor y cliente HTTP, las especificaciones
+OpenAPI, los esquemas y códecs de herramientas del agente y `AGENTS_QUICKSTART.md`. A partir de
+estas 54 líneas de `design/catalog.go`, `goa gen` produce 57 archivos bajo `gen/`
+(5.388 líneas en total: 5.108 líneas de Go además de OpenAPI, Protobuf y esquemas JSON de herramientas) junto con
+`AGENTS_QUICKSTART.md`, sin gastar tokens de salida del modelo. El código inicial de la
+aplicación es un punto de partida: implementa la búsqueda real y sustituye el planificador de
+ejemplo antes de llevarlo a producción.
 
-## Una instrucción útil
+{{< anchors "una-instrucción-útil" >}}
+## Un prompt de tarea útil
 
 ```text
 Read design/ and the relevant generated service interface. For Goa-AI,
@@ -167,11 +216,12 @@ Run the project's tests and relevant agent evaluations. Report the contract
 changes, checks performed, and any behavior still needing review.
 ```
 
-Añade el resultado deseado y los criterios de aceptación. La instrucción define un proceso; no sustituye una tarea clara ni el criterio de ingeniería.
+Añade el resultado concreto esperado por el usuario y los criterios de aceptación. Este prompt
+define un flujo de trabajo; no sustituye una especificación clara ni el buen criterio de ingeniería.
 
 ## Coordina varios agentes de programación con Chorus {#coordinate-multiple-agents}
 
-Cuando una tarea abarca varios roles o familias de modelos —por ejemplo, un agente revisando contratos y seguridad (`arch`), un segundo implementando el servicio Goa (`api`) y un tercero ejecutando pruebas concurrentes (`qa`)—, utiliza [Chorus](/es/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) para conectar sus sesiones a través de un servidor MCP local compartido (`http://localhost:9440/mcp`).
+Cuando una tarea abarca varios roles o familias de modelos —por ejemplo, un agente revisando contratos y seguridad (`arch`), un segundo implementando el servicio Goa (`api`) y un tercero ejecutando pruebas concurrentes de condición de carrera e integración (`qa`)—, utiliza [Chorus](/es/docs/3-ecosystem/chorus/) (`github.com/goadesign/chorus`) para conectar sus sesiones mediante un servidor MCP local compartido (`http://localhost:9440/mcp`).
 
 Instala e inicia Chorus (registra MCP y la skill `chorus` en tus agentes de programación):
 
@@ -189,35 +239,45 @@ curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/insta
 npx @goadesign/chorus up
 ```
 
-Indica a cada sesión su identificador y canal en tu instrucción:
+Después indica a cada sesión de agente su identificador y canal en el prompt:
 
 ```text
 Use Chorus as arch in #catalog and review the LookupPayload contract with api and qa.
 ```
 
-Los agentes se unen a `#channels`, intercambian mensajes directos `@agent`, reciben respuestas no leídas acumuladas en `send` y esperan en segundo plano mediante `chorus watch <handle>` hasta que otro agente los menciona o les responde. Consulta la [guía de Chorus](/es/docs/3-ecosystem/chorus/) para la referencia completa de herramientas y arquitectura.
+Los agentes se unen a `#channels`, intercambian mensajes directos `@agent`, reciben respuestas no leídas adjuntas en `send` y esperan en segundo plano mediante `chorus watch <handle>` hasta que un compañero los menciona o les responde. Consulta la [guía de Chorus](/es/docs/3-ecosystem/chorus/) para ver la referencia completa de herramientas y su arquitectura.
 
 ## Separa autoría de pruebas y verificación con Highbay {#build-and-verify-with-highbay}
 
-Cuando quieras que un agente escriba las pruebas de aceptación y otro distinto escriba la implementación —con un servidor que verifique ambos frente a un contrato acordado antes de fusionar—, utiliza [Highbay](/es/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`):
+Cuando quieras que un agente de programación escriba las pruebas de aceptación y otro distinto escriba la implementación —con un servidor verificando ambos frente a un contrato acordado antes de fusionar nada—, utiliza [Highbay](/es/docs/3-ecosystem/highbay/) (`github.com/goadesign/highbay`).
+
+Instala Highbay y registra el servidor MCP `highbay` y la skill `/highbay` (`$highbay` en Codex) en tus agentes de programación:
 
 ```bash
 go install github.com/goadesign/highbay/cmd/highbay@latest
 highbay up
 ```
 
-Después invoca `/highbay` (`$highbay` en Codex) en una carpeta vacía (o en un repositorio Goa con un commit Git y suite `<module>/eval` o ajustes de verificación guardados):
+A continuación invoca `/highbay` en una carpeta vacía (o en un repositorio Goa existente que ya tenga un commit de Git y una suite `<module>/eval` o ajustes de verificación guardados):
 
 ```text
 /highbay — build a refund assistant: refunds up to $50 get instant store credit; larger ones wait for a manager.
 ```
 
-En carpetas vacías, Highbay crea de forma predeterminada una estructura limpia y neutral de Go y `eval/` (`highbay init -example` o `worked_example: true` incluye un ejemplo ejecutable), abre la Change Card en el navegador, asigna al autor de pruebas (`.highbay-tests`) y al constructor (`.highbay-build`) copias separadas y verifica el commit antes de permitir fusionarlo en tu rama local. Consulta la [página de Highbay](/es/highbay/) y la [guía de Highbay](/es/docs/3-ecosystem/highbay/).
+Tu agente de programación inicializa una estructura limpia y neutral de Go y `eval/` si la carpeta está vacía (`highbay init -example` o `worked_example: true` añade un ejemplo ejecutable si lo prefieres), redacta los flujos de negocio en `design/story.go` y abre una Change Card en tu navegador. Una vez confirmada la tarjeta, Highbay asigna al autor de pruebas (`.highbay-tests`) y al constructor (`.highbay-build`) copias de trabajo independientes, comprueba y acepta la suite `eval/`, verifica frente a ella el commit del constructor y te permite fusionar los commits aprobados en tu rama local con un solo clic. Consulta la [página de Highbay](/es/highbay/) y la [guía del ecosistema de Highbay](/es/docs/3-ecosystem/highbay/).
 
-## Mide la ventaja
+{{< anchors "mide-la-ventaja" >}}
+## Mide la ventaja en tu proyecto
 
-Compara la misma tarea, criterios, modelo y código inicial en varias ejecuciones. Registra tokens de entrada y salida, tiempo total, generación, pruebas, correcciones manuales, revisión y defectos. Incluye preparación e intentos fallidos. Las líneas generadas demuestran trabajo del generador, no un ahorro medido de tokens.
+Compara la misma tarea, criterios de aceptación, modelo y código base inicial a lo largo de
+varias ejecuciones. Registra tokens de entrada y salida, tiempo total, tiempo de regeneración
+y pruebas, correcciones manuales, esfuerzo de revisión y defectos de comportamiento. Incluye
+la configuración inicial y los intentos fallidos. Las líneas de código generadas reflejan el
+trabajo que realiza el generador, no un índice directo de ahorro de tokens ni de productividad.
 
-No hay una promesa universal de 10×. La ventaja concreta es delegar trabajo repetitivo en generación determinista y dar a personas y agentes un objetivo de implementación más claro.
+Aquí no hay ninguna promesa universal de 10×. La ventaja concreta es que la generación
+determinista de código retira el trabajo repetitivo de contratos de la redacción del modelo y
+ofrece tanto a las personas como a los agentes un objetivo de implementación más claro.
 
-Continúa con la [guía rápida de Goa](../1-goa/quickstart/) o de [Goa-AI](../2-goa-ai/quickstart/).
+Continúa con el [inicio rápido de Goa](../1-goa/quickstart/) o el
+[inicio rápido de Goa-AI](../2-goa-ai/quickstart/).

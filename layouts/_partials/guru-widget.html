@@ -2,11 +2,12 @@
 <script>
 (function() {
   var host = document.getElementById('goa-assistant');
+  if (!host) return;
   var observer = new MutationObserver(function() {
     var widget = document.getElementById('gurubase-chat-widget-container');
     if (!widget) return;
     var style = document.createElement('style');
-    style.textContent = '.chat-widget { position: static !important; background: transparent !important; } .chat-button { position: static !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 12.5px !important; font-weight: 600 !important; background: var(--color-bg-alt, #f3f6fa) !important; color: var(--color-text-heading, #172b45) !important; border: 1px solid var(--color-border-subtle, #dce3ec) !important; box-shadow: none !important; } .chat-button * { color: var(--color-text-heading, #172b45) !important; }';
+    style.textContent = '.chat-widget { position: static !important; background: transparent !important; } .chat-button { position: static !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 12.5px !important; font-weight: 600 !important; background: var(--color-bg-alt, #f3f6fa) !important; color: var(--color-text-heading, #172b45) !important; border: 1px solid var(--color-border-subtle, #dce3ec) !important; box-shadow: none !important; } .chat-button * { color: var(--color-text-heading, #172b45) !important; } .chat-button img, .chat-button svg { filter: brightness(0) saturate(100%); opacity: .78; } :host-context([data-theme="dark"]) .chat-button img, :host-context([data-theme="dark"]) .chat-button svg { filter: brightness(0) invert(1); opacity: .88; }';
     widget.shadowRoot.appendChild(style);
     host.replaceChildren(widget);
     observer.disconnect();

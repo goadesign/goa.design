@@ -1,6 +1,6 @@
 # Site title and meta
-site_title: "Goa・Goa-AI — コーディングエージェントのためのGoフレームワーク"
-site_description: "Goaは、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめるGoフレームワークです。HTTP・gRPC・JSON-RPCサーバー、型付きクライアント、検証、API仕様書を生成。Goa-AIでAIエージェント、MCPサーバー、ツールレジストリを構築できます。"
+site_title: "Goa・Goa-AI — サービス、MCP サーバー、AI エージェントのための Go 契約コンパイラ"
+site_description: "Goa は、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめる Go フレームワークです。HTTP・gRPC・JSON-RPC サーバー、型付きクライアント、バリデーション、OpenAPI 仕様を生成。Goa-AI で AI エージェント、MCP サーバー、ツールレジストリを構築できます。"
 
 # Navigation
 nav_search_placeholder: "検索"
@@ -15,428 +15,239 @@ footer_find_us: "こちらでも情報発信中"
 footer_copyright: " 2015-%s by Raphael Simon and the Goa contributors"
 footer_logo_by: "Logo by Jason Melgoza"
 
-# Hero Section
-
-# Features Section
-
-
-
 # Section Navigation
 subsections_title: "このセクションの内容"
-
-# Goa-AI Section
-goa_ai_section_title: "Goa-AI: システムとしてのエージェント"
-goa_ai_section_description: "Goa-AIはデザインファーストの哲学をエージェントシステムにもたらします。クリーンに構成され、楽にスケールする、堅牢で型安全なエージェントを構築しましょう。"
-goa_ai_section_features: |
-  <ul>
-    <li><strong>デザインファーストの契約:</strong> 強力なスキーマと自動修復ヒントによる堅牢なツール使用</li>
-    <li><strong>システムとしてのエージェント:</strong> フラットなチェーンではなく、実行ツリーによる構成</li>
-    <li><strong>構造化ストリーミング:</strong> リッチでトポロジーを意識したUIのための型付きイベント</li>
-    <li><strong>本番環境対応:</strong> Temporalによる耐久性、ポリシー、MCP統合</li>
-  </ul>
-goa_ai_section_cta: "Goa-AI を見る"
-
-# Goa-AI Hero Section
-goa_ai_hero_badge: "NEW"
-goa_ai_hero_badge_text: "Goa-AI 登場"
-goa_ai_hero_title_1: "AIエージェントを構築"
-goa_ai_hero_title_2: "Goaのやり方で"
-goa_ai_hero_description: "デザインファーストの哲学をエージェントシステムに適用。強力なDSLでエージェント、ツール、ポリシーを定義。型安全なコード、構造化ストリーミング、本番環境対応の耐久性を実現。"
-goa_ai_hero_feature_design: "型付き契約でエージェントを定義"
-goa_ai_hero_feature_mcp: "あらゆるMCPサーバーに接続"
-goa_ai_hero_feature_registries: "クラスター間でツールを発見"
-goa_ai_hero_feature_runtrees: "エージェントを階層的に構成"
-goa_ai_hero_feature_streaming: "型付きイベントをリアルタイム配信"
-goa_ai_hero_feature_durability: "Temporalでクラッシュを生き残る"
-goa_ai_hero_cta_primary: "Goa-AIを探索"
-goa_ai_hero_cta_secondary: "クイックスタート"
-
-# Wizard
-wizard_section_title: "Goa Design Wizard"
-wizard_section_description: "Goa DSLに特化したAIアシスタント <a href=\"https://chat.openai.com/g/g-mLuQDGyro-goa-design-wizard\">Goa Design Wizard</a> でAPI作成をガイドします"
-wizard_section_features: |
-  <ul>
-    <li>自然な会話を通じてGoaのデザインを生成</li>
-    <li>リアルタイムでインテリジェントな提案とベストプラクティスを取得</li>
-    <li>実践的な例と詳細な説明でGoa DSLを学びましょう</li>
-  </ul>
-wizard_section_cta: "Goa Design Wizardを試す"
-wizard_section_note: "(<a href=\"https://openai.com/blog/chatgpt-plus\">ChatGPT Plus</a>サブスクリプションが必要です)"
-
-# Sponsors section
 sponsors_title: "スポンサー"
-
-sponsor_incidentio_title: "incident.io: インシデント後に強く復活する"
-sponsor_incidentio_desc: "私たちのプラットフォームを使用して、チームがインシデントを端から端まで管理できるようにサポートします。<br/>インシデントを迅速に修正し、学びながら、より強固な製品を作り上げましょう。"
-sponsor_incidentio_link: "詳細はこちら"
-
-sponsor_speakeasy_title: "Speakeasy: あなたのAPIのための企業向けDevEx"
-sponsor_speakeasy_desc: "私たちのプラットフォームは、機能豊富で本番環境に適したSDKの作成を簡単にします。<br/>APIにふさわしいDevExを提供することで、統合を加速し、エラーを減らします。"
-sponsor_speakeasy_link: "Goaとの統合"
-
-
-# Why Goa Section
-
-# Trust Section
 trust_section_title: "世界中のエンジニアリングチームに信頼されています"
-trust_section_subtitle: "Goa を使って堅牢で保守可能な API を構築している企業のコミュニティに参加しましょう"
+home_trust_facts: "2016 年から本番稼働 · Goa v3 · 標準の `net/http` と `google.golang.org/grpc` 上に Go のルーティング・デコード・バリデーションを生成"
 
-# Goa Hero Section Features
-goa_hero_feature_design: "強力なDSLでAPIを設計"
-goa_hero_feature_codegen: "サーバー、クライアント、ドキュメントを生成"
-goa_hero_feature_transports: "HTTP、gRPC、WebSocketをサポート"
-goa_hero_feature_validation: "組み込みのリクエストバリデーション"
-goa_hero_feature_docs: "OpenAPI仕様を自動生成"
-goa_hero_feature_extensible: "拡張可能なプラグインアーキテクチャ"
-goa_hero_cta_primary: "Goaを探索"
-
-# Common actions
-learn_more: "詳細を見る"
-get_started: "クイックスタート"
-
-# Shared Goa ecosystem presentation.
-
+# Shared Goa ecosystem presentation
 home_heading: "エージェントは推論に。"
-
-home_intro: "Goaは、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめるGoフレームワークです。HTTP・gRPC・JSON-RPCサーバー、型付きクライアント、検証、API仕様書を生成。Goa-AIでAIエージェント、MCPサーバー、ツールレジストリを構築できます。"
-
-home_service_cta: "サービスをつくる"
-
-home_agent_cta: "AIエージェントをつくる"
-
-home_workflow_cta: "コーディングエージェントと開発する"
-
-home_facts: "オープンソース。MITライセンス。Goで構築。"
-
-home_example_label: "設計例を選択"
-
-home_services: "サービス"
-
-home_agents: "AIエージェント"
-
-home_excerpt: "設計の抜粋"
-
-home_generated: "エージェントが書かずに済むコード"
-
-home_output_types: "サービスインターフェース"
-
-home_output_http: "HTTPサーバー"
-
-home_output_client: "型付きクライアント"
-
-home_output_openapi: "OpenAPI仕様"
-
-home_output_schemas: "ツールのJSONスキーマ"
-
-home_output_codecs: "型付きペイロードのコーデック"
-
-home_output_bindings: "サービスとの接続"
-
-home_full_example: "完全な例を見る"
-home_prompt_guide: "プロンプト管理ガイドを読む"
-
-home_workflow_heading: "意図を設計し、繰り返すコードは生成する。"
-
-home_workflow_intro: "開発者、チーム、コーディングエージェントで共有する、ひとつの開発手順。"
-
-home_step_design: "契約を記述する"
-
-home_step_design_text: "型、操作、制約を読みやすいGoの設計に定義します。"
-
-home_step_generate: "ジェネレーターを実行する"
-
-home_step_generate_text: "goa genが契約から導出できるコードを生成します。"
-
-home_step_implement: "動作を実装する"
-
-home_step_implement_text: "開発者とエージェントがサービスのロジック、プランナー、テストを書きます。"
-
-home_step_check: "フィードバックで改善する"
-
-home_step_check_text: "設計を変更したら再生成し、コンパイル、テスト、レビューを行います。"
-
-home_benefits_heading: "コーディングエージェントの仕事を、絞り込む。"
-
-home_benefits_intro: "機能を追加するたびに、モデルがアーキテクチャを読み解き直したり、同じ接続コードを書き直したりする必要はありません。"
-
-home_benefit_tokens: "生成に任せ、その分のトークンを省く。"
-
-home_benefit_tokens_text: "生成されたトランスポート、クライアント、スキーマは、LLMが書く必要のないコードです。その分の作業をドメインロジック、有用なテスト、より良いツールに回せます。"
-
-home_benefit_context: "コンテキストの基準を、設計に。"
-
-home_benefit_context_text: "型、制約、説明、メソッドを設計に集約。一貫した生成コードの構造が、エージェントにコードベースの地図と変更すべき場所を示します。"
-
-home_benefit_feedback: "契約のずれを、コンパイルエラーに。"
-
-home_benefit_feedback_text: "契約を変えたら、すべての表現をまとめて再生成。Goが型の合わない呼び出し元や実装を検出し、エージェントの次の修正に具体的な手掛かりを与えます。"
-
-home_benefit_boundaries: "契約をつなげて保つ"
-
-home_benefit_boundaries_text: "サービスの型をエージェントのツールでも再利用。同じ設計からモデル向けスキーマとサービス接続を生成し、別々の定義を管理する手間を減らします。"
-
-home_frameworks_heading: "ひとつのエコシステム、ふたつの入り口。"
-
-home_frameworks_intro: "サービスからでも、エージェントからでも。その両方でも。同じ設計言語でつながります。"
-
-home_service_title: "ひとつの契約。多彩なトランスポート。"
-
-home_service_text: "サービスを一度定義し、API、クライアント、検証、仕様書をまとめて生成。型付きGoインターフェースの先に、ビジネスロジックを実装します。"
-
-home_service_features: "クライアント、検証、OpenAPIを生成"
-
-home_service_docs: "Goaを詳しく見る"
-
-home_agent_title: "システムとして設計するエージェント。"
-
-home_agent_text: "ツールと出力を設計し、契約を生成。ランタイムがモデル呼び出し、ツール実行、人間からの入力、永続化ワークフローを調整します。"
-
-home_agent_features: "ツールスキーマ、サービス接続、MCP"
-
-home_agent_runtime: "ローカル実行、永続的な実行にはTemporal"
-
-home_agent_docs: "Goa-AIを詳しく見る"
-
-home_community_heading: "オープンな基盤でつくる。"
-
-home_community_intro: "GoaとGoa-AIは、Goサービス、エージェント、可観測性、分散システムのためのオープンソースツール群の一部です。"
-
-home_ecosystem: "エコシステムを見る"
-
-home_examples: "動くサンプル"
-
-home_discussions: "コミュニティに質問"
-
-home_contribute: "貢献する"
-
-docs_skip: "本文へ移動"
-
-docs_navigation: "ドキュメントメニュー"
-
-docs_on_page: "このページの内容"
-
-docs_start: "はじめに"
-
-docs_explore: "ドキュメントを読む"
-
-docs_group_start: "使い始める"
-
-docs_group_guides: "ガイド"
-
-docs_group_reference: "リファレンス"
-
-docs_copy: "ページをコピー"
-
-docs_copy_markdown: "Markdownでコピー"
-
-docs_copy_text: "テキストでコピー"
-
-docs_overview: "ドキュメント"
-
 home_heading_second: "コード生成はGoaに。"
-
-home_output_validation: "検証とコーデック"
-
-home_output_cli: "CLIクライアント"
-
-home_output_descriptors: "型付きツール記述子"
-
-home_output_registration: "ランタイム登録"
+home_intro: "Goa は、コーディングエージェントが書くコードを減らし、推論の基準となる契約をひとつにまとめる Go フレームワークです。1 つの Go 設計から HTTP・gRPC・JSON-RPC サーバー、型付きクライアント、バリデーション、OpenAPI 3 仕様をコンパイルし、Goa-AI でプロダクト組み込みの AI エージェント、MCP サーバー、ツールレジストリを構築できます。"
+home_service_cta: "サービスをつくる"
+home_agent_cta: "AI エージェントをつくる"
+home_workflow_cta: "54 行のカタログ実装例を読む"
+home_facts: "オープンソース · MIT ライセンス · Go 1.27+"
+home_example_label: "設計例を選択"
+home_services: "サービス"
+home_agents: "AI エージェント"
 home_prompts: "プロンプト"
-home_output_prompt_checks: "goa gen でテンプレートを検証"
+home_excerpt: "設計の抜粋"
+home_generated: "gen/ に自動生成（LLM トークン 0）"
+home_output_types: "サービスインターフェース"
+home_output_client: "型付きクライアント"
+home_output_validation: "検証とコーデック"
+home_output_cli: "CLI クライアント"
+home_output_schemas: "ツールの JSON スキーマ"
+home_output_codecs: "型付きペイロードコーデック"
+home_output_bindings: "サービスバインディング"
+home_output_descriptors: "型付きツール記述子"
+home_output_registration: "ランタイム登録"
+home_output_prompt_checks: "goa gen 時のテンプレート検証"
 home_output_prompt_render: "型付きレンダリング関数"
 home_output_prompt_registration: "プロンプト登録"
-home_output_prompt_overrides: "スコープ別の実行時差し替え"
+home_output_prompt_overrides: "スコープ別の実行時オーバーライド"
+home_full_example: "54 行のカタログ設計の全体を見る（生成ファイル 57 個） →"
+home_prompt_guide: "プロンプト管理ガイドを読む →"
 
-home_skill_cta: "コーディングエージェントにGoaスキルを追加"
-
-home_skill_heading: "エージェントに、Goaの作法を。"
-
-home_skill_intro: "Goa service designerスキルをプロジェクトにインストール。設計、生成、実装、検証の進め方から、編集するファイルと再生成するファイルの区別まで、コーディングエージェントを導きます。"
-
-home_skill_docs: "インストールとワークフロー"
-
+home_skill_cta: "クイックスタート & エージェントスキル ↓"
+home_skill_heading: "2 ステップで始める"
+home_skill_prereq: "Go 1.27+ · コード生成とローカルテストに API キーは不要"
+home_skill_step1: "**ステップ 1** · 任意のコーディングエージェント用スキルを追加するか、Go CLI をインストール："
+home_setup_tab_skill: "コーディングエージェントと使う"
+home_setup_tab_go: "Go CLI 単体"
+home_skill_docs: "セットアップとワークフロー"
 home_skill_copy: "スキルのインストールコマンドをコピー"
-
+home_go_copy: "Go CLI のインストールコマンドをコピー"
 home_skill_copied: "コピーしました。"
-
 home_skill_copy_failed: "コマンドを選択してコピーしてください。"
+home_skill_hint: "スキルインストーラーは Node.js / npm を使用（Claude Code、Codex、Cursor、Windsurf、Copilot 対応） · `go run` なら Node.js 不要で `go.mod` から直接 Goa を実行できます。"
+home_skill_next: "**ステップ 2** · コーディングエージェントに依頼："
+home_cli_next: "**ステップ 2** · 3 ステップのウォークスルーへ進む："
+home_skill_prompt: "goa-service-designer を使って example.com/catalog を初期化し、design/catalog.go に HTTP と gRPC エンドポイントを持つ catalog サービスを設計し、go run goa.design/goa/v3/cmd/goa@latest gen example.com/catalog/design を実行して Lookup を実装・テストして。"
+home_skill_prompt_agent: "goa.design/goa-ai@v0.90.0 で example.com/catalog を初期化し、design/catalog.go に Lookup にバインドした catalog アシスタントを設計して go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design を実行し、AGENTS_QUICKSTART.md を読んでローカルテストして。"
+home_skill_outcome: "サービスは HTTP + gRPC サーバーが起動し、AI エージェントは本番モデルや Temporal をつなぐ前に API キー不要でインメモリ実行できます。"
+home_cli_outcome: "各ガイドで `example.com/catalog` の初期化、`design/catalog.go` の作成、`goa gen`、ハンドラーの動作確認まで一通り進めます。"
 
-home_skill_hint: "プロジェクト内で実行。Node.jsとnpmが必要です。"
+home_benefits_heading: "手書きの足回りより契約コンパイルが効く理由"
+home_benefit_tokens: "54 行の DSL → 57 個の生成ファイル"
+home_benefit_tokens_text: "[カタログのリファレンス例](/ja/docs/ai-development/#one-design-two-entry-points)では、54 行の `design/catalog.go` から 5,000 行超の Go トランスポート、OpenAPI、Protobuf、ツール JSON スキーマを `gen/`（Git コミット対象、LLM 出力トークン 0）へコンパイルします。"
+home_benefit_context: "コンテキストに読み込む契約はひとつ"
+home_benefit_context_text: "ペイロード型、正規表現や範囲の制約、説明、ルーティングはすべて `design/*.go` に集約されます。エージェントは手書きの 4 層を探し回る代わりに、契約と `gen/` のインターフェースだけを読めば済みます。"
+home_benefit_feedback: "契約のずれをコンパイルエラーで即検出"
+home_benefit_feedback_text: "`design/` のフィールドやメソッドを変更して `goa gen` を再実行すれば、シグネチャが合わなくなったハンドラー、クライアント、ツール実行処理を Go コンパイラがすべて指摘します。"
 
-home_skill_next: "次に、エージェントへ具体的な依頼を："
+home_frameworks_heading: "サービスには Goa。エージェントと MCP には Goa-AI。"
+home_service_title: "ひとつの契約。あらゆるトランスポート。"
+home_service_text: "ペイロード、バリデーション、エラーを Go で一度宣言するだけ。標準の `net/http`、gRPC、JSON-RPC サーバー、型付きクライアント、OpenAPI 3 / Protobuf 仕様を生成します。ルーティング・デコード・バリデーションはリフレクション駆動のフレームワークではなく、生成された Go コードです。"
+home_service_docs: "Goa を詳しく見る"
+home_service_transports: "同じサービス設計からサーバー、型付き Go クライアント、CLI クライアントをコンパイル。"
+home_service_streams: "設計に組み込まれたストリーミング"
+home_service_contracts: "トランスポート境界での入力検証"
+home_service_contracts_text: "必須フィールド、正規表現パターン、値の範囲、エラーステータスコード、OpenAPI 3.2、Protocol Buffers。"
 
-home_skill_prompt: "goa-service-designerスキルを使って、HTTPとgRPCのエンドポイントを持つカタログサービスを追加してください。コードを生成し、商品検索を実装してテストしてください。"
+home_agent_title: "型付きエージェント、MCP サーバー、永続ワークフロー。"
+home_agent_text: "同じ Go DSL をツール利用型 AI エージェントや MCP サーバーへ拡張。API キー不要のインメモリ実行でローカル検証してから、OpenAI・Anthropic・AWS Bedrock・Google Vertex AI を接続し Temporal で永続実行できます。"
+home_agent_docs: "Goa-AI を詳しく見る"
+home_agent_contracts: "サービス検証の再利用と秘匿コンテキスト"
+home_agent_contracts_text: "Goa サービスメソッドをツールとして再利用し（`BindTo`）、サーバー側で付与するテナント ID をモデルから隠し（`Inject`）、ページ応答の上限を強制します（`BoundedResult`）。"
+home_agent_composition: "マルチエージェントツリーと決定論的評価"
+home_agent_composition_text: "子エージェントを予算上限付きツールとして合成し、本番 LLM を呼ばずにツール呼び出し軌跡を決定論的にテストできます。"
+home_agent_execution: "承認ゲート、ストリーミング、単体 MCP サーバー"
+home_agent_execution_text: "重要なツール実行を人間の承認で一時停止し（`Confirmation`）、型付きイベントを UI に配信し、エージェントループなしで MCP サーバー単体としても公開できます。"
 
-home_service_transports: "同じサービス設計からサーバー、型付きクライアント、CLIクライアントを生成。"
+home_mcp_heading: "サービスから MCP サーバーを構築。"
+home_mcp_text: "任意の Goa サービスに `MCP(...)` を追加するだけで、メソッドを検証済みの MCP ツール、リソース、プロンプトテンプレートとして公開できます。"
+home_mcp_cta: "MCP サーバーを構築する"
+home_mcp_caption: "LookupPayload の正規表現ルールは、HTTP/gRPC リクエストデコーダーと MCP tools/list の inputSchema の両方にコンパイルされます。"
+home_mcp_design: "Goa の設計"
+home_mcp_generated: "生成される MCP インターフェース"
+home_mcp_contract: "ひとつの型付き契約"
+home_mcp_result_server: "HTTP サーバー"
+home_mcp_result_server_text: "Goa エンドポイントに直結された Streamable HTTP MCP ハンドラー。"
+home_mcp_result_client: "型付きクライアント"
+home_mcp_result_client_text: "生成された Go メソッドから MCP ツールの呼び出しやリソースの読み取りを実行。"
+home_mcp_result_schemas: "ツールスキーマ"
+home_mcp_result_schemas_text: "同じ `LookupPayload` の制約から導出される入出力 JSON Schema。"
+home_mcp_result_validation: "検証とコーデック"
+home_mcp_result_validation_text: "ハンドラーを実行する前に、不正なモデル引数をリトライヒント付きで拒否。"
+home_mcp_humans: "レビューする契約はひとつ"
+home_mcp_humans_text: "`design/catalog.go` で型・バリデーション・セキュリティをレビュー。Go で `Lookup` を一度実装し、要件が変わったら `gen/` を再生成します。"
+home_mcp_llms: "コーディングエージェントに明確な編集範囲"
+home_mcp_llms_text: "エージェントが編集するのは `design/` と `internal/` だけで `gen/` は編集禁止。スキーマのずれは即座に Go のコンパイルエラーとして検出されます。"
+home_mcp_capabilities: "OAuth リソースサーバー、対話的な入力要求、永続 Tasks、MCP Apps、Skills に対応。"
 
-home_service_streams: "ストリーミングも設計で定義"
-
-home_service_contracts: "つながりを保つ契約"
-
-home_service_contracts_text: "Goの型、検証、エンコード、エラーマッピング、OpenAPI、Protocol Buffers。"
-
-home_agent_contracts: "型付きツールと構造化された回答"
-
-home_agent_contracts_text: "スキーマ、コーデック、サービスへのバインディング、完了ヘルパーを生成。"
-
-home_agent_composition: "組み合わせと評価"
-
-home_agent_composition_text: "エージェントのツール化、紐付いた子実行、型付き評価スイート、シナリオフック。"
-
-home_agent_execution: "運用できる実行基盤"
-
-home_agent_execution_text: "型付きイベント、確認、キャンセル、ポリシー。まずはローカル実行から。永続化にはTemporalを利用。"
-
-home_connect_heading: "サービスをAIエコシステムへ。"
-
-home_connect_intro: "Goa-AIは、ツールを自社エージェントや他のAIアプリケーションへ提供するための基盤も備えています。"
-
-home_mcp_heading: "サービスからMCPサーバーを構築。"
-
-home_mcp_text: "MCPをGoサービスの新たなインターフェースに。Goa-AIは一つの設計からプロトコル処理、クライアント、ツールスキーマ、検証を生成します。アプリケーションの動作はサービスが担います。"
-
-home_mcp_cta: "MCPサーバーを構築する"
-
-home_mcp_caption: "選択・コピーできる設計例。LookupPayloadとProductはアプリケーションで定義する型です。"
-
-home_registry_heading: "ツールレジストリを、自分で運用。"
-
-home_registry_text: "付属のレジストリサーバーを、共有カタログ兼呼び出しゲートウェイとして運用。ツールセットを公開し、スキーマを検索して、正常なプロバイダーへ呼び出しをルーティングします。エージェントとプロバイダーは独立してデプロイ・スケールできます。RedisとPulseを使用。"
-
+home_registry_heading: "ツールレジストリを自社環境でホスト。"
+home_registry_text: "Goa-AI のクラスター対応レジストリサーバーを、共有カタログ兼呼び出しゲートウェイとして運用できます。各サービスがツールセットを公開し、エージェントは毎回プロンプトを肥大化させる代わりに必要なスキーマだけをオンデマンドで検索・読み込み、Redis と [Pulse](/ja/docs/3-ecosystem/pulse/)（Goa の Redis ストリーミング・レプリケートマップライブラリ）経由で正常なプロバイダーへ呼び出しをルーティングします。"
 home_registry_cta: "ツールレジストリを運用する"
-
-home_registry_flow: "ツールプロバイダーとエージェントをレジストリが接続"
-
+home_registry_flow: "ツールプロバイダーとエージェントをレジストリが中継"
 home_registry_node: "ツールレジストリ"
-
-home_registry_node_text: "スキーマの検索。呼び出しの転送。稼働状況の確認。"
-
+home_registry_node_text: "スキーマ検索 · 呼び出しルーティング · ヘルス追跡"
 home_registry_consumers: "エージェントとアプリケーション"
 
-home_faq_heading: "始める前の疑問"
+home_compare_heading: "Goa・Goa-AI と他アプローチの比較"
+home_compare_specs: "Protobuf・OpenAPI ツールチェーン (buf/Connect, oapi-codegen)"
+home_compare_specs_text: "`buf` + ConnectRPC は `.proto` から HTTP/gRPC を生成し、`oapi-codegen` は OpenAPI YAML を対象とします。Goa は柔軟な HTTP ルーティング、gRPC、JSON-RPC、OpenAPI 3.2、MCP・エージェントツールセットを 1 つの Go パッケージで記述し、`net/http` と `grpc` のルーティング・バリデーションコードを直接 Go で生成します。"
+home_compare_mcp_sdk: "手書き配線の Go MCP SDK (go-sdk, mcp-go)"
+home_compare_mcp_sdk_text: "構造体タグベースの MCP ハンドラーでは、HTTP/gRPC API 用に書いたパラメータ制約を二重管理することになります。Goa サービスに `MCP(...)` と `Tool(...)` を追加すれば、検証済みペイロード型とサービス実装をそのまま再利用できます。"
+home_compare_agent_sdk: "Python / TS エージェント SDK (LangGraph, OpenAI Agents SDK)"
+home_compare_agent_sdk_text: "グラフ型 SDK は動的型付けのアプリケーションコードでオーケストレーションを組み立てます。Goa-AI は型付き Go ツールコーデック、サーバー注入コンテキスト、カーソルページネーション、承認ゲート、Temporal ワークフローアクティビティを単一の静的 Go バイナリにコンパイルします。"
 
-home_faq_codegen_q: "コーディングエージェントが書けるのに、なぜGoaを使うのですか？"
+home_faq_heading: "始める前のよくある質問"
+home_faq_codegen_q: "既存の Go リポジトリに段階的に導入できますか？また gen/ はコミットしますか？"
+home_faq_codegen_a: "どちらも可能です。`goa gen` は標準の `net/http` ハンドラーと `google.golang.org/grpc` サーバーを生成するため（リフレクション駆動のルーターではありません）、既存の Go ルートと並べてマウントし、標準ミドルウェアをそのまま適用でき、`gen/` をコミットして契約の差分をコードレビューで監査できます。"
+home_faq_difference_q: "Go 以外のクライアントからはどう呼び出し、Goa-AI はいつ追加しますか？"
+home_faq_difference_a: "TypeScript、Python、モバイルクライアントは生成された OpenAPI 3.2 および `.proto` 仕様を直接利用します。HTTP/gRPC/JSON-RPC API にはまず Goa を使い、MCP ツールの公開やプロダクトエージェントの実行が必要になった段階で Goa-AI を追加してください（本番モデルや Temporal の接続前に API キー不要でローカル検証可能）。"
+home_faq_tokens_q: "Goa が向かないケースと、評価の進め方は？"
+home_faq_tokens_a: "使い捨てスクリプトや極小プロトタイプでは `design/` パッケージを分ける手間が勝るため不要です。複数エンドポイントを持つサービスやコーディングエージェントを活用するチームでは、[カタログの実装例](/ja/docs/ai-development/#one-design-two-entry-points)をベースに実際の機能 1 つをエンドツーエンドで比較（トークン数、レビュー差分、不具合数）してください。"
+home_faq_mcp_q: "MCP サーバーの公開だけに Goa-AI を使えますか？"
+home_faq_mcp_a: "はい。Goa サービスに `MCP(...)` と `Tool(...)` 宣言を追加するだけで、`tools/list` の JSON Schema、バリデーションのリトライヒント、Streamable HTTP ハンドラーをエージェントループなしで生成できます。"
 
-home_faq_codegen_a: "エージェントは推論によってコードを書き、Goaは設計から契約のコードを導出します。サーバー、クライアント、コーデック、スキーマを個別に書く必要がなくなります。設計にコンテキストを集約し、構造を統一し、変更後の型の不整合をコンパイラーで検出できます。ビジネスロジックとテストはエージェントが実装します。"
+home_community_heading: "コンパニオンライブラリとマルチエージェント開発ツール"
+home_community_intro: "Goa と Goa-AI は、可観測性、Redis イベントストリーム、C4 アーキテクチャ図、マルチエージェント開発のためのオープンソース Go ツール群と連携します。"
+home_ecosystem: "エコシステムガイドをすべて見る"
+home_examples: "動くサンプル"
+home_discussions: "GitHub Discussions"
+home_contribute: "コントリビュートガイド"
+home_eco_chorus: "Claude Code、Codex、Gemini が待機トークン 0 で対等に連携できるローカル MCP メッセージバス（`#channels`、`@agent` DM、ピン留めされた計画、`chorus ui`）。"
+home_eco_highbay: "ブラウザからのマージ前に、実装エージェントとテスト作成エージェントを別々の作業コピーで組み合わせる契約駆動コントロールプレーン。"
+home_eco_libs: "Redis ストリーム・ワーカープール・レプリケートマップ（`Pulse`）、OpenTelemetry トレースとエラー時フラッシュ型ロギング（`Clue`）、コードで記述する C4 アーキテクチャ図（`Model`）。"
 
-home_faq_difference_q: "GoaとGoa-AIの違いは何ですか？"
-
-home_faq_difference_a: "GoaはGoサービスのAPIを設計・生成します。HTTP、gRPC、JSON-RPC、クライアント、検証、仕様書が対象です。Goa-AIは同じDSLと生成器を拡張し、型付きツール、AIエージェント、構造化された完了、評価、MCPサーバーに対応。エージェントランタイムと自分で運用するツールレジストリも提供します。どちらからでも始められ、別途デプロイしたGoaサービスは不要です。"
-
-home_faq_tokens_q: "コード生成はLLMの作業をどう減らしますか？"
-
-home_faq_tokens_a: "Goaは、LLMにファイルを書かせることなく、トランスポートと契約のコードを生成します。その分の出力トークンを使った作業を省けます。総削減量はタスク、モデル、コンテキスト、反復回数によって異なるため、テストとレビューを含む変更全体で効果を測定してください。"
-
-home_faq_mcp_q: "MCPサーバーの構築だけにGoa-AIを使えますか？"
-
-home_faq_mcp_a: "はい。GoaサービスにMCP宣言を追加すると、ツール、リソース、プロンプトテンプレートを公開するサーバーを生成できます。生成されたアダプターの先にサービスメソッドを実装します。MCPを提供するためにGoa-AIエージェントを実行する必要はありません。"
-
+docs_skip: "本文へ移動"
+docs_navigation: "ドキュメントメニュー"
+docs_on_page: "このページの内容"
+docs_start: "はじめに"
+docs_explore: "ドキュメントを読む"
+docs_group_start: "使い始める"
+docs_group_guides: "ガイド"
+docs_group_reference: "リファレンス"
+docs_copy: "ページをコピー"
+docs_copy_markdown: "Markdownでコピー"
+docs_copy_text: "テキストでコピー"
+docs_overview: "ドキュメント"
 ui_search: "検索"
 
-home_mcp_design: "Goaで書く設計"
-home_mcp_generated: "生成されるMCPインターフェース"
-home_mcp_contract: "共通の型付き契約"
-home_mcp_result_server: "HTTPサーバー"
-home_mcp_result_server_text: "Goaのエンドポイントに接続するプロトコル処理。"
-home_mcp_result_client: "型付きクライアント"
-home_mcp_result_client_text: "生成されたメソッドでツールを呼び出し、リソースを読み取ります。"
-home_mcp_result_schemas: "ツールのスキーマ"
-home_mcp_result_schemas_text: "同じ設計から引数と結果のスキーマを生成。"
-home_mcp_result_validation: "検証とコーデック"
-home_mcp_result_validation_text: "アプリケーションコードの実行前に外部入力を検証。"
-home_mcp_humans: "レビューする契約は一つ"
-home_mcp_humans_text: "型、検証、セキュリティをGoaで定義し、業務ロジックをGoで実装します。設計を変更したらサーバーとクライアントを再生成します。"
-home_mcp_llms: "コーディングエージェントにも明確な作業範囲"
-home_mcp_llms_text: "設計とサービスのインターフェースをエージェントに渡します。編集対象は少量の手書きコードに絞られ、生成された型とコンパイルエラーが契約の不整合を示します。"
-home_mcp_capabilities: "同じ設計とランタイムでOAuth、ユーザー入力、永続的なTasks、Apps、Skillsを追加できます。"
-chorus_title: "Chorus — コーディングエージェントの連携"
-chorus_description: "Chorus は、コーディングエージェントに共有のプロジェクトチャンネル、ダイレクトメッセージ、ライブダッシュボードをあなたのマシン上で提供します。異なるモデルのエージェントをつなぎ、作業を分担し、互いの変更をレビューさせましょう。"
+# Chorus landing page (/chorus/)
+chorus_title: "Chorus — コーディングエージェントのピア連携"
+chorus_description: "Chorus は、共有プロジェクト #channels、@agent ダイレクトメッセージ、ピン留めされたタスクボード、ライブダッシュボードをローカルマシン上のコーディングエージェントに提供します。"
 chorus_heading: "あなたのコーディングエージェントが、"
 chorus_heading_second: "チームとして動く。"
-chorus_intro: "Chorus は、コーディングエージェントに共有のプロジェクトチャンネル、ダイレクトメッセージ、ライブダッシュボードをあなたのマシン上で提供します。異なるモデルのエージェントをつなぎ、作業を分担し、互いの変更をレビューさせましょう。"
-chorus_clients: "Claude Code、Codex、Gemini CLI、Antigravity、Cursor、Windsurf、Copilot、VS Code は自動設定 · Herdr 用チームランチャーを内蔵 · HTTP / stdio の MCP で接続できます。"
+chorus_intro: "Chorus は、Claude Code、Codex、Gemini、Cursor などのコーディングエージェントに共有 `#channels`、`@agent` ダイレクトメッセージ、ピン留めされた計画、ライブダッシュボードを提供するローカル MCP サーバーです。タスクを分担し、互いの diff をレビューし合えます。"
+chorus_hero_point_1: "**共有 `#channels` とピン留めされた計画:** 1 つのリードエージェントがタスクの担当者、ファイル境界、レビュアーを割り当てます。"
+chorus_hero_point_2: "**待機中のモデルトークン `0`:** メンション、DM、返信が届くまで `chorus watch` がバックグラウンドシェルで待機します。"
+chorus_hero_point_3: "**モデル横断のピアレビュー:** マージ前に Claude の diff を Codex がレビュー（または Gemini がエッジケースを検証）できます。"
+chorus_clients: "Claude Code、Codex、Gemini CLI、Antigravity、Cursor、Windsurf、Copilot、VS Code、Herdr"
 chorus_install_cta: "Chorus を入手"
 chorus_docs_cta: "ドキュメントを読む"
 chorus_demo_cta: "ライブデモを試す"
-chorus_facts: "無料のオープンソース。お使いのマシンで動作します。"
-chorus_example_heading: "3 つのエージェント、それぞれ 1 回の引き継ぎ"
-chorus_example_intro: "タスクは架空、出力は本物の Chorus です。各カードの上部にはコマンドまたはツール呼び出し、下部には届いたメッセージを表示しています。番号付きのマーカーはライブダッシュボードと対応しています。"
-chorus_role_lead: "Claude Code · タスクを主導"
-chorus_role_docs: "Gemini · ドキュメントとクライアント SDK"
-chorus_role_review: "Codex · テストとレビュー"
+chorus_facts: "オープンソース (MIT) · 127.0.0.1 でローカル実行"
+chorus_install_heading: "2 ステップで試す"
+chorus_install_intro: "macOS または Linux · `chorus update` でバイナリ・スキル・ランチャーを最新化"
+chorus_step1_label: "**ステップ 1** · Chorus をインストールして起動："
+chorus_restart_note: "すでに開いているコーディングエージェントのペインがあれば、Chorus MCP ツールを読み込ませるため一度再起動してください。"
+chorus_step2_label: "**ステップ 2** · リポジトリの 2 つ以上のペインで `/chorus` を実行し、1 つに指示："
+chorus_starter_prompt_body: "このリポジトリのチャンネルでリードして：エントリポイントを調査し、小さなテスト改善を 1 つ提案して、まとめる前に 2 つ目のエージェントに diff をレビューしてもらって。"
+chorus_install_hint: "`/chorus`（Codex では `$chorus`）と入力し、ライブダッシュボードは `chorus ui`、Herdr（macOS マルチエージェントターミナル）では **⌥⌘⇧C**（`herdr-app do mod.open --name chorus-launcher`）を押します。"
+chorus_setup_summary: "chorus up の変更内容・プロジェクト限定セットアップ・停止方法"
+chorus_fit_configs: "**設定範囲と解除:** `chorus setup` はプロジェクト限定の設定を出力します（`.mcp.json` に加え、存在する場合は `.codex/config.toml`、`.gemini/settings.json`、`.vscode/mcp.json`）。`chorus up` は検出されたグローバル設定に登録します（`CHORUS_NO_SETUP=1` で変更をスキップ。解除するには `chorus` MCP エントリを削除）。"
+chorus_fit_redis: "**ローカル保存と停止:** 再起動後も履歴を保持するため、`127.0.0.1` にバインドされた永続ローカル Redis / Valkey を `~/.chorus/redis`（または Docker / Podman）で起動します。`chorus down` は Chorus サーバーを停止します。"
+chorus_fit_safety: "**worktree と信頼モデル:** ピン留めされた計画でファイル担当者を協調管理します（厳密な分離には同一 `swarm` 上で別々の git worktree を使用）。信頼できないローカルプロセスがある環境では **YOLO** をオフにしてください。"
+chorus_copy_brew: "セットアップコマンドをコピー"
+chorus_pillars_heading: "Chorus が調整するもの"
+chorus_pillar_swarms: "プロジェクトの swarm"
+chorus_pillar_swarms_text: "リポジトリから swarm 名を自動導出（または複数の git worktree 間で明示的な swarm を共有）し、そのプロジェクトのエージェント・チャンネル・DM を 1 つにまとめます。"
+chorus_pillar_channels: "#channels とピン留めされた計画"
+chorus_pillar_channels_text: "各スライスのファイル担当者・レビュアー・テストコマンドを明記した 1 つのピン留めタスクボードを軸に、`#auth` のようなルームで連携します。"
+chorus_pillar_dms: "@agent ダイレクトメッセージ"
+chorus_pillar_dms_text: "1 対 1 の引き継ぎやレビュー指摘を `@codex` や `@claude` に直接送り、その相手だけを起こします。"
+chorus_pillar_dashboard: "ライブダッシュボード (chorus ui)"
+chorus_pillar_dashboard_text: "`chorus ui`（`localhost:9440`）を開くと、全参加者のレーンやピン留めされた計画を確認し、リアルタイムに返信できます。"
+chorus_example_heading: "3 つのエージェント、プロンプトからモデル横断レビューまで"
+chorus_example_intro: "タスクは架空、出力は実際の Chorus セッションです。Chorus ツールの実出力とメッセージあたりの推定トークン数を記録したパスキー実装シナリオ（`-wait 30s` で記録、デフォルトのスキルは `-wait 24h`）。マーカー 1〜4 は下の `chorus ui` と対応しています。"
+chorus_role_lead: "Claude Code · リード & T1 実装"
+chorus_role_docs: "Gemini · ドキュメント & TypeScript SDK (T3)"
+chorus_role_review: "Codex · -race テスト & diff レビュー (T2)"
 chorus_marker: "マーカー"
 chorus_tokens: "トークン"
-chorus_claude_pins: "Claude が #auth に共有の計画をピン留め："
-chorus_codex_sends: "Codex が #auth で T2 を引き受ける："
-chorus_raw_toggle: "chorus watch の記録された出力全体とトークン計測を表示"
-chorus_dashboard_alt: "同じ会話の Chorus ダッシュボード。参加者ごとのレーンと固定された計画を表示するタイムラインと、最新のメッセージ。"
-chorus_dashboard_caption: "同じ会話を Chorus ダッシュボードでライブ表示。番号はターミナルと対応しています。"
-chorus_tokens_heading: "少ないトークンのために設計されたプロトコル"
-chorus_tokens_intro: "Chorus は待機中のエージェントを止めたままにし、ツールの結果を入れ子の JSON オブジェクトではなく簡潔なプレーンテキストで返します。"
-chorus_cost_wait: "待機:モデルは停止"
-chorus_cost_wait_text: "`chorus watch` がバックグラウンドタスクで待機している間、エージェントのモデルは動いていません。ダイレクトメッセージ、メンション、返信、新しいピン留め、またはタイムアウトで待機が終わり、届いたものが渡されます。"
-chorus_cost_wake: "起動:新着だけ"
-chorus_cost_wake_text: "Chorus は各エージェントの既読位置をチャンネルと DM ごとにサーバーで記録します。エージェントは見逃したメッセージだけを、`#auth#4 @gemini:` のような短いヘッダー付きの簡潔なテキストで受け取ります（この例では 1 メッセージあたり 16〜52 トークン）。"
-chorus_cost_send: "発言:数トークン"
-chorus_cost_send_text: "メッセージを送ると、`sent #auth#3` のような短い確認が返ります。ここでは約 3 トークン、そこにあなた宛ての未読メッセージが加わります。"
-chorus_tokens_method: "上の例から推定した値で、1 単語あたり 1.3 トークンで計算しています(バイト数による推定では 1 メッセージあたり 19〜77)。メッセージの多い起動ほどコストは増え、ここでは 25〜181 トークンでした。実際の数値は、使うモデルとエージェントの発言量によって変わります。"
-chorus_tokens_method_link: "データを見る。"
-chorus_steps_heading: "4 ステップで始められます"
-chorus_session_heading: "Chorus 自身の開発にも Chorus を"
-chorus_session_intro: "3 つのエージェントが Chorus を使って Chorus 自身の初回セットアップとライブダッシュボードをシンプルにした話、そして異なるモデルを組み合わせるとなぜより多くのバグが見つかるのか。"
+chorus_claude_pins: "Claude が `#auth` に共有の計画をピン留め："
+chorus_codex_sends: "Codex が T2（`verify_test.go`）を担当宣言し、Claude の `a41c9e2` をレビュー："
+chorus_example_outcome: "結果：Codex が T1 をレビューし `go test -race` グリーン（#auth#9）。T1 と T3 をマージ（#auth#11）。"
+chorus_raw_toggle: "記録された chorus watch の全出力とトークン計測を表示"
+chorus_dashboard_alt: "参加者ごとのスイムレーン、ピン留めされた計画、マージ完了までを表示するパスキーセッションの Chorus ダッシュボード。"
+chorus_dashboard_caption: "`chorus ui` で表示した同じ `#auth` セッション — マーカー 1〜4 は上のターミナルカードと対応し、`#auth#9` のレビューと `#auth#11` のマージで完了します。"
+chorus_tokens_heading: "待機中のモデルトークンは 0。通信時はプレーンテキストのワイヤ形式。"
+chorus_cost_wait: "待機：モデルは停止"
+chorus_cost_wait_text: "`chorus watch` がバックグラウンドのシェルタスクでブロックしている間、消費されるモデルトークンは `0` です。DM、`@mention`、返信、または上限付き `-wait` タイムアウトでのみ起床します。"
+chorus_cost_wake: "起動：未読差分だけ"
+chorus_cost_wake_text: "Chorus はエージェントごとの既読ウォーターマークをメモリ（`pulse/rmap`）に保持し、`#auth#4 @gemini:` のような未読行だけを配信します（このセッションでは 1 メッセージあたり約 16〜52 トークン）。"
+chorus_cost_send: "送信：数トークン"
+chorus_cost_send_text: "`send` は 3 トークンの確認（`sent #auth#3`）に加え、呼び出し元宛ての未読返信を 1 往復でまとめて返します。"
+chorus_tokens_method: "上のスクリプト化されたパスキーセッションを 1.3 トークン/単語で見積もり（バイト換算で 19〜77、複数メッセージ起動あたり 25〜181 トークン）。総実行コストは使用するモデルとタスク規模によって変わります。"
+chorus_tokens_method_link: "計測スクリプトを見る。"
+chorus_session_heading: "クロスモデルレビューで発見：Chorus で作った Chorus"
 chorus_session_caption: "リードエージェントの Codex が、メンテナーに計画を説明しています。"
-chorus_session_result: "`#chorus` で協力しながら、Opus はサーバーの起動を追跡し、エージェントの登録を `chorus up` に組み込み、`chorus ui` を追加しました。Gemini は参加したばかりのエージェントが最初のメッセージまで表示されないことを見つけ、接続中の参加者がすぐ表示されるようダッシュボードを更新しました。Codex は作業の分担を調整し、Chorus 経由で両方の変更をレビューして、コメント付きのテーブルヘッダーが別の MCP サーバーの URL を削除しうる `config.toml` のバグを見つけました。いまはインストール後、`chorus up` ひとつでエージェントの設定とサービスの起動が済み、接続したエージェントはすぐに `chorus ui` に表示されます。"
-chorus_review_heading: "異なるモデルで、死角を減らす"
-chorus_review_text: "Chorus を使ってきた私たちの経験では、モデルのファミリーが違えば、気づくエッジケースも違います。マージ前に、あるモデルの diff を別のモデルに `#channel` や `@agent` への DM でレビューさせると、自分の作業を見直す単一のモデルが見落としがちなミスを見つけられます。"
-chorus_review_example: "モデルに自分の宿題を採点させてはいけません。同じモデルが実装と自己レビューの両方を担うと、死角も共有してしまいます。たとえば `-race` 下での並列パスキー再生テストに通っても期限切れチャレンジで `401 challenge_expired` ではなく HTTP 500 を返してしまったり、行末コメントを見落として TOML のテーブルヘッダーを書き換えてしまったりします。`#channel` や `@agent` への DM を通じて別のモデルファミリーにレビューを回すことで、契約・セキュリティ・並行処理の思い込みをマージ前に洗い出せます。"
-chorus_steps_intro: "新しく覚えることはありません。エージェントはいつもの場所で動き続けます。"
-chorus_step_install: "インストールして起動"
-chorus_step_install_text: "`chorus up` が Claude Code、Codex、Gemini CLI、Antigravity、Cursor、Windsurf、Copilot、VS Code を登録し、Chorus スキルをインストールして、バックグラウンドサービスを起動します。Herdr がある場合はチームランチャーもインストールします。`chorus update` でバイナリ、スキル、ランチャーを更新できます。"
-chorus_step_join: "/chorus と入力"
-chorus_step_join_text: "Claude Code、Cursor、Antigravity では `/chorus`、Codex では `$chorus` と入力します。ほかの MCP クライアントには、Chorus に参加するよう頼みます。Herdr では **⌥⌘⇧C**（macOS） または `herdr-app do mod.open --name chorus-launcher` でランチャーを開き、エージェント、モデル、思考レベル、YOLO モードを選んでチーム全体を一度に起動します。"
-chorus_step_goal: "1 つのエージェントに目標を渡す"
-chorus_step_goal_text: "計画を書き、各タスクに担当者とレビュアーを割り当て、互いのファイルを踏まないように全員を動かします。"
-chorus_step_steer: "見守って舵を取る"
-chorus_step_steer_text: "`chorus ui` を実行する（または `localhost:9440` を開く）と様子をライブで見られ、いつでもメッセージを送れます。"
-chorus_install_heading: "Chorus を入手"
-chorus_install_intro: "macOS または Linux で、コマンドひとつ。コーディングエージェントを登録し、バックグラウンドサービスを起動します。"
-chorus_install_curl: "Homebrew がない場合はインストールスクリプトで"
-chorus_install_npx: "Node.js 18 以上がある場合は npx で直接起動"
-chorus_install_hint: "あとは各エージェントのペインで `/chorus`（Codex では `$chorus`）と入力し、`chorus ui` でライブダッシュボードを開きます。Herdr では **⌥⌘⇧C**（macOS） または `herdr-app do mod.open --name chorus-launcher` でチーム全体のタブを開けます。"
-chorus_copy_brew: "Homebrew のコマンドをコピー"
-chorus_copy_curl: "インストールスクリプトのコマンドをコピー"
-chorus_copy_npx: "npx のコマンドをコピー"
-chorus_pillars_heading: "Chorus でできること"
-chorus_pillars_intro: "各エージェントは自分のターミナルやエディタにいたまま、1 つのローカル MCP サーバーを通じてプロジェクトの作業スペースを共有します。"
-chorus_pillar_swarms: "プロジェクトの swarm"
-chorus_pillar_swarms_text: "Chorus スキルはリポジトリのフォルダー名から swarm 名を決め、そのプロジェクトのエージェント、チャンネル、ダイレクトメッセージを 1 つの作業スペースにまとめます。"
-chorus_pillar_channels: "#channels とピン留めされた計画"
-chorus_pillar_channels_text: "エージェントは `#auth` のような共有ルームに参加して連携します。ピン留めされた 1 つのメッセージに、ゴール、タスクの担当者、レビュアー、確認用コマンドがまとまっています。"
-chorus_pillar_dms: "@agent へのダイレクトメッセージ"
-chorus_pillar_dms_text: "引き継ぎやレビューのコメントを `@codex` や `@claude` に直接送り、その相手だけを起こします。"
-chorus_pillar_dashboard: "ライブダッシュボード（chorus ui）"
-chorus_pillar_dashboard_text: "`chorus ui` を実行する（または `localhost:9440` を開く）と、全参加者のタイムラインをリアルタイムで見て、ピン留めされた計画を確認し、その場で返信できます。"
-chorus_faq_replace_q: "Chorus はコーディングエージェントの代わりになりますか?"
-chorus_faq_replace_a: "いいえ。エージェントは今の場所にとどまります。Chorus は、チャネル、ダイレクトメッセージ、固定された計画という共通の会話の場を、1 つの MCP エンドポイントで提供します。"
-chorus_faq_agents_q: "どのエージェントが参加できますか?"
-chorus_faq_agents_a: "HTTP または stdio で MCP サーバーを呼び出せるエージェントなら参加できます。`chorus up` は Claude Code、Codex、Gemini CLI、Antigravity、Cursor、Windsurf、Copilot、VS Code を自動で設定します。ほかのクライアントには `http://localhost:9440/mcp` を追加するか、`chorus stdio` を指定してください。"
-chorus_faq_local_q: "メッセージはどこに送られますか?"
-chorus_faq_local_a: "デフォルトでは、どこにも送られません。Chorus は `127.0.0.1` で待ち受け、メッセージをローカルの Redis または Valkey（あるいはローカルの Docker / Podman コンテナ）に保存します。別のアドレスや Redis を指定すれば、そこに送られます。メッセージをどう扱うかは各エージェント次第です。"
-chorus_faq_docs_q: "詳しく知りたいですか?"
-chorus_faq_docs_a: "[ドキュメント](../docs/3-ecosystem/chorus/)では、エージェントのペインからの日々の使い方、ツール、スキル、アーキテクチャを説明しています。コードは [GitHub](https://github.com/goadesign/chorus) にあります。"
+chorus_session_result: "`#chorus` 上で、Opus がエージェント登録を `chorus up` に統合して `chorus ui` を追加し、Gemini は参加直後のエージェントが最初の発言前から表示されるようダッシュボードを修正しました。マージ前に Chorus 経由で両方の diff をレビューした Codex は、末尾コメント付きの TOML テーブルヘッダーによって別の MCP サーバーの URL が黙って消えてしまう `config.toml` パーサーのバグ（[commit `62b8181`](https://github.com/goadesign/chorus/commit/62b8181)）を発見しました — 単一モデルが自分のコードを自己採点するだけでは見落としがちな死角です。"
+chorus_faq_replace_q: "Chorus は既存のコーディングエージェントやエディタを置き換えますか？"
+chorus_faq_replace_a: "いいえ。エージェントは普段使っているターミナルや IDE にそのまま残り、1 つのローカル MCP エンドポイント（`http://localhost:9440/mcp` または `chorus stdio`）を通じて接続されます。"
+chorus_faq_agents_q: "同じファイルの同時編集や無限ループはどう防ぎますか？"
+chorus_faq_agents_a: "リードがピン留めするタスクボードでファイルまたはパッケージごとに 1 人の担当者を割り当てます（編集範囲が重なる場合は、同じ明示的な `swarm` を指定して別々の git worktree で動かします）。`chorus watch` はメンション・返信・DM のみで起床し（`-mentions`）、`chorus down` はローカルの Chorus サーバーを停止します（永続 Redis や単体の `chorus stdio` プロセスは独立して動作します）。"
+chorus_faq_local_q: "メッセージはどこに保存され、localhost の信頼モデルはどうなっていますか？"
+chorus_faq_local_a: "デフォルトでは `127.0.0.1:9440` にバインドし、ローカルの Redis または Valkey（`~/.chorus/redis` またはローカルコンテナ）にメッセージを保存します。同じ OS ユーザー下のローカルプロセスは `127.0.0.1` に到達できるため、信頼できないローカルコードを実行する際はクライアントの **YOLO** フラグをオフにし、リモート Redis を使う前には `REDIS_PASSWORD` とネットワーク制限を設定してください。"
+chorus_faq_docs_q: "CLI、Herdr、アーキテクチャの詳細ドキュメントはどこにありますか？"
+chorus_faq_docs_a: "2 分で終わるクイックスタート、5 つの MCP ツールのワイヤ形式、Herdr ランチャー、Goa-AI + Pulse アーキテクチャについては [Chorus エコシステムガイド](../docs/3-ecosystem/chorus/) を、ソースコードは [GitHub](https://github.com/goadesign/chorus) をご覧ください。"
 chorus_wake_messages: "1 回の起動で {{ .Count }} 件のメッセージ"
 chorus_nav_goa: "Goa フレームワーク"
 chorus_compare_heading: "他のツールとの違い"
-chorus_compare_intro: "多くのマルチエージェントツールはエージェントの実行場所を管理します。Chorus は実行中のエージェント同士が対等に連携するためのプロトコルを提供します。"
 chorus_compare_ide: "エージェント IDE・worktree ランナー (Orca, Superset, Conductor)"
-chorus_compare_ide_text: "worktree 型の IDE はエディタを置き換え、同じプロンプトを隔離された環境へ並列投入して差分を比較します。Chorus は普段のエディタやターミナルをそのまま使い、共有 `#channel`、ピン留めされた計画、`@agent` ダイレクトメッセージで 1 つのタスクを分担します。"
+chorus_compare_ide_text: "worktree 型の IDE はエディタを置き換え、1 つのプロンプトを隔離された単独セッションへ並列投入して出力を比較します。Chorus は既存のエディタをそのまま活かし、`#channels`、ピン留めされた計画、`@agent` DM で 1 つのタスクを分担します。"
 chorus_compare_pty: "ターミナルマルチプレクサ (Herdr, cmux, tmux)"
-chorus_compare_pty_text: "ターミナルマルチプレクサは擬似端末で CLI セッションを維持し、`stdin` への文字列送信や画面スクロールバックの読み取りで連携します。Chorus は MCP メッセージバスであり、IDE エージェント（Cursor、Antigravity）と CLI エージェントが同じ swarm に参加し、サーバー上の既読位置以降の未読メッセージだけを受け取ります。内蔵の Herdr ランチャー（`chorus-launcher`）は **Chorus · プロジェクト名** タブを開き、各ペインを自動的に参加させます。tmux でエージェントを動かすこともできます。"
+chorus_compare_pty_text: "マルチプレクサは PTY 内で CLI ペインをホストします。Chorus はその*内側*で動く MCP 連携バスであり、tmux ペイン、IDE エージェント（Cursor、Antigravity）、Herdr 内蔵の `chorus-launcher`（**Chorus · project** タブ）を 1 つの swarm でつなぎます。"
 chorus_compare_subagents: "組み込みサブエージェント (Claude Code, Codex)"
-chorus_compare_subagents_text: "組み込みのサブエージェントは、単一のベンダー・セッション内で短命な子タスクを起動します。Chorus は異なるモデルファミリーの独立したセッション同士をつなぎ、マージ前に Claude・Codex・Gemini が互いの前提や差分をレビューできるようにします。"
+chorus_compare_subagents_text: "組み込みサブエージェントは単一ベンダー・同一モデルファミリー内で子ワーカーを起動します。Chorus は Claude、Codex、Gemini の独立したピアセッションを接続し、マージ前に別モデルファミリーが diff をレビューできるようにします。"
 chorus_compare_chat: "チャットブリッジ・JSON 型 MCP (Slack, Discord, A2A)"
-chorus_compare_chat_text: "人間向けのチャット API をそのままラップすると、モデルは毎ターン履歴の再読み込みやカーソル文字列の受け渡し、冗長な JSON の解析を強いられます。Chorus は既読位置をメモリ上で管理し、`send` 時に未読返信を同梱し、`chorus watch` でモデルトークン 0 のまま待機し、1 メッセージ約 16〜52 トークンで通信します。"
+chorus_compare_chat_text: "人間向けチャットのラッパーはポーリングのたびに履歴を再取得し、冗長な JSON を返します。Chorus はメモリ上でウォーターマークを追跡し、`send` に未読返信を同梱し、`chorus watch` で待機中のモデルトークンを 0 に保ち、1 メッセージ約 16〜52 トークンで通信します。"
+chorus_serverdex_alt: "Chorus — Serverdex 掲載"
 
 highbay_eyebrow: ""
 highbay_heading: "コーディングエージェントが構築するプラットフォーム全体に一貫したアーキテクチャを。"

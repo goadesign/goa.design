@@ -23,12 +23,13 @@ as an automatic preparation step. Distinguish pre-existing drift from changes ca
 
 - Prefer the project's wrapper command, such as `make gen`, `scripts/gen`, or a task runner entry.
 - Check the project's selected Goa module, including `replace` directives, before choosing tooling.
+  Check that release's Go toolchain requirements before upgrading the module.
 - If there is no wrapper, use
   `go run goa.design/goa/v3/cmd/goa gen <design-package-import-path>`. A standalone `goa` command
   should match the project's module version.
 - Never use `goa gen ./design`; Goa expects a Go import path.
-- For gRPC, follow the selected release's protobuf compiler and plugin requirements. The preview
-  checks `protoc-gen-go` and `protoc-gen-go-grpc` versions; do not fix a mismatch by changing
+- For gRPC, follow the selected release's protobuf compiler and plugin requirements. Goa v3.31
+  and later check `protoc-gen-go` and `protoc-gen-go-grpc` versions; do not fix a mismatch by changing
   generated files or upgrading the application without authorization.
 - `goa example` creates missing starter files without overwriting existing files. It can scaffold
   a newly added service, but existing application wiring must be updated explicitly.

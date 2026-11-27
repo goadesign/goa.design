@@ -2,7 +2,7 @@
 nav_group: start
 title: Quickstart
 weight: 10
-description: "Complete guide to installing Goa and building your first service - from setup to running a working HTTP endpoint."
+description: "Install Goa, write a service contract, run goa gen, and serve a working HTTP endpoint in five minutes."
 llm_optimized: true
 aliases:
 ---

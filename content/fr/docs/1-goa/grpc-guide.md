@@ -2,7 +2,7 @@
 nav_group: guides
 title: gRPC Guide
 weight: 30
-description: "Complete guide to gRPC transport in Goa - service design, streaming patterns, error handling, and Protocol Buffer integration."
+description: "Correspondances de services et de messages, RPC unaires et en streaming, codes d’état et génération de Protocol Buffers."
 llm_optimized: true
 aliases:
 ---

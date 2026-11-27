@@ -111,12 +111,12 @@ This catalog exposes the same operation over **HTTP, gRPC, and JSON-RPC**, and g
 
 Create a module and install the versions used for this example:
 
-This guide uses the `v0.89.0` Goa-AI release (requiring Go 1.27.3 or later). Its Go module selects the matching Goa dependency (`v3.35.0`). Run the generator through `go run` so it uses that selected version.
+This guide uses the `v0.90.0` Goa-AI release (requiring Go 1.27.3 or later). Its Go module selects a compatible Goa `v3.35+` dependency automatically (or run `go get goa.design/goa/v3@v3.36.0` to pin the latest Goa release). Run the generator through `go run` so it uses the module's selected version.
 
 ```bash
 mkdir catalog && cd catalog
 go mod init example.com/catalog
-go get goa.design/goa-ai@v0.89.0
+go get goa.design/goa-ai@v0.90.0
 mkdir design
 ```
 
@@ -190,9 +190,12 @@ go test ./...
 ```
 
 Inspect the generated service interface, HTTP server and client, OpenAPI
-specifications, agent tool schemas and codecs, and `AGENTS_QUICKSTART.md`.
-Application scaffolding is a starting point: implement lookup behavior and
-replace the example planner before using it in a product.
+specifications, agent tool schemas and codecs, and `AGENTS_QUICKSTART.md`. On
+this 54-line `design/catalog.go`, `goa gen` produces 57 files under `gen/`
+(5,388 lines in total: 5,108 lines of Go plus OpenAPI, Protobuf, and tool JSON schemas) plus
+`AGENTS_QUICKSTART.md` without spending model output tokens. Application
+scaffolding is a starting point: implement lookup behavior and replace the
+example planner before using it in a product.
 
 ## A useful task prompt
 
