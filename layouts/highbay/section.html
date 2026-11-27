@@ -285,7 +285,7 @@ highbay up</code></pre>
     Confirmation(func() {
       Title("Confirm prod rollback")
       PromptTemplate("Roll back {{.svc}}?")
-      DeniedResultTemplate(` + "`" + `{"ok":false}` + "`" + `)
+      DeniedResultTemplate("{\"ok\":false}")
     })
   })
 })` "go" "" }}
