@@ -62,24 +62,24 @@
   <!-- Column 2: Generated -->
   <rect x="260" y="28" width="192" height="292" rx="8" class="panel"/>
   <rect x="260" y="28" width="192" height="36" rx="8" class="head"/>
-  <text x="356" y="51" text-anchor="middle" class="head-ink">2. Generated (gen/)</text>
+  <text x="356" y="51" text-anchor="middle" class="head-ink">2. Generated Output</text>
 
   <rect x="274" y="78" width="164" height="34" rx="5" class="chip"/>
-  <text x="356" y="99" text-anchor="middle" class="ink">JSON Schemas &amp; Codecs</text>
+  <text x="356" y="99" text-anchor="middle" class="ink">gen/ Schemas &amp; Codecs</text>
 
   <rect x="274" y="122" width="164" height="34" rx="5" class="chip"/>
-  <text x="356" y="143" text-anchor="middle" class="ink">Service &amp; MCP Adapters</text>
+  <text x="356" y="143" text-anchor="middle" class="ink">gen/ Service &amp; MCP</text>
 
   <rect x="274" y="166" width="164" height="34" rx="5" class="chip"/>
-  <text x="356" y="187" text-anchor="middle" class="ink">Workflow &amp; Activity Specs</text>
+  <text x="356" y="187" text-anchor="middle" class="ink">gen/ Workflow Specs</text>
 
   <rect x="274" y="210" width="164" height="34" rx="5" class="chip"/>
-  <text x="356" y="231" text-anchor="middle" class="ink">Completion &amp; Prompt Render</text>
+  <text x="356" y="231" text-anchor="middle" class="ink">gen/ Prompt Render</text>
 
   <rect x="274" y="254" width="164" height="34" rx="5" class="chip"/>
   <text x="356" y="275" text-anchor="middle" class="mono">AGENTS_QUICKSTART.md</text>
 
-  <text x="356" y="308" text-anchor="middle" class="muted">Never hand-edited</text>
+  <text x="356" y="308" text-anchor="middle" class="muted">gen/ + root guide (generated)</text>
 
   <!-- Arrow 2 -> 3 -->
   <line x1="456" y1="174" x2="488" y2="174" class="wire" marker-end="url(#arr)"/>
@@ -135,5 +135,5 @@
   <rect x="734" y="290" width="144" height="22" rx="5" class="chip"/>
   <text x="806" y="305" text-anchor="middle" class="muted">Pulse Streams · Registry</text>
 
-  <text x="460" y="354" text-anchor="middle" class="muted">Static contracts stay in design/*.go; generated codecs, schemas, and bindings live in gen/; application code owns planners and services.</text>
+  <text x="460" y="354" text-anchor="middle" class="muted">Contracts live in design/*.go; goa gen writes codecs/schemas to gen/ and AGENTS_QUICKSTART.md at the module root.</text>
 </svg>

@@ -9,62 +9,162 @@ permissions:
   contents: read
 
 jobs:
-  update-skills:
+  refresh-skills:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+      lock_hash: ${{ steps.check.outputs.lock_hash }}
+    steps:
+      - name: Checkout repository without persisted credentials
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Update skills with pinned CLI
+        run: npx --yes skills@1.9.0 update --project --yes
+
+      - name: Verify scoped skill diff and validate site build
+        id: check
+        run: |
+          outside="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(\.agents/skills/|skills-lock\.json$)' || true)"
+          if [ -n "$outside" ]; then
+            echo "Unexpected modifications outside .agents/skills/ and skills-lock.json:" >&2
+            echo "$outside" >&2
+            exit 1
+          fi
+
+          if [ -z "$(git status --porcelain -- .agents/skills skills-lock.json)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "All agent skills are up to date."
+            exit 0
+          fi
+
+          lock_hash="$(shasum -a 256 skills-lock.json | cut -c1-12)"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "lock_hash=$lock_hash" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Hugo
+        if: steps.check.outputs.changed == 'true'
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.169.0'
+          extended: true
+
+      - name: Validate Hugo build and internal links
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          export PATH="$PWD/bin:$PWD/node_modules/.bin:$PATH"
+          hugo --ignoreCache --minify
+          npm run check:links
+
+      - name: Package updated skill files
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/skills-bundle"
+          tar -cf "$RUNNER_TEMP/skills-bundle/skills.tar" skills-lock.json .agents/skills
+
+      - name: Upload refreshed skills bundle
+        if: steps.check.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: refreshed-agent-skills-${{ steps.check.outputs.lock_hash }}
+          path: ${{ runner.temp }}/skills-bundle/skills.tar
+          if-no-files-found: error
+          retention-days: 7
+
+  open-pr:
+    needs: refresh-skills
+    if: needs.refresh-skills.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Checkout repository
+      - name: Checkout base branch
         uses: actions/checkout@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
         with:
-          node-version: 'latest'
-          check-latest: true
+          fetch-depth: 1
 
-      - name: Update skills from skills-lock.json
-        run: npm run skills:update
+      - name: Download refreshed skills bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: refreshed-agent-skills-${{ needs.refresh-skills.outputs.lock_hash }}
+          path: ${{ runner.temp }}/skills-bundle
 
-      - name: Open or update pull request if skills changed
+      - name: Apply scoped skill files and open pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOCK_HASH: ${{ needs.refresh-skills.outputs.lock_hash }}
         run: |
+          branch="chore/update-agent-skills-${LOCK_HASH}"
+
+          # Verify tar archive contains only skills-lock.json and .agents/skills/* paths without traversal.
+          bad_paths="$(tar -tf "$RUNNER_TEMP/skills-bundle/skills.tar" | grep -Ev '^(skills-lock\.json|\.agents/skills(/.*)?)$' || true)"
+          if [ -n "$bad_paths" ]; then
+            echo "Refusing unexpected archive entries:" >&2
+            echo "$bad_paths" >&2
+            exit 1
+          fi
+
+          rm -rf .agents/skills skills-lock.json
+          tar -xf "$RUNNER_TEMP/skills-bundle/skills.tar"
+
           if [ -z "$(git status --porcelain -- .agents/skills skills-lock.json)" ]; then
-            echo "All agent skills are up to date."
+            echo "No changes relative to current base branch."
             exit 0
           fi
 
-          branch="chore/update-agent-skills"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B "$branch"
+          git checkout -b "$branch"
           git add -- .agents/skills skills-lock.json
 
           summary="$(git diff --cached --stat -- .agents/skills skills-lock.json)"
-          git commit -m "chore(skills): update pinned agent skills"
-          git push --force-with-lease origin "$branch"
+          git commit -m "chore(skills): update pinned agent skills (${LOCK_HASH})"
 
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "Remote branch $branch already exists; skipping push to preserve remote history."
+          else
+            git push origin "HEAD:refs/heads/$branch"
+          fi
+
+          existing="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "Pull request #$existing is already open for $branch."
+            exit 0
+          fi
+
+          prior="$(gh pr list --search 'head:chore/update-agent-skills- is:open' --base main --json number --jq '[.[].number | "#\(.)"] | join(", ")')"
           body_file="$(mktemp)"
           {
-            echo "Automated weekly refresh of repository agent skills via \`npm run skills:update\` (\`skills-lock.json\`)."
+            echo "Automated weekly refresh of repository agent skills via \`npx --yes skills@1.9.0 update --project --yes\` (\`skills-lock.json\` \`${LOCK_HASH}\`)."
             echo ""
-            echo "Review any changed \`SKILL.md\` instructions or scripts carefully before merging, since agent skills execute with full coding-agent permissions."
+            echo "Review any changed \`SKILL.md\` instructions, references, or scripts carefully before merging, and update \`.agents/THIRD_PARTY_NOTICES.md\` if upstream license or notice files changed."
+            if [ -n "$prior" ]; then
+              echo ""
+              echo "Supersedes open skill-update PR(s): ${prior}."
+            fi
             echo ""
             echo '```text'
             echo "$summary"
             echo '```'
           } > "$body_file"
 
-          existing="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')"
-          if [ -n "$existing" ]; then
-            gh pr edit "$existing" --body-file "$body_file"
-          else
-            gh pr create \
-              --base main \
-              --head "$branch" \
-              --title "chore(skills): update pinned agent skills" \
-              --body-file "$body_file"
-          fi
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "chore(skills): update pinned agent skills (${LOCK_HASH})" \
+            --body-file "$body_file"
           rm -f "$body_file"

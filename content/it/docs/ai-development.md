@@ -7,6 +7,7 @@ description: "Fornisci al tuo coding agent un contratto esplicito, genera il cod
 
 Goa supporta due attività complementari: **sviluppare software con un coding agent** e **integrare agenti IA in quel software**. Lo stesso flusso design-first aiuta in entrambi i casi. Goa genera i contratti dei servizi; Goa-AI estende la generazione a tool, output strutturati e integrazione degli agenti.
 
+{{< anchors "perché-la-generazione-cambia-il-lavoro" >}}
 ## Perché la generazione cambia il flusso di lavoro
 
 Quando un LLM scrive separatamente handler, client, schemi JSON e validazione, deve mantenere allineate tutte queste rappresentazioni. Goa le deriva dal design, lasciando che il modello si concentri su requisiti, decisioni di dominio e implementazione.
@@ -38,6 +39,7 @@ L'impostazione predefinita è locale al progetto. Aggiungi `--global` per un'ins
 
 ## Il ciclo di sviluppo
 
+{{< anchors "1-fornisci-il-contesto-necessario" >}}
 ### 1. Fornisci il contesto rilevante
 
 Consegna al coding agent l'obiettivo, i file di design e l'implementazione da modificare. Per un servizio, installa la [skill Goa service designer](https://github.com/goadesign/goa/tree/v3/skills) seguendo le istruzioni del tuo strumento.
@@ -46,6 +48,7 @@ Per Goa-AI, leggi anche **`AGENTS_QUICKSTART.md`** nella radice dell'applicazion
 
 Usa le pagine Markdown di questo sito o l'[indice della documentazione](/it/llms.txt) per fornire materiale di riferimento mirato. Evita di caricare per impostazione predefinita tutti i trasporti generati nel contesto del modello; ispezionali quando il task lo richiede.
 
+{{< anchors "2-modifica-prima-il-progetto" >}}
 ### 2. Modifica prima il design
 
 Descrivi operazioni, payload, risultati, errori e vincoli in `design/`. Metti la validazione strutturale nel design. Mantieni autorizzazione e regole di business nel livello applicativo che ne è responsabile.
@@ -60,6 +63,7 @@ goa gen example.com/catalog/design
 
 Implementa o aggiorna le interfacce generate nei file di proprietà dell'applicazione. `goa example` crea i file iniziali una sola volta e non aggiorna la logica di business esistente quando il design cambia. Non modificare mai `gen/` per far sparire un errore del compilatore: correggi il design o l'implementazione applicativa e rigenera.
 
+{{< anchors "4-verifica-il-cambiamento-completo" >}}
 ### 4. Verifica l'intera modifica
 
 ```bash
@@ -155,8 +159,9 @@ go mod tidy
 go test ./...
 ```
 
-Esamina l'interfaccia del servizio generata, il server e il client HTTP, le specifiche OpenAPI, gli schemi e i codec dei tool dell'agente e `AGENTS_QUICKSTART.md`. Su questo `design/catalog.go` di 54 righe, `goa gen` produce 57 file sotto `gen/` (~5.400 righe di Go più OpenAPI, Protobuf e schemi JSON dei tool) oltre ad `AGENTS_QUICKSTART.md` senza consumare token di output del modello. Lo scaffolding applicativo è un punto di partenza: implementa la logica di lookup e sostituisci il planner di esempio prima dell'uso in produzione.
+Esamina l'interfaccia del servizio generata, il server e il client HTTP, le specifiche OpenAPI, gli schemi e i codec dei tool dell'agente e `AGENTS_QUICKSTART.md`. Su questo `design/catalog.go` di 54 righe, `goa gen` produce 57 file sotto `gen/` (5.388 righe in totale: 5.108 righe di Go più OpenAPI, Protobuf e schemi JSON dei tool) oltre ad `AGENTS_QUICKSTART.md` senza consumare token di output del modello. Lo scaffolding applicativo è un punto di partenza: implementa la logica di lookup e sostituisci il planner di esempio prima dell'uso in produzione.
 
+{{< anchors "un-prompt-utile" >}}
 ## Un prompt operativo efficace
 
 ```text
@@ -222,6 +227,7 @@ Invoca poi `/highbay` in una cartella vuota (o in un repository Goa esistente ch
 
 Il tuo coding agent inizializza un guscio Go ed `eval/` pulito e neutrale rispetto al dominio quando la cartella è vuota (`highbay init -example` o `worked_example: true` aggiunge un esempio eseguibile se lo desideri), redige i flussi di business in `design/story.go` e apre una Change Card nel browser. Una volta confermata la scheda, Highbay assegna test writer (`.highbay-tests`) e builder (`.highbay-build`) a copie di lavoro separate, controlla e accetta la suite `eval/`, verifica il commit del builder contro di essa e ti permette di unire i commit approvati nel tuo branch locale con un clic. Vedi la [pagina Highbay](/it/highbay/) e la [guida dell'ecosistema Highbay](/it/docs/3-ecosystem/highbay/).
 
+{{< anchors "misura-il-vantaggio" >}}
 ## Misura il vantaggio nel tuo progetto
 
 Confronta lo stesso task, gli stessi criteri di accettazione, lo stesso modello e la stessa codebase di partenza su più esecuzioni. Registra token di input e output, tempo complessivo, tempo di rigenerazione e test, correzioni manuali, impegno di revisione e difetti comportamentali, includendo configurazione e tentativi falliti. Le righe di codice generate misurano il lavoro svolto dal generatore, non un benchmark automatico di risparmio token o produttività.

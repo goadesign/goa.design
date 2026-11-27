@@ -10,6 +10,7 @@ Goa cubre dos tareas complementarias: **construir software con un agente de prog
 ambas. Goa genera contratos de servicio; Goa-AI amplía la generación a herramientas,
 respuestas estructuradas e integración de agentes.
 
+{{< anchors "por-qué-la-generación-cambia-el-trabajo" >}}
 ## Por qué la generación cambia el flujo de trabajo
 
 Cuando un LLM escribe por separado manejadores, clientes, esquemas JSON y validaciones,
@@ -53,6 +54,7 @@ La instalación es local al proyecto por defecto. Añade `--global` para una ins
 
 ## El ciclo de desarrollo
 
+{{< anchors "1-proporciona-el-contexto-necesario" >}}
 ### 1. Aporta el contexto relevante
 
 Entrega al agente de programación el objetivo, los archivos de diseño y la implementación que
@@ -192,11 +194,12 @@ go test ./...
 Inspecciona la interfaz de servicio generada, el servidor y cliente HTTP, las especificaciones
 OpenAPI, los esquemas y códecs de herramientas del agente y `AGENTS_QUICKSTART.md`. A partir de
 estas 54 líneas de `design/catalog.go`, `goa gen` produce 57 archivos bajo `gen/`
-(~5.400 líneas de Go además de OpenAPI, Protobuf y esquemas JSON de herramientas) junto con
+(5.388 líneas en total: 5.108 líneas de Go además de OpenAPI, Protobuf y esquemas JSON de herramientas) junto con
 `AGENTS_QUICKSTART.md`, sin gastar tokens de salida del modelo. El código inicial de la
 aplicación es un punto de partida: implementa la búsqueda real y sustituye el planificador de
 ejemplo antes de llevarlo a producción.
 
+{{< anchors "una-instrucción-útil" >}}
 ## Un prompt de tarea útil
 
 ```text
@@ -263,6 +266,7 @@ A continuación invoca `/highbay` en una carpeta vacía (o en un repositorio Goa
 
 Tu agente de programación inicializa una estructura limpia y neutral de Go y `eval/` si la carpeta está vacía (`highbay init -example` o `worked_example: true` añade un ejemplo ejecutable si lo prefieres), redacta los flujos de negocio en `design/story.go` y abre una Change Card en tu navegador. Una vez confirmada la tarjeta, Highbay asigna al autor de pruebas (`.highbay-tests`) y al constructor (`.highbay-build`) copias de trabajo independientes, comprueba y acepta la suite `eval/`, verifica frente a ella el commit del constructor y te permite fusionar los commits aprobados en tu rama local con un solo clic. Consulta la [página de Highbay](/es/highbay/) y la [guía del ecosistema de Highbay](/es/docs/3-ecosystem/highbay/).
 
+{{< anchors "mide-la-ventaja" >}}
 ## Mide la ventaja en tu proyecto
 
 Compara la misma tarea, criterios de aceptación, modelo y código base inicial a lo largo de

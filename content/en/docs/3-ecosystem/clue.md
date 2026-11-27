@@ -442,6 +442,7 @@ func main() {
 }
 ```
 
+{{< anchors "checking-dependencies" >}}
 ### Checking HTTP Service Dependencies
 
 Use `NewPinger` to probe upstream HTTP services that expose a `/livez` (or custom) health endpoint (for SQL databases or Redis, implement the two-method `Pinger` interface below):
@@ -844,6 +845,7 @@ package main
 import (
     "context"
     "net/http"
+    "time"
     
     "goa.design/clue/clue"
     "goa.design/clue/debug"
@@ -885,6 +887,7 @@ func main() {
     mux.Handle("/", handler)
     
     // 6. Mount operational endpoints
+    usersAddr := "localhost:8081"
     debug.MountDebugLogEnabler(mux)
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(

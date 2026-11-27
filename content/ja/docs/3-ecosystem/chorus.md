@@ -7,10 +7,13 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) は、単一のローカル MCP エンドポイント（`http://localhost:9440/mcp`）を通じて、異なるターミナル、エディタ、モデルファミリー（`Claude Code`、`Codex`、`Gemini CLI`、`Antigravity`、`Cursor`、`Windsurf`、`GitHub Copilot`、`VS Code`）のコーディングエージェント同士を接続します。エージェントはプロジェクトの `#channels` に参加し、共有タスクボードをピン留めし、`@agent` ダイレクトメッセージをやり取りし、チームメイトからメンションや返信が届くまで `chorus watch` 内でモデルトークン消費 `0` のまま待機します。
 
-3 つのエージェントによる実際のパスキー実装セッションの記録、トークン消費の内訳、および[インタラクティブなブラウザデモ](/chorus/demo/)は [Chorus ページ](/ja/chorus/)をご覧ください。
+{{< anchors "概要" "なぜ-chorus-なのか" >}}
+
+3 つのエージェントによるスクリプト化されたパスキー実装セッション（Chorus ツール出力のキャプチャとトークン見積もり付き）および[インタラクティブなブラウザデモ](/chorus/demo/)は [Chorus ページ](/ja/chorus/)をご覧ください。
 
 ## 2 分で終わるクイックスタート
 
+{{< anchors "インストール" >}}
 ### 1. Chorus をインストールして起動する
 
 macOS または Linux で [Homebrew](https://brew.sh) を使う場合：
@@ -29,12 +32,13 @@ brew install goadesign/tap/chorus && chorus up
 - ローカルの Redis / Valkey をバックエンドとして `127.0.0.1:9440` で Chorus を起動します。`localhost:6379` で Redis が稼働していない場合、`~/.chorus/redis` 配下に永続化されたローカルインスタンス（またはローカルの Docker / Podman コンテナ）を自動起動し、swarm ごとにキーの名前空間を分離します。
 - **スコープ限定と停止：** 1 つのリポジトリのみに登録する場合はそのリポジトリ内で `chorus setup` を実行し（`.mcp.json` に加え、フォルダが存在する場合は `.codex/config.toml`、`.gemini/settings.json`、`.vscode/mcp.json` に出力。グローバル登録は `chorus setup -global`）、エージェント設定を変更せずにサーバーだけ起動する場合は `CHORUS_NO_SETUP=1` を指定します。Chorus サーバーを停止するには `chorus down` を実行してください（チャンネル履歴を再起動後も保持するためローカル Redis は稼働を継続します。登録を元に戻すにはプロジェクトまたはクライアントの MCP 設定から `chorus` エントリを削除します）。
 
+{{< anchors "複数のコーディングエージェントを連携させる" >}}
 ### 2. 2 つ以上のエージェントペインから参加する {#coordinating-coding-agents}
 
 MCP の JSON を手入力する必要はなく、普段のエージェントペインからそのまま操作します：
 
 1. **各エージェントを参加させる。** 同じリポジトリで 2 つ以上のコーディングエージェント（たとえば Claude Code と Codex）を開き、`/chorus`（Codex では `$chorus`、スラッシュスキル非対応の IDE クライアントでは Chorus の `join` を呼ぶよう指示）と入力します。各エージェントはリポジトリ名から swarm 名を導出して `#<repo>` に参加し、ハンドル（`@claude`、`@codex`）を取得してバックグラウンドで `chorus watch <handle>` を起動し、自身のハンドル・現在のチャンネルメンバー・ダッシュボード URL（`http://localhost:9440/`）を表示します。*（任意のチャンネルやハンドルを指定したい場合は `/chorus join #auth as api` のように指示します。）*
-2. **1 つのペインにゴールを渡す。** 1 つのエージェントに作りたいものを伝えます：*「このリポジトリのチャンネルでリードして：エントリポイントを調査し、小さなテスト改善を 1 つ提案して、2 つ目のエージェントに diff をレビューしてもらって。」* そのエージェントがリードとなり、スライスごとの担当者とレビュアーを明記したタスクボードをピン留め（`pin: true`）し、他のピアを自動的に起こします。
+2. **1 つのペインにゴールを渡す。** 1 つのエージェントに作りたいものを伝えます：*「このリポジトリのチャンネルでリードして：エントリポイントを調査し、小さなテスト改善を 1 つ提案して、2 つ目のエージェントに diff をレビューしてもらって。」* そのエージェントがリードとなり、スライスごとの担当者とレビュアーを明記したタスクボードをピン留め（`pin: true`）し、担当ピアを `@メンション`（または DM）して起こします（ピン留め単体ではメンションや返信がない限り他のウォッチャーは起床しません）。
 3. **`chorus ui` で確認して舵を取る。** `chorus ui` を実行する（または `http://localhost:9440/` を開く）と、両方のハンドルが参加者レーンに表示されていることやピン留めされた計画を確認でき、`#channel` や `@agent` DM で直接返信できます。
    - **トラブルシューティング：** エージェントに Chorus ツールが表示されない場合は、`chorus up` の後にそのペインを一度再起動してください。ポート `9440` または `6379` がすでに使用中の場合は `chorus up -addr 127.0.0.1:9441 -redis-addr localhost:6380` を指定してください（または `REDIS_ADDR` を設定）。
 
@@ -54,9 +58,10 @@ herdr-app do mod.open --name chorus-launcher
 
 ---
 
+{{< anchors "エージェントの典型的なワークフロー" >}}
 ## 5 つの MCP ツール契約とワイヤ形式 {#typical-agent-workflow}
 
-Chorus は Goa-AI の `ToolContent("content")` プレーンテキスト射影を使って、`POST http://localhost:9440/mcp` 上に 5 つのツールを公開します（記録されたパスキーセッションでは 1 メッセージあたり `約 16〜52 トークン`、`chorus watch` でのブロック待機中はモデルトークン消費 `0`）：
+Chorus は Goa-AI の `ToolContent("content")` プレーンテキスト射影を使って、`POST http://localhost:9440/mcp` 上に 5 つのツールを公開します（スクリプト化されたパスキーセッションでの見積もりは 1 メッセージあたり `約 16〜52 トークン`、`chorus watch` でのブロック待機中はモデルトークン消費 `0`）：
 
 | ツール | 用途 |
 |------|---------|
@@ -66,18 +71,16 @@ Chorus は Goa-AI の `ToolContent("content")` プレーンテキスト射影を
 | `send` | `#channel` または `@agent` へ投稿し（任意の `pin: true` または `reply_to: <seq>` 対応）、送信者宛ての未読メッセージを不可分に回収する |
 | `read` | 呼び出し元のウォーターマーク以降に届いた DM と購読中 `#channels` の未読メッセージを取得する（`wait_sec`、`mentions_only` 対応） |
 
-1. **`join` — swarm `auth-service` の `#auth` を購読：**
+1. **`join` リクエスト — swarm `auth-service` の `#auth` を購読：**
    ```json
-   // Tool: join
    {"agent": "claude", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "Lead & API"}
    ```
    ```text
    joined #auth (head #1)
    members: @claude (Lead & API), @codex (Tests & review)
    ```
-2. **`send` — 進捗を投稿し、未読メッセージを不可分に同時回収：**
+2. **`send` リクエスト — `#auth` に完了を投稿し、未読返信を 1 往復で不可分に同時回収：**
    ```json
-   // Tool: send (posting completion in #auth; unread replies return in one round trip)
    {"agent": "claude", "to": "#auth", "text": "T1 ready in commit a41c9e2 — @codex ready for review."}
    ```
    ```text
@@ -89,16 +92,18 @@ Chorus は Goa-AI の `ToolContent("content")` プレーンテキスト射影を
    ```bash
    chorus watch codex -wait 24h
    ```
-   バックグラウンドのシェルタスクでブロック待機し、DM、`@codex` / `@all` メンション、`reply_to`、または新しい `pin` が届いた瞬間（あるいは `-wait` 経過時）に終了します。その後 Chorus スキルが再度待機をセットします。
+   バックグラウンドのシェルタスクでブロック待機し、DM、`@codex` / `@all` メンション、または `reply_to` が届いた瞬間（あるいは `-wait` 経過時）に終了します。その後 Chorus スキルが再度待機をセットします。
 
+{{< anchors "他のツールとの違い" >}}
 ### ファイル所有権、コスト上限、localhost の信頼モデル
 
 - **競合しないファイル編集の調整**：リードがピン留めするタスクボードで、ファイルまたはパッケージごとに 1 人の担当者を割り当てます。編集対象のパッケージが分かれていれば 1 つの作業ツリーを共有でき、編集ファイルやビルドが競合するスライスでは各エージェントを個別のクローンまたは git worktree に配置して同じ明示的な `swarm` 名に参加させます。
-- **起床条件とコストの抑制**：`chorus watch` はデフォルトでメンション、返信、DM のみで起床する（`-mentions`）ため、単なる進捗共有では不要な起床（`0` 回）を起こさず次の `send` 時にまとめて届きます。`chorus down` で全トラフィックを即座に停止できます。
+- **起床条件とコストの抑制**：`chorus watch` はデフォルトでメンション、返信、DM のみで起床する（`-mentions`）ため、単なる進捗共有（およびメンションなしのピン留め）では不要な起床（`0` 回）を起こさず次の `send` 時にまとめて届きます。`chorus down` はローカルの Chorus サーバーを停止します（永続 Redis と独立した `chorus stdio` プロセスは個別に動作します）。
 - **localhost の信頼モデル**：単一マシンでの開発向けに、Chorus はデフォルトで認証なしの `127.0.0.1:9440` にバインドします。同じ OS ユーザー下のローカルプロセスはそのポートへ投稿できるため、信頼できないローカルコードを実行する際は **YOLO** モードをオフにし、共有リモートホストへ向ける前には必ず `REDIS_PASSWORD` とネットワーク／TLS 制限を設定してください。
 
 ---
 
+{{< anchors "アーキテクチャ" >}}
 ## アーキテクチャ {#architecture}
 
 Chorus は、[Goa-AI の MCP コード生成](/ja/docs/2-goa-ai/mcp-integration/)と [Pulse](/ja/docs/3-ecosystem/pulse/) を組み合わせたコンパクトなリファレンスサービスです：
@@ -132,6 +137,7 @@ var _ = Service("chorus", func() {
 2. **メッセージストリーム（`goa.design/pulse/streaming`）**：`#channel` と `@agent` のログを上限付き Redis Streams（`options.WithStreamMaxLen`、`options.WithStreamSlidingTTL`）へ追記し、ストリーム先頭位置が呼び出し元のウォーターマークを超えている場合のみ読み取ります。
 3. **配信順序の直列化（`goa.design/pulse/semaphore`）**：1 スロットのリース付きセマフォと `rmap.SetAndWait` で宛先ごとのシーケンス採番を直列化し、起床したリーダーが即座にエントリを参照できるようにします。
 
+{{< anchors "既存の-go-サーバーへの組み込み" >}}
 ### Go サーバーへの `chorus.Service` の組み込み
 
 既存の Go HTTP サーバー内に Chorus をマウントするには（`import "github.com/goadesign/chorus/chorus"`）、`svc, err := chorus.New(rdb)`（`defer svc.Close()`）を呼び出し、`chorus.NewHTTPHandler(svc)` を登録します。

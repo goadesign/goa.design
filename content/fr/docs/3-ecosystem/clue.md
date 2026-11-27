@@ -15,6 +15,7 @@ Le principe de Clue : **mettre les messages de journal en mémoire tampon et ne 
 
 Ce seul choix de conception réduit drastiquement le volume de logs tout en conservant les informations nécessaires au diagnostic.
 
+{{< anchors "aperçu-du-paquet" >}}
 ## Vue d’ensemble des packages
 
 | Package | Rôle |
@@ -41,6 +42,7 @@ go get goa.design/clue/interceptors
 
 ---
 
+{{< anchors "le-paquet-de-logs" >}}
 ## Le package `log`
 
 Le package `log` s’articule autour du `context.Context` de Go. Vous initialisez une seule fois un contexte de journalisation et le propagez dans votre application. Toutes les fonctions de journalisation prennent ce contexte en premier argument.
@@ -103,6 +105,7 @@ func HandleRequest(ctx context.Context, req *Request) error {
 
 Pour une requête réussie : **zéro ligne de log**. Pour une requête en échec : **le contexte complet**.
 
+{{< anchors "ajout-de-contexte-avec-with" >}}
 ### Enrichir le contexte avec `With()`
 
 Enrichissez le contexte de journalisation à mesure que la requête traverse votre service :
@@ -150,6 +153,7 @@ Utilisez `KV` lorsque l’ordre des champs compte pour la lecture visuelle, et `
 
 Les valeurs acceptées sont les chaînes, nombres, booléens, `nil` ou tranches de ces types.
 
+{{< anchors "formats-des-journaux" >}}
 ### Formats de sortie
 
 Clue détecte automatiquement les terminaux interactifs et choisit le format adapté :
@@ -184,6 +188,7 @@ func myFormat(e *log.Entry) []byte {
 ctx := log.Context(context.Background(), log.WithFormat(myFormat))
 ```
 
+{{< anchors "ajout-didentifiants-de-trace-et-de-portée" >}}
 ### Ajouter les identifiants de trace et de span
 
 Reliez vos journaux aux traces distribuées :
@@ -200,6 +205,7 @@ Sortie :
 {"time":"...","level":"info","trace_id":"abc123","span_id":"def456","msg":"hello"}
 ```
 
+{{< anchors "ajout-de-lemplacement-du-fichier" >}}
 ### Ajouter l’emplacement du fichier source
 
 Pour le débogage, ajoutez le fichier source et le numéro de ligne :
@@ -260,6 +266,7 @@ conn, err := grpc.Dial(addr,
 )
 ```
 
+{{< anchors "enregistrement-des-clients-http" >}}
 ### Journalisation du client HTTP
 
 Enveloppez le transport HTTP pour journaliser les requêtes sortantes :
@@ -277,6 +284,7 @@ client := &http.Client{
 }
 ```
 
+{{< anchors "intégration-de-goa" >}}
 ### Intégration Goa
 
 Ajoutez le nom du service et de la méthode aux journaux :
@@ -286,6 +294,7 @@ endpoints := genservice.NewEndpoints(svc)
 endpoints.Use(log.Endpoint)  // Adds goa.service and goa.method to context
 ```
 
+{{< anchors "personnalisation-des-clés-de-journalisation" >}}
 ### Personnaliser les clés de journalisation
 
 Toutes les clés standards sont exposées comme variables de package modifiables :
@@ -299,6 +308,7 @@ log.TraceIDKey = "traceId"       // default: "trace_id"
 log.SpanIDKey = "spanId"         // default: "span_id"
 ```
 
+{{< anchors "adaptateur-pour-dautres-enregistreurs" >}}
 ### Adaptateurs vers d’autres loggers
 
 ```go
@@ -317,6 +327,7 @@ goaLogger := log.AsGoaMiddlewareLogger(ctx)
 
 ---
 
+{{< anchors "le-paquet-dindices" >}}
 ## Le package `clue`
 
 Le package `clue` configure OpenTelemetry avec des valeurs par défaut pertinentes en un seul appel de fonction.
@@ -373,6 +384,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
+{{< anchors "fonctions-daide-à-lexportation" >}}
 ### Fonctions utilitaires d’exporteurs
 
 Clue propose des constructeurs d’exporteurs gérant proprement l’arrêt :
@@ -410,6 +422,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
+{{< anchors "désactivation-des-mesures-ou-du-traçage" >}}
 ### Désactiver les métriques ou le traçage
 
 Passez `nil` pour l’exporteur dont vous n’avez pas besoin :
@@ -424,6 +437,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, nil)
 
 ---
 
+{{< anchors "le-paquet-santé" >}}
 ## Le package `health`
 
 Le package `health` expose des endpoints de contrôle de santé qui vérifient l’état des dépendances du service.
@@ -442,6 +456,7 @@ func main() {
 }
 ```
 
+{{< anchors "vérification-des-dépendances" >}}
 ### Vérifier des dépendances HTTP
 
 Utilisez `NewPinger` pour sonder les services HTTP amont exposant un endpoint de santé `/livez` (ou personnalisé) ; pour les bases SQL ou Redis, implémentez l’interface `Pinger` à deux méthodes présentée ci-dessous :
@@ -465,6 +480,7 @@ health.NewPinger("service", "host:port",
 )
 ```
 
+{{< anchors "contrôles-de-santé-personnalisés" >}}
 ### Sondes de santé personnalisées
 
 Implémentez l’interface `Pinger` pour vos contrôles sur mesure :
@@ -486,6 +502,7 @@ func (c *DBChecker) Ping(ctx context.Context) error {
 checker := health.NewChecker(&DBChecker{db: db})
 ```
 
+{{< anchors "format-de-la-réponse" >}}
 ### Format de réponse
 
 Le gestionnaire renvoie du JSON par défaut, ou du XML sur demande :
@@ -522,10 +539,12 @@ health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=
 
 ---
 
+{{< anchors "le-paquet-de-débogage" >}}
 ## Le package `debug`
 
 Le package `debug` permet de diagnostiquer un service en cours d’exécution sans redéploiement.
 
+{{< anchors "la-journalisation-dynamique-de-débogage" >}}
 ### Activation dynamique des logs de debug
 
 Montez un endpoint permettant d’activer ou de désactiver les logs de debug à chaud :
@@ -575,6 +594,7 @@ debug.MountDebugLogEnabler(mux,
 )
 ```
 
+{{< anchors "pprof-endpoints" >}}
 ### Endpoints `pprof`
 
 Montez les endpoints de profilage Go :
@@ -597,6 +617,7 @@ Endpoints disponibles :
 debug.MountPprofHandlers(mux, debug.WithPrefix("/internal/pprof/"))
 ```
 
+{{< anchors "journalisation-des-charges-utiles-pour-goa" >}}
 ### Journalisation des charges utiles Goa
 
 Journalisez les charges utiles des requêtes et réponses lorsque le mode debug est actif :
@@ -617,6 +638,7 @@ debug.LogPayloads(
 )
 ```
 
+{{< anchors "adaptateur-muxer-goa" >}}
 ### Adaptateur pour le muxer Goa
 
 Pour le muxer HTTP de Goa :
@@ -629,6 +651,7 @@ debug.MountPprofHandlers(debug.Adapt(mux))
 
 ---
 
+{{< anchors "le-paquet-fictif" >}}
 ## Le package `mock`
 
 Le package `mock` facilite l’écriture de doublures de test pour vos dépendances, avec gestion des séquences d’appels et des comportements permanents.
@@ -639,6 +662,7 @@ Le package `mock` facilite l’écriture de doublures de test pour vos dépendan
 
 **Mocks permanents :** Renvoient toujours la même fonction ; utilisés une fois les séquences épuisées ou lorsque l’ordre des appels n’a pas d’importance.
 
+{{< anchors "création-dun-mock" >}}
 ### Créer un mock
 
 ```go
@@ -668,6 +692,7 @@ func (m *MockUserService) SetGetUser(f func(context.Context, string) (*User, err
 }
 ```
 
+{{< anchors "utilisation-des-mocks-dans-les-tests" >}}
 ### Utiliser les mocks dans les tests
 
 ```go
@@ -711,6 +736,7 @@ userMock.SetGetUser(func(ctx context.Context, id string) (*User, error) {
 
 Les séquences sont prioritaires sur les mocks permanents : une fois la séquence consommée, `Next()` renvoie le mock permanent.
 
+{{< anchors "générateur-de-mock-cmg" >}}
 ### Générateur de mocks (`cmg`)
 
 Générez automatiquement les mocks à partir des interfaces Go :
@@ -729,10 +755,12 @@ Les mocks générés sont écrits dans un sous-répertoire `mocks/` à côté du
 
 ---
 
+{{< anchors "le-paquet-dintercepteurs" >}}
 ## Le package `interceptors`
 
 Le package `interceptors` fournit des intercepteurs Goa capables de tracer individuellement chaque message dans les RPC en streaming. Contrairement à l’instrumentation OpenTelemetry standard (qui trace le flux dans son ensemble), ces intercepteurs propagent le contexte de trace dans chaque message.
 
+{{< anchors "quand-utiliser" >}}
 ### Quand l’utiliser
 
 Utilisez ces intercepteurs lorsque vous avez besoin de :
@@ -740,6 +768,7 @@ Utilisez ces intercepteurs lorsque vous avez besoin de :
 - Propager le contexte de trace du client au serveur à travers les messages du flux
 - Mesurer la durée et la corrélation message par message
 
+{{< anchors "configuration-de-la-conception" >}}
 ### Déclaration dans la conception Goa
 
 Dans votre conception Goa, déclarez des intercepteurs dotés d’attributs `TraceMetadata` :
@@ -772,6 +801,7 @@ Method("Chat", func() {
 })
 ```
 
+{{< anchors "mise-en-œuvre" >}}
 ### Implémentation
 
 Dans vos implémentations d’intercepteurs, déléguez aux fonctions fournies :
@@ -798,6 +828,7 @@ func (i *ServerInterceptors) TraceBidirectionalStream(
 }
 ```
 
+{{< anchors "extraction-du-contexte-de-la-trace-à-partir-des-messages-reçus" >}}
 ### Extraire le contexte de trace des messages reçus
 
 Comme les interfaces de flux générées par Goa ne renvoient pas de contexte, utilisez les fonctions utilitaires fournies :
@@ -844,6 +875,7 @@ package main
 import (
     "context"
     "net/http"
+    "time"
     
     "goa.design/clue/clue"
     "goa.design/clue/debug"
@@ -885,6 +917,7 @@ func main() {
     mux.Handle("/", handler)
     
     // 6. Mount operational endpoints
+    usersAddr := "localhost:8081"
     debug.MountDebugLogEnabler(mux)
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(
@@ -901,6 +934,7 @@ func main() {
 
 ---
 
+{{< anchors "meilleures-pratiques" >}}
 ## Bonnes pratiques
 
 ### Journalisation
@@ -911,6 +945,7 @@ func main() {
 
 3. **Activez systématiquement la corrélation de traces.** Utilisez `log.WithFunc(log.Span)` afin de relier chaque ligne de journal à sa trace.
 
+{{< anchors "contrôles-de-santé" >}}
 ### Sondes de santé
 
 1. **Sondez les vraies dépendances.** Ne renvoyez pas un `200` inconditionnel : vérifiez les connexions aux bases de données et aux services aval.

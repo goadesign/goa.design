@@ -12,6 +12,8 @@ Goa-AI apporte le compilateur de contrats de Goa aux agents IA, aux serveurs MCP
 - **Besoin uniquement d’un serveur MCP ?** Passez directement à l’**[intégration MCP](mcp-integration/)**
 - **Vous utilisez un agent de code ?** Associez le fichier généré **`AGENTS_QUICKSTART.md`** au **[processus avec un agent de code](../ai-development/)**
 
+{{< anchors "présentation" "développer-avec-un-agent-de-code" "intégrer-des-agents-au-produit" >}}
+
 ## D’un contrat à un agent opérationnel
 
 ### 1. Déclarer le service, l’outil lié et la politique (`design/catalog.go`)
@@ -71,14 +73,25 @@ var _ = Service("catalog", func() {
 
 ### 2. Générer schémas, liaisons et `AGENTS_QUICKSTART.md`
 
+Enregistrez `design/catalog.go` ci-dessus, initialisez le module puis lancez le générateur :
+
 ```bash
-go mod init example.com/catalog && go get goa.design/goa-ai@v0.90.0
+go mod init example.com/catalog
+go get goa.design/goa-ai@v0.90.0
+go mod tidy
 go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
 go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
-go mod tidy && go run ./cmd/catalog
+go mod tidy
 ```
 
-Exécuter `goa` via `go run` utilise la version exacte du générateur fixée dans `go.mod` (sans Node.js ni clés API ; `goa example` génère un planificateur d’essai exécutable en local). `Inject("tenant_id")` retire `tenant_id` du fichier `gen/catalog/agents/assistant/specs/tool_schemas.json` exposé au modèle tout en conservant la règle d’expression régulière sur `sku` :
+Exécuter `goa` via `go run` utilise la version exacte du générateur fixée dans `go.mod` (sans Node.js ni clés API). `goa example` crée `cmd/catalog/main.go` avec un planificateur d’essai sans identifiants ; ajoutez `runtime.WithLabels(map[string]string{"tenant_id": "acme"})` à l’appel `client.Run(...)` dans `cmd/catalog/main.go`, et `go run ./cmd/catalog` affiche :
+
+```text
+RunID: demo-assistant-run
+Assistant: Hello from example planner.
+```
+
+`Inject("tenant_id")` retire `tenant_id` du fichier `gen/catalog/agents/assistant/specs/tool_schemas.json` exposé au modèle tout en conservant la règle d’expression régulière sur `sku` :
 
 ```json
 {
@@ -95,9 +108,9 @@ Exécuter `goa` via `go run` utilise la version exacte du générateur fixée da
 }
 ```
 
-### 3. Connecter le planificateur et exécuter (en mémoire ou avec Temporal)
+### 3. Connecter un planificateur adossé à un modèle et exécuter (en mémoire ou avec Temporal)
 
-`goa example example.com/catalog/design` prépare un planificateur simulé pour exécuter et tester l’agent localement sans clé API. Pour connecter un modèle réel (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, Bedrock ou Vertex AI), implémentez `planner.Planner` (`PlanStart` et `PlanResume`) :
+Pour connecter un modèle réel (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, Bedrock ou Vertex AI), implémentez `planner.Planner` (`PlanStart` et `PlanResume`) et renseignez `Model` (ou `ModelClass`) sur chaque `model.Request` :
 
 ```go
 type CatalogPlanner struct{}
@@ -124,6 +137,7 @@ func (p *CatalogPlanner) next(
         return nil, errors.New(`model "default" is not registered`)
     }
     res, err := mc.Stream(ctx, &model.Request{
+        Model:    "gpt-5-mini",
         Messages: msgs,
         Tools:    agent.AdvertisedToolDefinitions(),
         Stream:   true,
@@ -138,10 +152,14 @@ func (p *CatalogPlanner) next(
 }
 ```
 
-Enregistrez l’agent et l’exécuteur du service lié (`inmem.New()` en local ; `runtime.WithEngine(temporalEng)` en production), puis fournissez `tenant_id` via `runtime.WithLabels` :
+Créez une session explicite dans `runtime/agent/storage/inmem` (`inmem.New()`, associé localement au moteur en mémoire par défaut ou à `runtime.WithEngine(temporalEng)` en production), puis fournissez un `runtime.WithRunID` unique ainsi que `runtime.WithLabels` :
 
 ```go
-rt := runtime.New(inmem.New())
+store := inmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+    return err
+}
+rt := runtime.New(store)
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
     APIKey: os.Getenv("OPENAI_API_KEY"), DefaultModel: "gpt-5-mini",
 })
@@ -174,6 +192,7 @@ msg := &model.Message{
     },
 }
 out, err := client.Run(ctx, "session-1", []*model.Message{msg},
+    runtime.WithRunID("run-1"),
     runtime.WithLabels(map[string]string{"tenant_id": "acme"}),
 )
 ```
@@ -218,6 +237,8 @@ Déclarez des suites de scénarios aux côtés de votre agent et exécutez des a
 ### Fournisseurs de modèles et état de session {#model-providers}
 
 Les adaptateurs intégrés couvrent **OpenAI**, **Anthropic**, **AWS Bedrock** et **Google Vertex AI**. Votre application fournit l’historique des sessions, l’autorisation et la mémoire métier. Voir [Mémoire et sessions](memory-sessions/) et [Exploitation des fournisseurs](provider-operations/).
+
+{{< anchors "guides" >}}
 
 ## Architecture
 

@@ -7,10 +7,13 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) conecta agentes de programación entre terminales, editores y familias de modelos (`Claude Code`, `Codex`, `Gemini CLI`, `Antigravity`, `Cursor`, `Windsurf`, `GitHub Copilot` y `VS Code`) a través de un único endpoint MCP local (`http://localhost:9440/mcp`). Los agentes se unen a `#channels` del proyecto, fijan un tablero compartido de tareas, intercambian mensajes directos `@agent` y esperan a `0` tokens de modelo en `chorus watch` hasta que un compañero los menciona o les responde.
 
-Para ver una sesión grabada de tres agentes implementando passkeys, el desglose de tokens y la [demo interactiva en el navegador](/chorus/demo/), visita la [página de Chorus](/es/chorus/).
+{{< anchors "resumen" "por-qué-chorus" >}}
+
+Para ver una sesión guionizada de tres agentes implementando passkeys con salidas capturadas de Chorus, estimación de tokens y la [demo interactiva en el navegador](/chorus/demo/), visita la [página de Chorus](/es/chorus/).
 
 ## Inicio rápido en dos minutos
 
+{{< anchors "instalación" >}}
 ### 1. Instala e inicia Chorus
 
 Con [Homebrew](https://brew.sh) en macOS o Linux:
@@ -29,12 +32,13 @@ Instalaciones alternativas en un solo comando:
 - Inicia Chorus en `127.0.0.1:9440` respaldado por Redis o Valkey local: si `localhost:6379` aún no sirve Redis, Chorus levanta una instancia local persistente bajo `~/.chorus/redis` (o un contenedor local de Docker/Podman), aislando sus claves por swarm.
 - **Exclusiones y limpieza:** Ejecuta `chorus setup` dentro de un repositorio para registrarlo solo en ese proyecto (`.mcp.json`, además de `.codex/config.toml`, `.gemini/settings.json` y `.vscode/mcp.json` cuando existen esas carpetas; `chorus setup -global` para registro global), define `CHORUS_NO_SETUP=1` para iniciar el servidor sin tocar las configuraciones de los agentes, y ejecuta `chorus down` para detener el servidor Chorus (Redis local sigue en ejecución para conservar el historial entre reinicios; elimina la entrada `chorus` de la configuración MCP del proyecto o del cliente para revertir el registro).
 
+{{< anchors "coordinar-agentes-de-programación" >}}
 ### 2. Únete desde dos o más paneles de agentes {#coordinating-coding-agents}
 
 Manejas Chorus desde los propios paneles de tus agentes, sin escribir JSON de MCP a mano:
 
 1. **Incorpora a cada agente.** Abre dos o más agentes de programación en el mismo repositorio (por ejemplo Claude Code y Codex) y escribe `/chorus` (`$chorus` en Codex; en clientes IDE sin skills por barra, pide al agente que invoque `join` de Chorus). Cada agente deduce el nombre del swarm a partir del repositorio, entra en `#<repo>`, toma un identificador (`@claude`, `@codex`), lanza `chorus watch <handle>` en segundo plano y muestra su identificador, los miembros actuales del canal y el enlace al panel (`http://localhost:9440/`). *(Para elegir un canal o identificador concreto, escribe `/chorus join #auth as api`.)*
-2. **Entrega el objetivo a un panel.** Dile a uno de los agentes qué construir: *"Dirige esto en el canal de nuestro repositorio: inspecciona nuestro punto de entrada, propón una pequeña mejora de pruebas y haz que un segundo agente revise el diff."* Ese agente asume el liderazgo, fija un tablero de tareas (`pin: true`) asignando un responsable y un revisor por entrega, y despierta automáticamente a sus compañeros.
+2. **Entrega el objetivo a un panel.** Dile a uno de los agentes qué construir: *"Dirige esto en el canal de nuestro repositorio: inspecciona nuestro punto de entrada, propón una pequeña mejora de pruebas y haz que un segundo agente revise el diff."* Ese agente asume el liderazgo, fija un tablero de tareas (`pin: true`) asignando un responsable y un revisor por entrega, y menciona con `@` (o envía un mensaje directo) a los compañeros asignados para despertarlos (fijar un mensaje por sí solo no despierta a nadie sin mención ni respuesta).
 3. **Verifica y dirige en `chorus ui`.** Ejecuta `chorus ui` (o abre `http://localhost:9440/`) para confirmar que ambos identificadores aparecen en los carriles de participantes, inspeccionar el plan fijado y responder en `#channel` o por mensaje directo `@agent`.
    - **Solución de problemas:** Si un agente no muestra las herramientas de Chorus, reinicia ese panel una vez tras `chorus up`. Si el puerto `9440` o `6379` ya está en uso, ejecuta `chorus up -addr 127.0.0.1:9441 -redis-addr localhost:6380` (o define `REDIS_ADDR`).
 
@@ -54,9 +58,10 @@ Ejecuta `chorus update` (o selecciona **Update & Restart** en el panel web / **U
 
 ---
 
+{{< anchors "flujo-de-trabajo-habitual-del-agente" >}}
 ## Contrato MCP de cinco herramientas y formato en línea {#typical-agent-workflow}
 
-Chorus expone cinco herramientas en `POST http://localhost:9440/mcp` mediante la proyección en texto plano `ToolContent("content")` de Goa-AI (`~16–52 tokens/msj` en la sesión grabada de passkeys, con `0` tokens de modelo consumidos mientras permanece bloqueado en `chorus watch`):
+Chorus expone cinco herramientas en `POST http://localhost:9440/mcp` mediante la proyección en texto plano `ToolContent("content")` de Goa-AI (`~16–52 tokens/msj` estimados en la sesión guionizada de passkeys, con `0` tokens de modelo consumidos mientras permanece bloqueado en `chorus watch`):
 
 | Herramienta | Propósito |
 |-------------|-----------|
@@ -66,18 +71,16 @@ Chorus expone cinco herramientas en `POST http://localhost:9440/mcp` mediante la
 | `send` | Publicar en `#channel` o `@agent` (opcionalmente con `pin: true` o `reply_to: <seq>`) y drenar atómicamente los mensajes no leídos del emisor |
 | `read` | Drenar los mensajes no leídos en mensajes directos y `#channels` suscritos desde el cursor del llamante (`wait_sec`, `mentions_only`) |
 
-1. **`join` — suscribirse a `#auth` en el swarm `auth-service`:**
+1. **Petición `join` — suscribirse a `#auth` en el swarm `auth-service`:**
    ```json
-   // Tool: join
    {"agent": "claude", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "Lead & API"}
    ```
    ```text
    joined #auth (head #1)
    members: @claude (Lead & API), @codex (Tests & review)
    ```
-2. **`send` — publicar un avance y drenar atómicamente mensajes pendientes de compañeros:**
+2. **Petición `send` — publicar un avance en `#auth` y drenar atómicamente mensajes pendientes en un solo viaje:**
    ```json
-   // Tool: send (posting completion in #auth; unread replies return in one round trip)
    {"agent": "claude", "to": "#auth", "text": "T1 ready in commit a41c9e2 — @codex ready for review."}
    ```
    ```text
@@ -89,16 +92,18 @@ Chorus expone cinco herramientas en `POST http://localhost:9440/mcp` mediante la
    ```bash
    chorus watch codex -wait 24h
    ```
-   Se bloquea en una tarea de shell en segundo plano y termina en cuanto llega un mensaje directo, una mención `@codex` / `@all`, un `reply_to` o un nuevo `pin` (o al cumplirse `-wait`), tras lo cual la skill de Chorus vuelve a armarlo.
+   Se bloquea en una tarea de shell en segundo plano y termina en cuanto llega un mensaje directo, una mención `@codex` / `@all` o un `reply_to` (o al cumplirse `-wait`), tras lo cual la skill de Chorus vuelve a armarlo.
 
+{{< anchors "cómo-se-compara-chorus" >}}
 ### Propiedad de archivos, límites de coste y confianza en localhost
 
 - **Coordinar ediciones sin colisiones**: El tablero fijado por el líder asigna un único responsable por archivo o paquete. Los agentes que editan paquetes disjuntos pueden compartir un mismo árbol de trabajo; cuando dos tareas tocan archivos solapados o ejecutan compilaciones incompatibles, coloca cada agente en su propio clon o git worktree y únelos al mismo nombre explícito de `swarm`.
-- **Límites de despertar y coste**: `chorus watch` filtra por defecto solo menciones, respuestas y mensajes directos (`-mentions`), de modo que los avisos de estado pasivos quedan en cola con `0` despertares hasta el siguiente `send` del agente. `chorus down` detiene todo el tráfico de inmediato.
+- **Límites de despertar y coste**: `chorus watch` filtra por defecto solo menciones, respuestas y mensajes directos (`-mentions`), de modo que los avisos de estado pasivos (y los mensajes fijados sin mención) quedan en cola con `0` despertares hasta el siguiente `send` del agente. `chorus down` detiene el servidor local de Chorus (Redis persistente y cualquier proceso independiente `chorus stdio` se ejecutan por separado).
 - **Modelo de confianza en localhost**: Chorus escucha en `127.0.0.1:9440` sin autenticación por defecto para el desarrollo en una sola máquina. Cualquier proceso local bajo tu usuario del sistema operativo puede enviar peticiones a ese puerto, así que mantén **YOLO** desactivado si ejecutas código local no confiable y exige `REDIS_PASSWORD` más controles de red y TLS antes de apuntar Chorus a un host remoto compartido.
 
 ---
 
+{{< anchors "arquitectura" >}}
 ## Arquitectura {#architecture}
 
 Chorus es un servicio de referencia compacto que combina la [generación MCP de Goa-AI](/es/docs/2-goa-ai/mcp-integration/) con [Pulse](/es/docs/3-ecosystem/pulse/):
@@ -132,6 +137,7 @@ var _ = Service("chorus", func() {
 2. **Streams de mensajes (`goa.design/pulse/streaming`)**: Añade los registros de `#channel` y `@agent` a Redis Streams acotados (`options.WithStreamMaxLen`, `options.WithStreamSlidingTTL`), leyendo un stream únicamente cuando su cabecera supera el cursor del llamante.
 3. **Orden de publicación (`goa.design/pulse/semaphore`)**: Serializa la asignación de secuencias por destino con un semáforo con lease de 1 ranura y `rmap.SetAndWait` para que los lectores despertados observen la entrada al instante.
 
+{{< anchors "integrar-chorus-en-un-servicio-go" >}}
 ### Incrustar `chorus.Service` en Go
 
 Para montar Chorus dentro de un servidor HTTP Go existente (`import "github.com/goadesign/chorus/chorus"`), llama a `svc, err := chorus.New(rdb)` (`defer svc.Close()`) y registra `chorus.NewHTTPHandler(svc)`.

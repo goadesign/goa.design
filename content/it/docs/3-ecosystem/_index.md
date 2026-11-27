@@ -7,6 +7,7 @@ llm_optimized: true
 content_scope: "Goa Ecosystem Overview"
 ---
 
+{{< anchors "librerie-e-strumenti-complementari" >}}
 ## Panoramica
 
 Queste librerie open source e strumenti MCP estendono Goa e Goa-AI per la modellazione dell'architettura, gli eventi distribuiti, l'osservabilità e lo sviluppo multi-agente. Ogni libreria funziona con Goa oppure in modo autonomo in qualsiasi servizio Go.
@@ -19,6 +20,7 @@ Queste librerie open source e strumenti MCP estendono Goa e Goa-AI per la modell
 | [Chorus](chorus/) | Coordinamento tra agenti alla pari | `#channels` condivisi, DM `@agent`, watermark sul server, `chorus watch` a 0 token, `chorus ui` in tempo reale |
 | [Highbay](highbay/) | Control plane per contratti e verifica | `Story` + Change Card, copie Git separate per builder e test writer, gate `eval/`, merge dal browser |
 
+{{< anchors "modello---diagrammi-di-architettura-come-codice" >}}
 ## Model: diagrammi di architettura C4 in Go
 
 [Model](model/) definisce [diagrammi di architettura C4](https://c4model.com) in codice Go accanto ai contratti dei tuoi servizi, così i diagrammi restano sotto controllo di versione e si rigenerano in CI:
@@ -42,6 +44,7 @@ var _ = Design("Catalog Platform", "Product catalog architecture", func() {
 
 Esegui `mdl serve` per regolare il layout in modo interattivo nel browser oppure `mdl svg` per esportare gli SVG in modalità headless in CI. Consulta la [guida di Model](model/).
 
+{{< anchors "pulse---infrastruttura-di-eventi-distribuiti" >}}
 ## Pulse: Redis Event Streams, Worker Pool e Mappe Replicate
 
 [Pulse](pulse/) costruisce tre primitive distribuite direttamente su Redis (`*redis.Client`) senza richiedere un message broker separato:
@@ -51,19 +54,20 @@ Esegui `mdl serve` per regolare il layout in modo interattivo nel browser oppure
 - **`rmap`**: Mappe chiave-valore a lettura locale ed consistenza eventuale, sincronizzate tramite script Lua atomici su Redis e notifiche pub/sub.
 
 ```go
-// Open a stream and append a typed JSON payload
+// Open a stream and subscribe a shared consumer-group sink before publishing
 stream, err := streaming.NewStream("orders", rdb)
 if err != nil {
     log.Fatal(err)
 }
-_, err = stream.Add(ctx, "order.created", payload)
-
-// Consume through a shared consumer-group sink with explicit acks
 sink, err := stream.NewSink(ctx, "billing-workers")
 if err != nil {
     log.Fatal(err)
 }
 defer sink.Close(ctx)
+
+if _, err := stream.Add(ctx, "order.created", payload); err != nil {
+    log.Fatal(err)
+}
 
 for event := range sink.Subscribe() {
     if err := handleOrder(event); err == nil {
@@ -74,6 +78,7 @@ for event := range sink.Subscribe() {
 
 Consulta la [guida di Pulse](pulse/).
 
+{{< anchors "indizio---osservabilità-dei-microservizi" >}}
 ## Clue: Tracing OpenTelemetry, Log Bufferizzati e Health Check
 
 [Clue](clue/) strumenta i servizi Go con tracce OpenTelemetry, metriche, sonde di salute e **logging contestuale scaricato sugli errori** — mantenendo silenziose le richieste non tracciate andate a buon fine ed emettendo l'intero contesto di debug della richiesta ogni volta che si verifica un errore:
@@ -97,6 +102,7 @@ checker := health.NewChecker(
 
 Consulta la [guida di Clue](clue/).
 
+{{< anchors "chorus---coordinamento-multi-agente-via-mcp" >}}
 ## Chorus: Coordinamento Multi-Agente via MCP
 
 [Chorus](chorus/) è un server MCP locale costruito su [Goa-AI](/it/docs/2-goa-ai/) e [Pulse](pulse/) che collega i coding agent tra terminali, editor e famiglie di modelli (`Claude Code`, `Codex`, `Gemini CLI`, `Antigravity`, `Cursor`, `Windsurf`, `Copilot`, `VS Code`) attraverso `#channels` condivisi, messaggi diretti `@agent` e una bacheca dei task fissata:
@@ -107,9 +113,10 @@ brew install goadesign/tap/chorus && chorus up
 
 Le installazioni alternative con un singolo comando (`npx @goadesign/chorus up`, `curl` e `go install`) sono descritte nella [guida di Chorus](chorus/) e nella [pagina di Chorus](/it/chorus/).
 
-- **Cinque tool (`who`, `join`, `leave`, `send`, `read`)** su `http://localhost:9440/mcp` con risposte wire `ToolContent` compatte in testo semplice (`~16–52 token/msg` nella sessione passkey registrata).
+- **Cinque tool (`who`, `join`, `leave`, `send`, `read`)** su `http://localhost:9440/mcp` con risposte wire `ToolContent` compatte in testo semplice (`~16–52 token/msg` stimati nella sessione passkey sceneggiata).
 - **Watermark di lettura mantenuti sul server** in `pulse/rmap`, consegna aggregata dei messaggi non letti su `send` e `0` token modello durante l'attesa in `chorus watch`.
 
+{{< anchors "highbay---control-plane-multi-agente-guidato-dai-contratti" >}}
 ## Highbay: Control Plane Multi-Agente Guidato dai Contratti
 
 [Highbay](highbay/) standardizza l'architettura della piattaforma tra servizi, server MCP e agenti IA — affiancando un coding agent builder (`.highbay-build`) a un coding agent test writer separato (`.highbay-tests`) attorno a un contratto confermato prima del merge:
@@ -124,6 +131,7 @@ Le configurazioni alternative con `npx @goadesign/highbay up` e `go install gith
 - **`/highbay` (`$highbay` in Codex)** prepara una Change Card (`CP1`) e un'anteprima dell'architettura C4 (`CP2`), inizializzando le cartelle vuote da un guscio Go ed `eval/` pulito e neutrale rispetto al dominio (`highbay init -example` aggiunge un esempio eseguibile).
 - **Verifica indipendente (`CP4`)** vincola **Approve** e **Merge** nel browser (`CP5`) finché i commit candidati non superano la suite di scenari `eval/` accettata.
 
+{{< anchors "guide-alla-documentazione" "iniziare" >}}
 ## Riferimento di installazione
 
 ```bash

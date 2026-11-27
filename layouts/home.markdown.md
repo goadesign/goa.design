@@ -36,6 +36,7 @@ var _ = Service("catalog", func() {
 npx skills add goadesign/goa --skill goa-service-designer
 # or standalone Go CLI (Go 1.27+):
 go install goa.design/goa/v3/cmd/goa@latest
+mkdir catalog && cd catalog && go mod init example.com/catalog && go get goa.design/goa/v3@v3.36.0
 ```
 
 {{ T "home_skill_next" }}

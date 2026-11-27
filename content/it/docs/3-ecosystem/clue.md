@@ -15,6 +15,7 @@ L'approccio di Clue: **accumulare i messaggi di log in memoria e scriverli solo 
 
 Questa singola scelta progettuale riduce drasticamente il volume dei log preservando tutte le informazioni necessarie per il debug.
 
+{{< anchors "panoramica-del-pacchetto" >}}
 ## Panoramica dei pacchetti
 
 | Pacchetto | Scopo |
@@ -62,6 +63,7 @@ func main() {
 }
 ```
 
+{{< anchors "comprendere-il-buffering" >}}
 ### Come funziona il buffering
 
 Questa è la caratteristica centrale di Clue. Esistono due categorie di funzioni di log:
@@ -103,6 +105,7 @@ func HandleRequest(ctx context.Context, req *Request) error {
 
 Per una richiesta riuscita: **zero output di log**. Per una richiesta fallita: **contesto completo**.
 
+{{< anchors "aggiunta-di-contesto-con-with" >}}
 ### Aggiungere contesto con `With()`
 
 Arricchisci il contesto di logging man mano che la richiesta attraversa il servizio:
@@ -150,6 +153,7 @@ Usa `KV` quando l'ordine dei campi conta per la leggibilità. Usa `Fields` quand
 
 I valori possono essere: stringhe, numeri, booleani, `nil` o slice di questi tipi.
 
+{{< anchors "formati-dei-registri" >}}
 ### Formati di log
 
 Clue rileva automaticamente i terminali e seleziona il formato appropriato:
@@ -184,6 +188,7 @@ func myFormat(e *log.Entry) []byte {
 ctx := log.Context(context.Background(), log.WithFormat(myFormat))
 ```
 
+{{< anchors "aggiunta-degli-id-delle-tracce-e-degli-span" >}}
 ### Aggiungere ID di trace e span
 
 Collega i log alle tracce distribuite:
@@ -200,6 +205,7 @@ Output:
 {"time":"...","level":"info","trace_id":"abc123","span_id":"def456","msg":"hello"}
 ```
 
+{{< anchors "aggiunta-della-posizione-del-file" >}}
 ### Aggiungere la posizione nel file sorgente
 
 Per il debug, aggiungi file sorgente e numero di riga:
@@ -240,6 +246,7 @@ handler = log.HTTP(ctx, log.WithDisableRequestLogging())(handler)
 handler = log.HTTP(ctx, log.WithDisableRequestID())(handler)
 ```
 
+{{< anchors "intercettori-grpc" >}}
 ### Interceptor gRPC
 
 Per i server gRPC:
@@ -260,6 +267,7 @@ conn, err := grpc.Dial(addr,
 )
 ```
 
+{{< anchors "registrazione-dei-client-http" >}}
 ### Logging del client HTTP
 
 Avvolgi i trasporti HTTP per registrare le richieste in uscita:
@@ -277,6 +285,7 @@ client := &http.Client{
 }
 ```
 
+{{< anchors "integrazione-di-goa" >}}
 ### Integrazione con Goa
 
 Aggiungi i nomi di servizio e metodo ai log:
@@ -286,6 +295,7 @@ endpoints := genservice.NewEndpoints(svc)
 endpoints.Use(log.Endpoint)  // Adds goa.service and goa.method to context
 ```
 
+{{< anchors "personalizzazione-delle-chiavi-di-registro" >}}
 ### Personalizzare le chiavi dei log
 
 Tutte le chiavi standard dei log sono variabili di pacchetto sovrascrivibili:
@@ -299,6 +309,7 @@ log.TraceIDKey = "traceId"       // default: "trace_id"
 log.SpanIDKey = "spanId"         // default: "span_id"
 ```
 
+{{< anchors "adattatore-per-altri-logger" >}}
 ### Adattatori per altri logger
 
 ```go
@@ -317,6 +328,7 @@ goaLogger := log.AsGoaMiddlewareLogger(ctx)
 
 ---
 
+{{< anchors "il-pacchetto-di-indizi" >}}
 ## Il pacchetto `clue`
 
 Il pacchetto `clue` configura OpenTelemetry con impostazioni predefinite sensate in una singola chiamata di funzione.
@@ -373,6 +385,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
+{{< anchors "funzioni-di-esportazione-degli-helper" >}}
 ### Funzioni helper per gli exporter
 
 Clue fornisce funzioni helper che creano gli exporter gestendo correttamente lo shutdown:
@@ -410,6 +423,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
+{{< anchors "disabilitazione-delle-metriche-o-del-tracciamento" >}}
 ### Disabilitare metriche o tracing
 
 Passa `nil` per l'exporter che non ti serve:
@@ -424,6 +438,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, nil)
 
 ---
 
+{{< anchors "il-pacchetto-salute" >}}
 ## Il pacchetto `health`
 
 Il pacchetto `health` crea endpoint di health check che riportano lo stato delle dipendenze del servizio.
@@ -442,6 +457,7 @@ func main() {
 }
 ```
 
+{{< anchors "verifica-delle-dipendenze" >}}
 ### Verificare le dipendenze HTTP
 
 Usa `NewPinger` per sondare i servizi HTTP a monte che espongono un endpoint di salute `/livez` (o personalizzato; per database SQL o Redis implementa invece l'interfaccia `Pinger` a due metodi mostrata più sotto):
@@ -465,6 +481,7 @@ health.NewPinger("service", "host:port",
 )
 ```
 
+{{< anchors "controlli-sanitari-personalizzati" >}}
 ### Health check personalizzati
 
 Implementa l'interfaccia `Pinger` per verifiche personalizzate:
@@ -526,6 +543,7 @@ health.Version = "v1.2.3"  // Or use ldflags: -X goa.design/clue/health.Version=
 
 Il pacchetto `debug` abilita la diagnostica a runtime senza ridistribuire il servizio.
 
+{{< anchors "registrazione-dinamica-del-debug" >}}
 ### Logging di debug dinamico
 
 Monta un endpoint per attivare o disattivare i log di debug a runtime:
@@ -575,6 +593,7 @@ debug.MountDebugLogEnabler(mux,
 )
 ```
 
+{{< anchors "endpoint-di-pprof" >}}
 ### Endpoint pprof
 
 Monta gli endpoint di profilazione di Go:
@@ -597,6 +616,7 @@ Endpoint disponibili:
 debug.MountPprofHandlers(mux, debug.WithPrefix("/internal/pprof/"))
 ```
 
+{{< anchors "registrazione-del-carico-utile-per-goa" >}}
 ### Logging dei payload per Goa
 
 Registra i payload di richiesta e risposta quando il debug è attivo:
@@ -617,6 +637,7 @@ debug.LogPayloads(
 )
 ```
 
+{{< anchors "adattatore-goa-muxer" >}}
 ### Adattatore per il muxer di Goa
 
 Per il muxer HTTP di Goa:
@@ -668,6 +689,7 @@ func (m *MockUserService) SetGetUser(f func(context.Context, string) (*User, err
 }
 ```
 
+{{< anchors "utilizzo-dei-mock-nei-test" >}}
 ### Usare i mock nei test
 
 ```go
@@ -729,10 +751,12 @@ I mock generati vengono scritti in una sottodirectory `mocks/` accanto al file s
 
 ---
 
+{{< anchors "il-pacchetto-di-intercettori" >}}
 ## Il pacchetto `interceptors`
 
 Il pacchetto `interceptors` fornisce interceptor Goa per tracciare i singoli messaggi nelle RPC in streaming. A differenza della strumentazione standard di OpenTelemetry (che traccia l'intero stream), questi interceptor propagano il contesto di trace in ciascun messaggio.
 
+{{< anchors "quando-usare" >}}
 ### Quando usarli
 
 Usa questi interceptor quando ti servono:
@@ -740,6 +764,7 @@ Usa questi interceptor quando ti servono:
 - Propagazione del contesto di trace dal client al server attraverso i messaggi dello stream
 - Tempistiche e correlazione dei singoli messaggi
 
+{{< anchors "impostazione-del-progetto" >}}
 ### Configurazione nel design
 
 Nel tuo design Goa, definisci gli interceptor con attributi `TraceMetadata`:
@@ -798,6 +823,7 @@ func (i *ServerInterceptors) TraceBidirectionalStream(
 }
 ```
 
+{{< anchors "estrazione-del-contesto-di-tracciamento-dai-messaggi-ricevuti" >}}
 ### Estrarre il contesto di trace dai messaggi ricevuti
 
 Poiché le interfacce stream generate da Goa non restituiscono un contesto, usa le funzioni helper:
@@ -844,6 +870,7 @@ package main
 import (
     "context"
     "net/http"
+    "time"
     
     "goa.design/clue/clue"
     "goa.design/clue/debug"
@@ -885,6 +912,7 @@ func main() {
     mux.Handle("/", handler)
     
     // 6. Mount operational endpoints
+    usersAddr := "localhost:8081"
     debug.MountDebugLogEnabler(mux)
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(
@@ -901,8 +929,10 @@ func main() {
 
 ---
 
+{{< anchors "migliori-pratiche" >}}
 ## Best practice
 
+{{< anchors "registrazione" >}}
 ### Logging
 
 1. **Usa `Info()` per l'elaborazione delle richieste, `Print()` per gli eventi del ciclo di vita.** I log delle richieste vanno bufferizzati; i log di avvio e arresto devono essere scritti subito.
@@ -911,6 +941,7 @@ func main() {
 
 3. **Aggiungi sempre la correlazione con le tracce.** Usa `log.WithFunc(log.Span)` per collegare i log agli span OpenTelemetry.
 
+{{< anchors "controlli-di-salute" >}}
 ### Health check
 
 1. **Verifica le dipendenze reali.** Non limitarti a restituire 200: controlla connessioni al database e servizi a valle.

@@ -62,6 +62,7 @@ func main() {
 }
 ```
 
+{{< anchors "バッファリングを理解する" >}}
 ### バッファリングの仕組み
 
 ここが Clue の中核機能です。ログ関数には 2 種類あります：
@@ -184,6 +185,7 @@ func myFormat(e *log.Entry) []byte {
 ctx := log.Context(context.Background(), log.WithFormat(myFormat))
 ```
 
+{{< anchors "trace--span-id-を追加する" >}}
 ### Trace ID と Span ID を追加する
 
 ログを分散トレースに紐付けます:
@@ -240,6 +242,7 @@ handler = log.HTTP(ctx, log.WithDisableRequestLogging())(handler)
 handler = log.HTTP(ctx, log.WithDisableRequestID())(handler)
 ```
 
+{{< anchors "grpc-インターセプタ" >}}
 ### gRPC インターセプター
 
 gRPC サーバー向け:
@@ -286,6 +289,7 @@ endpoints := genservice.NewEndpoints(svc)
 endpoints.Use(log.Endpoint)  // Adds goa.service and goa.method to context
 ```
 
+{{< anchors "ログキーをカスタマイズする" >}}
 ### ログキーのカスタマイズ
 
 ログキーはすべてパッケージ変数として公開されており、上書きできます:
@@ -299,6 +303,7 @@ log.TraceIDKey = "traceId"       // default: "trace_id"
 log.SpanIDKey = "spanId"         // default: "span_id"
 ```
 
+{{< anchors "他ロガー向けアダプタ" >}}
 ### 他のロガー向けアダプター
 
 ```go
@@ -373,6 +378,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExport
 )
 ```
 
+{{< anchors "エクスポータ作成のヘルパー関数" >}}
 ### エクスポーター作成のヘルパー関数
 
 適切なシャットダウン処理を備えたエクスポーターを作成するヘルパー関数が用意されています:
@@ -428,6 +434,7 @@ cfg, err := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, nil)
 
 `health` パッケージは、サービスの依存先状態をレポートするヘルスチェックエンドポイントを作成します。
 
+{{< anchors "基本利用" >}}
 ### 基本的な使い方
 
 ```go
@@ -442,6 +449,7 @@ func main() {
 }
 ```
 
+{{< anchors "依存関係のチェック" >}}
 ### HTTP サービス依存先のチェック
 
 `/livez`（または任意のパス）のヘルスエンドポイントを公開している上流 HTTP サービスをプローブするには `NewPinger` を使います（SQL データベースや Redis には、後述の 2 メソッドからなる `Pinger` インターフェースを実装してください）:
@@ -617,6 +625,7 @@ debug.LogPayloads(
 )
 ```
 
+{{< anchors "goa-muxer-アダプタ" >}}
 ### Goa Muxer アダプター
 
 Goa の HTTP muxer 向け:
@@ -633,6 +642,7 @@ debug.MountPprofHandlers(debug.Adapt(mux))
 
 `mock` パッケージは、呼び出し順序（シーケンス）や永続モックをサポートした依存関係のテストダブル作成を支援します。
 
+{{< anchors "概念" >}}
 ### 基本概念
 
 **シーケンス（Sequences）:** 期待される呼び出しを順序付きで定義します。`Next()` を呼ぶたびにシーケンス内の次の関数を返します。
@@ -711,6 +721,7 @@ userMock.SetGetUser(func(ctx context.Context, id string) (*User, error) {
 
 シーケンスは永続モックより優先され、シーケンスが尽きると `Next()` は永続モックを返します。
 
+{{< anchors "モックジェネレータcmg" >}}
 ### モックジェネレーター（cmg）
 
 インターフェースからモックを自動生成します:
@@ -740,6 +751,7 @@ cmg gen --testify ./services/...
 - ストリームメッセージを介したクライアントからサーバーへのトレースコンテキスト伝播
 - 個々のメッセージの所要時間計測と相関付け
 
+{{< anchors "デザイン設定" >}}
 ### 設計側のセットアップ
 
 Goa の設計で `TraceMetadata` 属性を持つインターセプターを定義します:
@@ -834,6 +846,7 @@ for {
 
 ---
 
+{{< anchors "完全な例" >}}
 ## 完全な実装例
 
 計装一式を組み込んだ Goa サービスの例です:
@@ -844,6 +857,7 @@ package main
 import (
     "context"
     "net/http"
+    "time"
     
     "goa.design/clue/clue"
     "goa.design/clue/debug"
@@ -885,6 +899,7 @@ func main() {
     mux.Handle("/", handler)
     
     // 6. Mount operational endpoints
+    usersAddr := "localhost:8081"
     debug.MountDebugLogEnabler(mux)
     debug.MountPprofHandlers(mux)
     mux.Handle("/healthz", health.Handler(

@@ -12,6 +12,8 @@ Goa-AI brings Goa's contract compiler to AI agents, MCP servers, and hosted tool
 - **Only need an MCP server?** Jump straight to **[MCP integration](mcp-integration/)**
 - **Using a coding agent?** Pair generated **`AGENTS_QUICKSTART.md`** with the **[coding-agent workflow](../ai-development/)**
 
+{{< anchors "overview" "build-with-a-coding-agent" "build-agents-into-your-product" >}}
+
 ## One contract to a running agent
 
 ### 1. Declare service, bound tool, and run policy (`design/catalog.go`)
@@ -71,14 +73,25 @@ var _ = Service("catalog", func() {
 
 ### 2. Generate schemas, bindings, and `AGENTS_QUICKSTART.md`
 
+Save `design/catalog.go` above, then initialize the module and run the generator:
+
 ```bash
-go mod init example.com/catalog && go get goa.design/goa-ai@v0.90.0
+go mod init example.com/catalog
+go get goa.design/goa-ai@v0.90.0
+go mod tidy
 go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
 go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
-go mod tidy && go run ./cmd/catalog
+go mod tidy
 ```
 
-Running `goa` via `go run` uses the exact generator version pinned in `go.mod` (no Node.js or API keys required; `goa example` scaffolds a runnable stub planner for local runs). `Inject("tenant_id")` strips `tenant_id` from the model-facing `gen/catalog/agents/assistant/specs/tool_schemas.json` while keeping `sku`'s regex rule:
+Running `goa` via `go run` uses the exact generator version pinned in `go.mod` (no Node.js or API keys required). `goa example` creates `cmd/catalog/main.go` with a zero-credential stub planner; pass `runtime.WithLabels(map[string]string{"tenant_id": "acme"})` on `client.Run(...)` in `cmd/catalog/main.go`, and `go run ./cmd/catalog` prints:
+
+```text
+RunID: demo-assistant-run
+Assistant: Hello from example planner.
+```
+
+`Inject("tenant_id")` strips `tenant_id` from the model-facing `gen/catalog/agents/assistant/specs/tool_schemas.json` while keeping `sku`'s regex rule:
 
 ```json
 {
@@ -95,9 +108,9 @@ Running `goa` via `go run` uses the exact generator version pinned in `go.mod` (
 }
 ```
 
-### 3. Wire the planner and run (In-Memory or Temporal)
+### 3. Wire a model-backed planner and run (In-Memory or Temporal)
 
-`goa example example.com/catalog/design` scaffolds a runnable stub planner so you can run and test locally without model API keys. To connect a live model (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, Bedrock, or Vertex AI), implement `planner.Planner` (`PlanStart` and `PlanResume`):
+To connect a live model (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, Bedrock, or Vertex AI), implement `planner.Planner` (`PlanStart` and `PlanResume`) and set `Model` (or `ModelClass`) on each `model.Request`:
 
 ```go
 type CatalogPlanner struct{}
@@ -124,6 +137,7 @@ func (p *CatalogPlanner) next(
         return nil, errors.New(`model "default" is not registered`)
     }
     res, err := mc.Stream(ctx, &model.Request{
+        Model:    "gpt-5-mini",
         Messages: msgs,
         Tools:    agent.AdvertisedToolDefinitions(),
         Stream:   true,
@@ -138,10 +152,14 @@ func (p *CatalogPlanner) next(
 }
 ```
 
-Register the agent and bound service executor (`inmem.New()` locally; `runtime.WithEngine(temporalEng)` in production) and supply `tenant_id` via `runtime.WithLabels`:
+Create an explicit session in `runtime/agent/storage/inmem` (`inmem.New()`, paired with the default in-memory workflow engine locally or `runtime.WithEngine(temporalEng)` in production) and pass a unique `runtime.WithRunID` plus `runtime.WithLabels`:
 
 ```go
-rt := runtime.New(inmem.New())
+store := inmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+    return err
+}
+rt := runtime.New(store)
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
     APIKey: os.Getenv("OPENAI_API_KEY"), DefaultModel: "gpt-5-mini",
 })
@@ -174,6 +192,7 @@ msg := &model.Message{
     },
 }
 out, err := client.Run(ctx, "session-1", []*model.Message{msg},
+    runtime.WithRunID("run-1"),
     runtime.WithLabels(map[string]string{"tenant_id": "acme"}),
 )
 ```
@@ -218,6 +237,8 @@ Declare scenario suites alongside your agent and run deterministic tool-trajecto
 ### Model providers & session state {#model-providers}
 
 Built-in model adapters cover **OpenAI**, **Anthropic**, **AWS Bedrock**, and **Google Vertex AI**. Your application supplies session transcripts, authorization, and domain memory. See [Memory and sessions](memory-sessions/) and [Provider operations](provider-operations/).
+
+{{< anchors "documentation-guides" >}}
 
 ## Architecture
 

@@ -12,6 +12,8 @@ Goa-AI は、Goa の契約コンパイラを AI エージェント、MCP サー�
 - **MCP サーバーだけが必要ですか？** **[MCP 統合](mcp-integration/)** へ直接進んでください
 - **コーディングエージェントをお使いですか？** 生成される **`AGENTS_QUICKSTART.md`** と **[コーディングエージェントとの開発手順](../ai-development/)** を組み合わせてください
 
+{{< anchors "概要" "コーディングエージェントと開発する" "プロダクトにエージェントを組み込む" >}}
+
 ## 1 つの契約から稼働するエージェントまで
 
 ### 1. サービス、バインドされたツール、実行ポリシーを宣言する（`design/catalog.go`）
@@ -71,14 +73,25 @@ var _ = Service("catalog", func() {
 
 ### 2. スキーマ、バインディング、`AGENTS_QUICKSTART.md` を生成する
 
+上の `design/catalog.go` を保存してから、モジュールを初期化してジェネレーターを実行します：
+
 ```bash
-go mod init example.com/catalog && go get goa.design/goa-ai@v0.90.0
+go mod init example.com/catalog
+go get goa.design/goa-ai@v0.90.0
+go mod tidy
 go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design
 go run goa.design/goa/v3/cmd/goa example example.com/catalog/design
-go mod tidy && go run ./cmd/catalog
+go mod tidy
 ```
 
-`go run` 経由で `goa` を実行すると、`go.mod` に固定されたジェネレーターのバージョンがそのまま使われます（Node.js や API キーは不要で、`goa example` がローカル動作確認用のスタブプランナーを生成します）。`Inject("tenant_id")` により、モデル向けの `gen/catalog/agents/assistant/specs/tool_schemas.json` からは `tenant_id` が除外され、`sku` の正規表現ルールだけが公開されます。
+`go run` 経由で `goa` を実行すると、`go.mod` に固定されたジェネレーターのバージョンがそのまま使われます（Node.js や API キーは不要）。`goa example` は認証情報不要のスタブプランナーを組み込んだ `cmd/catalog/main.go` を生成します。`cmd/catalog/main.go` 内の `client.Run(...)` に `runtime.WithLabels(map[string]string{"tenant_id": "acme"})` を渡して `go run ./cmd/catalog` を実行すると、次のように出力されます。
+
+```text
+RunID: demo-assistant-run
+Assistant: Hello from example planner.
+```
+
+`Inject("tenant_id")` により、モデル向けの `gen/catalog/agents/assistant/specs/tool_schemas.json` からは `tenant_id` が除外され、`sku` の正規表現ルールだけが公開されます。
 
 ```json
 {
@@ -95,9 +108,9 @@ go mod tidy && go run ./cmd/catalog
 }
 ```
 
-### 3. プランナーを配線して実行する（インメモリまたは Temporal）
+### 3. モデル連携プランナーを配線して実行する（インメモリまたは Temporal）
 
-`goa example example.com/catalog/design` は API キーなしでローカル実行・テストできるスタブプランナーを生成します。本番モデル（`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、Bedrock、Vertex AI）に接続する場合は `planner.Planner`（`PlanStart` と `PlanResume`）を実装します。
+本番モデル（`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、Bedrock、Vertex AI）に接続する場合は、`planner.Planner`（`PlanStart` と `PlanResume`）を実装し、`model.Request` に `Model`（または `ModelClass`）を設定します。
 
 ```go
 type CatalogPlanner struct{}
@@ -124,6 +137,7 @@ func (p *CatalogPlanner) next(
         return nil, errors.New(`model "default" is not registered`)
     }
     res, err := mc.Stream(ctx, &model.Request{
+        Model:    "gpt-5-mini",
         Messages: msgs,
         Tools:    agent.AdvertisedToolDefinitions(),
         Stream:   true,
@@ -138,10 +152,14 @@ func (p *CatalogPlanner) next(
 }
 ```
 
-エージェントとバインドされたサービスのエグゼキューターを登録し（ローカルでは `inmem.New()`、本番では `runtime.WithEngine(temporalEng)`）、`runtime.WithLabels` で `tenant_id` を渡します。
+`runtime/agent/storage/inmem`（`inmem.New()`、ローカルでは既定のインメモリ実行エンジン、本番では `runtime.WithEngine(temporalEng)` と併用）で明示的にセッションを作成し、一意な `runtime.WithRunID` と `runtime.WithLabels` を渡して実行します。
 
 ```go
-rt := runtime.New(inmem.New())
+store := inmem.New()
+if _, err := store.CreateSession(ctx, "session-1", time.Now().UTC()); err != nil {
+    return err
+}
+rt := runtime.New(store)
 modelClient, err := rt.NewOpenAIModelClient(runtime.OpenAIConfig{
     APIKey: os.Getenv("OPENAI_API_KEY"), DefaultModel: "gpt-5-mini",
 })
@@ -174,6 +192,7 @@ msg := &model.Message{
     },
 }
 out, err := client.Run(ctx, "session-1", []*model.Message{msg},
+    runtime.WithRunID("run-1"),
     runtime.WithLabels(map[string]string{"tenant_id": "acme"}),
 )
 ```
@@ -218,6 +237,8 @@ Goa のバリデーションでツールの入出力を定義し、モデルか�
 ### モデルプロバイダーとセッション状態 {#model-providers}
 
 **OpenAI**、**Anthropic**、**AWS Bedrock**、**Google Vertex AI** 向けの組み込みモデルアダプターを提供しています。セッショントランスクリプト、認可、ドメインメモリはアプリケーション側で管理します。[メモリとセッション](memory-sessions/)および[プロバイダー運用](provider-operations/)を参照してください。
+
+{{< anchors "ガイド" >}}
 
 ## アーキテクチャ
 

@@ -130,9 +130,13 @@ Design
 
 **変数で参照**（呼び出し元要素の DSL 関数内で `Uses` を呼ぶ）:
 ```go
-var DB = Container("Database", "Stores data", "PostgreSQL")
-var API = Container("API", "Backend service", "Go", func() {
-    Uses(DB, "Reads from", "SQL")
+var _ = Design("My System", "Overall design", func() {
+    SoftwareSystem("My System", "Application backend", func() {
+        var DB = Container("Database", "Stores data", "PostgreSQL")
+        Container("API", "Backend service", "Go", func() {
+            Uses(DB, "Reads from", "SQL")
+        })
+    })
 })
 ```
 
@@ -155,14 +159,18 @@ Uses("My System/Other Container/Service", "Invokes")
 同じ要素を 2 回定義すると（同じ階層で同名）、Model はそれらをマージします：
 
 ```go
-var User = Person("User", "First definition", func() {
-    Uses("System A", "Uses")
-})
+var _ = Design("Enterprise", "Merged model", func() {
+    SoftwareSystem("System A", "First system")
+    SoftwareSystem("System B", "Second system")
 
-var User2 = Person("User", "Updated description", func() {
-    Uses("System B", "Also uses")
+    Person("User", "First definition", func() {
+        Uses("System A", "Uses")
+    })
+    Person("User", "Updated description", func() {
+        Uses("System B", "Also uses")
+    })
+    // Result: One "User" person with "Updated description" and both relationships
 })
-// Result: One "User" person with "Updated description" and both relationships
 ```
 
 これにより、共有モデルをインポートしつつ、ローカルな関係を追加して拡張できます。
@@ -174,19 +182,21 @@ var User2 = Person("User", "Updated description", func() {
 デプロイ可能なソフトウェアシステムを表すトップレベル要素：
 
 ```go
-var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() {
-    // Mark as external to the enterprise
-    External()
-    
-    // Documentation link
-    URL("https://docs.example.com/ecommerce")
-    
-    // Custom metadata
-    Prop("owner", "Platform Team")
-    Prop("tier", "1")
-    
-    // Tags for styling
-    Tag("critical", "public-facing")
+var _ = Design("Enterprise", "System landscape", func() {
+    SoftwareSystem("E-Commerce", "Online shopping platform", func() {
+        // Mark as external to the enterprise
+        External()
+
+        // Documentation link
+        URL("https://docs.example.com/ecommerce")
+
+        // Custom metadata
+        Prop("owner", "Platform Team")
+        Prop("tier", "1")
+
+        // Tags for styling
+        Tag("critical", "public-facing")
+    })
 })
 ```
 
@@ -195,25 +205,27 @@ var ECommerce = SoftwareSystem("E-Commerce", "Online shopping platform", func() 
 ソフトウェアシステム内のアプリケーション、サービス、またはデータストア：
 
 ```go
-var _ = SoftwareSystem("E-Commerce", "Online store", func() {
-    var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
-        Tag("database")
-    })
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        var Database = Container("Database", "Order and product data", "PostgreSQL", func() {
+            Tag("database")
+        })
 
-    var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
-        Tag("infrastructure")
-    })
+        var Queue = Container("Message Queue", "Async processing", "RabbitMQ", func() {
+            Tag("infrastructure")
+        })
 
-    var API = Container("API", "Backend REST API", "Go/Goa", func() {
-        Tag("backend")
-        URL("https://api.example.com")
-        Uses(Database, "Reads/writes", "SQL")
-        Uses(Queue, "Publishes events to", "AMQP")
-    })
+        var API = Container("API", "Backend REST API", "Go/Goa", func() {
+            Tag("backend")
+            URL("https://api.example.com")
+            Uses(Database, "Reads/writes", "SQL")
+            Uses(Queue, "Publishes events to", "AMQP")
+        })
 
-    Container("Web Application", "Customer UI", "React", func() {
-        Tag("frontend")
-        Uses(API, "Makes requests to", "HTTPS/JSON")
+        Container("Web Application", "Customer UI", "React", func() {
+            Tag("frontend")
+            Uses(API, "Makes requests to", "HTTPS/JSON")
+        })
     })
 })
 ```
@@ -224,11 +236,13 @@ Goa では、サービス定義をそのまま使えます：
 // Goa service definition
 var OrdersService = Service("orders", func() { /* ... */ })
 
-// Use it as a container
-var _ = SoftwareSystem("E-Commerce", func() {
-    Container(OrdersService, func() {
-        // Name, description, and "Go and Goa v3" technology come from the service
-        Tag("api")
+// Reference it inside Design -> SoftwareSystem
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container(OrdersService, func() {
+            // Name, description, and "Go and Goa v3" technology come from the service
+            Tag("api")
+        })
     })
 })
 ```
@@ -238,15 +252,24 @@ var _ = SoftwareSystem("E-Commerce", func() {
 コンテナ内のモジュール。技術的な詳細ドキュメントに使います：
 
 ```go
-var _ = Container("API", "Backend API", "Go", func() {
-    var PaymentService = Component("Payment Service", "Processes payments", "Go package", func() {
-        Uses("Stripe/API", "Processes cards via", "HTTPS")
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("Stripe", "Payment processor", func() {
+        External()
+        Container("API", "Card processing API", "HTTPS")
     })
-    var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
 
-    Component("Order Service", "Handles order lifecycle", "Go package", func() {
-        Uses(PaymentService, "Calls for payment")
-        Uses(NotificationService, "Triggers confirmations")
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("API", "Backend API", "Go", func() {
+            var PaymentService = Component("Payment Service", "Processes payments", "Go package", func() {
+                Uses("Stripe/API", "Processes cards via", "HTTPS")
+            })
+            var NotificationService = Component("Notification Service", "Sends emails/SMS", "Go package")
+
+            Component("Order Service", "Handles order lifecycle", "Go package", func() {
+                Uses(PaymentService, "Calls for payment")
+                Uses(NotificationService, "Triggers confirmations")
+            })
+        })
     })
 })
 ```
@@ -258,21 +281,28 @@ var _ = Container("API", "Backend API", "Go", func() {
 システムとやり取りするユーザー、アクター、ロール：
 
 ```go
-var Customer = Person("Customer", "A customer placing orders", func() {
-    External()  // Outside the enterprise
-    Tag("user")
-    Uses("E-Commerce", "Places orders using", "HTTPS")
-})
+var _ = Design("E-Commerce", "Online shopping platform", func() {
+    SoftwareSystem("E-Commerce", "Online store", func() {
+        Container("Admin Portal", "Back-office UI", "Web")
+        Container("Support Tools", "Agent console", "Web")
+    })
 
-var Admin = Person("Administrator", "Manages the platform", func() {
-    // Internal by default
-    Tag("internal")
-    Uses("E-Commerce/Admin Portal", "Manages products via")
-})
+    var Customer = Person("Customer", "A customer placing orders", func() {
+        External() // Outside the enterprise
+        Tag("user")
+        Uses("E-Commerce", "Places orders using", "HTTPS")
+    })
 
-var Support = Person("Support Agent", "Handles customer issues", func() {
-    InteractsWith(Customer, "Helps")  // Person-to-person relationship
-    Uses("E-Commerce/Support Tools", "Uses")
+    Person("Administrator", "Manages the platform", func() {
+        // Internal by default
+        Tag("internal")
+        Uses("E-Commerce/Admin Portal", "Manages products via")
+    })
+
+    Person("Support Agent", "Handles customer issues", func() {
+        InteractsWith(Customer, "Helps") // Person-to-person relationship
+        Uses("E-Commerce/Support Tools", "Uses")
+    })
 })
 ```
 
@@ -776,7 +806,7 @@ var _ = API("orders", func() {
     Title("Orders API")
 })
 
-var _ = Service("orders", func() {
+var OrdersService = Service("orders", func() {
     Method("create", func() { /* ... */ })
 })
 

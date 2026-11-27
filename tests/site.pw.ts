@@ -33,6 +33,21 @@ for (const width of [390, 1440]) {
       await page.getByRole('button', { name: 'Copy skill install command' }).click();
       await expect(page.locator('.copy-install-status')).toHaveText('Command copied.');
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npx skills add goadesign/goa --skill goa-service-designer');
+      await expect(page.locator('#home-prompt-cmd')).toContainText('gen example.com/catalog/design');
+      await expect(page.locator('#home-step2-copy')).toHaveAccessibleName('Copy starter prompt');
+      await page.locator('.home-prompt-btn[data-home-prompt="agent"]').click();
+      await expect(page.locator('#home-prompt-cmd')).toContainText('gen example.com/catalog/design');
+      await page.locator('.home-setup-btn[data-home-cmd="go"]').click();
+      await page.getByRole('button', { name: 'Copy skill install command' }).click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('go install goa.design/goa/v3/cmd/goa@latest');
+      await expect(page.locator('#home-step2-copy')).toHaveAccessibleName('Copy module setup command');
+      await page.locator('#home-step2-copy').click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('mkdir catalog && cd catalog && go mod init example.com/catalog && go get goa.design/goa-ai@v0.90.0');
+      await page.locator('.home-prompt-btn[data-home-prompt="service"]').click();
+      await page.locator('#home-step2-copy').click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('mkdir catalog && cd catalog && go mod init example.com/catalog && go get goa.design/goa/v3@v3.36.0');
+      await expect(page.locator('#home-step2-hint a').first()).toHaveAttribute('href', '/docs/1-goa/');
+      await page.locator('.home-setup-btn[data-home-cmd="skill"]').click();
       await expect(page.getByRole('link', { name: 'Build an MCP server', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/mcp-integration/');
       const mcp = page.locator('#mcp');
       await expect(mcp.locator('pre')).toContainText(/Tool\("lookup",\s*"Find a product by SKU"\)/);
@@ -105,7 +120,7 @@ test('localized homes, documentation, and machine-readable outputs remain reacha
     for (const section of ['additional-input-and-asynchronous-tasks', 'mcp-apps', 'mcp-skills']) {
       await expect(page.locator(`[id="${section}"]`)).toHaveCount(1);
     }
-    for (const path of ['index.md', 'docs/', 'docs/ai-development/', 'docs/2-goa-ai/', 'docs/contributing/', 'llms.txt', 'docs/ai-development/index.md', 'docs/2-goa-ai/mcp-integration/index.md']) {
+    for (const path of ['index.md', 'docs/', 'docs/ai-development/', 'docs/2-goa-ai/', 'docs/contributing/', 'llms.txt', 'docs/ai-development/index.md', 'docs/2-goa-ai/mcp-integration/index.md', 'docs/2-goa-ai/toolsets/index.md']) {
       const response = await request.get(`/${lang}${path}`);
       expect(response.status(), `${lang}${path}`).toBe(200);
       if (path === 'docs/ai-development/index.md') {
@@ -113,6 +128,9 @@ test('localized homes, documentation, and machine-readable outputs remain reacha
       }
       if (path === 'llms.txt') {
         expect(await response.text()).toContain(`/${lang}docs/ai-development/index.md`);
+      }
+      if (path === 'docs/2-goa-ai/toolsets/index.md') {
+        expect(await response.text()).toContain(`/${lang}docs/2-goa-ai/registry/`);
       }
       if (path === 'docs/2-goa-ai/mcp-integration/index.md') {
         const content = await response.text();
@@ -158,8 +176,21 @@ test('source HTML and Markdown expose the ecosystem and skill without client ren
   expect(html).toContain('https://goa.design/');
   expect(html).toMatch(/<link rel="?canonical"? href="?https:\/\/goa.design\//);
   expect(html).toContain('hreflang=ja');
+  expect(html).toMatch(/id=["']?workflow-title/);
   expect(html).toContain('HTTP + gRPC + JSON-RPC');
   expect(html).toContain('npx skills add goadesign/goa --skill goa-service-designer');
+  for (const [docPath, expectedIds] of [
+    ['/chorus/', ['chorus-steps-title']],
+    ['/docs/3-ecosystem/pulse/', ['replicated-maps', 'streaming', 'worker-pools']],
+    ['/docs/3-ecosystem/clue/', ['checking-dependencies']],
+    ['/it/docs/3-ecosystem/chorus/', ['coordinare-più-coding-agent', 'flusso-di-lavoro-tipico-dellagente']],
+    ['/ja/docs/3-ecosystem/chorus/', ['複数のコーディングエージェントを連携させる', 'エージェントの典型的なワークフロー']],
+  ] as const) {
+    const docHtml = await (await request.get(docPath)).text();
+    for (const id of expectedIds) {
+      expect(docHtml, `${docPath}#${id}`).toContain(`id=${id}`);
+    }
+  }
   const schemaText = html.match(/<script type=["\']?application\/ld\+json["\']?>(.*?)<\/script>/s)?.[1];
   expect(schemaText).toBeTruthy();
   const schema = JSON.parse(schemaText!);

@@ -7,6 +7,7 @@ description: "Donnez un contrat explicite à votre agent de code, générez le c
 
 Goa accompagne deux missions complémentaires : **construire un logiciel avec un agent de code** et **intégrer des agents IA dans ce logiciel**. La même méthode orientée conception sert les deux. Goa génère les contrats de service ; Goa-AI étend la génération aux outils, aux sorties structurées et à l’intégration d’agents.
 
+{{< anchors "pourquoi-la-génération-change-le-travail" >}}
 ## Pourquoi la génération transforme le workflow
 
 Lorsqu’un LLM rédige séparément les gestionnaires, le code client, les schémas JSON et la validation, il doit maintenir ces représentations alignées. Goa les dérive de la conception. Le modèle peut se concentrer sur les exigences, les décisions métier et l’implémentation.
@@ -36,8 +37,10 @@ npx --yes skills add goadesign/goa --skill goa-service-designer \
 
 L’installation est locale au projet par défaut. Ajoutez `--global` pour une installation personnelle ou `--copy` si votre environnement ne prend pas en charge les liens symboliques. Sans Node.js, copiez l’intégralité du [répertoire `goa-service-designer`](https://github.com/goadesign/goa/tree/v3/skills/goa-service-designer) dans le dossier de skills pris en charge par votre outil.
 
+{{< anchors "le-cycle-de-développement" >}}
 ## La boucle de développement
 
+{{< anchors "1-fournir-le-contexte-utile" >}}
 ### 1. Fournir le contexte pertinent
 
 Donnez à l’agent de code l’objectif, les fichiers de conception et l’implémentation qu’il doit modifier. Pour un service, installez la [skill Goa service designer](https://github.com/goadesign/goa/tree/v3/skills) selon les instructions propres à votre outil.
@@ -60,6 +63,7 @@ goa gen example.com/catalog/design
 
 Implémentez ou mettez à jour les interfaces générées dans les fichiers appartenant à l’application. `goa example` crée les fichiers de départ une seule fois ; il ne met pas à jour la logique métier existante lorsque la conception évolue. Ne modifiez jamais `gen/` pour faire taire une erreur de compilation : corrigez la conception ou l’implémentation applicative, puis régénérez.
 
+{{< anchors "4-vérifier-le-changement-complet" >}}
 ### 4. Vérifier l’ensemble du changement
 
 ```bash
@@ -155,8 +159,9 @@ go mod tidy
 go test ./...
 ```
 
-Inspectez l’interface de service générée, le serveur et le client HTTP, les spécifications OpenAPI, les schémas et codecs d’outils de l’agent ainsi qu’`AGENTS_QUICKSTART.md`. Sur ce fichier `design/catalog.go` de 54 lignes, `goa gen` produit 57 fichiers dans `gen/` (~5 400 lignes de Go ainsi que les schémas OpenAPI, Protobuf et JSON d’outils) et `AGENTS_QUICKSTART.md` sans dépenser de tokens de sortie modèle. Le squelette applicatif généré constitue un point de départ : implémentez la recherche et remplacez le planificateur d’exemple avant toute mise en production.
+Inspectez l’interface de service générée, le serveur et le client HTTP, les spécifications OpenAPI, les schémas et codecs d’outils de l’agent ainsi qu’`AGENTS_QUICKSTART.md`. Sur ce fichier `design/catalog.go` de 54 lignes, `goa gen` produit 57 fichiers dans `gen/` (5 388 lignes au total : 5 108 lignes de Go ainsi que les schémas OpenAPI, Protobuf et JSON d’outils) et `AGENTS_QUICKSTART.md` sans dépenser de tokens de sortie modèle. Le squelette applicatif généré constitue un point de départ : implémentez la recherche et remplacez le planificateur d’exemple avant toute mise en production.
 
+{{< anchors "une-consigne-utile" >}}
 ## Un prompt de tâche efficace
 
 ```text
@@ -222,6 +227,7 @@ Invoquez ensuite `/highbay` dans un dossier vide (ou dans un dépôt Goa existan
 
 Votre agent de code initialise une coquille Go et `eval/` propre et neutre lorsque le dossier est vide (`highbay init -example` ou `worked_example: true` ajoute un exemple exécutable si vous le souhaitez), rédige les flux métier dans `design/story.go` et ouvre une Change Card dans votre navigateur. Une fois la carte confirmée, Highbay affecte le rédacteur de tests (`.highbay-tests`) et le bâtisseur (`.highbay-build`) à des copies de travail distinctes, valide et accepte la suite `eval/`, vérifie le commit du bâtisseur face à celle-ci et vous permet de fusionner les commits approuvés dans votre branche locale en un clic. Consultez la [page Highbay](/fr/highbay/) et le [guide Highbay de l’écosystème](/fr/docs/3-ecosystem/highbay/).
 
+{{< anchors "mesurer-lavantage" >}}
 ## Mesurer l’avantage sur votre projet
 
 Comparez la même tâche, les mêmes critères d’acceptation, le même modèle et la même base de code initiale sur plusieurs exécutions. Relevez les tokens d’entrée et de sortie, le temps écoulé, la durée de régénération et de test, les corrections manuelles, l’effort de relecture et les défauts de comportement. Incluez la mise en place et les tentatives échouées. Le nombre de lignes générées illustre le travail accompli par le générateur, non un benchmark universel d’économie de tokens ou de productivité.

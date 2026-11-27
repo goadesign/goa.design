@@ -7,6 +7,7 @@ llm_optimized: true
 
 Pulse réunit trois packages Go dédiés à la coordination distribuée au-dessus de Redis (`*redis.Client`), sans introduire de courtier de messages séparé. Il fonctionne de manière autonome dans n’importe quel binaire Go ou aux côtés de services Goa et Goa-AI.
 
+{{< anchors "pourquoi-pulse-" "cas-dutilisation" >}}
 ## Vue d’ensemble
 
 | Package | Type principal | Cas d’usage |
@@ -23,6 +24,7 @@ go get goa.design/pulse@latest
 
 ---
 
+{{< anchors "cartes-répliquées" "mise-en-cache-distribuée" >}}
 ## Cartes répliquées (`rmap`)
 
 `rmap` maintient une carte clé-valeur à lecture locale et cohérence finale entre les nœuds à l’aide d’un hash Redis (`map:<name>:content`), de scripts d’écriture Lua atomiques et d’un canal pub/sub Redis de mise à jour (`map:<name>:updates`).
@@ -35,6 +37,7 @@ go get goa.design/pulse@latest
 - **Écritures atomiques** : Chaque mutation (`Set`, `Inc`, `AppendValues`, `TestAndSet`, `Delete`, `Reset`) s’exécute dans un unique script Lua Redis qui met à jour le hash et publie une notification binaire compacte sur `map:<name>:updates`.
 - **Lectures sans appel réseau** : Chaque processus ayant rejoint la carte conserve une copie en mémoire alimentée par pub/sub ; `Get`, `Keys` et `Map` lisent ainsi la mémoire locale sans aller-retour vers Redis.
 
+{{< anchors "rejoindre-et-lire" "écriture" >}}
 ### Rejoindre, lire et écrire
 
 ```go
@@ -74,6 +77,7 @@ func main() {
 }
 ```
 
+{{< anchors "notifications-de-changement" >}}
 ### Observer les notifications de changement
 
 ```go
@@ -96,6 +100,7 @@ go func() {
 
 `Subscribe` émet des notifications `EventKind` globales (`EventChange`, `EventDelete`, `EventReset`) et regroupe les rafales rapprochées afin que les cartes à forte fréquence d’écriture ne saturent jamais les lecteurs ; inspectez `m.Get`, `m.Map()` ou `m.Keys()` à chaque réveil.
 
+{{< anchors "cohérence-et-modes-déchec" "options-de-configuration-clés" >}}
 ### Cohérence et modes de défaillance
 
 - **Ordre de souscription** : `rmap.Join` s’abonne à `map:<name>:updates` *avant* d’exécuter `HGETALL`, garantissant qu’aucune mutation survenant entre l’instantané et l’abonnement ne soit perdue.
@@ -104,6 +109,7 @@ go func() {
 
 ---
 
+{{< anchors "streaming" "event-sourcing" >}}
 ## Flux d’événements (`streaming`)
 
 `streaming` achemine des événements typés entre microservices via Redis Streams, avec prise en charge à la fois de curseurs indépendants en diffusion multiple (`Reader`) et de files de travail partagées en groupes de consommateurs (`Sink`).
@@ -118,6 +124,7 @@ Par défaut, `streaming.NewStream` conserve les **`1 000` événements les plus 
 - Passez `options.WithStreamMaxLen(n)` (depuis `goa.design/pulse/streaming/options`) pour augmenter ou réduire le plafond d’événements conservés.
 - Passez `options.WithUnboundedStream()` lorsque les éléments en attente ne doivent jamais être purgés automatiquement, puis appelez `stream.Remove(ctx, event.ID)` une fois chaque élément traité.
 
+{{< anchors "création-de-flux" "publication-dévénements" >}}
 ### Créer des flux et publier des événements
 
 ```go
@@ -163,6 +170,7 @@ func publishSignup(ctx context.Context, rdb *redis.Client) error {
 }
 ```
 
+{{< anchors "consommer-des-événements" "modèle-de-sortie-en-éventail" "modèle-dentrée-en-éventail" "lecteurs-et-puits" "puits-groupes-de-consommateurs" "modèles" >}}
 ### Consommer des événements : `Sink` vs `Reader`
 
 `Sink` et `Reader` livrent tous deux leurs événements sur un canal Go renvoyé par `Subscribe() <-chan *streaming.Event` :
@@ -215,6 +223,7 @@ for event := range reader.Subscribe() {
 }
 ```
 
+{{< anchors "options-de-configuration-clés-1" >}}
 ### Options principales de streaming (`goa.design/pulse/streaming/options`)
 
 | Option | Cible | Description |
@@ -232,6 +241,7 @@ Voir [`pkg.go.dev/goa.design/pulse/streaming/options`](https://pkg.go.dev/goa.de
 
 ---
 
+{{< anchors "pools-de-travailleurs" "traitement-des-tâches-asynchrones" >}}
 ## Pools de workers (`pool`)
 
 `pool` répartit des tâches identifiées par clé sur une flotte de processus workers à l’aide du hachage cohérent par saut (*jump consistent hashing*) : les tâches partageant la même clé arrivent sur le même worker et sont rééquilibrées automatiquement lorsque des workers rejoignent le pool, le quittent ou cessent d’émettre leur battement de cœur.
@@ -240,6 +250,7 @@ Voir [`pkg.go.dev/goa.design/pulse/streaming/options`](https://pkg.go.dev/goa.de
 
 {{< figure src="/images/diagrams/PulsePool.svg" alt="Architecture du pool de workers Pulse montrant le flux de répartition des tâches" class="img-fluid" >}}
 
+{{< anchors "création-dun-pool" "répartition-des-tâches" "emplois-de-traitement" "options-de-configuration-clés-2" >}}
 ### Créer un nœud de pool, ajouter des workers et distribuer des tâches
 
 ```go
@@ -285,6 +296,7 @@ func runPool(ctx context.Context, rdb *redis.Client) error {
 }
 ```
 
+{{< anchors "modes-de-défaillance-et-durabilité" >}}
 ### Sémantique de livraison et bascule
 
 - **Exécution au-moins-une-fois** : Les workers publient leur battement de cœur dans une `rmap` ; si un worker dépasse `WithWorkerTTL`, les nœuds pairs remettent ses tâches actives en file d’attente vers les propriétaires suivants désignés par le hachage cohérent. Gardez vos gestionnaires `Start` idempotents.
@@ -293,6 +305,7 @@ func runPool(ctx context.Context, rdb *redis.Client) error {
 
 ---
 
+{{< anchors "exemple-complet--flux-dinscription-de-lutilisateur" >}}
 ## Exemple complet : flux d’inscription utilisateur
 
 Combinaison de `rmap`, `streaming` et `pool` au sein d’un même service :
@@ -398,9 +411,10 @@ func (h *EmailJobHandler) Stop(key string) error {
 
 ---
 
+{{< anchors "configuration-de-linfrastructure" "exigences-de-redis" "cluster-redis" "considérations-relatives-à-la-production" "dépannage" >}}
 ## Configuration Redis et points de contrôle en production
 
-- **Type de client et persistance** : Les constructeurs Pulse (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) acceptent un `*redis.Client` connecté à Redis 5.0+ ou Valkey (instance autonome, primaire-réplica avec Redis Sentinel via `redis.NewFailoverClient`, ou service Redis managé avec persistance AOF activée). `*redis.ClusterClient` n’est pas pris en charge car les scripts Lua accèdent directement aux clés de cartes et de flux.
+- **Type de client et persistance** : Les constructeurs Pulse (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) acceptent un `*redis.Client` connecté à Redis 6.2+ ou Valkey (instance autonome, primaire-réplica avec Redis Sentinel via `redis.NewFailoverClient`, ou service Redis managé avec persistance AOF activée). `*redis.ClusterClient` n’est pas pris en charge car les scripts Lua accèdent directement aux clés de cartes et de flux.
 - **Troncature exacte des flux** : `NewStream` tronque par défaut à `1 000` événements avec `MAXLEN =` exact. Dimensionnez `options.WithStreamMaxLen(n)` selon votre fenêtre de relecture, ou combinez `options.WithUnboundedStream()` et `stream.Remove(ctx, id)` explicite lorsque chaque élément en file doit impérativement être traité avant suppression.
 - **Gestionnaires idempotents** : Les consommateurs `Sink` comme les workers `pool` garantissent une livraison au-moins-une-fois lors des pannes et rééquilibrages ; protégez les effets de bord externes avec des clés d’idempotence.
 

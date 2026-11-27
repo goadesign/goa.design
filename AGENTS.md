@@ -5,7 +5,7 @@ system before changing public copy or UI.
 
 ## Local skills
 
-Pinned in `skills-lock.json` and refreshed via `make update-skills` (`npm run skills:update`) or `.github/workflows/update-skills.yml`:
+Pinned in `skills-lock.json` (upstream licenses and notices preserved in `.agents/THIRD_PARTY_NOTICES.md`) and refreshed via `make update-skills` (`npm run skills:update`) or `.github/workflows/update-skills.yml`:
 
 - `.agents/skills/impeccable/`: UI hierarchy, layout, typography, visual polish, and design critique (`PRODUCT.md` and `DESIGN.md`).
 - `.agents/skills/frontend-design/`: distinctive visual direction and avoiding generic AI layout chrome.

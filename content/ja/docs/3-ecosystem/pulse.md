@@ -7,6 +7,7 @@ llm_optimized: true
 
 Pulse は、別途メッセージブローカーを導入することなく、Redis（`*redis.Client`）上で分散協調を実現する 3 つの Go パッケージを提供します。任意の Go バイナリで単体利用できるほか、Goa や Goa-AI サービスとも自然に組み合わせられます。
 
+{{< anchors "なぜ-pulse-なのか" "ユースケース" >}}
 ## 概要
 
 | パッケージ | 主な型 | ユースケース |
@@ -23,6 +24,7 @@ go get goa.design/pulse@latest
 
 ---
 
+{{< anchors "レプリケートマップ" "分散キャッシュ" >}}
 ## レプリケートマップ（`rmap`）
 
 `rmap` は、Redis ハッシュ（`map:<name>:content`）、原子的な Lua 書き込みスクリプト、および Redis pub/sub 更新チャネル（`map:<name>:updates`）を用いて、ノード間で結果整合性を持つローカル読み取り型のキーバリューマップを維持します。
@@ -35,6 +37,7 @@ go get goa.design/pulse@latest
 - **原子的書き込み**：すべての変更操作（`Set`、`Inc`、`AppendValues`、`TestAndSet`、`Delete`、`Reset`）は単一の Redis Lua スクリプト内で実行され、ハッシュの更新と `map:<name>:updates` へのコンパクトなバイナリ通知の publish を不可分に行います。
 - **ネットワーク往復ゼロの読み取り**：参加中の各プロセスは pub/sub から更新されるインメモリコピーを保持するため、`Get`、`Keys`、`Map` は Redis へ通信せずにローカルメモリから直接読み取ります。
 
+{{< anchors "参加と読み取り" "書き込み" >}}
 ### 参加・読み取り・書き込み
 
 ```go
@@ -74,6 +77,7 @@ func main() {
 }
 ```
 
+{{< anchors "変更通知" >}}
 ### 変更通知の購読
 
 ```go
@@ -96,6 +100,7 @@ go func() {
 
 `Subscribe` は粗粒度の `EventKind` 通知（`EventChange`、`EventDelete`、`EventReset`）を配信し、書き込みバーストを自動的にまとめるため、高頻度に更新されるマップでもリーダーが通知で溢れることはありません。起床時に `m.Get`、`m.Map()`、`m.Keys()` で最新状態を参照してください。
 
+{{< anchors "整合性と故障時の挙動" "主な設定オプション" >}}
 ### 整合性と障害時の挙動
 
 - **参加順序**：`rmap.Join` は `HGETALL` を実行する*前*に `map:<name>:updates` を購読するため、スナップショット取得と購読開始の間の変更を取りこぼしません。
@@ -104,6 +109,7 @@ go func() {
 
 ---
 
+{{< anchors "ストリーミング" "event-sourcing" >}}
 ## ストリーミング（`streaming`）
 
 `streaming` は Redis Streams 上でマイクロサービス間の型付きイベントをルーティングし、独立したファンアウトカーソル（`Reader`）と共有コンシューマーグループのワークキュー（`Sink`）の両方をサポートします。
@@ -118,6 +124,7 @@ go func() {
 - 保持イベント数の上限を増減するには、`options.WithStreamMaxLen(n)`（`goa.design/pulse/streaming/options`）を渡します。
 - 未処理のワークアイテムを自動トリムさせたくない場合は `options.WithUnboundedStream()` を渡し、各アイテムの処理完了後に `stream.Remove(ctx, event.ID)` を呼び出してください。
 
+{{< anchors "ストリームの作成" "イベントの-publish" >}}
 ### ストリームの作成とイベントの発行
 
 ```go
@@ -163,6 +170,7 @@ func publishSignup(ctx context.Context, rdb *redis.Client) error {
 }
 ```
 
+{{< anchors "イベントの-consume" "fan-out-パターン" "fan-in-パターン" "reader-と-sink-の違い" "sinkconsumer-group" "パターン" >}}
 ### イベントの消費：`Sink` と `Reader` の使い分け
 
 `Sink` と `Reader` はどちらも `Subscribe() <-chan *streaming.Event` が返す Go チャネル経由でイベントを配信します：
@@ -215,6 +223,7 @@ for event := range reader.Subscribe() {
 }
 ```
 
+{{< anchors "主な設定オプション-1" >}}
 ### 主なストリーミングオプション（`goa.design/pulse/streaming/options`）
 
 | オプション | 対象 | 説明 |
@@ -232,6 +241,7 @@ for event := range reader.Subscribe() {
 
 ---
 
+{{< anchors "ワーカープール" "非同期タスク処理" >}}
 ## ワーカープール（`pool`）
 
 `pool` はジャンプコンシステントハッシュを使ってワーカープロセス群へキー付きジョブをディスパッチします。同じキーのジョブは常に同じワーカーへルーティングされ、ワーカーの参加・離脱・ハートビート停止時には自動的にリバランスされます。
@@ -240,6 +250,7 @@ for event := range reader.Subscribe() {
 
 {{< figure src="/images/diagrams/PulsePool.svg" alt="ジョブディスパッチの流れを示す Pulse ワーカープールのアーキテクチャ" class="img-fluid" >}}
 
+{{< anchors "プールの作成" "ジョブのディスパッチ" "ジョブ処理" "主な設定オプション-2" >}}
 ### プールノードの作成、ワーカー追加、ジョブのディスパッチ
 
 ```go
@@ -285,6 +296,7 @@ func runPool(ctx context.Context, rdb *redis.Client) error {
 }
 ```
 
+{{< anchors "故障時の挙動と永続性" >}}
 ### 配信セマンティクスとフェイルオーバー
 
 - **at-least-once 実行**：各ワーカーは `rmap` 上でハートビートを更新します。ワーカーが `WithWorkerTTL` を超過すると、他ノードがその進行中ジョブを再キューイングし、生存しているコンシステントハッシュ担当ワーカーへ引き継ぎます。`Start` ハンドラーは冪等に実装してください。
@@ -293,6 +305,7 @@ func runPool(ctx context.Context, rdb *redis.Client) error {
 
 ---
 
+{{< anchors "完全な例-ユーザーサインアップフロー" >}}
 ## 完全な実装例：ユーザー登録フロー
 
 1 つのサービス内で `rmap`、`streaming`、`pool` を組み合わせる例です：
@@ -398,12 +411,14 @@ func (h *EmailJobHandler) Stop(key string) error {
 
 ---
 
+{{< anchors "インフラ構成" "redis-要件" "redis-クラスタ" "本番運用での考慮点" "トラブルシューティング" >}}
 ## Redis 構成と本番運用チェックリスト
 
-- **クライアント型と永続化**：Pulse の各コンストラクタ（`rmap.Join`、`streaming.NewStream`、`pool.AddNode`）は、Redis 5.0+ または Valkey（単体構成、`redis.NewFailoverClient` による Redis Sentinel プライマリ・レプリカ構成、または AOF 永続化を有効にしたマネージド Redis エンドポイント）に対する `*redis.Client` を受け取ります。Lua スクリプトがマップやストリームのキーへ直接アクセスするため、`*redis.ClusterClient` には対応していません。
+- **クライアント型と永続化**：Pulse の各コンストラクタ（`rmap.Join`、`streaming.NewStream`、`pool.AddNode`）は、Redis 6.2+ または Valkey（単体構成、`redis.NewFailoverClient` による Redis Sentinel プライマリ・レプリカ構成、または AOF 永続化を有効にしたマネージド Redis エンドポイント）に対する `*redis.Client` を受け取ります。Lua スクリプトがマップやストリームのキーへ直接アクセスするため、`*redis.ClusterClient` には対応していません。
 - **厳密なストリームトリミング**：`NewStream` はデフォルトで厳密な `MAXLEN =` により `1,000` 件でトリムします。必要なリプレイ幅に合わせて `options.WithStreamMaxLen(n)` を設定するか、すべてのキュー項目を確実に処理してから削除したい場合は `options.WithUnboundedStream()` と明示的な `stream.Remove(ctx, id)` を組み合わせてください。
 - **ハンドラーの冪等性**：`Sink` コンシューマーと `pool` ワーカーはどちらもクラッシュやリバランス時に at-least-once で再配信されるため、外部への副作用は冪等キーで保護してください。
 
+{{< anchors "参考" >}}
 ## 関連リンク
 
 - [Pulse GitHub リポジトリ](https://github.com/goadesign/pulse) — ソースコードとテスト

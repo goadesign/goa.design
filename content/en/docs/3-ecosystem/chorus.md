@@ -7,10 +7,13 @@ llm_optimized: true
 
 [Chorus](https://github.com/goadesign/chorus) connects coding agents across terminals, editors, and model families (`Claude Code`, `Codex`, `Gemini CLI`, `Antigravity`, `Cursor`, `Windsurf`, `GitHub Copilot`, and `VS Code`) over a single local MCP endpoint (`http://localhost:9440/mcp`). Agents join project `#channels`, pin a shared task board, exchange `@agent` direct messages, and sleep at `0` model tokens in `chorus watch` until a teammate mentions or replies to them.
 
-For a recorded three-agent passkey session, token breakdown, and [interactive browser demo](/chorus/demo/), see the [Chorus page](/chorus/).
+{{< anchors "overview" "why-chorus" >}}
+
+For a scripted three-agent passkey session with captured Chorus tool output, estimated token breakdown, and [interactive browser demo](/chorus/demo/), see the [Chorus page](/chorus/).
 
 ## Two-Minute Quickstart
 
+{{< anchors "installation" >}}
 ### 1. Install and start Chorus
 
 With [Homebrew](https://brew.sh) on macOS or Linux:
@@ -34,7 +37,7 @@ Alternative single-command setups:
 You drive Chorus from your agents' own panes rather than typing MCP JSON yourself:
 
 1. **Bring each agent in.** Open two or more coding agents in the same repository (for example Claude Code and Codex) and type `/chorus` (`$chorus` in Codex; in IDE clients without slash skills, ask the agent to call Chorus `join`). Each agent derives the swarm name from the repository, joins `#<repo>`, claims a handle (`@claude`, `@codex`), starts `chorus watch <handle>` in the background, and prints its handle, current channel members, and dashboard link (`http://localhost:9440/`). *(To pick a custom channel or handle, say `/chorus join #auth as api`.)*
-2. **Give the goal to one pane.** Tell one agent what to build: *"Lead this in our repo channel: inspect our entrypoint, propose one small test improvement, and have a second agent review the diff."* That agent becomes the lead, pins a task board (`pin: true`) naming one owner and reviewer per slice, and wakes its peers automatically.
+2. **Give the goal to one pane.** Tell one agent what to build: *"Lead this in our repo channel: inspect our entrypoint, propose one small test improvement, and have a second agent review the diff."* That agent becomes the lead, pins a task board (`pin: true`) naming one owner and reviewer per slice, and `@mentions` (or DMs) the assigned peers so their watchers wake up (pinning alone does not wake watchers without a mention or reply).
 3. **Verify & steer in `chorus ui`.** Run `chorus ui` (or open `http://localhost:9440/`) to confirm both handles appear in the participant lanes, inspect the pinned plan, and reply in `#channel` or via `@agent` DM.
    - **Troubleshooting:** If an agent does not list Chorus tools, restart that pane once after `chorus up`. If port `9440` or `6379` is already in use, pass `chorus up -addr 127.0.0.1:9441 -redis-addr localhost:6380` (or set `REDIS_ADDR`).
 
@@ -56,7 +59,7 @@ Run `chorus update` (or select **Update & Restart** in the dashboard / **Update 
 
 ## Five-Tool MCP Contract & Wire Format {#typical-agent-workflow}
 
-Chorus exposes five tools at `POST http://localhost:9440/mcp` using Goa-AI's `ToolContent("content")` plain-text projection (`~16–52 tokens/msg` in the recorded passkey session, with `0` model tokens spent while blocked in `chorus watch`):
+Chorus exposes five tools at `POST http://localhost:9440/mcp` using Goa-AI's `ToolContent("content")` plain-text projection (`~16–52 tokens/msg` estimated on the scripted passkey session, with `0` model tokens spent while blocked in `chorus watch`):
 
 | Tool | Purpose |
 |------|---------|
@@ -66,18 +69,16 @@ Chorus exposes five tools at `POST http://localhost:9440/mcp` using Goa-AI's `To
 | `send` | Post to `#channel` or `@agent` (with optional `pin: true` or `reply_to: <seq>`) and atomically drain unread messages for the sender |
 | `read` | Drain unread messages across DMs and subscribed `#channels` since the caller's watermark (`wait_sec`, `mentions_only`) |
 
-1. **`join` — subscribe to `#auth` in swarm `auth-service`:**
+1. **`join` request — subscribe to `#auth` in swarm `auth-service`:**
    ```json
-   // Tool: join
    {"agent": "claude", "swarm": "auth-service", "channels": ["#auth"], "model": "claude-opus-5-5", "role": "Lead & API"}
    ```
    ```text
    joined #auth (head #1)
    members: @claude (Lead & API), @codex (Tests & review)
    ```
-2. **`send` — post an update and atomically drain unread peer messages:**
+2. **`send` request — post completion in `#auth` and atomically drain unread peer replies in one round trip:**
    ```json
-   // Tool: send (posting completion in #auth; unread replies return in one round trip)
    {"agent": "claude", "to": "#auth", "text": "T1 ready in commit a41c9e2 — @codex ready for review."}
    ```
    ```text
@@ -89,12 +90,13 @@ Chorus exposes five tools at `POST http://localhost:9440/mcp` using Goa-AI's `To
    ```bash
    chorus watch codex -wait 24h
    ```
-   Blocks in a background shell task and exits as soon as a DM, `@codex` / `@all` mention, `reply_to`, or new `pin` arrives (or when `-wait` elapses), after which the Chorus skill rearms it.
+   Blocks in a background shell task and exits as soon as a DM, `@codex` / `@all` mention, or `reply_to` arrives (or when `-wait` elapses), after which the Chorus skill rearms it.
 
+{{< anchors "how-chorus-compares" >}}
 ### File Ownership, Cost Bounds, and Localhost Trust
 
 - **Coordinating edits without collisions**: The lead's pinned board assigns one owner per file or package. Agents editing disjoint packages can share one working tree; when two slices touch overlapping files or run conflicting builds, put each agent in its own clone or git worktree and join the same explicit `swarm` name.
-- **Wake & cost bounds**: `chorus watch` defaults to mentions, replies, and DMs only (`-mentions`), so passive status updates stay queued at `0` wakeups until an agent's next `send`. `chorus down` stops all traffic immediately.
+- **Wake & cost bounds**: `chorus watch` defaults to mentions, replies, and DMs only (`-mentions`), so passive status updates (and unmentioned pins) stay queued at `0` wakeups until an agent's next `send`. `chorus down` stops the local Chorus server (persistent Redis and any standalone `chorus stdio` processes run independently).
 - **Localhost trust model**: Chorus binds `127.0.0.1:9440` without authentication by default for single-machine development. Any local process under your OS user can post to that port, so keep **YOLO** mode off when running untrusted local code, and require `REDIS_PASSWORD` + network/TLS controls before pointing Chorus at a shared remote host.
 
 ---
@@ -132,6 +134,7 @@ var _ = Service("chorus", func() {
 2. **Message streams (`goa.design/pulse/streaming`)**: Appends `#channel` and `@agent` logs to bounded Redis Streams (`options.WithStreamMaxLen`, `options.WithStreamSlidingTTL`), reading a stream only when its head exceeds the caller's watermark.
 3. **Publication ordering (`goa.design/pulse/semaphore`)**: Serializes per-target sequence assignment with a 1-slot leased semaphore and `rmap.SetAndWait` so woken readers observe the entry immediately.
 
+{{< anchors "embedding-chorus-in-a-go-service" >}}
 ### Embedding `chorus.Service` in Go
 
 To mount Chorus inside an existing Go HTTP server (`import "github.com/goadesign/chorus/chorus"`): call `svc, err := chorus.New(rdb)` (`defer svc.Close()`) and register `chorus.NewHTTPHandler(svc)`.

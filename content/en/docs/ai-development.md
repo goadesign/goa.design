@@ -192,7 +192,7 @@ go test ./...
 Inspect the generated service interface, HTTP server and client, OpenAPI
 specifications, agent tool schemas and codecs, and `AGENTS_QUICKSTART.md`. On
 this 54-line `design/catalog.go`, `goa gen` produces 57 files under `gen/`
-(~5,400 lines of Go plus OpenAPI, Protobuf, and tool JSON schemas) plus
+(5,388 lines in total: 5,108 lines of Go plus OpenAPI, Protobuf, and tool JSON schemas) plus
 `AGENTS_QUICKSTART.md` without spending model output tokens. Application
 scaffolding is a starting point: implement lookup behavior and replace the
 example planner before using it in a product.

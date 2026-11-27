@@ -96,7 +96,7 @@ assistant.RegisterAssistantAgent(ctx, rt, cfg)</code></div>
 })` "go" "" }}
         <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/support/design</code></div>
         <div class="demo-impl"><code>// Checked at goa gen; rendered with typed Go structs at runtime
-support.RenderSupportSystemPrompt(support.SystemPromptArgs{...})</code></div>
+support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code></div>
         <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul role="list">
           <li>{{ T "home_output_prompt_checks" }}</li><li>{{ T "home_output_prompt_render" }}</li>
           <li>{{ T "home_output_prompt_registration" }}</li><li>{{ T "home_output_prompt_overrides" }}</li>
@@ -134,19 +134,19 @@ support.RenderSupportSystemPrompt(support.SystemPromptArgs{...})</code></div>
 
           <div class="highbay-install-step">
             <div class="highbay-step2-head">
-              <p id="home-step2-label" class="skill-prompt-label chorus-install-alt" data-label-skill="{{ T "home_skill_next" | markdownify }}" data-label-go="{{ T "home_cli_next" | markdownify }}">{{ T "home_skill_next" | markdownify }}</p>
+              <p id="home-step2-label" class="skill-prompt-label chorus-install-alt"><span class="home-label-skill">{{ T "home_skill_next" | markdownify }}</span><span class="home-label-go" hidden>{{ T "home_cli_next" | markdownify }}</span></p>
               <div class="highbay-prefix-switch home-prompt-switch" role="group" aria-label="{{ T "home_example_label" }}">
                 <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="service" aria-pressed="true">{{ T "home_services" }}</button>
                 <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="agent" aria-pressed="false">{{ T "home_agents" }}</button>
               </div>
             </div>
             <div class="install-command highbay-prompt-box">
-              <code id="home-prompt-cmd" class="highbay-prompt-code" data-prompt-service="{{ T "home_skill_prompt" }}" data-prompt-agent="{{ T "home_skill_prompt_agent" }}" data-cli-service="goa gen example.com/catalog/design &amp;&amp; go test ./..." data-cli-agent="go run goa.design/goa/v3/cmd/goa gen example.com/catalog/design &amp;&amp; go test ./...">{{ T "home_skill_prompt" }}</code>
-              <button type="button" class="copy-install" command="--copy" commandfor="home-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-copy-target="home-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+              <code id="home-prompt-cmd" class="highbay-prompt-code" data-prompt-service="{{ T "home_skill_prompt" }}" data-prompt-agent="{{ T "home_skill_prompt_agent" }}" data-cli-service="mkdir catalog &amp;&amp; cd catalog &amp;&amp; go mod init example.com/catalog &amp;&amp; go get goa.design/goa/v3@v3.36.0" data-cli-agent="mkdir catalog &amp;&amp; cd catalog &amp;&amp; go mod init example.com/catalog &amp;&amp; go get goa.design/goa-ai@v0.90.0">{{ T "home_skill_prompt" }}</code>
+              <button type="button" id="home-step2-copy" class="copy-install" command="--copy" commandfor="home-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-label-skill="{{ T "highbay_copy_prompt" }}" data-label-go="{{ T "home_cli_copy" }}" data-copy-target="home-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="install-hint">{{ T "home_skill_outcome" | markdownify }}</p>
+            <p id="home-step2-hint" class="install-hint"><span class="home-hint-skill">{{ T "home_skill_outcome" | markdownify }}</span><span class="home-hint-go" hidden>{{ T "home_cli_outcome" | markdownify }}</span></p>
           </div>
         </div>
       </div>
@@ -160,6 +160,7 @@ support.RenderSupportSystemPrompt(support.SystemPromptArgs{...})</code></div>
   </section>
 
   <section class="benefits-section" aria-labelledby="benefits-title">
+    <span id="workflow-title" aria-hidden="true"></span>
     <div class="site-width">
       <div class="section-intro"><h2 id="benefits-title">{{ T "home_benefits_heading" }}</h2></div>
       <dl class="benefit-list">
@@ -290,9 +291,21 @@ support.RenderSupportSystemPrompt(support.SystemPromptArgs{...})</code></div>
   let kind = 'service';
   function syncStep2() {
     const promptEl = document.getElementById('home-prompt-cmd');
-    const labelEl = document.getElementById('home-step2-label');
-    if (labelEl) {
-      labelEl.innerHTML = mode === 'go' ? labelEl.dataset.labelGo : labelEl.dataset.labelSkill;
+    const labelSkill = document.querySelector('#home-step2-label .home-label-skill');
+    const labelGo = document.querySelector('#home-step2-label .home-label-go');
+    const copyEl = document.getElementById('home-step2-copy');
+    const hintSkill = document.querySelector('#home-step2-hint .home-hint-skill');
+    const hintGo = document.querySelector('#home-step2-hint .home-hint-go');
+    if (labelSkill && labelGo) {
+      labelSkill.hidden = mode === 'go';
+      labelGo.hidden = mode !== 'go';
+    }
+    if (copyEl) {
+      copyEl.setAttribute('aria-label', mode === 'go' ? copyEl.dataset.labelGo : copyEl.dataset.labelSkill);
+    }
+    if (hintSkill && hintGo) {
+      hintSkill.hidden = mode === 'go';
+      hintGo.hidden = mode !== 'go';
     }
     if (promptEl) {
       const attr = mode === 'go'
