@@ -236,6 +236,7 @@ for (const width of [390, 1440]) {
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/chorus/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your coding agents. Working as a team.');
+      await expect(page.locator('.chorus-hero .highbay-roles dt')).toHaveText(['For you', 'For your agents']);
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveText('Get Chorus');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.chorus-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');
@@ -278,11 +279,12 @@ for (const width of [390, 1440]) {
       }
       await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: model off', 'Waking up: just the news', 'Talking: a few tokens']);
       await expect(page.locator('.chorus-quote-speaker')).toHaveText('Codex, lead agent, explains the plan to the maintainer.');
-      await expect(page.locator('.chorus-compare dt')).toHaveText([
-        'Agent IDEs & worktree runners (Orca, Superset, Conductor)',
-        'Terminal multiplexers (Herdr, cmux, tmux)',
-        'Built-in subagents (Claude Code, Codex)',
-        'Chat bridges & JSON MCPs (Slack, Discord, A2A)',
+      await expect(page.locator('.chorus-compare .highbay-matrix tbody tr')).toHaveCount(4);
+      await expect(page.locator('.chorus-compare .highbay-matrix tbody th')).toHaveText([
+        'Cross-model peers',
+        'Shared task plan',
+        'Waiting cost',
+        'Editor & setup',
       ]);
       await expect(page.locator('.chorus-directory-badge')).toHaveAttribute(
         'href',

@@ -213,11 +213,27 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 // benefit list, workflow, installer and FAQ; these rules add the hero install
 // card, four-pillar grid, separated call/message terminal cards, raw wire
 // disclosure, theme-matched dashboard screenshot and numbered markers.
-.chorus-hero { padding-block: 60px 32px; }
-.chorus-hero .hero-lead { max-inline-size: 62ch; font-size: 1.15rem; line-height: 1.62; margin-bottom: 1.5rem; }
+.chorus-hero { padding-block: 44px 28px; }
+.chorus-hero h1 { font-size: clamp(2.1rem, 3.25vw, 2.95rem); line-height: 1.13; margin: 0 0 1.25rem; }
 .chorus-hero .highbay-hero-actions { margin: 0; }
+.chorus-swarm-card { gap: .8rem; }
+.chorus-board-rows { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .38rem; }
+.chorus-board-rows li { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; padding: .35rem .6rem; border-radius: 6px; background: var(--color-bg-alt); border: 1px solid var(--color-border-subtle); font-size: .76rem; color: var(--color-text); }
+.chorus-board-rows code { background: var(--color-highlight); color: var(--doc-link-color); padding: .1rem .4rem; border-radius: 4px; font-size: .75rem; font-weight: 650; }
+.chorus-bus-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .55rem .85rem; border-radius: 9px; background: var(--color-highlight); border: 1px solid var(--doc-link-color); font-size: .78rem; font-weight: 600; color: var(--color-text-heading); }
+.chorus-bus-bar code { background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 4px; padding: .1rem .45rem; font-size: .75rem; font-weight: 650; color: var(--doc-link-color); }
+.chorus-peer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+.chorus-peer-node { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; padding: .55rem .75rem; border-radius: 9px; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); font-size: .78rem; color: var(--color-text); }
+.chorus-peer-node code { background: var(--color-bg-alt); border: 1px solid var(--color-border-subtle); border-radius: 4px; padding: .1rem .42rem; font-size: .75rem; font-weight: 650; color: var(--color-text-heading); }
+.chorus-peer-node--you { border-color: #166534; }
+.chorus-peer-node--you code { background: rgba(22, 163, 74, .11); border-color: transparent; color: #166534; }
+[data-theme="dark"] .chorus-peer-node--you { border-color: #4ade80; }
+[data-theme="dark"] .chorus-peer-node--you code { background: rgba(74, 222, 128, .13); color: #86efac; }
 .chorus-pillars { background: var(--color-bg); }
-.chorus-pillar-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2rem; }
+.chorus-pillar-list { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.25rem; }
+.chorus-tokens dd { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; }
+.chorus-token-pill { display: inline-flex; padding: .2rem .55rem; border-radius: 5px; background: var(--color-highlight); color: var(--doc-link-color); font: 700 .75rem/1.2 "Manrope", sans-serif; }
+.chorus-matrix { min-inline-size: 720px; }
 .chorus-example { padding-block: 88px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-alt); }
 .chorus-terminals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-bottom: 16px; }
 .chorus-terminal { min-width: 0; margin: 0; display: flex; flex-direction: column; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 8px; overflow: clip; }
@@ -236,7 +252,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .chorus-raw-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0 1rem 1rem; }
 .chorus-raw-pane { min-width: 0; display: flex; flex-direction: column; gap: .35rem; }
 .chorus-raw-pane strong { font: 700 .8rem $font-family-monospace; color: var(--color-text-heading); }
-.chorus-raw-pane pre { flex: 1; margin: 0; padding: .75rem; background: var(--color-bg); border: 1px solid var(--color-border-subtle); border-radius: 6px; font-size: .74rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-text); }
+.chorus-raw-pane pre { flex: 1; margin: 0; padding: .75rem; background: var(--color-bg); border: 1px solid var(--color-border-subtle); border-radius: 6px; font-size: .75rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-text); }
 .chorus-raw-pane code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
 .chorus-marker, .chorus-pin { display: inline-grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: var(--doc-link-color); color: var(--button-text); font: 700 .75rem/1 "Manrope", sans-serif; }
 .chorus-marker { margin-right: .45rem; vertical-align: .1em; }
@@ -252,7 +268,6 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .chorus-method { margin: .5rem 1rem 1rem; max-width: 82ch; color: var(--color-text-muted); font-size: .82rem; }
 .chorus-session { padding-block: 88px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg); }
 .chorus-session-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 2.5rem; align-items: start; }
-.chorus-compare-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 3rem; }
 .chorus-session-quote { margin: 0; padding: 1.25rem 1.5rem; background: var(--color-bg-alt); border-left: 3px solid var(--doc-link-color); border-radius: 0 8px 8px 0; }
 .chorus-quote-speaker { margin: 0 0 .65rem; font-size: .85rem; font-weight: 700; color: var(--doc-link-color); }
 .chorus-session-quote blockquote { margin: 0; padding: 0; border: 0; font-size: 1.02rem; line-height: 1.68; color: var(--color-text-heading); }
@@ -292,7 +307,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .highbay-page .highbay-h1-lead { max-inline-size: 23ch; text-wrap: balance; }
 .highbay-page .highbay-h1-sub { font-size: .95em; line-height: 1.15; max-inline-size: 22ch; margin-top: .16rem; text-wrap: balance; }
 .highbay-roles { margin: 0 0 1.45rem; border-top: 1px solid var(--color-border-subtle); border-bottom: 1px solid var(--color-border-subtle); }
-.highbay-roles__row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .9rem; align-items: baseline; padding-block: .85rem; }
+.highbay-roles__row { display: grid; grid-template-columns: minmax(8.5rem, max-content) minmax(0, 1fr); gap: .9rem; align-items: baseline; padding-block: .85rem; }
 .highbay-roles__row + .highbay-roles__row { border-top: 1px solid var(--color-border-subtle); }
 .highbay-roles dt { margin: 0; }
 .highbay-roles dd { margin: 0; font-size: .95rem; line-height: 1.58; color: var(--color-text); max-inline-size: 54ch; }
@@ -316,7 +331,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .highbay-pipe__conn { display: block; block-size: 14px; inline-size: 24px; margin-inline: auto; color: var(--color-text-muted); opacity: .75; }
 .highbay-pipe__conn--wide { inline-size: min(100%, 240px); block-size: 16px; }
 .highbay-pipe__fork { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
-.highbay-pipe__node { display: flex; align-items: center; gap: .55rem; inline-size: 100%; min-inline-size: 0; padding: .58rem .85rem; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 9px; color: var(--color-text-heading); font: 600 .82rem/1.35 $font-family-base; text-align: start; cursor: pointer; transition: border-color 140ms ease, background 140ms ease; }
+.highbay-pipe__node { display: flex; align-items: center; gap: .55rem; inline-size: 100%; min-inline-size: 0; padding: .58rem .85rem; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 9px; color: var(--color-text-heading); font: 600 .82rem/1.35 "Manrope", sans-serif; text-align: start; cursor: pointer; transition: border-color 140ms ease, background 140ms ease; }
 .highbay-pipe__node:hover { border-color: var(--doc-link-color); background: var(--color-highlight); }
 .highbay-pipe__node svg { inline-size: 18px; block-size: 18px; flex-shrink: 0; color: var(--doc-link-color); }
 .highbay-pipe__node code { background: var(--color-bg-alt); border: 1px solid var(--color-border-subtle); border-radius: 4px; padding: .1rem .4rem; font-size: .75rem; font-weight: 650; color: var(--color-text-heading); white-space: nowrap; }

@@ -9,12 +9,65 @@
 {{- $docs := relref . "/docs/3-ecosystem/chorus/" -}}
 <div class="goa-home chorus-page">
   <section class="highbay-hero-full chorus-hero site-width" aria-labelledby="chorus-title">
-    <h1 id="chorus-title"><strong class="highbay-h1-lead">{{ T "chorus_heading" }}</strong> <span class="highbay-h1-sub">{{ T "chorus_heading_second" }}</span></h1>
-    <p class="hero-lead">{{ T "chorus_intro" | markdownify }}</p>
-    <div class="hero-actions highbay-hero-actions">
-      <a class="goa-button" href="#install">{{ T "chorus_install_cta" }}</a>
-      <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "chorus_docs_cta" }}</a>
-      <a class="goa-button chorus-button-quiet" href="/chorus/demo/">{{ T "chorus_demo_cta" }}</a>
+    <div class="highbay-hero-split">
+      <div class="highbay-hero__copy">
+        <h1 id="chorus-title"><strong class="highbay-h1-lead">{{ T "chorus_heading" }}</strong> <span class="highbay-h1-sub">{{ T "chorus_heading_second" }}</span></h1>
+        <dl class="highbay-roles">
+          <div class="highbay-roles__row highbay-roles__row--you">
+            <dt><span class="highbay-role-pill highbay-role-pill--you">{{ T "chorus_for_you_label" }}</span></dt>
+            <dd>{{ T "chorus_for_you_text" | markdownify }}</dd>
+          </div>
+          <div class="highbay-roles__row highbay-roles__row--model">
+            <dt><span class="highbay-role-pill highbay-role-pill--model">{{ T "chorus_for_agents_label" }}</span></dt>
+            <dd>{{ T "chorus_for_agents_text" | markdownify }}</dd>
+          </div>
+        </dl>
+        <div class="hero-actions highbay-hero-actions">
+          <a class="goa-button" href="#install">{{ T "chorus_install_cta" }}</a>
+          <a class="goa-button chorus-button-quiet" href="{{ $docs }}">{{ T "chorus_docs_cta" }}</a>
+          <a class="goa-button chorus-button-quiet" href="/chorus/demo/">{{ T "chorus_demo_cta" }}</a>
+        </div>
+      </div>
+
+      <div class="highbay-hero__visual">
+        <div class="highbay-arch-card chorus-swarm-card" aria-hidden="true">
+          <div class="highbay-playbook">
+            <div class="highbay-playbook__head">
+              <strong>{{ T "chorus_diag_board_title" }}</strong>
+              <span>#auth · localhost:9440</span>
+            </div>
+            <ul class="chorus-board-rows">
+              <li><code>T1 @claude</code><span>{{ T "chorus_diag_t1" }}</span></li>
+              <li><code>T2 @codex</code><span>{{ T "chorus_diag_t2" }}</span></li>
+              <li><code>T3 @gemini</code><span>{{ T "chorus_diag_t3" }}</span></li>
+            </ul>
+          </div>
+
+          <div class="chorus-bus-bar">
+            <code>chorus watch</code>
+            <span>{{ T "chorus_diag_bus" }}</span>
+          </div>
+
+          <div class="chorus-peer-grid">
+            <div class="chorus-peer-node">
+              <code>@claude</code>
+              <span>{{ T "chorus_diag_peer_claude" }}</span>
+            </div>
+            <div class="chorus-peer-node">
+              <code>@codex</code>
+              <span>{{ T "chorus_diag_peer_codex" }}</span>
+            </div>
+            <div class="chorus-peer-node">
+              <code>@gemini</code>
+              <span>{{ T "chorus_diag_peer_gemini" }}</span>
+            </div>
+            <div class="chorus-peer-node chorus-peer-node--you">
+              <code>{{ T "chorus_diag_you_handle" }}</code>
+              <span>{{ T "chorus_diag_peer_you" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -151,10 +204,35 @@ sent #auth#3
   <section class="benefits-section chorus-pillars" aria-labelledby="chorus-pillars-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="chorus-pillars-title">{{ T "chorus_pillars_heading" }}</h2></div>
-      <dl class="benefit-list chorus-pillar-list">
-        {{ range slice "swarms" "channels" "dms" "dashboard" }}
-        <div><dt>{{ T (printf "chorus_pillar_%s" .) }}</dt><dd>{{ T (printf "chorus_pillar_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
+      <dl class="benefit-list chorus-pillar-list highbay-cap-grid">
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M9.5 7h5M8.2 9.2l2.6 5.6M15.8 9.2l-2.6 5.6"/></svg></span>
+            <span>{{ T "chorus_pillar_swarms" }}</span>
+          </dt>
+          <dd>{{ T "chorus_pillar_swarms_text" | markdownify }}</dd>
+        </div>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+            <span>{{ T "chorus_pillar_channels" }}</span>
+          </dt>
+          <dd>{{ T "chorus_pillar_channels_text" | markdownify }}</dd>
+        </div>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V16H6.5A2.5 2.5 0 0 1 4 13.5v-7Z"/></svg></span>
+            <span>{{ T "chorus_pillar_dms" }}</span>
+          </dt>
+          <dd>{{ T "chorus_pillar_dms_text" | markdownify }}</dd>
+        </div>
+        <div class="highbay-cap-item">
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9h18M9 9v10.5"/></svg></span>
+            <span>{{ T "chorus_pillar_dashboard" }}</span>
+          </dt>
+          <dd>{{ T "chorus_pillar_dashboard_text" | markdownify }}</dd>
+        </div>
       </dl>
     </div>
   </section>
@@ -164,7 +242,13 @@ sent #auth#3
       <div class="section-intro"><h2 id="chorus-tokens-title">{{ T "chorus_tokens_heading" }}</h2></div>
       <dl class="benefit-list">
         {{ range slice "wait" "wake" "send" }}
-        <div><dt>{{ T (printf "chorus_cost_%s" .) }}</dt><dd>{{ T (printf "chorus_cost_%s_text" .) | markdownify }}</dd></div>
+        <div>
+          <dt>{{ T (printf "chorus_cost_%s" .) }}</dt>
+          <dd>
+            <span class="chorus-token-pill">{{ T (printf "chorus_cost_%s_stat" .) }}</span>
+            <span>{{ T (printf "chorus_cost_%s_text" .) | markdownify }}</span>
+          </dd>
+        </div>
         {{ end }}
       </dl>
     </div>
@@ -183,14 +267,40 @@ sent #auth#3
     </div>
   </section>
 
-  <section class="benefits-section chorus-compare" aria-labelledby="chorus-compare-title">
+  <section class="chorus-compare highbay-compare" id="compare" aria-labelledby="chorus-compare-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="chorus-compare-title">{{ T "chorus_compare_heading" }}</h2></div>
-      <dl class="benefit-list chorus-compare-list">
-        {{ range slice "ide" "pty" "subagents" "chat" }}
-        <div><dt>{{ T (printf "chorus_compare_%s" .) }}</dt><dd>{{ T (printf "chorus_compare_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
-      </dl>
+      <div class="highbay-matrix-wrap">
+        <table class="highbay-matrix chorus-matrix">
+          <thead>
+            <tr>
+              <th scope="col">{{ T "highbay_compare_col_dim" }}</th>
+              <th scope="col" class="highbay-matrix__hb">{{ T "chorus_with_title" }}</th>
+              <th scope="col">{{ T "chorus_col_ide" }}</th>
+              <th scope="col">{{ T "chorus_col_pty" }}</th>
+              <th scope="col">{{ T "chorus_col_sub" }}</th>
+              <th scope="col">{{ T "chorus_col_chat" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{- range slice "r1" "r2" "r3" "r4" }}
+            <tr>
+              <th scope="row">{{ T (printf "chorus_matrix_%s_label" .) }}</th>
+              <td class="highbay-matrix__hb">
+                <span class="highbay-matrix__hb-cell">
+                  <svg class="highbay-matrix__check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3.2 3.2L13 4.8"/></svg>
+                  <span>{{ T (printf "chorus_matrix_%s_ch" .) | markdownify }}</span>
+                </span>
+              </td>
+              <td>{{ T (printf "chorus_matrix_%s_ide" .) | markdownify }}</td>
+              <td>{{ T (printf "chorus_matrix_%s_pty" .) | markdownify }}</td>
+              <td>{{ T (printf "chorus_matrix_%s_sub" .) | markdownify }}</td>
+              <td>{{ T (printf "chorus_matrix_%s_chat" .) | markdownify }}</td>
+            </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 

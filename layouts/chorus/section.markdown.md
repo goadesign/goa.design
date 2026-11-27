@@ -1,6 +1,7 @@
-# Chorus
+# Chorus: {{ T "chorus_heading" }} {{ T "chorus_heading_second" }}
 
-{{ T "chorus_intro" }}
+- **{{ T "chorus_for_you_label" }}:** {{ T "chorus_for_you_text" }}
+- **{{ T "chorus_for_agents_label" }}:** {{ T "chorus_for_agents_text" }}
 
 GitHub: [Chorus](https://github.com/goadesign/chorus) · [{{ T "chorus_demo_cta" }}](https://goa.design/chorus/demo/)
 
@@ -69,11 +70,12 @@ $ chorus watch gemini -wait 30s
 {{ end }}
 
 ## {{ T "chorus_compare_heading" }}
-{{ range slice "ide" "pty" "subagents" "chat" }}
-### {{ T (printf "chorus_compare_%s" .) }}
 
-{{ T (printf "chorus_compare_%s_text" .) }}
-{{ end }}
+| {{ T "highbay_compare_col_dim" }} | {{ T "chorus_with_title" }} | {{ T "chorus_col_ide" }} | {{ T "chorus_col_pty" }} | {{ T "chorus_col_sub" }} | {{ T "chorus_col_chat" }} |
+| --- | --- | --- | --- | --- | --- |
+{{- range slice "r1" "r2" "r3" "r4" }}
+| {{ T (printf "chorus_matrix_%s_label" .) }} | {{ T (printf "chorus_matrix_%s_ch" .) }} | {{ T (printf "chorus_matrix_%s_ide" .) }} | {{ T (printf "chorus_matrix_%s_pty" .) }} | {{ T (printf "chorus_matrix_%s_sub" .) }} | {{ T (printf "chorus_matrix_%s_chat" .) }} |
+{{- end }}
 
 ## {{ T "chorus_tokens_heading" }}
 {{ range slice "wait" "wake" "send" }}
