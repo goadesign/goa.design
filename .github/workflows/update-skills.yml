@@ -135,6 +135,9 @@ jobs:
           tar_path, stage_dir = sys.argv[1], sys.argv[2]
           with open("skills-lock.json", "r", encoding="utf-8") as f:
               base_lock = json.load(f)
+          base_version = base_lock.get("version")
+          if type(base_version) is not int or base_version < 1:
+              raise SystemExit(f"Invalid base skills-lock.json version: {base_version!r}")
           expected_skills = set(base_lock.get("skills", {}).keys())
           if not expected_skills:
               raise SystemExit("Base skills-lock.json has no tracked skills")
@@ -176,7 +179,8 @@ jobs:
                   raise SystemExit("Archive is missing skills-lock.json")
               lock_bytes = tf.extractfile("skills-lock.json").read()
               new_lock = json.loads(lock_bytes.decode("utf-8"))
-              if new_lock.get("version") != 1 or not isinstance(new_lock.get("skills"), dict):
+              new_version = new_lock.get("version")
+              if type(new_version) is not int or new_version < base_version or not isinstance(new_lock.get("skills"), dict):
                   raise SystemExit("Invalid skills-lock.json structure in archive")
               if set(new_lock["skills"].keys()) != expected_skills:
                   raise SystemExit(f"Archive skill set {sorted(new_lock['skills'])} != expected {sorted(expected_skills)}")
