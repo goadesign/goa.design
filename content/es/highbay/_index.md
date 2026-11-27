@@ -1,5 +1,5 @@
 ---
-title: "Highbay: Dale a tus agentes de programación una sola forma de construir"
+title: "Highbay: Mantén rápidos a tus agentes al crecer tu código"
 linkTitle: "Highbay"
-description: "Highbay da a tus agentes de programación una sola forma de construir servicios, servidores MCP y agentes de IA. Confirma un contrato breve en el navegador, compila servidores HTTP y MCP en Go (~70 % del código fuera de pruebas en el servicio de referencia Orders) y verifica el comportamiento en una copia Git separada."
+description: "Confirma un contrato breve en tu navegador. Highbay compila servicios Go, servidores MCP y agentes de IA (~70 % del código fuera de pruebas en Orders) y prueba los manejadores en una copia Git limpia."
 ---

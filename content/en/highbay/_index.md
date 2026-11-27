@@ -1,5 +1,5 @@
 ---
-title: "Highbay: Give your coding agents one way to build"
+title: "Highbay: Keep your coding agents fast as your codebase grows"
 linkTitle: "Highbay"
-description: "Highbay gives your coding agents one way to build services, MCP servers, and AI agents. Confirm a short contract in your browser, compile HTTP and MCP plumbing in Go (~70% of non-test code in the Orders reference service), and verify behavior in a separate Git copy before merge."
+description: "Confirm a short contract in your browser. Highbay compiles Go services, MCP servers, and AI agents (~70% of non-test code in the Orders reference service), then tests handlers in a clean Git copy."
 ---

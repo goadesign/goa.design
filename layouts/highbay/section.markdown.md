@@ -2,10 +2,6 @@
 
 {{ T "highbay_intro" }}
 
-- {{ T "highbay_hero_point_1" }}
-- {{ T "highbay_hero_point_2" }}
-- {{ T "highbay_hero_point_3" }}
-
 GitHub: [github.com/goadesign/highbay](https://github.com/goadesign/highbay) · Docs: [Ecosystem Guide]({{ relref . "/docs/3-ecosystem/highbay/" }})
 
 ## {{ T "highbay_install_heading" }}
@@ -25,35 +21,29 @@ go install github.com/goadesign/highbay/cmd/highbay@latest
 highbay up
 ```
 
-{{ T "highbay_install_prereq" }}
-
 {{ T "highbay_install_next" }}
 
 > {{ T "highbay_install_prompt" }}
 
-{{ T "highbay_install_hint" }}
-
-- {{ T "highbay_fit_agents" }}
-- {{ T "highbay_fit_scope" }}
-- {{ T "highbay_fit_local" }}
-
-## {{ T "highbay_contrast_heading" }} {#contrast}
-{{ range slice "1" "2" "3" "4" }}
-### {{ . }}. {{ T (printf "highbay_solo_row_%s_title" .) }}
-- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_chip_gate" }}):** {{ T (printf "highbay_solo_row_%s_text" .) }}
-- **{{ T "highbay_with_title" }} ({{ T "highbay_with_suite" }}):** {{ T (printf "highbay_with_row_%s_text" .) }}
-{{ end -}}
-
 ## {{ T "highbay_showcase_heading" }} {#views}
+
+{{ T "highbay_showcase_intro" }}
 
 - **{{ T "highbay_tab_agree" }}:** {{ T "highbay_agree_pin_1" }}
 - **{{ T "highbay_tab_arch" }}:** {{ T "highbay_arch_pin_1" }}
 - **{{ T "highbay_tab_check" }}:** {{ T "highbay_check_pin_1" }}
 - **{{ T "highbay_tab_approve" }}:** {{ T "highbay_approve_pin_1" }}
 
-*{{ T "highbay_showcase_caption" }} ([{{ T "highbay_showcase_method" }}](https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example))*
+## {{ T "highbay_contrast_heading" }} {#contrast}
+{{ range slice "1" "2" "3" }}
+### {{ . }}. {{ T (printf "highbay_solo_row_%s_title" .) }}
+- **{{ T "highbay_solo_title" }}:** {{ T (printf "highbay_solo_row_%s_text" .) }}
+- **{{ T "highbay_with_title" }}:** {{ T (printf "highbay_with_row_%s_text" .) }}
+{{ end -}}
 
 ## {{ T "highbay_walkthrough_heading" }} {#codegen}
+
+{{ T "highbay_walkthrough_intro" }}
 
 ### {{ T "highbay_role_guide" }}
 
@@ -88,8 +78,6 @@ var opsTools = Toolset("ops", func() {
 })
 ```
 
-{{ T "highbay_card_choice" }}
-
 ### {{ T "highbay_role_codegen" }}
 
 {{ T "highbay_role_codegen_caption" }}
@@ -109,8 +97,6 @@ type Service interface {
 // + BoundedResult cursor bounds
 ```
 
-{{ T "highbay_codegen_check" }}
-
 ### {{ T "highbay_role_tests" }}
 
 {{ T "highbay_role_tests_caption" }}
@@ -126,21 +112,15 @@ if err != nil {
     return eval.Result{}, err
 }
 return eval.Result{Checks: []eval.Check{
-    // eval.Check helper for named assertions
     check("paused", run.PendingConfirmation),
     check("non_oncall_approval_rejected",
         res.StatusCode == 403),
 }}, nil
 ```
 
-{{ T "highbay_builder_check" }}
-
-### {{ T "highbay_proof_heading" }} {#llm-stack}
-{{ range slice "codegen" "playbook" "suite" }}
-- **{{ T (printf "highbay_proof_%s_title" .) }}:** {{ T (printf "highbay_proof_%s_body" .) }}
-{{- end }}
-
 ## {{ T "highbay_cap_heading" }} {#capabilities}
+
+{{ T "highbay_cap_intro" }}
 {{ range slice "auth" "obs" "stream" "durable" }}
 - **{{ T (printf "highbay_cap_%s_title" .) }}:** {{ T (printf "highbay_cap_%s_body" .) }}
 {{- end }}

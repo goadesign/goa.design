@@ -14,11 +14,6 @@
       <a class="goa-button" href="#install">{{ T "highbay_install_cta" }}</a>
       <a class="goa-button chorus-button-quiet" href="#views">{{ T "highbay_walkthrough_cta" }}</a>
     </div>
-    <ul class="highbay-hero-points highbay-hero-points--row" role="list">
-      <li>{{ T "highbay_hero_point_1" | markdownify }}</li>
-      <li>{{ T "highbay_hero_point_2" | markdownify }}</li>
-      <li>{{ T "highbay_hero_point_3" | markdownify }}</li>
-    </ul>
   </section>
 
   <section class="highbay-install-band" id="install" aria-labelledby="highbay-install-title">
@@ -45,16 +40,12 @@ highbay up</code></pre>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="install-hint">{{ T "highbay_install_step1_hint" | markdownify }}</p>
           </div>
 
           <div class="highbay-install-step">
             <div class="highbay-step2-head">
               <p class="skill-prompt-label chorus-install-alt">{{ T "highbay_install_next" | markdownify }}</p>
-              <div class="highbay-prefix-switch" role="group" aria-label="{{ T "highbay_agent_prefix_label" }}">
-                <button type="button" class="highbay-prefix-btn" data-prefix="/highbay" aria-pressed="true">/highbay</button>
-                <button type="button" class="highbay-prefix-btn" data-prefix="$highbay" aria-pressed="false">$highbay (Codex)</button>
-              </div>
+              <span class="copy-install-status" role="status"></span>
             </div>
             <div class="install-command highbay-prompt-box">
               <code id="highbay-prompt-cmd" class="highbay-prompt-code"><span class="highbay-prompt-prefix">/highbay</span> {{ T "highbay_install_prompt_body" }}</code>
@@ -62,56 +53,9 @@ highbay up</code></pre>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="install-hint">{{ T "highbay_install_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
           </div>
         </div>
-        <details class="chorus-setup-details highbay-setup-details">
-          <summary>{{ T "highbay_setup_summary" }}</summary>
-          <ul class="highbay-fit highbay-fit--card" role="list">
-            <li>{{ T "highbay_fit_agents" | markdownify }}</li>
-            <li>{{ T "highbay_fit_scope" | markdownify }}</li>
-            <li>{{ T "highbay_fit_local" | markdownify }}</li>
-          </ul>
-        </details>
       </div>
-    </div>
-  </section>
-
-  <section class="highbay-contrast" id="contrast" aria-labelledby="highbay-contrast-title">
-    <div class="site-width">
-      <div class="section-intro">
-        <h2 id="highbay-contrast-title">{{ T "highbay_contrast_heading" }}</h2>
-        <p>{{ T "highbay_contrast_intro" }}</p>
-      </div>
-
-      <figure class="highbay-sim">
-        <div class="highbay-sim__colheads">
-          <div class="highbay-sim__head">
-            <h3>{{ T "highbay_solo_title" }}</h3>
-            <span class="highbay-sim__pass highbay-sim__pass--warn">{{ T "highbay_solo_chip_gate" }}</span>
-          </div>
-          <div class="highbay-sim__head">
-            <h3>{{ T "highbay_with_title" }}</h3>
-            <span class="highbay-sim__pass highbay-sim__pass--accent">{{ T "highbay_with_suite" }}</span>
-          </div>
-        </div>
-        <div class="highbay-sim__pairs">
-          {{ range slice "1" "2" "3" "4" }}
-          <div class="highbay-sim__pair">
-            <div class="highbay-sim__cell highbay-sim__cell--solo">
-              <span class="highbay-sim__mob-tag highbay-sim__mob-tag--warn">{{ T "highbay_solo_title" }}</span>
-              <h4><i class="highbay-sim__dot highbay-sim__dot--warn" aria-hidden="true"></i>{{ T (printf "highbay_solo_row_%s_title" .) }}</h4>
-              <p>{{ T (printf "highbay_solo_row_%s_text" .) | markdownify }}</p>
-            </div>
-            <div class="highbay-sim__cell highbay-sim__cell--hb">
-              <span class="highbay-sim__mob-tag highbay-sim__mob-tag--ok">{{ T "highbay_with_title" }}</span>
-              <h4><i class="highbay-sim__dot highbay-sim__dot--ok" aria-hidden="true"></i>{{ T (printf "highbay_with_row_%s_title" .) }}</h4>
-              <p>{{ T (printf "highbay_with_row_%s_text" .) | markdownify }}</p>
-            </div>
-          </div>
-          {{ end }}
-        </div>
-      </figure>
     </div>
   </section>
 
@@ -183,11 +127,46 @@ highbay up</code></pre>
           {{- end }}
         </div>
       </div>
-      <p class="highbay-showcase__foot">{{ T "highbay_showcase_caption" }} <a href="https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example">{{ T "highbay_showcase_method" }}</a></p>
+    </div>
+  </section>
+
+  <section class="highbay-contrast" id="contrast" aria-labelledby="highbay-contrast-title">
+    <div class="site-width">
+      <div class="section-intro">
+        <h2 id="highbay-contrast-title">{{ T "highbay_contrast_heading" }}</h2>
+      </div>
+
+      <figure class="highbay-sim">
+        <div class="highbay-sim__colheads">
+          <div class="highbay-sim__head">
+            <h3>{{ T "highbay_solo_title" }}</h3>
+          </div>
+          <div class="highbay-sim__head">
+            <h3>{{ T "highbay_with_title" }}</h3>
+          </div>
+        </div>
+        <div class="highbay-sim__pairs">
+          {{ range slice "1" "2" "3" }}
+          <div class="highbay-sim__pair">
+            <div class="highbay-sim__cell highbay-sim__cell--solo">
+              <span class="highbay-sim__mob-tag highbay-sim__mob-tag--warn">{{ T "highbay_solo_title" }}</span>
+              <h4><i class="highbay-sim__dot highbay-sim__dot--warn" aria-hidden="true"></i>{{ T (printf "highbay_solo_row_%s_title" .) }}</h4>
+              <p>{{ T (printf "highbay_solo_row_%s_text" .) | markdownify }}</p>
+            </div>
+            <div class="highbay-sim__cell highbay-sim__cell--hb">
+              <span class="highbay-sim__mob-tag highbay-sim__mob-tag--ok">{{ T "highbay_with_title" }}</span>
+              <h4><i class="highbay-sim__dot highbay-sim__dot--ok" aria-hidden="true"></i>{{ T (printf "highbay_with_row_%s_title" .) }}</h4>
+              <p>{{ T (printf "highbay_with_row_%s_text" .) | markdownify }}</p>
+            </div>
+          </div>
+          {{ end }}
+        </div>
+      </figure>
     </div>
   </section>
 
   <section class="highbay-walkthrough" id="codegen" aria-labelledby="highbay-walkthrough-title">
+    <span id="llm-stack" aria-hidden="true"></span>
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-walkthrough-title">{{ T "highbay_walkthrough_heading" }}</h2>
@@ -227,9 +206,6 @@ var opsTools = Toolset("ops", func() {
   })
 })</code></pre>
         </div>
-        <div class="highbay-lane__outcome">
-          <p>{{ T "highbay_card_choice" | markdownify }}</p>
-        </div>
       </article>
 
       <article class="highbay-lane" aria-labelledby="highbay-lane-codegen">
@@ -251,9 +227,6 @@ type Service interface {
 // + Tool JSON (org_id omitted)
 // + BoundedResult cursor bounds</code></pre>
         </div>
-        <div class="highbay-lane__outcome">
-          <p>{{ T "highbay_codegen_check" | markdownify }}</p>
-        </div>
       </article>
 
       <article class="highbay-lane" aria-labelledby="highbay-lane-tests">
@@ -272,26 +245,13 @@ if err != nil {
   return eval.Result{}, err
 }
 return eval.Result{Checks: []eval.Check{
-  // eval.Check helper for named assertions
   check("paused", run.PendingConfirmation),
   check("non_oncall_approval_rejected",
     res.StatusCode == 403),
 }}, nil</code></pre>
         </div>
-        <div class="highbay-lane__outcome">
-          <p>{{ T "highbay_builder_check" | markdownify }}</p>
-        </div>
       </article>
     </div>
-
-    <dl class="highbay-proof-strip" id="llm-stack">
-      {{ range slice "codegen" "playbook" "suite" }}
-      <div>
-        <dt>{{ T (printf "highbay_proof_%s_title" .) | markdownify }}</dt>
-        <dd>{{ T (printf "highbay_proof_%s_body" .) | markdownify }}</dd>
-      </div>
-      {{ end }}
-    </dl>
       <p class="section-link"><a href="{{ relref . "/docs/ai-development/" }}">{{ T "home_workflow_cta" }} →</a></p>
     </div>
   </section>
@@ -317,7 +277,6 @@ return eval.Result{Checks: []eval.Check{
     <div class="site-width">
       <div class="section-intro">
         <h2 id="highbay-compare-title">{{ T "highbay_compare_heading" }}</h2>
-        <p>{{ T "highbay_compare_intro" }}</p>
       </div>
       <dl class="benefit-list highbay-compare-3col">
         {{ range slice "solo" "speckit" "workspaces" }}
@@ -390,17 +349,6 @@ return eval.Result{Checks: []eval.Check{
         }
       });
     }
-  }
-  for (const btn of document.querySelectorAll('.highbay-prefix-btn')) {
-    btn.addEventListener('click', () => {
-      const p = btn.dataset.prefix;
-      for (const b of document.querySelectorAll('.highbay-prefix-btn')) {
-        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-      }
-      for (const span of document.querySelectorAll('.highbay-prompt-prefix')) {
-        span.textContent = p;
-      }
-    });
   }
   for (const btn of document.querySelectorAll('.highbay-mgr-btn')) {
     btn.addEventListener('click', () => {

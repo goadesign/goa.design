@@ -449,7 +449,7 @@ for (const width of [390, 1440]) {
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        'Give your coding agents one way to build. Generate ~70% of the code for your services, MCP servers, and AI agents.',
+        'Keep your coding agents fast as your codebase grows. Generate ~70% of the code for your services, MCP servers, and AI agents.',
       );
       await expect(page.locator('.highbay-hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.highbay-hero-actions a').nth(1)).toHaveAttribute('href', '#views');
@@ -466,11 +466,10 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
 
       // Paired Freehand vs. With Highbay contrast rows (both side labels stay available in the desktop accessibility tree).
-      await expect(page.locator('.highbay-sim__pair')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim')).toContainText('Inject("org_id")');
-      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand coding agent');
+      await expect(page.locator('.highbay-sim__pair')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand agent');
       await expect(page.locator('.highbay-sim__cell--hb .highbay-sim__mob-tag').first()).toHaveText('With Highbay');
       expect(
         await page.locator('.highbay-sim__mob-tag').first().evaluate((el) => getComputedStyle(el).display),
@@ -499,9 +498,6 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Toolset("ops"');
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Tool("rollback_production"');
       await expect(page.getByRole('group', { name: 'Install method' })).toBeVisible();
-      await expect(page.getByRole('group', { name: 'Agent prefix' })).toBeVisible();
-      await expect(page.locator('.highbay-prefix-btn[data-prefix="$highbay"]')).toHaveAttribute('aria-pressed', 'false');
-      await expect(page.locator('#llm-stack dt')).toHaveCount(3);
       await expect(page.locator('#capabilities dt')).toHaveCount(4);
       await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', '/docs/ai-development/');
       await expect(page.locator('.highbay-compare-3col dt')).toHaveCount(3);
@@ -510,7 +506,7 @@ for (const width of [390, 1440]) {
       await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();
 
-      // Step 1 [Homebrew | npx | Go] switcher + Step 2 [/highbay | $highbay] switcher + clipboard copy.
+      // Step 1 [Homebrew | npx | Go] switcher + Step 2 copyable prompt.
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.locator('#install').getByRole('button', { name: 'Copy setup command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
@@ -521,12 +517,7 @@ for (const width of [390, 1440]) {
       await page.locator('.highbay-mgr-btn[data-mgr="go"]').click();
       await expect(page.locator('#highbay-setup-cmd')).toContainText('github.com/goadesign/highbay/cmd/highbay@latest');
       await page.locator('.highbay-mgr-btn[data-mgr="brew"]').click();
-
-      await page.locator('.highbay-prefix-btn[data-prefix="$highbay"]').click();
-      await expect(page.locator('#highbay-prompt-cmd')).toContainText('$highbay Build a multi-tenant incident platform');
-      await page.locator('.highbay-prefix-btn[data-prefix="/highbay"]').click();
-      await page.locator('#install .highbay-setup-details summary').click();
-      await expect(page.locator('#install .highbay-setup-details')).toContainText('127.0.0.1');
+      await expect(page.locator('#highbay-prompt-cmd')).toContainText('/highbay Build an incident service');
       if (width >= 1440) {
         const hbNavBox = await brand.boundingBox();
         const hbHeroBox = await page.locator('.highbay-hero-full').boundingBox();
@@ -548,6 +539,8 @@ for (const width of [390, 1440]) {
       await page.goto('/docs/3-ecosystem/highbay/');
       const docShots = page.locator(`.highbay-doc-views ${shotSelector}`);
       await expect(docShots).toHaveCount(2);
+      await expect(page.locator('.highbay-doc-views figcaption').first()).not.toBeEmpty();
+      await expect(page.locator('.highbay-doc-views figcaption').nth(1)).not.toBeEmpty();
       await docShots.first().scrollIntoViewIfNeeded();
       await expect.poll(() => docShots.evaluateAll(
         imgs => imgs.every(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0),
@@ -559,10 +552,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Dale a tus agentes de programación una sola forma de construir. Genera ~70 % del código de tus servicios, servidores MCP y agentes de IA.', 'Documentación', 'Framework Goa'],
-    ['fr', 'Donnez à vos agents de code une seule façon de construire. Générez ~70 % du code de vos services, serveurs MCP et agents IA.', 'Documentation', 'Framework Goa'],
-    ['it', 'Dai ai tuoi coding agent un solo modo di costruire. Genera il ~70% del codice dei tuoi servizi, server MCP e agenti IA.', 'Documentazione', 'Framework Goa'],
-    ['ja', 'コーディングエージェントに統一された構築方式を。 サービス・MCP サーバー・AI エージェントのコードの約 70% を自動生成。', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Mantén rápidos a tus agentes al crecer tu código. Genera ~70 % del código de tus servicios, servidores MCP y agentes de IA.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Gardez vos agents rapides quand votre code grandit. Générez ~70 % du code de vos services, serveurs MCP et agents IA.', 'Documentation', 'Framework Goa'],
+    ['it', 'Mantieni veloci i tuoi coding agent mentre il codice cresce. Genera il ~70% del codice dei tuoi servizi, server MCP e agenti IA.', 'Documentazione', 'Framework Goa'],
+    ['ja', 'コードが増えてもエージェントの速度を保つ。 サービス・MCP サーバー・AI エージェントのコードの約 70% を自動生成。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
