@@ -383,7 +383,7 @@ function makeState(stage) {
         sender_role: "guide",
         model: "Claude Opus 4.6",
         reply_to: 3,
-        text: "Compiled C4 topology: 8 containers, server-injected org_id, BoundedResult log cursors, and Temporal approval gate.",
+        text: "Compiled C4 topology: 8 containers, server-injected org_id, bounded cursors, and Temporal approval gate.",
         sent_at_ms: baseMs + 165_000,
       },
     );
@@ -918,19 +918,30 @@ try {
           const chatFeed = document.querySelector("#highbay-conversation-messages");
           if (chatFeed) {
             chatFeed.scrollTop = chatFeed.scrollHeight;
+            const items = chatFeed.querySelectorAll("li.highbay-message-item");
+            const lastMsg = items[items.length - 1];
+            if (lastMsg instanceof HTMLElement) {
+              const feedRect = chatFeed.getBoundingClientRect();
+              const msgRect = lastMsg.getBoundingClientRect();
+              if (msgRect.top < feedRect.top + 4) {
+                chatFeed.scrollTop = Math.max(0, chatFeed.scrollTop + (msgRect.top - feedRect.top) - 4);
+              }
+            }
           }
           const sticky = document.querySelector("#highbay-checkpoint-nav");
-          const stickyBottom = sticky ? Math.ceil(sticky.getBoundingClientRect().bottom) : 130;
+          const stickyBottom = sz === "mobile" ? 0 : sticky ? Math.ceil(sticky.getBoundingClientRect().bottom) : 130;
           let top = 0;
-          if (stg === "agree" && sz === "desktop") {
+          if (stg === "agree") {
             const sim = [...document.querySelectorAll("h2, h3, div")].find((n) => /^Platform autonomy boundary$/i.test((n.textContent || "").trim()));
             if (sim) {
-              top = Math.max(0, Math.round(sim.getBoundingClientRect().top + window.scrollY - stickyBottom - 16));
+              const pad = sz === "mobile" ? 12 : 16;
+              top = Math.max(0, Math.round(sim.getBoundingClientRect().top + window.scrollY - stickyBottom - pad));
             }
           } else if (stg === "architecture") {
             const heading = [...document.querySelectorAll("h2, h3")].find((n) => /^C4 Directed Graph/i.test((n.textContent || "").trim()));
             if (heading) {
-              top = Math.max(0, Math.round(heading.getBoundingClientRect().top + window.scrollY - stickyBottom + 20));
+              const offset = sz === "mobile" ? -12 : 20;
+              top = Math.max(0, Math.round(heading.getBoundingClientRect().top + window.scrollY - stickyBottom + offset));
             }
           } else if (stg === "check") {
             if (sz === "mobile") {
@@ -944,6 +955,12 @@ try {
                 const visibleBottom = window.innerHeight - 16;
                 top = Math.max(0, Math.round(targetEl.getBoundingClientRect().bottom + window.scrollY - visibleBottom));
               }
+            }
+          } else if (stg === "approve" && sz === "mobile") {
+            document.body.style.paddingBottom = "360px";
+            const basisEl = document.querySelector("#highbay-approval-basis-title");
+            if (basisEl) {
+              top = Math.max(0, Math.round(basisEl.getBoundingClientRect().top + window.scrollY - 12));
             }
           }
           window.scrollTo({ top, behavior: "instant" });
