@@ -32,5 +32,7 @@ go-app/goa.design
 # Local design and browser verification artifacts
 .impeccable/review/
 .impeccable/*.py
+.impeccable/config.local.json
+.impeccable/hook.cache.json
 playwright-report/
 test-results/

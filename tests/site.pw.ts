@@ -22,6 +22,8 @@ for (const width of [390, 1440]) {
       expect(brandBox!.height).toBeGreaterThanOrEqual(44);
       await page.locator('.td-navbar').screenshot({ path: `.impeccable/review/header-${width}-${theme}.png` });
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Let agents reason. Let Goa generate.');
+      await expect(page.locator('.home-hero-full .highbay-roles dt')).toHaveText(['For coding agents', 'For AI products']);
+      await expect(page.locator('.home-hero-full .highbay-playbook__head strong')).toHaveText('design/*.go');
       await expect(page.getByRole('link', { name: 'Build a service', exact: true })).toHaveAttribute('href', '/docs/1-goa/quickstart/');
       await expect(page.getByRole('link', { name: 'Build an AI agent', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/quickstart/');
       await page.locator('label[for="demo-agent"]').click();
@@ -79,6 +81,8 @@ for (const width of [390, 1440]) {
       await mcp.locator('h2').click();
       await mcp.screenshot({ path: `.impeccable/review/mcp-${width}-${theme}.png` });
       await expect(page.getByRole('link', { name: 'Host a tool registry', exact: true })).toHaveAttribute('href', '/docs/2-goa-ai/registry/');
+      await expect(page.locator('#compare .highbay-matrix tbody tr')).toHaveCount(4);
+      await expect(page.locator('#compare').getByRole('table')).toBeVisible();
       await page.locator('.support-section').scrollIntoViewIfNeeded();
       await expect.poll(() => page.locator('.support-section img').evaluateAll(
         images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0),
@@ -236,6 +240,8 @@ for (const width of [390, 1440]) {
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/chorus/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your coding agents. Working as a team.');
+      await expect(page.locator('.chorus-hero .highbay-roles dt')).toHaveText(['For you', 'For your agents']);
+      await expect(page.locator('.chorus-swarm-card .highbay-playbook__head strong')).toHaveText('Pinned task board');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveText('Get Chorus');
       await expect(page.locator('.chorus-hero .hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.chorus-hero .hero-actions a').nth(1)).toHaveAttribute('href', '/docs/3-ecosystem/chorus/');
@@ -278,11 +284,12 @@ for (const width of [390, 1440]) {
       }
       await expect(page.locator('.chorus-tokens dt')).toHaveText(['Waiting: model off', 'Waking up: just the news', 'Talking: a few tokens']);
       await expect(page.locator('.chorus-quote-speaker')).toHaveText('Codex, lead agent, explains the plan to the maintainer.');
-      await expect(page.locator('.chorus-compare dt')).toHaveText([
-        'Agent IDEs & worktree runners (Orca, Superset, Conductor)',
-        'Terminal multiplexers (Herdr, cmux, tmux)',
-        'Built-in subagents (Claude Code, Codex)',
-        'Chat bridges & JSON MCPs (Slack, Discord, A2A)',
+      await expect(page.locator('.chorus-compare .highbay-matrix tbody tr')).toHaveCount(4);
+      await expect(page.locator('.chorus-compare .highbay-matrix tbody th')).toHaveText([
+        'Cross-model peers',
+        'Shared task plan',
+        'Waiting cost',
+        'Editor & setup',
       ]);
       await expect(page.locator('.chorus-directory-badge')).toHaveAttribute(
         'href',
@@ -353,14 +360,9 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
           await page.locator('.theme-toggle').click();
         }
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-        await expect(page.locator('.chorus-hero .hero-facts')).toContainText('Herdr');
-        await expect(page.locator('#install .install-hint')).toContainText('⌥⌘⇧C');
-        await expect(page.locator('#install .install-hint code')).toContainText([
-          '/chorus', '$chorus', 'chorus ui', 'herdr-app do mod.open --name chorus-launcher',
-        ]);
-        await expect(page.locator('#install')).toContainText('chorus update');
-        await page.locator('#install .chorus-setup-details summary').click();
-        await expect(page.locator('#install .chorus-setup-details')).toContainText('YOLO');
+        await expect(page.locator('#install .highbay-install-card__top')).toContainText('Herdr');
+        await expect(page.locator('#install .highbay-install-card__top a')).toHaveAttribute('href', `/${lang}docs/3-ecosystem/chorus/`);
+        await page.locator('#install .chorus-mgr-btn[data-chorus-mgr="npx"]').click({ trial: true });
         await expect(page.locator('.chorus-compare')).toContainText('chorus-launcher');
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} landing ${width}px ${theme}`).toBe(true);
 
@@ -384,9 +386,11 @@ for (const lang of ['', 'es/', 'fr/', 'it/', 'ja/']) {
       const response = await request.get(`/${lang}${path}`);
       expect(response.ok()).toBe(true);
       const markdown = await response.text();
-      expect(markdown).toContain('herdr-app do mod.open --name chorus-launcher');
-      expect(markdown).toContain('chorus update');
+      expect(markdown).toContain('Herdr');
+      expect(markdown).toContain('chorus-launcher');
       if (path.startsWith('docs/')) {
+        expect(markdown).toContain('herdr-app do mod.open --name chorus-launcher');
+        expect(markdown).toContain('chorus update');
         expect(markdown).toContain('{#herdr}');
         expect(markdown).toContain('Update & Restart');
         expect(markdown).toContain('Update & restart');
@@ -449,8 +453,10 @@ for (const width of [390, 1440]) {
       await page.addInitScript((value) => localStorage.setItem('goa-theme', value), theme);
       await page.goto('/highbay/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        'Consistent architecture across the platform your coding agent builds. Services, MCP servers, and AI agents — ~70% of the code generated, not prompted.',
+        'Ship services, MCP servers, and AI workflows with coding agents you can trust.',
       );
+      await expect(page.locator('.highbay-roles dt')).toHaveText(['For you', 'For the model']);
+      await expect(page.locator('.highbay-playbook__head strong')).toHaveText(/Built-in Go playbook/);
       await expect(page.locator('.highbay-hero-actions a').first()).toHaveAttribute('href', '#install');
       await expect(page.locator('.highbay-hero-actions a').nth(1)).toHaveAttribute('href', '#views');
       const brand = page.locator('.td-navbar .navbar-brand');
@@ -466,11 +472,10 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.td-navbar .theme-toggle')).toBeVisible();
 
       // Paired Freehand vs. With Highbay contrast rows (both side labels stay available in the desktop accessibility tree).
-      await expect(page.locator('.highbay-sim__pair')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(4);
-      await expect(page.locator('.highbay-sim')).toContainText('Inject("org_id")');
-      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand coding agent');
+      await expect(page.locator('.highbay-sim__pair')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--solo')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--hb')).toHaveCount(3);
+      await expect(page.locator('.highbay-sim__cell--solo .highbay-sim__mob-tag').first()).toHaveText('Freehand agent');
       await expect(page.locator('.highbay-sim__cell--hb .highbay-sim__mob-tag').first()).toHaveText('With Highbay');
       expect(
         await page.locator('.highbay-sim__mob-tag').first().evaluate((el) => getComputedStyle(el).display),
@@ -484,6 +489,8 @@ for (const width of [390, 1440]) {
       await expect(archImg).toBeVisible();
       await expect(archImg).toHaveAttribute('fetchpriority', 'high');
       await expect.poll(() => archImg.evaluate(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)).toBe(true);
+      await expect(page.locator(`.highbay-stage--architecture .highbay-window__zoom.chorus-badge--${theme}`)).toBeVisible();
+      await page.locator(`.highbay-stage--architecture .highbay-window__zoom.chorus-badge--${theme}`).click({ trial: true });
 
       for (const stage of ['agree', 'check', 'approve', 'architecture'] as const) {
         const tab = page.locator(`#highbay-tab-${stage}`);
@@ -498,18 +505,17 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Toolset("ops"');
       await expect(page.locator('.highbay-lane').first().locator('pre')).toContainText('Tool("rollback_production"');
       await expect(page.getByRole('group', { name: 'Install method' })).toBeVisible();
-      await expect(page.getByRole('group', { name: 'Agent prefix' })).toBeVisible();
-      await expect(page.locator('.highbay-prefix-btn[data-prefix="$highbay"]')).toHaveAttribute('aria-pressed', 'false');
-      await expect(page.locator('#llm-stack dt')).toHaveCount(3);
       await expect(page.locator('#capabilities dt')).toHaveCount(4);
       await expect(page.locator('.highbay-walkthrough .section-link a')).toHaveAttribute('href', '/docs/ai-development/');
-      await expect(page.locator('.highbay-compare-3col dt')).toHaveCount(3);
+      await expect(page.locator('#compare .highbay-matrix tbody tr')).toHaveCount(4);
+      await expect(page.getByRole('table')).toBeVisible();
       await expect(page.locator('.highbay-faq dt')).toHaveCount(4);
       const faqDocLink = page.locator('.highbay-faq a').first();
+      await expect(faqDocLink).toBeVisible();
       await faqDocLink.focus();
       await expect(faqDocLink).toBeFocused();
 
-      // Step 1 [Homebrew | npx | Go] switcher + Step 2 [/highbay | $highbay] switcher + clipboard copy.
+      // Step 1 [Homebrew | npx | Go] switcher + Step 2 copyable prompt.
       await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.locator('#install').getByRole('button', { name: 'Copy setup command' }).click();
       await expect(page.locator('#install .copy-install-status')).toHaveText('Command copied.');
@@ -520,10 +526,7 @@ for (const width of [390, 1440]) {
       await page.locator('.highbay-mgr-btn[data-mgr="go"]').click();
       await expect(page.locator('#highbay-setup-cmd')).toContainText('github.com/goadesign/highbay/cmd/highbay@latest');
       await page.locator('.highbay-mgr-btn[data-mgr="brew"]').click();
-
-      await page.locator('.highbay-prefix-btn[data-prefix="$highbay"]').click();
-      await expect(page.locator('#highbay-prompt-cmd')).toContainText('$highbay Build a multi-tenant incident platform');
-      await page.locator('.highbay-prefix-btn[data-prefix="/highbay"]').click();
+      await expect(page.locator('#highbay-prompt-cmd')).toContainText('/highbay Build an incident service');
       if (width >= 1440) {
         const hbNavBox = await brand.boundingBox();
         const hbHeroBox = await page.locator('.highbay-hero-full').boundingBox();
@@ -540,11 +543,18 @@ for (const width of [390, 1440]) {
       }
 
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.evaluate(() => {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      });
+      await page.screenshot({ path: `.impeccable/review/highbay-${width}-${theme}.png`, fullPage: true });
 
       // Ecosystem guide embeds theme-matched Agree and Approve browser views without horizontal overflow.
       await page.goto('/docs/3-ecosystem/highbay/');
       const docShots = page.locator(`.highbay-doc-views ${shotSelector}`);
       await expect(docShots).toHaveCount(2);
+      await expect(page.locator('.highbay-doc-views figcaption').first()).not.toBeEmpty();
+      await expect(page.locator('.highbay-doc-views figcaption').nth(1)).not.toBeEmpty();
       await docShots.first().scrollIntoViewIfNeeded();
       await expect.poll(() => docShots.evaluateAll(
         imgs => imgs.every(img => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0),
@@ -556,10 +566,10 @@ for (const width of [390, 1440]) {
 
 test('localized Highbay pages, ecosystem guides, and Markdown are reachable', async ({ page, request }) => {
   for (const [lang, heading, docsLabel, goaLabel] of [
-    ['es', 'Arquitectura consistente en toda la plataforma que construye tu agente de programación. Servicios, servidores MCP y agentes de IA — ~70 % del código generado, no pedido por prompt.', 'Documentación', 'Framework Goa'],
-    ['fr', 'Une architecture cohérente sur toute la plateforme que construit votre agent de code. Services, serveurs MCP et agents IA — ~70 % du code généré, pas demandé par prompt.', 'Documentation', 'Framework Goa'],
-    ['it', 'Architettura coerente su tutta la piattaforma costruita dal tuo coding agent. Servizi, server MCP e agenti IA — ~70% del codice generato, non scritto via prompt.', 'Documentazione', 'Framework Goa'],
-    ['ja', 'コーディングエージェントが構築するプラットフォーム全体に一貫したアーキテクチャを。 サービス・MCP サーバー・AI エージェント — コードの約 70% をプロンプトではなくコード生成で。', 'ドキュメント', 'Goa フレームワーク'],
+    ['es', 'Publica servicios, servidores MCP y flujos de IA con agentes de código en los que puedes confiar.', 'Documentación', 'Framework Goa'],
+    ['fr', 'Livrez services, serveurs MCP et workflows IA avec des agents de code fiables.', 'Documentation', 'Framework Goa'],
+    ['it', 'Rilascia servizi, server MCP e workflow IA con coding agent di cui puoi fidarti.', 'Documentazione', 'Framework Goa'],
+    ['ja', 'サービス・MCP サーバー・AI ワークフローを 信頼できるコーディングエージェントで出荷。', 'ドキュメント', 'Goa フレームワーク'],
   ] as const) {
     await page.goto(`/${lang}/highbay/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);

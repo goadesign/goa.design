@@ -1,5 +1,5 @@
 ---
-title: "Highbay — Architettura coerente su tutta la piattaforma costruita dal tuo coding agent."
+title: "Highbay: Rilascia servizi, server MCP e workflow IA con coding agent affidabili"
 linkTitle: "Highbay"
-description: "Highbay mantiene tutta la piattaforma costruita dal tuo coding agent su un'architettura coerente, compilando server HTTP/MCP, validazione e schemi dei tool (~70% del codice Go non di test nel servizio di riferimento) da un contratto confermato da te."
+description: "Highbay guida ogni modifica backend nel browser e fornisce ai coding agent regole di architettura Go integrate, il 70% di server e schemi generato (servizio Orders) e un worktree di test separato."
 ---

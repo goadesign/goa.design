@@ -1,9 +1,9 @@
-// capture.mjs renders the real Highbay Views single-page bundle
+// capture.mjs renders the real Highbay Studio single-page bundle
 // (internal/controlplane/checkpoint.html from github.com/goadesign/highbay)
 // across the four stages shown on goa.design/highbay/ (Agree, Architecture,
-// Check [Run 1 blocked], and Approve [Run 2 verified]) in light and dark themes
-// at desktop (1040x660 @ 2x) and mobile (390x680 @ 2x), writing optimized WebP
-// assets to static/img/highbay/.
+// Verify [Run 1 blocked], and Approve [Run 2 verified]) in light and dark themes
+// at desktop (1280x860 @ 2x, showing the sticky Chorus Conversation rail) and
+// mobile (390x740 @ 2x), writing optimized WebP assets to static/img/highbay/.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
@@ -139,7 +139,6 @@ function makeState(stage) {
   const isAgree = stage === "agree";
   const isCheck = stage === "check";
   const isApprove = stage === "approve";
-  const activeRunId = isCheck ? RUN_1_ID : RUN_2_ID;
   const activeCandidate = isCheck ? CANDIDATE_COMMIT_1 : CANDIDATE_COMMIT_2;
 
   const approvalItem = {
@@ -279,34 +278,158 @@ function makeState(stage) {
         },
       };
 
+  const guideChoice = {
+    client: "claude",
+    program: "claude",
+    model: "claude-opus-4-6",
+    thinking: "high",
+    yolo: false,
+  };
+  const builderChoice = {
+    client: "codex",
+    program: "codex",
+    model: "gpt-5.4",
+    thinking: "high",
+    yolo: false,
+  };
+  const writerChoice = {
+    client: "claude",
+    program: "claude",
+    model: "claude-sonnet-4-6",
+    thinking: "high",
+    yolo: false,
+  };
+
   const team = {
     team: "ops-copilot",
-    herdr_mode: "attached",
+    channel: "#ops-copilot",
     chorus_status: "connected",
     dismissed_notices: [],
     saved_choices: {
-      builder: { client: "codex", program: "codex", thinking: "high", yolo: false },
-      test_writer: { client: "claude", program: "claude", thinking: "high", yolo: false },
+      guide: guideChoice,
+      builder: builderChoice,
+      test_writer: writerChoice,
     },
     roles: [
-      { role: "guide", handle: "guide", state: "waiting", attention: "none", watcher: "held", assignment: "nothing_owed" },
+      {
+        role: "guide",
+        handle: "guide",
+        has_terminal: true,
+        state: "waiting",
+        attention: "none",
+        assignment: "nothing_owed",
+        choice: guideChoice,
+      },
       {
         role: "builder",
         handle: "builder",
-        state: isApprove ? "waiting" : "working",
+        has_terminal: true,
+        state: isApprove || isAgree ? "waiting" : "working",
         attention: "none",
-        watcher: "held",
         assignment: "nothing_owed",
+        choice: builderChoice,
       },
       {
         role: "test_writer",
         handle: "test-writer",
+        has_terminal: true,
         state: "waiting",
         attention: "none",
-        watcher: "held",
         assignment: "nothing_owed",
+        choice: writerChoice,
       },
     ],
+  };
+
+  const baseMs = Date.parse("2026-11-26T08:10:00Z");
+  const messages = [
+    {
+      id: "#ops-copilot:1",
+      seq: 1,
+      target: "#ops-copilot",
+      sender: "dana",
+      sender_role: "you",
+      text: "Build a multi-tenant incident platform with bounded pod logs, staging self-healing, and on-call approval for production rollbacks.",
+      sent_at_ms: baseMs,
+    },
+    {
+      id: "#ops-copilot:2",
+      seq: 2,
+      target: "#ops-copilot",
+      sender: "guide",
+      sender_role: "guide",
+      model: "Claude Opus 4.6",
+      reply_to: 1,
+      text: "Proposed Change Card ops-copilot-platform with 1 open autonomy question and 3 acceptance examples.",
+      sent_at_ms: baseMs + 48_000,
+    },
+  ];
+  if (!isAgree) {
+    messages.push(
+      {
+        id: "#ops-copilot:3",
+        seq: 3,
+        target: "#ops-copilot",
+        sender: "dana",
+        sender_role: "you",
+        text: "Confirmed autonomous staging rollbacks and on-call Confirmation for production.",
+        sent_at_ms: baseMs + 135_000,
+      },
+      {
+        id: "#ops-copilot:4",
+        seq: 4,
+        target: "#ops-copilot",
+        sender: "guide",
+        sender_role: "guide",
+        model: "Claude Opus 4.6",
+        reply_to: 3,
+        text: "Compiled C4 topology: 8 containers, server-injected org_id, bounded cursors, and Temporal approval gate.",
+        sent_at_ms: baseMs + 165_000,
+      },
+    );
+  }
+  if (isCheck || isApprove) {
+    messages.push(
+      {
+        id: "#ops-copilot:5",
+        seq: 5,
+        target: "#ops-copilot",
+        sender: "test-writer",
+        sender_role: "test_writer",
+        model: "Claude Sonnet 4.6",
+        text: "Accepted eval/ suite on highbay/tests-1 covering tenant guard and 403 non-oncall approval check.",
+        sent_at_ms: baseMs + 390_000,
+      },
+      {
+        id: "#ops-copilot:6",
+        seq: 6,
+        target: "#ops-copilot",
+        sender: "builder",
+        sender_role: "builder",
+        model: "gpt-5.4",
+        text: "Candidate 61d04b8 failed Run 1 on non_oncall_approval_rejected (viewer got 200 OK instead of 403).",
+        sent_at_ms: baseMs + 440_000,
+      },
+    );
+  }
+  if (isApprove) {
+    messages.push({
+      id: "#ops-copilot:7",
+      seq: 7,
+      target: "#ops-copilot",
+      sender: "builder",
+      sender_role: "builder",
+      model: "gpt-5.4",
+      text: "Enforced oncall role check before Confirmation resume. Candidate b92e4d1 passed all 4 scenarios in Run 2.",
+      sent_at_ms: baseMs + 585_000,
+    });
+  }
+
+  const conversation = {
+    team: "ops-copilot",
+    channel: "#ops-copilot",
+    chorus_status: "connected",
+    messages,
   };
 
   const options = {
@@ -570,7 +693,19 @@ function makeState(stage) {
     ],
   };
 
-  return { card, changes, build, team, options, run1Status, run2Status, run1Review, run2Review, activeRunId, architecturePreview };
+  return {
+    card,
+    changes,
+    build,
+    team,
+    conversation,
+    options,
+    run1Status,
+    run2Status,
+    run1Review,
+    run2Review,
+    architecturePreview,
+  };
 }
 
 let currentStage = "agree";
@@ -586,6 +721,7 @@ const server = http.createServer((req, res) => {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
+      "X-Highbay-UI-Build": "studio-f88aa63e",
     });
     res.end(payload);
   };
@@ -594,6 +730,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
+      "X-Highbay-UI-Build": "studio-f88aa63e",
     });
     res.end(checkpointBody);
     return;
@@ -603,8 +740,23 @@ const server = http.createServer((req, res) => {
     res.end();
     return;
   }
-  if (req.method === "POST" && p === "/project/browser-session") {
-    json(201, { project_name: "ops-copilot", session: "demo-session-token" });
+  if ((req.method === "POST" || req.method === "GET") && p === "/project/browser-session") {
+    json(req.method === "POST" ? 201 : 200, {
+      project_name: "ops-copilot",
+      session: "demo-session-token",
+      ui_build: "studio-f88aa63e",
+      version: "v0.4.0",
+    });
+    return;
+  }
+  if (req.method === "GET" && p === "/project/update") {
+    json(200, {
+      can_auto_update: true,
+      current_version: "v0.4.0",
+      latest_version: "v0.4.0",
+      release_url: "https://github.com/goadesign/highbay/releases/tag/v0.4.0",
+      update_available: false,
+    });
     return;
   }
   if (req.method === "GET" && p === "/changes") {
@@ -627,8 +779,23 @@ const server = http.createServer((req, res) => {
     json(200, state.build);
     return;
   }
+  if (req.method === "GET" && p === `/changes/${CHANGE_ID}/build/findings`) {
+    json(200, {
+      change_id: CHANGE_ID,
+      checked_at: "2026-11-26T08:16:40Z",
+      findings: [],
+      report: 1,
+      request_revision: REV_2,
+      started_at: "2026-11-26T08:14:00Z",
+    });
+    return;
+  }
   if (req.method === "GET" && p === "/team") {
     json(200, state.team);
+    return;
+  }
+  if (req.method === "GET" && p === "/team/conversation") {
+    json(200, state.conversation);
     return;
   }
   if (req.method === "GET" && p === "/team/agent-options") {
@@ -686,7 +853,7 @@ const { port } = server.address();
 const baseUrl = `http://127.0.0.1:${port}/views#link=demo-link`;
 
 const SIZES = {
-  desktop: { width: 1040, height: 845, scale: 2 },
+  desktop: { width: 1280, height: 860, scale: 2 },
   mobile: { width: 390, height: 740, scale: 2 },
 };
 
@@ -708,29 +875,25 @@ try {
         const page = await context.newPage();
         page.on("pageerror", (err) => console.error("PAGEERROR:", err));
         await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-        await page.waitForSelector('[data-state="cp1-change-card"]', { state: "attached", timeout: 5000 });
+        await page.waitForSelector("#highbay-checkpoint-nav:not([hidden])", { state: "visible", timeout: 5000 });
 
         if (stage === "agree") {
-          await page.getByRole("button", { name: "Agree", exact: true }).click().catch(() => {});
-          await page.waitForTimeout(250);
+          await page.waitForSelector("#highbay-cp1-editor", { state: "visible", timeout: 5000 });
           const firstChoice = page.locator(".shadcn-choice-option").first();
           if ((await firstChoice.count()) > 0) {
             await firstChoice.click();
           }
           await page.waitForTimeout(250);
         } else if (stage === "architecture") {
+          await page.waitForSelector("#highbay-build-section", { state: "visible", timeout: 5000 });
+          if (sizeName === "mobile") {
+            await page.locator("#highbay-stage-menu > summary").click();
+          }
           await page.locator("#highbay-nav-cp2").click();
           await page.waitForSelector("#highbay-c4-svg", { state: "visible", timeout: 5000 });
           await page.waitForTimeout(250);
         } else if (stage === "check") {
-          await page.locator("#highbay-nav-cp4").click();
           await page.waitForSelector("#highbay-cp4-verification", { state: "visible", timeout: 5000 });
-          await page.waitForTimeout(250);
-          const checkBtn = page.locator("#highbay-cp4-check-status");
-          if ((await checkBtn.count()) > 0) {
-            await checkBtn.scrollIntoViewIfNeeded();
-            await checkBtn.click();
-          }
           await page.waitForFunction(
             () => /This result matches the agreed revision/i.test(document.querySelector("#highbay-cp4-inputs")?.textContent || ""),
             { timeout: 5000 },
@@ -742,46 +905,62 @@ try {
               }
             }
           });
-          await page.waitForTimeout(150);
+          await page.waitForTimeout(200);
         } else if (stage === "approve") {
-          await page.getByRole("button", { name: "Approve", exact: true }).click();
-          await page.waitForTimeout(450);
+          await page.waitForSelector("#highbay-cp5-title", { state: "visible", timeout: 5000 });
+          await page.waitForTimeout(300);
         }
 
         await page.evaluate(([stg, sz]) => {
           if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
           }
-          const sticky = document.querySelector("#highbay-workspace-context") || document.querySelector("header");
-          const stickyBottom = sticky ? Math.ceil(sticky.getBoundingClientRect().bottom) : 220;
+          const chatFeed = document.querySelector("#highbay-conversation-messages");
+          if (chatFeed) {
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+            const items = chatFeed.querySelectorAll("li.highbay-message-item");
+            const lastMsg = items[items.length - 1];
+            if (lastMsg instanceof HTMLElement) {
+              const feedRect = chatFeed.getBoundingClientRect();
+              const msgRect = lastMsg.getBoundingClientRect();
+              if (msgRect.top < feedRect.top + 4) {
+                chatFeed.scrollTop = Math.max(0, chatFeed.scrollTop + (msgRect.top - feedRect.top) - 4);
+              }
+            }
+          }
+          const sticky = document.querySelector("#highbay-checkpoint-nav");
+          const stickyBottom = sz === "mobile" ? 0 : sticky ? Math.ceil(sticky.getBoundingClientRect().bottom) : 130;
           let top = 0;
-          if (stg === "agree" && sz === "desktop") {
+          if (stg === "agree") {
             const sim = [...document.querySelectorAll("h2, h3, div")].find((n) => /^Platform autonomy boundary$/i.test((n.textContent || "").trim()));
             if (sim) {
-              top = Math.max(0, Math.round(sim.getBoundingClientRect().top + window.scrollY - stickyBottom - 16));
+              const pad = sz === "mobile" ? 12 : 16;
+              top = Math.max(0, Math.round(sim.getBoundingClientRect().top + window.scrollY - stickyBottom - pad));
             }
           } else if (stg === "architecture") {
             const heading = [...document.querySelectorAll("h2, h3")].find((n) => /^C4 Directed Graph/i.test((n.textContent || "").trim()));
             if (heading) {
-              top = Math.max(0, Math.round(heading.getBoundingClientRect().top + window.scrollY - stickyBottom + 20));
+              const offset = sz === "mobile" ? -12 : 20;
+              top = Math.max(0, Math.round(heading.getBoundingClientRect().top + window.scrollY - stickyBottom + offset));
             }
           } else if (stg === "check") {
             if (sz === "mobile") {
-              document.body.style.paddingBottom = "420px";
-              const failedRow = [...document.querySelectorAll("details")].find((n) =>
-                /production_rollback_requires_approval/i.test(n.textContent || ""),
-              );
-              const bottomBar = document.querySelector("#highbay-workspace-context");
-              const bottomBarH = bottomBar ? Math.ceil(bottomBar.getBoundingClientRect().height) : 76;
-              if (failedRow) {
-                const visibleBottom = window.innerHeight - bottomBarH - 42;
-                top = Math.max(0, Math.round(failedRow.getBoundingClientRect().bottom + window.scrollY - visibleBottom));
+              document.body.style.paddingBottom = "320px";
+              const targetEl =
+                document.querySelector("#highbay-cp4-message-builder") ||
+                [...document.querySelectorAll("details")].find((n) =>
+                  /production_rollback_requires_approval/i.test(n.textContent || ""),
+                );
+              if (targetEl) {
+                const visibleBottom = window.innerHeight - 16;
+                top = Math.max(0, Math.round(targetEl.getBoundingClientRect().bottom + window.scrollY - visibleBottom));
               }
-            } else {
-              const titleEl = document.querySelector("#highbay-cp4-title");
-              if (titleEl) {
-                top = Math.max(0, Math.round(titleEl.getBoundingClientRect().top + window.scrollY - stickyBottom - 16));
-              }
+            }
+          } else if (stg === "approve" && sz === "mobile") {
+            document.body.style.paddingBottom = "360px";
+            const basisEl = document.querySelector("#highbay-approval-basis-title");
+            if (basisEl) {
+              top = Math.max(0, Math.round(basisEl.getBoundingClientRect().top + window.scrollY - 12));
             }
           }
           window.scrollTo({ top, behavior: "instant" });
@@ -802,9 +981,9 @@ try {
       }
     }
   }
+
+  fs.writeFileSync(path.join(__dirname, "pins.json"), JSON.stringify(pins, null, 2) + "\n");
 } finally {
   await browser.close();
   server.close();
 }
-
-fs.writeFileSync(path.join(__dirname, "pins.json"), JSON.stringify(pins, null, 2) + "\n");

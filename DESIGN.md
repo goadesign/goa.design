@@ -312,9 +312,10 @@ that distinction and the product claims.
 - Native controls and local scrolling keep dense content usable.
 - Selectable commands, visible answers, and simple topology make value extractable.
 
-Source of truth: `assets/scss/_variables_project.scss`, `_dark_theme.scss`,
-`_styles_project.scss`, `_custom.scss`, `_syntax_light.scss`, and
-`_syntax_dark.scss`; `layouts/index.html`, `layouts/docs/baseof.html`, and
+Source of truth: `assets/scss/_variables_project.scss`,
+`assets/scss/_dark_theme.scss`, `assets/scss/_styles_project.scss`,
+`assets/scss/_custom.scss`, `assets/scss/_syntax_light.scss`, and
+`assets/scss/_syntax_dark.scss`; `layouts/index.html`, `layouts/docs/baseof.html`, and
 `layouts/_partials/guru-widget.html`. The header wordmark is
 `assets/icons/logo.svg`; its letter paths also supply the monochrome Safari
 pinned-tab mask. The round badge in `static/img/goa-logo.png` supplies the footer;
@@ -568,8 +569,8 @@ A full-width two-step quickstart card sits on its own row directly beneath the
 hero. Step 1 pairs a `[Coding-agent skill | Go CLI]` toggle (defaulting to
 `npx skills add goadesign/goa --skill goa-service-designer`) with a selectable
 command box; Step 2 pairs a `[Services | AI agents]` toggle with a copyable
-coding-agent starter prompt. Visible guidance notes Go 1.27+ and Node.js/npm
-for the skill installer. Its square copy control contains a (20px) outline SVG;
+coding-agent starter prompt. Visible guidance notes Go 1.27+ and supported
+coding agents alongside a setup-guide link. Its square copy control contains a (20px) outline SVG;
 success announces “Command copied.” in a `role="status"` region, and clipboard
 failure selects the command and says “Select and copy the command.”
 

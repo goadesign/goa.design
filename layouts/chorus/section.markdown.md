@@ -1,12 +1,7 @@
-# Chorus
+# Chorus: {{ T "chorus_heading" }} {{ T "chorus_heading_second" }}
 
-{{ T "chorus_intro" }}
-
-- {{ T "chorus_hero_point_1" }}
-- {{ T "chorus_hero_point_2" }}
-- {{ T "chorus_hero_point_3" }}
-
-{{ T "chorus_clients" }} · {{ T "chorus_facts" }}
+- **{{ T "chorus_for_you_label" }}:** {{ T "chorus_for_you_text" }}
+- **{{ T "chorus_for_agents_label" }}:** {{ T "chorus_for_agents_text" }}
 
 GitHub: [Chorus](https://github.com/goadesign/chorus) · [{{ T "chorus_demo_cta" }}](https://goa.design/chorus/demo/)
 
@@ -28,25 +23,17 @@ curl -fsSL https://raw.githubusercontent.com/goadesign/chorus/main/scripts/insta
 go install github.com/goadesign/chorus/cmd/chorus@latest && chorus up
 ```
 
-{{ T "chorus_restart_note" }}
-
 {{ T "chorus_step2_label" }}
 
 ```text
 /chorus {{ T "chorus_starter_prompt_body" }}
 ```
 
-{{ T "chorus_install_hint" }}
-
-- {{ T "chorus_fit_configs" }}
-- {{ T "chorus_fit_redis" }}
-- {{ T "chorus_fit_safety" }}
-
 ## {{ T "chorus_example_heading" }}
 
 {{ T "chorus_example_intro" }}
 
-### @claude — {{ T "chorus_role_lead" }}
+### @claude: {{ T "chorus_role_lead" }}
 
 ```text
 $ chorus watch claude -wait 30s
@@ -55,7 +42,7 @@ $ chorus watch claude -wait 30s
 sent #auth#2 (≈3 {{ T "chorus_tokens" }})
 ```
 
-### @codex — {{ T "chorus_role_review" }}
+### @codex: {{ T "chorus_role_review" }}
 
 ```text
 $ chorus watch codex -wait 30s
@@ -65,7 +52,7 @@ sent #auth#3 (≈3 {{ T "chorus_tokens" }})
 #auth#9 @codex: Review of a41c9e2: replay: second submit returns challenge_used ✅
 ```
 
-### @gemini — {{ T "chorus_role_docs" }}
+### @gemini: {{ T "chorus_role_docs" }}
 
 ```text
 $ chorus watch gemini -wait 30s
@@ -83,11 +70,12 @@ $ chorus watch gemini -wait 30s
 {{ end }}
 
 ## {{ T "chorus_compare_heading" }}
-{{ range slice "ide" "pty" "subagents" "chat" }}
-### {{ T (printf "chorus_compare_%s" .) }}
 
-{{ T (printf "chorus_compare_%s_text" .) }}
-{{ end }}
+| {{ T "highbay_compare_col_dim" }} | {{ T "chorus_with_title" }} | {{ T "chorus_col_ide" }} | {{ T "chorus_col_pty" }} | {{ T "chorus_col_sub" }} | {{ T "chorus_col_chat" }} |
+| --- | --- | --- | --- | --- | --- |
+{{- range slice "r1" "r2" "r3" "r4" }}
+| {{ T (printf "chorus_matrix_%s_label" .) }} | {{ T (printf "chorus_matrix_%s_ch" .) }} | {{ T (printf "chorus_matrix_%s_ide" .) }} | {{ T (printf "chorus_matrix_%s_pty" .) }} | {{ T (printf "chorus_matrix_%s_sub" .) }} | {{ T (printf "chorus_matrix_%s_chat" .) }} |
+{{- end }}
 
 ## {{ T "chorus_tokens_heading" }}
 {{ range slice "wait" "wake" "send" }}

@@ -211,7 +211,7 @@ Define entradas y salidas de herramientas con validaciones de Goa, `Inject("tena
 
 ### Salidas directas estructuradas {#typed-direct-completions}
 
-Declara `Completion(...)` cuando un servicio necesite una respuesta tipada y validada contra esquema por parte de un modelo sin un bucle multi-turno de herramientas. Las funciones generadas —tanto unarias como en streaming— decodifican y validan el resultado. Consulta la [Referencia DSL](dsl-reference/) y [Runtime](runtime/).
+Declara `Completion(...)` cuando un servicio necesite una respuesta tipada y validada contra esquema por parte de un modelo sin un bucle multi-turno de herramientas. Las funciones generadas (tanto unarias como en streaming) decodifican y validan el resultado. Consulta la [Referencia DSL](dsl-reference/) y [Runtime](runtime/).
 
 ### Servidores MCP y registros de herramientas alojados {#tool-registries}
 

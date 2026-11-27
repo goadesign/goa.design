@@ -1,10 +1,7 @@
-# Highbay — {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
+# Highbay: {{ T "highbay_heading" }} {{ T "highbay_heading_second" }}
 
-{{ T "highbay_intro" }}
-
-- {{ T "highbay_hero_point_1" }}
-- {{ T "highbay_hero_point_2" }}
-- {{ T "highbay_hero_point_3" }}
+- **{{ T "highbay_for_you_label" }}:** {{ T "highbay_for_you_text" }}
+- **{{ T "highbay_for_model_label" }}:** {{ T "highbay_for_model_text" }}
 
 GitHub: [github.com/goadesign/highbay](https://github.com/goadesign/highbay) · Docs: [Ecosystem Guide]({{ relref . "/docs/3-ecosystem/highbay/" }})
 
@@ -25,35 +22,29 @@ go install github.com/goadesign/highbay/cmd/highbay@latest
 highbay up
 ```
 
-{{ T "highbay_install_prereq" }}
-
 {{ T "highbay_install_next" }}
 
 > {{ T "highbay_install_prompt" }}
 
-{{ T "highbay_install_hint" }}
-
-- {{ T "highbay_fit_agents" }}
-- {{ T "highbay_fit_scope" }}
-- {{ T "highbay_fit_local" }}
-
-## {{ T "highbay_contrast_heading" }} {#contrast}
-{{ range slice "1" "2" "3" "4" }}
-### {{ . }}. {{ T (printf "highbay_solo_row_%s_title" .) }}
-- **{{ T "highbay_solo_title" }} ({{ T "highbay_solo_chip_gate" }}):** {{ T (printf "highbay_solo_row_%s_text" .) }}
-- **{{ T "highbay_with_title" }} ({{ T "highbay_with_suite" }}):** {{ T (printf "highbay_with_row_%s_text" .) }}
-{{ end -}}
-
 ## {{ T "highbay_showcase_heading" }} {#views}
+
+{{ T "highbay_showcase_intro" }}
 
 - **{{ T "highbay_tab_agree" }}:** {{ T "highbay_agree_pin_1" }}
 - **{{ T "highbay_tab_arch" }}:** {{ T "highbay_arch_pin_1" }}
 - **{{ T "highbay_tab_check" }}:** {{ T "highbay_check_pin_1" }}
 - **{{ T "highbay_tab_approve" }}:** {{ T "highbay_approve_pin_1" }}
 
-*{{ T "highbay_showcase_caption" }} ([{{ T "highbay_showcase_method" }}](https://github.com/goadesign/goa.design/tree/main/scripts/highbay-example))*
+## {{ T "highbay_contrast_heading" }} {#contrast}
+{{ range slice "1" "2" "3" }}
+### {{ . }}. {{ T (printf "highbay_solo_row_%s_title" .) }}
+- **{{ T "highbay_solo_title" }}:** {{ T (printf "highbay_solo_row_%s_text" .) }}
+- **{{ T "highbay_with_title" }}:** {{ T (printf "highbay_with_row_%s_text" .) }}
+{{ end -}}
 
 ## {{ T "highbay_walkthrough_heading" }} {#codegen}
+
+{{ T "highbay_walkthrough_intro" }}
 
 ### {{ T "highbay_role_guide" }}
 
@@ -80,15 +71,13 @@ var opsTools = Toolset("ops", func() {
         BindTo("ops", "rollback_production")
         Inject("org_id")
         Confirmation(func() {
-            Title("Approve production rollback")
-            PromptTemplate(`Roll back {{"{{"}} .service {{"}}"}} in prod?`)
-            DeniedResultTemplate(`{"status":"denied"}`)
+            Title("Confirm prod rollback")
+            PromptTemplate(`Roll back {{"{{"}}.svc{{"}}"}}?`)
+            DeniedResultTemplate(`{"ok":false}`)
         })
     })
 })
 ```
-
-{{ T "highbay_card_choice" }}
 
 ### {{ T "highbay_role_codegen" }}
 
@@ -105,11 +94,9 @@ type Service interface {
         *RollbackArgs) (*RollbackOutcome, error)
 }
 // + HTTP & MCP servers, OpenAPI 3 spec
-// + Tool JSON (org_id omitted)
-// + BoundedResult cursor bounds
+// + Tenant ID bound server-side
+// + Enforced log page cursors
 ```
-
-{{ T "highbay_codegen_check" }}
 
 ### {{ T "highbay_role_tests" }}
 
@@ -126,31 +113,26 @@ if err != nil {
     return eval.Result{}, err
 }
 return eval.Result{Checks: []eval.Check{
-    // eval.Check helper for named assertions
     check("paused", run.PendingConfirmation),
     check("non_oncall_approval_rejected",
         res.StatusCode == 403),
 }}, nil
 ```
 
-{{ T "highbay_builder_check" }}
-
-### {{ T "highbay_proof_heading" }} {#llm-stack}
-{{ range slice "codegen" "playbook" "suite" }}
-- **{{ T (printf "highbay_proof_%s_title" .) }}:** {{ T (printf "highbay_proof_%s_body" .) }}
-{{- end }}
-
 ## {{ T "highbay_cap_heading" }} {#capabilities}
+
+{{ T "highbay_cap_intro" }}
 {{ range slice "auth" "obs" "stream" "durable" }}
 - **{{ T (printf "highbay_cap_%s_title" .) }}:** {{ T (printf "highbay_cap_%s_body" .) }}
 {{- end }}
 
 ## {{ T "highbay_compare_heading" }}
-{{ range slice "solo" "speckit" "workspaces" }}
-### {{ T (printf "highbay_compare_%s" .) }}
 
-{{ T (printf "highbay_compare_%s_text" .) }}
-{{ end }}
+| {{ T "highbay_compare_col_dim" }} | {{ T "highbay_with_title" }} | {{ T "highbay_compare_solo" }} | {{ T "highbay_compare_speckit" }} | {{ T "highbay_compare_workspaces" }} |
+| --- | --- | --- | --- | --- |
+{{- range slice "r1" "r2" "r3" "r4" }}
+| {{ T (printf "highbay_matrix_%s_label" .) }} | {{ T (printf "highbay_matrix_%s_hb" .) }} | {{ T (printf "highbay_matrix_%s_solo" .) }} | {{ T (printf "highbay_matrix_%s_sdk" .) }} | {{ T (printf "highbay_matrix_%s_wt" .) }} |
+{{- end }}
 
 ## {{ T "home_faq_heading" }}
 {{ range slice "scope" "holdouts" "local" "sandbox" }}

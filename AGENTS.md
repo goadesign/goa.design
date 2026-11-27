@@ -1,15 +1,20 @@
 # Working on goa.design
 
-Read `PRODUCT.md` for audience and positioning and `DESIGN.md` for the visual
-system before changing public copy or UI.
+Read `PRODUCT.md` for audience and positioning, `DESIGN.md` for the visual
+system, and `.agents/product-marketing.md` for active copy learnings before
+changing public copy or UI.
 
 ## Local skills
 
-Pinned in `skills-lock.json` (upstream licenses and notices preserved in `.agents/THIRD_PARTY_NOTICES.md`) and refreshed via `make update-skills` (`npm run skills:update`) or `.github/workflows/update-skills.yml`:
+First-party repository skill (checked into git and preserved across upstream skill refreshes):
+
+- `.agents/skills/goa-landing-pages/`: landing-page section budgets, functional headline rules, unboxed Google-style layout, shared-caller checks, and five-locale distillation (`/`, `/chorus/`, `/highbay/`).
+
+Upstream skills pinned in `skills-lock.json` (licenses and notices preserved in `.agents/THIRD_PARTY_NOTICES.md`) and refreshed via `make update-skills` (`npm run skills:update`) or `.github/workflows/update-skills.yml`:
 
 - `.agents/skills/impeccable/`: UI hierarchy, layout, typography, visual polish, and design critique (`PRODUCT.md` and `DESIGN.md`).
 - `.agents/skills/frontend-design/`: distinctive visual direction and avoiding generic AI layout chrome.
-- `.agents/skills/copywriting/`: product positioning, hero/CTA hierarchy, evidence-backed claims, and eliminating AI copy tells.
+- `.agents/skills/copywriting/`: product positioning, hero/CTA hierarchy, evidence-backed claims, and eliminating AI copy tells (reads `.agents/product-marketing.md`).
 - `.agents/skills/humanizer/`: prose editing pass to strip AI writing patterns across landing pages and documentation.
 - `.agents/skills/goa-service-designer/`: verify Goa design examples and the boundary between generated contracts and application code.
 
@@ -17,6 +22,8 @@ Pinned in `skills-lock.json` (upstream licenses and notices preserved in `.agent
 
 - Present one ecosystem with equal service and AI-agent entry points.
 - Distinguish using a coding agent from building an agent into a product.
+- Keep landing pages focused on what a first-time visitor needs before Step 1; put CLI flags, edge-case switches, and runtime caveats in `/docs/`.
+- Avoid framing tooling as restricting a developer's coding agent, and strip em dashes and `"X, not Y"` contrast clichés from public copy.
 - Ground capability claims in Goa or Goa-AI source and runnable examples.
 - Do not publish numeric productivity or token savings without a reproducible
   measurement and its limits.

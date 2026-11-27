@@ -120,7 +120,7 @@ Encontrarás instalaciones alternativas de un solo comando (`npx @goadesign/chor
 {{< anchors "highbay---plano-de-control-multiagente-guiado-por-contratos" >}}
 ## Highbay: plano de control multiagente guiado por contratos
 
-[Highbay](highbay/) estandariza la arquitectura de plataforma entre servicios, servidores MCP y agentes de IA, emparejando un agente constructor (`.highbay-build`) con otro agente autor de pruebas (`.highbay-tests`) en torno a un contrato confirmado antes de fusionar:
+[Highbay](highbay/) mantiene coherentes los servicios, servidores MCP y agentes de IA a medida que crece tu código. Empareja un agente constructor (`.highbay-build`) con otro agente autor de pruebas (`.highbay-tests`) en torno a un contrato confirmado antes de fusionar:
 
 ```bash
 brew install goadesign/tap/highbay

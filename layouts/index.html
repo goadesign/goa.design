@@ -1,25 +1,75 @@
 {{ define "main" }}
 <div class="goa-home">
   <section class="highbay-hero-full home-hero-full site-width" aria-labelledby="home-title">
-    <h1 id="home-title"><strong class="highbay-h1-lead">{{ T "home_heading" }}</strong> <span class="highbay-h1-sub">{{ T "home_heading_second" }}</span></h1>
-    <p class="hero-lead">{{ T "home_intro" }}</p>
-    <div class="hero-actions highbay-hero-actions">
-      <a class="goa-button" href="{{ relref . "/docs/1-goa/quickstart/" }}">{{ T "home_service_cta" }}</a>
-      <a class="goa-button chorus-button-quiet" href="{{ relref . "/docs/2-goa-ai/quickstart/" }}">{{ T "home_agent_cta" }}</a>
-      <div class="hero-repositories" role="group" aria-label="GitHub">
-        <span class="hero-repositories__label"><i class="fa-brands fa-github" aria-hidden="true"></i> GitHub</span>
-        <a href="https://github.com/goadesign/goa" aria-label="GitHub: Goa"><span>Goa</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
-        <a href="https://github.com/goadesign/goa-ai" aria-label="GitHub: Goa-AI"><span>Goa-AI</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+    <div class="highbay-hero-split">
+      <div class="highbay-hero__copy">
+        <h1 id="home-title"><strong class="highbay-h1-lead">{{ T "home_heading" }}</strong> <span class="highbay-h1-sub">{{ T "home_heading_second" }}</span></h1>
+        <dl class="highbay-roles">
+          <div class="highbay-roles__row highbay-roles__row--you">
+            <dt><span class="highbay-role-pill highbay-role-pill--you">{{ T "home_for_agents_label" }}</span></dt>
+            <dd>{{ T "home_for_agents_text" | markdownify }}</dd>
+          </div>
+          <div class="highbay-roles__row highbay-roles__row--model">
+            <dt><span class="highbay-role-pill highbay-role-pill--model">{{ T "home_for_products_label" }}</span></dt>
+            <dd>{{ T "home_for_products_text" | markdownify }}</dd>
+          </div>
+        </dl>
+        <div class="hero-actions highbay-hero-actions">
+          <a class="goa-button" href="{{ relref . "/docs/1-goa/quickstart/" }}">{{ T "home_service_cta" }}</a>
+          <a class="goa-button chorus-button-quiet" href="{{ relref . "/docs/2-goa-ai/quickstart/" }}">{{ T "home_agent_cta" }}</a>
+          <div class="hero-repositories" role="group" aria-label="GitHub">
+            <span class="hero-repositories__label"><i class="fa-brands fa-github" aria-hidden="true"></i> GitHub</span>
+            <a href="https://github.com/goadesign/goa" aria-label="GitHub: Goa"><span>Goa</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+            <a href="https://github.com/goadesign/goa-ai" aria-label="GitHub: Goa-AI"><span>Goa-AI</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+          </div>
+        </div>
+        <div class="hero-meta">
+          <div id="goa-assistant" class="hero-assistant"><a href="https://gurubase.io/g/goa">{{ T "home_ask_guru" }}</a></div>
+        </div>
       </div>
-    </div>
-    <ul class="highbay-hero-points highbay-hero-points--row" role="list">
-      <li>{{ T "home_hero_point_1" | markdownify }}</li>
-      <li>{{ T "home_hero_point_2" | markdownify }}</li>
-      <li>{{ T "home_hero_point_3" | markdownify }}</li>
-    </ul>
-    <div class="hero-meta">
-      <p class="hero-facts">{{ T "home_facts" }}</p>
-      <div id="goa-assistant" class="hero-assistant"><a href="https://gurubase.io/g/goa">Ask Goa Guru</a></div>
+
+      <div class="highbay-hero__visual">
+        <div class="highbay-arch-card">
+          <div class="highbay-playbook">
+            <div class="highbay-playbook__head">
+              <strong>design/*.go</strong>
+              <span>{{ T "home_diag_source_meta" }}</span>
+            </div>
+            <ul class="highbay-playbook__chips" role="list">
+              <li>{{ T "home_diag_chip_types" }}</li>
+              <li>{{ T "home_diag_chip_transports" }}</li>
+              <li>{{ T "home_diag_chip_tools" }}</li>
+              <li>{{ T "home_diag_chip_policies" }}</li>
+            </ul>
+          </div>
+
+          <div class="highbay-pipe">
+            <a href="#workflow-title" class="highbay-pipe__node highbay-pipe__node--accent home-pipe-link">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m10 2.5 7 3.8-7 3.8-7-3.8 7-3.8Z"/><path d="m3 10 7 3.8 7-3.8M3 13.7l7 3.8 7-3.8"/></svg>
+              <code>goa gen</code>
+              <span>{{ T "home_diag_compile" }}</span>
+            </a>
+            <svg class="highbay-pipe__conn highbay-pipe__conn--wide" viewBox="0 0 240 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M120 0v8M56 8h128M56 8v9m128-9v9"/></svg>
+            <div class="highbay-pipe__fork">
+              <a href="{{ relref . "/docs/1-goa/" }}" class="highbay-pipe__node highbay-pipe__node--branch home-pipe-link">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3.5" width="14" height="5" rx="1.5"/><rect x="3" y="11.5" width="14" height="5" rx="1.5"/><circle cx="6" cy="6" r=".8" fill="currentColor"/><circle cx="6" cy="14" r=".8" fill="currentColor"/></svg>
+                <code>Goa</code>
+                <span>{{ T "home_diag_goa_out" }}</span>
+              </a>
+              <a href="{{ relref . "/docs/2-goa-ai/" }}" class="highbay-pipe__node highbay-pipe__node--branch highbay-pipe__node--eval home-pipe-link">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="14" cy="6" r="2.2"/><circle cx="10" cy="14.2" r="2.2"/><path d="M8.2 6h3.6M7.1 7.9l2 4.3M12.9 7.9l-2 4.3"/></svg>
+                <code>Goa-AI</code>
+                <span>{{ T "home_diag_ai_out" }}</span>
+              </a>
+            </div>
+            <svg class="highbay-pipe__conn highbay-pipe__conn--wide" viewBox="0 0 240 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M56 0v9m128-9v9M56 9h128M120 9v9"/></svg>
+            <div class="highbay-pipe__node highbay-pipe__node--ok home-pipe-static">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="m6.8 10.2 2.1 2.1 4.4-4.5"/></svg>
+              <span>{{ T "home_diag_impl" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -28,7 +78,7 @@
       <div class="skill-install highbay-install-card">
         <div class="highbay-install-card__top">
           <h2 id="skill-title" class="chorus-install-title">{{ T "home_skill_heading" }}</h2>
-          <p class="highbay-go-alt">{{ T "home_skill_prereq" | markdownify }} · <a href="{{ relref . "/docs/ai-development/" }}#install-the-skill">{{ T "home_skill_docs" }}</a></p>
+          <p class="highbay-go-alt">{{ T "home_skill_prereq" | markdownify }} · <a href="{{ relref . "/docs/ai-development/" }}#install-the-skill">{{ T "home_skill_docs" }} →</a></p>
         </div>
         <div class="highbay-install-card__steps">
           <div class="highbay-install-step">
@@ -45,12 +95,11 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
-            <p class="install-hint">{{ T "home_skill_hint" | markdownify }} <span class="copy-install-status" role="status"></span></p>
           </div>
 
           <div class="highbay-install-step">
             <div class="highbay-step2-head">
-              <p id="home-step2-label" class="skill-prompt-label chorus-install-alt"><span class="home-label-skill">{{ T "home_skill_next" | markdownify }}</span><span class="home-label-go" hidden>{{ T "home_cli_next" | markdownify }}</span></p>
+              <p id="home-step2-label" class="skill-prompt-label chorus-install-alt"><span class="home-label-skill">{{ T "home_skill_next" | markdownify }}</span><span class="home-label-go" hidden>{{ T "home_cli_next" | markdownify }}</span><span class="copy-install-status" role="status"></span></p>
               <div class="highbay-prefix-switch home-prompt-switch" role="group" aria-label="{{ T "home_example_label" }}">
                 <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="service" aria-pressed="true">{{ T "home_services" }}</button>
                 <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="agent" aria-pressed="false">{{ T "home_agents" }}</button>
@@ -66,7 +115,6 @@
               <a id="home-cli-service-link" class="goa-button" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_service_docs" }} →</a>
               <a id="home-cli-agent-link" class="goa-button" href="{{ relref . "/docs/2-goa-ai/" }}" hidden>{{ T "home_agent_docs" }} →</a>
             </div>
-            <p id="home-step2-hint" class="install-hint"><span class="home-hint-skill">{{ T "home_skill_outcome" | markdownify }}</span><span class="home-hint-go" hidden>{{ T "home_cli_outcome" | markdownify }}</span></p>
           </div>
         </div>
       </div>
@@ -180,10 +228,34 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
         <a class="demo-source demo-source-contract" href="{{ relref . "/docs/ai-development/" }}#one-design-two-entry-points">{{ T "home_full_example" }}</a>
         <a class="demo-source demo-source-prompt" href="{{ relref . "/docs/2-goa-ai/prompt-management/" }}#version-prerequisite">{{ T "home_prompt_guide" }}</a>
       </div>
-      <dl class="benefit-list home-benefit-strip">
-        {{ range slice "tokens" "context" "feedback" }}
-        <div><dt>{{ T (printf "home_benefit_%s" .) }}</dt><dd>{{ T (printf "home_benefit_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
+      <dl class="benefit-list home-benefit-strip home-icon-list">
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 8 4.4-8 4.4-8-4.4L12 3Z"/><path d="m4 12 8 4.4 8-4.4M4 16.6 12 21l8-4.4"/></svg>
+            </span>
+            <span>{{ T "home_benefit_tokens" }}</span>
+          </dt>
+          <dd>{{ T "home_benefit_tokens_text" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>
+            </span>
+            <span>{{ T "home_benefit_context" }}</span>
+          </dt>
+          <dd>{{ T "home_benefit_context_text" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 5 6v5.5c0 4.8 3.1 8.2 7 9.5 3.9-1.3 7-4.7 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <span>{{ T "home_benefit_feedback" }}</span>
+          </dt>
+          <dd>{{ T "home_benefit_feedback_text" | markdownify }}</dd>
+        </div>
       </dl>
     </div>
   </section>
@@ -269,11 +341,35 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
   <section class="benefits-section home-compare-section" id="compare" aria-labelledby="compare-title">
     <div class="site-width">
       <div class="section-intro"><h2 id="compare-title">{{ T "home_compare_heading" }}</h2></div>
-      <dl class="benefit-list">
-        {{ range slice "specs" "mcp_sdk" "agent_sdk" }}
-        <div><dt>{{ T (printf "home_compare_%s" .) }}</dt><dd>{{ T (printf "home_compare_%s_text" .) | markdownify }}</dd></div>
-        {{ end }}
-      </dl>
+      <div class="highbay-matrix-wrap" role="region" aria-labelledby="compare-title" tabindex="0">
+        <table class="highbay-matrix">
+          <thead>
+            <tr>
+              <th scope="col">{{ T "home_compare_col_dim" }}</th>
+              <th scope="col" class="highbay-matrix__hb">{{ T "home_compare_col_goa" }}</th>
+              <th scope="col">{{ T "home_compare_specs" }}</th>
+              <th scope="col">{{ T "home_compare_mcp_sdk" }}</th>
+              <th scope="col">{{ T "home_compare_agent_sdk" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{- range slice "r1" "r2" "r3" "r4" }}
+            <tr>
+              <th scope="row">{{ T (printf "home_matrix_%s_label" .) }}</th>
+              <td class="highbay-matrix__hb">
+                <span class="highbay-matrix__hb-cell">
+                  <svg class="highbay-matrix__check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3.2 3.2L13 4.8"/></svg>
+                  <span>{{ T (printf "home_matrix_%s_goa" .) | markdownify }}</span>
+                </span>
+              </td>
+              <td>{{ T (printf "home_matrix_%s_specs" .) | markdownify }}</td>
+              <td>{{ T (printf "home_matrix_%s_mcp" .) | markdownify }}</td>
+              <td>{{ T (printf "home_matrix_%s_agent" .) | markdownify }}</td>
+            </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -281,12 +377,35 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
     <div class="site-width">
       <div class="section-intro">
         <h2 id="community-title">{{ T "home_community_heading" }}</h2>
-        <p>{{ T "home_community_intro" }}</p>
       </div>
-      <dl class="ecosystem-cards">
-        <div><dt><a href="{{ relref . "/chorus/" }}">Chorus</a></dt><dd>{{ T "home_eco_chorus" | markdownify }}</dd></div>
-        <div><dt><a href="{{ relref . "/highbay/" }}">Highbay</a></dt><dd>{{ T "home_eco_highbay" | markdownify }}</dd></div>
-        <div><dt><a href="{{ relref . "/docs/3-ecosystem/pulse/" }}">Pulse</a> · <a href="{{ relref . "/docs/3-ecosystem/clue/" }}">Clue</a> · <a href="{{ relref . "/docs/3-ecosystem/model/" }}">Model</a></dt><dd>{{ T "home_eco_libs" | markdownify }}</dd></div>
+      <dl class="benefit-list home-icon-list">
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 6.5h14a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3v-3H5A1.5 1.5 0 0 1 3.5 15V8A1.5 1.5 0 0 1 5 6.5Z"/></svg>
+            </span>
+            <span><a href="{{ relref . "/chorus/" }}">Chorus</a></span>
+          </dt>
+          <dd>{{ T "home_eco_chorus" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="7" height="6" rx="1.5"/><rect x="13.5" y="14" width="7" height="6" rx="1.5"/><path d="M10.5 7H15a2 2 0 0 1 2 2v5M7 10v5a2 2 0 0 0 2 2h4.5"/></svg>
+            </span>
+            <span><a href="{{ relref . "/highbay/" }}">Highbay</a></span>
+          </dt>
+          <dd>{{ T "home_eco_highbay" | markdownify }}</dd>
+        </div>
+        <div>
+          <dt>
+            <span class="highbay-cap-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="7" r="2.2"/><circle cx="6" cy="17" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M8.2 7.5 15.8 11M8.2 16.5 15.8 13"/></svg>
+            </span>
+            <span><a href="{{ relref . "/docs/3-ecosystem/pulse/" }}">Pulse</a> · <a href="{{ relref . "/docs/3-ecosystem/clue/" }}">Clue</a> · <a href="{{ relref . "/docs/3-ecosystem/model/" }}">Model</a></span>
+          </dt>
+          <dd>{{ T "home_eco_libs" | markdownify }}</dd>
+        </div>
       </dl>
       <div class="community-links">
         <a class="community-links__primary" href="{{ relref . "/docs/3-ecosystem/" }}">{{ T "home_ecosystem" }} →</a>
@@ -327,8 +446,6 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
     const cliAgtLink = document.getElementById('home-cli-agent-link');
     const labelSkill = document.querySelector('#home-step2-label .home-label-skill');
     const labelGo = document.querySelector('#home-step2-label .home-label-go');
-    const hintSkill = document.querySelector('#home-step2-hint .home-hint-skill');
-    const hintGo = document.querySelector('#home-step2-hint .home-hint-go');
     if (step1Copy) {
       step1Copy.setAttribute('aria-label', mode === 'go' ? step1Copy.dataset.labelGo : step1Copy.dataset.labelSkill);
     }
@@ -343,10 +460,6 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
     if (cliSvcLink && cliAgtLink) {
       cliSvcLink.hidden = kind === 'agent';
       cliAgtLink.hidden = kind !== 'agent';
-    }
-    if (hintSkill && hintGo) {
-      hintSkill.hidden = mode === 'go';
-      hintGo.hidden = mode !== 'go';
     }
     if (promptEl && mode !== 'go') {
       const attr = kind === 'agent' ? 'promptAgent' : 'promptService';

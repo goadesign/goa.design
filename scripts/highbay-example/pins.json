@@ -1,58 +1,58 @@
 {
   "agree": {
     "desktop-light": {
-      "sizeKb": 136.8
+      "sizeKb": 191.2
     },
     "mobile-light": {
-      "sizeKb": 75.7
+      "sizeKb": 76
     },
     "desktop-dark": {
-      "sizeKb": 135.5
+      "sizeKb": 192
     },
     "mobile-dark": {
-      "sizeKb": 74.8
+      "sizeKb": 72.2
     }
   },
   "architecture": {
     "desktop-light": {
-      "sizeKb": 138.3
+      "sizeKb": 221.3
     },
     "mobile-light": {
-      "sizeKb": 61
+      "sizeKb": 52.5
     },
     "desktop-dark": {
-      "sizeKb": 138.6
+      "sizeKb": 220.3
     },
     "mobile-dark": {
-      "sizeKb": 60.9
+      "sizeKb": 52.1
     }
   },
   "check": {
     "desktop-light": {
-      "sizeKb": 113.9
+      "sizeKb": 176.6
     },
     "mobile-light": {
-      "sizeKb": 50.9
+      "sizeKb": 61.3
     },
     "desktop-dark": {
-      "sizeKb": 110.8
+      "sizeKb": 172.7
     },
     "mobile-dark": {
-      "sizeKb": 49.5
+      "sizeKb": 61.2
     }
   },
   "approve": {
     "desktop-light": {
-      "sizeKb": 117.4
+      "sizeKb": 229.6
     },
     "mobile-light": {
-      "sizeKb": 53.2
+      "sizeKb": 80
     },
     "desktop-dark": {
-      "sizeKb": 113.5
+      "sizeKb": 225.5
     },
     "mobile-dark": {
-      "sizeKb": 50.3
+      "sizeKb": 79.4
     }
   }
 }

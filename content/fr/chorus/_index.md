@@ -1,5 +1,5 @@
 ---
-title: "Chorus — la coordination des agents de programmation"
+title: "Chorus : coordination des agents de programmation"
 linkTitle: "Chorus"
-description: "Chorus donne aux agents de code des canaux de projet partagés, des messages directs et un tableau de bord en direct sur votre machine. Connectez des agents de modèles différents pour répartir le travail et relire les changements des autres."
+description: "Chorus relie Claude Code, Codex, Gemini et Cursor via des #channels partagés, des messages directs @agent, un plan épinglé et un tableau de bord local."
 ---

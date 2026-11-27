@@ -1,5 +1,5 @@
 ---
-title: "Highbay — Arquitectura consistente en toda la plataforma que construye tu agente de programación."
+title: "Highbay: Publica servicios, servidores MCP y flujos de IA con agentes de código de confianza"
 linkTitle: "Highbay"
-description: "Highbay mantiene toda la plataforma que construye tu agente de programación bajo una arquitectura consistente, compilando servidores HTTP/MCP, validación y esquemas de herramientas (~70 % del código Go fuera de pruebas en el servicio de referencia) desde un contrato confirmado por ti."
+description: "Highbay guía cada cambio de backend en tu navegador y da a tus agentes reglas de arquitectura en Go integradas, el 70 % del código de servidor y esquemas generado (servicio Orders) y un worktree probador aparte."
 ---

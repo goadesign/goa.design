@@ -82,7 +82,7 @@ Voir le [guide Pulse](pulse/).
 {{< anchors "indice---observabilité-des-microservices" >}}
 ## Clue : traçage OpenTelemetry, journaux tamponnés et sondes de santé
 
-[Clue](clue/) instrumente les services Go avec des traces et métriques OpenTelemetry, des sondes de santé et une **journalisation contextuelle vidée sur erreur** — gardant silencieuses les requêtes réussies non tracées tout en écrivant le contexte complet de débogage dès qu’une erreur survient :
+[Clue](clue/) instrumente les services Go avec des traces et métriques OpenTelemetry, des sondes de santé et une **journalisation contextuelle vidée sur erreur**, gardant silencieuses les requêtes réussies non tracées tout en écrivant le contexte complet de débogage dès qu’une erreur survient :
 
 ```go
 // Configure OpenTelemetry trace and metric exporters
@@ -120,7 +120,7 @@ Les autres installations en une commande (`npx @goadesign/chorus up`, `curl` et 
 {{< anchors "highbay---plan-de-contrôle-multi-agents-piloté-par-contrat" >}}
 ## Highbay : plan de contrôle multi-agents piloté par contrat
 
-[Highbay](highbay/) standardise l’architecture de vos services, serveurs MCP et agents IA — en associant un agent bâtisseur (`.highbay-build`) et un agent rédacteur de tests distinct (`.highbay-tests`) autour d’un contrat confirmé avant toute fusion :
+[Highbay](highbay/) maintient une architecture cohérente entre vos services, serveurs MCP et agents IA. Il associe un agent bâtisseur (`.highbay-build`) et un agent rédacteur de tests distinct (`.highbay-tests`) autour d’un contrat confirmé avant fusion :
 
 ```bash
 brew install goadesign/tap/highbay
