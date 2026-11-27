@@ -1,11 +1,12 @@
 // Documentation keeps navigation, article text, and the outline in separate columns.
-.docs-layout { display: grid; grid-template-columns: clamp(232px, 16vw, 268px) minmax(0, 1fr) clamp(204px, 14vw, 236px); gap: clamp(36px, 3vw, 56px); width: 100%; max-width: 1840px; margin-inline: auto; padding: 104px clamp(24px, 3vw, 48px) 64px; }
+.docs-layout { display: grid; grid-template-columns: clamp(224px, 16vw, 256px) minmax(0, 1fr) clamp(196px, 14vw, 224px); gap: clamp(32px, 3vw, 48px); width: 100%; max-width: 1632px; margin-inline: auto; padding: 104px clamp(24px, 3vw, 48px) 64px; }
 .docs-sidebar, .docs-outline { position: sticky; top: 96px; max-height: calc(100dvh - 120px); overflow-y: auto; overscroll-behavior: contain; align-self: start; scrollbar-width: thin; }
 .docs-sidebar summary { display: none; }
 .docs-main { min-width: 0; }
 .docs-outline { order: 3; }
 .docs-outline-title { font-size: .8rem; font-weight: 700; margin: .25rem 0 1rem; color: var(--color-text-heading); }
 .td-content { max-width: none; inline-size: 100%; padding: 0; font-size: 1.0625rem; line-height: 1.72; color: var(--color-text); }
+.goa-docs .td-content > * { max-width: 100%; }
 .td-content p, .td-content ul, .td-content ol { margin-bottom: 1.3rem; }
 .td-content li { margin-bottom: .45rem; }
 .td-content h1 { font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1.2; margin: 0; }

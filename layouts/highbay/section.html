@@ -6,7 +6,6 @@
   standardized layout, and production infrastructure patterns.
 */ -}}
 {{ define "main" }}
-{{- $docs := relref . "/docs/3-ecosystem/highbay/" -}}
 <div class="goa-home chorus-page highbay-page">
   <section class="highbay-hero-full site-width" aria-labelledby="highbay-title">
     <h1 id="highbay-title"><strong class="highbay-h1-lead">{{ T "highbay_heading" }}</strong> <span class="highbay-h1-sub">{{ T "highbay_heading_second" }}</span></h1>
@@ -125,7 +124,7 @@ highbay up</code></pre>
         (dict "key" "approve" "file" "approve" "title" "highbay_tab_approve" "sub" "highbay_approve_pin_1" "alt" "highbay_approve_alt" "active" false "mobile" true)
       -}}
       <div class="highbay-studio">
-        <div class="highbay-tablist" role="tablist" aria-labelledby="highbay-showcase-title">
+        <div class="highbay-tablist" role="tablist" aria-orientation="vertical" aria-labelledby="highbay-showcase-title">
           {{- range $stages }}
           <button
             type="button"
@@ -352,7 +351,14 @@ return eval.Result{Checks: []eval.Check{
 </div>
 <script>
 (() => {
+  const studioMq = window.matchMedia('(max-width: 960px)');
   for (const studio of document.querySelectorAll('.highbay-studio')) {
+    const tablist = studio.querySelector('[role="tablist"]');
+    const syncOrientation = () => {
+      if (tablist) tablist.setAttribute('aria-orientation', studioMq.matches ? 'horizontal' : 'vertical');
+    };
+    syncOrientation();
+    studioMq.addEventListener('change', syncOrientation);
     const tabs = [...studio.querySelectorAll('[role="tab"]')];
     const panels = [...studio.querySelectorAll('[role="tabpanel"]')];
     const activate = (next, moveFocus) => {

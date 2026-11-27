@@ -31,7 +31,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .goa-docs .td-navbar .td-navbar-container,
 .goa-docs .td-footer > .container-fluid {
   width: 100%;
-  max-width: 1840px;
+  max-width: 1632px;
   padding-inline: clamp(24px, 3vw, 48px);
 }
 .td-outer { padding: 0; }
@@ -129,8 +129,8 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .section-intro h2 { font-size: clamp(1.75rem, 2.55vw, 2.35rem); line-height: 1.18; max-width: none; margin: 0; }
 .section-intro p { max-width: 72ch; margin: .55rem 0 0; color: var(--color-text-muted); font-size: .98rem; line-height: 1.6; }
 .benefits-section { padding-block: 56px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-alt); }
-.home-benefit-strip { margin-top: 2rem; }
 .benefit-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; margin: 0; }
+.benefit-list.home-benefit-strip { margin-top: 2rem; }
 .benefit-list > div { padding-top: 1.1rem; border-top: 2px solid var(--doc-link-color); }
 .benefit-list dt { font: 700 1.05rem/1.45 "Manrope", sans-serif; color: var(--color-text-heading); margin-bottom: .5rem; }
 .benefit-list dd { margin: 0; font-size: .95rem; line-height: 1.65; }
@@ -307,7 +307,7 @@ h1, h2, h3, h4, h5 { color: var(--color-text-heading); letter-spacing: -.025em; 
 .highbay-install-card__steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; column-gap: 1.85rem; row-gap: .55rem; }
 .highbay-install-step { min-inline-size: 0; grid-row: span 3; display: grid; grid-template-rows: auto 1fr auto; grid-template-rows: subgrid; row-gap: .55rem; }
 .highbay-install-step .chorus-install-intro, .highbay-install-step .chorus-install-alt { margin: 0; font-size: .86rem; color: var(--color-text-muted); }
-.highbay-step1-head, .highbay-step2-head { display: flex; flex-wrap: wrap; align-items: safe center; justify-content: space-between; gap: .4rem .75rem; margin: 0; min-block-size: 1.75rem; }
+.highbay-step1-head, .highbay-step2-head { align-self: start; display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .4rem .75rem; margin: 0; min-block-size: 1.75rem; }
 .highbay-mgr-btn { padding: .26rem .62rem; border: 0; border-radius: 5px; background: transparent; color: var(--color-text-muted); font: 650 .75rem/1.2 "Manrope", sans-serif; cursor: pointer; }
 .highbay-mgr-btn[aria-pressed="true"] { background: var(--color-highlight); color: var(--doc-link-color); }
 .highbay-cmd-pre { margin: 0; padding: 0; border: 0; background: transparent; flex: 1 1 auto; min-inline-size: 0; font: inherit; }

@@ -41,9 +41,12 @@ for (const width of [390, 1440]) {
         const homeCardBox = await page.locator('#designer-skill .highbay-install-card').boundingBox();
         const homeStep1Box = await page.locator('#designer-skill .highbay-setup-box').boundingBox();
         const homeStep2Box = await page.locator('#home-prompt-box').boundingBox();
+        const homeDemoBox = await page.locator('.contract-demo').boundingBox();
+        const homeStripBox = await page.locator('.home-benefit-strip').boundingBox();
         expect(Math.abs(homeNavBox!.x - homeHeroBox!.x)).toBeLessThanOrEqual(1);
         expect(Math.abs(homeHeroBox!.x - homeCardBox!.x)).toBeLessThanOrEqual(1);
         expect(Math.abs(homeStep1Box!.y - homeStep2Box!.y)).toBeLessThanOrEqual(1);
+        expect(homeStripBox!.y - (homeDemoBox!.y + homeDemoBox!.height)).toBeGreaterThanOrEqual(24);
       }
       await page.locator('.home-prompt-btn[data-home-prompt="agent"]').click();
       await expect(page.locator('#home-prompt-cmd')).toContainText('gen example.com/catalog/design');
@@ -95,9 +98,11 @@ for (const width of [390, 1440]) {
         await expect(page.locator('.docs-sidebar nav')).toBeVisible();
         const docsNavBox = await page.locator('.td-navbar .navbar-brand').boundingBox();
         const docsSidebarBox = await page.locator('.docs-sidebar').boundingBox();
-        const docsContentBox = await page.locator('.td-content').boundingBox();
+        const docsTitleRowBox = await page.locator('.td-content .page-title-row').boundingBox();
+        const docsProseBox = await page.locator('.td-content > p').first().boundingBox();
         expect(Math.abs(docsNavBox!.x - docsSidebarBox!.x)).toBeLessThanOrEqual(1);
-        expect(docsContentBox!.width).toBeGreaterThan(800);
+        expect(docsProseBox!.width).toBeGreaterThan(800);
+        expect(Math.abs(docsTitleRowBox!.width - docsProseBox!.width)).toBeLessThanOrEqual(1);
       }
       await page.getByRole('button', { name: 'Copy page content' }).click();
       await expect(page.getByRole('menuitem', { name: 'Copy as Markdown' })).toBeVisible();
@@ -473,6 +478,7 @@ for (const width of [390, 1440]) {
 
       // Accessible 4-stage browser Views studio (default active tab = architecture C4 diagram + 4 thumbnails).
       const shotSelector = theme === 'dark' ? '.chorus-shot--dark img' : '.chorus-shot--light img';
+      await expect(page.locator('.highbay-tablist')).toHaveAttribute('aria-orientation', width <= 960 ? 'horizontal' : 'vertical');
       await expect(page.locator('.highbay-tab__thumb')).toHaveCount(4);
       const archImg = page.locator(`.highbay-stage--architecture ${shotSelector}`);
       await expect(archImg).toBeVisible();
