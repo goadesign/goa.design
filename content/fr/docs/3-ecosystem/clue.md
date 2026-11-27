@@ -876,59 +876,71 @@ import (
     "context"
     "net/http"
     "time"
-    
+
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+    "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
     "goa.design/clue/clue"
     "goa.design/clue/debug"
     "goa.design/clue/health"
     "goa.design/clue/log"
-    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-    "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-    
-    genservice "myapp/gen/myservice"
+    goahttp "goa.design/goa/v3/http"
+
+    catalogapi "example.com/catalog"
+    gencatalog "example.com/catalog/gen/catalog"
+    genhttp "example.com/catalog/gen/http/catalog/server"
 )
 
 func main() {
     // 1. Initialize logging context with trace correlation
     ctx := log.Context(context.Background(),
         log.WithFormat(log.FormatJSON),
-        log.WithFunc(log.Span))
-    
+        log.WithFunc(log.Span),
+    )
+
     // 2. Configure OpenTelemetry
-    spanExporter, _ := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
-    metricExporter, _ := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
-    cfg, _ := clue.NewConfig(ctx, "myservice", "1.0.0", metricExporter, spanExporter)
+    spanExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
+    metricExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
+    cfg, err := clue.NewConfig(ctx, "catalog", "1.0.0", metricExporter, spanExporter)
+    if err != nil {
+        log.Fatal(ctx, err)
+    }
     clue.ConfigureOpenTelemetry(ctx, cfg)
-    
-    // 3. Create service and endpoints
-    svc := NewService()
-    endpoints := genservice.NewEndpoints(svc)
-    endpoints.Use(debug.LogPayloads())  // Log payloads when debug enabled
-    endpoints.Use(log.Endpoint)          // Add service/method to logs
-    
-    // 4. Create HTTP handler with middleware stack
-    handler := genservice.NewHandler(endpoints)
-    handler = otelhttp.NewHandler(handler, "myservice")  // OpenTelemetry
-    handler = debug.HTTP()(handler)                       // Debug log control
-    handler = log.HTTP(ctx)(handler)                      // Request logging
-    
-    // 5. Mount on mux
-    mux := http.NewServeMux()
-    mux.Handle("/", handler)
-    
-    // 6. Mount operational endpoints
+
+    // 3. Create Goa endpoints and mount generated HTTP server
+    svc := catalogapi.NewCatalog()
+    endpoints := gencatalog.NewEndpoints(svc)
+    endpoints.Use(debug.LogPayloads()) // Log payloads when debug enabled
+    endpoints.Use(log.Endpoint)        // Add goa.service and goa.method to logs
+
+    mux := goahttp.NewMuxer()
+    srv := genhttp.New(endpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
+    genhttp.Mount(mux, srv)
+
+    // 4. Mount debug, pprof, and dependency health endpoints
     usersAddr := "localhost:8081"
-    debug.MountDebugLogEnabler(mux)
-    debug.MountPprofHandlers(mux)
-    mux.Handle("/healthz", health.Handler(
-        health.NewChecker(
-            health.NewPinger("users-service", usersAddr, health.WithTimeout(5*time.Second)),
-        ),
+    debug.MountDebugLogEnabler(debug.Adapt(mux))
+    debug.MountPprofHandlers(debug.Adapt(mux))
+    check := health.Handler(health.NewChecker(
+        health.NewPinger("users-service", usersAddr, health.WithTimeout(5*time.Second)),
     ))
-    
-    // 7. Start server
+    mux.Handle("GET", "/healthz", check.ServeHTTP)
+
+    // 5. Wrap mux with OpenTelemetry, debug control, and request logging middleware
+    var handler http.Handler = mux
+    handler = otelhttp.NewHandler(handler, "catalog")
+    handler = debug.HTTP()(handler)
+    handler = log.HTTP(ctx)(handler)
+
+    // 6. Start server
     log.Printf(ctx, "starting server on :8080")
-    http.ListenAndServe(":8080", mux)
+    log.Fatal(ctx, http.ListenAndServe(":8080", handler))
 }
 ```
 

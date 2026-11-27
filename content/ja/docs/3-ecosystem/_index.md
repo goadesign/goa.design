@@ -54,7 +54,7 @@ var _ = Design("Catalog Platform", "Product catalog architecture", func() {
 - **`rmap`**：原子的な Redis Lua スクリプトと pub/sub 通知で同期される、ローカル読み取り・結果整合性のキーバリューマップ。
 
 ```go
-// Open a stream and subscribe a shared consumer-group sink before publishing
+// Open a stream, subscribe a consumer-group sink, then publish
 stream, err := streaming.NewStream("orders", rdb)
 if err != nil {
     log.Fatal(err)
@@ -64,12 +64,13 @@ if err != nil {
     log.Fatal(err)
 }
 defer sink.Close(ctx)
+events := sink.Subscribe()
 
 if _, err := stream.Add(ctx, "order.created", payload); err != nil {
     log.Fatal(err)
 }
 
-for event := range sink.Subscribe() {
+for event := range events {
     if err := handleOrder(event); err == nil {
         _ = sink.Ack(ctx, event)
     }

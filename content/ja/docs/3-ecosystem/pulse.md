@@ -414,7 +414,7 @@ func (h *EmailJobHandler) Stop(key string) error {
 {{< anchors "インフラ構成" "redis-要件" "redis-クラスタ" "本番運用での考慮点" "トラブルシューティング" >}}
 ## Redis 構成と本番運用チェックリスト
 
-- **クライアント型と永続化**：Pulse の各コンストラクタ（`rmap.Join`、`streaming.NewStream`、`pool.AddNode`）は、Redis 6.2+ または Valkey（単体構成、`redis.NewFailoverClient` による Redis Sentinel プライマリ・レプリカ構成、または AOF 永続化を有効にしたマネージド Redis エンドポイント）に対する `*redis.Client` を受け取ります。Lua スクリプトがマップやストリームのキーへ直接アクセスするため、`*redis.ClusterClient` には対応していません。
+- **クライアント型と永続化**：Pulse の各コンストラクタ（`rmap.Join`、`streaming.NewStream`、`pool.AddNode`）は、Redis 7.0+ または Valkey（`EXPIRE NX` を使う `rmap.WithTTL` を利用しない場合は Redis 6.2+ でも動作。Sink のリカバリは Redis 6.2 で導入された `XAUTOCLAIM` を使用）の単体構成、Sentinel（`redis.NewFailoverClient`）、または AOF 永続化を有効にしたマネージド構成に対する `*redis.Client` を受け取ります。Lua スクリプトがマップやストリームのキーへ直接アクセスするため、`*redis.ClusterClient` には対応していません。
 - **厳密なストリームトリミング**：`NewStream` はデフォルトで厳密な `MAXLEN =` により `1,000` 件でトリムします。必要なリプレイ幅に合わせて `options.WithStreamMaxLen(n)` を設定するか、すべてのキュー項目を確実に処理してから削除したい場合は `options.WithUnboundedStream()` と明示的な `stream.Remove(ctx, id)` を組み合わせてください。
 - **ハンドラーの冪等性**：`Sink` コンシューマーと `pool` ワーカーはどちらもクラッシュやリバランス時に at-least-once で再配信されるため、外部への副作用は冪等キーで保護してください。
 

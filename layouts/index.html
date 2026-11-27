@@ -95,7 +95,7 @@ assistant.RegisterAssistantAgent(ctx, rt, cfg)</code></div>
     })
 })` "go" "" }}
         <div class="demo-command"><span aria-hidden="true">$</span> <code>goa gen example.com/support/design</code></div>
-        <div class="demo-impl"><code>// Checked at goa gen; rendered with typed Go structs at runtime
+        <div class="demo-impl"><code>// Preview on goa-ai@fb00df9 (post-v0.90.0); rendered with typed Go structs
 support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code></div>
         <div class="demo-output"><h2>{{ T "home_generated" }}</h2><ul role="list">
           <li>{{ T "home_output_prompt_checks" }}</li><li>{{ T "home_output_prompt_render" }}</li>
@@ -103,7 +103,7 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
         </ul></div>
       </div>
       <a class="demo-source demo-source-contract" href="{{ relref . "/docs/ai-development/" }}#one-design-two-entry-points">{{ T "home_full_example" }}</a>
-      <a class="demo-source demo-source-prompt" href="{{ relref . "/docs/2-goa-ai/prompt-management/" }}">{{ T "home_prompt_guide" }}</a>
+      <a class="demo-source demo-source-prompt" href="{{ relref . "/docs/2-goa-ai/prompt-management/" }}#version-prerequisite">{{ T "home_prompt_guide" }}</a>
     </div>
   </section>
 
@@ -125,7 +125,7 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
             </div>
             <div class="install-command highbay-setup-box">
               <pre class="highbay-cmd-pre"><code id="skill-command" data-cmd-skill="npx skills add goadesign/goa --skill goa-service-designer" data-cmd-go="go install goa.design/goa/v3/cmd/goa@latest">npx skills add goadesign/goa --skill goa-service-designer</code></pre>
-              <button type="button" class="copy-install" command="--copy" commandfor="skill-command" aria-label="{{ T "home_skill_copy" }}" data-copy-target="skill-command" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+              <button type="button" id="home-step1-copy" class="copy-install" command="--copy" commandfor="skill-command" aria-label="{{ T "home_skill_copy" }}" data-label-skill="{{ T "home_skill_copy" }}" data-label-go="{{ T "home_go_copy" }}" data-copy-target="skill-command" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
             </div>
@@ -140,11 +140,15 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
                 <button type="button" class="highbay-prefix-btn home-prompt-btn" data-home-prompt="agent" aria-pressed="false">{{ T "home_agents" }}</button>
               </div>
             </div>
-            <div class="install-command highbay-prompt-box">
-              <code id="home-prompt-cmd" class="highbay-prompt-code" data-prompt-service="{{ T "home_skill_prompt" }}" data-prompt-agent="{{ T "home_skill_prompt_agent" }}" data-cli-service="mkdir catalog &amp;&amp; cd catalog &amp;&amp; go mod init example.com/catalog &amp;&amp; go get goa.design/goa/v3@v3.36.0" data-cli-agent="mkdir catalog &amp;&amp; cd catalog &amp;&amp; go mod init example.com/catalog &amp;&amp; go get goa.design/goa-ai@v0.90.0">{{ T "home_skill_prompt" }}</code>
-              <button type="button" id="home-step2-copy" class="copy-install" command="--copy" commandfor="home-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-label-skill="{{ T "highbay_copy_prompt" }}" data-label-go="{{ T "home_cli_copy" }}" data-copy-target="home-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
+            <div id="home-prompt-box" class="install-command highbay-prompt-box">
+              <code id="home-prompt-cmd" class="highbay-prompt-code" data-prompt-service="{{ T "home_skill_prompt" }}" data-prompt-agent="{{ T "home_skill_prompt_agent" }}">{{ T "home_skill_prompt" }}</code>
+              <button type="button" id="home-step2-copy" class="copy-install" command="--copy" commandfor="home-prompt-cmd" aria-label="{{ T "highbay_copy_prompt" }}" data-copy-target="home-prompt-cmd" data-copied="{{ T "home_skill_copied" }}" data-failed="{{ T "home_skill_copy_failed" }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               </button>
+            </div>
+            <div id="home-cli-links" class="hero-actions" hidden>
+              <a id="home-cli-service-link" class="goa-button" href="{{ relref . "/docs/1-goa/" }}">{{ T "home_service_docs" }} →</a>
+              <a id="home-cli-agent-link" class="goa-button" href="{{ relref . "/docs/2-goa-ai/" }}" hidden>{{ T "home_agent_docs" }} →</a>
             </div>
             <p id="home-step2-hint" class="install-hint"><span class="home-hint-skill">{{ T "home_skill_outcome" | markdownify }}</span><span class="home-hint-go" hidden>{{ T "home_cli_outcome" | markdownify }}</span></p>
           </div>
@@ -290,27 +294,37 @@ support.RenderSystemPrompt(ctx, in.Agent, support.SystemPromptArgs{...})</code><
   let mode = 'skill';
   let kind = 'service';
   function syncStep2() {
+    const step1Copy = document.getElementById('home-step1-copy');
+    const promptBox = document.getElementById('home-prompt-box');
     const promptEl = document.getElementById('home-prompt-cmd');
+    const cliLinks = document.getElementById('home-cli-links');
+    const cliSvcLink = document.getElementById('home-cli-service-link');
+    const cliAgtLink = document.getElementById('home-cli-agent-link');
     const labelSkill = document.querySelector('#home-step2-label .home-label-skill');
     const labelGo = document.querySelector('#home-step2-label .home-label-go');
-    const copyEl = document.getElementById('home-step2-copy');
     const hintSkill = document.querySelector('#home-step2-hint .home-hint-skill');
     const hintGo = document.querySelector('#home-step2-hint .home-hint-go');
+    if (step1Copy) {
+      step1Copy.setAttribute('aria-label', mode === 'go' ? step1Copy.dataset.labelGo : step1Copy.dataset.labelSkill);
+    }
     if (labelSkill && labelGo) {
       labelSkill.hidden = mode === 'go';
       labelGo.hidden = mode !== 'go';
     }
-    if (copyEl) {
-      copyEl.setAttribute('aria-label', mode === 'go' ? copyEl.dataset.labelGo : copyEl.dataset.labelSkill);
+    if (promptBox && cliLinks) {
+      promptBox.hidden = mode === 'go';
+      cliLinks.hidden = mode !== 'go';
+    }
+    if (cliSvcLink && cliAgtLink) {
+      cliSvcLink.hidden = kind === 'agent';
+      cliAgtLink.hidden = kind !== 'agent';
     }
     if (hintSkill && hintGo) {
       hintSkill.hidden = mode === 'go';
       hintGo.hidden = mode !== 'go';
     }
-    if (promptEl) {
-      const attr = mode === 'go'
-        ? (kind === 'agent' ? 'cliAgent' : 'cliService')
-        : (kind === 'agent' ? 'promptAgent' : 'promptService');
+    if (promptEl && mode !== 'go') {
+      const attr = kind === 'agent' ? 'promptAgent' : 'promptService';
       if (promptEl.dataset[attr]) promptEl.textContent = promptEl.dataset[attr];
     }
   }

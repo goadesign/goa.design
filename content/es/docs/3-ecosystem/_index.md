@@ -54,7 +54,7 @@ Ejecuta `mdl serve` para ajustar la disposición de forma interactiva en el nave
 - **`rmap`**: Mapas clave-valor de lectura local y consistencia eventual sincronizados mediante scripts Lua atómicos en Redis y notificaciones pub/sub.
 
 ```go
-// Open a stream and subscribe a shared consumer-group sink before publishing
+// Open a stream, subscribe a consumer-group sink, then publish
 stream, err := streaming.NewStream("orders", rdb)
 if err != nil {
     log.Fatal(err)
@@ -64,12 +64,13 @@ if err != nil {
     log.Fatal(err)
 }
 defer sink.Close(ctx)
+events := sink.Subscribe()
 
 if _, err := stream.Add(ctx, "order.created", payload); err != nil {
     log.Fatal(err)
 }
 
-for event := range sink.Subscribe() {
+for event := range events {
     if err := handleOrder(event); err == nil {
         _ = sink.Ack(ctx, event)
     }

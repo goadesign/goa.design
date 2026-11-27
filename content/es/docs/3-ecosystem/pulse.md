@@ -414,7 +414,7 @@ func (h *EmailJobHandler) Stop(key string) error {
 {{< anchors "configuración-de-la-infraestructura" "requisitos-de-redis" "cluster-redis" "consideraciones-de-producción" "solución-de-problemas" >}}
 ## Configuración de Redis y lista de control para producción
 
-- **Tipo de cliente y persistencia**: Los constructores de Pulse (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) reciben `*redis.Client` contra Redis 6.2+ o Valkey (instancia única, primario-réplica con Redis Sentinel mediante `redis.NewFailoverClient` o endpoints gestionados de Redis con persistencia AOF activada). `*redis.ClusterClient` no está soportado porque los scripts Lua operan directamente sobre las claves de mapas y streams.
+- **Tipo de cliente y persistencia**: Los constructores de Pulse (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) reciben `*redis.Client` contra Redis 7.0+ o Valkey (Redis 6.2+ basta si no se usa `rmap.WithTTL` con `EXPIRE NX`; la recuperación de sinks requiere `XAUTOCLAIM` desde Redis 6.2) en instancia única, primario-réplica con Redis Sentinel (`redis.NewFailoverClient`) o endpoints gestionados con persistencia AOF. `*redis.ClusterClient` no está soportado porque los scripts Lua operan directamente sobre las claves de mapas y streams.
 - **Recorte exacto de streams**: `NewStream` recorta en `1.000` eventos por defecto mediante `MAXLEN =` exacto. Ajusta `options.WithStreamMaxLen(n)` a tu ventana de replay, o usa `options.WithUnboundedStream()` + `stream.Remove(ctx, id)` explícito cuando cada tarea encolada deba procesarse antes de borrarse.
 - **Manejadores idempotentes**: Tanto los consumidores de `Sink` como los workers de `pool` entregan al menos una vez ante caídas y reequilibrios; protege los efectos externos con claves de idempotencia.
 

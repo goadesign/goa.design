@@ -413,7 +413,7 @@ func (h *EmailJobHandler) Stop(key string) error {
 {{< anchors "infrastructure-setup" "redis-requirements" "redis-cluster" "production-considerations" "troubleshooting" >}}
 ## Redis Setup and Production Checklist
 
-- **Client type & persistence**: Pulse constructors (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) accept `*redis.Client` against Redis 6.2+ or Valkey (standalone, primary-replica with Redis Sentinel via `redis.NewFailoverClient`, or managed Redis endpoints with AOF persistence enabled). `*redis.ClusterClient` is not supported because Lua scripts touch map/stream keys directly.
+- **Client type & persistence**: Pulse constructors (`rmap.Join`, `streaming.NewStream`, `pool.AddNode`) accept `*redis.Client` against Redis 7.0+ or Valkey (Redis 6.2+ suffices when not using `rmap.WithTTL`'s `EXPIRE NX`; sink recovery requires `XAUTOCLAIM` from Redis 6.2) in standalone, Sentinel (`redis.NewFailoverClient`), or managed AOF-enabled setups. `*redis.ClusterClient` is not supported because Lua scripts touch map/stream keys directly.
 - **Exact stream trimming**: `NewStream` trims at `1,000` events by default using exact `MAXLEN =`. Size `options.WithStreamMaxLen(n)` for your replay window, or use `options.WithUnboundedStream()` + explicit `stream.Remove(ctx, id)` when every queued item must be processed before deletion.
 - **Idempotent handlers**: Both `Sink` consumers and `pool` workers deliver at-least-once across crashes and rebalances; guard external side effects with idempotency keys.
 

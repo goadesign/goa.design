@@ -35,7 +35,7 @@ jobs:
       - name: Update skills with pinned CLI
         run: npx --yes skills@1.9.0 update --project --yes
 
-      - name: Verify scoped skill diff and validate site build
+      - name: Verify scoped skill diff and compute lock hash
         id: check
         run: |
           outside="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(\.agents/skills/|skills-lock\.json$)' || true)"
@@ -73,7 +73,22 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/skills-bundle"
-          tar -cf "$RUNNER_TEMP/skills-bundle/skills.tar" skills-lock.json .agents/skills
+          python3 - "$RUNNER_TEMP/skills-bundle/skills.tar" <<'PY'
+          import os, sys, tarfile
+
+          out_tar = sys.argv[1]
+          with tarfile.open(out_tar, "w", format=tarfile.PAX_FORMAT) as tf:
+              tf.add("skills-lock.json", recursive=False)
+              for root, dirs, files in os.walk(".agents/skills", followlinks=False):
+                  dirs.sort()
+                  files.sort()
+                  tf.add(root, recursive=False)
+                  for fn in files:
+                      full = os.path.join(root, fn)
+                      if os.path.islink(full) or not os.path.isfile(full):
+                          raise SystemExit(f"Refusing non-regular skill file: {full}")
+                      tf.add(full, recursive=False)
+          PY
 
       - name: Upload refreshed skills bundle
         if: steps.check.outputs.changed == 'true'
@@ -103,23 +118,92 @@ jobs:
           name: refreshed-agent-skills-${{ needs.refresh-skills.outputs.lock_hash }}
           path: ${{ runner.temp }}/skills-bundle
 
-      - name: Apply scoped skill files and open pull request
+      - name: Validate bundle, apply scoped skill files, and open pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOCK_HASH: ${{ needs.refresh-skills.outputs.lock_hash }}
         run: |
           branch="chore/update-agent-skills-${LOCK_HASH}"
+          stage_dir="$RUNNER_TEMP/skills-extracted"
+          rm -rf "$stage_dir"
+          mkdir -p "$stage_dir"
 
-          # Verify tar archive contains only skills-lock.json and .agents/skills/* paths without traversal.
-          bad_paths="$(tar -tf "$RUNNER_TEMP/skills-bundle/skills.tar" | grep -Ev '^(skills-lock\.json|\.agents/skills(/.*)?)$' || true)"
-          if [ -n "$bad_paths" ]; then
-            echo "Refusing unexpected archive entries:" >&2
-            echo "$bad_paths" >&2
+          # Validate member types, normalized paths, lockfile schema, and complete tracked skill tree before touching the working tree.
+          python3 - "$RUNNER_TEMP/skills-bundle/skills.tar" "$stage_dir" <<'PY'
+          import json, os, posixpath, shutil, sys, tarfile
+
+          tar_path, stage_dir = sys.argv[1], sys.argv[2]
+          with open("skills-lock.json", "r", encoding="utf-8") as f:
+              base_lock = json.load(f)
+          expected_skills = set(base_lock.get("skills", {}).keys())
+          if not expected_skills:
+              raise SystemExit("Base skills-lock.json has no tracked skills")
+
+          seen_files = {}
+          with tarfile.open(tar_path, "r:*") as tf:
+              members = tf.getmembers()
+              if not members:
+                  raise SystemExit("Empty skills.tar archive")
+              for m in members:
+                  if m.issym() or m.islnk() or not (m.isfile() or m.isdir()):
+                      raise SystemExit(f"Refusing non-regular archive member: {m.name!r} (type={m.type!r})")
+                  raw = m.name.rstrip("/")
+                  if not raw or m.name.startswith("/") or "\\" in m.name:
+                      raise SystemExit(f"Refusing unsafe archive path: {m.name!r}")
+                  parts = raw.split("/")
+                  if any(p in ("", ".", "..") for p in parts) or posixpath.normpath(raw) != raw:
+                      raise SystemExit(f"Refusing unnormalized archive path: {m.name!r}")
+                  if raw == "skills-lock.json":
+                      if not m.isfile() or m.size <= 0:
+                          raise SystemExit("skills-lock.json must be a non-empty regular file")
+                  elif raw == ".agents/skills":
+                      if not m.isdir():
+                          raise SystemExit(".agents/skills must be a directory")
+                  elif raw.startswith(".agents/skills/"):
+                      skill_name = parts[2]
+                      if skill_name not in expected_skills:
+                          raise SystemExit(f"Unexpected skill directory {skill_name!r} not in base skills-lock.json")
+                      if len(parts) == 3 and not m.isdir():
+                          raise SystemExit(f"Top-level entry {raw!r} under .agents/skills must be a directory")
+                  else:
+                      raise SystemExit(f"Refusing out-of-scope archive member: {m.name!r}")
+                  if m.isfile():
+                      if raw in seen_files:
+                          raise SystemExit(f"Duplicate file member in archive: {raw!r}")
+                      seen_files[raw] = m.size
+
+              if "skills-lock.json" not in seen_files:
+                  raise SystemExit("Archive is missing skills-lock.json")
+              lock_bytes = tf.extractfile("skills-lock.json").read()
+              new_lock = json.loads(lock_bytes.decode("utf-8"))
+              if new_lock.get("version") != 1 or not isinstance(new_lock.get("skills"), dict):
+                  raise SystemExit("Invalid skills-lock.json structure in archive")
+              if set(new_lock["skills"].keys()) != expected_skills:
+                  raise SystemExit(f"Archive skill set {sorted(new_lock['skills'])} != expected {sorted(expected_skills)}")
+              for s in sorted(expected_skills):
+                  skill_md = f".agents/skills/{s}/SKILL.md"
+                  if seen_files.get(skill_md, 0) <= 0:
+                      raise SystemExit(f"Archive missing non-empty {skill_md}")
+
+              tf.extractall(path=stage_dir, filter="data")
+
+          rm_targets = [".agents/skills", "skills-lock.json"]
+          for t in rm_targets:
+              if os.path.exists(t):
+                  if os.path.isdir(t) and not os.path.islink(t):
+                      shutil.rmtree(t)
+                  else:
+                      os.unlink(t)
+          shutil.copy2(os.path.join(stage_dir, "skills-lock.json"), "skills-lock.json")
+          shutil.copytree(os.path.join(stage_dir, ".agents", "skills"), ".agents/skills", symlinks=False)
+          PY
+
+          outside="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(\.agents/skills/|skills-lock\.json$)' || true)"
+          if [ -n "$outside" ]; then
+            echo "Refusing unexpected working-tree changes outside .agents/skills/ and skills-lock.json:" >&2
+            echo "$outside" >&2
             exit 1
           fi
-
-          rm -rf .agents/skills skills-lock.json
-          tar -xf "$RUNNER_TEMP/skills-bundle/skills.tar"
 
           if [ -z "$(git status --porcelain -- .agents/skills skills-lock.json)" ]; then
             echo "No changes relative to current base branch."
@@ -151,7 +235,7 @@ jobs:
           {
             echo "Automated weekly refresh of repository agent skills via \`npx --yes skills@1.9.0 update --project --yes\` (\`skills-lock.json\` \`${LOCK_HASH}\`)."
             echo ""
-            echo "Review any changed \`SKILL.md\` instructions, references, or scripts carefully before merging, and update \`.agents/THIRD_PARTY_NOTICES.md\` if upstream license or notice files changed."
+            echo "Review any changed \`SKILL.md\` instructions, references, or scripts carefully before merging, update \`.agents/THIRD_PARTY_NOTICES.md\` if upstream license or notice files changed, and click **Approve and run** if pull-request workflows await approval."
             if [ -n "$prior" ]; then
               echo ""
               echo "Supersedes open skill-update PR(s): ${prior}."
